@@ -12,6 +12,7 @@
     [com.sixsq.slipstream.ssclj.resources.credential-template-ssh-public-key :as spk]
     [com.sixsq.slipstream.ssclj.resources.lifecycle-test-utils :as ltu]
     [com.sixsq.slipstream.ssclj.util.metadata-test-utils :as mdtu]
+    [com.sixsq.slipstream.ssclj.resources.credential-template-cloud-alpha :as alpha]
     [peridot.core :refer :all]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -54,10 +55,11 @@
         types (set (map :type entries))]
     (is (= #{(str ct/resource-url "/" spk/method)
              (str ct/resource-url "/" skp/method)
-             (str ct/resource-url "/" akey/method)}
+             (str ct/resource-url "/" akey/method)
+             (str ct/resource-url "/" alpha/method)}
            ids))
-    (is (= #{spk/method skp/method akey/method} methods))
-    (is (= #{spk/credential-type akey/credential-type} types))
+    (is (= #{spk/method skp/method akey/method alpha/method} methods))
+    (is (= #{spk/credential-type akey/credential-type alpha/credential-type} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)

@@ -1,10 +1,10 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/slipstream-ring-container "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/ring "3.69-SNAPSHOT"
 
   :description "simple ring container for micro-services"
 
-  :url "https://github.com/slipstream/SlipStreamServer"
+  :url "https://github.com/nuvla/server"
   
   :license {:name "Apache 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0.txt"

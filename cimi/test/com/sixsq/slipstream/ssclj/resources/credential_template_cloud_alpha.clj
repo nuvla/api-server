@@ -54,7 +54,7 @@
    :name        "Alpha cloud credentials store"
    :description "Stores user cloud credentials for Alpha"
    :quota       20
-   :connector   {:href ""}
+   :connector   {:href "connector/abcdef"}
    :key         ""
    :secret      ""
    :acl         resource-acl})

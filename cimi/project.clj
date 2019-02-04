@@ -33,6 +33,7 @@
    [com.jcraft/jsch]
    [clj-stacktrace]
    [clj-time]
+   [com.amazonaws/aws-java-sdk-s3]
    [environ]
    [expound]
    [instaparse]

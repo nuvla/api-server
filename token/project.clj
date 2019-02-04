@@ -1,10 +1,10 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/token "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/token "3.69-SNAPSHOT"
 
   :description "token handling utilities in Clojure"
 
-  :url "https://github.com/slipstream/SlipStreamServer"
+  :url "https://github.com/nuvla/server"
 
   :license {:name "Apache 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0.txt"

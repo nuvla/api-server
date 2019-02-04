@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>SlipStreamCljResources-jar-dep</artifactId>
+  <artifactId>cimi-jar-dep</artifactId>
   <packaging>pom</packaging>
   <version>3.69-SNAPSHOT</version>
   <name>server/cimi</name>
@@ -24,42 +24,35 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>slipstream-ring-container-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>ring-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>SlipStreamDbBinding-jar-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>db-binding-jar-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>SlipStreamDbTesting-jar-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>db-testing-jar-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>SlipStreamCljResourcesTests-jar-dep</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
+      <groupId>sixsq.nuvla.server</groupId>
       <artifactId>token-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
+      <groupId>sixsq.nuvla.server</groupId>
       <artifactId>utils-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>

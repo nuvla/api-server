@@ -19,43 +19,12 @@
     <module>utils</module>
     <module>token</module>
     <module>cimi</module>
-    <module>cimi-resources</module>
-    <module>cimi-tools</module>
     <module>cimi-test-jar</module>
     <module>cimi-test-server</module>
     <module>db-binding</module>
     <module>db-testing</module>
-    <module>ring-container</module>
+    <module>ring</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>build-server-rpm</id>
-      <activation>
-        <file>
-          <exists>/usr/bin/rpmbuild</exists>
-        </file>
-      </activation>
-      <modules>
-        <module>cimi-rpm</module>
-        <module>cimi-resources-rpm</module>
-        <module>ring-container-rpm</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>build-server-rpm-local</id>
-      <activation>
-        <file>
-          <exists>/usr/local/bin/rpmbuild</exists>
-        </file>
-      </activation>
-      <modules>
-        <module>cimi-rpm</module>
-        <module>cimi-resources-rpm</module>
-        <module>ring-container-rpm</module>
-      </modules>
-    </profile>
-  </profiles>
 
   <scm>
     <connection>${scm.read}/server.git</connection>
@@ -75,8 +44,6 @@
     <!-- The value should NOT have a trailing slash! -->
     <nexus>https://nexus.sixsq.com/content/repositories</nexus>
 
-    <!-- package platform for the created RPMs -->
-    <platform.os>-rhel7</platform.os>
   </properties>
 
   <repositories>
@@ -119,7 +86,7 @@
               <goal>go-offline</goal>
             </goals>
             <configuration>
-              <excludeGroupIds>com.sixsq.slipstream</excludeGroupIds>
+              <excludeGroupIds>sixsq.nuvla.server</excludeGroupIds>
             </configuration>
           </execution>
         </executions>

@@ -1,6 +1,6 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/SlipStreamDbTesting-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/db-testing-jar "3.69-SNAPSHOT"
 
   :description "db testing utilities"
 
@@ -57,7 +57,7 @@
 
    [ring/ring-json]
 
-   [com.sixsq.slipstream/SlipStreamDbBinding-jar ~+version+]
+   [sixsq.nuvla.server/db-binding-jar ~+version+]
 
    ;;
    ;; This dependency is included explicitly to avoid having

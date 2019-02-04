@@ -23,15 +23,15 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>slipstream-ring-container-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>ring-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>SlipStreamCljResources-jar-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>cimi-jar-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>

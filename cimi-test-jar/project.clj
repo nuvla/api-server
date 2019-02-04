@@ -1,6 +1,6 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/SlipStreamCljResourcesTests-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/cimi-test-jar "3.69-SNAPSHOT"
 
   :description "cimi server testing utilities"
 
@@ -23,12 +23,12 @@
 
   :pom-location "target/"
 
-  :dependencies [[com.sixsq.slipstream/SlipStreamDbBinding-jar ~+version+]
-                 [com.sixsq.slipstream/SlipStreamDbTesting-jar ~+version+ :scope "compile"]
+  :dependencies [[sixsq.nuvla.server/db-binding-jar ~+version+]
+                 [sixsq.nuvla.server/db-testing-jar ~+version+ :scope "compile"]
                  [org.apache.curator/curator-test :scope "compile"]
                  [peridot :scope "compile"]
                  [expound :scope "compile"]
                  [org.clojure/data.json]
                  [compojure]
                  [com.cemerick/url]
-                 [com.sixsq.slipstream/slipstream-ring-container ~+version+]])
+                 [sixsq.nuvla.server/ring ~+version+]])

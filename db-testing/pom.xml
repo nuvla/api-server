@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>SlipStreamDbTesting-jar-dep</artifactId>
+  <artifactId>db-testing-jar-dep</artifactId>
   <packaging>pom</packaging>
   <version>3.69-SNAPSHOT</version>
   <name>server/db-testing</name>
@@ -24,8 +24,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.sixsq.slipstream</groupId>
-      <artifactId>SlipStreamDbBinding-jar-dep</artifactId>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>db-binding-jar-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <scope>provided</scope>

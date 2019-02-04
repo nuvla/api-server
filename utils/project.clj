@@ -1,10 +1,10 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/utils "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/utils "3.69-SNAPSHOT"
 
   :description "general server utilities"
 
-  :url "https://github.com/slipstream/SlipStreamServer"
+  :url "https://github.com/nuvla/server"
 
   :license {:name         "Apache 2.0"
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
