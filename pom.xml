@@ -1,10 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>SlipStreamServer</artifactId>
+  <groupId>sixsq.nuvla.server</groupId>
+  <artifactId>server</artifactId>
   <version>3.69-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>SlipStreamServer</name>
+  <name>server</name>
   <url>http://sixsq.com/</url>
 
   <parent>
@@ -57,16 +58,16 @@
   </profiles>
 
   <scm>
-    <connection>${scm.read}/SlipStreamServer.git</connection>
-    <developerConnection>${scm.write}/SlipStreamServer.git</developerConnection>
-    <url>${scm.public}/SlipStreamServer.git</url>
+    <connection>${scm.read}/server.git</connection>
+    <developerConnection>${scm.write}/server.git</developerConnection>
+    <url>${scm.public}/server.git</url>
     <tag>HEAD</tag>
   </scm>
 
   <properties>
 
     <logger.level>INFO</logger.level>
-    <logger.filepattern>${project.build.directory}/instance/SlipStreamServer/var/log/slipstream.%g
+    <logger.filepattern>${project.build.directory}/instance/server/var/log/slipstream.%g
     </logger.filepattern>
     <server.jre.version>1.8.0</server.jre.version>
     

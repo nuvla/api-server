@@ -4,11 +4,11 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>ring-container-rpm</artifactId>
-  <name>SlipStreamServer/ring-container-rpm</name>
+  <name>server/ring-container-rpm</name>
   <packaging>pom</packaging>
   <parent>
-    <groupId>com.sixsq.slipstream</groupId>
-    <artifactId>SlipStreamServer</artifactId>
+    <groupId>sixsq.nuvla.server</groupId>
+    <artifactId>server</artifactId>
     <version>3.69-SNAPSHOT</version>
   </parent>
   <!-- NOTE: This project MUST have same version as proxy module. -->

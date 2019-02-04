@@ -6,12 +6,12 @@
   <artifactId>SlipStreamServer-cimi-resources-dep</artifactId>
   <packaging>pom</packaging>
   <version>3.69-SNAPSHOT</version>
-  <name>SlipStreamServer/cimi-resources</name>
+  <name>server/cimi-resources</name>
   <url>http://sixsq.com</url>
 
   <parent>
-    <groupId>com.sixsq.slipstream</groupId>
-    <artifactId>SlipStreamServer</artifactId>
+    <groupId>sixsq.nuvla.server</groupId>
+    <artifactId>server</artifactId>
     <version>3.69-SNAPSHOT</version>
   </parent>
 
