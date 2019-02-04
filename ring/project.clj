@@ -5,7 +5,7 @@
   :description "simple ring container for micro-services"
 
   :url "https://github.com/nuvla/server"
-  
+
   :license {:name "Apache 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
@@ -25,7 +25,7 @@
 
   :pom-location "target/"
 
-  :aot [sixsq.slipstream.server.ring-container]
+  :aot [sixsq.nuvla.server.ring]
 
   :dependencies
   [[org.clojure/clojure]

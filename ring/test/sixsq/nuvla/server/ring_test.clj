@@ -1,8 +1,9 @@
-(ns sixsq.slipstream.server.ring-container-test
+(ns sixsq.nuvla.server.ring-test
   (:require
-    [clojure.test :refer :all]
-    [sixsq.slipstream.server.ring-container :as t])
-  (:import (clojure.lang ExceptionInfo)))
+    [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.server.ring :as t])
+  (:import
+    (clojure.lang ExceptionInfo)))
 
 
 (deftest check-as-symbol

@@ -22,12 +22,17 @@
     </license>
   </licenses>
 
-  <properties>
-    <installation.dir>/opt/nuvla/ring</installation.dir>
-  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>ring</artifactId>
+      <version>${project.version}</version>
+      <type>jar</type>
+    </dependency>
+  </dependencies>
 
   <profiles>
-    
+
     <profile>
       <id>run-tests</id>
       <activation>
@@ -60,88 +65,6 @@
       </build>
     </profile>
 
-    <profile>
-      <id>cimi-container</id>
-      <activation>
-        <property>
-          <name>!skipContainers</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <!-- docker build -->
-          <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <version>0.24.0</version>
-            <configuration>
-              <images>
-                <image>
-                  <alias>ring</alias>
-                  <name>sixsq/ring:${project.version}</name>
-                  <build>
-                    <from>openjdk:8-jre-alpine</from>
-                    <optimise>true</optimise>
-                    <assembly>
-                      <targetDir>/</targetDir>
-                      <inline>
-                        <fileSets>
-                          <fileSet>
-                            <directory>target</directory>
-                            <outputDirectory>${installation.dir}/lib</outputDirectory>
-                            <includes>
-                              <include>*.jar</include>
-                            </includes>
-                          </fileSet>
-                        </fileSets>
-                        <files>
-                          <file>
-                            <source>src/scripts/log4j.properties</source>
-                            <outputDirectory>/opt/nuvla/ring-example/resources</outputDirectory>
-                          </file>
-                        </files>
-                      </inline>
-                    </assembly>
-                    <runCmds>
-                      <runCmd>apk update</runCmd>
-                      <runCmd>apk add openssl openssh shadow</runCmd>
-                      <runCmd>/usr/sbin/groupadd -r nuvla</runCmd>
-                      <runCmd>/usr/sbin/useradd -r -d ${installation.dir} -g nuvla nuvla</runCmd>
-                      <runCmd>mkdir -p /opt/nuvla/server/.ssh</runCmd>
-                      <runCmd>chmod 700 /opt/nuvla/server/.ssh</runCmd>
-                      <runCmd>ssh-keygen -q -f /opt/nuvla/server/.ssh/id_rsa -N ""</runCmd>
-                      <runCmd>chown -R nuvla.nuvla /opt/nuvla/server/.ssh</runCmd>
-                      <runCmd>mkdir -p /opt/nuvla/ring-example/lib</runCmd>
-                      <runCmd>mkdir -p /var/log/nuvla/ring-example</runCmd>
-                    </runCmds>
-                    <env>
-                      <NUVLA_RING_CONTAINER_INIT>sixsq.nuvla.server.ring-example/init</NUVLA_RING_CONTAINER_INIT>
-                      <NUVLA_RING_CONTAINER_PORT>5000</NUVLA_RING_CONTAINER_PORT>
-                      <NUVLA_RING_CONTAINER_HOST>0.0.0.0</NUVLA_RING_CONTAINER_HOST>
-                    </env>
-                    <ports>
-                      <port>5000</port>
-                    </ports>
-                    <tags>latest</tags>
-                    <workdir>/opt/nuvla/ring-example</workdir>
-                    <cmd>/usr/bin/java -cp "/opt/nuvla/ring/lib/*:resources:lib/*" sixsq.nuvla.server.ring_container</cmd>
-                  </build>
-                </image>
-              </images>
-            </configuration>
-            <executions>
-              <execution>
-                <id>docker-build</id>
-                <goals>
-                  <goal>build</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    
   </profiles>
 
   <build>
@@ -161,6 +84,19 @@
               <executable>lein</executable>
               <arguments>
                 <argument>install</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>lein-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>lein</executable>
+              <arguments>
+                <argument>jar</argument>
               </arguments>
             </configuration>
           </execution>

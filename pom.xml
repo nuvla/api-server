@@ -24,6 +24,7 @@
     <module>db-binding</module>
     <module>db-testing</module>
     <module>ring</module>
+    <module>ring-container</module>
   </modules>
 
   <scm>

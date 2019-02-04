@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>ring-container-dep</artifactId>
+  <packaging>pom</packaging>
+  <version>3.69-SNAPSHOT</version>
+  <name>server/ring-container</name>
+  <url>http://sixsq.com</url>
+
+  <parent>
+    <groupId>sixsq.nuvla.server</groupId>
+    <artifactId>server</artifactId>
+    <version>3.69-SNAPSHOT</version>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>ring-dep</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>sixsq.nuvla.server</groupId>
+      <artifactId>ring</artifactId>
+      <version>${project.version}</version>
+      <type>jar</type>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+
+    <profile>
+      <id>cimi-container</id>
+      <activation>
+        <property>
+          <name>!skipContainers</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <!-- docker build -->
+          <plugin>
+            <groupId>io.fabric8</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <version>0.24.0</version>
+            <configuration>
+              <images>
+                <image>
+                  <alias>ring</alias>
+                  <name>sixsq/ring:${project.version}</name>
+                  <build>
+                    <from>openjdk:11-jre</from>
+                    <optimise>false</optimise>
+                    <assembly>
+                      <targetDir>/</targetDir>
+                      <inline>
+                        <fileSets>
+                          <fileSet>
+                            <directory>target/dependency/lib</directory>
+                            <outputDirectory>/opt/nuvla/server/lib</outputDirectory>
+                            <includes>
+                              <include>*.jar</include>
+                            </includes>
+                          </fileSet>
+                        </fileSets>
+                        <files>
+                          <file>
+                            <source>src/scripts/start.sh</source>
+                            <outputDirectory>/opt/nuvla/server/bin</outputDirectory>
+                          </file>
+                          <file>
+                            <source>src/scripts/log4j.properties</source>
+                            <outputDirectory>/opt/nuvla/server/resources</outputDirectory>
+                          </file>
+                        </files>
+                      </inline>
+                    </assembly>
+                    <runCmds>
+                      <runCmd>/usr/sbin/groupadd -r nuvla</runCmd>
+                      <runCmd>/usr/sbin/useradd -r -d /opt/nuvla/server -g nuvla nuvla</runCmd>
+                      <runCmd>mkdir -p /opt/nuvla/server/lib-ext/example</runCmd>
+                      <runCmd>chmod 0755 /opt/nuvla/server/bin/start.sh</runCmd>
+                    </runCmds>
+                    <env>
+                      <NUVLA_RING_CONTAINER_INIT>sixsq.nuvla.server.example/init</NUVLA_RING_CONTAINER_INIT>
+                      <NUVLA_RING_CONTAINER_PORT>5000</NUVLA_RING_CONTAINER_PORT>
+                      <NUVLA_RING_CONTAINER_HOST>0.0.0.0</NUVLA_RING_CONTAINER_HOST>
+                    </env>
+                    <ports>
+                      <port>5000</port>
+                    </ports>
+                    <tags>latest</tags>
+                    <workdir>/opt/nuvla/server</workdir>
+                    <cmd>/opt/nuvla/server/bin/start.sh</cmd>
+                  </build>
+                </image>
+              </images>
+            </configuration>
+
+            <executions>
+              <execution>
+                <id>docker-build</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+  </profiles>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/dependency/lib</outputDirectory>
+              <stripVersion>true</stripVersion>
+              <stripClassifier>true</stripClassifier>
+              <excludeTypes>pom</excludeTypes>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

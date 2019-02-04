@@ -1,4 +1,4 @@
-(ns sixsq.slipstream.server.ring-container
+(ns sixsq.nuvla.server.ring
   "Provides a simple, generic ring application server that can be started
    either via the static 'main' function (e.g. for running as a daemon) or via
    the 'start' function (e.g. for testing from the REPL)."
@@ -10,7 +10,10 @@
     [java.net InetSocketAddress])
   (:gen-class))
 
+
 (def ^:const default-port 8200)
+
+
 (def ^:const default-host "127.0.0.1")
 
 
