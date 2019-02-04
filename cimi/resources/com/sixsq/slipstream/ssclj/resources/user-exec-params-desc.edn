@@ -1,0 +1,37 @@
+{:defaultCloudService
+ {:description  "Default Cloud"
+  :options      []
+  :instructions "Select the cloud that you want to use as the default."
+  :type         "enum"
+  :order        10}
+ :keepRunning
+ {:description  "Keep running after deployment"
+  :options      ["never" "always" "on-error" "on-success"]
+  :instructions "Here you can define if and when SlipStream should leave the application running after performing the deployment. <br/> <code>On success</code> is useful for production deployments or long tests. </br> <code>On Error</code> might be useful so that resources are consumed only when debugging is needed. <br/> <code>Never</code> ensures that SlipStream automatically terminates the application after performing the deployment. <br/> Note: This parameter doesn't apply to <code>mutable deployment</code> Runs and to <code>build image</code> Runs."
+  :type         "enum"
+  :order        15}
+ :verbosityLevel
+ {:description  "Level of verbosity"
+  :options      [0 1 2 3]
+  :instructions "0 - Actions,  1 - Steps,  2 - Details data,  3 - Debugging"
+  :type         "enum"
+  :order        30}
+ :timeout
+ {:description  "Execution timeout (in minutes)"
+  :options      nil
+  :instructions "Frequency for receiving emails concerning your cloud usage."
+  :type         "text"
+  :order        40}
+ :sshPublicKey
+ {:description  "SSH Public Key(s) (one per line)"
+  :options      nil
+  :instructions "Warning: Some clouds may take into account only the first key until SlipStream bootstraps the machine."
+  :type         "text"
+  :order        50}
+ :mailUsage
+ {:description  "Cloud usage email"
+  ;; :options      ["never" "daily" "weekly" "monthly"]
+  :options      ["never" "daily"]
+  :instructions "Frequency for receiving emails concerning your cloud usage."
+  :type         "enum"
+  :order        60}}

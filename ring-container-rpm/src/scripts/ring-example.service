@@ -1,0 +1,22 @@
+[Unit]
+Description=SlipStream Example Micro-Service
+After=syslog.target
+After=network.target
+
+[Service]
+EnvironmentFile=-/etc/default/ring-example
+
+User=slipstream
+
+WorkingDirectory=/opt/slipstream/ring-example
+
+ExecStart=/usr/bin/java \
+            -cp "/opt/slipstream/ring-container/lib/*:resources:lib/*" \
+            sixsq.slipstream.server.ring_container
+ExecStop=/bin/kill -TERM $MAINPID
+
+# When a JVM receives a SIGTERM signal it exits with code 143
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

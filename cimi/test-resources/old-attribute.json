@@ -1,0 +1,42 @@
+{
+  "minor-version": 0,
+  "updated": "2016-03-03T14:32:06.308Z",
+  "major-version": 1,
+  "type": "String",
+  "created": "2016-03-03T14:32:06.308Z",
+  "en": {
+    "name": "overall.capacity.ram",
+    "categories": [
+      "Overall capacity"
+    ],
+    "description": "Nature: the amount of random-access memory in total; Value: expressed in relevant terms, e.g. 10 TB; Explanation: the amount of memory available across the installation as a whole. See below for what is available on any one system"
+  },
+  "id": "attribute/e01e3a07-7dc7-47ac-9161-f7c8a64f0a5a",
+  "acl": {
+    "owner": {
+      "principal": "ADMIN",
+      "type": "ROLE"
+    },
+    "rules": [
+      {
+        "principal": "USER",
+        "type": "ROLE",
+        "right": "VIEW"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "rel": "http://sixsq.com/slipstream/1/Action/edit",
+      "href": "attribute/e01e3a07-7dc7-47ac-9161-f7c8a64f0a5a"
+    },
+    {
+      "rel": "http://sixsq.com/slipstream/1/Action/delete",
+      "href": "attribute/e01e3a07-7dc7-47ac-9161-f7c8a64f0a5a"
+    }
+  ],
+  "resourceURI": "http://sixsq.com/slipstream/1/Attribute",
+  "uri": "http://example.schema.org/overall.capacity.ram",
+  "patch-version": 0,
+  "normative": true
+}

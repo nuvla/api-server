@@ -1,0 +1,61 @@
+# Java Maven CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: sixsq/slipstream:build
+      
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      MAVEN_OPTS: -Xmx1600m
+    
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: mvn -s .circleci/settings.xml --batch-mode dependency:go-offline
+      - run: (cd cimi; lein deps)
+      - run: (cd cimi-resources; lein deps)
+      - run: (cd cimi-test-jar; lein deps)
+      - run: (cd cimi-test-server; lein deps)
+      - run: (cd cimi-tools; lein deps)
+      - run: (cd db-binding; lein deps)
+      - run: (cd db-serializers; lein deps)
+      - run: (cd db-testing; lein deps)
+      - run: (cd dummy-connector/config; lein deps)
+      - run: (cd jar-async; lein deps)
+      - run: (cd jar-placement-lib; lein deps)
+      - run: (cd jar-pricing-lib; lein deps)
+      - run: (cd jar-prslib; lein deps)
+      - run: (cd metering; lein deps)
+      - run: (cd prs; lein deps)
+      - run: (cd ring-container; lein deps)
+      - run: (cd token/clj; lein deps)
+      - run: (cd token/java; lein deps)
+      - run: (cd utils; lein deps)
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+        
+      # build
+      - run: mvn -s .circleci/settings.xml --batch-mode deploy
+

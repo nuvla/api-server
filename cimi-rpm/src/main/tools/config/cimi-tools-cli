@@ -1,0 +1,2 @@
+SSCLJ_LOC=${installation.dir}
+export CLASSPATH=$SSCLJ_LOC/tools/resources/:$SSCLJ_LOC/../ring-container/lib/*:$SSCLJ_LOC/lib/*:$SSCLJ_LOC/tools/*

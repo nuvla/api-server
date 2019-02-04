@@ -1,0 +1,62 @@
+version: '3'
+services:
+  proxy:
+    image: traefik
+    restart: unless-stopped
+    command: --web --docker --docker.exposedByDefault=false --loglevel=info
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock:ro
+     - ./traefik/traefik.toml:/traefik.toml
+     - ./traefik/cert:/ssl:ro
+    ports:
+     - "80:80"
+     - "443:443"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
+    container_name: elasticsearch
+    expose:
+     - "9200"
+     - "9300"
+    environment:
+     - cluster.name=elasticsearch
+     - xpack.security.enabled=false
+     - discovery.type=single-node
+     - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.4
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    restart: always
+    ports:
+     - "5601:5601"
+  rc:
+    image: sixsq/ring-container:latest
+    ports:
+     - "5000:5000"
+    volumes:
+     - ringcontainer:/opt/slipstream/ring-container
+     - ringcontainerexample:/opt/slipstream/ring-example
+    command: sh
+  cimi:
+    image: sixsq/cimi:latest
+    ports:
+     - "8201:8201"
+    labels:
+     - "traefik.enable=true"
+     - "traefik.backend=cimi"
+     - "traefik.frontend.headers.customRequestHeaders=slipstream-authn-info:"
+     - "traefik.frontend.rule=PathPrefix:/,/"
+    volumes:
+     - ringcontainer:/opt/slipstream/ring-container
+     - ringcontainerexample:/opt/slipstream/ring-example
+     - resources:/opt/slipstream/cimi/extra-resources
+  cimi-resources:
+    image: sixsq/cimi-resources:latest
+    volumes:
+     - resources:/opt/slipstream/cimi/lib
+
+volumes:
+  ringcontainer: {}
+  ringcontainerexample: {}
+  resources: {}

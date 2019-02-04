@@ -1,0 +1,35 @@
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+*.cache
+
+# Clojure with Leiningen #
+##########################
+/checkouts
+.lein-deps-sum
+.lein-failures
+.lein-plugins
+.lein-env
+.classpath
+.settings
+.project
+.lein-repl-history
+.nrepl-port
+
+# Intellij #
+############
+lib
+.idea/
+*.iml
+
+# debugging #
+#############
+
+sscljdb*
+
+# generated files #
+###################
+
+dependency-reduced-pom.xml

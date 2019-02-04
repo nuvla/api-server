@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>cimi-resources-rpm</artifactId>
+  <name>SlipStreamServer/cimi-resources-rpm</name>
+
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>com.sixsq.slipstream</groupId>
+    <artifactId>SlipStreamServer</artifactId>
+    <version>3.69-SNAPSHOT</version>
+  </parent>
+
+  <properties>
+    <slipstream.installation.dir>${installation.dir}</slipstream.installation.dir>
+    <slipstream.user.home>${slipstream.installation.dir}</slipstream.user.home>
+    <cimi.installation.dir>${slipstream.base.dir}/cimi</cimi.installation.dir>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.sixsq.slipstream</groupId>
+      <artifactId>SlipStreamServer-cimi-resources-dep</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sixsq.slipstream</groupId>
+      <artifactId>SlipStreamServer-cimi-resources</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>cimi-resources-container</id>
+      <activation>
+        <property>
+          <name>!skipContainers</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.fabric8</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <version>0.24.0</version>
+            <configuration>
+              <images>
+                <image>
+                  <alias>cimi-resources</alias>
+                  <name>sixsq/cimi-resources:${project.version}</name>
+                  <build>
+                    <from>alpine</from>
+                    <optimise>true</optimise>
+                    <assembly>
+                      <targetDir>/</targetDir>
+                      <inline>
+                        <fileSets>
+                          <fileSet>
+                            <directory>target/dependency/lib</directory>
+                            <outputDirectory>${cimi.installation.dir}/lib</outputDirectory>
+                            <includes>
+                              <include>*</include>
+                            </includes>
+                          </fileSet>
+                        </fileSets>
+                      </inline>
+                    </assembly>
+                    <runCmds>
+                      <runCmd>apk update</runCmd>
+                      <runCmd>apk add openssl openssh shadow</runCmd>
+                      <runCmd>/usr/sbin/groupadd -r slipstream</runCmd>
+                      <runCmd>/usr/sbin/useradd -r -d ${slipstream.user.home} -g slipstream slipstream</runCmd>
+                      <runCmd>mkdir -p ${slipstream.user.home}/.ssh</runCmd>
+                      <runCmd>chmod 700 ${slipstream.user.home}/.ssh</runCmd>
+                      <runCmd>ssh-keygen -q -f ${slipstream.user.home}/.ssh/id_rsa -N ""</runCmd>
+                      <runCmd>chown -R slipstream.slipstream ${slipstream.user.home}/.ssh</runCmd>
+                    </runCmds>
+                    <tags>latest</tags>
+                    <workdir>${cimi.installation.dir}</workdir>
+                    <cmd>tail -f /dev/null</cmd>
+                  </build>
+                </image>
+              </images>
+            </configuration>
+            <executions>
+              <execution>
+                <id>docker-build</id>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+
+        <executions>
+
+          <execution>
+            <id>copy-dependencies</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/dependency/lib</outputDirectory>
+              <stripVersion>false</stripVersion>
+              <stripClassifier>true</stripClassifier>
+              <excludeTypes>pom</excludeTypes>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>rpm-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <classifier>${package.os}</classifier>
+          <release>${BUILD_NUMBER}.${package.os}</release>
+          <summary>SlipStream CIMI Resources</summary>
+          <name>slipstream-cimi-resources</name>
+          <group>System</group>
+          <vendor>SlipStream</vendor>
+          <packager>SlipStream</packager>
+          <license>Apache 2.0</license>
+          <url>http://sixsq.com</url>
+          <needarch>noarch</needarch>
+          <description>SlipStream CIMI Resources</description>
+          <requires>
+            <require>jre-headless &gt;= ${server.jre.version}</require>
+            <require>slipstream-useradd</require>
+            <require>slipstream-cimi</require>
+          </requires>
+
+          <defaultDirmode>755</defaultDirmode>
+          <defaultFilemode>644</defaultFilemode>
+          <defaultGroupname>slipstream</defaultGroupname>
+          <defaultUsername>slipstream</defaultUsername>
+
+          <mappings>
+            <mapping>
+              <directory>${cimi.installation.dir}/lib</directory>
+              <directoryIncluded>false</directoryIncluded>
+              <sources>
+                <source>
+                  <location>target/dependency/lib</location>
+                </source>
+              </sources>
+            </mapping>
+          </mappings>
+
+        </configuration>
+
+        <executions>
+          <execution>
+            <id>attach-rpm</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attached-rpm</goal>
+            </goals>
+          </execution>
+        </executions>
+
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+</project>

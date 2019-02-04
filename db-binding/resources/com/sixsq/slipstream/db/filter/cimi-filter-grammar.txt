@@ -1,0 +1,39 @@
+(* warning: do not use wildcards for 'and'/'or' expressions because
+            they create an ambiguous grammar that causes the parsing
+            time to increase exponentially with the number of terms *)
+Filter          ::= AndExpr | AndExpr <'or'> Filter
+AndExpr         ::= Comp | Comp <'and'> AndExpr
+Comp            ::= Attribute EqOp Value
+                    | Value EqOp Attribute
+                    | Attribute RelOp OrdinalValue
+                    | OrdinalValue RelOp Attribute
+                    | Attribute PrefixOp StringValue
+                    | StringValue PrefixOp Attribute
+                    | Attribute FullTextOp StringValue
+                    | StringValue FullTextOp Attribute
+                    | PropExpr
+                    | WS <'('> Filter <')'> WS
+
+FullTextOp      ::= '=='
+PrefixOp        ::= '^='
+EqOp            ::= '=' | '!='
+RelOp           ::= '<' | '<=' | '>=' | '>'
+
+Attribute       ::= WS NamespaceTerm ('/' NamespaceTerm)* WS
+
+<NamespaceTerm> ::= (Term ':' Term) | Term
+<Term>          ::= #'([a-zA-Z][\w-]*[\w]+)|[a-zA-Z]'
+<OrdinalValue>  ::= IntValue | DateValue | StringValue
+<NominalValue>  ::= BoolValue | NullValue
+<Value>         ::= OrdinalValue | NominalValue
+IntValue        ::= WS #'\d+' WS
+DateValue       ::= WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' WS
+<StringValue>   ::= WS (DoubleQuoteString | SingleQuoteString) WS
+BoolValue       ::= WS ('true' | 'false') WS
+NullValue       ::= WS 'null' WS
+PropExpr        ::= WS <'property['> StringValue <']'> WS EqOp (StringValue | NullValue)
+
+<WS>            ::= <#'\s*'>
+
+DoubleQuoteString ::= #"\"[^\"\\]*(?:\\.[^\"\\]*)*\""
+SingleQuoteString ::= #"'[^'\\]*(?:\\.[^'\\]*)*'"

@@ -1,0 +1,129 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>SlipStreamServer</artifactId>
+  <version>3.69-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>SlipStreamServer</name>
+  <url>http://sixsq.com/</url>
+
+  <parent>
+    <groupId>com.sixsq.slipstream</groupId>
+    <artifactId>SlipStreamCommunity</artifactId>
+    <version>3.69-SNAPSHOT</version>
+    <relativePath>../SlipStream/community</relativePath>
+  </parent>
+
+  <modules>
+    <module>utils</module>
+    <module>token</module>
+    <module>cimi</module>
+    <module>cimi-resources</module>
+    <module>cimi-tools</module>
+    <module>cimi-test-jar</module>
+    <module>cimi-test-server</module>
+    <module>db-binding</module>
+    <module>db-testing</module>
+    <module>ring-container</module>
+  </modules>
+
+  <profiles>
+    <profile>
+      <id>build-server-rpm</id>
+      <activation>
+        <file>
+          <exists>/usr/bin/rpmbuild</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>cimi-rpm</module>
+        <module>cimi-resources-rpm</module>
+        <module>ring-container-rpm</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>build-server-rpm-local</id>
+      <activation>
+        <file>
+          <exists>/usr/local/bin/rpmbuild</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>cimi-rpm</module>
+        <module>cimi-resources-rpm</module>
+        <module>ring-container-rpm</module>
+      </modules>
+    </profile>
+  </profiles>
+
+  <scm>
+    <connection>${scm.read}/SlipStreamServer.git</connection>
+    <developerConnection>${scm.write}/SlipStreamServer.git</developerConnection>
+    <url>${scm.public}/SlipStreamServer.git</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+
+    <logger.level>INFO</logger.level>
+    <logger.filepattern>${project.build.directory}/instance/SlipStreamServer/var/log/slipstream.%g
+    </logger.filepattern>
+    <server.jre.version>1.8.0</server.jre.version>
+    
+    <!-- root URL for the nexus repositories         -->
+    <!-- The value should NOT have a trailing slash! -->
+    <nexus>https://nexus.sixsq.com/content/repositories</nexus>
+
+    <!-- package platform for the created RPMs -->
+    <platform.os>-rhel7</platform.os>
+  </properties>
+
+  <repositories>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>slipstream.releases</id>
+      <name>SlipStream Releases</name>
+      <url>https://nexus.sixsq.com/content/repositories/releases-community-rhel7</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>slipstream.snapshots</id>
+      <name>SlipStream Snapshots</name>
+      <url>https://nexus.sixsq.com/content/repositories/snapshots-community-rhel7</url>
+    </repository>
+
+  </repositories>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>offline</id>
+            <goals>
+              <goal>go-offline</goal>
+            </goals>
+            <configuration>
+              <excludeGroupIds>com.sixsq.slipstream</excludeGroupIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
