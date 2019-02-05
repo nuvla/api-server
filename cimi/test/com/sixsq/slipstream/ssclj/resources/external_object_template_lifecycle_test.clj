@@ -9,7 +9,6 @@
     [com.sixsq.slipstream.ssclj.resources.external-object-template :as eot]
     [com.sixsq.slipstream.ssclj.resources.external-object-template-alpha-example :as eotae]
     [com.sixsq.slipstream.ssclj.resources.external-object-template-generic :as eotg]
-    [com.sixsq.slipstream.ssclj.resources.external-object-template-report :as eotr]
     [com.sixsq.slipstream.ssclj.resources.lifecycle-test-utils :as ltu]
     [peridot.core :refer [content-type header request session]]))
 
@@ -19,7 +18,6 @@
 (def collection-uri (str p/service-context (u/de-camelcase eot/resource-name)))
 
 (def eo-tmpl-ids (map #(format "%s/%s" eot/resource-url %) [eotg/objectType
-                                                            eotr/objectType
                                                             eotae/objectType]))
 
 (deftest check-retrieve-by-id
