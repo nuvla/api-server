@@ -73,16 +73,35 @@
                             </includes>
                           </fileSet>
                         </fileSets>
+                        <files>
+                          <file>
+                            <source>src/scripts/generate-auth-keys.sh</source>
+                            <outputDirectory>/opt/nuvla/server/bin</outputDirectory>
+                          </file>
+                          <file>
+                            <source>src/scripts/start-cimi.sh</source>
+                            <outputDirectory>/opt/nuvla/server/bin</outputDirectory>
+                          </file>
+                        </files>
                       </inline>
                     </assembly>
+                    <runCmds>
+                      <runCmd>chmod 0755 /opt/nuvla/server/bin/generate-auth-keys.sh</runCmd>
+                      <runCmd>chmod 0755 /opt/nuvla/server/bin/start-cimi.sh</runCmd>
+                    </runCmds>
                     <env>
                       <NUVLA_SERVER_INIT>com.sixsq.slipstream.ssclj.app.server/init</NUVLA_SERVER_INIT>
                       <NUVLA_SERVER_PORT>8201</NUVLA_SERVER_PORT>
                       <NUVLA_SERVER_HOST>0.0.0.0</NUVLA_SERVER_HOST>
+                      <PERSISTENT_DB_BINDING>com.sixsq.slipstream.db.es.loader</PERSISTENT_DB_BINDING>
+                      <EPHEMERAL_DB_BINDING>com.sixsq.slipstream.db.es.loader</EPHEMERAL_DB_BINDING>
+                      <ES_HOST>localhost</ES_HOST>
+                      <ES_PORT>9300</ES_PORT>
                     </env>
                     <ports>
                       <port>8201</port>
                     </ports>
+                    <cmd>/opt/nuvla/server/bin/start-cimi.sh</cmd>
                     <tags>latest</tags>
                   </build>
                 </image>

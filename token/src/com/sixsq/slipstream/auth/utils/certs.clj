@@ -5,8 +5,8 @@
     [clojure.tools.logging :as log]
     [environ.core :as environ]))
 
-(def ^:const default-public-key-path "/etc/slipstream/auth/auth_pubkey.pem")
-(def ^:const default-private-key-path "/etc/slipstream/auth/auth_privkey.pem")
+(def ^:const default-public-key-path "/etc/nuvla/auth/auth_pubkey.pem")
+(def ^:const default-private-key-path "/etc/nuvla/auth/auth_privkey.pem")
 
 
 (defn key-path
