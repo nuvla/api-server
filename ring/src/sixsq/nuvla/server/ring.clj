@@ -169,23 +169,23 @@
 
 (defn- server-cfg
   "Reads the server configuration from the environment. The variable
-   SLIPSTREAM_RING_CONTAINER_INIT must be defined. It is the namespaced symbol
-   of the server initialization function.
+   NUVLA_SERVER_INIT must be defined. It is the namespaced symbol of the server
+   initialization function.
 
-   If the environmental variable SLIPSTREAM_RING_CONTAINER_PORT is defined,
-   the value will be used for the server port, presuming that it is valid. If
-   the value is invalid, then the default port will be used.
+   If the environmental variable NUVLA_SERVER_PORT is defined, the value will
+   be used for the server port, presuming that it is valid. If the value is
+   invalid, then the default port will be used.
 
    NOTE: This function is only called when starting the server from the main
    function. Starting the server from the REPL will use the values given to the
    start function."
   []
   (let [env (dyn-resolve 'environ.core/env)
-        server-port (env :slipstream-ring-container-port)
-        server-host (env :slipstream-ring-container-host)]
-    (if-let [server-init (env :slipstream-ring-container-init)]
+        server-port (env :nuvla-server-port)
+        server-host (env :nuvla-server-host)]
+    (if-let [server-init (env :nuvla-server-init)]
       [server-init server-port server-host]
-      (let [msg "SLIPSTREAM_RING_CONTAINER_INIT is not defined"]
+      (let [msg "NUVLA_SERVER_INIT is not defined"]
         (log/error msg)
         (throw (ex-info msg {}))))))
 
@@ -193,8 +193,8 @@
 (defn -main
   "Function to start the web application as a daemon. The configuration of the
    server is taken from the environment. The environment must have
-   SLIPSTREAM_RING_CONTAINER_INIT defined. SLIPSTREAM_RING_CONTAINER_PORT and
-   SLIPSTREAM_RING_CONTAINER_PORT may be defined."
+   NUVLA_SERVER_INIT defined. NUVLA_SERVER_PORT and NUVLA_SERVER_PORT may be
+   defined."
   [& _]
   (let [[server-init server-port server-host] (server-cfg)
         shutdown-fn (start server-init server-port server-host)]

@@ -5,7 +5,7 @@
 (defn handler [request]
   {:status  200
    :headers {"Content-Type" "text/plain"}
-   :body    "Ring Example Running!"})
+   :body    "Ring Example Running!\n"})
 
 
 (defn init []
