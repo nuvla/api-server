@@ -34,6 +34,7 @@
    [clj-stacktrace]
    [clj-time]
    [com.amazonaws/aws-java-sdk-s3]
+   [com.taoensso/timbre]
    [environ]
    [expound]
    [instaparse]
@@ -66,7 +67,6 @@
    [peridot]
    [sixsq.nuvla.server/utils ~+version+]
    [sixsq.nuvla.server/db-binding-jar ~+version+]
-   [sixsq.nuvla/clojure-api-cimi ~+version+]
    [sixsq.nuvla.server/token ~+version+]]
 
   :aot [com.sixsq.slipstream.ssclj.app.main
