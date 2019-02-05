@@ -19,9 +19,9 @@ CP='/opt/nuvla/server/resources:/opt/nuvla/server/lib/*'
 # the classpath with wildcards.  All dependent containers
 # should put there jar files there.
 #
-for i in `ls /opt/nuvla/server/lib.d/*`
+for i in `ls /opt/nuvla/server/lib.d/`
 do
-  CP="${CP}:${i}/*"
+  CP="${CP}:/opt/nuvla/server/lib.d/${i}/*"
 done
 
 #
