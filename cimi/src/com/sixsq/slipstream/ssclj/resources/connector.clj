@@ -5,9 +5,7 @@
     [com.sixsq.slipstream.ssclj.resources.common.schema :as c]
     [com.sixsq.slipstream.ssclj.resources.common.std-crud :as std-crud]
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
-    [com.sixsq.slipstream.ssclj.resources.connector-template :as connector-tmpl]
-    [com.sixsq.slipstream.ssclj.resources.spec.connector]
-    [com.sixsq.slipstream.util.response :as r]))
+    [com.sixsq.slipstream.ssclj.resources.spec.connector]))
 
 (def ^:const resource-tag :connectors)
 
@@ -201,37 +199,6 @@
           (quarantine-subtype request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-
-;;; Describe operation
-
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [template-id (-> request
-                          (retrieve-impl)
-                          (get-in [:body :connectorTemplate :href]))]
-      (-> (get @connector-tmpl/descriptions template-id)
-          (a/can-view? request)
-          (r/json-response)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-;;; set subtype operations
-
-(defmulti set-subtype-ops
-          (fn [resource _] (:cloudServiceType resource)))
-
-(defmethod set-subtype-ops :default
-  [resource request]
-  (crud/set-standard-operations resource request))
-
-(defmethod crud/set-operations resource-uri
-  [{:keys [id connectorTemplate] :as resource} request]
-  (let [describe-href (str id "/describe")
-        describe-op {:rel (:describe c/action-uri) :href describe-href}]
-    (cond-> (set-subtype-ops resource request)
-            (:href connectorTemplate) (update-in [:operations] conj describe-op))))
 
 
 ;;

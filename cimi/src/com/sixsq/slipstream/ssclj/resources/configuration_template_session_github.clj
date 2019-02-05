@@ -22,26 +22,6 @@
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/ConfigurationTemplateDescription
-         {:clientID     {:displayName "Client ID"
-                         :type        "string"
-                         :description "client identifier assigned to the GitHub OAuth application"
-                         :mandatory   true
-                         :readOnly    false
-                         :order       20}
-          :clientSecret {:displayName "Client Secret"
-                         :type        "password"
-                         :description "client secret assigned to the GitHub OAuth application"
-                         :mandatory   true
-                         :readOnly    false
-                         :order       21}}))
-
-
-;;
 ;; multimethods for validation
 ;;
 
@@ -57,4 +37,4 @@
 
 (defn initialize
   []
-  (p/register resource desc))
+  (p/register resource))

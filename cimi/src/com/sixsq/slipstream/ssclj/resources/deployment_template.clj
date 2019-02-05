@@ -7,8 +7,7 @@
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.deployment.utils :as du]
     [com.sixsq.slipstream.ssclj.resources.spec.credential-template]
-    [com.sixsq.slipstream.ssclj.resources.spec.deployment-template :as dt]
-    [com.sixsq.slipstream.util.response :as r]))
+    [com.sixsq.slipstream.ssclj.resources.spec.deployment-template :as dt]))
 
 (def ^:const resource-tag :deploymentTemplates)
 
@@ -32,20 +31,6 @@
                      :rules [{:principal "USER"
                               :type      "ROLE"
                               :right     "MODIFY"}]})
-
-;;
-;; description
-;;
-
-
-(def ^:const desc
-  (merge c/CommonParameterDescription
-         {:module {:displayName "Module"
-                   :type        "string"
-                   :description "module from which to create a deployment"
-                   :mandatory   true
-                   :readOnly    false
-                   :order       20}}))
 
 
 ;;
@@ -119,18 +104,3 @@
 (defn initialize
   []
   (std-crud/initialize resource-url ::dt/deploymentTemplate))
-
-;;
-;; actions
-;;
-
-
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-url "/" uuid)
-          resource (crud/retrieve-by-id-as-admin id)]
-      (a/can-view? resource request)
-      (r/json-response desc))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))

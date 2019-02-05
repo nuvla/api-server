@@ -51,7 +51,6 @@
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
-                      (ltu/is-operation-absent "describe")
                       (ltu/entries resource-tag))
           ids (set (map :id entries))
           types (set (map :cloudServiceType entries))]
@@ -60,27 +59,17 @@
 
       (doseq [entry entries]
         (let [ops (ltu/operations->map entry)
-              href (get ops (c/action-uri :describe))
               entry-url (str p/service-context (:id entry))
-              describe-url (str p/service-context href)
 
               entry-resp (-> session-admin
                              (request entry-url)
                              (ltu/is-status 200)
                              (ltu/body->edn))
 
-              entry-body (get-in entry-resp [:response :body])
-
-              desc (-> session-admin
-                       (request describe-url)
-                       (ltu/body->edn)
-                       (ltu/is-status 200))
-              desc-body (get-in desc [:response :body])]
+              entry-body (get-in entry-resp [:response :body])]
           (is (nil? (get ops (c/action-uri :add))))
           (is (nil? (get ops (c/action-uri :edit))))
           (is (nil? (get ops (c/action-uri :delete))))
-          (is (:cloudServiceType desc-body))
-          (is (:acl desc-body))
 
           (is (thrown-with-msg? ExceptionInfo #".*resource does not satisfy defined schema.*" (crud/validate entry-body)))
           (is (crud/validate (assoc entry-body :instanceName "alpha-omega")))
@@ -89,16 +78,10 @@
           (-> session-anon
               (request entry-url)
               (ltu/is-status 403))
-          (-> session-anon
-              (request describe-url)
-              (ltu/is-status 403))
 
           ;; user can access
           (-> session-user
               (request entry-url)
-              (ltu/is-status 200))
-          (-> session-user
-              (request describe-url)
               (ltu/is-status 200)))))))
 
 (deftest bad-methods

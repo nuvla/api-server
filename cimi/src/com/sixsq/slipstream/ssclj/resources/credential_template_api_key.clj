@@ -44,21 +44,6 @@ secret to access the server. The credential can optionally be limited in time.
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/CredentialTemplateDescription
-         {:ttl {:displayName "Time to Live (TTL)"
-                :category    "general"
-                :description "number of seconds before the API key expires (0 = forever)"
-                :type        "int"
-                :mandatory   false
-                :readOnly    false
-                :order       20}}))
-
-
-;;
 ;; multimethods for validation
 ;;
 
@@ -74,7 +59,7 @@ secret to access the server. The credential can optionally be limited in time.
 
 (defn initialize
   []
-  (p/register resource desc)
+  (p/register resource)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema)))
 
 

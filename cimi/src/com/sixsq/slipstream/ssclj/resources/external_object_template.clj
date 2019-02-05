@@ -68,7 +68,6 @@
 ;;
 ;;
 (def templates (atom {}))
-(def descriptions (atom {}))
 (def name->kw (atom {}))
 
 
@@ -89,54 +88,29 @@
    resourceURI, timestamps, operations, and ACL."
   [{:keys [objectType] :as resource}]
   (when objectType
-    (let [id (str resource-url "/" objectType)
-          href (str id "/describe")
-          ops [{:rel (:describe c/action-uri) :href href}]]
+    (let [id (str resource-url "/" objectType)]
       (-> resource
           (merge {:id          id
                   :resourceURI resource-uri
-                  :acl         resource-acl
-                  :operations  ops})
+                  :acl         resource-acl})
           (merge external-object-reference-attrs-defaults)
           u/update-timestamps))))
 
 
 (defn register
-  "Registers a given ExternalObjectTemplate resource and its description
-   with the server.  The resource document (resource) and the description
-   (desc) must be valid.  The key will be used to create the id of
+  "Registers a given ExternalObjectTemplate resource with the server.
+   The resource document (resource) must be valid.
+   The key will be used to create the id of
    the resource as 'external-object-template/key'."
-  [resource desc & [name-kw-map]]
+  [resource & [name-kw-map]]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
       (log/info "loaded ExternalObjectTemplate" id)
-      (when desc
-        (let [acl (:acl full-resource)
-              full-desc (assoc desc :acl acl)]
-          (swap! descriptions assoc id full-desc))
-        (log/info "loaded ExternalObjectTemplate description" id))
       (when name-kw-map
         (swap! name->kw assoc id name-kw-map)
         (log/info "added name->kw mapping from ExternalObjectTemplate" id)))))
 
-
-(def ExternalObjectTemplateDescription
-  (merge c/CommonParameterDescription
-         {:objectType  {:displayName "External Object type"
-                        :category    "general"
-                        :description "type of external object"
-                        :type        "string"
-                        :mandatory   true
-                        :readOnly    true
-                        :order       10}
-          :contentType {:displayName "External object content type"
-                        :category    "general"
-                        :description "external object content type"
-                        :type        "string"
-                        :mandatory   false
-                        :readOnly    false
-                        :order       12}}))
 
 ;;
 ;; CRUD operations
@@ -147,7 +121,7 @@
 
 (defmethod crud/add resource-name
   [{{:keys [objectType]} :body :as request}]
-  (if (get @descriptions objectType)
+  (if (get @templates objectType)
     (add-impl request)
     (throw (r/ex-bad-request (str "invalid external object type '" objectType "'")))))
 
@@ -196,17 +170,3 @@
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
-
-
-;;
-;; actions
-;;
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-url "/" uuid)]
-      (-> (get @descriptions id)
-          (a/can-view? request)
-          (r/json-response)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))

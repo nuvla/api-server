@@ -1,12 +1,12 @@
 (ns com.sixsq.slipstream.ssclj.resources.configuration-template
   (:require
-    [clojure.tools.logging :as log]
     [com.sixsq.slipstream.auth.acl :as a]
     [com.sixsq.slipstream.ssclj.resources.common.crud :as crud]
     [com.sixsq.slipstream.ssclj.resources.common.schema :as c]
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.spec.configuration-template]
-    [com.sixsq.slipstream.util.response :as r]))
+    [com.sixsq.slipstream.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 (def ^:const resource-tag :configurationTemplates)
 
@@ -36,7 +36,6 @@
 ;; atom to keep track of the loaded ConfigurationTemplate resources
 ;;
 (def templates (atom {}))
-(def descriptions (atom {}))
 
 (defn collection-wrapper-fn
   "Specialized version of this function that removes the adding
@@ -54,14 +53,11 @@
    resourceURI, timestamps, operations, and ACL."
   [{:keys [service] :as resource}]
   (when service
-    (let [id (str resource-url "/" service)
-          href (str id "/describe")
-          ops [{:rel (:describe c/action-uri) :href href}]]
+    (let [id (str resource-url "/" service)]
       (-> resource
           (merge {:id          id
                   :resourceURI resource-uri
-                  :acl         resource-acl
-                  :operations  ops})
+                  :acl         resource-acl})
           u/update-timestamps))))
 
 (defn register
@@ -69,33 +65,12 @@
    with the server.  The resource document (resource) and the description
    (desc) must be valid.  The key will be used to create the id of
    the resource as 'configuration-template/key'."
-  [resource desc]
+  [resource]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded ConfigurationTemplate" id)
-      (when desc
-        (let [acl (:acl full-resource)
-              full-desc (assoc desc :acl acl)]
-          (swap! descriptions assoc id full-desc))
-        (log/info "loaded ConfigurationTemplate description" id)))))
+      (log/info "loaded ConfigurationTemplate" id))))
 
-(def ConfigurationTemplateDescription
-  (merge c/CommonParameterDescription
-         {:service  {:displayName "Service"
-                     :category    "general"
-                     :description "identifies the service to be configured"
-                     :type        "string"
-                     :mandatory   true
-                     :readOnly    true
-                     :order       10}
-          :instance {:displayName "Instance"
-                     :category    "general"
-                     :description "identifies the service instance to be configured"
-                     :type        "string"
-                     :mandatory   false
-                     :readOnly    false
-                     :order       11}}))
 ;;
 ;; multimethods for validation
 ;;
@@ -160,15 +135,4 @@
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
-;;
-;; actions
-;;
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-url "/" uuid)]
-      (-> (get @descriptions id)
-          (a/can-view? request)
-          (r/json-response)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+

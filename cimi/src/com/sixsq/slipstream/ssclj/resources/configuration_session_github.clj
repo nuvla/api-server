@@ -3,18 +3,10 @@
     [com.sixsq.slipstream.ssclj.resources.common.std-crud :as std-crud]
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.configuration :as p]
-    [com.sixsq.slipstream.ssclj.resources.configuration-template-session-github :as tpl]
     [com.sixsq.slipstream.ssclj.resources.spec.configuration-template-session-github :as cts-github]))
 
 (def ^:const service "session-github")
 
-(def ConfigurationDescription
-  tpl/desc)
-
-;;
-;; description
-;;
-(def ^:const desc ConfigurationDescription)
 
 ;;
 ;; multimethods for validation

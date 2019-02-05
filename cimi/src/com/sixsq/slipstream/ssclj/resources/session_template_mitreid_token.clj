@@ -23,26 +23,12 @@ portals in front of a SlipStream instance.
 
 
 ;;
-;; description
-;;
-(def ^:const desc
-  (merge p/SessionTemplateDescription
-         {:token {:displayName "OIDC Token"
-                  :category    "general"
-                  :description "OIDC Token"
-                  :type        "string"
-                  :mandatory   true
-                  :readOnly    false
-                  :order       20}}))
-
-
-;;
 ;; initialization: register this Session template
 ;;
 
 (defn initialize
   []
-  (p/register authn-method desc)
+  (p/register authn-method)
   (std-crud/initialize p/resource-url ::st-mitreid-token/schema)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-mitreid-token/schema)))
 

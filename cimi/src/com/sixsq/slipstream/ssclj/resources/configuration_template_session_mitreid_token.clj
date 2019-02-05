@@ -21,20 +21,6 @@
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/ConfigurationTemplateDescription
-         {:clientIPs {:displayName "Authorized Client IPs"
-                      :type        "string"
-                      :description "list of authorized client IP address for OIDC token authentication"
-                      :mandatory   true
-                      :readOnly    false
-                      :order       22}}))
-
-
-;;
 ;; multimethods for validation
 ;;
 
@@ -50,4 +36,4 @@
 
 (defn initialize
   []
-  (p/register resource desc))
+  (p/register resource))

@@ -44,21 +44,6 @@ format.
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/CredentialTemplateDescription
-         {:publicKey {:displayName "SSH Public Key"
-                      :category    "general"
-                      :description "public RSA or DSA key of an SSH key pair"
-                      :type        "string"
-                      :mandatory   true
-                      :readOnly    false
-                      :order       20}}))
-
-
-;;
 ;; multimethods for validation
 ;;
 
@@ -74,5 +59,5 @@ format.
 
 (defn initialize
   []
-  (p/register resource desc)
+  (p/register resource)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-ssh-public-key/schema)))

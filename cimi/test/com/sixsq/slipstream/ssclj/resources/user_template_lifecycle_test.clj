@@ -48,7 +48,6 @@
                     (ltu/is-operation-present "add")        ;; should really be absent, but admin always has all rights
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
-                    (ltu/is-operation-absent "describe")
                     (ltu/entries t/resource-tag))
         ids (set (map :id entries))
         types (set (map :method entries))]
@@ -59,29 +58,18 @@
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)
-            href (get ops (c/action-uri :describe))
             entry-url (str p/service-context (:id entry))
-            describe-url (str p/service-context href)
 
             entry-resp (-> session
                            (request entry-url)
                            (ltu/is-status 200)
                            (ltu/body->edn))
 
-            entry-body (get-in entry-resp [:response :body])
-
-            desc (-> session
-                     (request describe-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200))
-            desc-body (get-in desc [:response :body])]
+            entry-body (get-in entry-resp [:response :body])]
 
         (is (nil? (get ops (c/action-uri :add))))
         (is (get ops (c/action-uri :edit)))
         (is (get ops (c/action-uri :delete)))
-        (is (:method desc-body))
-        (is (:instance desc-body))
-        (is (:acl desc-body))
 
         (is (crud/validate entry-body))))))
 

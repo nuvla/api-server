@@ -128,28 +128,6 @@
   [request]
   (query-impl request))
 
-;;
-;; actions
-;;
-
-(defmethod crud/set-operations resource-uri
-  [{:keys [id resourceURI username configurationTemplate] :as resource} request]
-  (let [href (str id "/describe")
-        describe-op {:rel (:describe c/action-uri) :href href}]
-    (cond-> (crud/set-standard-operations resource request)
-            (get configurationTemplate :href) (update-in [:operations] conj describe-op))))
-
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [template-id (-> request
-                          (retrieve-impl)
-                          (get-in [:body :configurationTemplate :href]))]
-      (-> (get @conf-tmpl/descriptions template-id)
-          (a/can-view? request)
-          (r/json-response)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
 
 ;;
 ;; use service as the identifier

@@ -44,28 +44,19 @@
 ;;
 ;; template resource
 ;;
+
 (def ^:const resource-template
   {:objectType objectType
    :alphaKey   1001})
 
-;;
-;; description
-;;
-(def ^:const desc (merge eot/ExternalObjectTemplateDescription
-                         {:alphaKey {:displayName "Alpha Key"
-                                     :category    "general"
-                                     :description "example parameter"
-                                     :type        "int"
-                                     :mandatory   true
-                                     :readOnly    false
-                                     :order       1}}))
 
 ;;
 ;; initialization: register this external object template
 ;;
+
 (defn initialize
   []
-  (eot/register resource-template desc))
+  (eot/register resource-template))
 
 ;;
 ;; multimethods for validation

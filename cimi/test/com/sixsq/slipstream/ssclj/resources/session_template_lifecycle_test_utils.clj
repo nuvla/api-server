@@ -28,8 +28,7 @@
         (ltu/is-resource-uri collection-uri)
         (ltu/is-operation-absent "add")
         (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit")
-        (ltu/is-operation-absent "describe"))
+        (ltu/is-operation-absent "edit"))
 
     ;; for admin, should be able to add as well
     (-> session-admin
@@ -39,8 +38,7 @@
         (ltu/is-resource-uri collection-uri)
         (ltu/is-operation-present "add")
         (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit")
-        (ltu/is-operation-absent "describe"))
+        (ltu/is-operation-absent "edit"))
 
     ;; creating with an unknown authentication method should fail
     (-> session-admin
@@ -67,8 +65,7 @@
           (ltu/is-status 200)
           (ltu/is-operation-absent "add")
           (ltu/is-operation-present "delete")
-          (ltu/is-operation-present "edit")
-          (ltu/is-operation-present "describe"))
+          (ltu/is-operation-present "edit"))
 
       (-> session-user
           (request abs-uri)
@@ -76,25 +73,7 @@
           (ltu/is-status 200)
           (ltu/is-operation-absent "add")
           (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")
-          (ltu/is-operation-present "describe"))
-
-      ;; anon can read the template and additionally check that the describe works
-      (let [describe-href (-> session-anon
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/is-operation-absent "add")
-                              (ltu/is-operation-absent "delete")
-                              (ltu/is-operation-absent "edit")
-                              (ltu/is-operation-present "describe")
-                              (ltu/get-op "describe"))
-            describe-url (str p/service-context describe-href)]
-
-        (-> session-anon
-            (request describe-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)))
+          (ltu/is-operation-absent "edit"))
 
       ;; verify that the id corresponds to the value in the instance parameter
       (let [{:keys [id instance]} (-> session-anon
