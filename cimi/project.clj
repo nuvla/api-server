@@ -1,10 +1,10 @@
 (def +version+ "3.69-SNAPSHOT")
 
-(defproject com.sixsq.slipstream/SlipStreamCljResources-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/cimi-jar "3.69-SNAPSHOT"
 
   :description "core cimi server"
 
-  :url "https://github.com/slipstream/SlipStreamServer"
+  :url "https://github.com/nuvla/server"
 
   :license {:name "Apache 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0.txt"
@@ -64,24 +64,24 @@
    [buddy/buddy-sign]
    [clj-http]
    [peridot]
-   [com.sixsq.slipstream/utils ~+version+]
-   [com.sixsq.slipstream/SlipStreamDbBinding-jar ~+version+]
-   [com.sixsq.slipstream/SlipStreamClojureAPI-cimi ~+version+]
-   [com.sixsq.slipstream/token ~+version+]]
+   [sixsq.nuvla.server/utils ~+version+]
+   [sixsq.nuvla.server/db-binding-jar ~+version+]
+   [sixsq.nuvla/clojure-api-cimi ~+version+]
+   [sixsq.nuvla.server/token ~+version+]]
 
   :aot [com.sixsq.slipstream.ssclj.app.main
         com.sixsq.slipstream.ssclj.util.userparamsdesc]
 
   :profiles
   {
-   :provided {:dependencies [[com.sixsq.slipstream/slipstream-ring-container ~+version+]]}
+   :provided {:dependencies [[sixsq.nuvla.server/ring ~+version+]]}
    :test     {:dependencies   [[peridot]
                                [org.clojure/test.check]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [com.sixsq.slipstream/SlipStreamDbTesting-jar ~+version+]
-                               [com.sixsq.slipstream/SlipStreamCljResourcesTests-jar ~+version+]]
+                               [sixsq.nuvla.server/db-testing-jar ~+version+]
+                               [sixsq.nuvla.server/cimi-test-jar ~+version+]]
               :resource-paths ["test-resources"]
               :env            {:config-name      "config-params.edn"
                                :auth-private-key "test-resources/auth_privkey.pem"

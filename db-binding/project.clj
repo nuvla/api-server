@@ -4,7 +4,7 @@
 
   :description "bindings for (persistent) database backends"
 
-  :url "https://github.com/slipstream/SlipStreamServer"
+  :url "https://github.com/nuvla/server"
 
   :license {:name         "Apache 2.0"
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
@@ -33,7 +33,7 @@
    [cheshire]                                               ;; to avoid transient dependency conflicts
    [clj-time]
    [com.rpl/specter]
-   [com.sixsq.slipstream/utils ~+version+]
+   [sixsq.nuvla.server/utils ~+version+]
    [duratom]
    [environ]
    [instaparse]
