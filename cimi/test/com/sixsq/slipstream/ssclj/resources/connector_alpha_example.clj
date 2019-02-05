@@ -15,13 +15,6 @@
 ;; resource may have different schemas for the template and resource.
 (s/def :cimi/connector.alpha :cimi/connector-template.alpha)
 
-(def ConnectorAlphaDescription
-  tpl/ConnectorTemplateAlphaDescription)
-
-;;
-;; description
-;;
-(def ^:const desc ConnectorAlphaDescription)
 
 ;;
 ;; multimethods for validation

@@ -5,12 +5,12 @@ Normally, users and administrators will never create a UserParam resource
 manually and will not need to use these templates.
 "
   (:require
-    [clojure.tools.logging :as log]
     [com.sixsq.slipstream.auth.acl :as a]
     [com.sixsq.slipstream.ssclj.resources.common.crud :as crud]
     [com.sixsq.slipstream.ssclj.resources.common.schema :as c]
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
-    [com.sixsq.slipstream.util.response :as r]))
+    [com.sixsq.slipstream.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 (def ^:const resource-tag :userParamTemplates)
 
@@ -37,7 +37,6 @@ manually and will not need to use these templates.
                               :right     "VIEW"}]})
 
 (def templates (atom {}))
-(def descriptions (atom {}))
 
 (defn collection-wrapper-fn
   "Specialized version of this function that removes the adding
@@ -54,45 +53,24 @@ manually and will not need to use these templates.
   "Completes the given document with server-managed information:
    resourceURI, timestamps, operations, and ACL."
   [{:keys [paramsType] :as resource}]
-  (let [id  (str resource-url "/" paramsType)
-        ops [{:rel  (:describe c/action-uri)
-              :href (str id "/describe")}]]
+  (let [id  (str resource-url "/" paramsType)]
     (-> resource
         (merge {:id          id
                 :resourceURI resource-uri
-                :acl         resource-acl
-                :operations  ops})
+                :acl         resource-acl})
         u/update-timestamps)))
 
 (defn register
-  "Registers UserExecParametersTemplate resource and its description
-   with the server.  The resource document (resource) and the description
-   (desc) must be valid.  The key will be used to create the id of
+  "Registers UserExecParametersTemplate resource with the server.
+   The resource document (resource) must be valid.
+   The key will be used to create the id of
    the resource as 'user-exec-params-template/key'."
-  [resource desc]
+  [resource]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded UserExecParamsTemplate" id)
-      (when desc
-        (let [acl       (:acl full-resource)
-              full-desc (assoc desc :acl acl)]
-          (swap! descriptions assoc id full-desc))
-        (log/info "loaded UserExecParamsTemplate description" id)))))
+      (log/info "loaded UserExecParamsTemplate" id))))
 
-;;
-;; schemas
-;;
-
-(def UserParamTemplateDescription
-  (merge c/CommonParameterDescription
-         {:paramsType {:displayName "Type of the set of the parameters."
-                       :category    "general"
-                       :description "Grouping type of the parameters."
-                       :type        "string"
-                       :mandatory   true
-                       :readOnly    true
-                       :order       10}}))
 
 ;;
 ;; multimethods for validation
@@ -160,16 +138,3 @@ manually and will not need to use these templates.
         wrapped-entries         (wrapper-fn request entries)
         entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
-
-;;
-;; actions
-;;
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-url "/" uuid)]
-      (-> (get @descriptions id)
-          (a/can-view? request)
-          (r/json-response)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))

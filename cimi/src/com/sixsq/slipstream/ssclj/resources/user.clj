@@ -48,12 +48,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                               :type      "ROLE"
                               :right     "MODIFY"}]})
 
-;;
-;; description
-;; FIXME: Must be visible as an action on user resources.
-;;
-(def UserDescription tpl/desc)
-(def ^:const desc UserDescription)
 
 ;;
 ;; common validation for created users

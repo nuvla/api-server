@@ -7,8 +7,7 @@
     [com.sixsq.slipstream.ssclj.resources.credential-template :as p]
     [com.sixsq.slipstream.ssclj.resources.spec.credential-template :as ps]
     [com.sixsq.slipstream.ssclj.resources.spec.credential-template-cloud :as ctc]
-    [com.sixsq.slipstream.ssclj.util.spec :as su]
-    [com.sixsq.slipstream.ssclj.util.userparamsdesc :refer [slurp-cloud-cred-desc]]))
+    [com.sixsq.slipstream.ssclj.util.spec :as su]))
 
 ;; Schemas.
 (s/def :cimi.credential-template.cloud-alpha/domain-name string?)
@@ -60,16 +59,11 @@
    :acl         resource-acl})
 
 ;;
-;; description
-;;
-(def ^:const desc p/CredentialTemplateDescription)
-
-;;
 ;; initialization: register this Credential template
 ;;
 (defn initialize
   []
-  (p/register resource desc))
+  (p/register resource))
 
 ;;
 ;; multimethods for validation

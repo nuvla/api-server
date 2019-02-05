@@ -31,11 +31,7 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
     \"description\" : \"Creates a new user through OIDC registration\",
     ...
     },
-    \"resourceURI\" : \"http://sixsq.com/slipstream/1/UserTemplate\",
-    \"operations\" : [ {
-      \"rel\" : \"http://sixsq.com/slipstream/1/action/describe\",
-      \"href\" : \"/describe\"
-    } ]
+    \"resourceURI\" : \"http://sixsq.com/slipstream/1/UserTemplate\"
   }, {
     \"name\" : \"INFN Realm\",
     \"description\" : \"Creates a new user through OIDC registration\",
@@ -44,16 +40,14 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
 ```
 "
   (:require
-    [clojure.tools.logging :as log]
-    [com.sixsq.slipstream.auth.acl :as a]
     [com.sixsq.slipstream.ssclj.resources.common.crud :as crud]
     [com.sixsq.slipstream.ssclj.resources.common.schema :as c]
     [com.sixsq.slipstream.ssclj.resources.common.std-crud :as std-crud]
-    [com.sixsq.slipstream.ssclj.resources.common.ui-hints :as hints]
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.resource-metadata :as md]
     [com.sixsq.slipstream.ssclj.resources.spec.user-template :as user-tpl]
     [com.sixsq.slipstream.ssclj.util.metadata :as gen-md]
+    [clojure.tools.logging :as log]
     [com.sixsq.slipstream.util.response :as r]))
 
 (def ^:const resource-tag :userTemplates)
@@ -100,41 +94,15 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
 ;; atom to keep track of the UserTemplate descriptions
 ;;
 
-(def descriptions (atom {}))
+(def known-method (atom #{}))
 
 
 (defn register
-  "Registers a given UserTemplate description with the server. The description
-   (desc) must be valid. The method attribute is used as the key to look up the
-   correct description."
-  [method desc]
-  (when (and method desc)
-    (let [full-desc (assoc desc :acl desc-acl)]
-      (swap! descriptions assoc method full-desc)
-      (log/info "loaded UserTemplate description" method))))
-
-
-;;
-;; schemas
-;;
-
-(def UserTemplateDescription
-  (merge c/CommonParameterDescription
-         hints/UIHintsParameterDescription
-         {:method   {:displayName "Registration Method"
-                     :category    "general"
-                     :description "method to be used to register user"
-                     :type        "string"
-                     :mandatory   true
-                     :readOnly    true
-                     :order       10}
-          :instance {:displayName "Registration Instance"
-                     :category    "general"
-                     :description "registration instance identifier"
-                     :type        "string"
-                     :mandatory   true
-                     :readOnly    true
-                     :order       11}}))
+  "Registers a given UserTemplate id with the server."
+  [method]
+  (when method
+    (swap! known-method conj method)
+    (log/info "loaded UserTemplate description" method)))
 
 ;;
 ;; multimethods for validation
@@ -174,7 +142,7 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
 
 (defmethod crud/add resource-name
   [{{:keys [method]} :body :as request}]
-  (if (get @descriptions method)
+  (if (@known-method method)
     (add-impl request)
     (throw (r/ex-bad-request (str "invalid registration method '" method "'")))))
 
@@ -209,45 +177,6 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
 (defmethod crud/query resource-name
   [request]
   (query-impl request))
-
-
-;;
-;; override the operations method to add describe action
-;;
-
-(defmethod crud/set-operations resource-uri
-  [{:keys [id resourceURI] :as resource} request]
-  (let [href (str id "/describe")]
-    (try
-      (a/can-modify? resource request)
-      (let [ops (if (.endsWith resourceURI "Collection")
-                  [{:rel (:add c/action-uri) :href id}]
-                  [{:rel (:edit c/action-uri) :href id}
-                   {:rel (:delete c/action-uri) :href id}
-                   {:rel (:describe c/action-uri) :href href}])]
-        (assoc resource :operations ops))
-      (catch Exception e
-        (if (.endsWith resourceURI "Collection")
-          (dissoc resource :operations)
-          (assoc resource :operations [{:rel (:describe c/action-uri) :href href}]))))))
-
-
-;;
-;; actions
-;;
-
-(defmethod crud/do-action [resource-url "describe"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-url "/" uuid)]
-      (if-let [{:keys [method] :as resource} (crud/retrieve-by-id-as-admin id)]
-        (if (a/can-view? resource request)
-          (if-let [desc (get @descriptions method)]
-            (r/json-response desc)
-            (r/ex-not-found id)))
-        (r/ex-not-found id)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
 
 
 ;;

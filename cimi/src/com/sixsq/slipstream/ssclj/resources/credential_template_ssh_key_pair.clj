@@ -45,28 +45,6 @@ and not stored on, and cannot be recovered from the server.
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/CredentialTemplateDescription
-         {:size      {:displayName "Size of SSH Key"
-                      :category    "general"
-                      :description "size in bits of generated key"
-                      :type        "int"
-                      :mandatory   false
-                      :readOnly    false
-                      :order       20}
-          :algorithm {:displayName "SSH Key Algorithm"
-                      :category    "general"
-                      :description "algorithm ('rsa', 'dsa') to use to generate key pair"
-                      :type        "string"
-                      :mandatory   false
-                      :readOnly    false
-                      :order       21}}))
-
-
-;;
 ;; multimethods for validation
 ;;
 
@@ -82,5 +60,5 @@ and not stored on, and cannot be recovered from the server.
 
 (defn initialize
   []
-  (p/register resource desc)
+  (p/register resource)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-ssh-key-pair/schema)))

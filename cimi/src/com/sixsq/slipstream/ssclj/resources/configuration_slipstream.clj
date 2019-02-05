@@ -13,15 +13,6 @@
 (def ^:const instance-url (str p/resource-url "/" service))
 
 
-(def ConfigurationDescription
-  tpl/desc)
-
-;;
-;; description
-;;
-
-(def ^:const desc ConfigurationDescription)
-
 ;;
 ;; multimethods for validation
 ;;

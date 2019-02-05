@@ -50,47 +50,6 @@ information. Typically this method is available only to service administrators.
    :order            0
    :acl              resource-acl})
 
-;;
-;; description
-;;
-
-(def ^:const desc
-  (merge p/UserTemplateDescription
-         {:username     {:displayName "Username"
-                         :category    "general"
-                         :description "username"
-                         :type        "string"
-                         :mandatory   true
-                         :readOnly    false
-                         :order       20}
-          :emailAddress {:displayName "Email Address"
-                         :category    "general"
-                         :description "email address"
-                         :type        "string"
-                         :mandatory   true
-                         :readOnly    false
-                         :order       21}
-          :firstName    {:displayName "First Name"
-                         :category    "general"
-                         :description "user's given name"
-                         :type        "string"
-                         :mandatory   false
-                         :readOnly    false
-                         :order       22}
-          :lastName     {:displayName "Last Name"
-                         :category    "general"
-                         :description "user's last or family name"
-                         :type        "string"
-                         :mandatory   false
-                         :readOnly    false
-                         :order       23}
-          :organization {:displayName "Organization"
-                         :category    "general"
-                         :description "user's organization"
-                         :type        "string"
-                         :mandatory   false
-                         :readOnly    false
-                         :order       24}}))
 
 
 ;;
@@ -99,7 +58,7 @@ information. Typically this method is available only to service administrators.
 
 (defn initialize
   []
-  (p/register registration-method desc)
+  (p/register registration-method)
   (std-crud/initialize p/resource-url ::ut-direct/schema)
   (std-crud/add-if-absent (str p/resource-url "/" registration-method) p/resource-url resource)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-direct/schema)))

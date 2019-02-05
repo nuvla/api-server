@@ -28,32 +28,13 @@ pair.
                        :password    "secret"
                        :acl         p/resource-acl})
 
-;;
-;; description
-;;
-(def ^:const desc
-  (merge p/SessionTemplateDescription
-         {:key    {:displayName "Key"
-                   :category    "general"
-                   :description "API key"
-                   :type        "string"
-                   :mandatory   true
-                   :readOnly    false
-                   :order       20}
-          :secret {:displayName "Secret"
-                   :category    "general"
-                   :description "secret associated with API key"
-                   :type        "password"
-                   :mandatory   true
-                   :readOnly    false
-                   :order       21}}))
 
 ;;
 ;; initialization: register this Session template
 ;;
 (defn initialize
   []
-  (p/register authn-method desc)
+  (p/register authn-method)
   (std-crud/initialize p/resource-url ::st-api-key/schema)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema)))
 

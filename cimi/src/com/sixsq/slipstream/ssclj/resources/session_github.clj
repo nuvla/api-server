@@ -6,7 +6,6 @@
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.github.utils :as gu]
     [com.sixsq.slipstream.ssclj.resources.session :as p]
-    [com.sixsq.slipstream.ssclj.resources.session-template-github :as tpl]
     [com.sixsq.slipstream.ssclj.resources.session.utils :as sutils]
     [com.sixsq.slipstream.ssclj.resources.spec.session :as session]
     [com.sixsq.slipstream.ssclj.resources.spec.session-template-github :as st-github]))
@@ -15,18 +14,6 @@
 
 (def ^:const login-request-timeout (* 3 60))
 
-
-;;
-;; schemas
-;;
-
-(def SessionDescription
-  tpl/desc)
-
-;;
-;; description
-;;
-(def ^:const desc SessionDescription)
 
 ;;
 ;; multimethods for validation

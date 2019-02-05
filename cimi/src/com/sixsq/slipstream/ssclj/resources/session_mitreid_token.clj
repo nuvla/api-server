@@ -11,27 +11,12 @@
     [com.sixsq.slipstream.ssclj.resources.common.utils :as u]
     [com.sixsq.slipstream.ssclj.resources.session :as p]
     [com.sixsq.slipstream.ssclj.resources.session-oidc.utils :as oidc-utils]
-    [com.sixsq.slipstream.ssclj.resources.session-template-api-key :as tpl]
     [com.sixsq.slipstream.ssclj.resources.session.utils :as sutils]
     [com.sixsq.slipstream.ssclj.resources.spec.session :as session]
     [com.sixsq.slipstream.ssclj.resources.spec.session-template-mitreid-token :as st-mitreid-token]))
 
 
 (def ^:const authn-method "mitreid-token")
-
-
-;;
-;; schemas
-;;
-
-(def SessionDescription
-  tpl/desc)
-
-
-;;
-;; description
-;;
-(def ^:const desc SessionDescription)
 
 
 ;;

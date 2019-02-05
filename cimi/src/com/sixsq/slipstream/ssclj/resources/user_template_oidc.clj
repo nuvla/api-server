@@ -40,19 +40,12 @@ authentication workflow as implemented by a Keycloak server.
 
 
 ;;
-;; description
-;;
-
-(def ^:const desc p/UserTemplateDescription)
-
-
-;;
 ;; initialization: register this User template
 ;;
 
 (defn initialize
   []
-  (p/register registration-method desc)
+  (p/register registration-method)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-oidc/schema)))
 
 

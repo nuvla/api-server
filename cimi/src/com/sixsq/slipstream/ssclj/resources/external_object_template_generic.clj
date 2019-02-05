@@ -8,29 +8,6 @@
 
 (def ^:const objectType "generic")
 
-(def ExternalObjectTemplateGenericDescription
-  (merge eot/ExternalObjectTemplateDescription
-         {:bucketName      {:displayName "Object Store bucket name"
-                            :category    "general"
-                            :description "Name of the bucket to store the object to"
-                            :type        "string"
-                            :mandatory   true
-                            :readOnly    false
-                            :order       21}
-          :objectName      {:displayName "Object name"
-                            :category    "general"
-                            :description "Name of the object to store (/can/be/hierarchical)."
-                            :type        "string"
-                            :mandatory   true
-                            :readOnly    false
-                            :order       22}
-          :objectStoreCred {:displayName "Object Store credentials."
-                            :category    "general"
-                            :description "Link to Object Store credential."
-                            :type        "href"
-                            :mandatory   true
-                            :readOnly    false
-                            :order       23}}))
 
 ;;
 ;; resource
@@ -44,17 +21,11 @@
 
 
 ;;
-;; description
-;;
-(def ^:const desc ExternalObjectTemplateGenericDescription)
-
-
-;;
 ;; initialization: register this external object generic template
 ;;
 (defn initialize
   []
-  (eot/register resource desc))
+  (eot/register resource))
 
 
 ;;

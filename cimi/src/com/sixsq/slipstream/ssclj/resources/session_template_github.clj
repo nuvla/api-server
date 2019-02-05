@@ -20,17 +20,11 @@ Resource that is used to create a session with GitHub authentication.
 (def ^:const resource-url authn-method)
 
 ;;
-;; description
-;;
-(def ^:const desc
-  p/SessionTemplateDescription)
-
-;;
 ;; initialization: register this Session template
 ;;
 (defn initialize
   []
-  (p/register authn-method desc)
+  (p/register authn-method)
   (std-crud/initialize p/resource-url ::st-github/schema)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-github/schema)))
 
