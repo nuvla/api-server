@@ -23,14 +23,12 @@
   (dyn/load-filtered-namespaces resource?))
 
 (defn get-resource-link
-  "Returns a vector with the resource tag keyword and map with the
-   :href keyword associated with the relative URL for the resource.
-   Function returns nil if either value cannot be found for the
-   resource."
+  "Returns a vector with the resource type keyword and map with the :href
+   keyword associated with the relative URL for the resource. Function returns
+   nil if 'resource-type' cannot be found in the resource."
   [resource-ns]
-  (if-let [vtag (dyn/resolve "resource-tag" resource-ns)]
-    (if-let [vtype (dyn/resolve "resource-url" resource-ns)]
-      [(deref vtag) {:href (deref vtype)}])))
+  (if-let [vtag (dyn/resolve "resource-type" resource-ns)]
+    [(keyword (deref vtag)) {:href (deref vtag)}]))
 
 (defn- initialize-resource
   "Run a resource's initialization function if it exists."

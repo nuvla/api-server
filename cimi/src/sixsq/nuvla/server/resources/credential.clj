@@ -14,6 +14,8 @@ CredentialTemplate resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :credentials)
 
 (def ^:const resource-name "Credential")

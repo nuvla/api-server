@@ -30,6 +30,8 @@ appropriate users.
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :callbacks)
 
 (def ^:const resource-name "Callback")

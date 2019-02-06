@@ -50,6 +50,8 @@ curl 'https://nuv.la/api/user-template?$select=name,description'
     [clojure.tools.logging :as log]
     [sixsq.nuvla.util.response :as r]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :userTemplates)
 
 (def ^:const resource-name "UserTemplate")

@@ -25,6 +25,15 @@
     ""))
 
 ;;
+;; resource type from namespace
+;;
+
+(defn ns->type
+  [ns]
+  (-> ns str (str/split #"\.") last))
+
+
+;;
 ;; resource ID utilities
 ;;
 

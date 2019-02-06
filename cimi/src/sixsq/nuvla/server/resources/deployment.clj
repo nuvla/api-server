@@ -17,6 +17,8 @@
     [sixsq.nuvla.server.resources.spec.deployment-template :as deployment-template-spec]
     [sixsq.nuvla.util.response :as r]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :deployments)
 
 (def ^:const resource-name "Deployment")

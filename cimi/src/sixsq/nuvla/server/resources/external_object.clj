@@ -16,6 +16,8 @@
     [sixsq.nuvla.util.response :as r]
     [ring.util.response :as ru]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :externalObjects)
 
 (def ^:const resource-name "ExternalObject")

@@ -96,6 +96,8 @@ session.
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.util.response :as r]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :sessions)
 
 (def ^:const resource-name "Session")
