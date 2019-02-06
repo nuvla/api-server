@@ -65,9 +65,16 @@
 
 
 (s/def ::kebab-identifier
-  (-> (st/spec (s/and string? #(re-matches #"^[a-z]+(-[a-z]+)*$" %)))
+  (-> (st/spec (s/and string? #(re-matches #"^[a-z]+(-[a-z0-9]+)*$" %)))
       (assoc :name "kebab-identifier"
              :json-schema/description "string consisting of lowercased words separated by dashes"
+             :json-schema/type "string")))
+
+
+(s/def ::kebab-identifier-keyword
+  (-> (st/spec (s/and keyword? #(re-matches #"^:[a-z]+(-[a-z0-9]+)*$" (str %))))
+      (assoc :name "kebab-identifier-keyword"
+             :json-schema/description "keyword consisting of lowercased words separated by dashes"
              :json-schema/type "string")))
 
 
@@ -95,7 +102,14 @@
 (s/def ::resource-type
   (-> (st/spec ::kebab-identifier)
       (assoc :name "resource type"
-             :json-schema/description "CIMI resource type (kebab case)"
+             :json-schema/description "resource type (kebab case)"
+             :json-schema/type "string")))
+
+
+(s/def ::resource-type-keyword
+  (-> (st/spec ::kebab-identifier-keyword)
+      (assoc :name "resource type keyword"
+             :json-schema/description "resource type as keyword (kebab case)"
              :json-schema/type "string")))
 
 

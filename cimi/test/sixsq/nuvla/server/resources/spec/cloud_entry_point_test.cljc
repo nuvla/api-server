@@ -14,10 +14,16 @@
               :created     timestamp
               :updated     timestamp
               :acl         resource-acl
-              :baseURI     "http://cloud.example.org/"}]
+              :baseURI     "http://cloud.example.org/"
+              :collections {:collection-alpha {:href "resource/alpha"}
+                            :collection-beta  {:href "resource/beta"}}}]
 
-    (stu/is-valid ::cep/cloud-entry-point root)
-    (stu/is-valid ::cep/cloud-entry-point (assoc root :resources {:href "resource/uuid"}))
+    (stu/is-valid ::cep/resource root)
+
+    (stu/is-invalid ::cep/resource (assoc root :collections {}))
 
     (doseq [attr #{:id :resourceURI :created :updated :acl :baseURI}]
-      (stu/is-invalid ::cep/cloud-entry-point (dissoc root attr)))))
+      (stu/is-invalid ::cep/resource (dissoc root attr)))
+
+    (doseq [attr #{:collections}]
+      (stu/is-valid ::cep/resource (dissoc root attr)))))
