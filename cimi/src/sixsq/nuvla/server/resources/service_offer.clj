@@ -129,7 +129,7 @@ curl 'https://nuv.la/api/service-offer?$filter=connector/href=\"exoscale-ch-gva\
   [resource]
   (let [valid-prefixes (sn/all-prefixes)
         resource-payload (dissoc resource :acl :id :resourceURI :name :description
-                                 :created :updated :properties :operations :connector)
+                                 :created :updated :tags :operations :connector)
         validator (partial valid-attribute-name? valid-prefixes)]
     (if (valid-attributes? validator resource-payload)
       resource

@@ -48,12 +48,12 @@
   (stu/is-invalid ::cimi-common/operations []))
 
 
-(deftest check-properties
-  (doseq [v #{{:a "ok"}, {:a "ok" :b "ok"}}]
-    (stu/is-valid ::cimi-common/properties v))
+(deftest check-tags
+  (doseq [v #{["ok"], ["a", "b"], ["ok", "ok"]}]
+    (stu/is-valid ::cimi-common/tags v))
 
   (doseq [v #{{}, {1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}}]
-    (stu/is-invalid ::cimi-common/properties v)))
+    (stu/is-invalid ::cimi-common/tags v)))
 
 
 (deftest check-owner
@@ -128,7 +128,7 @@
         maximal (assoc minimal
                   :name "name"
                   :description "description"
-                  :properties {:a "b"}
+                  :tags ["a"]
                   :operations [{:rel "add" :href "/add"}]
                   :acl acl)]
 
@@ -141,5 +141,5 @@
     (doseq [k #{:id :resourceURI :created :updated}]
       (stu/is-invalid ::common-attrs (dissoc minimal k)))
 
-    (doseq [k #{:name :description :properties}]
+    (doseq [k #{:name :description :tags}]
       (stu/is-valid ::common-attrs (dissoc maximal k)))))

@@ -26,8 +26,7 @@
 
               ; :name          "name"
               ; :description   "short description",
-              ; :properties    {:a "one",
-              ;                 :b "two"}
+              ; :tags          #{"one", "two"}
 
               ; :credentials   [{:href "credential/e3db10f4-ad81-4b3e-8c04-4994450da9e3"}]
 

@@ -38,5 +38,5 @@
                          ::cimi-common/updated              ;; FIXME: should be required
                          ::cimi-common/name
                          ::cimi-common/description
-                         ::cimi-common/properties
+                         ::cimi-common/tags
                          ::cimi-common/operations]))

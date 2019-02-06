@@ -263,7 +263,7 @@
 
 (defn select-editable-attributes
   [body]
-  (select-keys body #{:name :description :properties :acl}))
+  (select-keys body #{:name :description :tags :acl}))
 
 (def edit-impl (std-crud/edit-fn resource-name))
 

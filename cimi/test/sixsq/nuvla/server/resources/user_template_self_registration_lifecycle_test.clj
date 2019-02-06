@@ -84,7 +84,7 @@
 
               name-attr "name"
               description-attr "description"
-              properties-attr {:a "one", :b "two"}
+              tags-attr ["one", "two"]
               plaintext-password "plaintext-password"
 
               no-href-create {:userTemplate (ltu/strip-unwanted-attrs (assoc template
@@ -94,7 +94,7 @@
                                                                         :emailAddress "user@example.org"))}
               href-create {:name         name-attr
                            :description  description-attr
-                           :properties   properties-attr
+                           :tags         tags-attr
                            :userTemplate {:href           href
                                           :username       uname
                                           :password       plaintext-password
@@ -211,7 +211,7 @@
             ;; check contents of resource
             (let [{:keys [name
                           description
-                          properties
+                          tags
                           isSuperUser
                           state
                           lastOnline
@@ -224,7 +224,7 @@
                                                  :body)]
               (is (= name name-attr))
               (is (= description description-attr))
-              (is (= properties properties-attr))
+              (is (= tags tags-attr))
               (is (false? isSuperUser))
               (is (= user/initial-state state))
               (is (false? deleted))

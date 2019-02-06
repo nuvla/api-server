@@ -32,7 +32,7 @@
 
         name-attr "name"
         description-attr "description"
-        properties-attr {:a "one", :b "two"}
+        tags-attr ["one", "two"]
 
         href (str ct/resource-url "/" akey/method)
         template-url (str p/service-context ct/resource-url "/" akey/method)
@@ -47,7 +47,7 @@
 
         create-import-href {:name               name-attr
                             :description        description-attr
-                            :properties         properties-attr
+                            :tags               tags-attr
                             :credentialTemplate {:href href
                                                  :ttl  1000}}
 
@@ -119,7 +119,7 @@
             (ltu/is-operation-present "edit")))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description properties
+      (let [{:keys [name description tags
                     digest expiry claims]} (-> session-user
                                                (request abs-uri)
                                                (ltu/body->edn)
@@ -128,7 +128,7 @@
                                                :body)]
         (is (= name name-attr))
         (is (= description description-attr))
-        (is (= properties properties-attr))
+        (is (= tags tags-attr))
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is expiry)
