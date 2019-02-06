@@ -74,7 +74,7 @@
 (defn strip-common-attrs
   "Strips all common resource attributes from the map."
   [m]
-  (dissoc m :id :name :description :created :updated :properties))
+  (dissoc m :id :name :description :created :updated :tags))
 
 (defn strip-service-attrs
   "Strips common attributes from the map whose values are controlled
@@ -145,9 +145,9 @@
 
 (defn select-desc-keys
   "Selects the common attributes that are related to the description of the
-   resource, namely 'name', 'description', and properties."
+   resource, namely 'name', 'description', and tags."
   [m]
-  (select-keys m #{:name :description :properties}))
+  (select-keys m #{:name :description :tags}))
 
 (defn create-spec-validation-fn
   "Creates a validation function that compares a resource against the

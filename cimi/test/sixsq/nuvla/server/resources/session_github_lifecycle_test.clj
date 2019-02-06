@@ -84,11 +84,11 @@
 
           name-attr "name"
           description-attr "description"
-          properties-attr {:a "one", :b "two"}
+          tags-attr ["one", "two"]
 
           href-create {:name            name-attr
                        :description     description-attr
-                       :properties      properties-attr
+                       :tags            tags-attr
                        :sessionTemplate {:href href}}
           href-create-redirect {:sessionTemplate {:href        href
                                                   :redirectURI redirect-uri-example}}
@@ -239,15 +239,15 @@
             (ltu/is-operation-absent "edit"))
 
         ;; check contents of session
-        (let [{:keys [name description properties] :as body} (-> session-user
-                                                                 (header authn-info-header (str "user USER ANON " id))
-                                                                 (request abs-uri)
-                                                                 (ltu/body->edn)
-                                                                 :response
-                                                                 :body)]
+        (let [{:keys [name description tags] :as body} (-> session-user
+                                                           (header authn-info-header (str "user USER ANON " id))
+                                                           (request abs-uri)
+                                                           (ltu/body->edn)
+                                                           :response
+                                                           :body)]
           (is (= name name-attr))
           (is (= description description-attr))
-          (is (= properties properties-attr)))
+          (is (= tags tags-attr)))
 
         ;; user query with session role should succeed but and have one entry
         (-> session-user

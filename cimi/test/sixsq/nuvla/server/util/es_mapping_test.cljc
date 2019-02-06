@@ -24,7 +24,7 @@
                        ::common/operations {:type "object", :enabled false}
 
 
-                       ::common/properties {:type "object"}
+                       ::common/tags {:type "object"}
 
                        ::common/id {:type "keyword"}
                        ::common/resourceURI {:type "keyword"}

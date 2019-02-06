@@ -83,11 +83,11 @@
     ;; get user template so that user resources can be tested
     (let [name-attr "name"
           description-attr "description"
-          properties-attr {:a "one", :b "two"}
+          tags-attr ["one", "two"]
 
           href-create {:name         name-attr
                        :description  description-attr
-                       :properties   properties-attr
+                       :tags         tags-attr
                        :userTemplate {:href href}}
 
           href-create-redirect {:userTemplate {:href        href

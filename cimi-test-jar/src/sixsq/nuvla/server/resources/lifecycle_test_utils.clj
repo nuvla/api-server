@@ -233,7 +233,7 @@
    versions of a resource."
   [m]
   (let [unwanted #{:id :resourceURI :acl :operations
-                   :created :updated :name :description :properties}]
+                   :created :updated :name :description :tags}]
     (into {} (remove #(unwanted (first %)) m))))
 
 

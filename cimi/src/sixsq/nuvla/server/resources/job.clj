@@ -71,7 +71,7 @@
                     u/update-timestamps
                     ju/job-cond->addition
                     (crud/add-acl request)
-                    (assoc :properties {:zookeeper-path zookeeper-path})
+                    (assoc :tags [zookeeper-path])
                     (crud/validate))]
     (db/add resource-name new-job {})))
 
