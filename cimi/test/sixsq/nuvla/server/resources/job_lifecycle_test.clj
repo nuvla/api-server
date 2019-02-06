@@ -113,6 +113,8 @@
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (ltu/is-operation-present "stop")
+                                 :response
+                                 :body
                                  :tags
                                  first)]
       (is (s/starts-with? zookeeper-path (str zk-job-path-start-subs "050-"))))
