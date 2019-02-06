@@ -12,9 +12,9 @@
   All of the following keys will be present in the modified request, although
   they may be nil if they were not specified.
 
-    - :first      value of the $first parameter, nil if invalid or
+    - :first      value of the first parameter, nil if invalid or
                   not specified
-    - :last       value of the $last parameter, nil if invalid or
+    - :last       value of the last parameter, nil if invalid or
                   not specified
     - :filter     contains the AST for the valid filters in hiccup
                   format. If multiple filters are provided, they are
@@ -37,7 +37,7 @@
     - :aggregation provides a map where the key is the aggregation algorithm
                    and the value is a vector of parameter names to which the
                    aggregation applies.  This is specified by parameter
-                   names and values like: '$aggregation=algo:key1,algo:key2'.
+                   names and values like: 'aggregation=algo:key1,algo:key2'.
                    The 'algo:' prefix names the algorithm and is required.
                    Supported algorithms are: min, max, sum, avg, stats,
                    extendedstats, count, percentiles, cardinality, missing,

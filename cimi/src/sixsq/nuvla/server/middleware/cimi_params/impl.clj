@@ -11,22 +11,22 @@
 (defn cimi-first
   "Calculates the value for the :first key in the CIMI parameters map. If a
    valid value isn't specified, this defaults to 1."
-  [{:strs [$first] :as params}]
-  (or (utils/first-valid-long $first) 1))
+  [{:keys [first] :as params}]
+  (or (utils/first-valid-long first) 1))
 
 (defn cimi-last
   "Calculates the value for the :last key in the CIMI parameters map. If a
    valid value isn't specified, then the value is nil."
-  [{:strs [$last] :as params}]
-  (utils/first-valid-long $last))
+  [{:keys [last] :as params}]
+  (utils/first-valid-long last))
 
 (defn cimi-filter
   "Calculates the :filter key for the CIMI parameters map; the value is the
-  AST resulting from the parsing of the complete filter. If the $filter
+  AST resulting from the parsing of the complete filter. If the filter
   parameter appears more than once, then the filters are combined with a
   logical AND. If the filter is invalid, then an exception is thrown."
-  [{:strs [$filter] :as params}]
-  (some->> $filter
+  [{:keys [filter] :as params}]
+  (some->> filter
            utils/as-vector
            utils/wrap-join-with-and
            parser/parse-cimi-filter
@@ -38,8 +38,8 @@
   were given. If the wildcard is specified '*', then :all will be given as the
   value. In all other cases, a set of the specified attributes will be
   provided."
-  [{:strs [$expand] :as params}]
-  (->> $expand
+  [{:keys [expand] :as params}]
+  (->> expand
        utils/as-vector
        (mapcat utils/comma-split)
        set
@@ -47,11 +47,11 @@
 
 (defn cimi-select
   "Calculates the value for the :select key in the CIMI parameters map. The
-  value will be nil if the $select key was not specified or if the wildcard
+  value will be nil if the select key was not specified or if the wildcard
   value '*' is given. Otherwise a set of the desired keys (with 'resourceURI'
   added automatically) is returned."
-  [{:strs [$select] :as params}]
-  (some->> $select
+  [{:keys [select] :as params}]
+  (some->> select
            utils/as-vector
            (mapcat utils/comma-split)
            (cons "resourceURI")
@@ -60,7 +60,7 @@
 
 (defn cimi-format
   "Calculates the value for the :format key in the CIMI parameters map. The
-   processing of the $format parameter is more lenient than the CIMI
+   processing of the format parameter is more lenient than the CIMI
    specification in the following ways:
 
     - The first _acceptable_ value is used, rather than strictly the first.
@@ -72,8 +72,8 @@
   Note that the specification states that this option must override any values
   provided in the HTTP Accept header. Consequently, the value must be checked
   before generating the output."
-  [{:strs [$format] :as params}]
-  (->> $format
+  [{:keys [format] :as params}]
+  (->> format
        utils/as-vector
        (filter string?)
        (map str/trim)
@@ -88,8 +88,8 @@
   specified or has no valid values. Otherwise it will contain a sequence of
   [attribute name, direction] tuples where the direction is either :asc
   (ascending) or :desc (descending)."
-  [{:strs [$orderby] :as params}]
-  (->> $orderby
+  [{:keys [orderby] :as params}]
+  (->> orderby
        utils/as-vector
        (mapcat utils/comma-split)
        (map utils/orderby-clause)
@@ -99,8 +99,8 @@
   "Calculates the value of the :aggregation key for the CIMI parameters map.
   The value is a map where the keys are algorithm names (as keywords) and the
   values are the attribute names to which the algorithms should be applied."
-  [{:strs [$aggregation] :as params}]
-  (->> $aggregation
+  [{:keys [aggregation] :as params}]
+  (->> aggregation
        utils/as-vector
        (mapcat utils/comma-split)
        (map utils/aggregation-clause)

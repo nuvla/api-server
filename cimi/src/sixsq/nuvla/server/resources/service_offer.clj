@@ -62,10 +62,10 @@ An example service offer from the Open Telekom Cloud (OTC).
 
 To show all of the ServiceOffer resources from the 'exoscale-ch-gva' cloud
 that provide more than 4096 MB of RAM. Be sure to escape the dollar sign in the
-`$filter` query parameter!
+`filter` query parameter!
 
 ```shell
-curl 'https://nuv.la/api/service-offer?$filter=connector/href=\"exoscale-ch-gva\" and resource:ram>4096'
+curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\" and resource:ram>4096'
 ```
 "
   (:require

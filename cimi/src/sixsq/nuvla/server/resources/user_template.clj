@@ -17,7 +17,7 @@ verification.
 Listing of the available UserTemplate resources on Nuvla.
 
 ```shell
-curl 'https://nuv.la/api/user-template?$select=name,description'
+curl 'https://nuv.la/api/user-template?select=name,description'
 ```
 
 ```json
