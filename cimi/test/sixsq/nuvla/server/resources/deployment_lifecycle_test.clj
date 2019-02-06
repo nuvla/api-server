@@ -75,7 +75,7 @@
                                          (ltu/location))
           abs-uri (str p/service-context (u/de-camelcase uri))
           deployment (-> session-user
-                         (request (str abs-uri "?$select=description")
+                         (request (str abs-uri "?select=description")
                                   :request-method :put
                                   :body (json/write-str {:name         "dep 1 new name"
                                                          :clientAPIKey "this field should be ignored, not editable"}))

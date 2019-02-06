@@ -8,7 +8,7 @@ This is a templated resource that follows all the standard CIMI SCRUD
 patterns. Normally, these resources are created during the user registration
 process and not created manually.
 
-A UserParam resource can be matched to the User resource via a `$filter` like
+A UserParam resource can be matched to the User resource via a `filter` like
 the following:
 
 ```
@@ -135,16 +135,16 @@ where the value is the `id` of the User resource without the 'user/' prefix.
   "Only one :paramsType document is allowed per user."
   [request]
   (let [params-type (get-in request [:body :userParamTemplate :paramsType])
-        cimi-filter (cpi/cimi-filter {"$filter" (format "paramsType='%s'" params-type)})
-        req         (update-in request [:cimi-params] #(assoc % :filter cimi-filter))
-        resp        (crud/query req)
-        count       (-> resp
-                        (get :body {:count 0})
-                        (get :count 0))]
+        cimi-filter (cpi/cimi-filter {"filter" (format "paramsType='%s'" params-type)})
+        req (update-in request [:cimi-params] #(assoc % :filter cimi-filter))
+        resp (crud/query req)
+        count (-> resp
+                  (get :body {:count 0})
+                  (get :count 0))]
     (when (pos? count)
       (logu/log-and-throw 409
-        (format "Resource of type %s for '%s' already exists: %s" params-type
-                (:user-name request) (resource-ids-str-from-resp resp))))))
+                          (format "Resource of type %s for '%s' already exists: %s" params-type
+                                  (:user-name request) (resource-ids-str-from-resp resp))))))
 
 (def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
 
@@ -153,11 +153,11 @@ where the value is the `id` of the User resource without the 'user/' prefix.
   [{:keys [body] :as request}]
   (conflict-if-exists request)
   (let [idmap {:identity (:identity request)}
-        body  (-> body
-                  (assoc :resourceURI create-uri)
-                  (crud/validate)
-                  (:userParamTemplate)
-                  (tpl->user-params request))]
+        body (-> body
+                 (assoc :resourceURI create-uri)
+                 (crud/validate)
+                 (:userParamTemplate)
+                 (tpl->user-params request))]
     (add-impl (assoc request :body body))))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-name))

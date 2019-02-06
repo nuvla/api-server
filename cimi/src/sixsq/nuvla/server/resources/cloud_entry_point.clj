@@ -142,18 +142,18 @@ escape the dollar signs or to put the parameters within single quotes.
 The results can be ordered by the values of fields within the
 resources.  The general form of a query with ordering is:
 
-`$orderby=attributeName[:asc|:desc], ...`
+`orderby=attributeName[:asc|:desc], ...`
 
 The ascending (:asc, default) or descending (:desc) field is
 optional.  The sorting is done using the natural order of the field
-values. Multiple `$orderby` parameters are allowed, in which case
+values. Multiple `orderby` parameters are allowed, in which case
 resources are sorted by the first attribute, then equal values are
 sorted by the second attribute, etc.
 
 ### Paging
 
-A range of resources can be obtained by setting the `$first` and
-`$last` (1-based) query parameters.  The values default to the first
+A range of resources can be obtained by setting the `first` and
+`last` (1-based) query parameters.  The values default to the first
 and last resources, respectively, in the collection if explicit values
 are not provided.
 
@@ -166,13 +166,13 @@ filtering and ordering.
 
 ### Subsetting
 
-Using the `$select` parameter allows you to select only certain
+Using the `select` parameter allows you to select only certain
 attributes to be returned by the server.  Avoiding sending information
 that will not be useful reduces the load on the network and the
 server.
 
 Multiple attributes may be specified by providing a string with
-comma-separated values or with multiple `$select` parameters.
+comma-separated values or with multiple `select` parameters.
 
 > NOTE: For various reasons, the server may return attributes that you have
 not selected in the responses. The server should always return the selected
@@ -200,7 +200,7 @@ The CIMI specification defines a simple, but powerful, filtering
 language to make sophisticated selections of resources. (See Section
 4.1.6.1 of the full [CIMI
 specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0263_2.0.0.pdf).)
-The syntax of the `$filter` query parameter consists of infix binary
+The syntax of the `filter` query parameter consists of infix binary
 comparisons combined with `and` or `or` operators. Parentheses can be
 used to force the ordering of operations.  Whitespace is ignored.
 
@@ -243,7 +243,7 @@ The filter syntax may be extended in the future to also support the
 'not' logical operation.
 
 The [full
-grammar](https://raw.githubusercontent.com/slipstream/SlipStreamServer/master/cimi/resources/com/sixsq/slipstream/ssclj/filter/cimi-filter-grammar.txt)
+grammar](https://raw.githubusercontent.com/nuvla/server/master/db-binding/resources/sixsq/nuvla/db/filter/cimi-filter-grammar.txt)
 of our extended CIMI filtering is documented in GitHub.
 
 
@@ -256,7 +256,7 @@ an attribute, average, etc.
 
 The general form of a query with an aggregation is:
 
-`$aggregation=algorithm:attributeName, ...`
+`aggregation=algorithm:attributeName, ...`
 
 Multiple aggregation expressions can be provided.  The results of
 these calculations are provided in the 'aggregations' section of the

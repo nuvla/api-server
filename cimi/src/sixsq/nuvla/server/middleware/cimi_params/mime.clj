@@ -3,7 +3,7 @@
   representations (mime-types).
 
   Normally, the desired representation is conveyed to the server via the
-  'Accept' header, but may also be specified by the CIMI '$format' parameter.
+  'Accept' header, but may also be specified by the CIMI 'format' parameter.
 
   Currently json, xml, and edn are supported, with the default (and fallback)
   being json.")
@@ -18,7 +18,7 @@
 
 (def accepted-formats
   "A set containing the short names for the supported resource
-  representations.  Used to validate the '$format' query parameter
+  representations.  Used to validate the 'format' query parameter
   if specified."
   (set (keys accepted-mime-types)))
 

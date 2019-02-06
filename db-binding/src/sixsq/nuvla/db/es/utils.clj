@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [read update])
   (:require
     [clojure.data.json :as json]
-    [clojure.java.io :as io]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.db.es.acl :as acl]
     [sixsq.nuvla.db.es.aggregation :as agg]
