@@ -69,7 +69,7 @@
    [sixsq.nuvla.server/db-binding-jar ~+version+]
    [sixsq.nuvla.server/token ~+version+]]
 
-  :aot [com.sixsq.slipstream.ssclj.app.main]
+  :aot [sixsq.nuvla.server.app.main]
 
   :profiles
   {

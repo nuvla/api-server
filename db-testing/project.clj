@@ -37,7 +37,7 @@
    [environ]
 
    ; FIXME: needed this one after requiring
-   ; com.sixsq.slipstream.ssclj.middleware.authn-info-header
+   ; sixsq.nuvla.ssclj.middleware.authn-info-header
    [cheshire]
    [cc.qbits/spandex]
    [org.clojure/data.xml]
