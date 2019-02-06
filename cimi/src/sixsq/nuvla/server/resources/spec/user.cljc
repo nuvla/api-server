@@ -472,5 +472,5 @@
 
 
 (s/def ::schema
-       (su/only-keys-maps user-common-attrs
-                          user-keys-spec))
+  (su/only-keys-maps user-common-attrs
+                     user-keys-spec))
