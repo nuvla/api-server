@@ -30,10 +30,10 @@ The following environental variable are used by the CIMI server:
    Defaults to 'localhost:2181'.
  - PERSISTENT_DB_BINDING: provides the namespace for the database
    binding loader to use.  Defaults to the Elasticsearch binding:
-   `com.sixsq.slipstream.db.es.loader`. 
+   `sixsq.nuvla.db.es.loader`. 
  - EPHEMERAL_DB_BINDING: provides the namespace for the ephemeral
    database binding to use.  Defaults to the Elasticsearch binding:
-   `com.sixsq.slipstream.db.es.loader`.
+   `sixsq.nuvla.db.es.loader`.
 
 If you use the Elasticsearch binding, you will also may also need to
 provide the following environmental variables as well:
