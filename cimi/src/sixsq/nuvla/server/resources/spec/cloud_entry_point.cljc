@@ -30,13 +30,14 @@
 
 
 (s/def ::collections
-  (-> (st/spec (s/map-of keyword?                           ;; FIXME: will be ::cimi-core/resource-type-keyword
-                         ::cimi-common/resource-link :min-count 1))
+  (-> (st/spec (s/map-of ::cimi-core/resource-type-keyword
+                         ::cimi-common/resource-link
+                         :min-count 1))
       (assoc :name "collections"
              :json-schema/name "collections"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
-             :json-schema/type "Array"
+             :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
              :json-schema/mutable false
@@ -48,7 +49,9 @@
              :json-schema/group "body"
              :json-schema/order 10
              :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/sensitive false
+
+             :json-schema/indexed false)))
 
 
 (s/def ::resource

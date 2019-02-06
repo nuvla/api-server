@@ -80,6 +80,8 @@ curl 'https://nuv.la/api/service-offer?$filter=connector/href=\"exoscale-ch-gva\
     [ring.util.response :as r]
     [superstring.core :as str]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "ServiceOffer")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))

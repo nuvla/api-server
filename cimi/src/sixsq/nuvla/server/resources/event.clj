@@ -241,6 +241,8 @@ Delete a specific (the event-uuid is known) event.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.event :as event]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :events)
 (def ^:const resource-name event-utils/resource-name)
 (def ^:const resource-url event-utils/resource-url)

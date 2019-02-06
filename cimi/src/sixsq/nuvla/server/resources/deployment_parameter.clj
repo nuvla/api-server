@@ -14,6 +14,8 @@
     [superstring.core :as str]
     [taoensso.timbre :as log]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "DeploymentParameter")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))

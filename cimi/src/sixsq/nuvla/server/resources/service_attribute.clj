@@ -40,6 +40,8 @@ curl https://nuv.la/api/service-attribute
     [java.net URI URISyntaxException]
     [java.nio.charset Charset]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "ServiceAttribute")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))

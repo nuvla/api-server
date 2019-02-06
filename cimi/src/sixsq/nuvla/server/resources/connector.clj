@@ -7,6 +7,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.connector]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :connectors)
 
 (def ^:const resource-name "Connector")

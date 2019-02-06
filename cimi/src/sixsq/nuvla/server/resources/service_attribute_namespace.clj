@@ -54,6 +54,8 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
     [sixsq.nuvla.util.response :as response]
     [superstring.core :as str]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "ServiceAttributeNamespace")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))

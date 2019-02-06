@@ -7,6 +7,8 @@
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [superstring.core :as str]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "ModuleComponent")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))

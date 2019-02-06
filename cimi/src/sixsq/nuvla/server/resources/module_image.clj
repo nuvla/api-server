@@ -7,6 +7,8 @@
     [sixsq.nuvla.server.resources.spec.module-image :as module-image]
     [superstring.core :as str]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-name "ModuleImage")
 
 (def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
