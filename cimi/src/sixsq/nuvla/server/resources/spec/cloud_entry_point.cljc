@@ -29,7 +29,32 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::cloud-entry-point
-  (su/constrained-map keyword? ::cimi-common/resource-link
-                      cimi-common/common-attrs
-                      {:req-un [::baseURI]}))
+(s/def ::collections
+  (-> (st/spec (s/map-of ::cimi-core/resource-type-keyword
+                         ::cimi-common/resource-link
+                         :min-count 1))
+      (assoc :name "collections"
+             :json-schema/name "collections"
+             :json-schema/namespace common-ns/slipstream-namespace
+             :json-schema/uri common-ns/slipstream-uri
+             :json-schema/type "map"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory false
+             :json-schema/mutable false
+             :json-schema/consumerWritable false
+
+             :json-schema/displayName "collections"
+             :json-schema/description "collection resources supported by the server"
+             :json-schema/help "collection resources supported by the server"
+             :json-schema/group "body"
+             :json-schema/order 10
+             :json-schema/hidden false
+             :json-schema/sensitive false
+
+             :json-schema/indexed false)))
+
+
+(s/def ::resource
+  (su/only-keys-maps cimi-common/common-attrs
+                     {:req-un [::baseURI]
+                      :opt-un [::collections]}))

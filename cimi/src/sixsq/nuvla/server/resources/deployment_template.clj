@@ -9,6 +9,8 @@
     [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.resources.spec.deployment-template :as dt]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :deploymentTemplates)
 
 (def ^:const resource-name "DeploymentTemplate")

@@ -28,6 +28,8 @@ where the value is the `id` of the User resource without the 'user/' prefix.
     [sixsq.nuvla.server.resources.spec.user-params-exec]
     [sixsq.nuvla.server.util.log :as logu]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :userParam)
 
 (def ^:const resource-name "UserParam")

@@ -8,6 +8,8 @@
     [sixsq.nuvla.server.resources.configuration-template :as conf-tmpl]
     [sixsq.nuvla.util.response :as r]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :configurations)
 
 (def ^:const resource-name "Configuration")

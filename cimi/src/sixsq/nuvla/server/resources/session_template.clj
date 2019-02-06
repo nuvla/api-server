@@ -46,6 +46,8 @@ a username and password pair stored in SlipStream's internal database.
     [sixsq.nuvla.util.response :as r]
     [clojure.tools.logging :as log]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :sessionTemplates)
 
 (def ^:const resource-name "SessionTemplate")

@@ -8,6 +8,8 @@
     [sixsq.nuvla.server.resources.spec.connector-template]
     [sixsq.nuvla.util.response :as r]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :connectorTemplates)
 
 (def ^:const resource-name "ConnectorTemplate")

@@ -317,7 +317,7 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.dynamic-load :as dyn] ;; ensure schema is loaded
+    [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -326,11 +326,14 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as sr]
     [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
-    [ring.util.response :as r]))
+    [ring.util.response :as r]
+    [sixsq.nuvla.server.resources.common.utils :as u]))
 
 ;;
 ;; utilities
 ;;
+
+(def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "CloudEntryPoint")
 
@@ -348,17 +351,18 @@ include aggregating values over a collection of resources.
 (def resource-links
   (into {} (dyn/get-resource-links)))
 
-(def stripped-keys
-  (concat (keys resource-links) [:baseURI :operations]))
 
 ;;
 ;; define validation function and add to standard multi-method
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::cep/cloud-entry-point))
+(def validate-fn (u/create-spec-validation-fn ::cep/resource))
+
+
 (defmethod crud/validate resource-uri
   [resource]
   (validate-fn resource))
+
 
 (defmethod crud/set-operations resource-uri
   [resource request]
@@ -368,6 +372,7 @@ include aggregating values over a collection of resources.
       (assoc resource :operations ops))
     (catch Exception e
       (dissoc resource :operations))))
+
 
 ;;
 ;; CRUD operations
@@ -384,17 +389,19 @@ include aggregating values over a collection of resources.
                   :resourceURI resource-uri})]
     (db/add resource-name record {:user-roles ["ANON"]})))
 
+
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
   (r/response (-> (db/retrieve resource-url {})
-                  ;; (a/can-view? request)
-                  (assoc :baseURI base-uri)
-                  (merge resource-links)
+                  (assoc :baseURI base-uri
+                         :collections resource-links)
                   (crud/set-operations request))))
+
 
 (defmethod crud/retrieve resource-name
   [request]
   (retrieve-impl request))
+
 
 (defn edit-impl
   [{:keys [body] :as request}]
@@ -406,23 +413,26 @@ include aggregating values over a collection of resources.
                     (u/strip-service-attrs))
         updated (-> (merge current updated)
                     (u/update-timestamps)
-                    (merge resource-links)
+                    (assoc :collections resource-links)
                     (crud/set-operations request)
                     (crud/validate))]
 
     (db/edit updated request)))
 
+
 (defmethod crud/edit resource-name
   [request]
   (edit-impl request))
 
+
 ;;
 ;; initialization: create cloud entry point if necessary
 ;;
+
 (defn initialize
   []
-  (std-crud/initialize resource-url ::cep/cloud-entry-point)
-  (md/register (gen-md/generate-metadata ::ns ::cep/cloud-entry-point))
+  (std-crud/initialize resource-url ::cep/resource)
+  (md/register (gen-md/generate-metadata ::ns ::cep/resource))
 
   (try
     (add)
@@ -430,10 +440,12 @@ include aggregating values over a collection of resources.
     (catch Exception e
       (log/warn resource-name "resource not created; may already exist; message: " (str e)))))
 
+
 ;;
 ;; CloudEntryPoint doesn't follow the usual service-context + '/resource-name/UUID'
 ;; pattern, so the routes must be defined explicitly.
 ;;
+
 (defroutes routes
            (GET (str p/service-context resource-url) request
              (crud/retrieve (assoc-in request [:params :resource-name]

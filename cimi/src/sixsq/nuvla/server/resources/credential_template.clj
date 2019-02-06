@@ -43,6 +43,8 @@ curl https://nuv.la/api/credential-template
     [sixsq.nuvla.util.response :as r]
     [clojure.tools.logging :as log]))
 
+(def ^:const resource-type (u/ns->type *ns*))
+
 (def ^:const resource-tag :credentialTemplates)
 
 (def ^:const resource-name "CredentialTemplate")
