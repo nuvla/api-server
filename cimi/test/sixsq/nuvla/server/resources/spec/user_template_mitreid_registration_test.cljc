@@ -20,7 +20,7 @@
              :name        "my-template"
              :description "my template"
              :group       "my group"
-             :properties  {:a "1", :b "2"}
+             :tags        #{"1", "2"}
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl
@@ -30,7 +30,7 @@
 
         create-tpl {:name         "my-create"
                     :description  "my create description"
-                    :properties   {:c "3", :d "4"}
+                    :tags         #{"3", "4"}
                     :resourceURI  "http://sixsq.com/slipstream/1/UserTemplateCreate"
                     :userTemplate (dissoc tpl :id)}]
 
@@ -40,7 +40,7 @@
     (doseq [attr #{:id :resourceURI :created :updated :acl :method}]
       (stu/is-invalid ::ut-mitreid/schema (dissoc tpl attr)))
 
-    (doseq [attr #{:name :description :group :properties}]
+    (doseq [attr #{:name :description :group :tags}]
       (stu/is-valid ::ut-mitreid/schema (dissoc tpl attr)))
 
     ;; check the create template schema (with href)
@@ -51,5 +51,5 @@
     (doseq [attr #{:resourceURI :userTemplate}]
       (stu/is-invalid ::ut-mitreid/schema-create (dissoc create-tpl attr)))
 
-    (doseq [attr #{:name :description :group :properties}]
+    (doseq [attr #{:name :description :group :tags}]
       (stu/is-valid ::ut-mitreid/schema-create (dissoc create-tpl attr)))))

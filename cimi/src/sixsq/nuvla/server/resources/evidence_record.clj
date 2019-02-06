@@ -42,7 +42,7 @@
   [resource]
   (let [valid-prefixes (sn/all-prefixes)
         resource-payload (dissoc resource :acl :id :resourceURI :name :description
-                                 :created :updated :properties :operations :class :planID :startTime :endTime :passed)
+                                 :created :updated :tags :operations :class :planID :startTime :endTime :passed)
         validator (partial sc/valid-attribute-name? valid-prefixes)]
     (if (sc/valid-attributes? validator resource-payload)
       resource

@@ -125,11 +125,11 @@
 
             name-attr "name"
             description-attr "description"
-            properties-attr {:a "one", :b "two"}
+            tags-attr ["one", "two"]
 
             valid-create {:name            name-attr
                           :description     description-attr
-                          :properties      properties-attr
+                          :tags            tags-attr
                           :sessionTemplate {:href   href
                                             :key    uuid
                                             :secret secret}}
@@ -244,15 +244,15 @@
               (ltu/is-count 1))
 
           ;; check contents of session resource
-          (let [{:keys [name description properties] :as body} (-> (session app)
-                                                                   (header authn-info-header (str "user USER " id))
-                                                                   (request abs-uri)
-                                                                   (ltu/body->edn)
-                                                                   :response
-                                                                   :body)]
+          (let [{:keys [name description tags] :as body} (-> (session app)
+                                                             (header authn-info-header (str "user USER " id))
+                                                             (request abs-uri)
+                                                             (ltu/body->edn)
+                                                             :response
+                                                             :body)]
             (is (= name name-attr))
             (is (= description description-attr))
-            (is (= properties properties-attr)))
+            (is (= tags tags-attr)))
 
           ;; user with session role can delete resource
           (-> (session app)

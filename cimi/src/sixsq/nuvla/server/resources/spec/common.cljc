@@ -291,21 +291,21 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::properties
-  (-> (st/spec (s/map-of keyword? string? :min-count 1))
-      (assoc :name "properties"
-             :json-schema/name "properties"
+(s/def ::tags
+  (-> (st/spec (s/coll-of string? :min-count 1 :into #{}))
+      (assoc :name "tags"
+             :json-schema/name "tags"
              :json-schema/namespace common-ns/cimi-namespace
              :json-schema/uri common-ns/cimi-uri
-             :json-schema/type "map"
+             :json-schema/type "Array"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "properties"
-             :json-schema/description "client defined properties of the resource"
-             :json-schema/help "client defined properties (key, value) of the resource"
+             :json-schema/displayName "tags"
+             :json-schema/description "client defined tags of the resource"
+             :json-schema/help "client defined tags (key, value) of the resource"
              :json-schema/group "metadata"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 15
@@ -346,7 +346,7 @@
             ::acl]
    :opt-un [::name
             ::description
-            ::properties
+            ::tags
             ::parent
             ::resourceMetadata
             ::operations]})
@@ -362,7 +362,7 @@
             ::description
             ::created
             ::updated
-            ::properties
+            ::tags
             ::parent
             ::resourceMetadata
             ::operations
@@ -379,7 +379,7 @@
             ::description
             ::created
             ::updated
-            ::properties
+            ::tags
             ::parent
             ::resourceMetadata
             ::operations

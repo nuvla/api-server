@@ -25,7 +25,7 @@
 
         name-attr "name"
         description-attr "description"
-        properties-attr {:a "one", :b "two"}
+        tags-attr ["one", "two"]
 
         href (str ct/resource-url "/" service)
         template-url (str p/service-context ct/resource-url "/" service)
@@ -36,7 +36,7 @@
         template (get-in resp [:response :body])
         valid-create {:name                  name-attr
                       :description           description-attr
-                      :properties            properties-attr
+                      :tags                  tags-attr
                       :configurationTemplate (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
         href-create {:configurationTemplate {:href   href
                                              attr-kw attr-value}}
@@ -84,14 +84,14 @@
           (ltu/is-status 200))
 
       ;; check the contents
-      (let [{:keys [name description properties] :as body} (-> session-admin
-                                                               (request abs-uri)
-                                                               (ltu/body->edn)
-                                                               :response
-                                                               :body)]
+      (let [{:keys [name description tags] :as body} (-> session-admin
+                                                         (request abs-uri)
+                                                         (ltu/body->edn)
+                                                         :response
+                                                         :body)]
         (is (= name name-attr))
         (is (= description description-attr))
-        (is (= properties properties-attr)))
+        (is (= tags tags-attr)))
 
       ;; anonymous query fails
       (-> session-anon
