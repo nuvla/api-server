@@ -41,11 +41,10 @@ curl https://nuv.la/api/credential-template
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]))
 
 (def ^:const resource-type (u/ns->type *ns*))
-
-(def ^:const resource-tag :credentialTemplates)
 
 (def ^:const resource-name "CredentialTemplate")
 
@@ -74,20 +73,6 @@ curl https://nuv.la/api/credential-template
 ;; atom to keep track of the loaded CredentialTemplate resources
 ;;
 (def templates (atom {}))
-
-
-(defn collection-wrapper-fn
-  "Specialized version of this function that removes the adding
-   of operations to the collection and entries.  These are already
-   part of the stored resources."
-  [resource-name collection-acl collection-uri collection-key]
-  (fn [request entries]
-    (let [skeleton {:acl         collection-acl
-                    :resourceURI collection-uri
-                    :id          (u/de-camelcase resource-name)}]
-      (-> skeleton
-          (crud/set-operations request)
-          (assoc collection-key entries)))))
 
 
 (defn complete-resource
@@ -185,7 +170,7 @@ curl https://nuv.la/api/credential-template
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri resource-tag)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])

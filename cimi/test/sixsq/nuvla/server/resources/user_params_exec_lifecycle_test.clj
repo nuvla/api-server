@@ -198,9 +198,7 @@
                      (ltu/is-status 200)
                      (ltu/is-count 1))
             uri (->> resp
-                     :response
-                     :body
-                     :userParam
+                     ltu/entries
                      first
                      :id)
             abs-uri (str p/service-context (u/de-camelcase uri))]

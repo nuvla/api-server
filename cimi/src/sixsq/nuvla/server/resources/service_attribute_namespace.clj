@@ -51,14 +51,11 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.service-attribute-namespace :as san]
-    [sixsq.nuvla.util.response :as response]
-    [superstring.core :as str]))
+    [sixsq.nuvla.util.response :as response]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "ServiceAttributeNamespace")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -115,7 +112,7 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
   (->> query-map
        crud/query
        :body
-       :serviceAttributeNamespaces
+       :resources
        (map k)
        set))
 
@@ -156,7 +153,7 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

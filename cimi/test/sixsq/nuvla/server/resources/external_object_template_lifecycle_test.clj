@@ -57,7 +57,7 @@
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
-                      (ltu/entries eot/resource-tag))]
+                      (ltu/entries))]
 
       (doseq [entry entries]
         (let [ops (ltu/operations->map entry)

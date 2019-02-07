@@ -18,14 +18,11 @@ address. When the callback is triggered, the `validated` flag is set to true.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.email :as email]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as r]
-    [superstring.core :as str]))
+    [sixsq.nuvla.util.response :as r]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "Email")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -117,7 +114,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; collection
 ;;
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

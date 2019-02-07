@@ -11,14 +11,11 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.resource-metadata :as resource-metadata]
-    [sixsq.nuvla.util.response :as r]
-    [superstring.core :as str]))
+    [sixsq.nuvla.util.response :as r]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "ResourceMetadata")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -49,18 +46,6 @@
 ;; atom to keep track of the resource metadata documents for loaded resources
 ;;
 (def templates (atom {}))
-
-
-(defn collection-wrapper-fn
-  "Specialized version of this function that removes the adding
-   of operations to the collection and entries.  These are already
-   part of the stored resources."
-  [resource-name collection-acl collection-uri collection-key]
-  (fn [_ entries]
-    (let [skeleton {:acl         collection-acl
-                    :resourceURI collection-uri
-                    :id          (u/de-camelcase resource-name)}]
-      (assoc skeleton collection-key entries))))
 
 
 (defn complete-resource
@@ -146,7 +131,7 @@
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri resource-tag)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

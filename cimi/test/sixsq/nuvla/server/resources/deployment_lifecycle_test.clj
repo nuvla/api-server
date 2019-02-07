@@ -92,7 +92,7 @@
           (ltu/is-status 200)
           (ltu/is-resource-uri deployment/collection-uri)
           (ltu/is-count #(= 2 %))
-          (ltu/entries deployment/resource-tag))
+          (ltu/entries))
 
       ;; user is able to change name and remove existing description attribute
       ;; but should not able to edit clientAPIKey
@@ -122,7 +122,7 @@
           (ltu/is-status 200)
           (ltu/is-resource-uri deployment/collection-uri)
           (ltu/is-count #(= 2 %))
-          (ltu/entries deployment/resource-tag))
+          (ltu/entries))
 
       ;; user view: OK
       (let [

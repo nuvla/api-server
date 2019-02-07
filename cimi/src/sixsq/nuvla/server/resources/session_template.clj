@@ -48,8 +48,6 @@ a username and password pair stored in SlipStream's internal database.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :sessionTemplates)
-
 (def ^:const resource-name "SessionTemplate")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -155,7 +153,7 @@ a username and password pair stored in SlipStream's internal database.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

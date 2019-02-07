@@ -46,7 +46,7 @@
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
-                      (ltu/entries upt/resource-tag))
+                      (ltu/entries))
           ids (set (map :id entries))
           types (set (map :paramsType entries))]
       (is (pos-int? (count ids)))

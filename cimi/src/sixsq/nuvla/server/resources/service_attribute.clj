@@ -33,8 +33,7 @@ curl https://nuv.la/api/service-attribute
     [sixsq.nuvla.server.resources.service-attribute-namespace :as san]
     [sixsq.nuvla.server.resources.spec.service-attribute :as sa]
     [sixsq.nuvla.util.response :as sr]
-    [ring.util.response :as r]
-    [superstring.core :as str])
+    [ring.util.response :as r])
   (:import
     [java.math BigInteger]
     [java.net URI URISyntaxException]
@@ -43,8 +42,6 @@ curl https://nuv.la/api/service-attribute
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "ServiceAttribute")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -138,7 +135,7 @@ curl https://nuv.la/api/service-attribute
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]
