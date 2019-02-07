@@ -39,11 +39,8 @@ information. Typically this method is available only to service administrators.
    :resourceMetadata (str p/resource-url "-" registration-method)
    :username         "username"
    :password         "password"
-   :firstName        "John"
-   :lastName         "Doe"
+   :full-name        "John Doe"
    :emailAddress     "user@example.com"
-   :organization     ""
-   :roles            ""
    :group            "administrator"
    :icon             "key"
    :hidden           true

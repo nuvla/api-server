@@ -25,34 +25,21 @@
              :username         uname
              :emailAddress     "me@example.com"
 
-             :firstName        "John"
-             :lastName         "Smith"
-             :organization     "MyOrganization"
+             :full-name        "John"
              :method           "direct"
              :href             "user-template/direct"
              :password         "hashed-password"
-             :roles            "alpha,beta,gamma"
              :isSuperUser      false
              :state            "ACTIVE"
              :deleted          false
-             :creation         timestamp
-             :lastOnline       timestamp
-             :lastExecute      timestamp
-             :activeSince      timestamp
-             :githublogin      "github-login"
-             :cyclonelogin     "cyclone-login"
-             :externalIdentity ["github:aGithubLogin"]
              :name             "me@example.com"}]
 
     (stu/is-valid ::user/schema cfg)
-    (stu/is-valid ::user/schema (assoc cfg :externalIdentity nil))
-    (stu/is-valid ::user/schema (update cfg :externalIdentity conj "oidc:aOidcLogin"))
     (stu/is-invalid ::user/schema (assoc cfg :unknown "value"))
 
     (doseq [attr #{:id :resource-type :created :updated :acl :username :emailAddress}]
       (stu/is-invalid ::user/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:firstName :lastName :organization :method :href :password
-                   :roles :isSuperUser :state :deleted :creation :lastOnline
-                   :lastExecute :activeSince :githublogin :cyclonelogin :externalIdentity :name}]
+    (doseq [attr #{:full-name :method :href :password
+                   :roles :isSuperUser :state :deleted :name}]
       (stu/is-valid ::user/schema (dissoc cfg attr)))))

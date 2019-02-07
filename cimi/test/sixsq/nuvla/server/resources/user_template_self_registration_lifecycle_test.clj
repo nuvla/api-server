@@ -214,9 +214,6 @@
                           tags
                           isSuperUser
                           state
-                          lastOnline
-                          activeSince
-                          lastExecute
                           deleted] :as user} (-> session-admin
                                                  (request abs-uri)
                                                  (ltu/body->edn)
@@ -227,8 +224,7 @@
               (is (= tags tags-attr))
               (is (false? isSuperUser))
               (is (= user/initial-state state))
-              (is (false? deleted))
-              (is (= user/epoch lastOnline activeSince lastExecute)))
+              (is (false? deleted)))
 
             ;; edit
             (let [body (-> session-admin
