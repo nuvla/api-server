@@ -24,11 +24,11 @@
              :server          "nuv.la"
              :clientIP        "127.0.0.1"
              :redirectURI     "https://nuv.la/webui/profile"
-             :sessionTemplate {:href "session-template/internal"}}]
+             :template {:href "session-template/internal"}}]
 
     (stu/is-valid ::session/session cfg)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :method :expiry :sessionTemplate}]
+    (doseq [attr #{:id :resourceURI :created :updated :acl :method :expiry :template}]
       (stu/is-invalid ::session/session (dissoc cfg attr)))
 
     (doseq [attr #{:username :server :clientIP}]

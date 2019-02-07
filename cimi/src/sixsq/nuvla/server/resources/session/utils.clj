@@ -58,8 +58,8 @@
   (let [server (or (get headers "slipstream-ssl-server-name") (:slipstream-ssl-server-name headers))
         client-ip (or (get headers "x-real-ip") (:x-real-ip headers))]
     (crud/new-identifier
-      (cond-> {:method          authn-method
-               :sessionTemplate {:href href}}
+      (cond-> {:method   authn-method
+               :template {:href href}}
               username (assoc :username username)
               server (assoc :server server)
               client-ip (assoc :clientIP client-ip)

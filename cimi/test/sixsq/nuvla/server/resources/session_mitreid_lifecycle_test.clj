@@ -52,14 +52,14 @@
     "3wIDAQAB"))
 
 (def configuration-session-mitreid
-  {:template {:service        "session-mitreid" ;;reusing configuration from session MITREid
-                           :instance       instance
-                           :clientID       "FAKE_CLIENT_ID"
-                           :clientSecret   "MyMITREidClientSecret"
-                           :authorizeURL   "https://authorize.mitreid.com/authorize"
-                           :tokenURL       "https://token.mitreid.com/token"
-                           :userProfileURL "https://userinfo.mitreid.com/api/user/me"
-                           :publicKey      auth-pubkey}})
+  {:template {:service        "session-mitreid"             ;;reusing configuration from session MITREid
+              :instance       instance
+              :clientID       "FAKE_CLIENT_ID"
+              :clientSecret   "MyMITREidClientSecret"
+              :authorizeURL   "https://authorize.mitreid.com/authorize"
+              :tokenURL       "https://token.mitreid.com/token"
+              :userProfileURL "https://userinfo.mitreid.com/api/user/me"
+              :publicKey      auth-pubkey}})
 
 
 (deftest lifecycle
@@ -99,15 +99,15 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          ;;valid-create {:sessionTemplate (ltu/strip-unwanted-attrs template)}
+          ;;valid-create {:template (ltu/strip-unwanted-attrs template)}
 
-          href-create {:name            name-attr
-                       :description     description-attr
-                       :tags            tags-attr
-                       :sessionTemplate {:href href}}
-          href-create-redirect {:sessionTemplate {:href        href
-                                                  :redirectURI redirect-uri}}
-          invalid-create (assoc-in href-create [:sessionTemplate :invalid] "BAD")]
+          href-create {:name        name-attr
+                       :description description-attr
+                       :tags        tags-attr
+                       :template    {:href href}}
+          href-create-redirect {:template {:href        href
+                                           :redirectURI redirect-uri}}
+          invalid-create (assoc-in href-create [:template :invalid] "BAD")]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon

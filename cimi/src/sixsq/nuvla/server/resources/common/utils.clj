@@ -227,7 +227,7 @@
   "Allow form encoded data to be supplied for a session. This is required to
    support external authentication methods triggered via a 'submit' button in
    an HTML form. This takes the flat list of form parameters, keywordizes the
-   keys, and adds the parent :sessionTemplate key."
+   keys, and adds the parent :template key."
   [tpl form-data]
   {tpl (walk/keywordize-keys form-data)})
 

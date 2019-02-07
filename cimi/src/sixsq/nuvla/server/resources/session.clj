@@ -35,7 +35,7 @@ must re-authenticate with the server when the token expires.
 > NOTE: To facilitate use of the API from browsers (i.e. javascript), the
 session resources also support request bodies with a media type of
 'application/x-www-form-urlencoded'. When using this media type, encode only
-the value of the 'sessionTemplate key in the example JSON forms.
+the value of the 'template key in the example JSON forms.
 
 > NOTE: The search feature of Session resources will only return the Session
 resource associated with your current session (or none at all if your are not
@@ -47,7 +47,7 @@ via the 'interna' (username and password) method.
 
 ```json
 {
-  \"sessionTemplate\" : {
+  \"template\" : {
                         \"href\" : \"session-template/internal\",
                         \"username\" : \"your-username\",
                         \"password\" : \"your-password\"
@@ -61,7 +61,7 @@ administrator may have chosen a different name.
 
 ```json
 {
-  \"sessionTemplate\" : {
+  \"template\" : {
                         \"href\" : \"session-template/api-key\",
                         \"key\" : \"your-api-key\",
                         \"secret\" : \"your-api-secret\"
@@ -144,7 +144,7 @@ session.
 ;;
 
 (defn dispatch-on-authn-method [resource]
-  (get-in resource [:sessionTemplate :method]))
+  (get-in resource [:template :method]))
 
 (defmulti create-validate-subtype dispatch-on-authn-method)
 
@@ -256,7 +256,7 @@ session.
 (defn convert-request-body
   [{:keys [body form-params headers] :as request}]
   (if (u/is-form? headers)
-    (u/convert-form :sessionTemplate form-params)
+    (u/convert-form :template form-params)
     body))
 
 
@@ -271,16 +271,16 @@ session.
           [cookie-header {:keys [id] :as body}] (-> body
                                                     (assoc :resourceURI create-uri)
                                                     (std-crud/resolve-hrefs idmap true)
-                                                    (update-in [:sessionTemplate] merge desc-attrs) ;; validate desc attrs
+                                                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
-                                                    (:sessionTemplate)
+                                                    (:template)
                                                     (tpl->session request))]
       (-> request
           (assoc :id id :body (merge body desc-attrs))
           add-impl
           (merge cookie-header)))
     (catch Exception e
-      (let [redirectURI (-> request convert-request-body :sessionTemplate :redirectURI)
+      (let [redirectURI (-> request convert-request-body :template :redirectURI)
             {:keys [status] :as http-response} (ex-data e)]
         (if (and redirectURI (= 400 status))
           (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))

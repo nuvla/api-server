@@ -77,7 +77,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-resource-uri st/collection-uri)
-                        (ltu/entries :sessionTemplates))]
+                        (ltu/entries :templates))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 

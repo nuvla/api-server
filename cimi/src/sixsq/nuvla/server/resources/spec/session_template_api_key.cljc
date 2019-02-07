@@ -60,11 +60,10 @@
                      session-template-keys-spec))
 
 ;; Defines the contents of the api-key template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :sessionTemplate here.
-(s/def ::sessionTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      session-template-keys-spec))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::sessionTemplate]}))
+                     {:req-un [::template]}))

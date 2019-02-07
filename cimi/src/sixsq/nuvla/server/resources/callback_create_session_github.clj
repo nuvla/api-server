@@ -21,7 +21,7 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server clientIP redirectURI] {:keys [href]} :sessionTemplate :as current-session} (sutils/retrieve-session-by-id session-id)
+  (let [{:keys [server clientIP redirectURI] {:keys [href]} :template :as current-session} (sutils/retrieve-session-by-id session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirectURI instance)]
     (if-let [code (uh/param-value request :code)]

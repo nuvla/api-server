@@ -56,19 +56,19 @@
 
 (def configuration-session-mitreid
   {:template {:service        "session-mitreid"
-                           :instance       instance
-                           :clientID       "FAKE_CLIENT_ID"
-                           :clientSecret   "MyMITREidClientSecret"
-                           :authorizeURL   "https://authorize.mitreid.com/authorize"
-                           :tokenURL       "https://token.mitreid.com/token"
-                           :userProfileURL "https://userinfo.mitreid.com/api/user/me"
-                           :publicKey      auth-pubkey}})
+              :instance       instance
+              :clientID       "FAKE_CLIENT_ID"
+              :clientSecret   "MyMITREidClientSecret"
+              :authorizeURL   "https://authorize.mitreid.com/authorize"
+              :tokenURL       "https://token.mitreid.com/token"
+              :userProfileURL "https://userinfo.mitreid.com/api/user/me"
+              :publicKey      auth-pubkey}})
 
 
 (def configuration-session-mitreid-token
   {:template {:service   "session-mitreid-token"
-                           :instance  instance
-                           :clientIPs [valid-ip]}})
+              :instance  instance
+              :clientIPs [valid-ip]}})
 
 
 (deftest lifecycle
@@ -144,14 +144,14 @@
               description-attr "description"
               tags-attr ["one", "two"]
 
-              valid-create {:name            name-attr
-                            :description     description-attr
-                            :tags            tags-attr
-                            :sessionTemplate {:href  href
-                                              :token access-token}}
+              valid-create {:name        name-attr
+                            :description description-attr
+                            :tags        tags-attr
+                            :template    {:href  href
+                                          :token access-token}}
 
-              valid-create-redirect (assoc-in valid-create [:sessionTemplate :redirectURI] "http://redirect.example.org")
-              invalid-create (assoc-in valid-create [:sessionTemplate :invalid] "BAD")]
+              valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
+              invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
           ;; invalid create should return a 400
           (-> session-anon

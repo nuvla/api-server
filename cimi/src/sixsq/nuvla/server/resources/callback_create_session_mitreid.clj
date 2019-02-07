@@ -24,7 +24,7 @@
 (defn validate-session
   [{{session-id :href} :targetResource callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
 
-  (let [{:keys [server clientIP redirectURI] {:keys [href]} :sessionTemplate :as current-session} (sutils/retrieve-session-by-id session-id)
+  (let [{:keys [server clientIP redirectURI] {:keys [href]} :template :as current-session} (sutils/retrieve-session-by-id session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [clientID clientSecret publicKey tokenURL]} (oidc-utils/config-mitreid-params redirectURI instance)]
     (if-let [code (uh/param-value request :code)]

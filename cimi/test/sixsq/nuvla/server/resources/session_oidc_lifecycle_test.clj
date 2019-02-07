@@ -52,12 +52,12 @@
     "3wIDAQAB"))
 
 (def configuration-session-oidc {:template {:service      "session-oidc"
-                                                         :instance     instance
-                                                         :clientID     "FAKE_CLIENT_ID"
-                                                         :clientSecret "MyOIDCClientSecret"
-                                                         :authorizeURL "https://authorize.oidc.com/authorize"
-                                                         :tokenURL     "https://token.oidc.com/token"
-                                                         :publicKey    auth-pubkey}})
+                                            :instance     instance
+                                            :clientID     "FAKE_CLIENT_ID"
+                                            :clientSecret "MyOIDCClientSecret"
+                                            :authorizeURL "https://authorize.oidc.com/authorize"
+                                            :tokenURL     "https://token.oidc.com/token"
+                                            :publicKey    auth-pubkey}})
 
 (deftest lifecycle
 
@@ -97,15 +97,15 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          ;;valid-create {:sessionTemplate (ltu/strip-unwanted-attrs template)}
-          href-create {:name            name-attr
-                       :description     description-attr
-                       :tags            tags-attr
-                       :sessionTemplate {:href href}}
+          ;;valid-create {:template (ltu/strip-unwanted-attrs template)}
+          href-create {:name        name-attr
+                       :description description-attr
+                       :tags        tags-attr
+                       :template    {:href href}}
 
-          href-create-redirect {:sessionTemplate {:href        href
-                                                  :redirectURI redirect-uri}}
-          invalid-create (assoc-in href-create [:sessionTemplate :invalid] "BAD")]
+          href-create-redirect {:template {:href        href
+                                           :redirectURI redirect-uri}}
+          invalid-create (assoc-in href-create [:template :invalid] "BAD")]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon

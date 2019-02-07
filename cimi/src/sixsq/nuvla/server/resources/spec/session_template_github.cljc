@@ -12,10 +12,9 @@
   (su/only-keys-maps ps/resource-keys-spec))
 
 ;; Defines the contents of the github template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :sessionTemplate here.
-(s/def ::sessionTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::sessionTemplate]}))
+                     {:req-un [::template]}))

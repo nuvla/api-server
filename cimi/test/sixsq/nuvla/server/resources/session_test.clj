@@ -21,5 +21,5 @@
                            false? {"content-type" "application/json"}))
 
 (deftest check-convert-form
-  (is (= {:sessionTemplate {:alpha "alpha", :beta "beta"}}
-         (u/convert-form :sessionTemplate {:alpha "alpha", "beta" "beta"}))))
+  (is (= {:template {:alpha "alpha", :beta "beta"}}
+         (u/convert-form :template {:alpha "alpha", "beta" "beta"}))))

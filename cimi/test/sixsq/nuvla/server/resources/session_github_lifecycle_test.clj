@@ -40,9 +40,9 @@
                               :acl         st/resource-acl})
 
 (def configuration-session-github {:template {:service      "session-github"
-                                                           :instance     instance
-                                                           :clientID     "FAKE_CLIENT_ID"
-                                                           :clientSecret "ABCDEF..."}})
+                                              :instance     instance
+                                              :clientID     "FAKE_CLIENT_ID"
+                                              :clientSecret "ABCDEF..."}})
 
 ;; callback state reset between tests
 (defn reset-callback! [callback-id]
@@ -86,14 +86,14 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          href-create {:name            name-attr
-                       :description     description-attr
-                       :tags            tags-attr
-                       :sessionTemplate {:href href}}
-          href-create-redirect {:sessionTemplate {:href        href
-                                                  :redirectURI redirect-uri-example}}
-          invalid-create (assoc-in href-create [:sessionTemplate :invalid] "BAD")
-          invalid-create-redirect (assoc-in href-create-redirect [:sessionTemplate :invalid] "BAD")]
+          href-create {:name        name-attr
+                       :description description-attr
+                       :tags        tags-attr
+                       :template    {:href href}}
+          href-create-redirect {:template {:href        href
+                                           :redirectURI redirect-uri-example}}
+          invalid-create (assoc-in href-create [:template :invalid] "BAD")
+          invalid-create-redirect (assoc-in href-create-redirect [:template :invalid] "BAD")]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon
