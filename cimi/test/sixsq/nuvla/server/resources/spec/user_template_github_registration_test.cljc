@@ -28,11 +28,11 @@
              :method      "github-registration"
              :instance    "github-registration"}
 
-        create-tpl {:name         "my-create"
-                    :description  "my create description"
-                    :tags         #{"3", "4"}
-                    :resourceURI  "http://sixsq.com/slipstream/1/UserTemplateCreate"
-                    :userTemplate (dissoc tpl :id)}]
+        create-tpl {:name        "my-create"
+                    :description "my create description"
+                    :tags        #{"3", "4"}
+                    :resourceURI "http://sixsq.com/slipstream/1/UserTemplateCreate"
+                    :template    (dissoc tpl :id)}]
 
     ;; check the registration schema (without href)
     (stu/is-valid ::ut-github/schema tpl)
@@ -45,10 +45,10 @@
 
     ;; check the create template schema (with href)
     (stu/is-valid ::ut-github/schema-create create-tpl)
-    (stu/is-valid ::ut-github/schema-create (assoc-in create-tpl [:userTemplate :href] "user-template/abc"))
-    (stu/is-invalid ::ut-github/schema-create (assoc-in create-tpl [:userTemplate :href] "bad-reference/abc"))
+    (stu/is-valid ::ut-github/schema-create (assoc-in create-tpl [:template :href] "user-template/abc"))
+    (stu/is-invalid ::ut-github/schema-create (assoc-in create-tpl [:template :href] "bad-reference/abc"))
 
-    (doseq [attr #{:resourceURI :userTemplate}]
+    (doseq [attr #{:resourceURI :template}]
       (stu/is-invalid ::ut-github/schema-create (dissoc create-tpl attr)))
 
     (doseq [attr #{:name :description :group :tags}]

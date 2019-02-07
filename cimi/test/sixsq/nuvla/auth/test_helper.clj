@@ -20,7 +20,7 @@
 (def req-u-role "ADMIN")
 
 
-(def req-template {:userTemplate
+(def req-template {:template
                    {:href   (str ct/resource-url "/" direct/registration-method)
                     :method "direct"}})
 
@@ -41,7 +41,7 @@
   [{:keys [password state] :as user}]
   (->> (assoc user :password (ia/hash-password password)
                    :state (or state "ACTIVE"))
-       (update-in request-base [:body :userTemplate] merge)))
+       (update-in request-base [:body :template] merge)))
 
 
 (defn add-user-for-test!

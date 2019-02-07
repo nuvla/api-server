@@ -32,11 +32,10 @@
                      user-template-keys-spec-req))
 
 ;; Defines the contents of the direct template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :userTemplate here.
-(s/def ::userTemplate
+(s/def ::template
   (su/only-keys-maps user-template/template-keys-spec
                      user-template-create-keys-spec-req))
 
 (s/def ::schema-create
   (su/only-keys-maps user-template/create-keys-spec
-                     {:opt-un [::userTemplate]}))
+                     {:opt-un [::template]}))

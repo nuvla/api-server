@@ -32,7 +32,7 @@
                      user-params-template-exec-keys-spec))
 
 ;; Defines the contents of the auto template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :userTemplate here.
+;; NOTE: The name must match the key defined by the resource, :userParamTemplate here.
 (s/def :cimi.user-params-template.exec/userParamTemplate
   (su/only-keys-maps ps/template-keys-spec
                      user-params-template-exec-keys-spec))

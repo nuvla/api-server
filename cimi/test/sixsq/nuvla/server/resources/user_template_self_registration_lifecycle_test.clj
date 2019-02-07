@@ -87,28 +87,28 @@
               tags-attr ["one", "two"]
               plaintext-password "plaintext-password"
 
-              no-href-create {:userTemplate (ltu/strip-unwanted-attrs (assoc template
-                                                                        :username uname
-                                                                        :password plaintext-password
-                                                                        :passwordRepeat plaintext-password
-                                                                        :emailAddress "user@example.org"))}
-              href-create {:name         name-attr
-                           :description  description-attr
-                           :tags         tags-attr
-                           :userTemplate {:href           href
-                                          :username       uname
-                                          :password       plaintext-password
-                                          :passwordRepeat plaintext-password
-                                          :emailAddress   "jane@example.org"}}
+              no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
+                                                                    :username uname
+                                                                    :password plaintext-password
+                                                                    :passwordRepeat plaintext-password
+                                                                    :emailAddress "user@example.org"))}
+              href-create {:name        name-attr
+                           :description description-attr
+                           :tags        tags-attr
+                           :template    {:href           href
+                                         :username       uname
+                                         :password       plaintext-password
+                                         :passwordRepeat plaintext-password
+                                         :emailAddress   "jane@example.org"}}
 
-              href-create-alt (assoc-in href-create [:userTemplate :username] uname-alt)
+              href-create-alt (assoc-in href-create [:template :username] uname-alt)
 
-              href-create-redirect (assoc-in href-create-alt [:userTemplate :redirectURI] "http://redirect.example.org")
+              href-create-redirect (assoc-in href-create-alt [:template :redirectURI] "http://redirect.example.org")
 
-              invalid-create (assoc-in href-create [:userTemplate :href] "user-template/unknown-template")
+              invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
 
-              bad-params-create (assoc-in href-create [:userTemplate :invalid] "BAD")
-              bad-params-create-redirect (assoc-in href-create-redirect [:userTemplate :invalid] "BAD")]
+              bad-params-create (assoc-in href-create [:template :invalid] "BAD")
+              bad-params-create-redirect (assoc-in href-create-redirect [:template :invalid] "BAD")]
 
 
           ;; user collection query should succeed but be empty for all users

@@ -65,7 +65,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; different create (registration) requests may take different inputs
 ;;
 (defn dispatch-on-registration-method [resource]
-  (get-in resource [:userTemplate :method]))
+  (get-in resource [:template :method]))
 
 (defmulti create-validate-subtype dispatch-on-registration-method)
 
@@ -179,16 +179,16 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
   (try
     (let [idmap {:identity (:identity request)}
-          body (if (u/is-form? headers) (u/convert-form :userTemplate form-params) body)
-          authn-method (-> body :userTemplate :method)
+          body (if (u/is-form? headers) (u/convert-form :template form-params) body)
+          authn-method (-> body :template :method)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
                                                     (assoc :resourceURI create-uri)
-                                                    (update-in [:userTemplate] dissoc :method :id) ;; forces use of template reference
+                                                    (update-in [:template] dissoc :method :id) ;; forces use of template reference
                                                     (std-crud/resolve-hrefs idmap true)
-                                                    (update-in [:userTemplate] merge desc-attrs) ;; validate desc attrs
+                                                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
-                                                    (:userTemplate)
+                                                    (:template)
                                                     (merge-with-defaults)
                                                     (tpl->user request) ;; returns a tuple [response-fragment, resource-body]
                                                     (merge desc-attrs)
@@ -212,7 +212,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                   (post-user-add (assoc body :id resource-id) request))
                 result)))
     (catch Exception e
-      (let [redirectURI (get-in body [:userTemplate :redirectURI])
+      (let [redirectURI (get-in body [:template :redirectURI])
             {:keys [status] :as http-response} (ex-data e)]
         (if (and redirectURI (= 400 status))
           (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))

@@ -15,12 +15,11 @@
 
 
 ;; Defines the contents of the oidc-registration template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :userTemplate here.
-(s/def ::userTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      user-template-oidc-registration-keys-href))
 
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::userTemplate]}))
+                     {:req-un [::template]}))

@@ -146,7 +146,7 @@
      :params       {:resource-name "user"}
      :route-params {:resource-name "user"}
      :user-roles   #{"ANON"}
-     :body         {:userTemplate user-resource}}))
+     :body         {:template user-resource}}))
 
 
 (defn user-param-create-request
