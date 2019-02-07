@@ -26,15 +26,14 @@
                       :opt-un [:cimi.connector-template.alpha/objectStoreEndpoint]}))
 
 ;; Defines the contents of the alpha template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :connectorTemplate here.
-(s/def :cimi.connector-template.alpha/connectorTemplate
+(s/def :cimi.connector-template.alpha/template
   (su/only-keys-maps ps/template-keys-spec
                      {:opt-un [:cimi.connector-template.alpha/alphaKey
                                :cimi.connector-template.alpha/objectStoreEndpoint]}))
 
 (s/def :cimi/connector-template.alpha-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:opt-un [:cimi.connector-template.alpha/connectorTemplate]}))
+                     {:opt-un [:cimi.connector-template.alpha/template]}))
 
 ;;
 ;; resource

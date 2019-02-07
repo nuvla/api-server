@@ -78,10 +78,10 @@
 
 (defn create-connector-fixture!
   [f]
-  (let [con-create {:connectorTemplate {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
-                                        :alphaKey            1234
-                                        :instanceName        connector-name
-                                        :objectStoreEndpoint obj-store-endpoint}}]
+  (let [con-create {:template {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
+                               :alphaKey            1234
+                               :instanceName        connector-name
+                               :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
         (request (str p/service-context (u/de-camelcase c/resource-name))
                  :request-method :post
