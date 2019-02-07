@@ -51,9 +51,9 @@
         session-user (header session-anon authn-info-header eoltu/user-info-header)
         base-uri (str p/service-context (u/de-camelcase eo/resource-name))
         template (eoltu/get-template (str p/service-context eot/resource-url "/" public/objectType))
-        create-href {:externalObjectTemplate (-> (external-object)
-                                                 (assoc :href (:id template))
-                                                 (dissoc :objectType))}]
+        create-href {:template (-> (external-object)
+                                   (assoc :href (:id template))
+                                   (dissoc :objectType))}]
 
     ;; Create the test object.
     (-> session-user

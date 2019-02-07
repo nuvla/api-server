@@ -70,7 +70,7 @@
 ;;
 
 (defn dispatch-on-object-type [resource]
-  (get-in resource [:externalObjectTemplate :objectType]))
+  (get-in resource [:template :objectType]))
 
 
 (defmulti create-validate-subtype dispatch-on-object-type)
@@ -199,22 +199,22 @@
 
 (defn check-cred-exists
   [body idmap]
-  (let [href (get-in body [:externalObjectTemplate :objectStoreCred])]
+  (let [href (get-in body [:template :objectStoreCred])]
     (std-crud/resolve-hrefs href idmap))
   body)
 
 (defn resolve-hrefs
   [body idmap]
-  (let [os-cred-href (if (contains? (:externalObjectTemplate body) :objectStoreCred)
-                       {:objectStoreCred (get-in body [:externalObjectTemplate :objectStoreCred])}
+  (let [os-cred-href (if (contains? (:template body) :objectStoreCred)
+                       {:objectStoreCred (get-in body [:template :objectStoreCred])}
                        {})]                                 ;; to put back the unexpanded href after
     (-> body
         (check-cred-exists idmap)
         ;; remove connector href (if any); regular user MAY NOT have rights to see it
-        (update-in [:externalObjectTemplate] dissoc :objectStoreCred)
+        (update-in [:template] dissoc :objectStoreCred)
         (std-crud/resolve-hrefs idmap)
         ;; put back unexpanded connector href
-        (update-in [:externalObjectTemplate] merge os-cred-href))))
+        (update-in [:template] merge os-cred-href))))
 
 
 (def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
@@ -222,15 +222,15 @@
 
 (defn merge-into-tmpl
   [body]
-  (if-let [href (get-in body [:externalObjectTemplate :href])]
+  (if-let [href (get-in body [:template :href])]
     (let [tmpl (-> (get @eot/templates href)
                    u/strip-service-attrs
                    u/strip-common-attrs
                    (dissoc :acl))
           user-resource (-> body
-                            :externalObjectTemplate
+                            :template
                             (dissoc :href))]
-      (assoc-in body [:externalObjectTemplate] (merge tmpl user-resource)))
+      (assoc-in body [:template] (merge tmpl user-resource)))
     body))
 
 ;; requires a ExternalObjectTemplate to create new ExternalObject
@@ -244,7 +244,7 @@
                  (merge-into-tmpl)
                  (resolve-hrefs idmap)
                  (crud/validate)
-                 (:externalObjectTemplate)
+                 :template
                  (tpl->externalObject)
                  (assoc :state state-new))]
     (s3/ok-to-add-external-resource? body request)

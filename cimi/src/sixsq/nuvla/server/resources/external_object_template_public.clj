@@ -40,7 +40,7 @@
   [resource]
   (create-validate-fn resource))
 
-(def validate-fn (u/create-spec-validation-fn ::eot-public/externalObjectTemplate))
+(def validate-fn (u/create-spec-validation-fn ::eot-public/template))
 (defmethod eot/validate-subtype-template objectType
   [resource]
   (validate-fn resource))
