@@ -23,17 +23,11 @@
   ([authn-method external-login external-email instance]
    (log/infof "Creating new SlipStream user with external (%s) user '%s'"
               authn-method external-login)
-   (let [user-name (db/create-user! authn-method external-login external-email instance)]
-     (when user-name
-       (db/create-user-params! user-name))
-     user-name))
+   (db/create-user! authn-method external-login external-email instance))
 
   ([{:keys [authn-login] :as user-record}]
    (log/infof "Creating new SlipStream user '%s'" authn-login)
-   (let [user-name (db/create-user! user-record)]
-     (when user-name
-       (db/create-user-params! user-name))
-     user-name)))
+   (db/create-user! user-record)))
 
 
 (defn match-existing-external-user

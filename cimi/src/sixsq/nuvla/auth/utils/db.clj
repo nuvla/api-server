@@ -1,10 +1,8 @@
 (ns sixsq.nuvla.auth.utils.db
   (:require
-    [clojure.string :as str]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.user-params-template-exec :as up-tmpl-exec])
+    [sixsq.nuvla.server.resources.common.crud :as crud])
   (:import
     (java.util UUID)))
 
@@ -25,13 +23,6 @@
   []
   (try
     (second (db/query resource-name {:user-roles ["ADMIN"]}))
-    (catch Exception _ [])))
-
-
-(defn get-all-user-params
-  []
-  (try
-    (second (db/query "user-param" {:user-roles ["ADMIN"]}))
     (catch Exception _ [])))
 
 
@@ -147,25 +138,6 @@
      :route-params {:resource-name "user"}
      :user-roles   #{"ANON"}
      :body         {:template user-resource}}))
-
-
-(defn user-param-create-request
-  [user-name]
-  {:identity     {:current user-name
-                  :authentications
-                           {user-name {:roles #{"USER"}, :identity user-name}}}
-   :sixsq.slipstream.authn/claims
-                 {:username user-name, :roles "USER"}
-   :params       {:resource-name "user-param"}
-   :route-params {:resource-name "user-param"}
-   :user-roles   #{"USER"}
-   :body         {:template up-tmpl-exec/resource}})
-
-
-(defn create-user-params!
-  [user-name]
-  (crud/add (user-param-create-request user-name)))
-
 
 
 (defn create-user!

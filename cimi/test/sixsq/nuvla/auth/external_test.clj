@@ -91,10 +91,8 @@
                                                                   :instance          "instance"
                                                                   :fail-on-existing? false}))))
 
-    (let [users (db/get-all-users)
-          user-params (db/get-all-user-params)]
-      (is (= (+ 2 (count authn-methods)) (count users)))
-      (is (= (+ 1 (count authn-methods)) (count user-params))))
+    (let [users (db/get-all-users)]
+      (is (= (+ 2 (count authn-methods)) (count users))))
 
 
     (doseq [authn-method authn-methods]
@@ -104,10 +102,8 @@
                                                                                    :fail-on-existing? false}))))
 
 
-    (let [users (db/get-all-users)
-          user-params (db/get-all-user-params)]
-      (is (= (* 3 (count authn-methods))) (count users))
-      (is (= (* 3 (count authn-methods))) (count user-params)))
+    (let [users (db/get-all-users)]
+      (is (= (* 3 (count authn-methods))) (count users)))
 
 
     (doseq [authn-method authn-methods]
@@ -116,10 +112,8 @@
                                                :state             "DELETED"
                                                :fail-on-existing? true}))))
 
-    (let [users (db/get-all-users)
-          user-params (db/get-all-user-params)]
-      (is (= (+ 2 (* 2 (count authn-methods))) (count users)))
-      (is (= (+ 1 (* 2 (count authn-methods))) (count user-params))))))
+    (let [users (db/get-all-users)]
+      (is (= (+ 2 (* 2 (count authn-methods))) (count users))))))
 
 
 (deftest test-new-user-with-params!
@@ -127,18 +121,7 @@
     (is (zero? (count users)))
 
     (is (= [(str (name :github) ":" "missing")] (get-identifiers :github {:external-login "missing"
-                                                                          :external-email "ok@example.com"})))
-
-    (let [user-params (db/get-all-user-params)
-          user-id (str "user/" (-> user-params
-                                   first
-                                   (get-in [:acl :owner :principal])))]
-
-      (is (= (str (name :github) ":" "missing") (-> user-id
-                                                    (uiu/find-identities-by-user)
-                                                    first
-                                                    :identifier)))
-      (is (= 1 (count user-params))))))
+                                                                          :external-email "ok@example.com"})))))
 
 
 (deftest test-new-user-with-instance-params!
@@ -147,14 +130,4 @@
     (is (= ["instance:missing"] (get-identifiers :oidc {:external-login "missing"
                                                         :external-email "ok@example.com"
                                                         :instance       "instance"
-                                                        })))
-
-    (let [user-params (db/get-all-user-params)
-          user-id (str "user/" (-> user-params
-                                   first
-                                   (get-in [:acl :owner :principal])))]
-      (is (= "instance:missing" (-> user-id
-                                    (uiu/find-identities-by-user)
-                                    first
-                                    :identifier)))
-      (is (= 1 (count user-params))))))
+                                                        })))))
