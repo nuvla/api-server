@@ -89,7 +89,7 @@ internal-identity
                      :resourceURI collection-uri
                      :id          (u/de-camelcase resource-name)}
            entries-result (cond->> entries
-                                   with-entries-op? (map #(crud/set-operations % request) entries))]
+                                   with-entries-op? (map #(crud/set-operations % request)))]
 
        (-> skeleton
            (crud/set-operations request)
