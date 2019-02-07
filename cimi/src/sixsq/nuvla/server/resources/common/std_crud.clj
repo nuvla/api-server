@@ -87,9 +87,13 @@ internal-identity
    (fn [request entries]
      (let [skeleton {:acl         collection-acl
                      :resourceURI collection-uri
-                     :id          (u/de-camelcase resource-name)}]
-       (cond-> (crud/set-operations skeleton request)
-               with-entries-op? (assoc :resources (map #(crud/set-operations % request) entries)))))))
+                     :id          (u/de-camelcase resource-name)}
+           entries-result (cond->> entries
+                                   with-entries-op? (map #(crud/set-operations % request) entries))]
+
+       (-> skeleton
+           (crud/set-operations request)
+           (assoc :resources entries-result))))))
 
 
 (defn query-fn
