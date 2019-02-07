@@ -20,7 +20,7 @@
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumerWritable false
 
              :json-schema/displayName "method"
              :json-schema/description "user creation method"
@@ -43,7 +43,7 @@
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumerWritable false
 
              :json-schema/displayName "instance"
              :json-schema/description "instance name of user creation method"
