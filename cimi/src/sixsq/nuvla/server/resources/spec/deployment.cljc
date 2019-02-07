@@ -135,7 +135,7 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::deploymentTemplate ::cimi-common/resource-link)
+(s/def ::template ::cimi-common/resource-link)
 
 
 (def ^:const external-object-id-regex #"^external-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -203,7 +203,7 @@
                         deployment-template/deployment-template-keys-spec
                         {:req-un [::state
                                   ::clientAPIKey]
-                         :opt-un [::deploymentTemplate
+                         :opt-un [::template
                                   ::sshPublicKeys
                                   ::externalObjects
                                   ::serviceOffers]}]))

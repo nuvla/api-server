@@ -35,28 +35,28 @@
                                   :disk       300}]})
 
 
-(def valid-deployment {:id                 (str d/resource-url "/connector-uuid")
-                       :resourceURI        d/resource-uri
-                       :created            timestamp
-                       :updated            timestamp
-                       :acl                valid-acl
+(def valid-deployment {:id               (str d/resource-url "/connector-uuid")
+                       :resourceURI      d/resource-uri
+                       :created          timestamp
+                       :updated          timestamp
+                       :acl              valid-acl
 
-                       :state              "STARTED"
+                       :state            "STARTED"
 
-                       :clientAPIKey       {:href   "credential/uuid"
-                                            :secret "api secret"}
+                       :clientAPIKey     {:href   "credential/uuid"
+                                          :secret "api secret"}
 
-                       :deploymentTemplate {:href "deployment-template/uuid-1"}
+                       :template         {:href "deployment-template/uuid-1"}
 
-                       :sshPublicKeys      ["ssh-rsa key1..." "ssh-rsa key2..."]
+                       :sshPublicKeys    ["ssh-rsa key1..." "ssh-rsa key2..."]
 
-                       :outputParameters   [{:parameter "param-1"}]
-                       :module             (merge {:href "my-module-uuid"} valid-module)
+                       :outputParameters [{:parameter "param-1"}]
+                       :module           (merge {:href "my-module-uuid"} valid-module)
 
-                       :externalObjects    ["external-object/uuid1" "external-object/uuid2"]
-                       :serviceOffers      {:service-offer/uuid1 ["service-offer/dataset1" "service-offer/dataset2"]
-                                            :service-offer/uuid2 nil
-                                            :service-offer/uuid3 ["service-offer/dataset3"]}})
+                       :externalObjects  ["external-object/uuid1" "external-object/uuid2"]
+                       :serviceOffers    {:service-offer/uuid1 ["service-offer/dataset1" "service-offer/dataset2"]
+                                          :service-offer/uuid2 nil
+                                          :service-offer/uuid3 ["service-offer/dataset3"]}})
 
 
 (deftest test-schema-check
@@ -73,5 +73,5 @@
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:deploymentTemplate :sshPublicKeys :externalObjects :serviceOffers}]
+  (doseq [k #{:template :sshPublicKeys :externalObjects :serviceOffers}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))
