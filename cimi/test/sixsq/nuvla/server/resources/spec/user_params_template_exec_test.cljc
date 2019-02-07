@@ -13,7 +13,7 @@
                          :type      "ROLE"
                          :right     "VIEW"}]})
 
-(def common-req-attrs #{:id :resourceURI :updated :created :acl})
+(def common-req-attrs #{:id :resource-type :updated :created :acl})
 
 (defn only-not-common-req-attrs
   [m]
@@ -22,7 +22,7 @@
 (deftest test-schema-check
   (let [timestamp "1972-10-08T10:00:00.0Z"
         root      {:id                  (str upt/resource-url "/" upte/params-type)
-                   :resourceURI         upt/resource-uri
+                   :resource-type         upt/resource-uri
                    :created             timestamp
                    :updated             timestamp
                    :acl                 valid-acl

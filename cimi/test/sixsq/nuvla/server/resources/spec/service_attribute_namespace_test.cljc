@@ -23,7 +23,7 @@
    :uri         "https://schema.org/schema1"
    :updated     timestamp
    :created     timestamp
-   :resourceURI sn/resource-uri})
+   :resource-type sn/resource-uri})
 
 
 (deftest check-prefix
@@ -56,5 +56,5 @@
   (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :uri ""))
   (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :prefix ""))
 
-  (doseq [k #{:id :resourceURI :created :updated :acl :prefix :uri}]
+  (doseq [k #{:id :resource-type :created :updated :acl :prefix :uri}]
     (stu/is-invalid ::san/service-attribute-namespace (dissoc valid-namespace k))))

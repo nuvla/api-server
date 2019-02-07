@@ -21,7 +21,7 @@
 
 
 (def common {:id          (str t/resource-url "/abcdef")
-             :resourceURI t/resource-uri
+             :resource-type t/resource-uri
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl})
@@ -41,7 +41,7 @@
 
   (stu/is-valid ::spec/resource-metadata valid)
 
-  (doseq [attr #{:id :resourceURI :created :updated :acl :typeURI}]
+  (doseq [attr #{:id :resource-type :created :updated :acl :typeURI}]
     (stu/is-invalid ::spec/resource-metadata (dissoc valid attr)))
 
   (doseq [attr #{:actions :attributes :capabilities :vscope}]

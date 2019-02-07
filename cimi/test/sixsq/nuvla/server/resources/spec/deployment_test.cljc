@@ -16,7 +16,7 @@
 
 
 (def valid-module {:id          (str d/resource-url "/connector-uuid")
-                   :resourceURI d/resource-uri
+                   :resource-type d/resource-uri
                    :created     timestamp
                    :updated     timestamp
                    :acl         valid-acl
@@ -36,7 +36,7 @@
 
 
 (def valid-deployment {:id               (str d/resource-url "/connector-uuid")
-                       :resourceURI      d/resource-uri
+                       :resource-type      d/resource-uri
                        :created          timestamp
                        :updated          timestamp
                        :acl              valid-acl
@@ -69,7 +69,7 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :serviceOffers {"BAD_ID" nil}))
 
   ;; required attributes
-  (doseq [k #{:id :resourceURI :created :updated :acl :state :module}]
+  (doseq [k #{:id :resource-type :created :updated :acl :state :module}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes

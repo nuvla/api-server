@@ -114,10 +114,10 @@ where the value is the `id` of the User resource without the 'user/' prefix.
           "Transforms the UserParamTemplate into a UserParams resource."
           :paramsType)
 
-;; default implementation just updates the resourceURI
+;; default implementation just updates the resource-type
 (defmethod tpl->user-params :default
   [resource]
-  (assoc resource :resourceURI resource-uri))
+  (assoc resource :resource-type resource-uri))
 
 ;;
 ;; CRUD operations
@@ -152,7 +152,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
   (conflict-if-exists request)
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resourceURI create-uri)
+                 (assoc :resource-type create-uri)
                  (crud/validate)
                  :template
                  (tpl->user-params request))]

@@ -33,7 +33,7 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
 ```json
 {
   \"id\" : \"service-attribute-namespace/exoscale\",
-  \"resourceURI\" : \"http://sixsq.com/slipstream/1/ServiceAttributeNamespace\",
+  \"resource-type\" : \"http://sixsq.com/slipstream/1/ServiceAttributeNamespace\",
   \"created\" : \"2017-04-27T08:41:39.470Z\",
   \"updated\" : \"2017-04-27T08:41:39.470Z\",
 

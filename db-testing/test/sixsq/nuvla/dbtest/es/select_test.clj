@@ -18,7 +18,7 @@
                        (for [n (range n)]
                          [(eu/random-index-name)
                           (eu/edn->json {:_acl-users  ["admin"]
-                                         :resourceURI "resource-uri"
+                                         :resource-type "resource-uri"
                                          :number      n
                                          :doubled     (* 2 n)
                                          :x1          "x1"
@@ -33,14 +33,14 @@
       (let [result (eu/search client index type {:user-name   "admin"
                                                  :cimi-params {:first  1
                                                                :last   (* 2 n)
-                                                               :select #{"resourceURI" "doubled" "x*"}}})
+                                                               :select #{"resource-type" "doubled" "x*"}}})
 
             total (-> result :hits :total)
             docs (map :_source (-> result :hits :hits))]
 
         (is (= n total))
 
-        (is (every? :resourceURI docs))
+        (is (every? :resource-type docs))
         (is (every? :doubled docs))
         (is (every? :x1 docs))
         (is (every? :x2 docs))
@@ -49,11 +49,11 @@
 
       ;; test get
       (let [doc (-> (eu/read client index type uuid {:user-name   "admin"
-                                                     :cimi-params {:select #{"resourceURI" "doubled"}}})
+                                                     :cimi-params {:select #{"resource-type" "doubled"}}})
                     (.getSourceAsString)
                     (eu/json->edn))]
 
-        (is (:resourceURI doc))
+        (is (:resource-type doc))
         (is (:doubled doc))
         (is (nil? (:x1 doc)))
         (is (nil? (:x2 doc)))

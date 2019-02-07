@@ -437,7 +437,7 @@
 
 (def ^:const user-common-attrs
   {:req-un [::id
-            ::cimi-common/resourceURI
+            ::cimi-common/resource-type
             ::cimi-common/created
             ::cimi-common/updated
             ::cimi-common/acl]

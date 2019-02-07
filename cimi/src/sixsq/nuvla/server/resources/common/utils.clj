@@ -67,9 +67,9 @@
   (second (split-resource-id resource-id)))
 
 
-(defn cimi-collection? [resourceURI]
-  (and (instance? String resourceURI)
-       (.endsWith ^String resourceURI "Collection")))
+(defn cimi-collection? [resource-type]
+  (and (instance? String resource-type)
+       (.endsWith ^String resource-type "Collection")))
 
 (defn md5 [^String s]
   (let [algorithm (MessageDigest/getInstance "MD5")
@@ -88,15 +88,15 @@
 (defn strip-service-attrs
   "Strips common attributes from the map whose values are controlled
    entirely by the service.  These include :id, :created, :updated,
-   :resourceURI, and :operations."
+   :resource-type, and :operations."
   [m]
-  (dissoc m :id :created :updated :resourceURI :operations))
+  (dissoc m :id :created :updated :resource-type :operations))
 
 (defn strip-select-from-mandatory-attrs
   "Strips non removable attributes from the set. These include
-  :id :created :updated :resourceURI :acl"
+  :id :created :updated :resource-type :acl"
   [s]
-  (disj s :id :created :updated :resourceURI :acl))
+  (disj s :id :created :updated :resource-type :acl))
 
 (defn unparse-timestamp-datetime
   "Returns the string representation of the given timestamp."

@@ -76,13 +76,13 @@
           "Transforms the ConfigurationTemplate into a Configuration resource."
           :service)
 
-;; default implementation just removes href and updates the resourceURI
+;; default implementation just removes href and updates the resource-type
 (defmethod tpl->configuration :default
   [{:keys [href] :as resource}]
   (cond-> resource
       href (assoc :template {:href href})
       true (dissoc :href)
-      true (assoc :resourceURI resource-uri)))
+      true (assoc :resource-type resource-uri)))
 
 ;;
 ;; CRUD operations
@@ -96,7 +96,7 @@
   (let [idmap {:identity (:identity request)}
         desc-attrs (u/select-desc-keys body)
         body (-> body
-                 (assoc :resourceURI create-uri)
+                 (assoc :resource-type create-uri)
                  (std-crud/resolve-hrefs idmap true)
                  (update-in [:template] merge desc-attrs) ;; validate desc attrs
                  (crud/validate)

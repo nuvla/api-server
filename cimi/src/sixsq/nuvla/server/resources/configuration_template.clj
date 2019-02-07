@@ -40,13 +40,13 @@
 
 (defn complete-resource
   "Completes the given document with server-managed information:
-   resourceURI, timestamps, operations, and ACL."
+   resource-type, timestamps, operations, and ACL."
   [{:keys [service] :as resource}]
   (when service
     (let [id (str resource-url "/" service)]
       (-> resource
           (merge {:id          id
-                  :resourceURI resource-uri
+                  :resource-type resource-uri
                   :acl         resource-acl})
           u/update-timestamps))))
 

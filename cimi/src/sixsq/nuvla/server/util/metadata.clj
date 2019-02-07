@@ -147,7 +147,7 @@
            common {:id          "resource-metadata/dummy-id"
                    :created     "1964-08-25T10:00:00.0Z"
                    :updated     "1964-08-25T10:00:00.0Z"
-                   :resourceURI resource-metadata/resource-uri
+                   :resource-type resource-metadata/resource-uri
                    :acl         {:owner {:principal "ADMIN", :type "ROLE"}
                                  :rules [{:principal "ANON", :type "ROLE", :right "VIEW"}]}
                    :typeURI     type-uri

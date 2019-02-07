@@ -27,7 +27,7 @@
 ;; strips method attribute and updates the resource URI
 ;;
 
-(def user-defaults {:resourceURI p/resource-uri
+(def user-defaults {:resource-type p/resource-uri
                     :isSuperUser false
                     :deleted     false
                     :state       "NEW"})

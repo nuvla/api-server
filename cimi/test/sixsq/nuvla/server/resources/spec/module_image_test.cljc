@@ -17,7 +17,7 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id           (str t/resource-url "/connector-uuid")
-              :resourceURI  t/resource-uri
+              :resource-type  t/resource-uri
               :created      timestamp
               :updated      timestamp
               :acl          valid-acl
@@ -44,7 +44,7 @@
     (stu/is-invalid ::module-image/module-image (assoc root :os "BAD_OS"))
 
     ;; required attributes
-    (doseq [k #{:id :resourceURI :created :updated :acl :os :loginUser :networkType :author}]
+    (doseq [k #{:id :resource-type :created :updated :acl :os :loginUser :networkType :author}]
       (stu/is-invalid ::module-image/module-image (dissoc root k)))
 
     ;; optional attributes

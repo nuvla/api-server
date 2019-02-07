@@ -62,7 +62,7 @@ curl https://nuv.la/api/credential \\
 ;;
 (defmethod p/tpl->credential tpl/credential-type
   [{:keys [type method publicKey algorithm size]} request]
-  (let [common-info {:resourceURI p/resource-uri
+  (let [common-info {:resource-type p/resource-uri
                      :type        type
                      :method      method}]
     (try

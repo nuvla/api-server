@@ -44,11 +44,11 @@
   (are [expect arg] (= expect (t/cimi-select {:select arg}))
                     nil nil
                     nil "*"
-                    #{"a" "resourceURI"} "a"
-                    #{"a" "resourceURI"} " a "
-                    #{"a" "resourceURI"} "a,a"
-                    #{"a" "resourceURI"} [" a,a" "a" "a"]
-                    #{"a" "a2" "resourceURI"} " a, a2 "))
+                    #{"a" "resource-type"} "a"
+                    #{"a" "resource-type"} " a "
+                    #{"a" "resource-type"} "a,a"
+                    #{"a" "resource-type"} [" a,a" "a" "a"]
+                    #{"a" "a2" "resource-type"} " a, a2 "))
 
 (deftest check-params->expand
   (are [expect arg] (= expect (t/cimi-expand {:expand arg}))

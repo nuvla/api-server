@@ -16,7 +16,7 @@
 (deftest check-session-template-mitreid-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id          (str st/resource-url "/mitreid")
-             :resourceURI st/resource-uri
+             :resource-type st/resource-uri
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl
@@ -28,7 +28,7 @@
 
     (stu/is-valid ::st-mitreid/schema cfg)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :method :instance}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :instance}]
       (stu/is-invalid ::st-mitreid/schema (dissoc cfg attr)))
 
     (doseq [attr #{:group :redirectURI}]

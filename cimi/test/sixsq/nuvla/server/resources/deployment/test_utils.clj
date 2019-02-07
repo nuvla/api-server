@@ -18,7 +18,7 @@
                             :commit      "commit image a"
                             :os          "Ubuntu"}
               :id          "module/image-a",
-              :resourceURI "http://sixsq.com/slipstream/1/Module"})
+              :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def image-b {:description "descr image-b"
               :path        "root/image-b"
@@ -37,7 +37,7 @@
                             :commit       "commit image b"
                             :os           "Ubuntu"}
               :id          "module/image-b",
-              :resourceURI "http://sixsq.com/slipstream/1/Module"})
+              :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def comp-a {:description "Apache web server appliance with custom landing page.",
              :path        "examples/tutorials/service-testing/apache",
@@ -64,7 +64,7 @@
              :created     "2018-07-25T10:08:49.035Z",
              :id          "module/comp-a",
              :parentPath  "examples/tutorials/service-testing",
-             :resourceURI "http://sixsq.com/slipstream/1/Module"})
+             :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def comp-b {:description "Apache web server ++",
              :path        "examples/tutorials/service-testing/apache++",
@@ -90,7 +90,7 @@
              :created     "2018-07-25T10:08:49.035Z",
              :id          "module/comp-b",
              :parentPath  "examples/tutorials/service-testing",
-             :resourceURI "http://sixsq.com/slipstream/1/Module"})
+             :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def comp-c {:description "Apache web server +++",
              :path        "examples/tutorials/service-testing/apache+++",
@@ -111,7 +111,7 @@
              :created     "2018-07-25T10:08:49.035Z",
              :id          "module/comp-b",
              :parentPath  "examples/tutorials/service-testing",
-             :resourceURI "http://sixsq.com/slipstream/1/Module"})
+             :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def app-a {:description "Deployment",
             :path        "examples/tutorials/service-testing/system",
@@ -136,7 +136,7 @@
             :created     "2018-07-25T10:09:18.583Z",
             :id          "module/app",
             :parentPath  "examples/tutorials/service-testing",
-            :resourceURI "http://sixsq.com/slipstream/1/Module"})
+            :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 
 (deftest test-resolve-template-from-simple-image
@@ -182,7 +182,7 @@
         :name        "image-a"
         :path        "root/image-a"
         :id          "module/image-a"
-        :resourceURI "http://sixsq.com/slipstream/1/Module"
+        :resource-type "http://sixsq.com/slipstream/1/Module"
         :type        "IMAGE"}})))
 
 (deftest test-resolve-template-from-image-with-parent
@@ -224,7 +224,7 @@
            :logoURL     "https://example.org/logo"
            :name        "image-b"
            :path        "root/image-b"
-           :resourceURI "http://sixsq.com/slipstream/1/Module"
+           :resource-type "http://sixsq.com/slipstream/1/Module"
            :id          "module/image-b"
            :type        "IMAGE"}})))
 
@@ -278,7 +278,7 @@
            :name        "apache"
            :parentPath  "examples/tutorials/service-testing"
            :path        "examples/tutorials/service-testing/apache"
-           :resourceURI "http://sixsq.com/slipstream/1/Module"
+           :resource-type "http://sixsq.com/slipstream/1/Module"
            :type        "COMPONENT"
            :updated     "2018-10-03T13:19:47.347Z"}})))
 
@@ -337,7 +337,7 @@
            :name        "apache++"
            :parentPath  "examples/tutorials/service-testing"
            :path        "examples/tutorials/service-testing/apache++"
-           :resourceURI "http://sixsq.com/slipstream/1/Module"
+           :resource-type "http://sixsq.com/slipstream/1/Module"
            :type        "COMPONENT"
            :updated     "2018-10-03T13:19:47.347Z"}})))
 
@@ -399,6 +399,6 @@
            :name        "apache++"
            :parentPath  "examples/tutorials/service-testing"
            :path        "examples/tutorials/service-testing/apache+++"
-           :resourceURI "http://sixsq.com/slipstream/1/Module"
+           :resource-type "http://sixsq.com/slipstream/1/Module"
            :type        "COMPONENT"
            :updated     "2018-10-03T13:19:47.347Z"}})))

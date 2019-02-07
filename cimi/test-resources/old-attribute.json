@@ -35,7 +35,7 @@
       "href": "attribute/e01e3a07-7dc7-47ac-9161-f7c8a64f0a5a"
     }
   ],
-  "resourceURI": "http://sixsq.com/slipstream/1/Attribute",
+  "resource-type": "http://sixsq.com/slipstream/1/Attribute",
   "uri": "http://example.schema.org/overall.capacity.ram",
   "patch-version": 0,
   "normative": true

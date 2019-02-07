@@ -17,7 +17,7 @@
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id             (str ct/resource-url "/session-mitreid-test-instance")
-              :resourceURI    p/service-context
+              :resource-type    p/service-context
               :created        timestamp
               :updated        timestamp
               :acl            valid-acl
@@ -36,7 +36,7 @@
 
     (stu/is-invalid ::cts-mitreid/schema (assoc root :bad "BAD"))
 
-    (doseq [k #{:id :resourceURI :created :updated :acl
+    (doseq [k #{:id :resource-type :created :updated :acl
                 :service :instance
                 :clientID :clientSecret :authorizeURL :tokenURL :userProfileURL :publicKey}]
       (stu/is-invalid ::cts-mitreid/schema (dissoc root k)))))

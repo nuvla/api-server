@@ -87,13 +87,13 @@
 
 (defmulti validate
           "Validates the given resource, returning the resource itself on success.
-           This method dispatches on the value of resourceURI.  For any unknown
+           This method dispatches on the value of resource-type.  For any unknown
            dispatch value, the method throws an exception."
-          :resourceURI)
+          :resource-type)
 
 (defmethod validate :default
   [resource]
-  (throw (ex-info (str "unknown resource type: " (:resourceURI resource)) (or resource {}))))
+  (throw (ex-info (str "unknown resource type: " (:resource-type resource)) (or resource {}))))
 
 ;;
 ;; Provide allowed operations for resources and collections
@@ -101,17 +101,17 @@
 
 (defmulti set-operations
           "Adds the authorized resource operations to the resource based on the current
-           user and the resource's ACL.  Dispatches on the value of resourceURI.
-           For any unregistered resourceURI, the default implementation will add the
+           user and the resource's ACL.  Dispatches on the value of resource-type.
+           For any unregistered resource-type, the default implementation will add the
            'add' action for a Collection and the 'edit' and 'delete' actions for resources,
            if the current user has the MODIFY right."
-          :resourceURI)
+          :resource-type)
 
 (defn set-standard-operations
-  [{:keys [id resourceURI] :as resource} request]
+  [{:keys [id resource-type] :as resource} request]
   (try
     (a/can-modify? resource request)
-    (let [ops (if (.endsWith resourceURI "Collection")
+    (let [ops (if (.endsWith resource-type "Collection")
                 [{:rel (:add c/action-uri) :href id}]
                 [{:rel (:edit c/action-uri) :href id}
                  {:rel (:delete c/action-uri) :href id}])]
@@ -144,8 +144,8 @@
 ;;
 
 (defmulti add-acl
-          (fn [{:keys [resourceURI]} request]
-            resourceURI))
+          (fn [{:keys [resource-type]} request]
+            resource-type))
 
 (defmethod add-acl :default
   [json request]

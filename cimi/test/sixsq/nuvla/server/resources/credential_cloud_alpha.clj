@@ -22,7 +22,7 @@
 ;;
 (defmethod p/tpl->credential tpl/credential-type
   [{:keys [type method quota connector key secret acl]} request]
-  (let [resource (cond-> {:resourceURI p/resource-uri
+  (let [resource (cond-> {:resource-type p/resource-uri
                           :type        type
                           :method      method
                           :quota       quota

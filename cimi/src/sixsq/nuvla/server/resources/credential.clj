@@ -123,8 +123,8 @@ CredentialTemplate resource.
     (try
       (a/can-modify? resource request)
       (let [href (:id resource)
-            ^String resourceURI (:resourceURI resource)
-            ops (if (.endsWith resourceURI "Collection")
+            ^String resource-type (:resource-type resource)
+            ops (if (.endsWith resource-type "Collection")
                   [{:rel (:add c/action-uri) :href href}]
                   [{:rel (:delete c/action-uri) :href href}])]
         (assoc resource :operations ops))
@@ -161,7 +161,7 @@ CredentialTemplate resource.
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
-            (assoc :resourceURI create-uri)
+            (assoc :resource-type create-uri)
             (update-in [:template] dissoc :type)  ;; forces use of template reference
             (resolve-hrefs idmap)
             (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated

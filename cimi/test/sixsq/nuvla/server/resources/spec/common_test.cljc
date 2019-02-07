@@ -121,7 +121,7 @@
                       :type      "ROLE"
                       :right     "MODIFY"}]}
         minimal {:id          "a"
-                 :resourceURI "http://example.org/data"
+                 :resource-type "http://example.org/data"
                  :created     date
                  :updated     date
                  :acl         acl}
@@ -138,7 +138,7 @@
 
     (stu/is-invalid ::common-attrs (assoc maximal :bad "BAD"))
 
-    (doseq [k #{:id :resourceURI :created :updated}]
+    (doseq [k #{:id :resource-type :created :updated}]
       (stu/is-invalid ::common-attrs (dissoc minimal k)))
 
     (doseq [k #{:name :description :tags}]

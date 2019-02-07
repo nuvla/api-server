@@ -76,7 +76,7 @@ curl https://nuv.la/api/credential-template
 
 
 (defn complete-resource
-  "Completes the given document with server-managed information: resourceURI,
+  "Completes the given document with server-managed information: resource-type,
    timestamps, and operations. NOTE: The subtype MUST provide an ACL for the
    template."
   [{:keys [method] :as resource}]
@@ -84,7 +84,7 @@ curl https://nuv.la/api/credential-template
     (let [id (str resource-url "/" method)]
       (-> resource
           (merge {:id          id
-                  :resourceURI resource-uri})
+                  :resource-type resource-uri})
           u/update-timestamps))))
 
 

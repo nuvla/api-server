@@ -18,7 +18,7 @@
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root (merge tpl/resource
                     {:id          "external-object/my-report"
-                     :resourceURI eot/resource-uri
+                     :resource-type eot/resource-uri
                      :created     timestamp
                      :updated     timestamp
                      :acl         valid-acl
@@ -32,7 +32,7 @@
                                :md5sum      "3deb5ba5d971c85dd979b7466debfdee"}))
 
     ;; mandatory keywords
-    (doseq [k #{:id :resourceURI :created :updated :acl
+    (doseq [k #{:id :resource-type :created :updated :acl
                 :objectType :state :objectName :bucketName :objectStoreCred}]
       (stu/is-invalid ::eo-generic/external-object (dissoc root k)))
 

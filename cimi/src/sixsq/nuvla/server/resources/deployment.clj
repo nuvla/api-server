@@ -106,7 +106,7 @@
           [api-key secret] (generate-api-key-secret request)
           deployment (-> body
                          (assoc-in [:template :href] deployment-tmpl-href)
-                         (assoc :resourceURI create-uri)
+                         (assoc :resource-type create-uri)
                          (retrieve-deployment-template idmap)
                          (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
                          crud/validate

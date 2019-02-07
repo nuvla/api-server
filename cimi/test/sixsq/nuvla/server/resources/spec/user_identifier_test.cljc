@@ -16,7 +16,7 @@
 (deftest check-session-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id          (str ui/resource-url "/hash-of-identifier")
-             :resourceURI ui/resource-uri
+             :resource-type ui/resource-uri
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl
@@ -27,7 +27,7 @@
     (stu/is-valid ::user-identifier/schema cfg)
     (stu/is-invalid ::user-identifier/schema (assoc cfg :bad-attr "BAD_ATTR"))
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :identifier :user}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :identifier :user}]
       (stu/is-invalid ::user-identifier/schema (dissoc cfg attr)))
 
     (doseq [attr #{:username :server :clientIP}]

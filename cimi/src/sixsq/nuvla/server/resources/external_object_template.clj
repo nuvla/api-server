@@ -73,13 +73,13 @@
 
 (defn complete-resource
   "Completes the given document with server-managed information:
-   resourceURI, timestamps, operations, and ACL."
+   resource-type, timestamps, operations, and ACL."
   [{:keys [objectType] :as resource}]
   (when objectType
     (let [id (str resource-url "/" objectType)]
       (-> resource
           (merge {:id          id
-                  :resourceURI resource-uri
+                  :resource-type resource-uri
                   :acl         resource-acl})
           (merge external-object-reference-attrs-defaults)
           u/update-timestamps))))

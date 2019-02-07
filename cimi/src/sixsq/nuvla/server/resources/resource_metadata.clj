@@ -50,14 +50,14 @@
 
 (defn complete-resource
   "Completes the given document with server-managed information:
-   resourceURI, timestamps, and ACL."
+   resource-type, timestamps, and ACL."
   [identifier resource]
   (when identifier
     (let [id (str resource-url "/" identifier)]
       (-> resource
           (dissoc :created :updated)
           (merge {:id          id
-                  :resourceURI resource-uri
+                  :resource-type resource-uri
                   :acl         default-resource-acl})
           u/update-timestamps))))
 

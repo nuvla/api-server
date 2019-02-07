@@ -75,7 +75,7 @@
 
 (defmacro is-resource-uri
   [m type-uri]
-  `(is-key-value ~m :resourceURI ~type-uri))
+  `(is-key-value ~m :resource-type ~type-uri))
 
 
 (defn get-op [m op]
@@ -232,7 +232,7 @@
   "Strips common attributes that are not interesting when comparing
    versions of a resource."
   [m]
-  (let [unwanted #{:id :resourceURI :acl :operations
+  (let [unwanted #{:id :resource-type :acl :operations
                    :created :updated :name :description :tags}]
     (into {} (remove #(unwanted (first %)) m))))
 

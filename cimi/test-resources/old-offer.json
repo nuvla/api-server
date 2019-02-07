@@ -18,7 +18,7 @@
 "acl":
 {"owner":{"principal":"ADMIN", "type":"ROLE"},
 "rules":[{"principal":"USER", "type":"ROLE", "right":"VIEW"}]},
-"resourceURI":"http:\/\/sixsq.com\/slipstream\/1\/ServiceInfo",
+"resource-type":"http:\/\/sixsq.com\/slipstream\/1\/ServiceInfo",
 "http:\/\/example.schema.org\/suppliers.catalog":"",
 "http:\/\/example.schema.org\/single.vm.storage.volatile":"",
 "http:\/\/example.schema.org\/single.vm.min.cpu":"",

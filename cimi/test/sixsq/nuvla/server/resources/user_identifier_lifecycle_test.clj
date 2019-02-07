@@ -32,7 +32,7 @@
 
 
 (def valid-entry {:id          (str user-identifier/resource-url "/hashed-identifier")
-                  :resourceURI user-identifier/resource-uri
+                  :resource-type user-identifier/resource-uri
                   :created     timestamp
                   :updated     timestamp
                   :acl         valid-acl

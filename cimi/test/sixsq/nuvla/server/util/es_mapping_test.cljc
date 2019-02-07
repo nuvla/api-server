@@ -27,7 +27,7 @@
                        ::common/tags {:type "keyword"}
 
                        ::common/id {:type "keyword"}
-                       ::common/resourceURI {:type "keyword"}
+                       ::common/resource-type {:type "keyword"}
                        ::common/created {:type "date", :format "strict_date_optional_time||epoch_millis"}
                        ::common/updated {:type "date", :format "strict_date_optional_time||epoch_millis"}
                        ::common/name {:type "keyword", :copy_to "fulltext"}
