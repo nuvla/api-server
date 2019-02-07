@@ -34,11 +34,10 @@
                                deployment-template-keys-spec))
 
 ;; Defines the contents of the generic template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :deploymentTemplate here.
-(s/def ::deploymentTemplate
+(s/def ::template
   (su/only-keys-maps cimi-common/template-attrs
                      deployment-template-keys-spec))
 
 (s/def ::deployment-template-create
   (su/only-keys-maps cimi-common/create-attrs
-                     {:req-un [::deploymentTemplate]}))
+                     {:req-un [::template]}))

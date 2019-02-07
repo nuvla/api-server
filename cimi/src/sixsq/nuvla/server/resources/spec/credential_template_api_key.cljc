@@ -40,11 +40,10 @@
                      credential-template-keys-spec))
 
 ;; Defines the contents of the api-key template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :credentialTemplate here.
-(s/def ::credentialTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      credential-template-create-keys-spec))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::credentialTemplate]}))
+                     {:req-un [::template]}))

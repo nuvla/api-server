@@ -24,15 +24,14 @@
                      ; credential-template-keys-spec))
 
 ;; Defines the contents of the cloud-alpha template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :credentialTemplate here.
-(s/def :cimi.credential-template.cloud-alpha/credentialTemplate
+(s/def :cimi.credential-template.cloud-alpha/template
   (su/only-keys-maps ps/template-keys-spec
                      ctc/credential-template-create-keys-spec))
                      ;credential-template-create-keys-spec))
 
 (s/def :cimi/credential-template.cloud-alpha-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [:cimi.credential-template.cloud-alpha/credentialTemplate]}))
+                     {:req-un [:cimi.credential-template.cloud-alpha/template]}))
 
 ;; Template.
 (def ^:const credential-type (str "cloud-cred-" ct/cloud-service-type))

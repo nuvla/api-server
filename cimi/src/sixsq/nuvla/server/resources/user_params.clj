@@ -71,7 +71,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
 ;;
 
 (defn dispatch-on-cloud-service-type [resource]
-  (get-in resource [:userParamTemplate :paramsType]))
+  (get-in resource [:template :paramsType]))
 
 (defmulti create-validate-subtype dispatch-on-cloud-service-type)
 
@@ -132,7 +132,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
 (defn conflict-if-exists
   "Only one :paramsType document is allowed per user."
   [request]
-  (let [params-type (get-in request [:body :userParamTemplate :paramsType])
+  (let [params-type (get-in request [:body :template :paramsType])
         cimi-filter (cpi/cimi-filter {"filter" (format "paramsType='%s'" params-type)})
         req (update-in request [:cimi-params] #(assoc % :filter cimi-filter))
         resp (crud/query req)
@@ -154,7 +154,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
         body (-> body
                  (assoc :resourceURI create-uri)
                  (crud/validate)
-                 (:userParamTemplate)
+                 :template
                  (tpl->user-params request))]
     (add-impl (assoc request :body body))))
 

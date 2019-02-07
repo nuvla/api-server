@@ -59,7 +59,7 @@ CredentialTemplate resource.
 ;;
 
 (defn dispatch-on-registration-method [resource]
-  (get-in resource [:credentialTemplate :type]))
+  (get-in resource [:template :type]))
 
 (defmulti create-validate-subtype dispatch-on-registration-method)
 
@@ -137,22 +137,22 @@ CredentialTemplate resource.
   [body idmap]
   (let [admin {:identity {:current         "internal",
                           :authentications {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}}
-        href (get-in body [:credentialTemplate :connector])]
+        href (get-in body [:template :connector])]
     (std-crud/resolve-hrefs href admin))
   body)
 
 (defn resolve-hrefs
   [body idmap]
-  (let [connector-href (if (contains? (:credentialTemplate body) :connector)
-                         {:connector (get-in body [:credentialTemplate :connector])}
+  (let [connector-href (if (contains? (:template body) :connector)
+                         {:connector (get-in body [:template :connector])}
                          {})]                               ;; to put back the unexpanded href after
     (-> body
         (check-connector-exists idmap)
         ;; remove connector href (if any); regular user doesn't have rights to see them
-        (update-in [:credentialTemplate] dissoc :connector)
+        (update-in [:template] dissoc :connector)
         (std-crud/resolve-hrefs idmap)
         ;; put back unexpanded connector href
-        (update-in [:credentialTemplate] merge connector-href))))
+        (update-in [:template] merge connector-href))))
 
 ;; requires a CredentialTemplate to create new Credential
 (defmethod crud/add resource-name
@@ -162,11 +162,11 @@ CredentialTemplate resource.
         [create-resp {:keys [id] :as body}]
         (-> body
             (assoc :resourceURI create-uri)
-            (update-in [:credentialTemplate] dissoc :type)  ;; forces use of template reference
+            (update-in [:template] dissoc :type)  ;; forces use of template reference
             (resolve-hrefs idmap)
-            (update-in [:credentialTemplate] merge desc-attrs) ;; ensure desc attrs are validated
+            (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
             crud/validate
-            :credentialTemplate
+            :template
             (tpl->credential request))]
     (-> request
         (assoc :id id :body (merge body desc-attrs))

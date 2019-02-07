@@ -41,8 +41,8 @@
                                     (ltu/body->edn)
                                     (ltu/is-status 201)
                                     (ltu/location))
-        valid-deployment {:deploymentTemplate {:href deployment-template-uri} :name "dep1" :description "dep1 desc"}
-        valid-deployment-from-module {:deploymentTemplate {:module {:href module-uri}}}]
+        valid-deployment {:template {:href deployment-template-uri} :name "dep1" :description "dep1 desc"}
+        valid-deployment-from-module {:template {:module {:href module-uri}}}]
 
     ;; anonymous create should fail
     (-> session-anon

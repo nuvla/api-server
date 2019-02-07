@@ -33,13 +33,13 @@
   (su/only-keys-maps resource-keys-spec))
 
 
-(s/def :cimi.external-object-template.alpha/externalObjectTemplate
+(s/def :cimi.external-object-template.alpha/template
   (su/only-keys-maps c/template-attrs
                      (u/remove-req external-object-alpha-keys-spec #{::eo/state})))
 
 (s/def :cimi/external-object-template.alpha-create
   (su/only-keys-maps c/create-attrs
-                     {:req-un [:cimi.external-object-template.alpha/externalObjectTemplate]}))
+                     {:req-un [:cimi.external-object-template.alpha/template]}))
 
 ;;
 ;; template resource
@@ -72,7 +72,7 @@
   [resource]
   (validate-fn resource))
 
-(def validate-fn (u/create-spec-validation-fn :cimi.external-object-template.alpha/externalObjectTemplate))
+(def validate-fn (u/create-spec-validation-fn :cimi.external-object-template.alpha/template))
 (defmethod eot/validate-subtype-template objectType
   [resource]
   (validate-fn resource))

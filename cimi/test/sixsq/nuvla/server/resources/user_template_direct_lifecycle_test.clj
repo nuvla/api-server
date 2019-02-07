@@ -42,13 +42,13 @@
                      (ltu/is-status 200)
                      (get-in [:response :body]))
 
-        no-href-create {:userTemplate (ltu/strip-unwanted-attrs (assoc template
-                                                                  :username uname
-                                                                  :emailAddress "user@example.org"))}
-        href-create {:userTemplate {:href         href
-                                    :username     uname
-                                    :emailAddress "user@example.org"}}
-        invalid-create (assoc-in href-create [:userTemplate :href] "user-template/unknown-template")]
+        no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
+                                                              :username uname
+                                                              :emailAddress "user@example.org"))}
+        href-create {:template {:href         href
+                                :username     uname
+                                :emailAddress "user@example.org"}}
+        invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")]
 
     ;; anonymous user collection query should succeed but be empty
     ;; access needed to allow self-registration
@@ -104,9 +104,9 @@
         (ltu/is-status 404))
 
     ;; create a user via admin
-    (let [create-req {:userTemplate {:href         href
-                                     :username     uname
-                                     :emailAddress "jane@example.org"}}
+    (let [create-req {:template {:href         href
+                                 :username     uname
+                                 :emailAddress "jane@example.org"}}
           resp (-> session-admin
                    (request base-uri
                             :request-method :post

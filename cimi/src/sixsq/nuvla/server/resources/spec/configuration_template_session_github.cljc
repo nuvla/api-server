@@ -70,11 +70,10 @@
                      configuration-template-keys-spec-req))
 
 ;; Defines the contents of the github authentication template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :configurationTemplate here.
-(s/def ::configurationTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      configuration-template-keys-spec-create))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::configurationTemplate]}))
+                     {:req-un [::template]}))

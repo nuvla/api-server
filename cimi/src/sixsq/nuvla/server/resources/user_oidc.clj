@@ -14,7 +14,7 @@
 
 (def create-validate-fn (u/create-spec-validation-fn ::ut-oidc/schema-create))
 (defmethod p/create-validate-subtype user-template/registration-method
-  [{resource :userTemplate :as create-document}]
+  [{resource :template :as create-document}]
   (create-validate-fn create-document))
 
 

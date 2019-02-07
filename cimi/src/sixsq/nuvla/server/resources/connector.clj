@@ -60,7 +60,7 @@
 ;;
 
 (defn dispatch-on-cloud-service-type [resource]
-  (get-in resource [:connectorTemplate :cloudServiceType]))
+  (get-in resource [:template :cloudServiceType]))
 
 (defmulti create-validate-subtype dispatch-on-cloud-service-type)
 
@@ -95,7 +95,7 @@
       (dissoc :href)
       (assoc :resourceURI resource-uri
              :acl resource-acl)
-      (cond-> href (assoc :connectorTemplate {:href href}))))
+      (cond-> href (assoc :template {:href href}))))
 
 ;;
 ;; CRUD operations
@@ -111,7 +111,7 @@
                  (assoc :resourceURI create-uri)
                  (std-crud/resolve-hrefs idmap true)
                  (crud/validate)
-                 (:connectorTemplate)
+                 :template
                  (tpl->connector))]
     (add-impl (assoc request :body body))))
 

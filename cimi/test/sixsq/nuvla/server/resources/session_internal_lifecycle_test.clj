@@ -88,16 +88,16 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          valid-create {:name            name-attr
-                        :description     description-attr
-                        :tags            tags-attr
-                        :sessionTemplate {:href     href
-                                          :username "user"
-                                          :password "user"}}
-          valid-create-redirect (assoc-in valid-create [:sessionTemplate :redirectURI] "http://redirect.example.org")
-          unauthorized-create (update-in valid-create [:sessionTemplate :password] (constantly "BAD"))
-          invalid-create (assoc-in valid-create [:sessionTemplate :invalid] "BAD")
-          invalid-create-redirect (assoc-in valid-create-redirect [:sessionTemplate :invalid] "BAD")]
+          valid-create {:name        name-attr
+                        :description description-attr
+                        :tags        tags-attr
+                        :template    {:href     href
+                                      :username "user"
+                                      :password "user"}}
+          valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
+          unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))
+          invalid-create (assoc-in valid-create [:template :invalid] "BAD")
+          invalid-create-redirect (assoc-in valid-create-redirect [:template :invalid] "BAD")]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon
@@ -235,8 +235,8 @@
 
       ;; admin create must also succeed
       (let [create-req (-> valid-create
-                           (assoc-in [:sessionTemplate :username] "root")
-                           (assoc-in [:sessionTemplate :password] "root"))
+                           (assoc-in [:template :username] "root")
+                           (assoc-in [:template :password] "root"))
             resp (-> session-anon
                      (request base-uri
                               :request-method :post

@@ -51,7 +51,7 @@
 
 (defn create-cloud-cred
   [user-session]
-  (let [cred-create {:credentialTemplate
+  (let [cred-create {:template
                      {:href      (str credt/resource-url "/" cred-alpha/method)
                       :key       "key"
                       :secret    "secret"
@@ -78,10 +78,10 @@
 
 (defn create-connector-fixture!
   [f]
-  (let [con-create {:connectorTemplate {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
-                                        :alphaKey            1234
-                                        :instanceName        connector-name
-                                        :objectStoreEndpoint obj-store-endpoint}}]
+  (let [con-create {:template {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
+                               :alphaKey            1234
+                               :instanceName        connector-name
+                               :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
         (request (str p/service-context (u/de-camelcase c/resource-name))
                  :request-method :post
@@ -164,15 +164,15 @@
 (defn full-eo-lifecycle
   [template-url template-obj]
   (let [template (get-template template-url)
-        create-href {:externalObjectTemplate (-> template-obj
-                                                 (assoc :href (:id template))
-                                                 (dissoc :objectType))}
-        create-no-href {:externalObjectTemplate (merge (ltu/strip-unwanted-attrs template) template-obj)}]
+        create-href {:template (-> template-obj
+                                   (assoc :href (:id template))
+                                   (dissoc :objectType))}
+        create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute
     (doseq [valid-create [create-href create-no-href]]
 
-      (let [invalid-create (assoc-in valid-create [:externalObjectTemplate :invalid] "BAD")]
+      (let [invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
         ;; anonymous create should always return a 403 error
         (-> session-anon

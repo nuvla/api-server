@@ -34,10 +34,10 @@
   (cbu/update-callback-state! "WAITING" callback-id))
 
 
-(def configuration-user-github {:configurationTemplate {:service      "session-github" ;;reusing configuration from session GitHub
-                                                        :instance     github/registration-method
-                                                        :clientID     "FAKE_CLIENT_ID"
-                                                        :clientSecret "ABCDEF..."}})
+(def configuration-user-github {:template {:service      "session-github" ;;reusing configuration from session GitHub
+                                           :instance     github/registration-method
+                                           :clientID     "FAKE_CLIENT_ID"
+                                           :clientSecret "ABCDEF..."}})
 
 
 (deftest check-metadata
@@ -85,14 +85,14 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          href-create {:name         name-attr
-                       :description  description-attr
-                       :tags         tags-attr
-                       :userTemplate {:href href}}
+          href-create {:name        name-attr
+                       :description description-attr
+                       :tags        tags-attr
+                       :template    {:href href}}
 
-          href-create-redirect {:userTemplate {:href        href
-                                               :redirectURI redirect-uri-example}}
-          invalid-create (assoc-in href-create [:userTemplate :invalid] "BAD")]
+          href-create-redirect {:template {:href        href
+                                           :redirectURI redirect-uri-example}}
+          invalid-create (assoc-in href-create [:template :invalid] "BAD")]
 
       ;; queries by anyone should succeed but have no entries
       (doseq [session [session-anon session-user session-admin]]

@@ -71,15 +71,15 @@
 
 (defn retrieve-deployment-template
   [deployment idmap]
-  (let [deployment-tmpl-href (get-in deployment [:deploymentTemplate :href])
+  (let [deployment-tmpl-href (get-in deployment [:template :href])
         {:keys [body status]} (if (= deployment-tmpl-href deployment-template/generated-url)
                                 {:status 200
-                                 :body   (du/create-deployment-template (:deploymentTemplate deployment) idmap)}
+                                 :body   (du/create-deployment-template (:template deployment) idmap)}
                                 (crud/retrieve {:params   {:uuid          (u/document-id deployment-tmpl-href)
                                                            :resource-name deployment-template/resource-url}
                                                 :identity idmap}))]
     (if (= status 200)
-      (assoc deployment :deploymentTemplate (dissoc body :operations :acl :id :href))
+      (assoc deployment :template (dissoc body :operations :acl :id :href))
       (throw (ex-info "" body)))))
 
 
@@ -88,7 +88,7 @@
 (defn generate-api-key-secret
   [{:keys [identity] :as request}]
   (let [request-api-key {:params   {:resource-name credential/resource-url}
-                         :body     {:credentialTemplate {:href (str "credential-template/" cred-api-key/method)}}
+                         :body     {:template {:href (str "credential-template/" cred-api-key/method)}}
                          :identity identity}
         {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
     (if (= status 201)
@@ -102,16 +102,16 @@
     (a/can-modify? {:acl collection-acl} request)
     (let [idmap (:identity request)
           desc-attrs (u/select-desc-keys body)
-          deployment-tmpl-href (get-in body [:deploymentTemplate :href] deployment-template/generated-url)
+          deployment-tmpl-href (get-in body [:template :href] deployment-template/generated-url)
           [api-key secret] (generate-api-key-secret request)
           deployment (-> body
-                         (assoc-in [:deploymentTemplate :href] deployment-tmpl-href)
+                         (assoc-in [:template :href] deployment-tmpl-href)
                          (assoc :resourceURI create-uri)
                          (retrieve-deployment-template idmap)
-                         (update-in [:deploymentTemplate] merge desc-attrs) ;; ensure desc attrs are validated
+                         (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
                          crud/validate
-                         :deploymentTemplate
-                         (assoc-in [:deploymentTemplate :href] deployment-tmpl-href)
+                         :template
+                         (assoc-in [:template :href] deployment-tmpl-href)
                          (assoc :clientAPIKey {:href api-key, :secret secret})
                          (assoc :state "CREATED"))
           create-response (add-impl (assoc request :body deployment))

@@ -10,9 +10,9 @@
 (s/def ::method ::session-tpl/method)
 
 ;; reference to the session template that was used to create the session
-(s/def ::sessionTemplate (s/merge
-                           (s/keys :req-un [::session-tpl/href])
-                           (s/map-of #{:href} any?)))
+(s/def ::template (s/merge
+                    (s/keys :req-un [::session-tpl/href])
+                    (s/map-of #{:href} any?)))
 
 ;; expiration time of the cookie
 (s/def ::expiry ::cimi-core/timestamp)
@@ -29,5 +29,5 @@
 
 (s/def ::session
   (su/only-keys-maps c/common-attrs
-                     {:req-un [::method ::sessionTemplate ::expiry]
+                     {:req-un [::method ::template ::expiry]
                       :opt-un [::username ::roles ::server ::clientIP ::hints/redirectURI]}))

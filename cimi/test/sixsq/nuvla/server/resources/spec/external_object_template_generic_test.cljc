@@ -11,17 +11,17 @@
   (let [root (merge tpl/resource
                     {:href "external-object-template/generic"})]
 
-    (stu/is-valid ::eot-generic/externalObjectTemplate root)
+    (stu/is-valid ::eot-generic/template root)
 
     ;; mandatory keywords
     (doseq [k #{:objectType :objectStoreCred :bucketName :objectName}]
-      (stu/is-invalid ::eot-generic/externalObjectTemplate (dissoc root k)))
+      (stu/is-invalid ::eot-generic/template (dissoc root k)))
 
     ;; optional keywords
     (doseq [k #{:contentType :href}]
-      (stu/is-valid ::eot-generic/externalObjectTemplate (dissoc root k)))
+      (stu/is-valid ::eot-generic/template (dissoc root k)))
 
 
     (let [create {:resourceURI            (str eot/resource-uri "Create")
-                  :externalObjectTemplate (dissoc root :id)}]
+                  :template (dissoc root :id)}]
       (stu/is-valid ::eot-generic/external-object-create create))))

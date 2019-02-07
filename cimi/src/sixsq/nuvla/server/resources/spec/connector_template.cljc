@@ -276,7 +276,7 @@
 (s/def ::href (s/and string? #(re-matches connector-template-regex %)))
 
 
-(s/def ::connectorTemplate (su/only-keys :req-un [::href]))
+(s/def ::template (su/only-keys :req-un [::href]))
 
 ;;
 ;; Keys specifications for ConnectorTemplate resources.
@@ -289,7 +289,7 @@
                                             ::orchestratorImageid
                                             ::quotaVm
                                             ::maxIaasWorkers]
-                                   :opt-un [::connectorTemplate]})
+                                   :opt-un [::template]})
 
 (def resource-keys-spec
   (su/merge-keys-specs [c/common-attrs connector-template-keys-spec]))

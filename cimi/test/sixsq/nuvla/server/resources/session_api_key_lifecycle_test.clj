@@ -127,15 +127,15 @@
             description-attr "description"
             tags-attr ["one", "two"]
 
-            valid-create {:name            name-attr
-                          :description     description-attr
-                          :tags            tags-attr
-                          :sessionTemplate {:href   href
-                                            :key    uuid
-                                            :secret secret}}
-            valid-create-redirect (assoc-in valid-create [:sessionTemplate :redirectURI] "http://redirect.example.org")
-            unauthorized-create (update-in valid-create [:sessionTemplate :secret] (constantly bad-digest))
-            invalid-create (assoc-in valid-create [:sessionTemplate :invalid] "BAD")]
+            valid-create {:name        name-attr
+                          :description description-attr
+                          :tags        tags-attr
+                          :template    {:href   href
+                                        :key    uuid
+                                        :secret secret}}
+            valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
+            unauthorized-create (update-in valid-create [:template :secret] (constantly bad-digest))
+            invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
         ;; anonymous query should succeed but have no entries
         (-> session-anon

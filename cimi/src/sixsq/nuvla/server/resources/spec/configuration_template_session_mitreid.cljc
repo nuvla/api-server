@@ -140,17 +140,16 @@
 (def configuration-template-keys-spec-create
   {:req-un [::ps/instance ::clientID ::clientSecret ::publicKey ::authorizeURL ::tokenURL ::userProfileURL]})
 
-;; Defines the contents of the Mi authentication ConfigurationTemplate resource itself.
+;; Defines the contents of the MITREid authentication ConfigurationTemplate resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
                      configuration-template-keys-spec-req))
 
 ;; Defines the contents of the MitreId authentication template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :configurationTemplate here.
-(s/def ::configurationTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      configuration-template-keys-spec-create))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::configurationTemplate]}))
+                     {:req-un [::template]}))

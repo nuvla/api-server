@@ -103,4 +103,4 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-url ::dt/deploymentTemplate))
+  (std-crud/initialize resource-url ::dt/template))

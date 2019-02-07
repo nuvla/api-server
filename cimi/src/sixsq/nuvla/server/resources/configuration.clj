@@ -48,7 +48,7 @@
 ;;
 
 (defn dispatch-on-service [resource]
-  (get-in resource [:configurationTemplate :service]))
+  (get-in resource [:template :service]))
 
 (defmulti create-validate-subtype dispatch-on-service)
 
@@ -80,7 +80,7 @@
 (defmethod tpl->configuration :default
   [{:keys [href] :as resource}]
   (cond-> resource
-      href (assoc :configurationTemplate {:href href})
+      href (assoc :template {:href href})
       true (dissoc :href)
       true (assoc :resourceURI resource-uri)))
 
@@ -98,9 +98,9 @@
         body (-> body
                  (assoc :resourceURI create-uri)
                  (std-crud/resolve-hrefs idmap true)
-                 (update-in [:configurationTemplate] merge desc-attrs) ;; validate desc attrs
+                 (update-in [:template] merge desc-attrs) ;; validate desc attrs
                  (crud/validate)
-                 (:configurationTemplate)
+                 (:template)
                  (tpl->configuration))]
     (add-impl (assoc request :body (merge body desc-attrs)))))
 

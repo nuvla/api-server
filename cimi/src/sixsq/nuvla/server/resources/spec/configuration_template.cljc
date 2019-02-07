@@ -73,10 +73,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::configurationTemplate
+(s/def ::template
   (-> (st/spec (su/only-keys-maps {:req-un [::href]}))
-      (assoc :name "configurationTemplate"
-             :json-schema/name "configurationTemplate"
+      (assoc :name "template"
+             :json-schema/name "template"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
@@ -85,7 +85,7 @@
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "configurationTemplate"
+             :json-schema/displayName "template"
              :json-schema/description "reference to the configuration template used"
              :json-schema/help "reference to the configuration template used"
              :json-schema/group "body"
@@ -101,7 +101,7 @@
 ;;
 
 (def configuration-template-keys-spec {:req-un [::service]
-                                       :opt-un [::instance ::configurationTemplate]})
+                                       :opt-un [::instance ::template]})
 
 (def resource-keys-spec
   (su/merge-keys-specs [c/common-attrs configuration-template-keys-spec]))

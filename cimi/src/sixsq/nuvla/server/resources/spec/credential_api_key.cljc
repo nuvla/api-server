@@ -4,7 +4,7 @@
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
-    [sixsq.nuvla.server.resources.spec.credential-template-api-key]
+    [sixsq.nuvla.server.resources.spec.credential-template-api-key :as api-key]
     [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::expiry ::cimi-core/timestamp)
@@ -33,4 +33,4 @@
 ;; multiple methods to create an ssh public key, so multiple schemas
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::ps/credentialTemplate]}))
+                     {:req-un [::api-key/template]}))

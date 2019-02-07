@@ -35,7 +35,7 @@
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (get-in [:response :body]))
-        create-from-templ {:userParamTemplate
+        create-from-templ {:template
                            (-> template
                                ltu/strip-unwanted-attrs
                                (merge {:defaultCloudService "foo-bar-baz"

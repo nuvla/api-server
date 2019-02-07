@@ -43,13 +43,13 @@
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
 
-(def configuration-user-oidc {:configurationTemplate {:service      "session-oidc" ;;reusing configuration from session
-                                                      :instance     oidc/registration-method
-                                                      :clientID     "FAKE_CLIENT_ID"
-                                                      :clientSecret "MyClientSecret"
-                                                      :authorizeURL "https://authorize.oidc.com/authorize"
-                                                      :tokenURL     "https://token.oidc.com/token"
-                                                      :publicKey    auth-pubkey}})
+(def configuration-user-oidc {:template {:service      "session-oidc" ;;reusing configuration from session
+                                         :instance     oidc/registration-method
+                                         :clientID     "FAKE_CLIENT_ID"
+                                         :clientSecret "MyClientSecret"
+                                         :authorizeURL "https://authorize.oidc.com/authorize"
+                                         :tokenURL     "https://token.oidc.com/token"
+                                         :publicKey    auth-pubkey}})
 
 
 (deftest check-metadata
@@ -103,13 +103,13 @@
           description-attr "description"
           tags-attr ["one", "two"]
 
-          href-create {:name         name-attr
-                       :description  description-attr
-                       :tags         tags-attr
-                       :userTemplate {:href href}}
-          href-create-redirect {:userTemplate {:href        href
-                                               :redirectURI redirect-uri}}
-          invalid-create (assoc-in href-create [:userTemplate :invalid] "BAD")]
+          href-create {:name        name-attr
+                       :description description-attr
+                       :tags        tags-attr
+                       :template    {:href href}}
+          href-create-redirect {:template {:href        href
+                                           :redirectURI redirect-uri}}
+          invalid-create (assoc-in href-create [:template :invalid] "BAD")]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon
