@@ -150,10 +150,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def user-attrs-defaults
   {:state       initial-state
-   :deleted     false
-   :lastOnline  epoch
-   :activeSince epoch
-   :lastExecute epoch})
+   :deleted     false})
 
 (defn merge-with-defaults
   [resource]

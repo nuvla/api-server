@@ -115,7 +115,7 @@
 
 
 (defn user-create-request
-  [{:keys [authn-login email authn-method firstname lastname roles organization state external-login password instance] :as user-record}]
+  [{:keys [authn-login email authn-method full-name roles state external-login password instance] :as user-record}]
   (let [user-resource (cond-> {:href         "user-template/direct" ;; FIXME: should reflect the actual user template
                                :username     authn-login
                                :emailAddress email
@@ -125,10 +125,8 @@
                                :state        (or state "ACTIVE")}
                               authn-method (assoc :method authn-method
                                                   :name email)
-                              firstname (assoc :firstName firstname)
-                              lastname (assoc :lastName lastname)
-                              roles (assoc :roles roles)
-                              organization (assoc :organization organization))]
+                              full-name (assoc :full-name full-name)
+                              roles (assoc :roles roles))]
     {:identity     {:current "internal"
                     :authentications
                              {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}

@@ -20,10 +20,8 @@
       (is (= id (db/create-user! {:authn-method "github"
                                   :authn-login  id
                                   :email        "st@s.com"
-                                  :roles        "alpha-role, beta-role"
                                   :firstname    "first"
-                                  :lastname     "last"
-                                  :organization "myorg"}))))))
+                                  :lastname     "last"}))))))
 
 
 (deftest test-user-creation-standard-username-oidc
@@ -32,10 +30,7 @@
                                         :instance     "instance"
                                         :authn-login  identifier
                                         :email        "st@s.com"
-                                        :roles        "alpha-role, beta-role"
-                                        :firstname    "first"
-                                        :lastname     "last"
-                                        :organization "myorg"})))))
+                                        :full-name    "full name"})))))
 
 
 (deftest test-user-creation-uuid
@@ -44,23 +39,18 @@
                                   :authn-login    uuid
                                   :external-login "st"
                                   :email          "st@s.com"
-                                  :roles          "alpha-role, beta-role"
-                                  :firstname      "first"
-                                  :lastname       "last"
-                                  :organization   "myorg"})))
+                                  :full-name      "full name"})))
 
     (let [usernames (db/existing-user-names)
           user (db/get-user (first usernames))]
 
       (is (= 1 (count usernames)))
-      (is (= "alpha-role, beta-role" (:roles user)))
       (is (= false (:deleted user)))
       (is (= "st@s.com" (:emailAddress user)))
       (is (= false (:isSuperUser user)))
       (is (= uuid (:username user)))
       (is (= "ACTIVE" (:state user)))
-      (is (= "first" (:firstName user)))
-      (is (= "last" (:lastName user)))
+      (is (= "full name" (:full-name user)))
       (is (:password user))
       (is (:created user))
       (is (= "USER ANON" (db/find-roles-for-username "st")))))
@@ -71,8 +61,7 @@
                                 :email        "st@s.com"
                                 :roles        "alpha-role, beta-role"
                                 :firstname    "first"
-                                :lastname     "last"
-                                :organization "myorg"}))))
+                                :lastname     "last"}))))
 
 
 (deftest test-no-creation-on-existing-user
@@ -137,7 +126,6 @@
   (th/add-user-for-test! {:username     "joe-slipstream"
                           :password     "123456"
                           :emailAddress "joe@sixsq.com"
-                          :githublogin  "joe"
                           :state        "DELETED"})
   (is (nil? (uiu/find-username-by-identifier :github nil "joe"))))
 
@@ -149,25 +137,6 @@
                           :state        "DELETED"})
   (uiu/add-user-identifier! "joe-slipstream" :github "joe" nil)
   (is (nil? (uiu/find-username-by-identifier :github nil "joe"))))
-
-
-(deftest test-users-by-authn-legacy
-  (th/add-user-for-test! {:username     "joe-slipstream"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"
-                          :githublogin  "joe"})
-
-  (th/add-user-for-test! {:username     "jack-slipstream"
-                          :password     "123456"
-                          :emailAddress "jack@sixsq.com"
-                          :githublogin  "jack"})
-
-  (th/add-user-for-test! {:username     "alice-slipstream"
-                          :password     "123456"
-                          :emailAddress "alice@sixsq.com"})
-
-  (is (nil? (uiu/find-username-by-identifier :github nil "unknownid")))
-  (is (= "joe-slipstream" (uiu/find-username-by-identifier :github nil "joe"))))
 
 
 (deftest test-users-by-authn
@@ -197,22 +166,6 @@
   (is (= "william-slipstream" (uiu/find-username-by-identifier :some-method "some-instance" "bill"))))
 
 
-(deftest test-users-by-authn-detect-inconsistent-data-legacy
-  (th/add-user-for-test! {:username     "joe1-slipstream"
-                          :password     "123456"
-                          :emailAddress "jane@example.org"
-                          :firstName    "Jane"
-                          :lastName     "Tester"
-                          :githublogin  "joe"})
-  (th/add-user-for-test! {:username     "joe2-slipstream"
-                          :password     "123456"
-                          :emailAddress "jane@example.org"
-                          :firstName    "Jane"
-                          :lastName     "Tester"
-                          :githublogin  "joe"})
-  (is (thrown-with-msg? Exception #"one result for joe"
-                        (uiu/find-username-by-identifier :github nil "joe"))))
-
 (deftest check-user-exists?
   (let [test-username "some-long-random-user-name-that-does-not-exist"
         test-username-deleted (str test-username "-deleted")]
@@ -221,14 +174,12 @@
     (th/add-user-for-test! {:username     test-username
                             :password     "password"
                             :emailAddress "jane@example.org"
-                            :firstName    "Jane"
-                            :lastName     "Tester"
+                            :full-name    "Jane Tester"
                             :state        "ACTIVE"})
     (th/add-user-for-test! {:username     test-username-deleted
                             :password     "password"
                             :emailAddress "jane@example.org"
-                            :firstName    "Jane"
-                            :lastName     "Tester"
+                            :full-name    "Jane Tester"
                             :state        "DELETED"})
     (is (true? (db/user-exists? test-username)))
 

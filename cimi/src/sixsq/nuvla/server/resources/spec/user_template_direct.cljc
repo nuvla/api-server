@@ -9,16 +9,9 @@
 (def user-template-direct-keys
   {:opt-un [::user/href
             ::user/password
-            ::user/roles
             ::user/isSuperUser
             ::user/state
-            ::user/deleted
-            ::user/creation
-            ::user/lastOnline
-            ::user/lastExecute
-            ::user/activeSince
-            ::user/githublogin
-            ::user/cyclonelogin]})
+            ::user/deleted]})
 
 (def user-template-keys-spec-req
   (su/merge-keys-specs

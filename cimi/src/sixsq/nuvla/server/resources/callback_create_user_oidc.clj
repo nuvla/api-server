@@ -31,7 +31,6 @@
                                                                          :external-email    (or email (str sub "@fake-email.com")) ;;some OIDC server do not return emails
                                                                          :firstname         given_name
                                                                          :lastname          family_name
-                                                                         :organization      realm
                                                                          :instance          instance
                                                                          :fail-on-existing? true})]
                 (do

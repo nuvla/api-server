@@ -25,21 +25,18 @@
                           :emailAddress "st@sixsq.com"
                           :state        "ACTIVE"})
   (let [users-before-match (db/get-all-users)]
-    (is (= 1 (count users-before-match)))
-    (is (nil? (:githublogin (first users-before-match)))))
+    (is (= 1 (count users-before-match))))
 
   (match-existing-external-user :github "st" nil)
 
   (let [users-after-match (db/get-all-users)]
-    (is (= 1 (count users-after-match)))
-    (is (nil? (:githublogin (first users-after-match))))))
+    (is (= 1 (count users-after-match)))))
 
 
 (deftest match-already-mapped
   (let [get-db-user #(-> (db/get-all-users) first (dissoc :updated))
         user-info {:username     "joe"
                    :password     "secret"
-                   :githublogin  "st"
                    :emailAddress "st@sixsq.com"
                    :state        "ACTIVE"}
         _ (th/add-user-for-test! user-info)

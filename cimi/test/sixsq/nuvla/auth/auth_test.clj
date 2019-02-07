@@ -7,11 +7,10 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def valid-credentials {:username "super"
-                        :password "supeRsupeR"
+(def valid-credentials {:username     "super"
+                        :password     "supeRsupeR"
                         :emailAddress "jane@example.org"
-                        :firstName "Jane"
-                        :lastName "Tester"})
+                        :full-name    "Jane Tester"})
 (def valid-request {:params (merge {:authn-method :internal} valid-credentials)})
 
 (deftest test-auth-internal-accepts-username-and-fallbacks-to-user-name
@@ -21,11 +20,11 @@
   (is (= 200 (:status (auth/login {:params {:authn-method :internal :user-name "super" :password "supeRsupeR"}}))))
 
   (is (= 401 (:status (auth/login {:params {:authn-method :internal
-                                            :username "wrong" :user-name "super"
-                                            :password "supeRsupeR"}}))))
+                                            :username     "wrong" :user-name "super"
+                                            :password     "supeRsupeR"}}))))
   (is (= 200 (:status (auth/login {:params {:authn-method :internal
-                                            :username "super" :user-name "wrong"
-                                            :password "supeRsupeR"}})))))
+                                            :username     "super" :user-name "wrong"
+                                            :password     "supeRsupeR"}})))))
 
 (deftest test-auth-internal-invalid-credentials
   (th/add-user-for-test! valid-credentials)
@@ -39,7 +38,7 @@
 
 (deftest test-auth-logout
   (let [logout-response (auth/logout valid-request)
-        cookies         (get-in logout-response [:cookies "com.sixsq.slipstream.cookie"])]
+        cookies (get-in logout-response [:cookies "com.sixsq.slipstream.cookie"])]
     (is (= 200 (:status logout-response)))
     (is (= "INVALID" (:value cookies)))
     (is (zero? (:max-age cookies)))))
