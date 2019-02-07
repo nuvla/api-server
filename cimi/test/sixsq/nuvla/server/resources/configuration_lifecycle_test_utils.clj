@@ -37,10 +37,10 @@
         valid-create {:name                  name-attr
                       :description           description-attr
                       :tags                  tags-attr
-                      :configurationTemplate (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
-        href-create {:configurationTemplate {:href   href
+                      :template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
+        href-create {:template {:href   href
                                              attr-kw attr-value}}
-        invalid-create (assoc-in valid-create [:configurationTemplate :invalid] "BAD")]
+        invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
     ;; anonymous create should fail
     (-> session-anon

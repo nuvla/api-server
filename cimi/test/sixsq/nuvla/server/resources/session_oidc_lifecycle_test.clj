@@ -51,7 +51,7 @@
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
 
-(def configuration-session-oidc {:configurationTemplate {:service      "session-oidc"
+(def configuration-session-oidc {:template {:service      "session-oidc"
                                                          :instance     instance
                                                          :clientID     "FAKE_CLIENT_ID"
                                                          :clientSecret "MyOIDCClientSecret"

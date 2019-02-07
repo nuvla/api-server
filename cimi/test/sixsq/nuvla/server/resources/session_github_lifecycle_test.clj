@@ -39,7 +39,7 @@
                               :description "External Authentication with GitHub Credentials"
                               :acl         st/resource-acl})
 
-(def configuration-session-github {:configurationTemplate {:service      "session-github"
+(def configuration-session-github {:template {:service      "session-github"
                                                            :instance     instance
                                                            :clientID     "FAKE_CLIENT_ID"
                                                            :clientSecret "ABCDEF..."}})

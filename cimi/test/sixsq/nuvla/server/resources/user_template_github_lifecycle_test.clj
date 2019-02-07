@@ -34,7 +34,7 @@
   (cbu/update-callback-state! "WAITING" callback-id))
 
 
-(def configuration-user-github {:configurationTemplate {:service      "session-github" ;;reusing configuration from session GitHub
+(def configuration-user-github {:template {:service      "session-github" ;;reusing configuration from session GitHub
                                                         :instance     github/registration-method
                                                         :clientID     "FAKE_CLIENT_ID"
                                                         :clientSecret "ABCDEF..."}})

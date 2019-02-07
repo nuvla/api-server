@@ -35,7 +35,7 @@
                  (ltu/body->edn)
                  (ltu/is-status 200))
         template (get-in resp [:response :body])
-        valid-create {:configurationTemplate (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
+        valid-create {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
         uri (str (u/de-camelcase resource-name) "/" service)
         abs-uri (str p/service-context uri)]

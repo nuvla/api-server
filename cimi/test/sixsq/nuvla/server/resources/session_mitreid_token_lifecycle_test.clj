@@ -55,7 +55,7 @@
 
 
 (def configuration-session-mitreid
-  {:configurationTemplate {:service        "session-mitreid"
+  {:template {:service        "session-mitreid"
                            :instance       instance
                            :clientID       "FAKE_CLIENT_ID"
                            :clientSecret   "MyMITREidClientSecret"
@@ -66,7 +66,7 @@
 
 
 (def configuration-session-mitreid-token
-  {:configurationTemplate {:service   "session-mitreid-token"
+  {:template {:service   "session-mitreid-token"
                            :instance  instance
                            :clientIPs [valid-ip]}})
 

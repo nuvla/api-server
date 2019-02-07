@@ -43,7 +43,7 @@
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
 
-(def configuration-user-oidc {:configurationTemplate {:service      "session-oidc" ;;reusing configuration from session
+(def configuration-user-oidc {:template {:service      "session-oidc" ;;reusing configuration from session
                                                       :instance     oidc/registration-method
                                                       :clientID     "FAKE_CLIENT_ID"
                                                       :clientSecret "MyClientSecret"

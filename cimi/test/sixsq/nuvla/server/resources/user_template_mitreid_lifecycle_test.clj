@@ -44,7 +44,7 @@
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
 
-(def configuration-user-mitreid {:configurationTemplate {:service        "session-mitreid" ;;reusing configuration from session MITREid
+(def configuration-user-mitreid {:template {:service        "session-mitreid" ;;reusing configuration from session MITREid
                                                          :instance       mitreid/registration-method
                                                          :clientID       "FAKE_CLIENT_ID"
                                                          :clientSecret   "MyMITREidClientSecret"

@@ -52,7 +52,7 @@
     "3wIDAQAB"))
 
 (def configuration-session-mitreid
-  {:configurationTemplate {:service        "session-mitreid" ;;reusing configuration from session MITREid
+  {:template {:service        "session-mitreid" ;;reusing configuration from session MITREid
                            :instance       instance
                            :clientID       "FAKE_CLIENT_ID"
                            :clientSecret   "MyMITREidClientSecret"

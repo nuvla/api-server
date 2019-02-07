@@ -90,11 +90,10 @@
                      configuration-template-keys-spec-req))
 
 ;; Defines the contents of the slipstream template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :configurationTemplate here.
-(s/def ::configurationTemplate
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      configuration-template-keys-spec-opt))
 
 (s/def ::slipstream-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:opt-un [::configurationTemplate]}))
+                     {:opt-un [::template]}))
