@@ -75,7 +75,7 @@
           (ltu/is-status 200)
           (ltu/is-operation-present "delete")
           (ltu/is-operation-absent "edit")
-          (ltu/is-operation-present (:execute c/action-uri)))
+          (ltu/is-operation-present "execute"))
 
       ;; user cannot directly see the callback
       (-> session-user
