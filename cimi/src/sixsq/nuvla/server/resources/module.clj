@@ -13,15 +13,12 @@
     [sixsq.nuvla.server.resources.module-image :as module-image]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.spec.module :as module]
-    [sixsq.nuvla.util.response :as r]
-    [superstring.core :as str]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "Module")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -259,7 +256,7 @@
       (or (ex-data e) (throw e)))))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

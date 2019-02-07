@@ -11,8 +11,6 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :externalObjectTemplates)
-
 (def ^:const resource-name "ExternalObjectTemplate")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -71,18 +69,6 @@
 ;;
 (def templates (atom {}))
 (def name->kw (atom {}))
-
-
-(defn collection-wrapper-fn
-  "Specialized version of this function that removes the adding
-   of operations to the collection and entries.  These are already
-   part of the stored resources."
-  [resource-name collection-acl collection-uri collection-key]
-  (fn [_ entries]
-    (let [skeleton {:acl         collection-acl
-                    :resourceURI collection-uri
-                    :id          (u/de-camelcase resource-name)}]
-      (assoc skeleton collection-key entries))))
 
 
 (defn complete-resource
@@ -165,7 +151,7 @@
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri resource-tag)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)

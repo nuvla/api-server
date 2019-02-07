@@ -43,7 +43,6 @@
   ;;  * resource-name = 'ConnectorTemplate'
   ;;  * collection-name = 'ConnectorTemplateCollection'
   ;;  * resource-url = 'connector-template'
-  ;;  * resource-tag = 'ConnectorTemplates'
   ;;  * resource-uri = '<prefix>/ConnectorTemplate'
   ;;  * collection-uri = '<prefix>/ConnectorTemplateCollection'
   ;;
@@ -64,11 +63,6 @@
     "Provides the relative URL for the resource/collection on the server using
      kebab-case (e.g. 'connector-template' for the 'ConnectorTemplate'
      resource.")
-  (resource-tag [_]
-    "Provides the name of the key (in Pascal-case) used in the CloudEntryPoint
-     and in the collection representation for this resource. This is the plural
-     form of the resource name (e.g. 'ConnectorTemplates' for the
-     'ConnectorTemplate' resource.")
   (resource-uri [_]
     "Provides the unique URI that identifies the type of this resource. This
      is the resource name with a given URI prefix prepended. For CIMI

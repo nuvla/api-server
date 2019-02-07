@@ -48,7 +48,7 @@
                     (ltu/is-operation-absent "add")
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
-                    (ltu/entries ct/resource-tag))
+                    (ltu/entries))
         ids (set (map :id entries))
         methods (set (map :method entries))
         types (set (map :type entries))]

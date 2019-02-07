@@ -19,8 +19,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :users)
-
 (def ^:const resource-name "User")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -228,7 +226,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 (defmethod crud/query resource-name
   [request]
   (query-impl request))

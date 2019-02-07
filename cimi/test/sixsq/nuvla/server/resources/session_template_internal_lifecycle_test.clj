@@ -51,7 +51,7 @@
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-resource-uri st/collection-uri)
-                      (ltu/entries :sessionTemplates))]
+                      (ltu/entries))]
       (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
     ;; do full lifecycle for an internal session template
@@ -77,7 +77,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-resource-uri st/collection-uri)
-                        (ltu/entries :templates))]
+                        (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 

@@ -18,8 +18,6 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :externalObjects)
-
 (def ^:const resource-name "ExternalObject")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -273,7 +271,7 @@
   (edit-impl (assoc request :body (select-editable-attributes body))))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 
 (defmethod crud/query resource-name

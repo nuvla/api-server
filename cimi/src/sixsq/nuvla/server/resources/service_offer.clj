@@ -84,8 +84,6 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 
 (def ^:const resource-name "ServiceOffer")
 
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
-
 (def ^:const resource-url (u/de-camelcase resource-name))
 
 (def ^:const collection-name "ServiceOfferCollection")
@@ -174,7 +172,7 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

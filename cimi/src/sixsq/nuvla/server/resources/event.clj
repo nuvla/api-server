@@ -243,12 +243,14 @@ Delete a specific (the event-uuid is known) event.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :events)
 (def ^:const resource-name event-utils/resource-name)
+
 (def ^:const resource-url event-utils/resource-url)
+
 (def ^:const collection-name "EventCollection")
 
 (def ^:const resource-uri event-utils/resource-uri)
+
 (def ^:const collection-uri (str c/cimi-schema-uri collection-name))
 
 (def collection-acl event-utils/collection-acl)
@@ -300,7 +302,7 @@ Delete a specific (the event-uuid is known) event.
 ;;
 ;; collection
 ;;
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 (defmethod crud/query resource-name
   [{{:keys [orderby]} :cimi-params :as request}]
   (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))

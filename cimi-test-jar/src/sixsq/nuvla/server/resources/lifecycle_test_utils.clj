@@ -192,8 +192,8 @@
     m))
 
 
-(defn entries [m k]
-  (get-in m [:response :body k]))
+(defn entries [m]
+  (some-> m :response :body :resources))
 
 
 (defn concat-routes

@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service-attribute-namespace :refer :all]
     [peridot.core :refer :all]))
@@ -40,29 +39,29 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ;; user create should fail
     (-> session-user
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     (let [uri (-> session-admin
                   (request base-uri
                            :request-method :post
                            :body (json/write-str valid-namespace))
-                  (t/body->edn)
-                  (t/is-status 201)
-                  (t/location))
+                  (ltu/body->edn)
+                  (ltu/is-status 201)
+                  (ltu/location))
           abs-uri (str p/service-context (u/de-camelcase uri))
           doc (-> session-user
                   (request abs-uri)
-                  (t/body->edn)
-                  (t/is-status 200)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
                   (get-in [:response :body]))]
 
       (is (= "schema-org" (:prefix doc)))
@@ -71,8 +70,8 @@
 
       (-> session-user
           (request "/api/service-attribute-namespace")
-          (t/body->edn)
-          (t/is-status 200)
+          (ltu/body->edn)
+          (ltu/is-status 200)
           (get-in [:response :body]))
 
       ;; trying to create another namespace with same name is forbidden
@@ -80,8 +79,8 @@
           (request base-uri
                    :request-method :post
                    :body (json/write-str namespace-same-prefix))
-          (t/body->edn)
-          (t/is-status 409)
+          (ltu/body->edn)
+          (ltu/is-status 409)
           (get-in [:response :body :message])
           (= (str "conflict with " uri))
           is)
@@ -91,8 +90,8 @@
           (request base-uri
                    :request-method :post
                    :body (json/write-str namespace-same-uri))
-          (t/body->edn)
-          (t/is-status 409)
+          (ltu/body->edn)
+          (ltu/is-status 409)
           (get-in [:response :body :message])
           (= (str "conflict with " uri))
           is)
@@ -102,10 +101,10 @@
           (request base-uri
                    :request-method :post
                    :body (json/write-str another-valid-namespace))
-          (t/body->edn)
-          (t/is-status 201))
+          (ltu/body->edn)
+          (ltu/is-status 201))
 
       (-> session-admin
           (request abs-uri :request-method :delete)
-          (t/body->edn)
-          (t/is-status 200)))))
+          (ltu/body->edn)
+          (ltu/is-status 200)))))

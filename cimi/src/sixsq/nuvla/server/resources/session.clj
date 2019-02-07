@@ -98,8 +98,6 @@ session.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :sessions)
-
 (def ^:const resource-name "Session")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -329,7 +327,7 @@ session.
   (fn [request]
     (query-fn (add-session-filter request))))
 
-(def query-impl (query-wrapper (std-crud/query-fn resource-name collection-acl collection-uri resource-tag)))
+(def query-impl (query-wrapper (std-crud/query-fn resource-name collection-acl collection-uri)))
 
 (defmethod crud/query resource-name
   [request]

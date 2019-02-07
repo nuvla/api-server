@@ -52,7 +52,7 @@
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
-                      (ltu/entries resource-tag))
+                      (ltu/entries))
           ids (set (map :id entries))
           types (set (map :service entries))]
       (is (contains? ids (str resource-url "/" service)))
