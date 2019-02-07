@@ -38,14 +38,14 @@
 
         imported-ssh-key-info (ssh-utils/generate)
 
-        create-import-no-href {:credentialTemplate (ltu/strip-unwanted-attrs
-                                                     (assoc template
-                                                       :publicKey (:publicKey imported-ssh-key-info)))}
+        create-import-no-href {:template (ltu/strip-unwanted-attrs
+                                           (assoc template
+                                             :publicKey (:publicKey imported-ssh-key-info)))}
 
-        create-import-href {:credentialTemplate {:href      href
-                                                 :publicKey (:publicKey imported-ssh-key-info)}}
+        create-import-href {:template {:href      href
+                                       :publicKey (:publicKey imported-ssh-key-info)}}
 
-        invalid-create-href (assoc-in create-import-href [:credentialTemplate :href] "user-template/unknown-template")]
+        invalid-create-href (assoc-in create-import-href [:template :href] "user-template/unknown-template")]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -85,7 +85,7 @@
     (-> session-user
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc-in create-import-href [:credentialTemplate :publicKey] "bad-ssh-key")))
+                 :body (json/write-str (assoc-in create-import-href [:template :publicKey] "bad-ssh-key")))
         (ltu/body->edn)
         (ltu/is-status 400)
         (ltu/message-matches #".*invalid public key.*"))
@@ -149,7 +149,7 @@
                      (ltu/is-status 200)
                      (get-in [:response :body]))
 
-        create-import-href {:credentialTemplate {:href href}}]
+        create-import-href {:template {:href href}}]
 
     ;; create a credential as a normal user
     (let [resp (-> session-user

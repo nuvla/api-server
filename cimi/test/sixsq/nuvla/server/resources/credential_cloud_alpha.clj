@@ -15,7 +15,7 @@
 
 (s/def :cimi/credential.cloud-alpha.create
   (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [:cimi.credential-template.cloud-alpha/credentialTemplate]}))
+                     {:req-un [:cimi.credential-template.cloud-alpha/template]}))
 
 ;;
 ;; convert template to credential

@@ -51,7 +51,7 @@
 
 (defn create-cloud-cred
   [user-session]
-  (let [cred-create {:credentialTemplate
+  (let [cred-create {:template
                      {:href      (str credt/resource-url "/" cred-alpha/method)
                       :key       "key"
                       :secret    "secret"

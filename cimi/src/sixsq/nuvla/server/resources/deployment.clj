@@ -90,7 +90,7 @@
 (defn generate-api-key-secret
   [{:keys [identity] :as request}]
   (let [request-api-key {:params   {:resource-name credential/resource-url}
-                         :body     {:credentialTemplate {:href (str "credential-template/" cred-api-key/method)}}
+                         :body     {:template {:href (str "credential-template/" cred-api-key/method)}}
                          :identity identity}
         {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
     (if (= status 201)

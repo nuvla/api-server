@@ -43,18 +43,18 @@
                      (ltu/is-status 200)
                      (get-in [:response :body]))
 
-        create-import-no-href {:credentialTemplate (ltu/strip-unwanted-attrs template)}
+        create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href {:name               name-attr
-                            :description        description-attr
-                            :tags               tags-attr
-                            :credentialTemplate {:href href
-                                                 :ttl  1000}}
+        create-import-href {:name        name-attr
+                            :description description-attr
+                            :tags        tags-attr
+                            :template    {:href href
+                                          :ttl  1000}}
 
-        create-import-href-zero-ttl {:credentialTemplate {:href href
-                                                          :ttl  0}}
+        create-import-href-zero-ttl {:template {:href href
+                                                :ttl  0}}
 
-        create-import-href-no-ttl {:credentialTemplate {:href href}}]
+        create-import-href-no-ttl {:template {:href href}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
