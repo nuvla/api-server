@@ -115,7 +115,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-resource-uri collection-uri)
-                        (ltu/entries :sessionTemplates))]
+                        (ltu/entries))]
         (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
       ;; delete the template
@@ -137,7 +137,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-resource-uri collection-uri)
-                        (ltu/entries :sessionTemplates))]
+                        (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 (defn bad-methods [base-uri]

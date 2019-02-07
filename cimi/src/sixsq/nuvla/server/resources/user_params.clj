@@ -30,8 +30,6 @@ where the value is the `id` of the User resource without the 'user/' prefix.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :userParam)
-
 (def ^:const resource-name "UserParam")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -127,7 +125,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
 
 (defn- resource-ids-str-from-resp
   [resp]
-  (->> (get-in resp [:body resource-tag])
+  (->> (get-in resp [:body :resources])
        (map :id)
        (s/join ", ")))
 
@@ -175,7 +173,7 @@ where the value is the `id` of the User resource without the 'user/' prefix.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 (defmethod crud/query resource-name
   [request]
   (query-impl request))

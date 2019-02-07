@@ -377,7 +377,7 @@
                             (ltu/is-status 200)
                             (ltu/is-resource-uri eo/collection-uri)
                             (ltu/is-count 1)
-                            (ltu/entries eo/resource-tag)
+                            (ltu/entries)
                             first)
                   id (:id entry)
                   abs-uri (str p/service-context id)]

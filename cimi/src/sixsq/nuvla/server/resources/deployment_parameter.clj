@@ -11,14 +11,11 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
     [sixsq.nuvla.util.response :as r]
-    [superstring.core :as str]
     [taoensso.timbre :as log]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const resource-name "DeploymentParameter")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -165,7 +162,7 @@
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

@@ -16,8 +16,6 @@ CredentialTemplate resource.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :credentials)
-
 (def ^:const resource-name "Credential")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -202,7 +200,7 @@ CredentialTemplate resource.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 (defmethod crud/query resource-name
   [request]
   (query-impl request))

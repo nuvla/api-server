@@ -119,7 +119,7 @@
                         (ltu/is-status 200)
                         (ltu/is-resource-uri c/collection-uri)
                         (ltu/is-count #(= 1 %))
-                        (ltu/entries c/resource-tag))]
+                        (ltu/entries))]
         (is ((set (map :id entries)) uri))
 
         ;; verify that all entries are accessible

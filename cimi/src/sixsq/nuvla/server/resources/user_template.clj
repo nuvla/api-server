@@ -52,8 +52,6 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :userTemplates)
-
 (def ^:const resource-name "UserTemplate")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -173,7 +171,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 
 (defmethod crud/query resource-name

@@ -6,11 +6,10 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.configuration-template]
     [sixsq.nuvla.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]))
 
 (def ^:const resource-type (u/ns->type *ns*))
-
-(def ^:const resource-tag :configurationTemplates)
 
 (def ^:const resource-name "ConfigurationTemplate")
 
@@ -38,17 +37,6 @@
 ;; atom to keep track of the loaded ConfigurationTemplate resources
 ;;
 (def templates (atom {}))
-
-(defn collection-wrapper-fn
-  "Specialized version of this function that removes the adding
-   of operations to the collection and entries.  These are already
-   part of the stored resources."
-  [resource-name collection-acl collection-uri collection-key]
-  (fn [_ entries]
-    (let [skeleton {:acl         collection-acl
-                    :resourceURI collection-uri
-                    :id          (u/de-camelcase resource-name)}]
-      (assoc skeleton collection-key entries))))
 
 (defn complete-resource
   "Completes the given document with server-managed information:
@@ -129,7 +117,7 @@
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri resource-tag)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)

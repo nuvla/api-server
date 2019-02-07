@@ -81,22 +81,22 @@ internal-identity
 
 
 (defn collection-wrapper-fn
-  [resource-name collection-acl collection-uri collection-key]
-  (fn [request entries]
-    (let [skeleton {:acl         collection-acl
-                    :resourceURI collection-uri
-                    :id          (u/de-camelcase resource-name)}
-          entries-with-operations (map #(crud/set-operations % request) entries)]
-      (-> skeleton
-          (crud/set-operations request)
-          (assoc collection-key entries-with-operations)))))
+  ([resource-name collection-acl collection-uri]
+   (collection-wrapper-fn resource-name collection-acl collection-uri true))
+  ([resource-name collection-acl collection-uri with-entries-op?]
+   (fn [request entries]
+     (let [skeleton {:acl         collection-acl
+                     :resourceURI collection-uri
+                     :id          (u/de-camelcase resource-name)}]
+       (cond-> (crud/set-operations skeleton request)
+               with-entries-op? (assoc :resources (map #(crud/set-operations % request) entries)))))))
 
 
 (defn query-fn
-  [resource-name collection-acl collection-uri collection-key]
+  [resource-name collection-acl collection-uri]
   (fn [request]
     (a/can-view? {:acl collection-acl} request)
-    (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri collection-key)
+    (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
           options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
           [metadata entries] (db/query resource-name options)
           entries-and-count (merge metadata (wrapper-fn request entries))]

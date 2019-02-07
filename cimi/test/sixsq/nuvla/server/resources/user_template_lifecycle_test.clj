@@ -48,7 +48,7 @@
                     (ltu/is-operation-present "add")        ;; should really be absent, but admin always has all rights
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
-                    (ltu/entries t/resource-tag))
+                    (ltu/entries))
         ids (set (map :id entries))
         types (set (map :method entries))]
     (is (= #{(str t/resource-url "/" direct/registration-method)}

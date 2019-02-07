@@ -26,9 +26,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)
-                    :response
-                    :body
-                    :resourceMetadatas)]
+                    (ltu/entries))]
 
     (first (filter #(-> % :typeURI (= typeURI)) md-docs))))
 
@@ -47,9 +45,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)
-                    :response
-                    :body
-                    :resourceMetadatas)
+                    (ltu/entries))
 
         typeURIs (set (map :typeURI md-docs))
         ids (set (map u/document-id (map :id md-docs)))]

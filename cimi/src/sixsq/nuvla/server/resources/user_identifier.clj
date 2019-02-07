@@ -27,12 +27,9 @@ must delete the old one and create a new one.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [superstring.core :as str]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 (def ^:const resource-name "UserIdentifier")
-
-(def ^:const resource-tag (keyword (str (str/camel-case resource-name) "s")))
 
 (def ^:const resource-url (u/de-camelcase resource-name))
 
@@ -123,7 +120,7 @@ must delete the old one and create a new one.
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

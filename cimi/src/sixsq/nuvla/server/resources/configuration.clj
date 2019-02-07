@@ -10,8 +10,6 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-tag :configurations)
-
 (def ^:const resource-name "Configuration")
 
 (def ^:const resource-url (u/de-camelcase resource-name))
@@ -124,7 +122,7 @@
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri resource-tag))
+(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
 
 (defmethod crud/query resource-name
   [request]

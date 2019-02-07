@@ -51,7 +51,7 @@
 ;;
 
 (def ^:private are-counts
-  (partial tu/are-counts :events base-uri "joe"))
+  (partial tu/are-counts :resources base-uri "joe"))
 
 (deftest events-are-retrieved-most-recent-first
   (->> valid-events
@@ -60,21 +60,23 @@
        false?
        is)
 
-  (->> (get-in (exec-request base-uri "" "joe") [:response :body :events])
+  (->> (exec-request base-uri "" "joe")
+       ltu/entries
        (map :timestamp)
        tu/ordered-desc?
        is))
 
 (deftest check-events-can-be-reordered
-  (->> (get-in (exec-request base-uri "?orderby=timestamp:asc" "joe") [:response :body :events])
+  (->> (exec-request base-uri "?orderby=timestamp:asc" "joe")
+       ltu/entries
        (map :timestamp)
-       tu/ordered-asc?
-       is))
+       (tu/ordered-asc?)
+       (is)))
 
 (defn timestamp-paginate-single
   [n]
   (-> (exec-request base-uri (str "?first=" n "&last=" n) "joe")
-      (get-in [:response :body :events])
+      ltu/entries
       first
       :timestamp))
 

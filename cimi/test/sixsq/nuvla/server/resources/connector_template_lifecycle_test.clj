@@ -51,7 +51,7 @@
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
-                      (ltu/entries resource-tag))
+                      (ltu/entries))
           ids (set (map :id entries))
           types (set (map :cloudServiceType entries))]
       (is (= #{(str resource-url "/" example/cloud-service-type)} ids))
