@@ -32,12 +32,11 @@
                      user-params-template-exec-keys-spec))
 
 ;; Defines the contents of the auto template used in a create resource.
-;; NOTE: The name must match the key defined by the resource, :userParamTemplate here.
-(s/def :cimi.user-params-template.exec/userParamTemplate
+(s/def :cimi.user-params-template.exec/template
   (su/only-keys-maps ps/template-keys-spec
                      user-params-template-exec-keys-spec))
 
 (s/def :cimi/user-params-template.exec-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:opt-un [:cimi.user-params-template.exec/userParamTemplate]}))
+                     {:opt-un [:cimi.user-params-template.exec/template]}))
 
