@@ -21,7 +21,7 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id                  (str c/resource-url "/connector-uuid")
-              :resourceURI         c/resource-uri
+              :resource-type         c/resource-uri
               :created             timestamp
               :updated             timestamp
               :acl                 valid-acl
@@ -32,5 +32,5 @@
               :instanceName        "foo"}]
 
     (stu/is-valid :cimi.test/connector root)
-    (doseq [k (into #{} (keys (dissoc root :id :resourceURI)))]
+    (doseq [k (into #{} (keys (dissoc root :id :resource-type)))]
       (stu/is-invalid :cimi.test/connector (dissoc root k)))))

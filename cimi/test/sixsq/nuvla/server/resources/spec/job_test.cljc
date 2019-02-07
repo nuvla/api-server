@@ -16,7 +16,7 @@
 (deftest check-job
   (let [timestamp "1964-08-25T10:00:00.0Z"
         job {:id                (str sj/resource-url "/test-job")
-             :resourceURI       sj/resource-uri
+             :resource-type       sj/resource-uri
              :created           timestamp
              :updated           timestamp
              :acl               valid-acl
@@ -42,7 +42,7 @@
     (stu/is-invalid ::job/job (assoc job :parentJob "notjob/id"))
 
     ;; mandatory keywords
-    (doseq [k #{:id :resourceURI :created :updated :acl :state :progress :action}]
+    (doseq [k #{:id :resource-type :created :updated :acl :state :progress :action}]
       (stu/is-invalid ::job/job (dissoc job k)))
 
     ;; optional keywords

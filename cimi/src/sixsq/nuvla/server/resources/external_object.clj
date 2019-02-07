@@ -155,8 +155,8 @@
   "Provides a list of the standard external object operations, depending
    on the user's authentication and whether this is a ExternalObject or
    a ExternalObjectCollection."
-  [{:keys [resourceURI] :as resource} request]
-  (if (.endsWith resourceURI "Collection")
+  [{:keys [resource-type] :as resource} request]
+  (if (.endsWith resource-type "Collection")
     (standard-external-object-collection-operations resource request)
     (standard-external-object-resource-operations resource request)))
 
@@ -185,11 +185,11 @@
           "Transforms the ExternalObjectTemplate into a ExternalObject resource."
           :objectType)
 
-;; default implementation just updates the resourceURI
+;; default implementation just updates the resource-type
 
 (defmethod tpl->externalObject :default
   [resource]
-  (assoc resource :resourceURI resource-uri))
+  (assoc resource :resource-type resource-uri))
 
 ;;
 ;; CRUD operations
@@ -238,7 +238,7 @@
   (a/can-modify? {:acl collection-acl} request)
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resourceURI create-uri)
+                 (assoc :resource-type create-uri)
                  (merge-into-tmpl)
                  (resolve-hrefs idmap)
                  (crud/validate)

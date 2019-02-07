@@ -10,7 +10,7 @@
 (deftest check-root-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id          resource-url
-              :resourceURI p/service-context
+              :resource-type p/service-context
               :created     timestamp
               :updated     timestamp
               :acl         resource-acl
@@ -22,7 +22,7 @@
 
     (stu/is-invalid ::cep/resource (assoc root :collections {}))
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :baseURI}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :baseURI}]
       (stu/is-invalid ::cep/resource (dissoc root attr)))
 
     (doseq [attr #{:collections}]

@@ -17,7 +17,7 @@
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root (merge tpl/resource
                     {:id              "external-object/my-public-object"
-                     :resourceURI     eot/resource-uri
+                     :resource-type     eot/resource-uri
                      :created         timestamp
                      :updated         timestamp
                      :acl             valid-acl
@@ -27,7 +27,7 @@
     (stu/is-valid ::eo-public/external-object root)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resourceURI :created :updated :acl
+    (doseq [k #{:id :resource-type :created :updated :acl
                 :objectType :state :objectName :bucketName :objectStoreCred}]
       (stu/is-invalid ::eo-public/external-object (dissoc root k)))
 

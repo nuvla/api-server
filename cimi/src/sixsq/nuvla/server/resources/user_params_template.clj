@@ -39,12 +39,12 @@ manually and will not need to use these templates.
 
 (defn complete-resource
   "Completes the given document with server-managed information:
-   resourceURI, timestamps, operations, and ACL."
+   resource-type, timestamps, operations, and ACL."
   [{:keys [paramsType] :as resource}]
   (let [id  (str resource-url "/" paramsType)]
     (-> resource
         (merge {:id          id
-                :resourceURI resource-uri
+                :resource-type resource-uri
                 :acl         resource-acl})
         u/update-timestamps)))
 

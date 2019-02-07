@@ -28,7 +28,7 @@ internal-identity
       (-> body
           u/strip-service-attrs
           (crud/new-identifier resource-name)
-          (assoc :resourceURI resource-uri)
+          (assoc :resource-type resource-uri)
           u/update-timestamps
           (crud/add-acl request)
           crud/validate)
@@ -88,7 +88,7 @@ internal-identity
      (let [resources (cond->> entries
                               with-entries-op? (map #(crud/set-operations % request)))
            skeleton {:acl         collection-acl
-                     :resourceURI collection-uri
+                     :resource-type collection-uri
                      :id          (u/de-camelcase resource-name)
                      :resources   resources}]
 

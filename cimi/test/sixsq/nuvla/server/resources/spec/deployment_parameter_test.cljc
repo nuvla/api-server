@@ -17,7 +17,7 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id          (str t/resource-url "/connector-uuid")
-              :resourceURI t/resource-uri
+              :resource-type t/resource-uri
               :created     timestamp
               :updated     timestamp
               :acl         valid-acl
@@ -32,7 +32,7 @@
     (stu/is-invalid ::dp/deployment-parameter (assoc root :value "   "))
 
     ;; required attributes
-    (doseq [k #{:id :resourceURI :created :updated :acl :deployment :name}]
+    (doseq [k #{:id :resource-type :created :updated :acl :deployment :name}]
       (stu/is-invalid ::dp/deployment-parameter (dissoc root k)))
 
     ;; optional attributes

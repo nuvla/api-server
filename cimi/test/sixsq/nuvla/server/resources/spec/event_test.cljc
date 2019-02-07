@@ -11,7 +11,7 @@
 
 (def valid-event
   {:id          "event/262626262626262"
-   :resourceURI resource-uri
+   :resource-type resource-uri
    :acl         {:owner {:type "USER" :principal "joe"}
                  :rules [{:type "ROLE" :principal "ANON" :right "ALL"}]}
 
@@ -46,7 +46,7 @@
   (stu/is-valid ::event/event valid-event)
 
   ;; mandatory keywords
-  (doseq [k #{:id :resourceURI :acl :timestamp :content :type :severity}]
+  (doseq [k #{:id :resource-type :acl :timestamp :content :type :severity}]
     (stu/is-invalid ::event/event (dissoc valid-event k)))
 
   ;; optional keywords

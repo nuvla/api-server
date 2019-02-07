@@ -48,13 +48,13 @@
 (defn cimi-select
   "Calculates the value for the :select key in the CIMI parameters map. The
   value will be nil if the select key was not specified or if the wildcard
-  value '*' is given. Otherwise a set of the desired keys (with 'resourceURI'
+  value '*' is given. Otherwise a set of the desired keys (with 'resource-type'
   added automatically) is returned."
   [{:keys [select] :as params}]
   (some->> select
            utils/as-vector
            (mapcat utils/comma-split)
-           (cons "resourceURI")
+           (cons "resource-type")
            set
            utils/reduce-select-set))
 

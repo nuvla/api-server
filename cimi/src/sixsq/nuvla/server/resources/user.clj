@@ -181,7 +181,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           authn-method (-> body :template :method)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
-                                                    (assoc :resourceURI create-uri)
+                                                    (assoc :resource-type create-uri)
                                                     (update-in [:template] dissoc :method :id) ;; forces use of template reference
                                                     (std-crud/resolve-hrefs idmap true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs

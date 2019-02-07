@@ -22,7 +22,7 @@
 (deftest test-configuration-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id          (str resource-url "/slipstream")
-             :resourceURI resource-uri
+             :resource-type resource-uri
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl
@@ -30,5 +30,5 @@
 
     (is (stu/is-valid ::configuration cfg))
 
-    (doseq [k (into #{} (keys (dissoc cfg :id :resourceURI)))]
+    (doseq [k (into #{} (keys (dissoc cfg :id :resource-type)))]
       (stu/is-invalid ::configuration (dissoc cfg k)))))

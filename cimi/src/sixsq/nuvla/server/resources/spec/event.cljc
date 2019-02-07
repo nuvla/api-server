@@ -27,7 +27,7 @@
 
 (s/def ::event
   (su/only-keys :req-un [::cimi-common/id
-                         ::cimi-common/resourceURI
+                         ::cimi-common/resource-type
                          ::cimi-common/acl
 
                          ::cimi-core/timestamp

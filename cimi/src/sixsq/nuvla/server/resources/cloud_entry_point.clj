@@ -36,7 +36,7 @@ curl https://nuv.la/api/cloud-entry-point
 ```json
 {
   \"id\" : \"cloud-entry-point\",
-  \"resourceURI\" : \"http://schemas.dmtf.org/cimi/2/CloudEntryPoint\",
+  \"resource-type\" : \"http://schemas.dmtf.org/cimi/2/CloudEntryPoint\",
   \"created\" : \"2016-06-21T17:31:14.950Z\",
   \"updated\" : \"2016-06-21T17:31:14.950Z\",
 
@@ -386,7 +386,7 @@ include aggregating values over a collection of resources.
   (let [record (u/update-timestamps
                  {:acl         resource-acl
                   :id          resource-url
-                  :resourceURI resource-uri})]
+                  :resource-type resource-uri})]
     (db/add resource-name record {:user-roles ["ANON"]})))
 
 

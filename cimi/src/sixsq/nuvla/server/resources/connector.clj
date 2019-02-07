@@ -88,12 +88,12 @@
           "Transforms the ConnectorTemplate into a Connector resource."
           :cloudServiceType)
 
-;; default implementation just updates the resourceURI
+;; default implementation just updates the resource-type
 (defmethod tpl->connector :default
   [{:keys [href] :as resource}]
   (-> resource
       (dissoc :href)
-      (assoc :resourceURI resource-uri
+      (assoc :resource-type resource-uri
              :acl resource-acl)
       (cond-> href (assoc :template {:href href}))))
 
@@ -108,7 +108,7 @@
   [{:keys [body] :as request}]
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resourceURI create-uri)
+                 (assoc :resource-type create-uri)
                  (std-crud/resolve-hrefs idmap true)
                  (crud/validate)
                  :template

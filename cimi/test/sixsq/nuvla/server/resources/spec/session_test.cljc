@@ -14,7 +14,7 @@
 (deftest check-session-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id              (str resource-url "/internal")
-             :resourceURI     resource-uri
+             :resource-type     resource-uri
              :created         timestamp
              :updated         timestamp
              :acl             valid-acl
@@ -28,7 +28,7 @@
 
     (stu/is-valid ::session/session cfg)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :method :expiry :template}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :expiry :template}]
       (stu/is-invalid ::session/session (dissoc cfg attr)))
 
     (doseq [attr #{:username :server :clientIP}]

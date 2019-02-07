@@ -101,8 +101,8 @@ address. When the callback is triggered, the `validated` flag is set to true.
   (try
     (a/can-modify? resource request)
     (let [href (:id resource)
-          ^String resourceURI (:resourceURI resource)
-          ops (if (.endsWith resourceURI "Collection")
+          ^String resource-type (:resource-type resource)
+          ops (if (.endsWith resource-type "Collection")
                 [{:rel (:add c/action-uri) :href href}]
                 (cond-> [{:rel (:delete c/action-uri) :href href}]
                         (not validated) (conj {:rel (:validate c/action-uri) :href (str href "/validate")})))]

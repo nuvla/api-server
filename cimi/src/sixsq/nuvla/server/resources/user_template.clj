@@ -24,14 +24,14 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 {
   \"count\" : 15,
   ...
-  \"resourceURI\" : \"http://sixsq.com/slipstream/1/UserTemplateCollection\",
+  \"resource-type\" : \"http://sixsq.com/slipstream/1/UserTemplateCollection\",
   \"id\" : \"user-template\",
   \"userTemplates\" : [ {
     \"name\" : \"ESRF Realm\",
     \"description\" : \"Creates a new user through OIDC registration\",
     ...
     },
-    \"resourceURI\" : \"http://sixsq.com/slipstream/1/UserTemplate\"
+    \"resource-type\" : \"http://sixsq.com/slipstream/1/UserTemplate\"
   }, {
     \"name\" : \"INFN Realm\",
     \"description\" : \"Creates a new user through OIDC registration\",

@@ -87,7 +87,7 @@
           (-> module-meta
               u/strip-service-attrs
               (crud/new-identifier resource-name)
-              (assoc :resourceURI resource-uri)
+              (assoc :resource-type resource-uri)
               u/update-timestamps
               (crud/add-acl request)
               crud/validate)
@@ -95,7 +95,7 @@
       (let [content-url (type->resource-name type)
             content-uri (type->resource-uri type)
 
-            content-body (merge module-content {:resourceURI content-uri})
+            content-body (merge module-content {:resource-type content-uri})
 
             content-request {:params   {:resource-name content-url}
                              :identity std-crud/internal-identity
@@ -114,7 +114,7 @@
           (-> module-meta
               u/strip-service-attrs
               (crud/new-identifier resource-name)
-              (assoc :resourceURI resource-uri)
+              (assoc :resource-type resource-uri)
               u/update-timestamps
               (crud/add-acl request)
               crud/validate)
@@ -149,7 +149,7 @@
           module-content (if version-id
                            (-> version-id
                                (crud/retrieve-by-id-as-admin)
-                               (dissoc :resourceURI :operations :acl))
+                               (dissoc :resource-type :operations :acl))
                            (when version-index
                              (throw (r/ex-not-found (str "Module version not found: " resource-url "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
@@ -177,7 +177,7 @@
           content-url (type->resource-name type)
           content-uri (type->resource-uri type)
 
-          content-body (merge module-content {:resourceURI content-uri})
+          content-body (merge module-content {:resource-type content-uri})
 
           content-request {:params   {:resource-name content-url}
                            :identity std-crud/internal-identity

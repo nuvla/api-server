@@ -16,7 +16,7 @@
 (deftest check-session-template-internal-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id          (str st/resource-url "/internal")
-             :resourceURI st/resource-uri
+             :resource-type st/resource-uri
              :created     timestamp
              :updated     timestamp
              :acl         valid-acl
@@ -31,7 +31,7 @@
 
     (stu/is-valid ::session-tpl/schema cfg)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :method :instance :username :password}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :instance :username :password}]
       (stu/is-invalid ::session-tpl/schema (dissoc cfg attr)))
 
     (doseq [attr #{:group :redirectURI}]

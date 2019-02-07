@@ -22,7 +22,7 @@
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id          (str ct/resource-url "/test")
-              :resourceURI p/service-context
+              :resource-type p/service-context
               :created     timestamp
               :updated     timestamp
               :acl         valid-acl
@@ -30,5 +30,5 @@
 
     (stu/is-valid ::configuration-template root)
 
-    (doseq [k (into #{} (keys (dissoc root :id :resourceURI)))]
+    (doseq [k (into #{} (keys (dissoc root :id :resource-type)))]
       (stu/is-invalid ::configuration-template (dissoc root k)))))

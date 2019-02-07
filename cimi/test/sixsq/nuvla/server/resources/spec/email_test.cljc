@@ -16,7 +16,7 @@
 (deftest check-email-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         email {:id          (str t/resource-url "/abcdef")
-               :resourceURI t/resource-uri
+               :resource-type t/resource-uri
                :created     timestamp
                :updated     timestamp
                :acl         valid-acl
@@ -27,7 +27,7 @@
 
     (stu/is-invalid ::email/schema (assoc email :bad "value"))
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :address}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :address}]
       (stu/is-invalid ::email/schema (dissoc email attr)))
 
     (doseq [attr #{:validated}]

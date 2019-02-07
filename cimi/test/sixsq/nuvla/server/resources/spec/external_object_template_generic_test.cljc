@@ -22,6 +22,6 @@
       (stu/is-valid ::eot-generic/template (dissoc root k)))
 
 
-    (let [create {:resourceURI            (str eot/resource-uri "Create")
+    (let [create {:resource-type            (str eot/resource-uri "Create")
                   :template (dissoc root :id)}]
       (stu/is-valid ::eot-generic/external-object-create create))))

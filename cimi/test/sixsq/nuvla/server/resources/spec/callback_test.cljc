@@ -16,7 +16,7 @@
 (deftest check-callback-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         callback {:id             (str t/resource-url "/test-callback")
-                  :resourceURI    t/resource-uri
+                  :resource-type    t/resource-uri
                   :created        timestamp
                   :updated        timestamp
                   :acl            valid-acl
@@ -32,7 +32,7 @@
     (stu/is-valid ::callback/schema (assoc callback :state "FAILED"))
     (stu/is-invalid ::callback/schema (assoc callback :state "UNKNOWN"))
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :action :state}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :action :state}]
       (stu/is-invalid ::callback/schema (dissoc callback attr)))
 
     (doseq [attr #{:targetResource :expires :data}]

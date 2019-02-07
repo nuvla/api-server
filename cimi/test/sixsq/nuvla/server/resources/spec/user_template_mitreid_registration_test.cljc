@@ -16,7 +16,7 @@
 (deftest check-user-template-mitreid-registration-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         tpl {:id          (str st/resource-url "/mitreid")
-             :resourceURI st/resource-uri
+             :resource-type st/resource-uri
              :name        "my-template"
              :description "my template"
              :group       "my group"
@@ -31,13 +31,13 @@
         create-tpl {:name        "my-create"
                     :description "my create description"
                     :tags        #{"3", "4"}
-                    :resourceURI "http://sixsq.com/slipstream/1/UserTemplateCreate"
+                    :resource-type "http://sixsq.com/slipstream/1/UserTemplateCreate"
                     :template    (dissoc tpl :id)}]
 
     ;; check the registration schema (without href)
     (stu/is-valid ::ut-mitreid/schema tpl)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl :method}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method}]
       (stu/is-invalid ::ut-mitreid/schema (dissoc tpl attr)))
 
     (doseq [attr #{:name :description :group :tags}]
@@ -48,7 +48,7 @@
     (stu/is-valid ::ut-mitreid/schema-create (assoc-in create-tpl [:template :href] "user-template/abc"))
     (stu/is-invalid ::ut-mitreid/schema-create (assoc-in create-tpl [:template :href] "bad-reference/abc"))
 
-    (doseq [attr #{:resourceURI :template}]
+    (doseq [attr #{:resource-type :template}]
       (stu/is-invalid ::ut-mitreid/schema-create (dissoc create-tpl attr)))
 
     (doseq [attr #{:name :description :group :tags}]

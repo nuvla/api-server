@@ -32,10 +32,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::resourceURI
+(s/def ::resource-type
   (-> (st/spec ::cimi-core/uri)
-      (assoc :name "resourceURI"
-             :json-schema/name "resourceURI"
+      (assoc :name "resource-type"
+             :json-schema/name "resource-type"
              :json-schema/namespace common-ns/cimi-namespace
              :json-schema/uri common-ns/cimi-uri
              :json-schema/type "URI"
@@ -340,7 +340,7 @@
   "clojure.spec/keys specification (as a map) for common CIMI attributes
    for regular resources"
   {:req-un [::id
-            ::resourceURI
+            ::resource-type
             ::created
             ::updated
             ::acl]
@@ -357,7 +357,7 @@
    for the 'create' resources used when creating resources from a template.
    This applies to the create wrapper and not the embedded resource
    template!"
-  {:req-un [::resourceURI]
+  {:req-un [::resource-type]
    :opt-un [::name
             ::description
             ::created
@@ -374,7 +374,7 @@
    for the resource templates that are embedded in 'create' resources. Although
    these may be added to the templates (usually by reference), they will have
    no affect on the created resource."
-  {:opt-un [::resourceURI
+  {:opt-un [::resource-type
             ::name
             ::description
             ::created

@@ -183,10 +183,10 @@ session.
   "Provides a list of the standard session operations, depending
    on the user's authentication and whether this is a Session or
    a SessionCollection."
-  [{:keys [id resourceURI] :as resource} request]
+  [{:keys [id resource-type] :as resource} request]
   (try
     (a/can-modify? resource request)
-    (if (.endsWith resourceURI "Collection")
+    (if (.endsWith resource-type "Collection")
       [{:rel (:add c/action-uri) :href id}]
       [{:rel (:delete c/action-uri) :href id}])
     (catch Exception _
@@ -244,7 +244,7 @@ session.
     (-> body
         u/strip-service-attrs
         (assoc :id id)
-        (assoc :resourceURI resource-uri)
+        (assoc :resource-type resource-uri)
         u/update-timestamps
         (crud/add-acl request)
         crud/validate)
@@ -267,7 +267,7 @@ session.
           body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
-                                                    (assoc :resourceURI create-uri)
+                                                    (assoc :resource-type create-uri)
                                                     (std-crud/resolve-hrefs idmap true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)

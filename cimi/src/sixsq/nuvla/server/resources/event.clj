@@ -56,7 +56,7 @@ Date: Thu, 19 Mar 2015 13:15:48 GMT
       \"rel\" : \"http://sixsq.com/slipstream/1/Action/delete\",
       \"href\" : \"Event/0d78db78-1b98-4bd1-ba14-bf378da68a66\"
     } ],
-    \"resourceURI\" : \"http://sixsq.com/slipstream/1/Event\",
+    \"resource-type\" : \"http://sixsq.com/slipstream/1/Event\",
     \"timestamp\" : \"2015-01-10T08:20:00.0Z\"
   } ],
   \"operations\" : [ {
@@ -74,7 +74,7 @@ Date: Thu, 19 Mar 2015 13:15:48 GMT
       \"principal\" : \"ADMIN\"
     }
   },
-  \"resourceURI\" : \"http://sixsq.com/slipstream/1/EventCollection\",
+  \"resource-type\" : \"http://sixsq.com/slipstream/1/EventCollection\",
   \"id\" : \"Event\",
   \"count\" : 1
 }
@@ -88,7 +88,7 @@ see an event if she is the owner, or is a super user.
 ### Create an Event
 
 ```shell
-curl https://nuv.la/api/event -d \"{ \"acl\": {\"owner\": {\"type\": \"USER\", \"principal\": \"joe\"},    \"rules\": [{\"type\": \"ROLE\", \"prinipal\": \"ANON\", \"right\": \"ALL\"}]},    \"id\": \"123\",    \"created\" :  \"2015-01-16T08:20:00.0Z\",    \"updated\" : \"2015-01-16T08:20:00.0Z\",    \"resourceURI\" : \"http://slipstream.sixsq.com/ssclj/1/Event\",    \"timestamp\": \"2015-01-10T08:20:00.0Z\",    \"content\" :  { \"resource\":  {\"href\": \"Run/45614147-aed1-4a24-889d-6365b0b1f2cd\"},    \"state\" : \"Started\" } ,    \"type\": \"state\",    \"severity\": \"medium\"}\" -X POST -H \"Content-Type: application/json\" -b cookie-user.txt -D -
+curl https://nuv.la/api/event -d \"{ \"acl\": {\"owner\": {\"type\": \"USER\", \"principal\": \"joe\"},    \"rules\": [{\"type\": \"ROLE\", \"prinipal\": \"ANON\", \"right\": \"ALL\"}]},    \"id\": \"123\",    \"created\" :  \"2015-01-16T08:20:00.0Z\",    \"updated\" : \"2015-01-16T08:20:00.0Z\",    \"resource-type\" : \"http://slipstream.sixsq.com/ssclj/1/Event\",    \"timestamp\": \"2015-01-10T08:20:00.0Z\",    \"content\" :  { \"resource\":  {\"href\": \"Run/45614147-aed1-4a24-889d-6365b0b1f2cd\"},    \"state\" : \"Started\" } ,    \"type\": \"state\",    \"severity\": \"medium\"}\" -X POST -H \"Content-Type: application/json\" -b cookie-user.txt -D -
 ```
 
 The above command returns a json structured like this:
@@ -182,7 +182,7 @@ Date: Thu, 19 Mar 2015 13:17:06 GMT
     \"rel\" : \"http://sixsq.com/slipstream/1/Action/delete\",
     \"href\" : \"Event/4605ee06-ccda-48f5-a481-23c6ab296b0d\"
   } ],
-  \"resourceURI\" : \"http://sixsq.com/slipstream/1/Event\",
+  \"resource-type\" : \"http://sixsq.com/slipstream/1/Event\",
   \"timestamp\" : \"2015-01-10T08:20:00.0Z\"
 }
 ```
@@ -291,8 +291,8 @@ Delete a specific (the event-uuid is known) event.
   (try
     (a/can-modify? resource request)
     (let [href (:id resource)
-          ^String resourceURI (:resourceURI resource)
-          ops (if (.endsWith resourceURI "Collection")
+          ^String resource-type (:resource-type resource)
+          ops (if (.endsWith resource-type "Collection")
                 [{:rel (:add c/action-uri) :href href}]
                 [{:rel (:delete c/action-uri) :href href}])]
       (assoc resource :operations ops))

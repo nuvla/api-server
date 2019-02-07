@@ -74,7 +74,7 @@ secret, so you must capture and save the plain text secret from this response!
 (defmethod p/tpl->credential tpl/credential-type
   [{:keys [type method ttl]} request]
   (let [[secret-key digest] (key-utils/generate)
-        resource (cond-> {:resourceURI p/resource-uri
+        resource (cond-> {:resource-type p/resource-uri
                           :type        type
                           :method      method
                           :digest      digest

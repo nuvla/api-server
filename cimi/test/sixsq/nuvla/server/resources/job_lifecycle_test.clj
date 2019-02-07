@@ -17,7 +17,7 @@
 (def base-uri (str p/service-context resource-url))
 
 (def valid-job
-  {:resourceURI resource-uri
+  {:resource-type resource-uri
    :action      "collect"
    :acl         {:owner {:type "USER" :principal "admin"}
                  :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})

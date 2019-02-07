@@ -22,6 +22,6 @@
 ;;
 (defmethod p/tpl->user tpl/registration-method
   [{:keys [isSuperUser] :as resource} request]
-  [nil (cond-> (assoc resource :resourceURI p/resource-uri)
+  [nil (cond-> (assoc resource :resource-type p/resource-uri)
                true (dissoc :instance :group :order :icon :hidden)
                (nil? isSuperUser) (assoc :isSuperUser false))])

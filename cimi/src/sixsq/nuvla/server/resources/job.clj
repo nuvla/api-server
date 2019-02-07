@@ -64,7 +64,7 @@
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
                     u/strip-service-attrs
-                    (assoc :resourceURI resource-uri)
+                    (assoc :resource-type resource-uri)
                     (assoc :id id)
                     (assoc :state ju/state-queued)
                     u/update-timestamps

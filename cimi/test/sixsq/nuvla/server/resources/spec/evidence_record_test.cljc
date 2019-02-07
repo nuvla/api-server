@@ -19,7 +19,7 @@
 (deftest evid
   (let [root {
               ; :id            (str ev/resource-url "/uuid")
-              ; :resourceURI   ev/resource-uri
+              ; :resource-type   ev/resource-uri
               ; :created       timestamp
               ; :updated       timestamp
               ; :acl           valid-acl

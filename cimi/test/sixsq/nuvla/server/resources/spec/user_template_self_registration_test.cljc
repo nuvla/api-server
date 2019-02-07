@@ -14,7 +14,7 @@
 (deftest check-user-template-self-registration-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         tpl {:id             (str st/resource-url "/internal")
-             :resourceURI    st/resource-uri
+             :resource-type    st/resource-uri
              :name           "my-template"
              :description    "my template"
              :group          "my group"
@@ -34,13 +34,13 @@
         create-tpl {:name        "my-create"
                     :description "my create description"
                     :tags        #{"3", "4"}
-                    :resourceURI "http://sixsq.com/slipstream/1/UserTemplateCreate"
+                    :resource-type "http://sixsq.com/slipstream/1/UserTemplateCreate"
                     :template    (dissoc tpl :id)}]
 
     ;; check the registration schema (without href)
     (stu/is-valid ::ut-auto/schema tpl)
 
-    (doseq [attr #{:id :resourceURI :created :updated :acl
+    (doseq [attr #{:id :resource-type :created :updated :acl
                    :method :username :password :passwordRepeat :emailAddress}]
       (stu/is-invalid ::ut-auto/schema (dissoc tpl attr)))
 
@@ -52,7 +52,7 @@
     (stu/is-valid ::ut-auto/schema-create (assoc-in create-tpl [:template :href] "user-template/abc"))
     (stu/is-invalid ::ut-auto/schema-create (assoc-in create-tpl [:template :href] "bad-reference/abc"))
 
-    (doseq [attr #{:resourceURI :template}]
+    (doseq [attr #{:resource-type :template}]
       (stu/is-invalid ::ut-auto/schema-create (dissoc create-tpl attr)))
 
     (doseq [attr #{:name :description :tags}]

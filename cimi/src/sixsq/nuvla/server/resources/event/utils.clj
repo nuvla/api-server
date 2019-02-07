@@ -36,7 +36,7 @@
    & {:keys [severity type],
       :or   {severity severity-medium
              type     type-action}}]
-  (let [event-map {:resourceURI resource-uri
+  (let [event-map {:resource-type resource-uri
                    :content     {:resource {:href resource-href}
                                  :state    message}
                    :severity    severity
