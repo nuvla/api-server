@@ -131,7 +131,7 @@
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

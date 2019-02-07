@@ -151,7 +151,7 @@
 (defmethod crud/query resource-name
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)
