@@ -73,8 +73,6 @@
              "3=alpha and 4=beta"
              "(alpha=3)"
              "(3=alpha)"
-             "property['beta']='4'"
-             "property['beta']!='4'"
              "alpha=3 and beta=4"
              "alpha=3 or beta=4"
              "alpha=3 and beta=4 or gamma=5 and delta=6"
@@ -88,8 +86,6 @@
              "null=alpha"
              "alpha!=null"
              "null!=alpha"
-             "property['beta']=null"
-             "property['beta']!=null"
              "alpha^='abc'"
              "alpha^=\"abc\""
              "'abc'^=alpha"
@@ -105,12 +101,20 @@
              "alpha&&4"
              "alpha>true"
              "alpha>null"
+             "alpha^=3"
+             "alpha^=null"))
+
+;; invalid filters: all property support removed
+(deftest check-invalid-filters
+  (are [arg] ((fails-fn :Filter) arg)
+             "property['beta']='4'"
+             "property['beta']!='4'"
+             "property['beta']=null"
+             "property['beta']!=null"
              "property[beta]='4'"
              "property['beta']=4"
              "property['beta']<'4'"
-             "4=property['beta']"
-             "alpha^=3"
-             "alpha^=null"))
+             "4=property['beta']"))
 
 ;; valid attributes
 (deftest check-valid-attributes

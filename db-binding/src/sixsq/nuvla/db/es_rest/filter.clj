@@ -73,11 +73,6 @@
           m)))))
 
 
-(defmethod convert :PropExpr
-  [[_ Prop EqOp Value]]
-  [[:Attribute (str "property/" (second Prop))] EqOp Value])
-
-
 (defmethod convert :AndExpr
   [v]
   (let [args (rest v)]

@@ -11,7 +11,6 @@ Comp            ::= Attribute EqOp Value
                     | StringValue PrefixOp Attribute
                     | Attribute FullTextOp StringValue
                     | StringValue FullTextOp Attribute
-                    | PropExpr
                     | WS <'('> Filter <')'> WS
 
 FullTextOp      ::= '=='
@@ -31,7 +30,6 @@ DateValue       ::= WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' W
 <StringValue>   ::= WS (DoubleQuoteString | SingleQuoteString) WS
 BoolValue       ::= WS ('true' | 'false') WS
 NullValue       ::= WS 'null' WS
-PropExpr        ::= WS <'property['> StringValue <']'> WS EqOp (StringValue | NullValue)
 
 <WS>            ::= <#'\s*'>
 
