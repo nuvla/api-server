@@ -8,8 +8,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
-    [sixsq.nuvla.server.resources.credential-template-ssh-key-pair :as skp]
-    [sixsq.nuvla.server.resources.credential-template-ssh-public-key :as spk]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as alpha]
@@ -21,7 +19,7 @@
 
 
 (deftest check-retrieve-by-id
-  (doseq [registration-method [spk/method skp/method akey/method]]
+  (doseq [registration-method [akey/method]]
     (let [id (str ct/resource-url "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
@@ -29,9 +27,7 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists ct/resource-url)
-  (mdtu/check-metadata-exists (str ct/resource-url "-" akey/resource-url))
-  (mdtu/check-metadata-exists (str ct/resource-url "-" skp/resource-url))
-  (mdtu/check-metadata-exists (str ct/resource-url "-" spk/resource-url)))
+  (mdtu/check-metadata-exists (str ct/resource-url "-" akey/resource-url)))
 
 
 ;; check that all templates are visible as normal user
@@ -52,13 +48,11 @@
         ids (set (map :id entries))
         methods (set (map :method entries))
         types (set (map :type entries))]
-    (is (= #{(str ct/resource-url "/" spk/method)
-             (str ct/resource-url "/" skp/method)
-             (str ct/resource-url "/" akey/method)
+    (is (= #{(str ct/resource-url "/" akey/method)
              (str ct/resource-url "/" alpha/method)}
            ids))
-    (is (= #{spk/method skp/method akey/method alpha/method} methods))
-    (is (= #{spk/credential-type akey/credential-type alpha/credential-type} types))
+    (is (= #{akey/method alpha/method} methods))
+    (is (= #{akey/credential-type alpha/credential-type} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)

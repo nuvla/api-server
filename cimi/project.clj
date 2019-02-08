@@ -30,7 +30,6 @@
    [aleph "0.4.4"]
    [cheshire]                                               ;; newer version needed for ring-json
    [compojure]
-   [com.jcraft/jsch]
    [clj-stacktrace]
    [clj-time]
    [com.amazonaws/aws-java-sdk-s3]
