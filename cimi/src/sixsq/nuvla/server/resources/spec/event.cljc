@@ -1,20 +1,35 @@
 (ns sixsq.nuvla.server.resources.spec.event
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]))
 
-(s/def ::severity (s/and string? #{event-utils/severity-critical
-                                   event-utils/severity-high
-                                   event-utils/severity-medium
-                                   event-utils/severity-low}))
+;;
+;; severity and type values that are reused elsewhere
+;;
 
-(s/def ::type (s/and string? #{event-utils/type-state
-                               event-utils/type-alarm
-                               event-utils/type-action
-                               event-utils/type-system}))
+(def ^:const severity-critical "critical")
+(def ^:const severity-high "high")
+(def ^:const severity-medium "medium")
+(def ^:const severity-low "low")
+
+(def ^:const type-state "state")
+(def ^:const type-alarm "alarm")
+(def ^:const type-action "action")
+(def ^:const type-system "system")
+
+
+(s/def ::severity (s/and string? #{severity-critical
+                                   severity-high
+                                   severity-medium
+                                   severity-low}))
+
+
+(s/def ::type (s/and string? #{type-state
+                               type-alarm
+                               type-action
+                               type-system}))
 
 ;; Events may need to reference resources that do not follow the CIMI.
 ;; conventions.  Allow for a more flexible schema to be used here.
