@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.app.routes
   (:require
-    [sixsq.nuvla.auth.auth :as auth]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
@@ -48,14 +47,6 @@
       (r/map-response "unknown resource" 404 uri))))
 
 
-(def auth-routes
-  (let-routes [uri-login (str p/auth-context "login")
-               uri-logout (str p/auth-context "logout")]
-
-    (POST uri-login request (auth/login request))
-    (POST uri-logout request (auth/logout request))))
-
-
 (def user-routes
   (let-routes [uri (str p/service-context ":resource-name{user}/:uuid{.*}")]
     (GET uri request
@@ -73,7 +64,6 @@
    user-routes
    resource-routes
    action-routes
-   auth-routes
    (not-found)])
 
 
