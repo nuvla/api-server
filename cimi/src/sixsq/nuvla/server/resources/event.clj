@@ -247,10 +247,10 @@ Delete a specific (the event-uuid is known) event.
 (def ^:const collection-name "EventCollection")
 
 
-(def ^:const resource-uri (str c/cimi-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
 
-(def ^:const collection-uri (str c/cimi-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 
 (def collection-acl {:owner {:principal "ADMIN"

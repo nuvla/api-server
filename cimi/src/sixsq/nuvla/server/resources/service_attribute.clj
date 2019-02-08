@@ -43,9 +43,9 @@ curl https://nuv.la/api/service-attribute
 
 (def ^:const collection-name "ServiceAttributeCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}

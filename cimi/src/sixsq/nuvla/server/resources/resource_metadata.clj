@@ -17,9 +17,9 @@
 
 (def ^:const collection-name (str resource-type "Collection"))
 
-(def ^:const resource-uri (str c/cimi-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/cimi-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 (def default-resource-acl {:owner {:principal "ADMIN"
                                    :type      "ROLE"}

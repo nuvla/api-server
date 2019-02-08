@@ -18,11 +18,11 @@ CredentialTemplate resource.
 
 (def ^:const collection-name "CredentialCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
-(def ^:const create-uri (str c/slipstream-schema-uri resource-type "Create"))
+(def ^:const create-uri (str resource-type "Create"))
 
 ;; only authenticated users can view and create credentials
 (def collection-acl {:owner {:principal "ADMIN"

@@ -24,9 +24,9 @@ address. When the callback is triggered, the `validated` flag is set to true.
 
 (def ^:const collection-name "EmailCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}

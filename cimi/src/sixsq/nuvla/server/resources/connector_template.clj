@@ -13,9 +13,9 @@
 
 (def ^:const collection-name "ConnectorTemplateCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 (def user-can-view {:principal "USER"
                     :type      "ROLE"

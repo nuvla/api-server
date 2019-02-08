@@ -57,9 +57,9 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
 
 (def ^:const collection-name "ServiceAttributeNamespaceCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}

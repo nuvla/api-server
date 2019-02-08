@@ -48,9 +48,9 @@ curl https://nuv.la/api/credential-template
 
 (def ^:const collection-name "CredentialTemplateCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
+(def ^:const collection-uri collection-name)
 
 ;; the templates are managed as in-memory resources, so modification
 ;; of the collection is not permitted, but anonymous credentials must be

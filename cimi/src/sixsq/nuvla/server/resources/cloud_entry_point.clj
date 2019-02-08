@@ -335,7 +335,7 @@ include aggregating values over a collection of resources.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-uri (str c/cimi-schema-uri resource-type))
+(def ^:const resource-uri resource-type)
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
