@@ -9,7 +9,7 @@
     [peridot.core :refer [content-type header request session]]))
 
 
-(def base-uri (str p/service-context md/resource-name))
+(def base-uri (str p/service-context md/resource-type))
 
 
 (defn get-generated-metadata
