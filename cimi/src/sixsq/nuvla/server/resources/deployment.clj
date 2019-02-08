@@ -21,8 +21,6 @@
 
 (def ^:const collection-name "DeploymentCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def ^:const create-uri (str resource-type "Create"))
@@ -41,7 +39,7 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::deployment-spec/deployment))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -56,7 +54,7 @@
 ;;
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -79,7 +77,7 @@
       (throw (ex-info "" body)))))
 
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn generate-api-key-secret
   [{:keys [identity] :as request}]
@@ -177,7 +175,7 @@
   (vec (remove #(= (:delete c/action-uri) (:rel %)) operations)))
 
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [start-op {:rel (:start c/action-uri) :href (str id "/start")}
         stop-op {:rel (:stop c/action-uri) :href (str id "/stop")}]

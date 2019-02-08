@@ -2,7 +2,6 @@
   (:require
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.connector]))
@@ -10,8 +9,6 @@
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "ConnectorCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -47,7 +44,7 @@
                         :message err-msg
                         :body    resource}))))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -72,7 +69,7 @@
 ;; multimethod for ACLs
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -89,7 +86,7 @@
   [{:keys [href] :as resource}]
   (-> resource
       (dissoc :href)
-      (assoc :resource-type resource-uri
+      (assoc :resource-type resource-type
              :acl resource-acl)
       (cond-> href (assoc :template {:href href}))))
 
@@ -97,7 +94,7 @@
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; requires a ConnectorTemplate to create new Connector
 (defmethod crud/add resource-type

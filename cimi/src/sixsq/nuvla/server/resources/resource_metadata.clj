@@ -7,7 +7,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.resource-metadata :as resource-metadata]
@@ -16,8 +15,6 @@
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name (str resource-type "Collection"))
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -52,9 +49,9 @@
     (let [id (str resource-type "/" identifier)]
       (-> resource
           (dissoc :created :updated)
-          (merge {:id          id
-                  :resource-type resource-uri
-                  :acl         default-resource-acl})
+          (merge {:id            id
+                  :resource-type resource-type
+                  :acl           default-resource-acl})
           u/update-timestamps))))
 
 
@@ -79,7 +76,7 @@
 
 (def validate-fn (u/create-spec-validation-fn ::resource-metadata/resource-metadata))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 

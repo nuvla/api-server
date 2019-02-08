@@ -16,7 +16,7 @@
 (deftest check-ServiceInfo
   (let [timestamp "1964-08-25T10:00:00.0Z"
         service-offer {:id            (str so-resource/resource-type "/offer-uuid")
-                       :resource-type so-resource/resource-uri
+                       :resource-type so-resource/resource-type
                        :created       timestamp
                        :updated       timestamp
                        :acl           valid-acl

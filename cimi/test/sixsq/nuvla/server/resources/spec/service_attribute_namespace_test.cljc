@@ -23,7 +23,7 @@
    :uri           "https://schema.org/schema1"
    :updated       timestamp
    :created       timestamp
-   :resource-type sn/resource-uri})
+   :resource-type sn/resource-type})
 
 
 (deftest check-prefix

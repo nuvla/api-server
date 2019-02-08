@@ -16,7 +16,7 @@
 (deftest check-session-template-internal-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
         cfg {:id            (str st/resource-type "/internal")
-             :resource-type st/resource-uri
+             :resource-type st/resource-type
              :created       timestamp
              :updated       timestamp
              :acl           valid-acl

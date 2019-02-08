@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.user-direct
   (:require
-    [sixsq.nuvla.auth.internal :as ia]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-direct :as ut-direct]
@@ -22,6 +21,6 @@
 ;;
 (defmethod p/tpl->user tpl/registration-method
   [{:keys [isSuperUser] :as resource} request]
-  [nil (cond-> (assoc resource :resource-type p/resource-uri)
+  [nil (cond-> (assoc resource :resource-type p/resource-type)
                true (dissoc :instance :group :order :icon :hidden)
                (nil? isSuperUser) (assoc :isSuperUser false))])

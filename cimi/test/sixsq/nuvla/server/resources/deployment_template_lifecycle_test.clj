@@ -64,10 +64,10 @@
         module-uri (-> session-user
                        (request module-test/base-uri
                                 :request-method :post
-                                :body (json/write-str (assoc {:resource-type module/resource-uri
-                                                              :parentPath  "a/b"
-                                                              :path        "a/b/c"
-                                                              :type        "COMPONENT"}
+                                :body (json/write-str (assoc {:resource-type module/resource-type
+                                                              :parentPath    "a/b"
+                                                              :path          "a/b/c"
+                                                              :type          "COMPONENT"}
                                                         :content (valid-comp module-img-uri))))
                        (ltu/body->edn)
                        (ltu/is-status 201)

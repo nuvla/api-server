@@ -34,8 +34,6 @@ appropriate users.
 
 (def ^:const collection-name "CallbackCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -50,7 +48,7 @@ appropriate users.
 
 (def validate-fn (u/create-spec-validation-fn ::callback/schema))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 
@@ -66,7 +64,7 @@ appropriate users.
             :right     "VIEW"}]})
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (assoc
     resource
@@ -77,7 +75,7 @@ appropriate users.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 (defmethod crud/add resource-type
   [request]
   (add-impl (assoc-in request [:body :state] "WAITING")))
@@ -104,7 +102,7 @@ appropriate users.
 ;; available operations
 ;;
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
   (let [href (str id "/execute")
         collection? (u/cimi-collection? resource-type)

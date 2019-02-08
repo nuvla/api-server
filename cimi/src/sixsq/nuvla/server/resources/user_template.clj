@@ -41,7 +41,6 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 "
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -53,8 +52,6 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "UserTemplateCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -116,7 +113,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
@@ -134,7 +131,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
   [{{:keys [method]} :body :as request}]

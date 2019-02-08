@@ -35,7 +35,6 @@ curl https://nuv.la/api/credential-template
   (:require
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
@@ -47,8 +46,6 @@ curl https://nuv.la/api/credential-template
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "CredentialTemplateCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -79,8 +76,8 @@ curl https://nuv.la/api/credential-template
   (when method
     (let [id (str resource-type "/" method)]
       (-> resource
-          (merge {:id          id
-                  :resource-type resource-uri})
+          (merge {:id            id
+                  :resource-type resource-type})
           u/update-timestamps))))
 
 
@@ -111,7 +108,7 @@ curl https://nuv.la/api/credential-template
 
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 

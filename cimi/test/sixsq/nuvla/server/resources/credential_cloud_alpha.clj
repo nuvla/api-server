@@ -22,13 +22,13 @@
 ;;
 (defmethod p/tpl->credential tpl/credential-type
   [{:keys [type method quota connector key secret acl]} request]
-  (let [resource (cond-> {:resource-type p/resource-uri
-                          :type        type
-                          :method      method
-                          :quota       quota
-                          :connector   connector
-                          :key         key
-                          :secret      secret}
+  (let [resource (cond-> {:resource-type p/resource-type
+                          :type          type
+                          :method        method
+                          :quota         quota
+                          :connector     connector
+                          :key           key
+                          :secret        secret}
                          acl (assoc :acl acl))]
     [nil resource]))
 

@@ -21,7 +21,7 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root {:id                  (str c/resource-type "/connector-uuid")
-              :resource-type       c/resource-uri
+              :resource-type       c/resource-type
               :created             timestamp
               :updated             timestamp
               :acl                 valid-acl

@@ -3,7 +3,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.util.response :as r]))
@@ -12,8 +11,6 @@
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "ExternalObjectTemplateCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -54,7 +51,7 @@
   [resource]
   (throw (ex-info (str "unknown External object template type: '" (:objectType resource) "'") resource)))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype-template resource))
 
@@ -74,9 +71,9 @@
   (when objectType
     (let [id (str resource-type "/" objectType)]
       (-> resource
-          (merge {:id          id
-                  :resource-type resource-uri
-                  :acl         resource-acl})
+          (merge {:id            id
+                  :resource-type resource-type
+                  :acl           resource-acl})
           (merge external-object-reference-attrs-defaults)
           u/update-timestamps))))
 
@@ -100,7 +97,7 @@
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
 (defmethod crud/add resource-type

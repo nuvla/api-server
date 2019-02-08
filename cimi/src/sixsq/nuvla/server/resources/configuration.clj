@@ -2,15 +2,12 @@
   (:require
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "ConfigurationCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -33,7 +30,7 @@
   [resource]
   (throw (ex-info (str "unknown Configuration type: " (:service resource)) resource)))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -58,7 +55,7 @@
 ;; multimethod for ACLs
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -74,15 +71,15 @@
 (defmethod tpl->configuration :default
   [{:keys [href] :as resource}]
   (cond-> resource
-      href (assoc :template {:href href})
-      true (dissoc :href)
-      true (assoc :resource-type resource-uri)))
+          href (assoc :template {:href href})
+          true (dissoc :href)
+          true (assoc :resource-type resource-type)))
 
 ;;
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; requires a ConfigurationTemplate to create new Configuration
 (defmethod crud/add resource-type

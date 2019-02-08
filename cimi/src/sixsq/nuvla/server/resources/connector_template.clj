@@ -3,7 +3,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.connector-template]
     [sixsq.nuvla.util.response :as r]
@@ -12,8 +11,6 @@
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "ConnectorTemplateCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -70,9 +67,9 @@
   (when cloudServiceType
     (let [id (str resource-type "/" cloudServiceType)]
       (-> resource
-          (merge {:id          id
-                  :resource-type resource-uri
-                  :acl         resource-acl})
+          (merge {:id            id
+                  :resource-type resource-type
+                  :acl           resource-acl})
           (merge connector-mandatory-reference-attrs-defaults)
           (merge connector-instance-name-default)
           u/update-timestamps))))
@@ -106,7 +103,7 @@
   (throw (ex-info (str "unknown ConnectorTemplate type: " (:cloudServiceType resource)) resource)))
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 

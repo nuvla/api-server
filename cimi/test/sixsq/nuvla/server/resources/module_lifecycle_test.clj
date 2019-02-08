@@ -21,7 +21,7 @@
 
 
 (def valid-entry {:id            (str module/resource-type "/connector-uuid")
-                  :resource-type module/resource-uri
+                  :resource-type module/resource-type
                   :created       timestamp
                   :updated       timestamp
                   :parentPath    "a/b"

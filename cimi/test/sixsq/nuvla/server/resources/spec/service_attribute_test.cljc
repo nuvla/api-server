@@ -18,7 +18,7 @@
         attr {:id            (str sa-resource/resource-type "/test-attribute")
               :name          "Test Attribute"
               :description   "A attribute containing a test value."
-              :resource-type sa-resource/resource-uri
+              :resource-type sa-resource/resource-type
               :created       timestamp
               :updated       timestamp
               :acl           valid-acl

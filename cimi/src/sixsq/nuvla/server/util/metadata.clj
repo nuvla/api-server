@@ -129,15 +129,15 @@
            doc (get-doc (or child-ns parent-ns))
            type-uri (ns->typeURI (or child-ns parent-ns))
 
-           common {:id          "resource-metadata/dummy-id"
-                   :created     "1964-08-25T10:00:00.0Z"
-                   :updated     "1964-08-25T10:00:00.0Z"
-                   :resource-type resource-metadata/resource-uri
-                   :acl         {:owner {:principal "ADMIN", :type "ROLE"}
-                                 :rules [{:principal "ANON", :type "ROLE", :right "VIEW"}]}
-                   :typeURI     type-uri
-                   :name        resource-name
-                   :description doc}
+           common {:id            "resource-metadata/dummy-id"
+                   :created       "1964-08-25T10:00:00.0Z"
+                   :updated       "1964-08-25T10:00:00.0Z"
+                   :resource-type resource-metadata/resource-type
+                   :acl           {:owner {:principal "ADMIN", :type "ROLE"}
+                                   :rules [{:principal "ANON", :type "ROLE", :right "VIEW"}]}
+                   :typeURI       type-uri
+                   :name          resource-name
+                   :description   doc}
 
            attributes (generate-attributes spec)
 

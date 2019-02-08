@@ -247,9 +247,6 @@ Delete a specific (the event-uuid is known) event.
 (def ^:const collection-name "EventCollection")
 
 
-(def ^:const resource-uri resource-type)
-
-
 (def ^:const collection-uri collection-name)
 
 
@@ -267,12 +264,12 @@ Delete a specific (the event-uuid is known) event.
 
 (def validate-fn (u/create-spec-validation-fn ::event/event))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
 (defmethod crud/add resource-type
@@ -295,7 +292,7 @@ Delete a specific (the event-uuid is known) event.
 ;;
 ;; available operations
 ;;
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (try
     (a/can-modify? resource request)

@@ -74,11 +74,11 @@ secret, so you must capture and save the plain text secret from this response!
 (defmethod p/tpl->credential tpl/credential-type
   [{:keys [type method ttl]} request]
   (let [[secret-key digest] (key-utils/generate)
-        resource (cond-> {:resource-type p/resource-uri
-                          :type        type
-                          :method      method
-                          :digest      digest
-                          :claims      (extract-claims request)}
+        resource (cond-> {:resource-type p/resource-type
+                          :type          type
+                          :method        method
+                          :digest        digest
+                          :claims        (extract-claims request)}
                          (valid-ttl? ttl) (assoc :expiry (u/ttl->timestamp ttl)))]
     [{:secretKey secret-key} resource]))
 

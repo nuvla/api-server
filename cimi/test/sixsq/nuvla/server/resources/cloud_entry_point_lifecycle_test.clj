@@ -34,7 +34,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-absent "edit")
         (ltu/is-operation-absent "delete"))
 
@@ -43,7 +43,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-present "edit")
         (ltu/is-operation-absent "delete"))
 
@@ -63,7 +63,7 @@
                  :body (json/write-str {:name "dummy"}))
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-present "edit")
         (ltu/is-key-value :name "dummy"))
 
@@ -72,7 +72,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-absent "edit")
         (ltu/is-key-value :name "dummy"))))
 

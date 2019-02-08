@@ -15,15 +15,15 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-module {:id          (str d/resource-type "/connector-uuid")
-                   :resource-type d/resource-uri
-                   :created     timestamp
-                   :updated     timestamp
-                   :acl         valid-acl
+(def valid-module {:id            (str d/resource-type "/connector-uuid")
+                   :resource-type d/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-                   :module      {:href "my-module-uuid"}
+                   :module        {:href "my-module-uuid"}
 
-                   :nodes       [{:nodeID     "my-node-uuid"
+                   :nodes         [{:nodeID     "my-node-uuid"
                                   :credential {:href "my-cred-uuid"}
                                   :cpu        10
                                   :ram        20
@@ -36,7 +36,7 @@
 
 
 (def valid-deployment {:id               (str d/resource-type "/connector-uuid")
-                       :resource-type      d/resource-uri
+                       :resource-type    d/resource-type
                        :created          timestamp
                        :updated          timestamp
                        :acl              valid-acl

@@ -28,7 +28,7 @@
 
 
 (def valid-entry {:id            (str module-image/resource-type "/connector-uuid")
-                  :resource-type module-image/resource-uri
+                  :resource-type module-image/resource-type
                   :created       timestamp
                   :updated       timestamp
                   :acl           valid-acl

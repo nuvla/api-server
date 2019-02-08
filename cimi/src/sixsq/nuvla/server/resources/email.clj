@@ -24,8 +24,6 @@ address. When the callback is triggered, the `validated` flag is set to true.
 
 (def ^:const collection-name "EmailCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -46,7 +44,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; multimethod for ACLs
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl (dissoc resource :acl) request))
 
@@ -63,12 +61,12 @@ address. When the callback is triggered, the `validated` flag is set to true.
 
 (def validate-fn (u/create-spec-validation-fn ::email/schema))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
   [request]
@@ -92,7 +90,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; available operations; disallows editing of resource, adds validate action for unvalidated emails
 ;;
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [validated] :as resource} request]
   (try
     (a/can-modify? resource request)

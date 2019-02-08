@@ -14,8 +14,6 @@
 
 (def ^:const collection-name "JobCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -38,7 +36,7 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::job/job))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -46,7 +44,7 @@
 ;; use default ACL method
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -60,7 +58,7 @@
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
                     u/strip-service-attrs
-                    (assoc :resource-type resource-uri)
+                    (assoc :resource-type resource-type)
                     (assoc :id id)
                     (assoc :state ju/state-queued)
                     u/update-timestamps
@@ -120,7 +118,7 @@
 ;; provide an action that allows the job to be stoppable.
 ;;
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [href (str id "/stop")
         collect-op {:rel (:stop c/action-uri) :href href}]

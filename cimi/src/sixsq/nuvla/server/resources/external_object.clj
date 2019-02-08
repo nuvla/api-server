@@ -20,8 +20,6 @@
 
 (def ^:const collection-name "ExternalObjectCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def ^:const create-uri (str resource-type "Create"))
@@ -55,7 +53,7 @@
   (throw (ex-info (str "unknown External object type: '" (:objectType resource) "'") resource)))
 
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -95,7 +93,7 @@
 
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
@@ -111,12 +109,12 @@
             :right     "MODIFY"}]})
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
@@ -157,7 +155,7 @@
     (standard-external-object-resource-operations resource request)))
 
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (let [ops (standard-external-object-operations resource request)]
     (cond-> (dissoc resource :operations)
@@ -185,7 +183,7 @@
 
 (defmethod tpl->externalObject :default
   [resource]
-  (assoc resource :resource-type resource-uri))
+  (assoc resource :resource-type resource-type))
 
 ;;
 ;; CRUD operations
@@ -211,7 +209,7 @@
         (update-in [:template] merge os-cred-href))))
 
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
 (defn merge-into-tmpl

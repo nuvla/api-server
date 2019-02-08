@@ -22,7 +22,6 @@ must delete the old one and create a new one.
 "
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -32,8 +31,6 @@ must delete the old one and create a new one.
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "UserIdentifierCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -51,7 +48,7 @@ must delete the old one and create a new one.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::user-identifier/schema))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -70,7 +67,7 @@ must delete the old one and create a new one.
               :right     "VIEW"}]}))
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{{user-id :href} :user :as resource} request]
   (assoc resource :acl (user-acl user-id)))
 
@@ -90,7 +87,7 @@ must delete the old one and create a new one.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
   [request]

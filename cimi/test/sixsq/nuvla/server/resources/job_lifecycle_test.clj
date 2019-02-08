@@ -17,10 +17,10 @@
 (def base-uri (str p/service-context resource-type))
 
 (def valid-job
-  {:resource-type resource-uri
-   :action      "collect"
-   :acl         {:owner {:type "USER" :principal "admin"}
-                 :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})
+  {:resource-type resource-type
+   :action        "collect"
+   :acl           {:owner {:type "USER" :principal "admin"}
+                   :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})
 
 (def zk-job-path-start-subs "/job/entries/entry-")
 

@@ -9,7 +9,6 @@ CredentialTemplate resource.
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]))
@@ -17,8 +16,6 @@ CredentialTemplate resource.
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "CredentialCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -45,7 +42,7 @@ CredentialTemplate resource.
   [resource]
   (logu/log-and-throw-400 (str "unknown Credential type: '" resource (:type resource) "'")))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -80,7 +77,7 @@ CredentialTemplate resource.
             :type      "USER"
             :right     "MODIFY"}]})
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
@@ -107,14 +104,14 @@ CredentialTemplate resource.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;;
 ;; available operations
 ;;
 
 ;; Use standard method for setting operations.
-#_(defmethod crud/set-operations resource-uri
+#_(defmethod crud/set-operations resource-type
     [resource request]
     (try
       (a/can-modify? resource request)

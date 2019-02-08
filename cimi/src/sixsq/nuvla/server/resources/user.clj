@@ -9,7 +9,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user :as user]
@@ -20,8 +19,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "UserCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -50,7 +47,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::user/schema))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -86,7 +83,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
             :type      "USER"
             :right     "MODIFY"}]})
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [username acl] :as resource} request]
   (assoc
     resource
@@ -152,7 +149,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (merge user-attrs-defaults resource))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn revert-method
   [[fragment {:keys [method] :as body}] original-method]

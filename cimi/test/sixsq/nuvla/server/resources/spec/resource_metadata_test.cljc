@@ -21,7 +21,7 @@
 
 
 (def common {:id            (str t/resource-type "/abcdef")
-             :resource-type t/resource-uri
+             :resource-type t/resource-type
              :created       timestamp
              :updated       timestamp
              :acl           valid-acl})

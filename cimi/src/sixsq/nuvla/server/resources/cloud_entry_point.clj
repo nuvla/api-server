@@ -335,8 +335,6 @@ include aggregating values over a collection of resources.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-uri resource-type)
-
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
                    :rules [{:principal "ANON"
@@ -355,12 +353,12 @@ include aggregating values over a collection of resources.
 (def validate-fn (u/create-spec-validation-fn ::cep/resource))
 
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (try
     (a/can-modify? resource request)
@@ -382,7 +380,7 @@ include aggregating values over a collection of resources.
   (let [record (u/update-timestamps
                  {:acl           resource-acl
                   :id            resource-type
-                  :resource-type resource-uri})]
+                  :resource-type resource-type})]
     (db/add resource-type record {:user-roles ["ANON"]})))
 
 

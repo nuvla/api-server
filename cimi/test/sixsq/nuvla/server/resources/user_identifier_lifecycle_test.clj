@@ -31,15 +31,15 @@
 (def test-identifier "some-user-identifer")
 
 
-(def valid-entry {:id          (str user-identifier/resource-type "/hashed-identifier")
-                  :resource-type user-identifier/resource-uri
-                  :created     timestamp
-                  :updated     timestamp
-                  :acl         valid-acl
+(def valid-entry {:id            (str user-identifier/resource-type "/hashed-identifier")
+                  :resource-type user-identifier/resource-type
+                  :created       timestamp
+                  :updated       timestamp
+                  :acl           valid-acl
 
-                  :identifier  test-identifier
+                  :identifier    test-identifier
 
-                  :user        {:href "user/jane"}})
+                  :user          {:href "user/jane"}})
 
 
 (deftest check-metadata

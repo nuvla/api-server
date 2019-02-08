@@ -17,12 +17,12 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root (merge tpl/resource
-                    {:id          "external-object/my-report"
-                     :resource-type eot/resource-uri
-                     :created     timestamp
-                     :updated     timestamp
-                     :acl         valid-acl
-                     :state       eo/state-new})]
+                    {:id            "external-object/my-report"
+                     :resource-type eot/resource-type
+                     :created       timestamp
+                     :updated       timestamp
+                     :acl           valid-acl
+                     :state         eo/state-new})]
 
     (stu/is-valid ::eo-generic/external-object root)
 

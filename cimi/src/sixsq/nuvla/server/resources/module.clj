@@ -4,7 +4,6 @@
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -20,8 +19,6 @@
 
 (def ^:const collection-name "ModuleCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -35,7 +32,7 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::module/module))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -43,7 +40,7 @@
 ;; use default ACL method
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -63,9 +60,9 @@
 (defn type->resource-uri
   [type]
   (case type
-    "IMAGE" module-image/resource-uri
-    "COMPONENT" module-component/resource-uri
-    "APPLICATION" module-application/resource-uri
+    "IMAGE" module-image/resource-type
+    "COMPONENT" module-component/resource-type
+    "APPLICATION" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module type: " type)))))
 
 
@@ -83,7 +80,7 @@
           (-> module-meta
               u/strip-service-attrs
               (crud/new-identifier resource-type)
-              (assoc :resource-type resource-uri)
+              (assoc :resource-type resource-type)
               u/update-timestamps
               (crud/add-acl request)
               crud/validate)
@@ -110,7 +107,7 @@
           (-> module-meta
               u/strip-service-attrs
               (crud/new-identifier resource-type)
-              (assoc :resource-type resource-uri)
+              (assoc :resource-type resource-type)
               u/update-timestamps
               (crud/add-acl request)
               crud/validate)

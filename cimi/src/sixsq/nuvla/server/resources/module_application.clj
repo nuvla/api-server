@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.module-application
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.module-application :as module-application]))
@@ -9,8 +8,6 @@
 (def ^:const resource-type (u/ns->type *ns*))
 
 (def ^:const collection-name "ModuleApplicationCollection")
-
-(def ^:const resource-uri resource-type)
 
 (def ^:const collection-uri collection-name)
 
@@ -27,7 +24,7 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::module-application/module-application))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -35,7 +32,7 @@
 ;; use default ACL method
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (assoc resource :acl resource-acl))
 
@@ -43,7 +40,7 @@
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
   [request]

@@ -100,8 +100,6 @@ session.
 
 (def ^:const collection-name "SessionCollection")
 
-(def ^:const resource-uri resource-type)
-
 (def ^:const collection-uri collection-name)
 
 (def ^:const create-uri (str resource-type "Create"))
@@ -129,7 +127,7 @@ session.
   [resource]
   (throw (ex-info (str "unknown Session type: '" (:method resource) "'") resource)))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -162,7 +160,7 @@ session.
             :type      "ROLE"
             :right     "VIEW"}]})
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} request]
   (assoc
     resource
@@ -205,7 +203,7 @@ session.
 
 ;; Just triggers the Session-level multimethod for adding operations
 ;; to the Session resource.
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (set-session-operations resource request))
 
@@ -240,7 +238,7 @@ session.
     (-> body
         u/strip-service-attrs
         (assoc :id id)
-        (assoc :resource-type resource-uri)
+        (assoc :resource-type resource-type)
         u/update-timestamps
         (crud/add-acl request)
         crud/validate)
