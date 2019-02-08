@@ -38,6 +38,17 @@
 
 
 ;;
+;; check resource category
+;;
+
+(defn is-collection?
+  [resource-type]
+  (if (string? resource-type)
+    (.endsWith resource-type "-collection")
+    false))
+
+
+;;
 ;; resource ID utilities
 ;;
 

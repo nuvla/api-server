@@ -96,13 +96,15 @@ session.
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -144,7 +146,7 @@ session.
   [resource]
   (throw (ex-info (str "unknown Session create type: " (dispatch-on-authn-method resource) resource) resource)))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -261,7 +263,7 @@ session.
           body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
-                                                    (assoc :resource-type create-uri)
+                                                    (assoc :resource-type create-type)
                                                     (std-crud/resolve-hrefs idmap true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
@@ -321,7 +323,7 @@ session.
   (fn [request]
     (query-fn (add-session-filter request))))
 
-(def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-uri)))
+(def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-type)))
 
 (defmethod crud/query resource-type
   [request]

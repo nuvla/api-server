@@ -118,7 +118,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri t/collection-uri)
+          (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 2))
 
       ;; user should see only 1
@@ -126,7 +126,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri t/collection-uri)
+          (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 1))
 
       ;; verify contents of admin email

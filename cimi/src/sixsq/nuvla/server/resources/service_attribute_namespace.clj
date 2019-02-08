@@ -52,11 +52,12 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
     [sixsq.nuvla.server.resources.spec.service-attribute-namespace :as san]
     [sixsq.nuvla.util.response :as response]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -64,11 +65,13 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
                             :type      "ROLE"
                             :right     "VIEW"}]})
 
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; multimethods for validation and operations
@@ -146,7 +149,7 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

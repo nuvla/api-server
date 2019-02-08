@@ -49,11 +49,12 @@ curl 'https://nuv.la/api/user-template?select=name,description'
     [clojure.tools.logging :as log]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -67,11 +68,13 @@ curl 'https://nuv.la/api/user-template?select=name,description'
                             :type      "ROLE"
                             :right     "VIEW"}]})
 
+
 (def desc-acl {:owner {:principal "ADMIN"
                        :type      "ROLE"}
                :rules [{:principal "ANON"
                         :type      "ROLE"
                         :right     "VIEW"}]})
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -164,7 +167,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
 (defmethod crud/query resource-type

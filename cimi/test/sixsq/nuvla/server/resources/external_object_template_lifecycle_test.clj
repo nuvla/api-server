@@ -52,7 +52,7 @@
                       (request (str collection-uri))
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri eot/collection-uri)
+                      (ltu/is-resource-uri eot/collection-type)
                       (ltu/is-count pos?)
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")

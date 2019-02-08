@@ -117,7 +117,7 @@
                         (request collection-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri c/collection-uri)
+                        (ltu/is-resource-uri c/collection-type)
                         (ltu/is-count #(= 1 %))
                         (ltu/entries))]
         (is ((set (map :id entries)) uri))

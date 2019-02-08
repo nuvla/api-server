@@ -43,16 +43,18 @@ curl https://nuv.la/api/credential-template
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 ;; the templates are managed as in-memory resources, so modification
 ;; of the collection is not permitted, but anonymous credentials must be
 ;; able to list and view templates (if anonymous registration is
 ;; permitted)
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "ANON"
@@ -61,6 +63,7 @@ curl https://nuv.la/api/credential-template
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; atom to keep track of the loaded CredentialTemplate resources
@@ -163,7 +166,7 @@ curl https://nuv.la/api/credential-template
 (defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri true false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])

@@ -105,7 +105,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is ((set (map :id entries)) uri))
         (is (= 1 (count (filter service-matches? entries))))

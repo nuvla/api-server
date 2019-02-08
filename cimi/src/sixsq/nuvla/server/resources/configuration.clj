@@ -5,13 +5,15 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -47,7 +49,7 @@
   [resource]
   (throw (ex-info (format "unknown Configuration create type: %s %s" (dispatch-on-service resource) resource) resource)))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -87,7 +89,7 @@
   (let [idmap {:identity (:identity request)}
         desc-attrs (u/select-desc-keys body)
         body (-> body
-                 (assoc :resource-type create-uri)
+                 (assoc :resource-type create-type)
                  (std-crud/resolve-hrefs idmap true)
                  (update-in [:template] merge desc-attrs) ;; validate desc attrs
                  (crud/validate)
@@ -113,7 +115,7 @@
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

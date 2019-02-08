@@ -17,13 +17,15 @@
     [sixsq.nuvla.server.resources.spec.deployment-template :as deployment-template-spec]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -33,6 +35,7 @@
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "MODIFY"}]})
+
 
 ;;
 ;; validate deployment
@@ -44,7 +47,7 @@
   (validate-fn resource))
 
 (def validate-create-fn (u/create-spec-validation-fn ::deployment-template-spec/deployment-template-create))
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (validate-create-fn resource))
 
@@ -100,7 +103,7 @@
           [api-key secret] (generate-api-key-secret request)
           deployment (-> body
                          (assoc-in [:template :href] deployment-tmpl-href)
-                         (assoc :resource-type create-uri)
+                         (assoc :resource-type create-type)
                          (retrieve-deployment-template idmap)
                          (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
                          crud/validate
@@ -158,7 +161,7 @@
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

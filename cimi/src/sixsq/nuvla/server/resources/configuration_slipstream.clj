@@ -30,8 +30,8 @@
 
 
 (def create-template
-  {:resource-type p/create-uri
-   :template    {:href "configuration-template/slipstream"}})
+  {:resource-type p/create-type
+   :template      {:href "configuration-template/slipstream"}})
 
 
 ;;

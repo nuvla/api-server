@@ -2,20 +2,18 @@
   (:require
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.configuration-template]
     [sixsq.nuvla.util.response :as r]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const resource-uri resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -23,11 +21,13 @@
                             :type      "ROLE"
                             :right     "VIEW"}]})
 
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "ADMIN"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; atom to keep track of the loaded ConfigurationTemplate resources
@@ -41,9 +41,9 @@
   (when service
     (let [id (str resource-type "/" service)]
       (-> resource
-          (merge {:id          id
-                  :resource-type resource-uri
-                  :acl         resource-acl})
+          (merge {:id            id
+                  :resource-type resource-type
+                  :acl           resource-acl})
           u/update-timestamps))))
 
 (defn register
@@ -71,7 +71,7 @@
   (throw (ex-info (str "unknown ConfigurationTemplate type: " (:service resource)) resource)))
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
@@ -113,7 +113,7 @@
 (defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri false false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)

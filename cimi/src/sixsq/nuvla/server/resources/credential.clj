@@ -13,13 +13,15 @@ CredentialTemplate resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 ;; only authenticated users can view and create credentials
 (def collection-acl {:owner {:principal "ADMIN"
@@ -30,6 +32,7 @@ CredentialTemplate resource.
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "MODIFY"}]})
+
 
 ;;
 ;; validate the created credential resource
@@ -61,7 +64,7 @@ CredentialTemplate resource.
   (logu/log-and-throw-400 (str "cannot validate CredentialTemplate create document with type: '"
                                (dispatch-on-registration-method resource) "'")))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -154,7 +157,7 @@ CredentialTemplate resource.
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
-            (assoc :resource-type create-uri)
+            (assoc :resource-type create-type)
             (update-in [:template] dissoc :type)  ;; forces use of template reference
             (resolve-hrefs idmap)
             (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
@@ -193,7 +196,7 @@ CredentialTemplate resource.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
   (query-impl request))

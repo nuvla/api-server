@@ -375,7 +375,7 @@
                             (request base-uri)
                             (ltu/body->edn)
                             (ltu/is-status 200)
-                            (ltu/is-resource-uri eo/collection-uri)
+                            (ltu/is-resource-uri eo/collection-type)
                             (ltu/is-count 1)
                             (ltu/entries)
                             first)

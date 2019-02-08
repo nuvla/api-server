@@ -335,11 +335,13 @@ include aggregating values over a collection of resources.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
+
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
                    :rules [{:principal "ANON"
                             :type      "ROLE"
                             :right     "VIEW"}]})
+
 
 ;; dynamically loads all available resources
 (def resource-links

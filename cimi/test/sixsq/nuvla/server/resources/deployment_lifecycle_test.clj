@@ -89,7 +89,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri deployment/collection-uri)
+          (ltu/is-resource-uri deployment/collection-type)
           (ltu/is-count #(= 2 %))
           (ltu/entries))
 
@@ -119,7 +119,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri deployment/collection-uri)
+          (ltu/is-resource-uri deployment/collection-type)
           (ltu/is-count #(= 2 %))
           (ltu/entries))
 

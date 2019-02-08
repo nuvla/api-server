@@ -162,7 +162,7 @@
                         (request base-uri)
                         (t/body->edn)
                         (t/is-status 200)
-                        (t/is-resource-uri collection-uri)
+                        (t/is-resource-uri collection-type)
                         (t/is-count pos?)
                         (t/entries))]
 

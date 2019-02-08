@@ -45,11 +45,12 @@ a username and password pair stored in SlipStream's internal database.
     [sixsq.nuvla.util.response :as r]
     [clojure.tools.logging :as log]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -72,6 +73,7 @@ a username and password pair stored in SlipStream's internal database.
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; atom to keep track of the SessionTemplate descriptions
@@ -146,7 +148,7 @@ a username and password pair stored in SlipStream's internal database.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

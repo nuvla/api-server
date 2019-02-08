@@ -58,7 +58,7 @@
             (request base-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-resource-uri t/collection-uri)
+            (ltu/is-resource-uri t/collection-type)
             (ltu/is-count pos?))
 
         (let [{:keys [id] :as metadata} (-> session

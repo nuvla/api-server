@@ -16,19 +16,23 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 (def ^:const form-urlencoded "application/x-www-form-urlencoded")
+
 
 ;; creating a new user is a registration request, so anonymous users must
 ;; be able to view the collection and post requests to it (if a template is
 ;; visible to ANON.)
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "ADMIN"
@@ -64,7 +68,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (logu/log-and-throw-400 "missing or invalid UserTemplate reference"))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -171,7 +175,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           authn-method (-> body :template :method)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
-                                                    (assoc :resource-type create-uri)
+                                                    (assoc :resource-type create-type)
                                                     (update-in [:template] dissoc :method :id) ;; forces use of template reference
                                                     (std-crud/resolve-hrefs idmap true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
@@ -216,7 +220,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
   (query-impl request))

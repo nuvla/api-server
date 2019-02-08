@@ -10,9 +10,8 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -24,6 +23,7 @@
                             :right     "VIEW"}
                            ]})
 
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "ADMIN"
@@ -32,6 +32,7 @@
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; Resource defaults
@@ -144,7 +145,7 @@
 (defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri false false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)

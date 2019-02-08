@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const action-name "user-email-validation")
 
 

@@ -46,7 +46,7 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri collection-uri)
+                      (ltu/is-resource-uri collection-type)
                       (ltu/is-count pos?)
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")

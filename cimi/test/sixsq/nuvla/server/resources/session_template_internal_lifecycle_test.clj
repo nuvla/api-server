@@ -50,7 +50,7 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri st/collection-uri)
+                      (ltu/is-resource-uri st/collection-type)
                       (ltu/entries))]
       (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
@@ -76,7 +76,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri st/collection-uri)
+                        (ltu/is-resource-uri st/collection-type)
                         (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 

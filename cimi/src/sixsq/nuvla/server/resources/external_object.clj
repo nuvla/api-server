@@ -16,13 +16,15 @@
     [sixsq.nuvla.util.response :as r]
     [ring.util.response :as ru]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const create-uri (u/ns->create-type *ns*))
+
+(def ^:const create-type (u/ns->create-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -35,9 +37,12 @@
 
 
 (def ^:const state-new "new")
-(def ^:const state-uploading "uploading")
-(def ^:const state-ready "ready")
 
+
+(def ^:const state-uploading "uploading")
+
+
+(def ^:const state-ready "ready")
 
 
 ;;
@@ -73,7 +78,7 @@
   (throw (ex-info (str "unknown External Object create type: " (dispatch-on-object-type resource) resource) resource)))
 
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -232,7 +237,7 @@
   (a/can-modify? {:acl collection-acl} request)
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resource-type create-uri)
+                 (assoc :resource-type create-type)
                  (merge-into-tmpl)
                  (resolve-hrefs idmap)
                  (crud/validate)
@@ -265,7 +270,7 @@
   (edit-impl (assoc request :body (select-editable-attributes body))))
 
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
 (defmethod crud/query resource-type

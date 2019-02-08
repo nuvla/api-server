@@ -28,11 +28,12 @@ must delete the old one and create a new one.
     [sixsq.nuvla.server.resources.spec.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -40,8 +41,10 @@ must delete the old one and create a new one.
                               :type      "ROLE"
                               :right     "VIEW"}]})
 
+
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}})
+
 
 ;;
 ;; multimethods for validation and operations
@@ -115,7 +118,7 @@ must delete the old one and create a new one.
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

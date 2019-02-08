@@ -8,17 +8,20 @@
     [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.resources.spec.deployment-template :as dt]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def ^:const generated-url (str resource-type "/generated"))
+
 
 ;; the templates are managed as in-memory resources, so modification
 ;; of the collection is not permitted, but users must be able to list
 ;; and view templates
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "USER"
@@ -83,7 +86,7 @@
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 (defmethod crud/query resource-type
   [request]

@@ -25,7 +25,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-uri)
+        (ltu/is-resource-uri collection-type)
         (ltu/is-operation-absent "add")
         (ltu/is-operation-absent "delete")
         (ltu/is-operation-absent "edit"))
@@ -35,7 +35,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-uri)
+        (ltu/is-resource-uri collection-type)
         (ltu/is-operation-present "add")
         (ltu/is-operation-absent "delete")
         (ltu/is-operation-absent "edit"))
@@ -114,7 +114,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
@@ -136,7 +136,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 

@@ -12,11 +12,12 @@
     [sixsq.nuvla.server.resources.spec.resource-metadata :as resource-metadata]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name (u/ns->collection-type *ns*))
 
-(def ^:const collection-uri collection-name)
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def default-resource-acl {:owner {:principal "ADMIN"
                                    :type      "ROLE"}
@@ -124,7 +125,7 @@
 (defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri false false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
