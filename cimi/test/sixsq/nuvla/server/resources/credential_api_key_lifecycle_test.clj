@@ -15,7 +15,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context credential/resource-url))
+(def base-uri (str p/service-context credential/resource-type))
 
 
 (deftest check-strip-session-role
@@ -34,8 +34,8 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href (str ct/resource-url "/" akey/method)
-        template-url (str p/service-context ct/resource-url "/" akey/method)
+        href (str ct/resource-type "/" akey/method)
+        template-url (str p/service-context ct/resource-type "/" akey/method)
 
         template (-> session-admin
                      (request template-url)

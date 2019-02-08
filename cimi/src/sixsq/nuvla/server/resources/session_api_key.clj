@@ -95,4 +95,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize p/resource-url ::session/session))
+  (std-crud/initialize p/resource-type ::session/session))

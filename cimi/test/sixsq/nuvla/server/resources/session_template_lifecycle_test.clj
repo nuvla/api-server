@@ -10,11 +10,11 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context st/resource-name))
+(def base-uri (str p/service-context st/resource-type))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists st/resource-url))
+  (mdtu/check-metadata-exists st/resource-type))
 
 
 (deftest bad-methods

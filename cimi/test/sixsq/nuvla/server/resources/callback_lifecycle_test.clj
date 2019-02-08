@@ -13,7 +13,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context callback/resource-url))
+(def base-uri (str p/service-context callback/resource-type))
 
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)
@@ -156,7 +156,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id callback/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id callback/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

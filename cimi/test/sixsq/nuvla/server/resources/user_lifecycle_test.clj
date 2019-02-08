@@ -9,11 +9,11 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context user/resource-name))
+(def base-uri (str p/service-context user/resource-type))
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id user/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id user/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

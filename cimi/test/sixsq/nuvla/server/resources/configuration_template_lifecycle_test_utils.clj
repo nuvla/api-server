@@ -12,12 +12,12 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-name))
+(def base-uri (str p/service-context resource-type))
 
 
 (defn check-retrieve-by-id
   [service]
-  (let [id (str resource-url "/" service)
+  (let [id (str resource-type "/" service)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
@@ -55,7 +55,7 @@
                       (ltu/entries))
           ids (set (map :id entries))
           types (set (map :service entries))]
-      (is (contains? ids (str resource-url "/" service)))
+      (is (contains? ids (str resource-type "/" service)))
       (is (contains? types service))
 
       (doseq [entry entries]
@@ -86,7 +86,7 @@
 
 (defn check-bad-methods
   []
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :post]
                             [base-uri :delete]

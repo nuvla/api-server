@@ -98,17 +98,13 @@ session.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "SessionCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
+(def ^:const create-uri (str c/slipstream-schema-uri resource-type "Create"))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -240,7 +236,7 @@ session.
 (defn add-impl [{:keys [id body] :as request}]
   (a/can-modify? {:acl collection-acl} request)
   (db/add
-    resource-name
+    resource-type
     (-> body
         u/strip-service-attrs
         (assoc :id id)
@@ -259,7 +255,7 @@ session.
 
 
 ;; requires a SessionTemplate to create new Session
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body form-params headers] :as request}]
 
   (try
@@ -284,13 +280,13 @@ session.
           (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))
           (or http-response (throw e)))))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
 ;; FIXME: Copied to avoid dependency cycle.
 (defn cookie-name
@@ -309,7 +305,7 @@ session.
     {:cookies (cookies/revoked-cookie (cookie-name (-> response :body :resource-id)))}
     {}))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (let [response (delete-impl request)
         cookies (delete-cookie response)]
@@ -327,9 +323,9 @@ session.
   (fn [request]
     (query-fn (add-session-filter request))))
 
-(def query-impl (query-wrapper (std-crud/query-fn resource-name collection-acl collection-uri)))
+(def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-uri)))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -344,10 +340,10 @@ session.
   [resource request]
   (log-util/log-and-throw 400 (str "error executing validation callback: '" (dispatch-conversion resource request) "'")))
 
-(defmethod crud/do-action [resource-url "validate"]
+(defmethod crud/do-action [resource-type "validate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (validate-callback (crud/retrieve-by-id-as-admin id) request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -358,4 +354,4 @@ session.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url nil))
+  (std-crud/initialize resource-type nil))

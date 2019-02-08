@@ -16,9 +16,9 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context t/resource-url))
+(def base-uri (str p/service-context t/resource-type))
 
-(def md-uri (str p/service-context md/resource-url "/" t/resource-url))
+(def md-uri (str p/service-context md/resource-type "/" t/resource-type))
 
 (def valid-acl {:owner {:principal "ADMIN",
                         :type      "ROLE"},
@@ -37,7 +37,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists t/resource-url))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -50,13 +50,13 @@
     ;; verify resource metadata
     (-> session-anon
         (request md-uri))
-    (is (= t/resource-url (-> session-anon
-                              (request md-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              :response
-                              :body
-                              :typeURI)))
+    (is (= t/resource-type (-> session-anon
+                               (request md-uri)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               :response
+                               :body
+                               :typeURI)))
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -215,7 +215,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :put]

@@ -13,8 +13,8 @@
 
 (deftest check-user-template-self-registration-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        tpl {:id             (str st/resource-url "/internal")
-             :resource-type    st/resource-uri
+        tpl {:id             (str st/resource-type "/internal")
+             :resource-type  st/resource-uri
              :name           "my-template"
              :description    "my template"
              :group          "my group"

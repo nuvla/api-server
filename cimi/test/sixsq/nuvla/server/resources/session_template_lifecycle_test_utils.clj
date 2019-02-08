@@ -81,7 +81,7 @@
                                       (ltu/body->edn)
                                       :response
                                       :body)]
-        (is (= id (str resource-url "/" instance))))
+        (is (= id (str resource-type "/" instance))))
 
       ;; verify that editing/updating the template works
       (let [orig-template (-> session-anon
@@ -141,7 +141,7 @@
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 (defn bad-methods [base-uri]
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

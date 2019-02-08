@@ -25,7 +25,7 @@ credentials. This template is guaranteed to be present on all server instances.
                        :instance         authn-method
                        :name             "Internal"
                        :description      "Internal Authentication via Username/Password"
-                       :resourceMetadata (str p/resource-url "-" authn-method)
+                       :resourceMetadata (str p/resource-type "-" authn-method)
                        :group            "Login with Username/Password"
                        :username         "username"
                        :password         "password"
@@ -39,8 +39,8 @@ credentials. This template is guaranteed to be present on all server instances.
 (defn initialize
   []
   (p/register authn-method)
-  (std-crud/initialize p/resource-url ::st-internal/schema)
-  (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-url default-template)
+  (std-crud/initialize p/resource-type ::st-internal/schema)
+  (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-internal/schema)))
 

@@ -19,5 +19,5 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize eo/resource-url ::eo-generic/external-object))
+  (std-crud/initialize eo/resource-type ::eo-generic/external-object))
 

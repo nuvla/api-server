@@ -15,7 +15,7 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-module {:id          (str d/resource-url "/connector-uuid")
+(def valid-module {:id          (str d/resource-type "/connector-uuid")
                    :resource-type d/resource-uri
                    :created     timestamp
                    :updated     timestamp
@@ -35,7 +35,7 @@
                                   :disk       300}]})
 
 
-(def valid-deployment {:id               (str d/resource-url "/connector-uuid")
+(def valid-deployment {:id               (str d/resource-type "/connector-uuid")
                        :resource-type      d/resource-uri
                        :created          timestamp
                        :updated          timestamp

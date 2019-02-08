@@ -111,4 +111,4 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 (defn initialize
   []
-  (std-crud/initialize p/resource-url ::api-key/schema))
+  (std-crud/initialize p/resource-type ::api-key/schema))

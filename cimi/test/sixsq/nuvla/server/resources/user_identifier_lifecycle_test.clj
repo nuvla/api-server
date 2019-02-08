@@ -15,7 +15,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context user-identifier/resource-name))
+(def base-uri (str p/service-context user-identifier/resource-type))
 
 
 (def valid-acl {:owner {:type      "ROLE"
@@ -31,7 +31,7 @@
 (def test-identifier "some-user-identifer")
 
 
-(def valid-entry {:id          (str user-identifier/resource-url "/hashed-identifier")
+(def valid-entry {:id          (str user-identifier/resource-type "/hashed-identifier")
                   :resource-type user-identifier/resource-uri
                   :created     timestamp
                   :updated     timestamp
@@ -43,7 +43,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists user-identifier/resource-url))
+  (mdtu/check-metadata-exists user-identifier/resource-type))
 
 
 (deftest lifecycle
@@ -102,7 +102,7 @@
             (ltu/is-status 200)))
 
       ;; check content of the resource
-      (let [expected-id (str user-identifier/resource-url "/" (u/md5 (:identifier valid-entry)))
+      (let [expected-id (str user-identifier/resource-type "/" (u/md5 (:identifier valid-entry)))
             resource (-> session-admin
                          (request abs-uri)
                          (ltu/body->edn)
@@ -145,7 +145,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id user-identifier/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id user-identifier/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

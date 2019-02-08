@@ -32,13 +32,9 @@ appropriate users.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "CallbackCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -81,26 +77,26 @@ appropriate users.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
-(defmethod crud/add resource-name
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
+(defmethod crud/add resource-type
   [request]
   (add-impl (assoc-in request [:body :state] "WAITING")))
 
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
-(defmethod crud/retrieve resource-name
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 
-(def delete-impl (std-crud/delete-fn resource-name))
-(defmethod crud/delete resource-name
+(def delete-impl (std-crud/delete-fn resource-type))
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
-(defmethod crud/query resource-name
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -140,10 +136,10 @@ appropriate users.
     (log-util/log-and-throw 400 msg)))
 
 
-(defmethod crud/do-action [resource-url "execute"]
+(defmethod crud/do-action [resource-type "execute"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (when-let [callback-resource (crud/retrieve-by-id-as-admin id)]
         (if (utils/executable? callback-resource)
           (execute callback-resource request)
@@ -163,7 +159,7 @@ appropriate users.
   ([action-name baseURI href]
    (create action-name baseURI href nil))
   ([action-name baseURI href data]
-   (let [callback-request {:params   {:resource-name resource-url}
+   (let [callback-request {:params   {:resource-name resource-type}
                            :body     (cond-> {:action         action-name
                                               :targetResource {:href href}}
                                              data (assoc :data data))
@@ -189,5 +185,5 @@ appropriate users.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::callback/schema)
+  (std-crud/initialize resource-type ::callback/schema)
   (md/register (gen-md/generate-metadata ::ns ::callback/schema)))

@@ -18,13 +18,9 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "ModuleCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -58,9 +54,9 @@
 (defn type->resource-name
   [type]
   (case type
-    "IMAGE" module-image/resource-url
-    "COMPONENT" module-component/resource-url
-    "APPLICATION" module-application/resource-url
+    "IMAGE" module-image/resource-type
+    "COMPONENT" module-component/resource-type
+    "APPLICATION" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module type: " type)))))
 
 
@@ -73,7 +69,7 @@
     (throw (r/ex-bad-request (str "unknown module type: " type)))))
 
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (a/can-modify? {:acl collection-acl} request)
   (let [[{:keys [type] :as module-meta}
@@ -83,10 +79,10 @@
       (let [module-meta (module-utils/set-parent-path module-meta)]
 
         (db/add                                             ; FIXME duplicated code
-          resource-name
+          resource-type
           (-> module-meta
               u/strip-service-attrs
-              (crud/new-identifier resource-name)
+              (crud/new-identifier resource-type)
               (assoc :resource-type resource-uri)
               u/update-timestamps
               (crud/add-acl request)
@@ -110,10 +106,10 @@
                             module-utils/set-parent-path)]
 
         (db/add
-          resource-name
+          resource-type
           (-> module-meta
               u/strip-service-attrs
-              (crud/new-identifier resource-name)
+              (crud/new-identifier resource-type)
               (assoc :resource-type resource-uri)
               u/update-timestamps
               (crud/add-acl request)
@@ -128,7 +124,7 @@
 
 (defn retrieve-edn
   [{{uuid :uuid} :params :as request}]
-  (-> (str resource-name "/" (-> uuid split-uuid first))
+  (-> (str resource-type "/" (-> uuid split-uuid first))
       (db/retrieve request)
       (a/can-view? request)))
 
@@ -140,7 +136,7 @@
     (->> versions (remove nil?) last :href)))
 
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
     (let [{:keys [versions] :as module-meta} (retrieve-edn request)
@@ -151,23 +147,23 @@
                                (crud/retrieve-by-id-as-admin)
                                (dissoc :resource-type :operations :acl))
                            (when version-index
-                             (throw (r/ex-not-found (str "Module version not found: " resource-url "/" uuid)))))]
+                             (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
           (r/json-response)))
     (catch IndexOutOfBoundsException _
-      (r/response-not-found (str resource-url "/" uuid)))
+      (r/response-not-found (str resource-type "/" uuid)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [{:keys [body] :as request}]
   (try
-    (let [id (str resource-url "/" (-> request :params :uuid))
+    (let [id (str resource-type "/" (-> request :params :uuid))
           [module-meta {:keys [author commit] :as module-content}]
           (-> body u/strip-service-attrs module-utils/split-resource)
           {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)
@@ -205,7 +201,7 @@
     (concat part-a [nil] part-b)))
 
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
 (defn delete-content
   [content-id type]
@@ -235,7 +231,7 @@
 
     delete-response))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [{{uuid-full :uuid} :params :as request}]
   (try
 
@@ -251,14 +247,14 @@
         (delete-all request module-meta)))
 
     (catch IndexOutOfBoundsException _
-      (r/response-not-found (str resource-url "/" uuid-full)))
+      (r/response-not-found (str resource-type "/" uuid-full)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -268,4 +264,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::module/module))
+  (std-crud/initialize resource-type ::module/module))

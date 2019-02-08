@@ -19,17 +19,13 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "DeploymentCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
+(def ^:const create-uri (str c/slipstream-schema-uri resource-type "Create"))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -76,18 +72,18 @@
                                 {:status 200
                                  :body   (du/create-deployment-template (:template deployment) idmap)}
                                 (crud/retrieve {:params   {:uuid          (u/document-id deployment-tmpl-href)
-                                                           :resource-name deployment-template/resource-url}
+                                                           :resource-name deployment-template/resource-type}
                                                 :identity idmap}))]
     (if (= status 200)
       (assoc deployment :template (dissoc body :operations :acl :id :href))
       (throw (ex-info "" body)))))
 
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
 
 (defn generate-api-key-secret
   [{:keys [identity] :as request}]
-  (let [request-api-key {:params   {:resource-name credential/resource-url}
+  (let [request-api-key {:params   {:resource-name credential/resource-type}
                          :body     {:template {:href (str "credential-template/" cred-api-key/method)}}
                          :identity identity}
         {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
@@ -96,7 +92,7 @@
       (throw (ex-info "" body)))))
 
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (try
     (a/can-modify? {:acl collection-acl} request)
@@ -122,16 +118,16 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl (update request :body dissoc :clientAPIKey)))
 
@@ -151,7 +147,7 @@
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-name "/" uuid)
+    (-> (str resource-type "/" uuid)
         (db/retrieve request)
         verify-can-delete
         (a/can-modify? request)
@@ -159,14 +155,14 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -191,10 +187,10 @@
             (not (can-delete? resource)) (update :operations remove-delete))))
 
 
-(defmethod crud/do-action [resource-url "start"]
+(defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)
+    (let [id (str resource-type "/" uuid)
           user-id (:identity (a/current-authentication request))
           request-job-creation {:identity std-crud/internal-identity
                                 :body     {:action         "start_deployment"
@@ -205,7 +201,7 @@
                                                             :rules [{:principal user-id
                                                                      :right     "VIEW"
                                                                      :type      "USER"}]}}
-                                :params   {:resource-name job/resource-url}}
+                                :params   {:resource-name job/resource-type}}
 
           {{job-id :resource-id job-status :status} :body :as job-start-response} (crud/add request-job-creation)
           job-msg (str "starting " id " with async " job-id)]
@@ -222,10 +218,10 @@
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [resource-url "stop"]
+(defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)
+    (let [id (str resource-type "/" uuid)
           user-id (:identity (a/current-authentication request))
           request-job-creation {:identity std-crud/internal-identity
                                 :body     {:action         "stop_deployment"
@@ -237,7 +233,7 @@
                                                                      :right     "VIEW"
                                                                      :type      "USER"}]}
                                            }
-                                :params   {:resource-name job/resource-url}}
+                                :params   {:resource-name job/resource-type}}
 
           {{job-id :resource-id job-status :status} :body :as job-stop-response} (crud/add request-job-creation)
           job-msg (str "stopping " id " with async " job-id)]
@@ -258,4 +254,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::deployment-spec/deployment))
+  (std-crud/initialize resource-type ::deployment-spec/deployment))

@@ -46,13 +46,9 @@ curl https://nuv.la/api/credential-template
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "CredentialTemplateCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -81,7 +77,7 @@ curl https://nuv.la/api/credential-template
    template."
   [{:keys [method] :as resource}]
   (when method
-    (let [id (str resource-url "/" method)]
+    (let [id (str resource-type "/" method)]
       (-> resource
           (merge {:id          id
                   :resource-type resource-uri})
@@ -124,15 +120,15 @@ curl https://nuv.la/api/credential-template
 ;; CRUD operations
 ;;
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
           (a/can-view? request)
           (r/json-response)))
@@ -142,7 +138,7 @@ curl https://nuv.la/api/credential-template
 
 ;; must override the default implementation so that the
 ;; data can be pulled from the atom rather than the database
-(defmethod crud/retrieve-by-id resource-url
+(defmethod crud/retrieve-by-id resource-type
   [id]
   (try
     (get @templates id)
@@ -150,12 +146,12 @@ curl https://nuv.la/api/credential-template
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
@@ -167,10 +163,10 @@ curl https://nuv.la/api/credential-template
       false)))
 
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri true false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])

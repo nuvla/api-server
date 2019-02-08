@@ -20,11 +20,11 @@
                          :right     "ALL"}]})
 
 
-(def common {:id          (str t/resource-url "/abcdef")
+(def common {:id            (str t/resource-type "/abcdef")
              :resource-type t/resource-uri
-             :created     timestamp
-             :updated     timestamp
-             :acl         valid-acl})
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl})
 
 
 (def valid-contents {:typeURI      "https://sixsq.com/slipstream/SomeResource"

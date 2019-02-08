@@ -54,25 +54,10 @@
   (-> resource-ns meta :doc))
 
 
-(defn get-type-uri
+(defn get-resource-type
   [ns]
   (some-> ns
-          (ns-resolve 'resource-url)
-          deref))
-
-
-(defn get-resource-name
-  [ns]
-  (or (some-> ns
-              (ns-resolve 'resource-name)
-              deref)
-      (get-type-uri ns)))
-
-
-(defn get-type-uri
-  [ns]
-  (some-> ns
-          (ns-resolve 'resource-url)
+          (ns-resolve 'resource-type)
           deref))
 
 
@@ -138,8 +123,8 @@
    (if-let [parent-ns (as-namespace parent-ns)]
      (let [child-ns (as-namespace child-ns)
 
-           resource-name (cond-> (get-resource-name parent-ns)
-                                 child-ns (str " \u2014 " (get-resource-name child-ns)))
+           resource-name (cond-> (get-resource-type parent-ns)
+                                 child-ns (str " \u2014 " (get-resource-type child-ns)))
 
            doc (get-doc (or child-ns parent-ns))
            type-uri (ns->typeURI (or child-ns parent-ns))

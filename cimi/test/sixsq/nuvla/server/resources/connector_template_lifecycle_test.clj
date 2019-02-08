@@ -14,10 +14,10 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-name))
+(def base-uri (str p/service-context resource-type))
 
 (deftest check-retrieve-by-id
-  (let [id (str resource-url "/" example/cloud-service-type)
+  (let [id (str resource-type "/" example/cloud-service-type)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
@@ -54,7 +54,7 @@
                       (ltu/entries))
           ids (set (map :id entries))
           types (set (map :cloudServiceType entries))]
-      (is (= #{(str resource-url "/" example/cloud-service-type)} ids))
+      (is (= #{(str resource-type "/" example/cloud-service-type)} ids))
       (is (= #{example/cloud-service-type} types))
 
       (doseq [entry entries]
@@ -85,7 +85,7 @@
               (ltu/is-status 200)))))))
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :post]
                             [base-uri :delete]

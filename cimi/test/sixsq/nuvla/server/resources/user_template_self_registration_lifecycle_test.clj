@@ -17,13 +17,13 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context user/resource-name))
+(def base-uri (str p/service-context user/resource-type))
 
-(def user-template-base-uri (str p/service-context ut/resource-name))
+(def user-template-base-uri (str p/service-context ut/resource-type))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str ut/resource-url "-" self/resource-url)))
+  (mdtu/check-metadata-exists (str ut/resource-type "-" self/resource-url)))
 
 
 (deftest lifecycle
@@ -43,8 +43,8 @@
 
       (let [uname "120720737412_eduid_chhttps___eduid_ch"
             uname-alt "120720737412_eduid_chhttps___eduid_ch_2"
-            href (str ut/resource-url "/" self/registration-method)
-            template-url (str p/service-context ut/resource-url "/" self/registration-method)
+            href (str ut/resource-type "/" self/registration-method)
+            template-url (str p/service-context ut/resource-type "/" self/registration-method)
 
             session (-> (ltu/ring-app)
                         session

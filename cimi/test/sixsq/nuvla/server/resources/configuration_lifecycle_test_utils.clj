@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [peridot.core :refer :all]))
 
-(def base-uri (str p/service-context resource-name))
+(def base-uri (str p/service-context resource-type))
 
 
 (defn check-lifecycle
@@ -27,8 +27,8 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href (str ct/resource-url "/" service)
-        template-url (str p/service-context ct/resource-url "/" service)
+        href (str ct/resource-type "/" service)
+        template-url (str p/service-context ct/resource-type "/" service)
         resp (-> session-admin
                  (request template-url)
                  (ltu/body->edn)
@@ -183,7 +183,7 @@
 
 (defn check-bad-methods
   []
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

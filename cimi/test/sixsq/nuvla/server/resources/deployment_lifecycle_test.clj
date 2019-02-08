@@ -14,9 +14,9 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context deployment/resource-url))
+(def base-uri (str p/service-context deployment/resource-type))
 
-(def deployment-template-collection-uri (str p/service-context deployment-template/resource-name))
+(def deployment-template-collection-uri (str p/service-context deployment-template/resource-type))
 
 (deftest lifecycle
 
@@ -202,7 +202,7 @@
         ))))
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id deployment/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id deployment/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

@@ -20,7 +20,7 @@
                    :type          type
                    :timestamp     (u/unparse-timestamp-datetime (time/now))
                    :acl           acl}
-        create-request {:params   {:resource-name event/resource-url}
+        create-request {:params   {:resource-name event/resource-type}
                         :identity std-crud/internal-identity
                         :body     event-map}]
     (crud/add create-request)))

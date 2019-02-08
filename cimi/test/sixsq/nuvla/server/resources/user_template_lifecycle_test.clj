@@ -19,16 +19,16 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context t/resource-name))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists t/resource-url))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest check-retrieve-by-id
   (doseq [registration-method [direct/registration-method]]
-    (let [id (str t/resource-url "/" registration-method)
+    (let [id (str t/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
 
@@ -51,7 +51,7 @@
                     (ltu/entries))
         ids (set (map :id entries))
         types (set (map :method entries))]
-    (is (= #{(str t/resource-url "/" direct/registration-method)}
+    (is (= #{(str t/resource-type "/" direct/registration-method)}
            ids))
     (is (= #{direct/registration-method}
            types))
@@ -75,7 +75,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

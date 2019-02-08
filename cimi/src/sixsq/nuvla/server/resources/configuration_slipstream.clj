@@ -10,7 +10,7 @@
 (def ^:const service "slipstream")
 
 
-(def ^:const instance-url (str p/resource-url "/" service))
+(def ^:const instance-url (str p/resource-type "/" service))
 
 
 ;;
@@ -42,5 +42,5 @@
   ;; FIXME: this is a nasty hack to ensure configuration template is available
   (tpl/initialize)
 
-  (std-crud/initialize p/resource-url ::configuration-template/slipstream)
-  (std-crud/add-if-absent "configuration/slipstream" p/resource-url create-template))
+  (std-crud/initialize p/resource-type ::configuration-template/slipstream)
+  (std-crud/add-if-absent "configuration/slipstream" p/resource-type create-template))

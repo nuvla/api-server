@@ -52,13 +52,13 @@
 (defn create-cloud-cred
   [user-session]
   (let [cred-create {:template
-                     {:href      (str credt/resource-url "/" cred-alpha/method)
+                     {:href      (str credt/resource-type "/" cred-alpha/method)
                       :key       "key"
                       :secret    "secret"
                       :quota     7
-                      :connector {:href (str c/resource-url "/" connector-name)}}}
+                      :connector {:href (str c/resource-type "/" connector-name)}}}
         uri (-> user-session
-                (request (str p/service-context cred/resource-name)
+                (request (str p/service-context cred/resource-type)
                          :request-method :post
                          :body (json/write-str cred-create))
                 (ltu/body->edn)
@@ -78,12 +78,12 @@
 
 (defn create-connector-fixture!
   [f]
-  (let [con-create {:template {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
+  (let [con-create {:template {:href                (str cont/resource-type "/" con-alpha/cloud-service-type)
                                :alphaKey            1234
                                :instanceName        connector-name
                                :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
-        (request (str p/service-context c/resource-name)
+        (request (str p/service-context c/resource-type)
                  :request-method :post
                  :body (json/write-str con-create))
         (ltu/body->edn)
@@ -141,7 +141,7 @@
                 s3/set-acl-public-read (fn [_ _ _] nil)]
     (f)))
 
-(def base-uri (str p/service-context eo/resource-name))
+(def base-uri (str p/service-context eo/resource-type))
 
 
 (def session-anon (-> (ltu/ring-app)

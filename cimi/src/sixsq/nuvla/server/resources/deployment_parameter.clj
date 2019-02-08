@@ -16,13 +16,9 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "DeploymentCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -69,7 +65,7 @@
   [current-state deployment-href]
   (let [new-state (next-state current-state)
         uuid (parameter->uiid deployment-href nil "ss:state")
-        content-request {:params   {:resource-name resource-url
+        content-request {:params   {:resource-name resource-type
                                     :uuid          uuid}
                          :identity std-crud/internal-identity
                          :body     {:value new-state}}
@@ -103,7 +99,7 @@
       "complete" (some-> value
                          (update-state deployment-href))
       "ss:abort" (when value (update-state "Aborted" deployment-href))
-      "ss:state" (let [deployment-request {:params      {:resource-name d/resource-url
+      "ss:state" (let [deployment-request {:params      {:resource-name d/resource-type
                                                          :uuid          (u/document-id deployment-href)}
                                            :cimi-params {:select #{"keepRunning"}}
                                            :identity    std-crud/internal-identity}
@@ -113,7 +109,7 @@
                              (and (= keep-running "On Success") (= value "Aborted"))
                              (and (= keep-running "On Error") (= value "Ready")))
                      (crud/do-action {:params   {:action        "stop"
-                                                 :resource-name d/resource-url
+                                                 :resource-name d/resource-type
                                                  :uuid          (u/document-id deployment-href)}
                                       :identity std-crud/internal-identity})))
       nil))
@@ -123,19 +119,19 @@
 ;; set the resource identifier to "deployment-parameter/predictable-uuid3-from-string"
 ;;
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [{:keys [deployment nodeID name] :as parameter} resource-name]
   (->> (parameter->uiid (:href deployment) nodeID name)
-       (str resource-url "/")
+       (str resource-type "/")
        (assoc parameter :id)))
 
 ;;
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{{:keys [name value deployment acl]} :body :as request}]
   (when (= name "ss:state")
     (event-utils/create-event (:href deployment) value acl
@@ -144,28 +140,28 @@
   (add-impl request))
 
 
-(def edit-impl (std-crud/edit-fn resource-name))
-(defmethod crud/edit resource-name
+(def edit-impl (std-crud/edit-fn resource-type))
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
-(defmethod crud/retrieve resource-name
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -176,4 +172,4 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-url ::deployment-parameter/deployment-parameter))
+  (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter))

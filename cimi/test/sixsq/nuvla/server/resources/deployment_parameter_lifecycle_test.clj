@@ -12,7 +12,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context dp/resource-url))
+(def base-uri (str p/service-context dp/resource-type))
 
 (def valid-entry
   {:name       "param1"
@@ -233,7 +233,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id dp/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id dp/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

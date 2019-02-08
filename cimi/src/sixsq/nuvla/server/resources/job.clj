@@ -12,13 +12,9 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "JobCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -33,7 +29,7 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::job/job)
+  (std-crud/initialize resource-type ::job/job)
   (ju/create-job-queue))
 
 
@@ -60,7 +56,7 @@
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
   (a/can-modify? {:acl collection-acl} request)
-  (let [id (u/new-resource-id resource-name)
+  (let [id (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
                     u/strip-service-attrs
@@ -72,22 +68,22 @@
                     (crud/add-acl request)
                     (assoc :tags [zookeeper-path])
                     (crud/validate))]
-    (db/add resource-name new-job {})))
+    (db/add resource-type new-job {})))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (add-impl request))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 (defn edit-impl
   [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [current (-> (str resource-name "/" uuid)
+    (let [current (-> (str resource-type "/" uuid)
                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
                       (a/can-modify? request))
           dissoc-keys (-> (map keyword select)
@@ -103,20 +99,20 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -132,10 +128,10 @@
         (update-in [:operations] conj collect-op))))
 
 
-(defmethod crud/do-action [resource-url "stop"]
+(defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-name "/" uuid)
+    (-> (str resource-type "/" uuid)
         (db/retrieve request)
         (a/can-modify? request)
         (ju/stop)

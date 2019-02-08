@@ -13,13 +13,13 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context c/resource-name))
+(def collection-uri (str p/service-context c/resource-type))
 
 
 (deftest lifecycle
 
-  (let [href (str ct/resource-url "/" example/cloud-service-type)
-        template-url (str p/service-context ct/resource-url "/" example/cloud-service-type)
+  (let [href (str ct/resource-type "/" example/cloud-service-type)
+        template-url (str p/service-context ct/resource-type "/" example/cloud-service-type)
 
         session-anon (-> (ltu/ring-app)
                          session
@@ -173,7 +173,7 @@
           (ltu/is-status 404)))))
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id c/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id c/resource-type))]
     (ltu/verify-405-status [[collection-uri :options]
                             [collection-uri :delete]
                             [resource-uri :options]

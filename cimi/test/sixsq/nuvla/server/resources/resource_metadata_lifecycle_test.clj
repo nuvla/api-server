@@ -14,7 +14,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context t/resource-url))
+(def base-uri (str p/service-context t/resource-type))
 
 (def valid-acl {:owner {:principal "ADMIN",
                         :type      "ROLE"},
@@ -46,7 +46,7 @@
 
     ;; use the internal register method to create a new entry
     (let [identifier "unit-test-resource"
-          full-identifier (str t/resource-url "/" identifier)
+          full-identifier (str t/resource-type "/" identifier)
           abs-uri (str p/service-context full-identifier)]
 
       (t/register (-> resource-metadata/valid
@@ -75,7 +75,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-url))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [base-uri :post]

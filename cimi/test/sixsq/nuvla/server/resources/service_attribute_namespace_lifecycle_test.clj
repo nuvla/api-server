@@ -11,7 +11,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-url))
+(def base-uri (str p/service-context resource-type))
 
 (def valid-namespace
   {:prefix "schema-org"

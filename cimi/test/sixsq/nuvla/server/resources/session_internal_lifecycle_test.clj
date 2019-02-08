@@ -20,10 +20,10 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context session/resource-name))
+(def base-uri (str p/service-context session/resource-type))
 
 
-(def session-template-base-uri (str p/service-context ct/resource-name))
+(def session-template-base-uri (str p/service-context ct/resource-type))
 
 
 (def session-template-internal {:method      internal/authn-method
@@ -74,7 +74,7 @@
           ;;
           ;; session template should already exist after test server initialization
           ;;
-          href (str st/resource-url "/internal")
+          href (str st/resource-type "/internal")
 
           template-url (str p/service-context href)
 

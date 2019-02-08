@@ -8,17 +8,13 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "ConfigurationCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
+(def ^:const create-uri (str c/slipstream-schema-uri resource-type "Create"))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -86,10 +82,10 @@
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
 
 ;; requires a ConfigurationTemplate to create new Configuration
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [idmap {:identity (:identity request)}
         desc-attrs (u/select-desc-keys body)
@@ -102,27 +98,27 @@
                  (tpl->configuration))]
     (add-impl (assoc request :body (merge body desc-attrs)))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -131,7 +127,7 @@
 ;; use service as the identifier
 ;;
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [{:keys [service instance] :as resource} resource-name]
   (if-let [new-id (cond-> service
                           instance (str "-" instance))]
@@ -143,4 +139,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url nil))
+  (std-crud/initialize resource-type nil))

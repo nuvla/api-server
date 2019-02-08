@@ -41,13 +41,9 @@ curl https://nuv.la/api/service-attribute
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "ServiceAttributeCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
@@ -88,7 +84,7 @@ curl https://nuv.la/api/service-attribute
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
 
 (defn positive-biginteger
   [^bytes bs]
@@ -108,36 +104,36 @@ curl https://nuv.la/api/service-attribute
         (throw (Exception. (str "invalid attribute URI: " uri)))))
     (throw (Exception. (str "attribute URI cannot be nil")))))
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [json resource-name]
-  (let [new-id (str resource-url "/" (uri->id (str (:prefix json) ":" (:attributeName json))))]
+  (let [new-id (str resource-type "/" (uri->id (str (:prefix json) ":" (:attributeName json))))]
     (assoc json :id new-id)))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (add-impl request))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -147,4 +143,4 @@ curl https://nuv.la/api/service-attribute
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::sa/service-attribute))
+  (std-crud/initialize resource-type ::sa/service-attribute))

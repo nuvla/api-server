@@ -24,7 +24,7 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize eo/resource-url ::eo-public/external-object))
+  (std-crud/initialize eo/resource-type ::eo-public/external-object))
 
 (defmethod eo/ready-subtype eot/objectType
   [resource request]

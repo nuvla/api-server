@@ -15,13 +15,9 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
+(def ^:const collection-name (str resource-type "Collection"))
 
-(def ^:const resource-url resource-type)
-
-(def ^:const collection-name (str resource-name "Collection"))
-
-(def ^:const resource-uri (str c/cimi-schema-uri resource-name))
+(def ^:const resource-uri (str c/cimi-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/cimi-schema-uri collection-name))
 
@@ -53,7 +49,7 @@
    resource-type, timestamps, and ACL."
   [identifier resource]
   (when identifier
-    (let [id (str resource-url "/" identifier)]
+    (let [id (str resource-type "/" identifier)]
       (-> resource
           (dissoc :created :updated)
           (merge {:id          id
@@ -92,15 +88,15 @@
 ;; only retrieve and query are supported CRUD operations
 ;;
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
           (a/can-view? request)
           (r/json-response)))
@@ -110,7 +106,7 @@
 
 ;; must override the default implementation so that the
 ;; data can be pulled from the atom rather than the database
-(defmethod crud/retrieve-by-id resource-url
+(defmethod crud/retrieve-by-id resource-type
   [id]
   (try
     (get @templates id)
@@ -118,20 +114,20 @@
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-uri false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
@@ -143,4 +139,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::resource-metadata/resource-metadata))
+  (std-crud/initialize resource-type ::resource-metadata/resource-metadata))

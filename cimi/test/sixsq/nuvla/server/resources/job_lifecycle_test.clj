@@ -14,7 +14,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-url))
+(def base-uri (str p/service-context resource-type))
 
 (def valid-job
   {:resource-type resource-uri

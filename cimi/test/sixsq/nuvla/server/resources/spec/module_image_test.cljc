@@ -16,28 +16,28 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id           (str t/resource-url "/connector-uuid")
-              :resource-type  t/resource-uri
-              :created      timestamp
-              :updated      timestamp
-              :acl          valid-acl
+        root {:id            (str t/resource-type "/connector-uuid")
+              :resource-type t/resource-uri
+              :created       timestamp
+              :updated       timestamp
+              :acl           valid-acl
 
-              :os           "Ubuntu"
-              :loginUser    "ubuntu"
-              :sudo         true
+              :os            "Ubuntu"
+              :loginUser     "ubuntu"
+              :sudo          true
 
-              :cpu          2
-              :ram          2048
-              :disk         100
-              :volatileDisk 500
-              :networkType  "public"
+              :cpu           2
+              :ram           2048
+              :disk          100
+              :volatileDisk  500
+              :networkType   "public"
 
-              :imageIDs     {:some-cloud       "my-great-image-1"
-                             :some-other-cloud "great-stuff"}
+              :imageIDs      {:some-cloud       "my-great-image-1"
+                              :some-other-cloud "great-stuff"}
 
-              :relatedImage {:href "module/other"}
-              :author "someone"
-              :commit "wip"}]
+              :relatedImage  {:href "module/other"}
+              :author        "someone"
+              :commit        "wip"}]
 
     (stu/is-valid ::module-image/module-image root)
     (stu/is-invalid ::module-image/module-image (assoc root :badKey "badValue"))

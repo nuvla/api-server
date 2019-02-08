@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
-(def rname ur/resource-url)
+(def rname ur/resource-type)
 
 
 (def req-u-name "internal")
@@ -21,7 +21,7 @@
 
 
 (def req-template {:template
-                   {:href   (str ct/resource-url "/" direct/registration-method)
+                   {:href   (str ct/resource-type "/" direct/registration-method)
                     :method "direct"}})
 
 

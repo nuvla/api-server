@@ -19,17 +19,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
 (def ^:const collection-name "UserCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const resource-uri (str c/slipstream-schema-uri resource-type))
 
 (def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
+(def ^:const create-uri (str c/slipstream-schema-uri resource-type "Create"))
 
 (def ^:const form-urlencoded "application/x-www-form-urlencoded")
 
@@ -100,9 +96,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 ;; set the resource identifier to "user/username"
 ;;
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [{:keys [username] :as json} resource-name]
-  (assoc json :id (str resource-url "/" username)))
+  (assoc json :id (str resource-type "/" username)))
 
 ;;
 ;; template processing
@@ -156,7 +152,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (merge user-attrs-defaults resource))
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-uri))
 
 (defn revert-method
   [[fragment {:keys [method] :as body}] original-method]
@@ -169,7 +165,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [fragment (merge m desc-attrs)])
 
 ;; requires a UserTemplate to create new User
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body form-params headers] :as request}]
 
   (try
@@ -213,18 +209,18 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))
           (or http-response (throw e)))))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
-(defmethod crud/retrieve resource-name
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
-(defmethod crud/delete resource-name
+(def delete-impl (std-crud/delete-fn resource-type))
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
-(defmethod crud/query resource-name
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-uri))
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -274,7 +270,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
@@ -284,4 +280,4 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::user/schema))
+  (std-crud/initialize resource-type ::user/schema))

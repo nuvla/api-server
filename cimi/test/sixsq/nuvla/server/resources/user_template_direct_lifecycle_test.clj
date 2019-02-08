@@ -15,17 +15,17 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context user/resource-name))
+(def base-uri (str p/service-context user/resource-type))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str ct/resource-url "-" direct/resource-url)))
+  (mdtu/check-metadata-exists (str ct/resource-type "-" direct/resource-url)))
 
 
 (deftest lifecycle
   (let [uname "120720737412@eduid.chhttps://eduid.ch/idp/shibboleth!https://fed-id.nuv.la/samlbridge/module.php/saml/sp/metadata.php/sixsq-saml-bridge!iqqrh4oiyshzcw9o40cvo0+pgka="
-        href (str ct/resource-url "/" direct/registration-method)
-        template-url (str p/service-context ct/resource-url "/" direct/registration-method)
+        href (str ct/resource-type "/" direct/registration-method)
+        template-url (str p/service-context ct/resource-type "/" direct/registration-method)
 
         session (-> (ltu/ring-app)
                     session

@@ -15,7 +15,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def collection-uri (str p/service-context dt/resource-name))
+(def collection-uri (str p/service-context dt/resource-type))
 
 (defn valid-comp [image-id] {:parentModule     {:href image-id}
 
@@ -154,7 +154,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id dt/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id dt/resource-type))]
     (ltu/verify-405-status [[collection-uri :options]
                             [collection-uri :delete]
                             [resource-uri :options]
