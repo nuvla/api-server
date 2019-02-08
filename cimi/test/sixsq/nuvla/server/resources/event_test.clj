@@ -4,7 +4,6 @@
     [clojure.test :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event :refer :all]
     [sixsq.nuvla.server.resources.event.test-utils :as tu :refer [exec-request is-count urlencode-params]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]

@@ -238,22 +238,34 @@ Delete a specific (the event-uuid is known) event.
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.event :as event]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
+
 (def ^:const resource-name resource-type)
+
 
 (def ^:const resource-url resource-type)
 
+
 (def ^:const collection-name "EventCollection")
 
-(def ^:const resource-uri event-utils/resource-uri)
+
+(def ^:const resource-uri (str c/cimi-schema-uri resource-name))
+
 
 (def ^:const collection-uri (str c/cimi-schema-uri collection-name))
 
-(def collection-acl event-utils/collection-acl)
+
+(def collection-acl {:owner {:principal "ADMIN"
+                             :type      "ROLE"}
+                     :rules [{:principal "ANON"
+                              :type      "ROLE"
+                              :right     "ALL"}]})
+
+
 
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
@@ -266,9 +278,12 @@ Delete a specific (the event-uuid is known) event.
   (validate-fn resource))
 
 
+(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+
+
 (defmethod crud/add resource-name
   [request]
-  (event-utils/add-impl request))
+  (add-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-name))

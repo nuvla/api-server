@@ -8,6 +8,7 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment :as d]
+    [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
     [sixsq.nuvla.util.response :as r]
@@ -80,9 +81,9 @@
     (when (not= current-state new-state)
       (event-utils/create-event deployment-href new-state (:acl body)
                                 :severity (if (= new-state "Aborted")
-                                            event-utils/severity-critical
-                                            event-utils/severity-medium)
-                                :type event-utils/type-state))))
+                                            event/severity-critical
+                                            event/severity-medium)
+                                :type event/type-state))))
 
 
 ;;
@@ -138,8 +139,8 @@
   [{{:keys [name value deployment acl]} :body :as request}]
   (when (= name "ss:state")
     (event-utils/create-event (:href deployment) value acl
-                              :severity event-utils/severity-medium
-                              :type event-utils/type-state))
+                              :severity event/severity-medium
+                              :type event/type-state))
   (add-impl request))
 
 
