@@ -182,7 +182,7 @@ session.
   [{:keys [id resource-type] :as resource} request]
   (try
     (a/can-modify? resource request)
-    (if (.endsWith resource-type "-collection")
+    (if (u/is-collection? resource-type)
       [{:rel (:add c/action-uri) :href id}]
       [{:rel (:delete c/action-uri) :href id}])
     (catch Exception _

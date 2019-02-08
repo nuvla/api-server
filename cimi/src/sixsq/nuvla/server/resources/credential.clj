@@ -120,7 +120,7 @@ CredentialTemplate resource.
       (a/can-modify? resource request)
       (let [href (:id resource)
             ^String resource-type (:resource-type resource)
-            ops (if (.endsWith resource-type "-collection")
+            ops (if (is-collection? resource-type)
                   [{:rel (:add c/action-uri) :href href}]
                   [{:rel (:delete c/action-uri) :href href}])]
         (assoc resource :operations ops))

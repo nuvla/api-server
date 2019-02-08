@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.common.utils
   "General utilities for dealing with resources."
   (:require
-    [clj-time.coerce :as c]
     [clj-time.core :as time]
     [clj-time.format :as time-fmt]
     [clojure.spec.alpha :as s]
@@ -11,7 +10,7 @@
     [clojure.string :as str])
   (:import
     (java.security MessageDigest)
-    (java.util Date UUID)
+    (java.util UUID)
     (org.joda.time DateTime)))
 
 
@@ -43,9 +42,8 @@
 
 (defn is-collection?
   [resource-type]
-  (if (string? resource-type)
-    (.endsWith resource-type "-collection")
-    false))
+  (and (string? resource-type)
+       (.endsWith resource-type "-collection")))
 
 
 ;;
@@ -57,14 +55,17 @@
   []
   (str (UUID/randomUUID)))
 
+
 (defn from-data-uuid
   "Provides the string representation of a UUID generated from an input."
   [input]
   (str (UUID/nameUUIDFromBytes (.getBytes input "UTF-8"))))
 
+
 (defn new-resource-id
   [resource-name]
   (str resource-name "/" (random-uuid)))
+
 
 (defn split-resource-id
   "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
@@ -73,23 +74,22 @@
   (let [[type docid] (str/split id #"/")]
     [type docid]))
 
+
 (defn resource-name
   [resource-id]
   (first (split-resource-id resource-id)))
+
 
 (defn document-id
   [resource-id]
   (second (split-resource-id resource-id)))
 
 
-(defn cimi-collection? [resource-type]
-  (and (instance? String resource-type)
-       (.endsWith ^String resource-type "Collection")))
-
 (defn md5 [^String s]
   (let [algorithm (MessageDigest/getInstance "MD5")
         raw (.digest algorithm (.getBytes s))]
     (format "%032x" (BigInteger. 1 raw))))
+
 
 ;;
 ;; utilities for handling common attributes
@@ -185,7 +185,7 @@
   [{:keys [operations]} op]
   (->> operations
        (map (juxt :rel :href))
-       (filter (fn [[rel _]] (.endsWith rel op)))
+       (filter (fn [[rel _]] (= rel op)))
        first
        second))
 

@@ -106,7 +106,7 @@ appropriate users.
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
   (let [href (str id "/execute")
-        collection? (u/cimi-collection? resource-type)
+        collection? (u/is-collection? resource-type)
         modifiable? (a/modifiable? resource request)
         ops (cond-> []
                     (and collection? modifiable?) (conj {:rel (:add c/action-uri) :href id})

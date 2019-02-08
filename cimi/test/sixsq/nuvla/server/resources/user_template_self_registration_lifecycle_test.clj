@@ -118,7 +118,6 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-count zero?)
-                (ltu/dump)
                 (ltu/is-operation-present "add")
                 (ltu/is-operation-absent "delete")
                 (ltu/is-operation-absent "edit")))

@@ -155,7 +155,7 @@
    on the user's authentication and whether this is a ExternalObject or
    a ExternalObjectCollection."
   [{:keys [resource-type] :as resource} request]
-  (if (.endsWith resource-type "-collection")
+  (if (u/is-collection? resource-type)
     (standard-external-object-collection-operations resource request)
     (standard-external-object-resource-operations resource request)))
 
