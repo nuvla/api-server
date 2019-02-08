@@ -48,9 +48,9 @@ a username and password pair stored in SlipStream's internal database.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "SessionTemplate")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "SessionTemplateCollection")
 

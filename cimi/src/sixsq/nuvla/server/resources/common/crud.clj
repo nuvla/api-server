@@ -12,9 +12,7 @@
 
 (defn resource-name-dispatch
   [request]
-  (-> request
-      (get-in [:params :resource-name])
-      u/lisp-to-camelcase))
+  (get-in request [:params :resource-name]))
 
 (defn resource-id-dispatch
   [resource-id & _]

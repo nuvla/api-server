@@ -10,11 +10,13 @@
     [sixsq.nuvla.auth.utils.db :as db]
     [sixsq.nuvla.auth.utils.http :as uh]))
 
+
 (defn- extract-credentials
   [request]
   ;; FIXME: Remove :user-name!
   {:username (->> request :params ((some-fn :username :user-name)))
    :password (uh/param-value request :password)})
+
 
 (defn hash-password
   "Hash password exactly as done in SlipStream Java server."
@@ -24,6 +26,7 @@
         co/bytes->hex
         str/upper-case)))
 
+
 (defn valid?
   [{:keys [username password]}]
   (let [db-password-hash (db/find-password-for-username username)]
@@ -32,10 +35,12 @@
       db-password-hash
       (= (hash-password password) db-password-hash))))
 
+
 (defn create-claims
   [username]
   {:username username
    :roles    (db/find-roles-for-username username)})
+
 
 (defn login
   [request]
@@ -49,6 +54,7 @@
       (do
         (log/warn "failed login attempt for" username)
         (uh/response-forbidden)))))                         ;; FIXME: Returns 401, but should be 403.
+
 
 (defn logout
   []

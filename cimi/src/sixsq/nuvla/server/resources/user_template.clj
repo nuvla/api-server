@@ -52,9 +52,9 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "UserTemplate")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "UserTemplateCollection")
 

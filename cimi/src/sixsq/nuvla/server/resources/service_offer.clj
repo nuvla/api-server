@@ -82,9 +82,9 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "ServiceOffer")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "ServiceOfferCollection")
 

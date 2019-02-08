@@ -98,9 +98,9 @@ session.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "Session")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "SessionCollection")
 
