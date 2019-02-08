@@ -18,7 +18,8 @@
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [peridot.core :refer :all]
-    [ring.util.codec :as codec]))
+    [ring.util.codec :as codec]
+    [sixsq.nuvla.server.resources.user-template :as user-template]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -377,14 +378,3 @@
                                       :response
                                       :body
                                       :state))))))))))))
-
-
-(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id user/resource-name))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
-                            [resource-uri :put]
-                            [resource-uri :post]])))
-
-

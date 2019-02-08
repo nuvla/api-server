@@ -79,6 +79,4 @@
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]
-                            [resource-uri :put]
-                            [resource-uri :post]
-                            [resource-uri :delete]])))
+                            [resource-uri :post]])))

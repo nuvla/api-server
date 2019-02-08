@@ -335,9 +335,9 @@ include aggregating values over a collection of resources.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "CloudEntryPoint")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const resource-uri (str c/cimi-schema-uri resource-name))
 

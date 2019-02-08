@@ -29,9 +29,11 @@ must delete the old one and create a new one.
     [sixsq.nuvla.server.resources.spec.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
-(def ^:const resource-name "UserIdentifier")
+(def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-name resource-type)
+
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "UserIdentifierCollection")
 

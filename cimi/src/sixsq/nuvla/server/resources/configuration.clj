@@ -4,15 +4,13 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.configuration-template :as conf-tmpl]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.resources.common.utils :as u]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "Configuration")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "ConfigurationCollection")
 

@@ -243,9 +243,9 @@ Delete a specific (the event-uuid is known) event.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name event-utils/resource-name)
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url event-utils/resource-url)
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "EventCollection")
 

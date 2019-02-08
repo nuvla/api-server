@@ -19,9 +19,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name "User")
+(def ^:const resource-name resource-type)
 
-(def ^:const resource-url (u/de-camelcase resource-name))
+(def ^:const resource-url resource-type)
 
 (def ^:const collection-name "UserCollection")
 
@@ -233,6 +233,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [coll elm]
   (if (some #(= elm %) coll) true false))
 
+
 (defn admin?
   "Expects identity map from the request."
   [identity]
@@ -242,16 +243,19 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
       :roles
       (in? "ADMIN")))
 
+
 (defn filter-for-regular-user
   [user-resource request]
   (if (admin? (:identity request))
     user-resource
     (dissoc user-resource :isSuperUser)))
 
+
 (defn throw-no-id
   [body]
   (if-not (contains? body :id)
     (logu/log-and-throw-400 "id is not provided in the document.")))
+
 
 (defn edit-impl [{body :body :as request}]
   "Returns edited document or exception data in case of an error."
@@ -268,6 +272,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           (db/edit request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/edit resource-name
   [request]
   (edit-impl request))
