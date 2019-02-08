@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.db.filter.parser-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.db.filter.parser :refer :all]
-    [instaparse.core :as insta]))
+    [instaparse.core :as insta]
+    [sixsq.nuvla.db.filter.parser :refer :all]))
 
 (defn fails-fn
   "Provides a function that will parse a string from the given point

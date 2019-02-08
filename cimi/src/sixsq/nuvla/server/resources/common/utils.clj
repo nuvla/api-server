@@ -4,10 +4,10 @@
     [clj-time.core :as time]
     [clj-time.format :as time-fmt]
     [clojure.spec.alpha :as s]
+    [clojure.string :as str]
     [clojure.walk :as walk]
-    [sixsq.nuvla.server.util.log :as logu]
     [expound.alpha :as expound]
-    [clojure.string :as str])
+    [sixsq.nuvla.server.util.log :as logu])
   (:import
     (java.security MessageDigest)
     (java.util UUID)

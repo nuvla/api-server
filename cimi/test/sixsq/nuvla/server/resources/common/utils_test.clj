@@ -16,9 +16,9 @@
     (is (true? (t/not-expired? future-time)))))
 
 (deftest check-select-desc-keys
-  (let [resource {:name "name"
+  (let [resource {:name        "name"
                   :description "description"
-                  :tags #{"one", "two"}}]
+                  :tags        #{"one", "two"}}]
     (is (= resource (t/select-desc-keys resource)))
     (is (= resource (t/select-desc-keys (assoc resource :other "ignored"))))
     (is (= (dissoc resource :name) (t/select-desc-keys (dissoc resource :name))))))

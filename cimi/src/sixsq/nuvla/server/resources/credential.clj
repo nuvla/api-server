@@ -158,9 +158,9 @@ CredentialTemplate resource.
         [create-resp {:keys [id] :as body}]
         (-> body
             (assoc :resource-type create-type)
-            (update-in [:template] dissoc :type)  ;; forces use of template reference
+            (update-in [:template] dissoc :type)            ;; forces use of template reference
             (resolve-hrefs idmap)
-            (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
+            (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
             crud/validate
             :template
             (tpl->credential request))]

@@ -32,5 +32,5 @@
       (stu/is-invalid ::eo-public/external-object (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{ :URL} ]
+    (doseq [k #{:URL}]
       (stu/is-valid ::eo-public/external-object (dissoc root k)))))

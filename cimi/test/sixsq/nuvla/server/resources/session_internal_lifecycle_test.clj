@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.internal :as auth-internal]
     [sixsq.nuvla.auth.utils.db :as db]
     [sixsq.nuvla.auth.utils.sign :as sign]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template-internal :as internal]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.session-template-internal :as internal]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

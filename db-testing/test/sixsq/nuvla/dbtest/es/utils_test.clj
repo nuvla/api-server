@@ -13,7 +13,7 @@
 
 (deftest test-create-index-and-index-exists?
   (eu/with-es-test-client
-    (let [index-name                    (eu/random-index-name)
+    (let [index-name (eu/random-index-name)
           ^CreateIndexResponse response (eu/create-index client index-name)]
       (is (.isAcknowledged response))
       (is (eu/index-exists? client index-name))

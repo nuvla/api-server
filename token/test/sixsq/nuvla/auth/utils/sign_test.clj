@@ -2,10 +2,10 @@
   (:refer-clojure :exclude [update])
   (:require
     [clojure.test :refer :all]
+    [environ.core :as environ]
     [sixsq.nuvla.auth.env-fixture :as env-fixture]
     [sixsq.nuvla.auth.utils.sign :as t]
-    [sixsq.nuvla.auth.utils.timestamp :as ts]
-    [environ.core :as environ]))
+    [sixsq.nuvla.auth.utils.timestamp :as ts]))
 
 (deftest roundtrip-claims
   (let [claims {:alpha "alpha"

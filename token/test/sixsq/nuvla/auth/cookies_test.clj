@@ -2,10 +2,10 @@
   (:refer-clojure :exclude [update])
   (:require
     [clojure.test :refer :all]
-    [sixsq.nuvla.auth.cookies :as t]
-    [sixsq.nuvla.auth.env-fixture :as env-fixture]
     [environ.core :as environ]
-    [ring.util.codec :as codec]))
+    [ring.util.codec :as codec]
+    [sixsq.nuvla.auth.cookies :as t]
+    [sixsq.nuvla.auth.env-fixture :as env-fixture]))
 
 (defn serialize-cookie-value
   "replaces the map cookie value with a serialized string"

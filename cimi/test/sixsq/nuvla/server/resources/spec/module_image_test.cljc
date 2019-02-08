@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.connector :as t]  ;; FIXME: Change to module-version when available.
+    [sixsq.nuvla.server.resources.connector :as t]          ;; FIXME: Change to module-version when available.
     [sixsq.nuvla.server.resources.spec.module-image :as module-image]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 

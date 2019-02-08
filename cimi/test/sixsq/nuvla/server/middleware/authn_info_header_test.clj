@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.middleware.authn-info-header-test
   (:require
     [clojure.test :refer :all]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as cookies]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer :all]
-    [ring.util.codec :as codec]))
+    [sixsq.nuvla.server.middleware.authn-info-header :refer :all]))
 
 (defn serialize-cookie-value
   "replaces the map cookie value with a serialized string"

@@ -34,11 +34,11 @@ address. When the callback is triggered, the `validated` flag is set to true.
                               :right     "MODIFY"}]})
 
 
-(def actions [{:name "validate"
-               :uri (:validate c/action-uri)
-               :description "starts the workflow to validate the email address"
-               :method "POST"
-               :inputMessage "application/json"
+(def actions [{:name          "validate"
+               :uri           (:validate c/action-uri)
+               :description   "starts the workflow to validate the email address"
+               :method        "POST"
+               :inputMessage  "application/json"
                :outputMessage "application/json"}])
 
 

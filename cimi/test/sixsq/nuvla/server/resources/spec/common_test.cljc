@@ -120,11 +120,11 @@
                      {:principal "group2"
                       :type      "ROLE"
                       :right     "MODIFY"}]}
-        minimal {:id          "a"
+        minimal {:id            "a"
                  :resource-type "http://example.org/data"
-                 :created     date
-                 :updated     date
-                 :acl         acl}
+                 :created       date
+                 :updated       date
+                 :acl           acl}
         maximal (assoc minimal
                   :name "name"
                   :description "description"

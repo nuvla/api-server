@@ -69,15 +69,15 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 ```
 "
   (:require
+    [clojure.string :as str]
+    [ring.util.response :as r]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
     [sixsq.nuvla.server.resources.spec.service-offer :as so]
-    [sixsq.nuvla.util.response :as sr]
-    [ring.util.response :as r]
-    [clojure.string :as str]))
+    [sixsq.nuvla.util.response :as sr]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

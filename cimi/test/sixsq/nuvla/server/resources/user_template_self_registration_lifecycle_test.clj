@@ -2,6 +2,9 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
+    [postal.core :as postal]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -10,10 +13,7 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as ut]
     [sixsq.nuvla.server.resources.user-template-self-registration :as self]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]
-    [postal.core :as postal]
-    [ring.util.codec :as codec]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 

@@ -2,20 +2,20 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
-    [sixsq.nuvla.server.app.params :as p]
+    [peridot.core :refer :all]
 
+    [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector :as con]
     [sixsq.nuvla.server.resources.connector-template :as ct]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import (clojure.lang ExceptionInfo)))
 
-(def base-uri (str p/service-context (u/de-camelcase con/resource-name)))
-(def tpl-base-uri (str p/service-context (u/de-camelcase ct/resource-name)))
+(def base-uri (str p/service-context con/resource-type))
+(def tpl-base-uri (str p/service-context ct/resource-type))
 
 (defn new-instance-name
   [cloud-service-type]
@@ -68,7 +68,7 @@
                    (ltu/body->edn)
                    (ltu/is-status 201)
                    (ltu/location))
-           abs-uri (str p/service-context (u/de-camelcase uri))]
+           abs-uri (str p/service-context uri)]
 
 
        ;; create again with the same connector instance name should fail with 409
@@ -132,7 +132,7 @@
                    (ltu/body->edn)
                    (ltu/is-status 201)
                    (ltu/location))
-           abs-uri (str p/service-context (u/de-camelcase uri))]
+           abs-uri (str p/service-context uri)]
 
        ;; admin delete succeeds
        (-> session-admin

@@ -4,6 +4,7 @@
     [buddy.core.hash :as ha]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [ring.util.response :as ru]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.external-object-template :as eot]
     [sixsq.nuvla.server.resources.external-object.utils :as s3]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.util.response :as r]
-    [ring.util.response :as ru]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -378,8 +378,8 @@
   [resource request]
   (let [dl-uri (download-subtype resource request)]
     (try
-      (-> {:status  303
-           :body    {:uri dl-uri}}
+      (-> {:status 303
+           :body   {:uri dl-uri}}
           (ru/header "Location" dl-uri)
           (ru/header "Content-Type" "application/json"))
       (catch Exception e

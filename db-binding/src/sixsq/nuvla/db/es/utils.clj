@@ -3,6 +3,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.tools.logging :as log]
+    [environ.core :as env]
     [sixsq.nuvla.db.es.acl :as acl]
     [sixsq.nuvla.db.es.aggregation :as agg]
     [sixsq.nuvla.db.es.common.es-mapping :as mapping]
@@ -10,8 +11,7 @@
     [sixsq.nuvla.db.es.order :as order]
     [sixsq.nuvla.db.es.pagination :as pg]
     [sixsq.nuvla.db.es.select :as select]
-    [sixsq.nuvla.db.utils.common :as cu]
-    [environ.core :as env])
+    [sixsq.nuvla.db.utils.common :as cu])
   (:import
     (java.net InetAddress)
     (java.util UUID)

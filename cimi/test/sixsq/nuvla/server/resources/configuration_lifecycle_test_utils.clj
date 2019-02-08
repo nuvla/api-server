@@ -2,13 +2,13 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :refer :all]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (def base-uri (str p/service-context resource-type))
 
@@ -34,12 +34,12 @@
                  (ltu/body->edn)
                  (ltu/is-status 200))
         template (get-in resp [:response :body])
-        valid-create {:name                  name-attr
-                      :description           description-attr
-                      :tags                  tags-attr
-                      :template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
+        valid-create {:name        name-attr
+                      :description description-attr
+                      :tags        tags-attr
+                      :template    (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
         href-create {:template {:href   href
-                                             attr-kw attr-value}}
+                                attr-kw attr-value}}
         invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
     ;; anonymous create should fail

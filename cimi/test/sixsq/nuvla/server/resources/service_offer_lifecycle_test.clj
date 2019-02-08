@@ -2,15 +2,15 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
-    [sixsq.nuvla.server.resources.service-offer :refer :all]
-    [peridot.core :refer :all]
-    [ring.util.codec :as rc]))
+    [sixsq.nuvla.server.resources.service-offer :refer :all]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 

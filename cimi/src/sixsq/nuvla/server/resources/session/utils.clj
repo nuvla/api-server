@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.session.utils
   (:require
+    [ring.util.codec :as codec]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session :as p]
-    [sixsq.nuvla.util.response :as r]
-    [ring.util.codec :as codec]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (defn cookie-name

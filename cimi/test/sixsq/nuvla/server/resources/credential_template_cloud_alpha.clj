@@ -21,13 +21,13 @@
 (s/def :cimi/credential-template.cloud-alpha
   (su/only-keys-maps ps/resource-keys-spec
                      ctc/credential-template-cloud-keys-spec))
-                     ; credential-template-keys-spec))
+; credential-template-keys-spec))
 
 ;; Defines the contents of the cloud-alpha template used in a create resource.
 (s/def :cimi.credential-template.cloud-alpha/template
   (su/only-keys-maps ps/template-keys-spec
                      ctc/credential-template-create-keys-spec))
-                     ;credential-template-create-keys-spec))
+;credential-template-create-keys-spec))
 
 (s/def :cimi/credential-template.cloud-alpha-create
   (su/only-keys-maps ps/create-keys-spec

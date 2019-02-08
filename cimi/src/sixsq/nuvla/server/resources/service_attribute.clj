@@ -25,14 +25,14 @@ curl https://nuv.la/api/service-attribute
 ```
 "
   (:require
+    [ring.util.response :as r]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as san]
     [sixsq.nuvla.server.resources.spec.service-attribute :as sa]
-    [sixsq.nuvla.util.response :as sr]
-    [ring.util.response :as r])
+    [sixsq.nuvla.util.response :as sr])
   (:import
     [java.math BigInteger]
     [java.net URI URISyntaxException]

@@ -91,7 +91,7 @@
         body (-> body
                  (assoc :resource-type create-type)
                  (std-crud/resolve-hrefs idmap true)
-                 (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                 (update-in [:template] merge desc-attrs)   ;; validate desc attrs
                  (crud/validate)
                  (:template)
                  (tpl->configuration))]

@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.email.utils
   (:require
     [clojure.string :as str]
+    [postal.core :as postal]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.util.response :as r]
-    [postal.core :as postal]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def validation-email-body

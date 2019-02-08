@@ -34,12 +34,12 @@ secret to access the server. The credential can optionally be limited in time.
 ;;
 
 (def ^:const resource
-  {:type        credential-type
-   :method      method
-   :name        "Generate API Key"
-   :description "generates an API key and stores hash"
-   :ttl         0
-   :acl         resource-acl
+  {:type             credential-type
+   :method           method
+   :name             "Generate API Key"
+   :description      "generates an API key and stores hash"
+   :ttl              0
+   :acl              resource-acl
    :resourceMetadata "resource-metadata/credential-template-api-key"})
 
 

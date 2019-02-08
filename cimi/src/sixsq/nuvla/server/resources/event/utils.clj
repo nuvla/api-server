@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.event.utils
   (:require
     [clj-time.core :as time]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.event :as event]
     [sixsq.nuvla.server.resources.spec.event :as event-spec]))
 

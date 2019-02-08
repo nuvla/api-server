@@ -15,7 +15,7 @@
                        ::common/acl {:type       "object",
                                      :properties {"owner" {:type       "object",
                                                            :properties {"principal" {:type "keyword"},
-                                                                        "type" {:type "keyword"}}},
+                                                                        "type"      {:type "keyword"}}},
                                                   "rules" {:type       "object",
                                                            :properties {"principal" {:type "keyword"},
                                                                         "type"      {:type "keyword"},
@@ -36,4 +36,4 @@
                        ::common/resource-link {:type "object", :properties {"href" {:type "keyword"}}}
                        ::common/resource-links {:type "object", :properties {"href" {:type "keyword"}}}
                        ::common/operation {:type "object", :properties {"href" {:type "keyword"},
-                                                                        "rel" {:type "keyword"}}}))
+                                                                        "rel"  {:type "keyword"}}}))

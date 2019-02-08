@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.service-catalog.utils
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.util.response :as sr]
-    [ring.util.response :as r]))
+    [ring.util.response :as r]
+    [sixsq.nuvla.util.response :as sr]))
 
 
 (defn valid-attribute-name?

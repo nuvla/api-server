@@ -24,15 +24,15 @@
                    :module        {:href "my-module-uuid"}
 
                    :nodes         [{:nodeID     "my-node-uuid"
-                                  :credential {:href "my-cred-uuid"}
-                                  :cpu        10
-                                  :ram        20
-                                  :disk       30}
-                                 {:nodeID     "my-second-node-uuid"
-                                  :credential {:href "my-second-cred-uuid"}
-                                  :cpu        100
-                                  :ram        200
-                                  :disk       300}]})
+                                    :credential {:href "my-cred-uuid"}
+                                    :cpu        10
+                                    :ram        20
+                                    :disk       30}
+                                   {:nodeID     "my-second-node-uuid"
+                                    :credential {:href "my-second-cred-uuid"}
+                                    :cpu        100
+                                    :ram        200
+                                    :disk       300}]})
 
 
 (def valid-deployment {:id               (str d/resource-type "/connector-uuid")

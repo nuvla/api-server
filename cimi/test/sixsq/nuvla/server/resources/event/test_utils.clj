@@ -5,10 +5,10 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [peridot.core :refer :all]
-    [ring.util.codec :as rc]))
+    [ring.util.codec :as rc]
+    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (defn to-time

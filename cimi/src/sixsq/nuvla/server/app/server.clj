@@ -1,6 +1,12 @@
 (ns sixsq.nuvla.server.app.server
   (:require
     [clojure.tools.logging :as log]
+    [environ.core :as env]
+    [ring.middleware.cookies :refer [wrap-cookies]]
+    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
+    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+    [ring.middleware.nested-params :refer [wrap-nested-params]]
+    [ring.middleware.params :refer [wrap-params]]
     [sixsq.nuvla.db.ephemeral-impl :as edb]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.db.loader :as db-loader]
@@ -11,13 +17,7 @@
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as resources]
-    [sixsq.nuvla.server.util.zookeeper :as zku]
-    [environ.core :as env]
-    [ring.middleware.cookies :refer [wrap-cookies]]
-    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
-    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-    [ring.middleware.nested-params :refer [wrap-nested-params]]
-    [ring.middleware.params :refer [wrap-params]]))
+    [sixsq.nuvla.server.util.zookeeper :as zku]))
 
 
 (def default-db-binding-ns "sixsq.nuvla.db.es.loader")

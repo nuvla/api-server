@@ -40,13 +40,13 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 ```
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user-template :as user-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.util.response :as r]))
 
 

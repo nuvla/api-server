@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.email :as t]      ;; FIXME: Should be resource-metadata!!!
+    [sixsq.nuvla.server.resources.email :as t]              ;; FIXME: Should be resource-metadata!!!
     [sixsq.nuvla.server.resources.spec.resource-metadata :as spec]
     [sixsq.nuvla.server.resources.spec.resource-metadata-action-test :as action]
     [sixsq.nuvla.server.resources.spec.resource-metadata-attribute-test :as attribute]

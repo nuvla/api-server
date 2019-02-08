@@ -146,8 +146,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def ^:const initial-state "NEW")
 
 (def user-attrs-defaults
-  {:state       initial-state
-   :deleted     false})
+  {:state   initial-state
+   :deleted false})
 
 (defn merge-with-defaults
   [resource]
