@@ -1,10 +1,9 @@
 (ns sixsq.nuvla.db.es.common.utils
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case]]
     [sixsq.nuvla.db.utils.common :as cu]))
 
 
-(def default-index-prefix "slipstream-")
+(def default-index-prefix "nuvla-")
 
 
 (defn id->index
@@ -18,4 +17,4 @@
   ([collection-id]
    (collection-id->index default-index-prefix collection-id))
   ([index-prefix collection-id]
-   (str index-prefix (->kebab-case collection-id))))
+   (str index-prefix collection-id)))

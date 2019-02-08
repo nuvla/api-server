@@ -149,7 +149,7 @@
 (defmethod new-identifier-subtype :default
   [resource resource-name]
   (if-let [new-id (:instanceName resource)]
-    (assoc resource :id (str (u/de-camelcase resource-name) "/" new-id))))
+    (assoc resource :id (str resource-name "/" new-id))))
 
 
 (defmethod crud/new-identifier resource-name

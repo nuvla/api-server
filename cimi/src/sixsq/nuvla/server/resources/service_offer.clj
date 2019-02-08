@@ -78,7 +78,7 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
     [sixsq.nuvla.server.resources.spec.service-offer :as so]
     [sixsq.nuvla.util.response :as sr]
     [ring.util.response :as r]
-    [superstring.core :as str]))
+    [clojure.string :as str]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 

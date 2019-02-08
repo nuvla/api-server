@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment-parameter
   (:require
-    [clojure.string :as s]
+    [clojure.string :as str]
 
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -38,7 +38,7 @@
 
 (defn parameter->uiid
   [deployment-href nodeID name]
-  (let [id (s/join ":" [deployment-href nodeID name])]
+  (let [id (str/join ":" [deployment-href nodeID name])]
     (u/from-data-uuid id)))
 
 

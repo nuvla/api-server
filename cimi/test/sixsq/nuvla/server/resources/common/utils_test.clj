@@ -22,21 +22,3 @@
     (is (= resource (t/select-desc-keys resource)))
     (is (= resource (t/select-desc-keys (assoc resource :other "ignored"))))
     (is (= (dissoc resource :name) (t/select-desc-keys (dissoc resource :name))))))
-
-(deftest check-de-camelcase
-  (are [expect arg] (= expect (t/de-camelcase arg))
-                    "" ""
-                    "abc" "Abc"
-                    "abc-def" "AbcDef"))
-
-;; given string must be lisp-cased, if not empty string returned
-(deftest check-lisp-to-camelcase
-  (are [expect arg] (= expect (t/lisp-to-camelcase arg))
-                    "" "Abc"
-                    "" "-"
-                    "" "abc-"
-                    "" "abc--def"
-                    "" "abc-Def-ghi"
-                    "" ""
-                    "Abc" "abc"
-                    "AbcDef" "abc-def"))

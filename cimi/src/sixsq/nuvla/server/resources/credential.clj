@@ -182,7 +182,7 @@ CredentialTemplate resource.
 (def edit-impl (std-crud/edit-fn resource-name))
 (defmethod crud/edit resource-name
   [{{uuid :uuid} :params body :body :as request}]
-  (let [type (-> (str (u/de-camelcase resource-name) "/" uuid)
+  (let [type (-> (str resource-name "/" uuid)
                  (db/retrieve request)
                  :type)
         new-body (-> body

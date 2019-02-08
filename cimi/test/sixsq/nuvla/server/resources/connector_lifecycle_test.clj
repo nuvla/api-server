@@ -13,7 +13,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context (u/de-camelcase c/resource-name)))
+(def collection-uri (str p/service-context c/resource-name))
 
 
 (deftest lifecycle
@@ -71,7 +71,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          resource-uri (str p/service-context (u/de-camelcase uri))]
+          resource-uri (str p/service-context uri)]
 
       ;; admin get succeeds
       (-> session-admin
@@ -157,7 +157,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; admin delete succeeds
       (-> session-admin

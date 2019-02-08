@@ -21,8 +21,8 @@
   (let [uri "example-org"
         name "price"
         hex (uri->id (str uri ":" name))
-        id (str (u/de-camelcase resource-name) "/" hex)]
+        id (str resource-name "/" hex)]
     (is (= id (:id (crud/new-identifier {:prefix uri :attributeName name} resource-name)))))
 
   (let [long-uri (apply str "http://" (repeat 10000 "a"))]
-    (is (str (u/de-camelcase resource-name) "/" (uri->id long-uri)))))
+    (is (str resource-name "/" (uri->id long-uri)))))

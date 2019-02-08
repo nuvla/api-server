@@ -95,7 +95,7 @@
                   (t/body->edn)
                   (t/is-status 201)
                   (t/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       (-> session-user
           (request abs-uri)
@@ -116,7 +116,7 @@
                   (t/body->edn)
                   (t/is-status 201)
                   (t/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       (-> session-admin
           (request abs-uri)
@@ -145,7 +145,7 @@
                   (t/body->edn)
                   (t/is-status 201)
                   (t/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       (is uri)
 
@@ -223,7 +223,7 @@
                             (t/is-status 201)
                             (t/location))
 
-          abs-uri (str p/service-context (u/de-camelcase uri-of-posted))
+          abs-uri (str p/service-context uri-of-posted)
 
           doc (-> session-admin
                   (request abs-uri)
@@ -263,7 +263,7 @@
                   (t/body->edn)
                   (t/is-status 201)
                   (t/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))
+          abs-uri (str p/service-context uri)
 
           doc (-> session-admin
                   (request abs-uri)

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.external-object-test
   (:require
-    [clojure.string :as s]
+    [clojure.string :as str]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.external-object :as eo]
     [sixsq.nuvla.server.resources.external-object.utils :as s3])
@@ -26,23 +26,23 @@
                             (eo/upload-fn {:state eo/state-ready} {}))))
 
     ;; generic external object
-    (is (s/starts-with? (eo/upload-fn {:state           eo/state-new
-                                       :contentType     "application/tar+gzip"
-                                       :bucketName      bucketname
-                                       :objectName      objectname
-                                       :objectStoreCred {:href "credential/my-cred"}}
-                                      {})
-                        (format "https://%s.%s/%s?" bucketname s3-host objectname)))
+    (is (str/starts-with? (eo/upload-fn {:state           eo/state-new
+                                         :contentType     "application/tar+gzip"
+                                         :bucketName      bucketname
+                                         :objectName      objectname
+                                         :objectStoreCred {:href "credential/my-cred"}}
+                                        {})
+                          (format "https://%s.%s/%s?" bucketname s3-host objectname)))
 
     ;; external object report
-    (is (s/starts-with? (eo/upload-fn {:state           eo/state-new
-                                       :contentType     "application/tar+gzip"
-                                       :bucketName      bucketname
-                                       :objectStoreCred {:href "credential/my-cred"}
-                                       :runUUID         runUUID
-                                       :filename        filename}
-                                      {})
-                        (format "https://%s.%s/%s/%s?" bucketname s3-host runUUID filename)))))
+    (is (str/starts-with? (eo/upload-fn {:state           eo/state-new
+                                         :contentType     "application/tar+gzip"
+                                         :bucketName      bucketname
+                                         :objectStoreCred {:href "credential/my-cred"}
+                                         :runUUID         runUUID
+                                         :filename        filename}
+                                        {})
+                          (format "https://%s.%s/%s/%s?" bucketname s3-host runUUID filename)))))
 
 (deftest test-download-fn
   (with-redefs [s3/expand-cred (fn [cred-href] (get my-cloud-creds (:href cred-href)))]
@@ -51,9 +51,9 @@
       (is (thrown-with-msg? ExceptionInfo (re-pattern expected-msg)
                             (eo/download-subtype {:state eo/state-new} {}))))
 
-    (is (s/starts-with? (eo/download-subtype {:state           eo/state-ready
-                                              :bucketName      bucketname
-                                              :objectName      objectname
-                                              :objectStoreCred {:href "credential/my-cred"}}
-                                             {})
-                        (format "https://%s.%s/%s?" bucketname s3-host objectname)))))
+    (is (str/starts-with? (eo/download-subtype {:state           eo/state-ready
+                                                :bucketName      bucketname
+                                                :objectName      objectname
+                                                :objectStoreCred {:href "credential/my-cred"}}
+                                               {})
+                          (format "https://%s.%s/%s?" bucketname s3-host objectname)))))

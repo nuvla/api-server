@@ -12,7 +12,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase resource-name)))
+(def base-uri (str p/service-context resource-name))
 
 
 (defn check-retrieve-by-id

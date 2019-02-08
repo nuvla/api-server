@@ -17,7 +17,7 @@
                                     eoltu/create-cloud-cred-fixture!
                                     eoltu/s3-redefs!]))
 
-(def base-uri (str p/service-context (u/de-camelcase eo/resource-name)))
+(def base-uri (str p/service-context eo/resource-name))
 
 (defn external-object
   []

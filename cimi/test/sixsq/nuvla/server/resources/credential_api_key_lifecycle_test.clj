@@ -15,7 +15,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase credential/resource-url)))
+(def base-uri (str p/service-context credential/resource-url))
 
 
 (deftest check-strip-session-role
@@ -101,7 +101,7 @@
           secret-key (get-in resp [:response :body :secretKey])
           uri (-> resp
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
@@ -152,7 +152,7 @@
           secret-key (get-in resp [:response :body :secretKey])
           uri (-> resp
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
@@ -199,7 +199,7 @@
           secret-key (get-in resp [:response :body :secretKey])
           uri (-> resp
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))

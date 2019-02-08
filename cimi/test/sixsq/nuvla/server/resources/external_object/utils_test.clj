@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.external-object.utils-test
   (:require
-    [clojure.string :as s]
+    [clojure.string :as str]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.external-object.utils :as u])
   (:import (com.amazonaws AmazonServiceException)))
@@ -14,8 +14,8 @@
         bucket "bucket-name"
         obj-name "object/name"
         verb :put]
-    (is (s/starts-with? (u/generate-url obj-store-conf bucket obj-name verb)
-                        (format "https://%s.%s/%s?" bucket os-host obj-name)))))
+    (is (str/starts-with? (u/generate-url obj-store-conf bucket obj-name verb)
+                          (format "https://%s.%s/%s?" bucket os-host obj-name)))))
 
 (deftest add-size-or-md5sum
 

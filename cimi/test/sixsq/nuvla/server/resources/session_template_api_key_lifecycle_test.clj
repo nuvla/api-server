@@ -11,7 +11,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase st/resource-name)))
+(def base-uri (str p/service-context st/resource-name))
 
 
 (def valid-template {:method      api-key/authn-method

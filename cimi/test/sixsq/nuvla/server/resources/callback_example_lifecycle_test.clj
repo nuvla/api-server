@@ -12,7 +12,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase callback/resource-url)))
+(def base-uri (str p/service-context callback/resource-url))
 
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)

@@ -19,7 +19,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context (u/de-camelcase t/resource-name)))
+(def base-uri (str p/service-context t/resource-name))
 
 
 (deftest check-metadata

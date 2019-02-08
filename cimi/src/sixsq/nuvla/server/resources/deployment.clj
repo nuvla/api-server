@@ -151,7 +151,7 @@
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str (u/de-camelcase resource-name) "/" uuid)
+    (-> (str resource-name "/" uuid)
         (db/retrieve request)
         verify-can-delete
         (a/can-modify? request)

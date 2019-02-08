@@ -135,7 +135,7 @@
   [{:keys [service instance] :as resource} resource-name]
   (if-let [new-id (cond-> service
                           instance (str "-" instance))]
-    (assoc resource :id (str (u/de-camelcase resource-name) "/" new-id))))
+    (assoc resource :id (str resource-name "/" new-id))))
 
 
 ;;

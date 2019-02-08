@@ -60,7 +60,7 @@
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
   (a/can-modify? {:acl collection-acl} request)
-  (let [id (u/new-resource-id (u/de-camelcase resource-name))
+  (let [id (u/new-resource-id resource-name)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
                     u/strip-service-attrs
@@ -87,7 +87,7 @@
 (defn edit-impl
   [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [current (-> (str (u/de-camelcase resource-name) "/" uuid)
+    (let [current (-> (str resource-name "/" uuid)
                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
                       (a/can-modify? request))
           dissoc-keys (-> (map keyword select)
@@ -135,7 +135,7 @@
 (defmethod crud/do-action [resource-url "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str (u/de-camelcase resource-name) "/" uuid)
+    (-> (str resource-name "/" uuid)
         (db/retrieve request)
         (a/can-modify? request)
         (ju/stop)

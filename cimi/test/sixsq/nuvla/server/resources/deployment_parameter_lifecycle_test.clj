@@ -12,7 +12,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase dp/resource-url)))
+(def base-uri (str p/service-context dp/resource-url))
 
 (def valid-entry
   {:name       "param1"
@@ -157,7 +157,7 @@
                           (ltu/is-status 201)
                           (ltu/location))
 
-            state-abs-uri (str p/service-context (u/de-camelcase state-uri))
+            state-abs-uri (str p/service-context state-uri)
 
 
             complete-uri (-> session-admin
@@ -167,7 +167,7 @@
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
-            abs-complete-uri (str p/service-context (u/de-camelcase complete-uri))]
+            abs-complete-uri (str p/service-context complete-uri)]
 
         (-> session-jane
             (request abs-complete-uri

@@ -62,7 +62,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (defmethod crud/new-identifier resource-name
   [resource resource-name]
   (if-let [new-id (some-> resource :address u/md5)]
-    (assoc resource :id (str (u/de-camelcase resource-name) "/" new-id))))
+    (assoc resource :id (str resource-name "/" new-id))))
 
 
 (def validate-fn (u/create-spec-validation-fn ::email/schema))

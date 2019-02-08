@@ -8,7 +8,7 @@
     [clojure.walk :as walk]
     [sixsq.nuvla.server.util.log :as logu]
     [expound.alpha :as expound]
-    [superstring.core :as str])
+    [clojure.string :as str])
   (:import
     (java.security MessageDigest)
     (java.util Date UUID)
@@ -17,12 +17,6 @@
 
 (def ^:const form-urlencoded "application/x-www-form-urlencoded")
 
-;; NOTE: this cannot be replaced with s/lisp-case because it
-;; will treat a '/' in a resource name as a word separator.
-(defn de-camelcase [s]
-  (if s
-    (str/join "-" (map str/lower-case (str/split s #"(?=[A-Z])")))
-    ""))
 
 ;;
 ;; resource type from namespace
@@ -106,13 +100,6 @@
     (catch Exception _
       nil)))
 
-(defn unparse-timestamp-date
-  "Returns the string representation of the given timestamp."
-  [^Date timestamp]
-  (try
-    (unparse-timestamp-datetime (c/from-date timestamp))
-    (catch Exception _
-      nil)))
 
 (defn as-datetime
   "Tries to parse the given string as a DateTime value.  Returns the DateTime
@@ -180,32 +167,6 @@
        (filter (fn [[rel _]] (.endsWith rel op)))
        first
        second))
-
-
-(defn into-vec-without-nil
-  [op xs]
-  (when (->> xs
-             (remove nil?)
-             seq)
-    (->> (into [op] xs)
-         (remove nil?)
-         vec)))
-
-(defn- lisp-cased?
-  [s]
-  (re-matches #"[a-z]+(-[a-z]+)*" s))
-
-(defn lisp-to-camelcase
-  "Converts s to CamelCase format. If the argument is not lisp-cased, an empty
-  string is returned."
-  [s]
-  (if (lisp-cased? s)
-    (str/pascal-case s)
-    ""))
-
-(defn map-multi-line
-  [m]
-  (str "\n" (clojure.pprint/write m :stream nil :right-margin 50)))
 
 
 (defn remove-in

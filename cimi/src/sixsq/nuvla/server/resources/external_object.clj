@@ -175,7 +175,7 @@
 (defmethod crud/new-identifier resource-name
   [{:keys [objectName bucketName] :as resource} resource-name]
   (if-let [new-id (co/bytes->hex (ha/md5 (str objectName bucketName)))]
-    (assoc resource :id (str (u/de-camelcase resource-name) "/" new-id))))
+    (assoc resource :id (str resource-name "/" new-id))))
 
 ;;
 ;; template processing
