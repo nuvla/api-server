@@ -11,7 +11,7 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "ConfigurationTemplateCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const resource-uri resource-type)
 

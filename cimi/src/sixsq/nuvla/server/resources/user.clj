@@ -18,11 +18,11 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "UserCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 
-(def ^:const create-uri (str resource-type "Create"))
+(def ^:const create-uri (u/ns->create-type *ns*))
 
 (def ^:const form-urlencoded "application/x-www-form-urlencoded")
 

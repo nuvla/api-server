@@ -54,7 +54,7 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "ServiceAttributeNamespaceCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 

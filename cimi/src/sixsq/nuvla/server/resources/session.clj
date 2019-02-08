@@ -98,11 +98,11 @@ session.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "SessionCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 
-(def ^:const create-uri (str resource-type "Create"))
+(def ^:const create-uri (u/ns->create-type *ns*))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -180,7 +180,7 @@ session.
   [{:keys [id resource-type] :as resource} request]
   (try
     (a/can-modify? resource request)
-    (if (.endsWith resource-type "Collection")
+    (if (.endsWith resource-type "-collection")
       [{:rel (:add c/action-uri) :href id}]
       [{:rel (:delete c/action-uri) :href id}])
     (catch Exception _

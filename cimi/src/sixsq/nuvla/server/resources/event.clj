@@ -244,7 +244,7 @@ Delete a specific (the event-uuid is known) event.
 (def ^:const resource-type (u/ns->type *ns*))
 
 
-(def ^:const collection-name "EventCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 
 (def ^:const collection-uri collection-name)
@@ -298,7 +298,7 @@ Delete a specific (the event-uuid is known) event.
     (a/can-modify? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
-          ops (if (.endsWith resource-type "Collection")
+          ops (if (.endsWith resource-type "-collection")
                 [{:rel (:add c/action-uri) :href href}]
                 [{:rel (:delete c/action-uri) :href href}])]
       (assoc resource :operations ops))

@@ -30,7 +30,7 @@ must delete the old one and create a new one.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "UserIdentifierCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 

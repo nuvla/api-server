@@ -31,11 +31,11 @@
              :passwordRepeat "plaintext-password"
              :emailAddress   "someone@example.org"}
 
-        create-tpl {:name        "my-create"
-                    :description "my create description"
-                    :tags        #{"3", "4"}
-                    :resource-type "http://sixsq.com/slipstream/1/UserTemplateCreate"
-                    :template    (dissoc tpl :id)}]
+        create-tpl {:name          "my-create"
+                    :description   "my create description"
+                    :tags          #{"3", "4"}
+                    :resource-type "user-template-create"
+                    :template      (dissoc tpl :id)}]
 
     ;; check the registration schema (without href)
     (stu/is-valid ::ut-auto/schema tpl)

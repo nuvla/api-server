@@ -18,11 +18,11 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "ExternalObjectCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 
-(def ^:const create-uri (str resource-type "Create"))
+(def ^:const create-uri (u/ns->create-type *ns*))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -150,7 +150,7 @@
    on the user's authentication and whether this is a ExternalObject or
    a ExternalObjectCollection."
   [{:keys [resource-type] :as resource} request]
-  (if (.endsWith resource-type "Collection")
+  (if (.endsWith resource-type "-collection")
     (standard-external-object-collection-operations resource request)
     (standard-external-object-resource-operations resource request)))
 

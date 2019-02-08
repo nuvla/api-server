@@ -40,7 +40,7 @@ curl https://nuv.la/api/service-attribute
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "ServiceAttributeCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 

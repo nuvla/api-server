@@ -27,6 +27,16 @@
   (-> ns str (str/split #"\.") last))
 
 
+(defn ns->collection-type
+  [ns]
+  (str (ns->type ns) "-collection"))
+
+
+(defn ns->create-type
+  [ns]
+  (str (ns->type ns) "-create"))
+
+
 ;;
 ;; resource ID utilities
 ;;

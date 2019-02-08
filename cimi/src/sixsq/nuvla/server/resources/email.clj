@@ -22,7 +22,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const collection-name "EmailCollection")
+(def ^:const collection-name (u/ns->collection-type *ns*))
 
 (def ^:const collection-uri collection-name)
 
@@ -96,7 +96,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
     (a/can-modify? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
-          ops (if (.endsWith resource-type "Collection")
+          ops (if (.endsWith resource-type "-collection")
                 [{:rel (:add c/action-uri) :href href}]
                 (cond-> [{:rel (:delete c/action-uri) :href href}]
                         (not validated) (conj {:rel (:validate c/action-uri) :href (str href "/validate")})))]
