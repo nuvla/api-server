@@ -15,7 +15,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context (u/de-camelcase eot/resource-name)))
+(def collection-uri (str p/service-context eot/resource-name))
 
 (def eo-tmpl-ids (map #(format "%s/%s" eot/resource-url %) [eotg/objectType
                                                             eotae/objectType]))

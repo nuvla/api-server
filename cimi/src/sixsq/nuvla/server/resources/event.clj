@@ -39,7 +39,7 @@ Date: Thu, 19 Mar 2015 13:15:48 GMT
     \"updated\" : \"2015-03-19T09:39:38.238Z\",
     \"type\" : \"state\",
     \"created\" : \"2015-03-19T09:39:38.238Z\",
-    \"id\" : \"Event/0d78db78-1b98-4bd1-ba14-bf378da68a66\",
+    \"id\" : \"event/0d78db78-1b98-4bd1-ba14-bf378da68a66\",
     \"severity\" : \"medium\",
     \"acl\" : {
       \"owner\" : {
@@ -54,7 +54,7 @@ Date: Thu, 19 Mar 2015 13:15:48 GMT
     },
     \"operations\" : [ {
       \"rel\" : \"http://sixsq.com/slipstream/1/Action/delete\",
-      \"href\" : \"Event/0d78db78-1b98-4bd1-ba14-bf378da68a66\"
+      \"href\" : \"event/0d78db78-1b98-4bd1-ba14-bf378da68a66\"
     } ],
     \"resource-type\" : \"http://sixsq.com/slipstream/1/Event\",
     \"timestamp\" : \"2015-01-10T08:20:00.0Z\"
@@ -95,7 +95,7 @@ The above command returns a json structured like this:
 
 ```http
 HTTP/1.1 201 Created
-Location: Event/257cf1bd-1397-4296-8124-bb2213425b6e
+Location: event/257cf1bd-1397-4296-8124-bb2213425b6e
 Content-Type: application/json
 Content-Length: 152
 Server: http-kit
@@ -103,8 +103,8 @@ Date: Thu, 19 Mar 2015 12:47:38 GMT
 
 {
   \"status\" : 201,
-  \"message\" : \"created Event/257cf1bd-1397-4296-8124-bb2213425b6e\",
-  \"resource-id\" : \"Event/257cf1bd-1397-4296-8124-bb2213425b6e\"
+  \"message\" : \"created event/257cf1bd-1397-4296-8124-bb2213425b6e\",
+  \"resource-id\" : \"event/257cf1bd-1397-4296-8124-bb2213425b6e\"
 }
 ```
 
@@ -165,7 +165,7 @@ Date: Thu, 19 Mar 2015 13:17:06 GMT
   \"updated\" : \"2015-03-19T12:46:16.766Z\",
   \"type\" : \"state\",
   \"created\" : \"2015-03-19T12:46:16.766Z\",
-  \"id\" : \"Event/4605ee06-ccda-48f5-a481-23c6ab296b0d\",
+  \"id\" : \"event/4605ee06-ccda-48f5-a481-23c6ab296b0d\",
   \"severity\" : \"medium\",
   \"acl\" : {
     \"owner\" : {
@@ -180,7 +180,7 @@ Date: Thu, 19 Mar 2015 13:17:06 GMT
   },
   \"operations\" : [ {
     \"rel\" : \"http://sixsq.com/slipstream/1/Action/delete\",
-    \"href\" : \"Event/4605ee06-ccda-48f5-a481-23c6ab296b0d\"
+    \"href\" : \"event/4605ee06-ccda-48f5-a481-23c6ab296b0d\"
   } ],
   \"resource-type\" : \"http://sixsq.com/slipstream/1/Event\",
   \"timestamp\" : \"2015-01-10T08:20:00.0Z\"
@@ -221,8 +221,8 @@ Date: Thu, 19 Mar 2015 13:35:57 GMT
 
 {
   \"status\" : 404,
-  \"message\" : \"Event/wrong-uuid not found\",
-  \"resource-id\" : \"Event/wrong-uuid\"
+  \"message\" : \"event/wrong-uuid not found\",
+  \"resource-id\" : \"event/wrong-uuid\"
 }
 ```
 

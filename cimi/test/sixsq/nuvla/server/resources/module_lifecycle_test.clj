@@ -14,7 +14,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context (u/de-camelcase module/resource-name)))
+(def base-uri (str p/service-context module/resource-name))
 
 
 (def timestamp "1964-08-25T10:00:00.0Z")
@@ -94,7 +94,7 @@
                     (ltu/is-status 201)
                     (ltu/location))
 
-            abs-uri (str p/service-context (u/de-camelcase uri))]
+            abs-uri (str p/service-context uri)]
 
         ;; retrieve: NOK for anon
         (-> session-anon

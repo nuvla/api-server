@@ -29,7 +29,6 @@
 
   :dependencies
   [[cc.qbits/spandex]
-   [camel-snake-kebab]
    [cheshire]                                               ;; to avoid transient dependency conflicts
    [clj-time]
    [com.rpl/specter]
@@ -46,7 +45,6 @@
    [org.elasticsearch.client/transport]
    [org.slf4j/slf4j-api]
    [ring/ring-json]
-   [superstring]                                            ;; needed for pascal case conversion function
    ]
 
   :profiles {:test     {:aot            :all

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.module
   (:require
-    [clojure.string :as s]
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -122,13 +122,13 @@
 
 (defn split-uuid
   [uuid]
-  (let [[uuid-module index] (s/split uuid #"_")
+  (let [[uuid-module index] (str/split uuid #"_")
         index (some-> index read-string)]
     [uuid-module index]))
 
 (defn retrieve-edn
   [{{uuid :uuid} :params :as request}]
-  (-> (str (u/de-camelcase resource-name) "/" (-> uuid split-uuid first))
+  (-> (str resource-name "/" (-> uuid split-uuid first))
       (db/retrieve request)
       (a/can-view? request)))
 

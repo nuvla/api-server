@@ -14,7 +14,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase st/resource-name)))
+(def base-uri (str p/service-context st/resource-name))
 
 
 (def valid-template {:method
@@ -55,7 +55,7 @@
       (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
     ;; do full lifecycle for an internal session template
-    (let [uri (str (u/de-camelcase st/resource-name) "/" method)
+    (let [uri (str st/resource-name "/" method)
           abs-uri (str p/service-context uri)]
 
       ;; delete the template

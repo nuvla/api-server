@@ -15,7 +15,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def collection-uri (str p/service-context (u/de-camelcase dt/resource-name)))
+(def collection-uri (str p/service-context dt/resource-name))
 
 (defn valid-comp [image-id] {:parentModule     {:href image-id}
 
@@ -97,7 +97,7 @@
                                       (ltu/body->edn)
                                       (ltu/is-status 201)
                                       (ltu/location))
-          resource-uri (str p/service-context (u/de-camelcase deployment-template-uri))]
+          resource-uri (str p/service-context deployment-template-uri)]
 
       ;; admin get succeeds
       (-> session-admin

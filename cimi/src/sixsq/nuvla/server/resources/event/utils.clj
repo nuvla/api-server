@@ -5,9 +5,9 @@
             [sixsq.nuvla.server.resources.common.utils :as u]))
 
 
-(def resource-name "Event")
+(def resource-name "event")
 
-(def resource-url (u/de-camelcase resource-name))
+(def resource-url resource-name)
 
 (def resource-uri (str c/cimi-schema-uri resource-name))
 

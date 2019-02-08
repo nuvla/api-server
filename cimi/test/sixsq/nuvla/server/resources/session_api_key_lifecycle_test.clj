@@ -20,9 +20,9 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase session/resource-name)))
+(def base-uri (str p/service-context session/resource-name))
 
-(def session-template-base-uri (str p/service-context (u/de-camelcase ct/resource-name)))
+(def session-template-base-uri (str p/service-context ct/resource-name))
 
 
 (def session-template-api-key {:method      api-key/authn-method
@@ -167,7 +167,7 @@
 
               uri (-> resp
                       (ltu/location))
-              abs-uri (str p/service-context (u/de-camelcase uri))
+              abs-uri (str p/service-context uri)
 
               resp2 (-> session-anon
                         (request base-uri
@@ -183,7 +183,7 @@
 
               uri2 (-> resp2
                        (ltu/location))
-              abs-uri2 (str p/service-context (u/de-camelcase uri2))]
+              abs-uri2 (str p/service-context uri2)]
 
           ;; check claims in cookie
           (is (= "jane" (:username claims)))

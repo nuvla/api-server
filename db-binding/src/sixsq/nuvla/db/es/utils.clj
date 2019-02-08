@@ -112,7 +112,7 @@
   (try
     (let [^SearchRequestBuilder request (-> (.. client
                                                 (prepareSearch (into-array String [index]))
-                                                (setTypes (into-array String [(cu/de-camelcase doc-type)]))
+                                                (setTypes (into-array String [doc-type]))
                                                 (setSearchType SearchType/DEFAULT))
                                             (add-query options)
                                             (select/add-selected-keys cimi-params)

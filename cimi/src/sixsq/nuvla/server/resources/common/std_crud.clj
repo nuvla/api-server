@@ -39,7 +39,7 @@ internal-identity
   [resource-name]
   (fn [{{uuid :uuid} :params :as request}]
     (try
-      (-> (str (u/de-camelcase resource-name) "/" uuid)
+      (-> (str resource-name "/" uuid)
           (db/retrieve request)
           (a/can-view? request)
           (crud/set-operations request)
@@ -52,7 +52,7 @@ internal-identity
   [resource-name]
   (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
     (try
-      (let [current (-> (str (u/de-camelcase resource-name) "/" uuid)
+      (let [current (-> (str resource-name "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
                         (a/can-modify? request))
             dissoc-keys (-> (map keyword select)
@@ -72,7 +72,7 @@ internal-identity
   [resource-name]
   (fn [{{uuid :uuid} :params :as request}]
     (try
-      (-> (str (u/de-camelcase resource-name) "/" uuid)
+      (-> (str resource-name "/" uuid)
           (db/retrieve request)
           (a/can-modify? request)
           (db/delete request))
@@ -89,7 +89,7 @@ internal-identity
                               with-entries-op? (map #(crud/set-operations % request)))
            skeleton {:acl         collection-acl
                      :resource-type collection-uri
-                     :id          (u/de-camelcase resource-name)
+                     :id          resource-name
                      :resources   resources}]
 
        (cond-> skeleton

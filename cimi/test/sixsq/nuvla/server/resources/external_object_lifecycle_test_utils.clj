@@ -58,7 +58,7 @@
                       :quota     7
                       :connector {:href (str c/resource-url "/" connector-name)}}}
         uri (-> user-session
-                (request (str p/service-context (u/de-camelcase cred/resource-name))
+                (request (str p/service-context cred/resource-name)
                          :request-method :post
                          :body (json/write-str cred-create))
                 (ltu/body->edn)
@@ -83,7 +83,7 @@
                                :instanceName        connector-name
                                :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
-        (request (str p/service-context (u/de-camelcase c/resource-name))
+        (request (str p/service-context c/resource-name)
                  :request-method :post
                  :body (json/write-str con-create))
         (ltu/body->edn)
@@ -141,7 +141,7 @@
                 s3/set-acl-public-read (fn [_ _ _] nil)]
     (f)))
 
-(def base-uri (str p/service-context (u/de-camelcase eo/resource-name)))
+(def base-uri (str p/service-context eo/resource-name))
 
 
 (def session-anon (-> (ltu/ring-app)
@@ -213,7 +213,7 @@
                           (ltu/body->edn)
                           (ltu/is-status 201)
                           (ltu/location))
-                  abs-uri (str p/service-context (u/de-camelcase uri))]
+                  abs-uri (str p/service-context uri)]
 
 
               (with-redefs [s3/bucket-exists? (fn [_ _] true)
@@ -279,7 +279,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
-                abs-uri (str p/service-context (u/de-camelcase uri))]
+                abs-uri (str p/service-context uri)]
 
             (-> session
                 (request base-uri
@@ -302,7 +302,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
-                abs-uri (str p/service-context (u/de-camelcase uri))]
+                abs-uri (str p/service-context uri)]
 
             ;; retrieve works
             (-> session
@@ -395,7 +395,7 @@
                                   (ltu/is-status 200)
                                   (ltu/get-op "upload"))
 
-                    abs-upload-uri (str p/service-context (u/de-camelcase upload-op))]
+                    abs-upload-uri (str p/service-context upload-op)]
 
                 ;; triggering the upload url with anonymous, authorized or unauthorized viewer should fail
                 (doseq [session [session-anon session-user-no-view session-user-view]]

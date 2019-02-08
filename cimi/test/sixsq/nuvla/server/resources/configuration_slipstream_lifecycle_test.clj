@@ -15,7 +15,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context (u/de-camelcase resource-name)))
+(def base-uri (str p/service-context resource-name))
 
 ;; must have specialized checks for slipstream configuration because
 ;; the initialization function creates a default slipstream configuration
@@ -37,7 +37,7 @@
         template (get-in resp [:response :body])
         valid-create {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
-        uri (str (u/de-camelcase resource-name) "/" service)
+        uri (str resource-name "/" service)
         abs-uri (str p/service-context uri)]
 
     ;; verify that the auto-generated configuration is present

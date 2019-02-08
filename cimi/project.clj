@@ -51,7 +51,6 @@
    [potemkin]
    [ring/ring-core]
    [ring/ring-json]
-   [superstring]
    [zookeeper-clj]
    [com.draines/postal]
 

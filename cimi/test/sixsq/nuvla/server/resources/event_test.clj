@@ -12,7 +12,7 @@
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
     [ring.middleware.params :refer [wrap-params]]))
 
-(def base-uri (str p/service-context (u/de-camelcase resource-name)))
+(def base-uri (str p/service-context resource-name))
 
 (def ^:private nb-events 20)
 

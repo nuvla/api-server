@@ -14,7 +14,7 @@
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context (u/de-camelcase module-image/resource-name)))
+(def base-uri (str p/service-context module-image/resource-name))
 
 
 (def valid-acl {:owner {:type      "ROLE"
@@ -92,7 +92,7 @@
                   (ltu/is-status 201)
                   (ltu/location))
 
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; retrieve: OK for admin; NOK for others
       (doseq [session [session-anon session-user]]

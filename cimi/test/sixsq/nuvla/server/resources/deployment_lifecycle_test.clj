@@ -16,7 +16,7 @@
 
 (def base-uri (str p/service-context deployment/resource-url))
 
-(def deployment-template-collection-uri (str p/service-context (u/de-camelcase deployment-template/resource-name)))
+(def deployment-template-collection-uri (str p/service-context deployment-template/resource-name))
 
 (deftest lifecycle
 
@@ -73,7 +73,7 @@
                                          (ltu/body->edn)
                                          (ltu/is-status 201)
                                          (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))
+          abs-uri (str p/service-context uri)
           deployment (-> session-user
                          (request (str abs-uri "?select=description")
                                   :request-method :put
@@ -82,8 +82,7 @@
                          (ltu/body->edn)
                          (ltu/is-status 200))
           cred-uri (str p/service-context
-                        (u/de-camelcase
-                          (get-in deployment [:response :body :clientAPIKey :href])))]
+                        (get-in deployment [:response :body :clientAPIKey :href]))]
 
       ;; user query: ok
       (-> session-user
@@ -136,7 +135,7 @@
                          (ltu/is-operation-present (:start c/action-uri))
                          (ltu/is-operation-absent (:stop c/action-uri))
                          (ltu/get-op "start"))
-            abs-start-uri (str p/service-context (u/de-camelcase start-op))
+            abs-start-uri (str p/service-context start-op)
 
             start-job-uri (-> session-user
                               (request abs-start-uri
@@ -157,7 +156,7 @@
                         (ltu/is-operation-absent (:start c/action-uri))
                         (ltu/is-operation-present (:stop c/action-uri))
                         (ltu/get-op "stop"))
-            abs-stop-uri (str p/service-context (u/de-camelcase stop-op))
+            abs-stop-uri (str p/service-context stop-op)
 
             stop-job-uri (-> session-user
                              (request abs-stop-uri

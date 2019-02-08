@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [peridot.core :refer :all]))
 
-(def base-uri (str p/service-context (u/de-camelcase resource-name)))
+(def base-uri (str p/service-context resource-name))
 
 
 (defn check-lifecycle
@@ -75,7 +75,7 @@
                   (ltu/is-status 201)
                   (ltu/is-location)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; admin get succeeds
       (-> session-admin
@@ -165,7 +165,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; admin delete succeeds
       (-> session-admin

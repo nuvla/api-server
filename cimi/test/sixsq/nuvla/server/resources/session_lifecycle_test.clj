@@ -9,7 +9,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase session/resource-name)))
+(def base-uri (str p/service-context session/resource-name))
 
 
 (deftest bad-methods

@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.job-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as s]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
@@ -58,7 +58,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))
+          abs-uri (str p/service-context uri)
           job (-> session-user
                   (request abs-uri)
                   (ltu/body->edn)
@@ -69,7 +69,7 @@
 
       (is (= "QUEUED" (:state job)))
 
-      (is (s/starts-with? zookeeper-path (str zk-job-path-start-subs "999-")))
+      (is (str/starts-with? zookeeper-path (str zk-job-path-start-subs "999-")))
 
       (is (= (uzk/get-data zookeeper-path) uri))
 
@@ -107,7 +107,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))
+          abs-uri (str p/service-context uri)
           zookeeper-path (some-> session-user
                                  (request abs-uri)
                                  (ltu/body->edn)
@@ -117,5 +117,4 @@
                                  :body
                                  :tags
                                  first)]
-      (is (s/starts-with? zookeeper-path (str zk-job-path-start-subs "050-"))))
-    ))
+      (is (str/starts-with? zookeeper-path (str zk-job-path-start-subs "050-"))))))

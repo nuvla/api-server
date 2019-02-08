@@ -17,9 +17,9 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase user/resource-name)))
+(def base-uri (str p/service-context user/resource-name))
 
-(def user-template-base-uri (str p/service-context (u/de-camelcase ut/resource-name)))
+(def user-template-base-uri (str p/service-context ut/resource-name))
 
 
 (deftest check-metadata
@@ -189,7 +189,7 @@
                 id (get-in resp [:response :body :resource-id])
                 uri (-> resp
                         (ltu/location))
-                abs-uri (str p/service-context (u/de-camelcase uri))]
+                abs-uri (str p/service-context uri)]
 
             ;; creating same user a second time should fail
             (-> session-anon
@@ -301,7 +301,7 @@
                          (ltu/is-status 201))
 
                 uri (-> resp ltu/location)
-                abs-uri (str p/service-context (u/de-camelcase uri))]
+                abs-uri (str p/service-context uri)]
 
             ;; check resource exists
             (-> session-admin

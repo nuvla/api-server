@@ -16,9 +16,9 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context (u/de-camelcase t/resource-url)))
+(def base-uri (str p/service-context t/resource-url))
 
-(def md-uri (str p/service-context (u/de-camelcase md/resource-url) "/" t/resource-url))
+(def md-uri (str p/service-context md/resource-url "/" t/resource-url))
 
 (def valid-acl {:owner {:principal "ADMIN",
                         :type      "ROLE"},
@@ -101,7 +101,7 @@
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
-          admin-abs-uri (str p/service-context (u/de-camelcase admin-uri))
+          admin-abs-uri (str p/service-context admin-uri)
 
           user-uri (-> session-user
                        (request base-uri
@@ -111,7 +111,7 @@
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
-          user-abs-uri (str p/service-context (u/de-camelcase user-uri))]
+          user-abs-uri (str p/service-context user-uri)]
 
       ;; admin should see 2 email resources
       (-> session-admin

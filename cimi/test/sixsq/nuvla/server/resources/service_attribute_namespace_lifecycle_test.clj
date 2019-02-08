@@ -57,7 +57,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))
+          abs-uri (str p/service-context uri)
           doc (-> session-user
                   (request abs-uri)
                   (ltu/body->edn)
