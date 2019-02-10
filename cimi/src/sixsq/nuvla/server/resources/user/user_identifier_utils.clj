@@ -130,7 +130,7 @@
   [user-id]
   (let [filter (create-cimi-filter (format "user/href='%s'" user-id))]
     (try
-      (second (db/query user-identifier/collection-type {:cimi-params filter
-                                                         :user-roles  ["ADMIN"]}))
+      (second (db/query user-identifier/resource-type {:cimi-params filter
+                                                       :user-roles  ["ADMIN"]}))
       (catch Exception _
         []))))
