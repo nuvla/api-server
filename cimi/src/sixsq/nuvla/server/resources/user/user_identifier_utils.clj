@@ -5,7 +5,8 @@
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (def ^:private active-user-filter "(state='ACTIVE')")
@@ -18,11 +19,12 @@
    (str (or instance (name authn-method)) ":" external-login)))
 
 
-(defn add-user-identifier!
+(defn
+  add-user-identifier!
   [username authn-method external-login instance]
   (let [user-id (str "user/" username)
         identifier (generate-identifier authn-method external-login instance)]
-    (log/debugf "Creating a UserIdentifier resource for user %s with identifier %s" username identifier)
+    (log/debugf "Creating a user-identifier resource for user %s with identifier %s" username identifier)
     (crud/add
       {:identity     {:current "internal"
                       :authentications
@@ -128,7 +130,7 @@
   [user-id]
   (let [filter (create-cimi-filter (format "user/href='%s'" user-id))]
     (try
-      (second (db/query "UserIdentifier" {:cimi-params filter
-                                          :user-roles  ["ADMIN"]}))
+      (second (db/query user-identifier/collection-type {:cimi-params filter
+                                                         :user-roles  ["ADMIN"]}))
       (catch Exception _
         []))))
