@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -9,13 +10,12 @@
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-slipstream :as slipstream]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context resource-name))
+(def base-uri (str p/service-context resource-type))
 
 ;; must have specialized checks for slipstream configuration because
 ;; the initialization function creates a default slipstream configuration
@@ -29,7 +29,7 @@
                     (content-type "application/json"))
         session-admin (header session authn-info-header "root ADMIN USER ANON")
 
-        template-url (str p/service-context ct/resource-url "/" service)
+        template-url (str p/service-context ct/resource-type "/" service)
         resp (-> session-admin
                  (request template-url)
                  (ltu/body->edn)
@@ -37,7 +37,7 @@
         template (get-in resp [:response :body])
         valid-create {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
-        uri (str resource-name "/" service)
+        uri (str resource-type "/" service)
         abs-uri (str p/service-context uri)]
 
     ;; verify that the auto-generated configuration is present

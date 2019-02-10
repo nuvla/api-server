@@ -3,24 +3,24 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :refer :all]
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-url))
+(def base-uri (str p/service-context resource-type))
 
 (def valid-job
-  {:resource-type resource-uri
-   :action      "collect"
-   :acl         {:owner {:type "USER" :principal "admin"}
-                 :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})
+  {:resource-type resource-type
+   :action        "collect"
+   :acl           {:owner {:type "USER" :principal "admin"}
+                   :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})
 
 (def zk-job-path-start-subs "/job/entries/entry-")
 

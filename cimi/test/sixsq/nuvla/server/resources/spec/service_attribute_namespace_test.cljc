@@ -17,13 +17,13 @@
 
 
 (def valid-namespace
-  {:acl         valid-acl
-   :id          (str sn/resource-url "/uuid")
-   :prefix      "schema-org"
-   :uri         "https://schema.org/schema1"
-   :updated     timestamp
-   :created     timestamp
-   :resource-type sn/resource-uri})
+  {:acl           valid-acl
+   :id            (str sn/resource-type "/uuid")
+   :prefix        "schema-org"
+   :uri           "https://schema.org/schema1"
+   :updated       timestamp
+   :created       timestamp
+   :resource-type sn/resource-type})
 
 
 (deftest check-prefix

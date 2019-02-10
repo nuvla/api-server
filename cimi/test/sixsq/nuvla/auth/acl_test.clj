@@ -16,13 +16,13 @@
 (deftest check-extract-right
 
   (is (= ::acl/all (acl/extract-right {:identity "anyone" :roles ["R1", "ADMIN"]}
-                                  {:type "USER" :principal "USER1" :right "ALL"})))
+                                      {:type "USER" :principal "USER1" :right "ALL"})))
 
   (is (= ::acl/view (acl/extract-right nil {:type "ROLE" :principal "ANON" :right "VIEW"})))
   (is (= ::acl/view (acl/extract-right {} {:type "ROLE" :principal "ANON" :right "VIEW"})))
 
   (is (nil? (acl/extract-right {:identity "unknown" :roles ["ANON"]}
-                           {:principal "USER" :type "ROLE" :right "MODIFY"})))
+                               {:principal "USER" :type "ROLE" :right "MODIFY"})))
 
   (let [id-map {:identity "USER1" :roles ["R1" "R3"]}]
 

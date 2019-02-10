@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.external-object-template-lifecycle-test
   (:require
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -9,16 +10,15 @@
     [sixsq.nuvla.server.resources.external-object-template :as eot]
     [sixsq.nuvla.server.resources.external-object-template-alpha-example :as eotae]
     [sixsq.nuvla.server.resources.external-object-template-generic :as eotg]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer [content-type header request session]]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context eot/resource-name))
+(def collection-uri (str p/service-context eot/resource-type))
 
-(def eo-tmpl-ids (map #(format "%s/%s" eot/resource-url %) [eotg/objectType
-                                                            eotae/objectType]))
+(def eo-tmpl-ids (map #(format "%s/%s" eot/resource-type %) [eotg/objectType
+                                                             eotae/objectType]))
 
 (deftest check-retrieve-by-id
   (doseq [eo-tmpl-id eo-tmpl-ids]
@@ -52,7 +52,7 @@
                       (request (str collection-uri))
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri eot/collection-uri)
+                      (ltu/is-resource-uri eot/collection-type)
                       (ltu/is-count pos?)
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")

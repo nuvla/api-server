@@ -48,8 +48,8 @@
   ; FIXME: it's not possible to create a super user with auto template.
   #_(th/add-user-for-test! (merge valid-creds-super {:isSuperUser true}))
   #_(is (= {:username "super"
-          :roles    "ADMIN USER ANON"}
-         (t/create-claims "super"))))
+            :roles    "ADMIN USER ANON"}
+           (t/create-claims "super"))))
 
 (deftest check-login
   (th/add-user-for-test! (merge valid-creds-super {:isSuperUser true}))

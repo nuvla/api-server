@@ -16,8 +16,8 @@
 
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id             (str ct/resource-url "/session-mitreid-test-instance")
-              :resource-type    p/service-context
+        root {:id             (str ct/resource-type "/session-mitreid-test-instance")
+              :resource-type  p/service-context
               :created        timestamp
               :updated        timestamp
               :acl            valid-acl

@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -9,12 +10,11 @@
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-internal :as internal]
     [sixsq.nuvla.server.resources.session-template-lifecycle-test-utils :as stu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context st/resource-name))
+(def base-uri (str p/service-context st/resource-type))
 
 
 (def valid-template {:method
@@ -50,12 +50,12 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri st/collection-uri)
+                      (ltu/is-resource-uri st/collection-type)
                       (ltu/entries))]
       (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
     ;; do full lifecycle for an internal session template
-    (let [uri (str st/resource-name "/" method)
+    (let [uri (str st/resource-type "/" method)
           abs-uri (str p/service-context uri)]
 
       ;; delete the template
@@ -76,13 +76,13 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri st/collection-uri)
+                        (ltu/is-resource-uri st/collection-type)
                         (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str st/resource-url "-" internal/resource-url)))
+  (mdtu/check-metadata-exists (str st/resource-type "-" internal/resource-url)))
 
 
 (deftest lifecycle

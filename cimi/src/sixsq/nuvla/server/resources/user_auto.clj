@@ -27,10 +27,10 @@
 ;; strips method attribute and updates the resource URI
 ;;
 
-(def user-defaults {:resource-type p/resource-uri
-                    :isSuperUser false
-                    :deleted     false
-                    :state       "NEW"})
+(def user-defaults {:resource-type p/resource-type
+                    :isSuperUser   false
+                    :deleted       false
+                    :state         "NEW"})
 
 
 (defn create-user-map

@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -14,8 +15,7 @@
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as cred-alpha]
     [sixsq.nuvla.server.resources.external-object :as eo]
     [sixsq.nuvla.server.resources.external-object.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import (com.amazonaws AmazonServiceException)))
 
 
@@ -52,13 +52,13 @@
 (defn create-cloud-cred
   [user-session]
   (let [cred-create {:template
-                     {:href      (str credt/resource-url "/" cred-alpha/method)
+                     {:href      (str credt/resource-type "/" cred-alpha/method)
                       :key       "key"
                       :secret    "secret"
                       :quota     7
-                      :connector {:href (str c/resource-url "/" connector-name)}}}
+                      :connector {:href (str c/resource-type "/" connector-name)}}}
         uri (-> user-session
-                (request (str p/service-context cred/resource-name)
+                (request (str p/service-context cred/resource-type)
                          :request-method :post
                          :body (json/write-str cred-create))
                 (ltu/body->edn)
@@ -78,12 +78,12 @@
 
 (defn create-connector-fixture!
   [f]
-  (let [con-create {:template {:href                (str cont/resource-url "/" con-alpha/cloud-service-type)
+  (let [con-create {:template {:href                (str cont/resource-type "/" con-alpha/cloud-service-type)
                                :alphaKey            1234
                                :instanceName        connector-name
                                :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
-        (request (str p/service-context c/resource-name)
+        (request (str p/service-context c/resource-type)
                  :request-method :post
                  :body (json/write-str con-create))
         (ltu/body->edn)
@@ -141,7 +141,7 @@
                 s3/set-acl-public-read (fn [_ _ _] nil)]
     (f)))
 
-(def base-uri (str p/service-context eo/resource-name))
+(def base-uri (str p/service-context eo/resource-type))
 
 
 (def session-anon (-> (ltu/ring-app)
@@ -375,7 +375,7 @@
                             (request base-uri)
                             (ltu/body->edn)
                             (ltu/is-status 200)
-                            (ltu/is-resource-uri eo/collection-uri)
+                            (ltu/is-resource-uri eo/collection-type)
                             (ltu/is-count 1)
                             (ltu/entries)
                             first)

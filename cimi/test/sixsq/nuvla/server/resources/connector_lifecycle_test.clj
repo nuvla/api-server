@@ -2,24 +2,24 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector :as c]
     [sixsq.nuvla.server.resources.connector-template :as ct]
     [sixsq.nuvla.server.resources.connector-template-alpha-example :as example]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context c/resource-name))
+(def collection-uri (str p/service-context c/resource-type))
 
 
 (deftest lifecycle
 
-  (let [href (str ct/resource-url "/" example/cloud-service-type)
-        template-url (str p/service-context ct/resource-url "/" example/cloud-service-type)
+  (let [href (str ct/resource-type "/" example/cloud-service-type)
+        template-url (str p/service-context ct/resource-type "/" example/cloud-service-type)
 
         session-anon (-> (ltu/ring-app)
                          session
@@ -117,7 +117,7 @@
                         (request collection-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri c/collection-uri)
+                        (ltu/is-resource-uri c/collection-type)
                         (ltu/is-count #(= 1 %))
                         (ltu/entries))]
         (is ((set (map :id entries)) uri))
@@ -173,7 +173,7 @@
           (ltu/is-status 404)))))
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id c/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id c/resource-type))]
     (ltu/verify-405-status [[collection-uri :options]
                             [collection-uri :delete]
                             [resource-uri :options]

@@ -9,24 +9,19 @@ CredentialTemplate resource.
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "CredentialCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const create-type (u/ns->create-type *ns*))
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
-
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
 
 ;; only authenticated users can view and create credentials
 (def collection-acl {:owner {:principal "ADMIN"
@@ -37,6 +32,7 @@ CredentialTemplate resource.
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "MODIFY"}]})
+
 
 ;;
 ;; validate the created credential resource
@@ -49,7 +45,7 @@ CredentialTemplate resource.
   [resource]
   (logu/log-and-throw-400 (str "unknown Credential type: '" resource (:type resource) "'")))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -68,7 +64,7 @@ CredentialTemplate resource.
   (logu/log-and-throw-400 (str "cannot validate CredentialTemplate create document with type: '"
                                (dispatch-on-registration-method resource) "'")))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -84,7 +80,7 @@ CredentialTemplate resource.
             :type      "USER"
             :right     "MODIFY"}]})
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
@@ -111,20 +107,20 @@ CredentialTemplate resource.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;;
 ;; available operations
 ;;
 
 ;; Use standard method for setting operations.
-#_(defmethod crud/set-operations resource-uri
+#_(defmethod crud/set-operations resource-type
     [resource request]
     (try
       (a/can-modify? resource request)
       (let [href (:id resource)
             ^String resource-type (:resource-type resource)
-            ops (if (.endsWith resource-type "Collection")
+            ops (if (is-collection? resource-type)
                   [{:rel (:add c/action-uri) :href href}]
                   [{:rel (:delete c/action-uri) :href href}])]
         (assoc resource :operations ops))
@@ -155,16 +151,16 @@ CredentialTemplate resource.
         (update-in [:template] merge connector-href))))
 
 ;; requires a CredentialTemplate to create new Credential
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [idmap {:identity (:identity request)}
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
-            (assoc :resource-type create-uri)
-            (update-in [:template] dissoc :type)  ;; forces use of template reference
+            (assoc :resource-type create-type)
+            (update-in [:template] dissoc :type)            ;; forces use of template reference
             (resolve-hrefs idmap)
-            (update-in [:template] merge desc-attrs) ;; ensure desc attrs are validated
+            (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
             crud/validate
             :template
             (tpl->credential request))]
@@ -179,10 +175,10 @@ CredentialTemplate resource.
   [resource _]
   resource)
 
-(def edit-impl (std-crud/edit-fn resource-name))
-(defmethod crud/edit resource-name
+(def edit-impl (std-crud/edit-fn resource-type))
+(defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [type (-> (str resource-name "/" uuid)
+  (let [type (-> (str resource-type "/" uuid)
                  (db/retrieve request)
                  :type)
         new-body (-> body
@@ -190,18 +186,18 @@ CredentialTemplate resource.
                      (special-edit request))]
     (edit-impl (assoc request :body new-body))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
-(defmethod crud/retrieve resource-name
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
-(defmethod crud/delete resource-name
+(def delete-impl (std-crud/delete-fn resource-type))
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
-(defmethod crud/query resource-name
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -211,4 +207,4 @@ CredentialTemplate resource.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url nil))
+  (std-crud/initialize resource-type nil))

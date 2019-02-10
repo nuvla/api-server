@@ -76,7 +76,7 @@
             ::metricsGraphiteEnable
             ::reportsObjectStoreBucketName
             ::reportsObjectStoreCreds]
-   :opt-un [::reportsLocation ; reportsLocation is deprecated
+   :opt-un [::reportsLocation                               ; reportsLocation is deprecated
             ::termsAndConditions]})
 
 ;; FIXME: Treats all parameters as optional.  Instead those without reasonable defaults should be required.

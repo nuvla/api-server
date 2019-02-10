@@ -143,7 +143,7 @@
 
 (defn resolve-module [module-href idmap]
   (let [request-module {:params   {:uuid          (some-> module-href (str/split #"/") second)
-                                   :resource-name m/resource-url}
+                                   :resource-name m/resource-type}
                         :identity idmap}
         {:keys [body status] :as module-response} (crud/retrieve request-module)
         parent-href (get-in body [:content :parentModule :href])]

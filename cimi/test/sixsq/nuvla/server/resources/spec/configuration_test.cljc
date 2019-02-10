@@ -21,12 +21,12 @@
 
 (deftest test-configuration-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id          (str resource-url "/slipstream")
-             :resource-type resource-uri
-             :created     timestamp
-             :updated     timestamp
-             :acl         valid-acl
-             :service     "foo"}]
+        cfg {:id            (str resource-type "/slipstream")
+             :resource-type resource-type
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl
+             :service       "foo"}]
 
     (is (stu/is-valid ::configuration cfg))
 

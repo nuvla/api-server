@@ -2,19 +2,19 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.module-image :as module-image]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.module-image :as module-image]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context module-image/resource-name))
+(def base-uri (str p/service-context module-image/resource-type))
 
 
 (def valid-acl {:owner {:type      "ROLE"
@@ -27,29 +27,29 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-entry {:id           (str module-image/resource-url "/connector-uuid")
-                  :resource-type  module-image/resource-uri
-                  :created      timestamp
-                  :updated      timestamp
-                  :acl          valid-acl
+(def valid-entry {:id            (str module-image/resource-type "/connector-uuid")
+                  :resource-type module-image/resource-type
+                  :created       timestamp
+                  :updated       timestamp
+                  :acl           valid-acl
 
-                  :os           "Ubuntu"
-                  :loginUser    "ubuntu"
-                  :sudo         true
+                  :os            "Ubuntu"
+                  :loginUser     "ubuntu"
+                  :sudo          true
 
-                  :cpu          2
-                  :ram          2048
-                  :disk         100
-                  :volatileDisk 500
-                  :networkType  "public"
+                  :cpu           2
+                  :ram           2048
+                  :disk          100
+                  :volatileDisk  500
+                  :networkType   "public"
 
-                  :imageIDs     {:some-cloud       "my-great-image-1"
-                                 :some-other-cloud "great-stuff"}
+                  :imageIDs      {:some-cloud       "my-great-image-1"
+                                  :some-other-cloud "great-stuff"}
 
-                  :relatedImage {:href "module/other"}
+                  :relatedImage  {:href "module/other"}
 
-                  :author "someone"
-                  :commit "wip"})
+                  :author        "someone"
+                  :commit        "wip"})
 
 
 (deftest lifecycle
@@ -128,7 +128,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id module-image/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id module-image/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

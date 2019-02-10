@@ -15,6 +15,7 @@
     [sixsq.nuvla.server.resources.spec.session-template-api-key :as st-api-key]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const authn-method "api-key")
 
 
@@ -95,4 +96,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize p/resource-url ::session/session))
+  (std-crud/initialize p/resource-type ::session/session))

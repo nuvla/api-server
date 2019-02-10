@@ -35,7 +35,7 @@ information (username, password, and email address) from the user.
    :instance         registration-method
    :name             "Self Registration"
    :description      "Creates a new user through self-registration"
-   :resourceMetadata (str p/resource-url "-" registration-method)
+   :resourceMetadata (str p/resource-type "-" registration-method)
    :username         "username"
    :password         "password"
    :passwordRepeat   "password"

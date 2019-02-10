@@ -12,6 +12,7 @@
     [sixsq.nuvla.server.resources.spec.session-template-internal :as st-internal]
     [sixsq.nuvla.util.response :as r]))
 
+
 (def ^:const authn-method "internal")
 
 
@@ -67,4 +68,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize p/resource-url ::session/session))
+  (std-crud/initialize p/resource-type ::session/session))

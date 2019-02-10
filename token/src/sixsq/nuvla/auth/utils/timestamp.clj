@@ -7,7 +7,7 @@
     [clj-time.format :as f]))
 
 
-(def default-ttl-minutes (* 24 60))                  ;; 1 day
+(def default-ttl-minutes (* 24 60))                         ;; 1 day
 
 
 (def rfc822-formatter (:rfc822 f/formatters))

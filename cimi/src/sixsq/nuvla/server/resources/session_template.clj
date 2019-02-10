@@ -36,27 +36,21 @@ One SessionTemplate that will always exist on the server is the
 a username and password pair stored in SlipStream's internal database.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session-template :as session-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.util.response :as r]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "SessionTemplateCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -79,6 +73,7 @@ a username and password pair stored in SlipStream's internal database.
                              {:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
+
 
 ;;
 ;; atom to keep track of the SessionTemplate descriptions
@@ -108,54 +103,54 @@ a username and password pair stored in SlipStream's internal database.
   (throw (ex-info (str "unknown SessionTemplate type: " (:method resource)) resource)))
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
 ;;
 ;; identifiers for these resources are the same as the :instance value
 ;;
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [{:keys [instance method] :as resource} resource-name]
   (let [new-id (if (= method instance)
                  instance
                  (str method "-" instance))]
-    (assoc resource :id (str resource-url "/" new-id))))
+    (assoc resource :id (str resource-type "/" new-id))))
 
 
 ;;
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{{:keys [method]} :body :as request}]
   (if (@known-methods method)
     (add-impl request)
     (throw (r/ex-bad-request (str "invalid authentication method '" method "'")))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 

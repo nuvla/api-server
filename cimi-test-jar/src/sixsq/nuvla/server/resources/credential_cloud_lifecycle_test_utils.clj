@@ -4,16 +4,16 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector :as con]
     [sixsq.nuvla.server.resources.connector-template :as cont]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
-(def base-uri (str p/service-context (u/de-camelcase credential/resource-url)))
+(def base-uri (str p/service-context credential/resource-type))
 
 
 (defmulti get-connector-template
@@ -165,7 +165,7 @@
           id (get-in resp [:response :body :resource-id])
           uri (-> resp
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))

@@ -11,12 +11,12 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str st/resource-url "-" api-key/resource-url)))
+  (mdtu/check-metadata-exists (str st/resource-type "-" api-key/resource-url)))
 
 
 (deftest check-metadata-contents
   (let [{:keys [attributes vscope capabilities actions]}
-        (mdtu/get-generated-metadata (str st/resource-url "-" api-key/resource-url))]
+        (mdtu/get-generated-metadata (str st/resource-type "-" api-key/resource-url))]
 
     (is (nil? actions))
     (is (nil? capabilities))

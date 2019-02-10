@@ -15,13 +15,13 @@
 
 (deftest check-ServiceInfo
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        service-offer {:id          (str so-resource/resource-url "/offer-uuid")
-                       :resource-type so-resource/resource-uri
-                       :created     timestamp
-                       :updated     timestamp
-                       :acl         valid-acl
-                       :connector   {:href "myconnector"}
-                       :other       "value"}]
+        service-offer {:id            (str so-resource/resource-type "/offer-uuid")
+                       :resource-type so-resource/resource-type
+                       :created       timestamp
+                       :updated       timestamp
+                       :acl           valid-acl
+                       :connector     {:href "myconnector"}
+                       :other         "value"}]
 
     (stu/is-valid ::so/service-offer service-offer)
 

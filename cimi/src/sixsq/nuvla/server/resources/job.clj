@@ -12,15 +12,9 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "JobCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -33,7 +27,7 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::job/job)
+  (std-crud/initialize resource-type ::job/job)
   (ju/create-job-queue))
 
 
@@ -42,7 +36,7 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::job/job))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
@@ -50,7 +44,7 @@
 ;; use default ACL method
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -60,11 +54,11 @@
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
   (a/can-modify? {:acl collection-acl} request)
-  (let [id (u/new-resource-id resource-name)
+  (let [id (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
                     u/strip-service-attrs
-                    (assoc :resource-type resource-uri)
+                    (assoc :resource-type resource-type)
                     (assoc :id id)
                     (assoc :state ju/state-queued)
                     u/update-timestamps
@@ -72,22 +66,22 @@
                     (crud/add-acl request)
                     (assoc :tags [zookeeper-path])
                     (crud/validate))]
-    (db/add resource-name new-job {})))
+    (db/add resource-type new-job {})))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (add-impl request))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 (defn edit-impl
   [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [current (-> (str resource-name "/" uuid)
+    (let [current (-> (str resource-type "/" uuid)
                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
                       (a/can-modify? request))
           dissoc-keys (-> (map keyword select)
@@ -103,20 +97,20 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -124,7 +118,7 @@
 ;; provide an action that allows the job to be stoppable.
 ;;
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [href (str id "/stop")
         collect-op {:rel (:stop c/action-uri) :href href}]
@@ -132,10 +126,10 @@
         (update-in [:operations] conj collect-op))))
 
 
-(defmethod crud/do-action [resource-url "stop"]
+(defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-name "/" uuid)
+    (-> (str resource-type "/" uuid)
         (db/retrieve request)
         (a/can-modify? request)
         (ju/stop)

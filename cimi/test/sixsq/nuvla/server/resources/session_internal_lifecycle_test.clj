@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.internal :as auth-internal]
     [sixsq.nuvla.auth.utils.db :as db]
     [sixsq.nuvla.auth.utils.sign :as sign]
@@ -13,17 +14,16 @@
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template-internal :as internal]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.session-template-internal :as internal]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context session/resource-name))
+(def base-uri (str p/service-context session/resource-type))
 
 
-(def session-template-base-uri (str p/service-context ct/resource-name))
+(def session-template-base-uri (str p/service-context ct/resource-type))
 
 
 (def session-template-internal {:method      internal/authn-method
@@ -74,7 +74,7 @@
           ;;
           ;; session template should already exist after test server initialization
           ;;
-          href (str st/resource-url "/internal")
+          href (str st/resource-type "/internal")
 
           template-url (str p/service-context href)
 

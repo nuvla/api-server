@@ -109,7 +109,7 @@
   [{:keys [id resource-type] :as resource} request]
   (try
     (a/can-modify? resource request)
-    (let [ops (if (.endsWith resource-type "Collection")
+    (let [ops (if (u/is-collection? resource-type)
                 [{:rel (:add c/action-uri) :href id}]
                 [{:rel (:edit c/action-uri) :href id}
                  {:rel (:delete c/action-uri) :href id}])]

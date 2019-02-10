@@ -2,19 +2,19 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.module-application :as module-application]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.module-application :as module-application]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context module-application/resource-name))
+(def base-uri (str p/service-context module-application/resource-type))
 
 
 (def valid-acl {:owner {:type      "ROLE"
@@ -27,28 +27,28 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-entry {:id          (str module-application/resource-url "/connector-uuid")
-                  :resource-type module-application/resource-uri
-                  :created     timestamp
-                  :updated     timestamp
-                  :acl         valid-acl
+(def valid-entry {:id            (str module-application/resource-type "/connector-uuid")
+                  :resource-type module-application/resource-type
+                  :created       timestamp
+                  :updated       timestamp
+                  :acl           valid-acl
 
-                  :nodes       [{:node         "node_alpha"
-                                 :component    {:href "module/a-b"}
-                                 :multiplicity 1}
-                                {:node                    "node_beta"
-                                 :component               {:href "module/c-d"}
-                                 :multiplicity            2
-                                 :maxProvisioningFailures 1}
-                                {:node                    "node_gamma"
-                                 :component               {:href "module/e-f"}
-                                 :multiplicity            20
-                                 :maxProvisioningFailures 10
-                                 :parameterMappings       [{:parameter "param.1-2" :mapped true, :value "param.2-3"}
-                                                           {:parameter "param.3-4" :mapped false, :value "default"}]}]
+                  :nodes         [{:node         "node_alpha"
+                                   :component    {:href "module/a-b"}
+                                   :multiplicity 1}
+                                  {:node                    "node_beta"
+                                   :component               {:href "module/c-d"}
+                                   :multiplicity            2
+                                   :maxProvisioningFailures 1}
+                                  {:node                    "node_gamma"
+                                   :component               {:href "module/e-f"}
+                                   :multiplicity            20
+                                   :maxProvisioningFailures 10
+                                   :parameterMappings       [{:parameter "param.1-2" :mapped true, :value "param.2-3"}
+                                                             {:parameter "param.3-4" :mapped false, :value "default"}]}]
 
-                  :author      "someone"
-                  :commit      "wip"})
+                  :author        "someone"
+                  :commit        "wip"})
 
 
 (deftest lifecycle
@@ -127,7 +127,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id module-application/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id module-application/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

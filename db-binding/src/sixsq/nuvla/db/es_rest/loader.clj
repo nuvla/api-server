@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.db.es-rest.loader
   (:refer-clojure :exclude [load])
   (:require
-    [sixsq.nuvla.db.es-rest.binding :as esrb]
-    [environ.core :as env]))
+    [environ.core :as env]
+    [sixsq.nuvla.db.es-rest.binding :as esrb]))
 
 
 (defn load

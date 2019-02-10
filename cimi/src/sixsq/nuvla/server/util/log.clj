@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.util.log
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.util.response :as r]
-    [ring.util.response :as ring-resp]))
+    [ring.util.response :as ring-resp]
+    [sixsq.nuvla.util.response :as r]))
 
 (defn log-and-throw
   "Logs the given message and returns an error response with the given status

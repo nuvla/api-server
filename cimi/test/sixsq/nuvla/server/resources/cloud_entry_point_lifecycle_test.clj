@@ -2,21 +2,21 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.cloud-entry-point :as t]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context t/resource-name))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists t/resource-url))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -34,7 +34,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-absent "edit")
         (ltu/is-operation-absent "delete"))
 
@@ -43,7 +43,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-present "edit")
         (ltu/is-operation-absent "delete"))
 
@@ -63,7 +63,7 @@
                  :body (json/write-str {:name "dummy"}))
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-present "edit")
         (ltu/is-key-value :name "dummy"))
 
@@ -72,7 +72,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-uri)
+        (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-absent "edit")
         (ltu/is-key-value :name "dummy"))))
 

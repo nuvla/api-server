@@ -16,15 +16,15 @@
 
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id          (str ct/resource-url "/session-mitreid-token-test-instance")
+        root {:id            (str ct/resource-type "/session-mitreid-token-test-instance")
               :resource-type p/service-context
-              :created     timestamp
-              :updated     timestamp
-              :acl         valid-acl
+              :created       timestamp
+              :updated       timestamp
+              :acl           valid-acl
 
-              :service     "session-mitreid-token"
-              :instance    "test-instance"
-              :clientIPs   ["127.0.0.1", "192.168.100.100"]}]
+              :service       "session-mitreid-token"
+              :instance      "test-instance"
+              :clientIPs     ["127.0.0.1", "192.168.100.100"]}]
 
     (stu/is-valid ::cts-mitreid-token/schema root)
 

@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.session.utils
   (:require
+    [ring.util.codec :as codec]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session :as p]
-    [sixsq.nuvla.util.response :as r]
-    [ring.util.codec :as codec]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (defn cookie-name
@@ -43,7 +43,7 @@
   (second (re-matches #"session/(.+)" session-id)))
 
 
-(def internal-edit (std-crud/edit-fn p/resource-name))
+(def internal-edit (std-crud/edit-fn p/resource-type))
 
 
 (defn create-session
@@ -64,7 +64,7 @@
               server (assoc :server server)
               client-ip (assoc :clientIP client-ip)
               redirectURI (assoc :redirectURI redirectURI))
-      p/resource-name)))
+      p/resource-type)))
 
 
 (defn retrieve-session-by-id
@@ -92,7 +92,7 @@
 
 ;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create-callback [baseURI session-id action]
-  (let [callback-request {:params   {:resource-name callback/resource-url}
+  (let [callback-request {:params   {:resource-name callback/resource-type}
                           :body     {:action         action
                                      :targetResource {:href session-id}}
                           :identity {:current         "INTERNAL"

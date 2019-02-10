@@ -17,13 +17,13 @@
                      (doall
                        (for [n (range n)]
                          [(eu/random-index-name)
-                          (eu/edn->json {:_acl-users  ["admin"]
+                          (eu/edn->json {:_acl-users    ["admin"]
                                          :resource-type "resource-uri"
-                                         :number      n
-                                         :doubled     (* 2 n)
-                                         :x1          "x1"
-                                         :x2          "x2"
-                                         :acl         "acl"})])))
+                                         :number        n
+                                         :doubled       (* 2 n)
+                                         :x1            "x1"
+                                         :x2            "x2"
+                                         :acl           "acl"})])))
           uuid (ffirst shuffled)]
 
       ;; insert generated records in random order

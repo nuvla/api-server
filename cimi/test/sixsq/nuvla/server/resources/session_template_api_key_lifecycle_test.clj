@@ -11,7 +11,7 @@
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context st/resource-name))
+(def base-uri (str p/service-context st/resource-type))
 
 
 (def valid-template {:method      api-key/authn-method
@@ -24,7 +24,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str st/resource-url "-" api-key/resource-url)))
+  (mdtu/check-metadata-exists (str st/resource-type "-" api-key/resource-url)))
 
 
 (deftest lifecycle

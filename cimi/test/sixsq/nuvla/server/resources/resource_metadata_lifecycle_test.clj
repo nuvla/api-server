@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -9,12 +10,11 @@
     [sixsq.nuvla.server.resources.common.utils :as cu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as t]
-    [sixsq.nuvla.server.resources.spec.resource-metadata-test :as resource-metadata]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.spec.resource-metadata-test :as resource-metadata]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context t/resource-url))
+(def base-uri (str p/service-context t/resource-type))
 
 (def valid-acl {:owner {:principal "ADMIN",
                         :type      "ROLE"},
@@ -46,7 +46,7 @@
 
     ;; use the internal register method to create a new entry
     (let [identifier "unit-test-resource"
-          full-identifier (str t/resource-url "/" identifier)
+          full-identifier (str t/resource-type "/" identifier)
           abs-uri (str p/service-context full-identifier)]
 
       (t/register (-> resource-metadata/valid
@@ -58,7 +58,7 @@
             (request base-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-resource-uri t/collection-uri)
+            (ltu/is-resource-uri t/collection-type)
             (ltu/is-count pos?))
 
         (let [{:keys [id] :as metadata} (-> session
@@ -75,7 +75,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-url))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [base-uri :post]

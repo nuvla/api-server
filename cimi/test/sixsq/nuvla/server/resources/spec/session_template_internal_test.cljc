@@ -15,19 +15,19 @@
 
 (deftest check-session-template-internal-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id          (str st/resource-url "/internal")
-             :resource-type st/resource-uri
-             :created     timestamp
-             :updated     timestamp
-             :acl         valid-acl
+        cfg {:id            (str st/resource-type "/internal")
+             :resource-type st/resource-type
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl
 
-             :method      "internal"
-             :instance    "internal"
-             :group       "Federated Identity"
-             :redirectURI "https://nuv.la/webui/profile"
+             :method        "internal"
+             :instance      "internal"
+             :group         "Federated Identity"
+             :redirectURI   "https://nuv.la/webui/profile"
 
-             :username    "user"
-             :password    "pass"}]
+             :username      "user"
+             :password      "pass"}]
 
     (stu/is-valid ::session-tpl/schema cfg)
 

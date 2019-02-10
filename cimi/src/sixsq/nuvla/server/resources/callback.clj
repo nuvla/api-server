@@ -24,23 +24,18 @@ appropriate users.
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.callback :as callback]
     [sixsq.nuvla.server.util.log :as log-util]
-    [sixsq.nuvla.util.response :as r]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.util.response :as r]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "CallbackCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -54,7 +49,7 @@ appropriate users.
 
 (def validate-fn (u/create-spec-validation-fn ::callback/schema))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 
@@ -70,7 +65,7 @@ appropriate users.
             :right     "VIEW"}]})
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (assoc
     resource
@@ -81,26 +76,26 @@ appropriate users.
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
-(defmethod crud/add resource-name
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+(defmethod crud/add resource-type
   [request]
   (add-impl (assoc-in request [:body :state] "WAITING")))
 
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
-(defmethod crud/retrieve resource-name
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 
-(def delete-impl (std-crud/delete-fn resource-name))
-(defmethod crud/delete resource-name
+(def delete-impl (std-crud/delete-fn resource-type))
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
-(defmethod crud/query resource-name
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -108,10 +103,10 @@ appropriate users.
 ;; available operations
 ;;
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
   (let [href (str id "/execute")
-        collection? (u/cimi-collection? resource-type)
+        collection? (u/is-collection? resource-type)
         modifiable? (a/modifiable? resource request)
         ops (cond-> []
                     (and collection? modifiable?) (conj {:rel (:add c/action-uri) :href id})
@@ -140,10 +135,10 @@ appropriate users.
     (log-util/log-and-throw 400 msg)))
 
 
-(defmethod crud/do-action [resource-url "execute"]
+(defmethod crud/do-action [resource-type "execute"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (when-let [callback-resource (crud/retrieve-by-id-as-admin id)]
         (if (utils/executable? callback-resource)
           (execute callback-resource request)
@@ -163,7 +158,7 @@ appropriate users.
   ([action-name baseURI href]
    (create action-name baseURI href nil))
   ([action-name baseURI href data]
-   (let [callback-request {:params   {:resource-name resource-url}
+   (let [callback-request {:params   {:resource-name resource-type}
                            :body     (cond-> {:action         action-name
                                               :targetResource {:href href}}
                                              data (assoc :data data))
@@ -189,5 +184,5 @@ appropriate users.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::callback/schema)
+  (std-crud/initialize resource-type ::callback/schema)
   (md/register (gen-md/generate-metadata ::ns ::callback/schema)))

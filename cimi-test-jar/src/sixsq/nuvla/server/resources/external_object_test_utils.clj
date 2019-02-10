@@ -2,20 +2,20 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.external-object :as eo] ;;con
-    [sixsq.nuvla.server.resources.external-object-template :as eot] ;;ct
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all])
+    [sixsq.nuvla.server.resources.common.utils :as u]   ;;con
+    [sixsq.nuvla.server.resources.external-object :as eo] ;;ct
+    [sixsq.nuvla.server.resources.external-object-template :as eot]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import (clojure.lang ExceptionInfo)))
 
 
-(def base-uri (str p/service-context (u/de-camelcase eo/resource-name)))
-(def tpl-base-uri (str p/service-context (u/de-camelcase eot/resource-name)))
+(def base-uri (str p/service-context eo/resource-type))
+(def tpl-base-uri (str p/service-context eot/resource-type))
 
 (defn new-instance-name
   [objectType]
@@ -63,7 +63,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
 
       ;; create again with the same external object instance name should fail
@@ -127,7 +127,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          abs-uri (str p/service-context (u/de-camelcase uri))]
+          abs-uri (str p/service-context uri)]
 
       ;; admin delete succeeds
       (-> session-admin

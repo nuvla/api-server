@@ -2,15 +2,15 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :refer :all]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
-(def base-uri (str p/service-context resource-name))
+(def base-uri (str p/service-context resource-type))
 
 
 (defn check-lifecycle
@@ -27,19 +27,19 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href (str ct/resource-url "/" service)
-        template-url (str p/service-context ct/resource-url "/" service)
+        href (str ct/resource-type "/" service)
+        template-url (str p/service-context ct/resource-type "/" service)
         resp (-> session-admin
                  (request template-url)
                  (ltu/body->edn)
                  (ltu/is-status 200))
         template (get-in resp [:response :body])
-        valid-create {:name                  name-attr
-                      :description           description-attr
-                      :tags                  tags-attr
-                      :template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
+        valid-create {:name        name-attr
+                      :description description-attr
+                      :tags        tags-attr
+                      :template    (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
         href-create {:template {:href   href
-                                             attr-kw attr-value}}
+                                attr-kw attr-value}}
         invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
     ;; anonymous create should fail
@@ -105,7 +105,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is ((set (map :id entries)) uri))
         (is (= 1 (count (filter service-matches? entries))))
@@ -183,7 +183,7 @@
 
 (defn check-bad-methods
   []
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

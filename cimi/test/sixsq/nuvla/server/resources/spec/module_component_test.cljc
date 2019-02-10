@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.connector :as t]  ;; FIXME: Change to module-version when available.
+    [sixsq.nuvla.server.resources.connector :as t]          ;; FIXME: Change to module-version when available.
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
@@ -16,8 +16,8 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id               (str t/resource-url "/connector-uuid")
-              :resource-type      t/resource-uri
+        root {:id               (str t/resource-type "/connector-uuid")
+              :resource-type    t/resource-type
               :created          timestamp
               :updated          timestamp
               :acl              valid-acl

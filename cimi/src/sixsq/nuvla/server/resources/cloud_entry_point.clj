@@ -313,6 +313,8 @@ include aggregating values over a collection of resources.
 "
   (:require
     [clojure.tools.logging :as log]
+    [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
+    [ring.util.response :as r]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
@@ -321,13 +323,11 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as sr]
-    [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
-    [ring.util.response :as r]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.util.response :as sr]))
 
 ;;
 ;; utilities
@@ -335,17 +335,13 @@ include aggregating values over a collection of resources.
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
-
-(def ^:const resource-url resource-type)
-
-(def ^:const resource-uri (str c/cimi-schema-uri resource-name))
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
                    :rules [{:principal "ANON"
                             :type      "ROLE"
                             :right     "VIEW"}]})
+
 
 ;; dynamically loads all available resources
 (def resource-links
@@ -359,16 +355,16 @@ include aggregating values over a collection of resources.
 (def validate-fn (u/create-spec-validation-fn ::cep/resource))
 
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (try
     (a/can-modify? resource request)
-    (let [ops [{:rel (:edit c/action-uri) :href resource-url}]]
+    (let [ops [{:rel (:edit c/action-uri) :href resource-type}]]
       (assoc resource :operations ops))
     (catch Exception e
       (dissoc resource :operations))))
@@ -384,28 +380,28 @@ include aggregating values over a collection of resources.
    adds the minimal CloudEntryPoint resource to the database."
   []
   (let [record (u/update-timestamps
-                 {:acl         resource-acl
-                  :id          resource-url
-                  :resource-type resource-uri})]
-    (db/add resource-name record {:user-roles ["ANON"]})))
+                 {:acl           resource-acl
+                  :id            resource-type
+                  :resource-type resource-type})]
+    (db/add resource-type record {:user-roles ["ANON"]})))
 
 
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
-  (r/response (-> (db/retrieve resource-url {})
+  (r/response (-> (db/retrieve resource-type {})
                   (assoc :baseURI base-uri
                          :collections resource-links)
                   (crud/set-operations request))))
 
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
 
 (defn edit-impl
   [{:keys [body] :as request}]
-  (let [current (-> (db/retrieve resource-url {})
+  (let [current (-> (db/retrieve resource-type {})
                     (assoc :acl resource-acl)
                     (a/can-modify? request))
         updated (-> body
@@ -420,7 +416,7 @@ include aggregating values over a collection of resources.
     (db/edit updated request)))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
@@ -431,14 +427,14 @@ include aggregating values over a collection of resources.
 
 (defn initialize
   []
-  (std-crud/initialize resource-url ::cep/resource)
+  (std-crud/initialize resource-type ::cep/resource)
   (md/register (gen-md/generate-metadata ::ns ::cep/resource))
 
   (try
     (add)
-    (log/info "Created" resource-name "resource")
+    (log/info "Created" resource-type "resource")
     (catch Exception e
-      (log/warn resource-name "resource not created; may already exist; message: " (str e)))))
+      (log/warn resource-type "resource not created; may already exist; message: " (str e)))))
 
 
 ;;
@@ -447,11 +443,11 @@ include aggregating values over a collection of resources.
 ;;
 
 (defroutes routes
-           (GET (str p/service-context resource-url) request
+           (GET (str p/service-context resource-type) request
              (crud/retrieve (assoc-in request [:params :resource-name]
-                                      resource-url)))
-           (PUT (str p/service-context resource-url) request
+                                      resource-type)))
+           (PUT (str p/service-context resource-type) request
              (crud/edit (assoc-in request [:params :resource-name]
-                                  resource-url)))
-           (ANY (str p/service-context resource-url) request
+                                  resource-type)))
+           (ANY (str p/service-context resource-type) request
              (throw (sr/ex-bad-method request))))

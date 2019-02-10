@@ -114,7 +114,7 @@
 
 
 (s/def ::publicKey
-  (-> (st/spec ::cimi-core/nonblank-string) ;; allows jwk JSON representation
+  (-> (st/spec ::cimi-core/nonblank-string)                 ;; allows jwk JSON representation
       (assoc :name "publicKey"
              :json-schema/name "publicKey"
              :json-schema/namespace common-ns/slipstream-namespace
@@ -135,7 +135,7 @@
 
 
 (def configuration-template-keys-spec-req
-  {:req-un [::ps/instance ::clientID  ::clientSecret ::publicKey ::authorizeURL ::tokenURL ::userProfileURL]})
+  {:req-un [::ps/instance ::clientID ::clientSecret ::publicKey ::authorizeURL ::tokenURL ::userProfileURL]})
 
 (def configuration-template-keys-spec-create
   {:req-un [::ps/instance ::clientID ::clientSecret ::publicKey ::authorizeURL ::tokenURL ::userProfileURL]})

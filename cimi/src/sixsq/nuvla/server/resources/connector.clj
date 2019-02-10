@@ -2,39 +2,38 @@
   (:require
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.connector]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "ConnectorCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const create-type (u/ns->create-type *ns*))
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
-
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
 
 (def acl-rule-user-view {:principal "USER"
                          :type      "ROLE"
                          :right     "VIEW"})
 
+
 (def acl-rule-admin-modify {:principal "ADMIN"
                             :type      "ROLE"
                             :right     "MODIFY"})
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [acl-rule-admin-modify
                              acl-rule-user-view]})
 
+
 (def resource-acl collection-acl)
+
 
 ;;
 ;; validate subclasses of connectors
@@ -51,7 +50,7 @@
                         :message err-msg
                         :body    resource}))))
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -68,7 +67,7 @@
   [resource]
   (throw (ex-info (str "unknown Connector create type: " (dispatch-on-cloud-service-type resource)) resource)))
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -76,7 +75,7 @@
 ;; multimethod for ACLs
 ;;
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -93,7 +92,7 @@
   [{:keys [href] :as resource}]
   (-> resource
       (dissoc :href)
-      (assoc :resource-type resource-uri
+      (assoc :resource-type resource-type
              :acl resource-acl)
       (cond-> href (assoc :template {:href href}))))
 
@@ -101,41 +100,41 @@
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; requires a ConnectorTemplate to create new Connector
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resource-type create-uri)
+                 (assoc :resource-type create-type)
                  (std-crud/resolve-hrefs idmap true)
                  (crud/validate)
                  :template
                  (tpl->connector))]
     (add-impl (assoc request :body body))))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -152,7 +151,7 @@
     (assoc resource :id (str resource-name "/" new-id))))
 
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [resource resource-name]
   (new-identifier-subtype resource resource-name))
 
@@ -169,10 +168,10 @@
                              :message err-msg
                              :body    resource}))))
 
-(defmethod crud/do-action [resource-url "activate"]
+(defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (activate-subtype request)))
     (catch Exception e
@@ -191,10 +190,10 @@
                              :message err-msg
                              :body    resource}))))
 
-(defmethod crud/do-action [resource-url "quarantine"]
+(defmethod crud/do-action [resource-type "quarantine"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (quarantine-subtype request)))
     (catch Exception e
@@ -206,4 +205,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url nil))
+  (std-crud/initialize resource-type nil))

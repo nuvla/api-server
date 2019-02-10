@@ -35,7 +35,7 @@ pair.
 (defn initialize
   []
   (p/register authn-method)
-  (std-crud/initialize p/resource-url ::st-api-key/schema)
+  (std-crud/initialize p/resource-type ::st-api-key/schema)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema)))
 
 ;;

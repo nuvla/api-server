@@ -87,10 +87,10 @@ internal-identity
    (fn [request entries]
      (let [resources (cond->> entries
                               with-entries-op? (map #(crud/set-operations % request)))
-           skeleton {:acl         collection-acl
+           skeleton {:acl           collection-acl
                      :resource-type collection-uri
-                     :id          resource-name
-                     :resources   resources}]
+                     :id            resource-name
+                     :resources     resources}]
 
        (cond-> skeleton
                with-collection-op? (crud/set-operations request))))))

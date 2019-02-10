@@ -47,23 +47,17 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
   (:require
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.service-attribute-namespace :as san]
     [sixsq.nuvla.util.response :as response]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "ServiceAttributeNamespaceCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -71,22 +65,24 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
                             :type      "ROLE"
                             :right     "VIEW"}]})
 
+
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "USER"
                               :type      "ROLE"
                               :right     "VIEW"}]})
 
+
 ;;
 ;; multimethods for validation and operations
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::san/service-attribute-namespace))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (assoc resource :acl resource-acl))
 
@@ -94,14 +90,14 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; FIXME: Roles are needed in two locations!  Should be unique way to specify authentication information.
 (def ^:private all-query-map {:identity       {:current         "slipstream",
                                                :authentications {"slipstream"
                                                                  {:identity "slipstream"
                                                                   :roles    ["ADMIN" "USER" "ANON"]}}}
-                              :params         {:resource-name resource-url}
+                              :params         {:resource-name resource-type}
                               :user-roles     ["ADMIN" "USER" "ANON"]
                               :request-method :get})
 
@@ -129,39 +125,39 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
         (extract-field-values :id)
         first)))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{{:keys [prefix uri]} :body :as request}]
   (if-let [id (colliding-id prefix uri)]
     (response/response-conflict id)
     (add-impl request)))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [json _]
-  (let [new-id (str resource-url "/" (:prefix json))]
+  (let [new-id (str resource-type "/" (:prefix json))]
     (assoc json :id new-id)))
 
 
@@ -170,4 +166,4 @@ curl https://nuv.la/api/service-attribute-namespace/exoscale
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::san/service-attribute-namespace))
+  (std-crud/initialize resource-type ::san/service-attribute-namespace))

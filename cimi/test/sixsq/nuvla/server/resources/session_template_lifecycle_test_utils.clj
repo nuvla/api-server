@@ -2,12 +2,12 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.session-template :refer :all]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.session-template :refer :all]))
 
 (defn session-template-lifecycle [base-uri valid-template]
 
@@ -25,7 +25,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-uri)
+        (ltu/is-resource-uri collection-type)
         (ltu/is-operation-absent "add")
         (ltu/is-operation-absent "delete")
         (ltu/is-operation-absent "edit"))
@@ -35,7 +35,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-uri)
+        (ltu/is-resource-uri collection-type)
         (ltu/is-operation-present "add")
         (ltu/is-operation-absent "delete")
         (ltu/is-operation-absent "edit"))
@@ -81,7 +81,7 @@
                                       (ltu/body->edn)
                                       :response
                                       :body)]
-        (is (= id (str resource-url "/" instance))))
+        (is (= id (str resource-type "/" instance))))
 
       ;; verify that editing/updating the template works
       (let [orig-template (-> session-anon
@@ -114,7 +114,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
@@ -136,12 +136,12 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-uri)
+                        (ltu/is-resource-uri collection-type)
                         (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 (defn bad-methods [base-uri]
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

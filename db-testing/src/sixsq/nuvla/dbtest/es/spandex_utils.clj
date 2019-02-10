@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.dbtest.es.spandex-utils
   (:require
     [clojure.string :as str]
+    [qbits.spandex :as spandex]
     [sixsq.nuvla.db.es.utils :as esu]
-    [sixsq.nuvla.dbtest.es.utils :as esut]
-    [qbits.spandex :as spandex])
+    [sixsq.nuvla.dbtest.es.utils :as esut])
   (:import
     (org.apache.http HttpHost)
     (org.elasticsearch.action.admin.cluster.node.info NodeInfo NodesInfoResponse)

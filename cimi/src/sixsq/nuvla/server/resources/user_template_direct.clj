@@ -36,7 +36,7 @@ information. Typically this method is available only to service administrators.
    :instance         registration-method
    :name             "Direct"
    :description      "Direct creation of user by the administrator"
-   :resourceMetadata (str p/resource-url "-" registration-method)
+   :resourceMetadata (str p/resource-type "-" registration-method)
    :username         "username"
    :password         "password"
    :full-name        "John Doe"
@@ -56,8 +56,8 @@ information. Typically this method is available only to service administrators.
 (defn initialize
   []
   (p/register registration-method)
-  (std-crud/initialize p/resource-url ::ut-direct/schema)
-  (std-crud/add-if-absent (str p/resource-url "/" registration-method) p/resource-url resource)
+  (std-crud/initialize p/resource-type ::ut-direct/schema)
+  (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-direct/schema)))
 
 

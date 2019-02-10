@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.email :as t]      ;; FIXME: Should be resource-metadata!!!
+    [sixsq.nuvla.server.resources.email :as t]              ;; FIXME: Should be resource-metadata!!!
     [sixsq.nuvla.server.resources.spec.resource-metadata :as spec]
     [sixsq.nuvla.server.resources.spec.resource-metadata-action-test :as action]
     [sixsq.nuvla.server.resources.spec.resource-metadata-attribute-test :as attribute]
@@ -20,11 +20,11 @@
                          :right     "ALL"}]})
 
 
-(def common {:id          (str t/resource-url "/abcdef")
-             :resource-type t/resource-uri
-             :created     timestamp
-             :updated     timestamp
-             :acl         valid-acl})
+(def common {:id            (str t/resource-type "/abcdef")
+             :resource-type t/resource-type
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl})
 
 
 (def valid-contents {:typeURI      "https://sixsq.com/slipstream/SomeResource"

@@ -13,8 +13,8 @@
 
 (deftest check-user-template-self-registration-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        tpl {:id             (str st/resource-url "/internal")
-             :resource-type    st/resource-uri
+        tpl {:id             (str st/resource-type "/internal")
+             :resource-type  st/resource-type
              :name           "my-template"
              :description    "my template"
              :group          "my group"
@@ -31,11 +31,11 @@
              :passwordRepeat "plaintext-password"
              :emailAddress   "someone@example.org"}
 
-        create-tpl {:name        "my-create"
-                    :description "my create description"
-                    :tags        #{"3", "4"}
-                    :resource-type "http://sixsq.com/slipstream/1/UserTemplateCreate"
-                    :template    (dissoc tpl :id)}]
+        create-tpl {:name          "my-create"
+                    :description   "my create description"
+                    :tags          #{"3", "4"}
+                    :resource-type "user-template-create"
+                    :template      (dissoc tpl :id)}]
 
     ;; check the registration schema (without href)
     (stu/is-valid ::ut-auto/schema tpl)

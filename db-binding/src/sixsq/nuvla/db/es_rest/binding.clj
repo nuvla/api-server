@@ -3,6 +3,7 @@
    of the Elasticsearch REST API."
   (:require
     [clojure.tools.logging :as log]
+    [qbits.spandex :as spandex]
     [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.db.es-rest.acl :as acl]
     [sixsq.nuvla.db.es-rest.filter :as filter]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.util.response :as response]
-    [qbits.spandex :as spandex])
+    [sixsq.nuvla.util.response :as response])
   (:import
     (java.io Closeable)))
 

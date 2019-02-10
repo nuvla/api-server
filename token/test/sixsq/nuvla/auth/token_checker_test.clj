@@ -2,9 +2,9 @@
   (:require
     [clojure.string :as str]
     [clojure.test :refer :all]
+    [environ.core :as environ]
     [sixsq.nuvla.auth.env-fixture :as env-fixture]
-    [sixsq.nuvla.auth.token-checker :as t]
-    [environ.core :as environ])
+    [sixsq.nuvla.auth.token-checker :as t])
   (:import (java.util Properties)))
 
 (deftest check-create-token

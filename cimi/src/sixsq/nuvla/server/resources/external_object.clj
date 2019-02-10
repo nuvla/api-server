@@ -4,6 +4,7 @@
     [buddy.core.hash :as ha]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [ring.util.response :as ru]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -13,22 +14,17 @@
     [sixsq.nuvla.server.resources.external-object-template :as eot]
     [sixsq.nuvla.server.resources.external-object.utils :as s3]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.util.response :as r]
-    [ring.util.response :as ru]))
+    [sixsq.nuvla.util.response :as r]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "ExternalObjectCollection")
 
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
+(def ^:const create-type (u/ns->create-type *ns*))
 
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
-
-(def ^:const create-uri (str c/slipstream-schema-uri resource-name "Create"))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -41,9 +37,12 @@
 
 
 (def ^:const state-new "new")
-(def ^:const state-uploading "uploading")
-(def ^:const state-ready "ready")
 
+
+(def ^:const state-uploading "uploading")
+
+
+(def ^:const state-ready "ready")
 
 
 ;;
@@ -59,7 +58,7 @@
   (throw (ex-info (str "unknown External object type: '" (:objectType resource) "'") resource)))
 
 
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
 
@@ -79,7 +78,7 @@
   (throw (ex-info (str "unknown External Object create type: " (dispatch-on-object-type resource) resource) resource)))
 
 
-(defmethod crud/validate create-uri
+(defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
 
@@ -99,7 +98,7 @@
 
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
@@ -115,12 +114,12 @@
             :right     "MODIFY"}]})
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
@@ -156,12 +155,12 @@
    on the user's authentication and whether this is a ExternalObject or
    a ExternalObjectCollection."
   [{:keys [resource-type] :as resource} request]
-  (if (.endsWith resource-type "Collection")
+  (if (u/is-collection? resource-type)
     (standard-external-object-collection-operations resource request)
     (standard-external-object-resource-operations resource request)))
 
 
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (let [ops (standard-external-object-operations resource request)]
     (cond-> (dissoc resource :operations)
@@ -172,7 +171,7 @@
 ;; Generate ID.
 ;;
 
-(defmethod crud/new-identifier resource-name
+(defmethod crud/new-identifier resource-type
   [{:keys [objectName bucketName] :as resource} resource-name]
   (if-let [new-id (co/bytes->hex (ha/md5 (str objectName bucketName)))]
     (assoc resource :id (str resource-name "/" new-id))))
@@ -189,7 +188,7 @@
 
 (defmethod tpl->externalObject :default
   [resource]
-  (assoc resource :resource-type resource-uri))
+  (assoc resource :resource-type resource-type))
 
 ;;
 ;; CRUD operations
@@ -215,7 +214,7 @@
         (update-in [:template] merge os-cred-href))))
 
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
 (defn merge-into-tmpl
@@ -233,12 +232,12 @@
 
 ;; requires a ExternalObjectTemplate to create new ExternalObject
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (a/can-modify? {:acl collection-acl} request)
   (let [idmap {:identity (:identity request)}
         body (-> body
-                 (assoc :resource-type create-uri)
+                 (assoc :resource-type create-type)
                  (merge-into-tmpl)
                  (resolve-hrefs idmap)
                  (crud/validate)
@@ -249,10 +248,10 @@
     (add-impl (assoc request :body body))))
 
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
@@ -263,18 +262,18 @@
   [body]
   (select-keys body #{:name :description :tags :acl}))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [{:keys [body] :as request}]
   (edit-impl (assoc request :body (select-editable-attributes body))))
 
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -327,10 +326,10 @@
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [resource-url "upload"]
+(defmethod crud/do-action [resource-type "upload"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (upload (crud/retrieve-by-id-as-admin id) request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -350,10 +349,10 @@
       (s3/add-s3-md5sum)
       (db/edit request)))
 
-(defmethod crud/do-action [resource-url "ready"]
+(defmethod crud/do-action [resource-type "ready"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [resource (crud/retrieve-by-id-as-admin (str resource-url "/" uuid))]
+    (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
       (ready-subtype resource request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -379,18 +378,18 @@
   [resource request]
   (let [dl-uri (download-subtype resource request)]
     (try
-      (-> {:status  303
-           :body    {:uri dl-uri}}
+      (-> {:status 303
+           :body   {:uri dl-uri}}
           (ru/header "Location" dl-uri)
           (ru/header "Content-Type" "application/json"))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
 
-(defmethod crud/do-action [resource-url "download"]
+(defmethod crud/do-action [resource-type "download"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (a/can-view? request)
           (download request)))
@@ -399,7 +398,7 @@
 
 ;;; Delete resource.
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
 
 (defn delete
@@ -426,10 +425,10 @@
   (delete-impl request))
 
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (a/can-modify? request)
           (delete request)))
@@ -443,4 +442,4 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-url nil))
+  (std-crud/initialize resource-type nil))

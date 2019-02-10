@@ -2,6 +2,8 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
+    [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -10,15 +12,13 @@
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]
-    [postal.core :as postal]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context t/resource-url))
+(def base-uri (str p/service-context t/resource-type))
 
-(def md-uri (str p/service-context md/resource-url "/" t/resource-url))
+(def md-uri (str p/service-context md/resource-type "/" t/resource-type))
 
 (def valid-acl {:owner {:principal "ADMIN",
                         :type      "ROLE"},
@@ -37,7 +37,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists t/resource-url))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -50,13 +50,13 @@
     ;; verify resource metadata
     (-> session-anon
         (request md-uri))
-    (is (= t/resource-url (-> session-anon
-                              (request md-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              :response
-                              :body
-                              :typeURI)))
+    (is (= t/resource-type (-> session-anon
+                               (request md-uri)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               :response
+                               :body
+                               :typeURI)))
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -118,7 +118,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri t/collection-uri)
+          (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 2))
 
       ;; user should see only 1
@@ -126,7 +126,7 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-resource-uri t/collection-uri)
+          (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 1))
 
       ;; verify contents of admin email
@@ -215,7 +215,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :put]

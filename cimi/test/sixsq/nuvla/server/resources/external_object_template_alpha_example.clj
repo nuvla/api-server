@@ -18,8 +18,8 @@
 
 (def external-object-keys-spec
   (u/remove-req eo/common-external-object-attrs #{::eo/bucketName
-                                               ::eo/objectName
-                                               ::eo/objectStoreCred}))
+                                                  ::eo/objectName
+                                                  ::eo/objectStoreCred}))
 
 (def external-object-alpha-keys-spec
   (su/merge-keys-specs [external-object-keys-spec

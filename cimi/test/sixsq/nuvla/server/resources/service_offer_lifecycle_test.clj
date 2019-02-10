@@ -2,19 +2,19 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
-    [sixsq.nuvla.server.resources.service-offer :refer :all]
-    [peridot.core :refer :all]
-    [ring.util.codec :as rc]))
+    [sixsq.nuvla.server.resources.service-offer :refer :all]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-url))
+(def base-uri (str p/service-context resource-type))
 
 (def valid-entry
   {:connector       {:href "cloud-software-solution-1"}
@@ -60,7 +60,7 @@
 
     ;; create namespace
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
         (t/body->edn)
@@ -162,7 +162,7 @@
                         (request base-uri)
                         (t/body->edn)
                         (t/is-status 200)
-                        (t/is-resource-uri collection-uri)
+                        (t/is-resource-uri collection-type)
                         (t/is-count pos?)
                         (t/entries))]
 
@@ -182,7 +182,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
     (doall
       (for [[uri method] [[base-uri :options]
                           [base-uri :delete]
@@ -205,7 +205,7 @@
 
     ;; create namespace
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
         (t/body->edn)
@@ -243,14 +243,14 @@
 
     ;; create namespaces
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
         (t/body->edn)
         (t/is-status 201))
 
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str namespace-com))
         (t/body->edn)
@@ -294,7 +294,7 @@
 
     ;; create namespaces
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
         (t/body->edn)
@@ -309,14 +309,14 @@
         (t/location))
 
     (let [cimi-url-ok (str p/service-context
-                           resource-url
+                           resource-type
                            "?filter=schema-org:att1='123.456'")
           cimi-url-no-result (str p/service-context
-                                  resource-url
+                                  resource-type
                                   "?filter=schema-org:att1='xxx'")
 
           res-all (-> session-admin
-                      (request (str p/service-context resource-url))
+                      (request (str p/service-context resource-type))
                       (t/body->edn)
                       (t/is-status 200)
                       (get-in [:response :body]))
@@ -346,14 +346,14 @@
 
     ;; create namespaces
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
         (t/body->edn)
         (t/is-status 201))
 
     (-> session-admin
-        (request (str p/service-context sn/resource-url)
+        (request (str p/service-context sn/resource-type)
                  :request-method :post
                  :body (json/write-str namespace-com))
         (t/body->edn)
@@ -367,10 +367,10 @@
                 (t/is-status 201)
                 (t/location))
           cimi-url-ok (str p/service-context
-                           resource-url
+                           resource-type
                            "?filter=schema-org:att1/schema-org:att2='456'")
           cimi-url-no-result (str p/service-context
-                                  resource-url
+                                  resource-type
                                   "?filter=schema-org:att1/schema-org:att2='xxx'")
           res-ok (-> session-admin
                      (request cimi-url-ok)

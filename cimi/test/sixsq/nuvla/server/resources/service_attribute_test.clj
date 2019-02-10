@@ -14,15 +14,15 @@
              "http://example.org/attributes#funky?query=/values"))
 
 (deftest check-new-identifier
-  (is (thrown? Exception (crud/new-identifier {:prefix " "} resource-name)))
-  (is (thrown? Exception (crud/new-identifier {:prefix "http://example.org/invalid uri"} resource-name))))
+  (is (thrown? Exception (crud/new-identifier {:prefix " "} resource-type)))
+  (is (thrown? Exception (crud/new-identifier {:prefix "http://example.org/invalid uri"} resource-type))))
 
 (deftest check-valid-new-identifer
   (let [uri "example-org"
         name "price"
         hex (uri->id (str uri ":" name))
-        id (str resource-name "/" hex)]
-    (is (= id (:id (crud/new-identifier {:prefix uri :attributeName name} resource-name)))))
+        id (str resource-type "/" hex)]
+    (is (= id (:id (crud/new-identifier {:prefix uri :attributeName name} resource-type)))))
 
   (let [long-uri (apply str "http://" (repeat 10000 "a"))]
-    (is (str resource-name "/" (uri->id long-uri)))))
+    (is (str resource-type "/" (uri->id long-uri)))))

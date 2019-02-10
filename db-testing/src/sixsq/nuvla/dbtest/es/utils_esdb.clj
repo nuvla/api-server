@@ -14,7 +14,7 @@
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(with-open [node#   (esut/create-test-node)
+  `(with-open [node# (esut/create-test-node)
                client# (-> node#
                            esu/node-client
                            esu/wait-for-cluster)]

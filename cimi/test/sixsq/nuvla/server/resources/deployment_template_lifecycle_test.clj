@@ -2,20 +2,20 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-template :as dt]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
-    [sixsq.nuvla.server.resources.module-lifecycle-test :as module-test]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.module-lifecycle-test :as module-test]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def collection-uri (str p/service-context dt/resource-name))
+(def collection-uri (str p/service-context dt/resource-type))
 
 (defn valid-comp [image-id] {:parentModule     {:href image-id}
 
@@ -64,10 +64,10 @@
         module-uri (-> session-user
                        (request module-test/base-uri
                                 :request-method :post
-                                :body (json/write-str (assoc {:resource-type module/resource-uri
-                                                              :parentPath  "a/b"
-                                                              :path        "a/b/c"
-                                                              :type        "COMPONENT"}
+                                :body (json/write-str (assoc {:resource-type module/resource-type
+                                                              :parentPath    "a/b"
+                                                              :path          "a/b/c"
+                                                              :type          "COMPONENT"}
                                                         :content (valid-comp module-img-uri))))
                        (ltu/body->edn)
                        (ltu/is-status 201)
@@ -154,7 +154,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id dt/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id dt/resource-type))]
     (ltu/verify-405-status [[collection-uri :options]
                             [collection-uri :delete]
                             [resource-uri :options]

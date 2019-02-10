@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.email.utils
   (:require
     [clojure.string :as str]
+    [postal.core :as postal]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.util.response :as r]
-    [postal.core :as postal]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def validation-email-body
@@ -28,7 +28,7 @@
 
 ;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create-callback [email-id baseURI]
-  (let [callback-request {:params   {:resource-name callback/resource-url}
+  (let [callback-request {:params   {:resource-name callback/resource-type}
                           :body     {:action         email-callback/action-name
                                      :targetResource {:href email-id}}
                           :identity {:current         "INTERNAL"

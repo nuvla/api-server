@@ -244,19 +244,7 @@ Delete a specific (the event-uuid is known) event.
 (def ^:const resource-type (u/ns->type *ns*))
 
 
-(def ^:const resource-name resource-type)
-
-
-(def ^:const resource-url resource-type)
-
-
-(def ^:const collection-name "EventCollection")
-
-
-(def ^:const resource-uri (str c/cimi-schema-uri resource-name))
-
-
-(def ^:const collection-uri (str c/cimi-schema-uri collection-name))
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -273,41 +261,41 @@ Delete a specific (the event-uuid is known) event.
 
 (def validate-fn (u/create-spec-validation-fn ::event/event))
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-fn resource))
 
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (add-impl request))
 
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 ;;
 ;; available operations
 ;;
-(defmethod crud/set-operations resource-uri
+(defmethod crud/set-operations resource-type
   [resource request]
   (try
     (a/can-modify? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
-          ops (if (.endsWith resource-type "Collection")
+          ops (if (u/is-collection? resource-type)
                 [{:rel (:add c/action-uri) :href href}]
                 [{:rel (:delete c/action-uri) :href href}])]
       (assoc resource :operations ops))
@@ -317,8 +305,8 @@ Delete a specific (the event-uuid is known) event.
 ;;
 ;; collection
 ;;
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
-(defmethod crud/query resource-name
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+(defmethod crud/query resource-type
   [{{:keys [orderby]} :cimi-params :as request}]
   (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
 
@@ -328,4 +316,4 @@ Delete a specific (the event-uuid is known) event.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::event/event))
+  (std-crud/initialize resource-type ::event/event))

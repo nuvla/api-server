@@ -16,13 +16,13 @@
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
         root (merge tpl/resource
-                    {:id              "external-object/my-public-object"
-                     :resource-type     eot/resource-uri
-                     :created         timestamp
-                     :updated         timestamp
-                     :acl             valid-acl
-                     :state           eo/state-new
-                     :URL       "http://bucket.s3.com"})]
+                    {:id            "external-object/my-public-object"
+                     :resource-type eot/resource-type
+                     :created       timestamp
+                     :updated       timestamp
+                     :acl           valid-acl
+                     :state         eo/state-new
+                     :URL           "http://bucket.s3.com"})]
 
     (stu/is-valid ::eo-public/external-object root)
 
@@ -32,5 +32,5 @@
       (stu/is-invalid ::eo-public/external-object (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{ :URL} ]
+    (doseq [k #{:URL}]
       (stu/is-valid ::eo-public/external-object (dissoc root k)))))

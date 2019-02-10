@@ -69,34 +69,29 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 ```
 "
   (:require
+    [clojure.string :as str]
+    [ring.util.response :as r]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
     [sixsq.nuvla.server.resources.spec.service-offer :as so]
-    [sixsq.nuvla.util.response :as sr]
-    [ring.util.response :as r]
-    [clojure.string :as str]))
+    [sixsq.nuvla.util.response :as sr]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "ServiceOfferCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
                      :rules [{:principal "USER"
                               :type      "ROLE"
                               :right     "MODIFY"}]})
+
 
 ;;
 ;; multimethods for validation and operations
@@ -134,13 +129,13 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
       (throw-wrong-namespace))))
 
 (def validate-fn (u/create-spec-validation-fn ::so/service-offer))
-(defmethod crud/validate resource-uri
+(defmethod crud/validate resource-type
   [resource]
   (-> resource
       validate-fn
       validate-attributes))
 
-(defmethod crud/add-acl resource-uri
+(defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
 
@@ -148,33 +143,33 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 ;; CRUD operations
 ;;
 
-(def add-impl (std-crud/add-fn resource-name collection-acl resource-uri))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (add-impl request))
 
-(def retrieve-impl (std-crud/retrieve-fn resource-name))
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
-(def edit-impl (std-crud/edit-fn resource-name))
+(def edit-impl (std-crud/edit-fn resource-type))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
-(def delete-impl (std-crud/delete-fn resource-name))
+(def delete-impl (std-crud/delete-fn resource-type))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
-(def query-impl (std-crud/query-fn resource-name collection-acl collection-uri))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (query-impl request))
 
@@ -184,4 +179,4 @@ curl 'https://nuv.la/api/service-offer?filter=connector/href=\"exoscale-ch-gva\"
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-url ::so/service-offer))
+  (std-crud/initialize resource-type ::so/service-offer))

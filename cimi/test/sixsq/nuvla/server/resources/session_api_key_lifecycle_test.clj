@@ -4,6 +4,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
@@ -15,14 +16,13 @@
     [sixsq.nuvla.server.resources.session-api-key :as t]
     [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context session/resource-name))
+(def base-uri (str p/service-context session/resource-type))
 
-(def session-template-base-uri (str p/service-context ct/resource-name))
+(def session-template-base-uri (str p/service-context ct/resource-type))
 
 
 (def session-template-api-key {:method      api-key/authn-method

@@ -119,45 +119,45 @@
 
 
 (s/def ::managers
-       (-> (st/spec (s/coll-of ::manager :min-count 1 :kind vector?))
-           (assoc :name "managers"
-                  :json-schema/name "managers"
-                  :json-schema/namespace common-ns/slipstream-namespace
-                  :json-schema/uri common-ns/slipstream-uri
-                  :json-schema/type "Array"
-                  :json-schema/providerMandatory false
-                  :json-schema/consumerMandatory false
-                  :json-schema/mutable true
-                  :json-schema/consumerWritable true
+  (-> (st/spec (s/coll-of ::manager :min-count 1 :kind vector?))
+      (assoc :name "managers"
+             :json-schema/name "managers"
+             :json-schema/namespace common-ns/slipstream-namespace
+             :json-schema/uri common-ns/slipstream-uri
+             :json-schema/type "Array"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
 
-                  :json-schema/displayName "managers"
-                  :json-schema/description "list of credential managers"
-                  :json-schema/help "list of credential managers"
-                  :json-schema/group "body"
-                  :json-schema/order 25
-                  :json-schema/hidden false
-                  :json-schema/sensitive false)))
+             :json-schema/displayName "managers"
+             :json-schema/description "list of credential managers"
+             :json-schema/help "list of credential managers"
+             :json-schema/group "body"
+             :json-schema/order 25
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 
 (s/def ::disabledMonitoring
-       (-> (st/spec boolean?)
-           (assoc :name "disabledMonitoring"
-                  :json-schema/name "disabledMonitoring"
-                  :json-schema/namespace common-ns/slipstream-namespace
-                  :json-schema/uri common-ns/slipstream-uri
-                  :json-schema/type "boolean"
-                  :json-schema/providerMandatory false
-                  :json-schema/consumerMandatory false
-                  :json-schema/mutable true
-                  :json-schema/consumerWritable true
+  (-> (st/spec boolean?)
+      (assoc :name "disabledMonitoring"
+             :json-schema/name "disabledMonitoring"
+             :json-schema/namespace common-ns/slipstream-namespace
+             :json-schema/uri common-ns/slipstream-uri
+             :json-schema/type "boolean"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
 
-                  :json-schema/displayName "disabledMonitoring"
-                  :json-schema/description "periodic monitoring disabled for this credential"
-                  :json-schema/help "true to disable periodic monitoring for this credential"
-                  :json-schema/group "body"
-                  :json-schema/order 26
-                  :json-schema/hidden false
-                  :json-schema/sensitive false)))
+             :json-schema/displayName "disabledMonitoring"
+             :json-schema/description "periodic monitoring disabled for this credential"
+             :json-schema/help "true to disable periodic monitoring for this credential"
+             :json-schema/group "body"
+             :json-schema/order 26
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 
 (def credential-template-cloud-keys-spec

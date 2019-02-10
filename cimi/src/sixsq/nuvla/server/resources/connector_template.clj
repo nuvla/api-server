@@ -3,27 +3,22 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.connector-template]
-    [sixsq.nuvla.util.response :as r]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]))
+    [sixsq.nuvla.util.response :as r]))
+
 
 (def ^:const resource-type (u/ns->type *ns*))
 
-(def ^:const resource-name resource-type)
 
-(def ^:const resource-url resource-type)
+(def ^:const collection-type (u/ns->collection-type *ns*))
 
-(def ^:const collection-name "ConnectorTemplateCollection")
-
-(def ^:const resource-uri (str c/slipstream-schema-uri resource-name))
-
-(def ^:const collection-uri (str c/slipstream-schema-uri collection-name))
 
 (def user-can-view {:principal "USER"
                     :type      "ROLE"
                     :right     "VIEW"})
+
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
@@ -31,6 +26,7 @@
                             :type      "ROLE"
                             :right     "VIEW"}
                            user-can-view]})
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
@@ -72,11 +68,11 @@
    resource-type, timestamps, operations, and ACL."
   [{:keys [cloudServiceType] :as resource}]
   (when cloudServiceType
-    (let [id (str resource-url "/" cloudServiceType)]
+    (let [id (str resource-type "/" cloudServiceType)]
       (-> resource
-          (merge {:id          id
-                  :resource-type resource-uri
-                  :acl         resource-acl})
+          (merge {:id            id
+                  :resource-type resource-type
+                  :acl           resource-acl})
           (merge connector-mandatory-reference-attrs-defaults)
           (merge connector-instance-name-default)
           u/update-timestamps))))
@@ -110,7 +106,7 @@
   (throw (ex-info (str "unknown ConnectorTemplate type: " (:cloudServiceType resource)) resource)))
 
 (defmethod crud/validate
-  resource-uri
+  resource-type
   [resource]
   (validate-subtype resource))
 
@@ -118,14 +114,14 @@
 ;; CRUD operations
 ;;
 
-(defmethod crud/add resource-name
+(defmethod crud/add resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
-(defmethod crud/retrieve resource-name
+(defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-url "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
           (a/can-view? request)
           (r/json-response)))
@@ -134,25 +130,25 @@
 
 ;; must override the default implementation so that the
 ;; data can be pulled from the atom rather than the database
-(defmethod crud/retrieve-by-id resource-url
+(defmethod crud/retrieve-by-id resource-type
   [id]
   (try
     (get @templates id)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-(defmethod crud/edit resource-name
+(defmethod crud/edit resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
-(defmethod crud/delete resource-name
+(defmethod crud/delete resource-type
   [request]
   (throw (r/ex-bad-method request)))
 
-(defmethod crud/query resource-name
+(defmethod crud/query resource-type
   [request]
   (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-name collection-acl collection-uri false false)
+  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
         [count-before-pagination entries] ((juxt count vals) @templates)

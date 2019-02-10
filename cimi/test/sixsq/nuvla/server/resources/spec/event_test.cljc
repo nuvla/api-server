@@ -10,16 +10,16 @@
 
 
 (def valid-event
-  {:id          "event/262626262626262"
-   :resource-type resource-uri
-   :acl         {:owner {:type "USER" :principal "joe"}
-                 :rules [{:type "ROLE" :principal "ANON" :right "ALL"}]}
+  {:id            "event/262626262626262"
+   :resource-type resource-type
+   :acl           {:owner {:type "USER" :principal "joe"}
+                   :rules [{:type "ROLE" :principal "ANON" :right "ALL"}]}
 
-   :timestamp   event-timestamp
-   :content     {:resource {:href "module/HNSciCloud-RHEA/S3"}
-                 :state    "Started"}
-   :type        "state"
-   :severity    "critical"})
+   :timestamp     event-timestamp
+   :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
+                   :state    "Started"}
+   :type          "state"
+   :severity      "critical"})
 
 
 (deftest check-reference
