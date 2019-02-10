@@ -20,11 +20,9 @@
     <module>token</module>
     <module>cimi</module>
     <module>cimi-test-jar</module>
-    <module>cimi-container</module>
     <module>db-binding</module>
     <module>db-testing</module>
     <module>ring</module>
-    <module>ring-container</module>
   </modules>
 
   <scm>
