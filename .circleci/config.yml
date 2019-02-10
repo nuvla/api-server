@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: sixsq/slipstream:build
+      - image: nuvla/build:latest
       
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -32,23 +32,12 @@ jobs:
 
       - run: mvn -s .circleci/settings.xml --batch-mode dependency:go-offline
       - run: (cd cimi; lein deps)
-      - run: (cd cimi-resources; lein deps)
       - run: (cd cimi-test-jar; lein deps)
-      - run: (cd cimi-test-server; lein deps)
-      - run: (cd cimi-tools; lein deps)
       - run: (cd db-binding; lein deps)
       - run: (cd db-serializers; lein deps)
       - run: (cd db-testing; lein deps)
-      - run: (cd dummy-connector/config; lein deps)
-      - run: (cd jar-async; lein deps)
-      - run: (cd jar-placement-lib; lein deps)
-      - run: (cd jar-pricing-lib; lein deps)
-      - run: (cd jar-prslib; lein deps)
-      - run: (cd metering; lein deps)
-      - run: (cd prs; lein deps)
-      - run: (cd ring-container; lein deps)
-      - run: (cd token/clj; lein deps)
-      - run: (cd token/java; lein deps)
+      - run: (cd ring; lein deps)
+      - run: (cd token; lein deps)
       - run: (cd utils; lein deps)
 
       - save_cache:
