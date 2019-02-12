@@ -10,12 +10,14 @@
   (let [[ns _] (str/split (name attr-name) #":")]
     (valid-prefixes ns)))
 
+
 (defn valid-attributes?
   [validator resource]
   (if-not (map? resource)
     true
     (and (every? validator (keys resource))
          (every? (partial valid-attributes? validator) (vals resource)))))
+
 
 (defn throw-wrong-namespace
   []

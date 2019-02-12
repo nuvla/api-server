@@ -116,7 +116,6 @@
                              :request-method :post
                              :body (json/write-str valid-entry))
                     (t/body->edn)
-                    (t/dump)
                     (t/is-status 201)
                     (t/location))
             abs-uri (str p/service-context uri)]
@@ -309,11 +308,11 @@
 
     (let [cimi-url-ok (str p/service-context
                            resource-type
-                           "?$filter=schema-org:att1='123.456'")
+                           "?filter=schema-org:att1='123.456'")
 
           cimi-url-no-result (str p/service-context
                                   resource-type
-                                  "?$filter=schema-org:att1='xxx'")
+                                  "?filter=schema-org:att1='xxx'")
 
           res-all (-> session-admin
                       (request (str p/service-context resource-type))
@@ -371,7 +370,7 @@
     ;; check queries that will select the resource
     (let [cimi-url-ok (str p/service-context
                            resource-type
-                           "?$filter=schema-org:att1/schema-org:att2='456'")
+                           "?filter=schema-org:att1/schema-org:att2='456'")
 
           res-ok (-> session-admin-json
                      (request cimi-url-ok)
@@ -389,7 +388,7 @@
           res-ok-put-body (-> session-admin-form
                               (request cimi-url-ok
                                        :request-method :put
-                                       :body (rc/form-encode {:$filter "schema-org:att1/schema-org:att2='456'"}))
+                                       :body (rc/form-encode {:filter "schema-org:att1/schema-org:att2='456'"}))
                               (t/body->edn)
                               (t/is-status 200)
                               (get-in [:response :body :count]))]
@@ -401,7 +400,7 @@
     ;; test queries that do not select the resource
     (let [cimi-url-no-result (str p/service-context
                                   resource-type
-                                  "?$filter=schema-org:att1/schema-org:att2='xxx'")
+                                  "?filter=schema-org:att1/schema-org:att2='xxx'")
 
           no-result (-> session-admin-json
                         (request cimi-url-no-result)
@@ -419,7 +418,7 @@
           no-result-put-body (-> session-admin-form
                                  (request cimi-url-no-result
                                           :request-method :put
-                                          :body (rc/form-encode {:$filter "schema-org:att1/schema-org:att2='xxx'"}))
+                                          :body (rc/form-encode {:filter "schema-org:att1/schema-org:att2='xxx'"}))
                                  (t/body->edn)
                                  (t/is-status 200)
                                  (get-in [:response :body :count]))]
