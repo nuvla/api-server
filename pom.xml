@@ -22,7 +22,7 @@
     <module>cimi-test-jar</module>
     <module>db-binding</module>
     <module>db-testing</module>
-    <module>ring</module>
+    <module>container</module>
   </modules>
 
   <scm>

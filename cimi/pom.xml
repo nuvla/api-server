@@ -25,13 +25,6 @@
   <dependencies>
     <dependency>
       <groupId>sixsq.nuvla.server</groupId>
-      <artifactId>ring-dep</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>sixsq.nuvla.server</groupId>
       <artifactId>db-binding-jar-dep</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
