@@ -1,6 +1,6 @@
-(def +version+ "3.69-SNAPSHOT")
+(def +version+ "0.0.1-SNAPSHOT")
 
-(defproject sixsq.nuvla.server/utils "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/utils "0.0.1-SNAPSHOT"
 
   :description "general server utilities"
 
