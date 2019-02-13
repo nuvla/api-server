@@ -18,17 +18,17 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 (deftest evid
-  (let [root {:endTime   timestamp
-              :startTime timestamp
-              :planID    "b12345"
-              :passed    true
-              :class     "className"
-              :log       ["log1", "log2"]}]
+  (let [root {:end-time   timestamp
+              :start-time timestamp
+              :plan-id    "b12345"
+              :passed     true
+              :class      "className"
+              :log        ["log1", "log2"]}]
 
     (stu/is-valid :cimi.test/evidence-record root)
 
     ;; mandatory keywords
-    (doseq [k #{:endTime :passed :planID :startTime}]
+    (doseq [k #{:end-time :passed :plan-id :start-time}]
       (stu/is-invalid :cimi.test/evidence-record (dissoc root k)))
 
     ;; optional keywords

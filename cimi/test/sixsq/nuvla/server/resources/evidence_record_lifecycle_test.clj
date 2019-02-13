@@ -17,25 +17,25 @@
 
 (def valid-entry
   {:passed          true
-   :planID          "abcd"
-   :startTime       "1964-08-25T10:00:00.0Z"
-   :endTime         "1964-08-25T10:00:00.0Z"
+   :plan-id         "abcd"
+   :start-time      "1964-08-25T10:00:00.0Z"
+   :end-time        "1964-08-25T10:00:00.0Z"
    :class           "className"
    :schema-org:att1 "123.456"})
 
 (def valid-nested-2-levels
   {:passed          true
-   :planID          "abcd"
-   :startTime       "1964-08-25T10:00:00.0Z"
-   :endTime         "1964-08-25T10:00:00.0Z"
+   :plan-id         "abcd"
+   :start-time      "1964-08-25T10:00:00.0Z"
+   :end-time        "1964-08-25T10:00:00.0Z"
    :class           "className"
    :schema-org:att1 {:schema-org:att2 "456"}})
 
 (def valid-nested-entry
   {:passed          true
-   :planID          "abcd"
-   :startTime       "1964-08-25T10:00:00.0Z"
-   :endTime         "1964-08-25T10:00:00.0Z"
+   :plan-id         "abcd"
+   :start-time      "1964-08-25T10:00:00.0Z"
+   :end-time        "1964-08-25T10:00:00.0Z"
    :class           "className"
    :schema-org:att1 "hi"
    :schema-org:attnested
@@ -57,9 +57,9 @@
 ; only schema-org and schema-com are valid and existing (see below)
 (def entry-wrong-namespace
   {:passed     true
-   :planID     "abcd"
-   :startTime  "1964-08-25T10:00:00.0Z"
-   :endTime    "1964-08-25T10:00:00.0Z"
+   :plan-id    "abcd"
+   :start-time "1964-08-25T10:00:00.0Z"
+   :end-time   "1964-08-25T10:00:00.0Z"
    :class      "className"
    :wrong:att1 "123.456"})
 
@@ -208,10 +208,10 @@
         (t/is-status 201))
 
     (let [with-namespaced-key
-          (str "{\"planID\":\"abcd\","
+          (str "{\"plan-id\":\"abcd\","
                "\"passed\": true,"
-               "\"endTime\": \"1964-08-25T10:00:00.0Z\","
-               "\"startTime\": \"1964-08-25T10:00:00.0Z\","
+               "\"end-time\": \"1964-08-25T10:00:00.0Z\","
+               "\"start-time\": \"1964-08-25T10:00:00.0Z\","
                "\"class\": \"className\","
                "\"schema-org:attr-name\":\"123.456\"}")
 

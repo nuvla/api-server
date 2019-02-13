@@ -6,13 +6,13 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::class ::cimi-core/nonblank-string)
-(s/def ::endTime ::cimi-core/timestamp)
-(s/def ::startTime ::cimi-core/timestamp)
-(s/def ::planID ::cimi-core/nonblank-string)
+(s/def ::end-time ::cimi-core/timestamp)
+(s/def ::start-time ::cimi-core/timestamp)
+(s/def ::plan-id ::cimi-core/nonblank-string)
 (s/def ::passed boolean?)
 (s/def ::log (s/coll-of string?))
 
-(def evidence-record-spec {:req-un [::endTime ::startTime ::planID ::passed]
+(def evidence-record-spec {:req-un [::end-time ::start-time ::plan-id ::passed]
                            :opt-un [::log ::class]})
 
 (s/def ::evidence-record
