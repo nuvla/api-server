@@ -67,7 +67,7 @@
 
   :profiles
   {
-   :provided {:dependencies [[sixsq.nuvla.server/ring ~+version+]]}
+   :provided {:dependencies [[sixsq.nuvla.ring/code ~+version+]]}
    :test     {:dependencies   [[peridot]
                                [org.clojure/test.check]
                                [org.slf4j/slf4j-log4j12]
