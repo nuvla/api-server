@@ -31,4 +31,4 @@
                  [org.clojure/data.json]
                  [compojure]
                  [com.cemerick/url]
-                 [sixsq.nuvla.server/ring ~+version+]])
+                 [sixsq.nuvla.ring/code ~+version+]])
