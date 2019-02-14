@@ -1,6 +1,6 @@
-(def +version+ "3.69-SNAPSHOT")
+(def +version+ "0.0.1-SNAPSHOT")
 
-(defproject sixsq.nuvla.server/cimi-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/cimi-jar "0.0.1-SNAPSHOT"
 
   :description "core cimi server"
 
@@ -67,7 +67,7 @@
 
   :profiles
   {
-   :provided {:dependencies [[sixsq.nuvla.server/ring ~+version+]]}
+   :provided {:dependencies [[sixsq.nuvla.ring/code ~+version+]]}
    :test     {:dependencies   [[peridot]
                                [org.clojure/test.check]
                                [org.slf4j/slf4j-log4j12]

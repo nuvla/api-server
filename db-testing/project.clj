@@ -1,6 +1,6 @@
-(def +version+ "3.69-SNAPSHOT")
+(def +version+ "0.0.1-SNAPSHOT")
 
-(defproject sixsq.nuvla.server/db-testing-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/db-testing-jar "0.0.1-SNAPSHOT"
 
   :description "db testing utilities"
 

@@ -3,16 +3,15 @@
 
   <groupId>sixsq.nuvla.server</groupId>
   <artifactId>server</artifactId>
-  <version>3.69-SNAPSHOT</version>
+  <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>server</name>
   <url>http://sixsq.com/</url>
 
   <parent>
-    <groupId>com.sixsq.slipstream</groupId>
-    <artifactId>SlipStreamCommunity</artifactId>
-    <version>3.69-SNAPSHOT</version>
-    <relativePath>../SlipStream/community</relativePath>
+    <groupId>sixsq.nuvla.parent</groupId>
+    <artifactId>pom</artifactId>
+    <version>1.0.0</version>
   </parent>
 
   <modules>
@@ -22,7 +21,7 @@
     <module>cimi-test-jar</module>
     <module>db-binding</module>
     <module>db-testing</module>
-    <module>ring</module>
+    <module>container</module>
   </modules>
 
   <scm>
@@ -54,9 +53,9 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>slipstream.releases</id>
-      <name>SlipStream Releases</name>
-      <url>https://nexus.sixsq.com/content/repositories/releases-community-rhel7</url>
+      <id>nuvla.releases</id>
+      <name>Nuvla Releases</name>
+      <url>https://nexus.sixsq.com/content/repositories/nuvla-releases</url>
     </repository>
 
     <repository>
@@ -66,9 +65,9 @@
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-      <id>slipstream.snapshots</id>
-      <name>SlipStream Snapshots</name>
-      <url>https://nexus.sixsq.com/content/repositories/snapshots-community-rhel7</url>
+      <id>nuvla.snapshots</id>
+      <name>Nuvla Snapshots</name>
+      <url>https://nexus.sixsq.com/content/repositories/nuvla-snapshots</url>
     </repository>
 
   </repositories>

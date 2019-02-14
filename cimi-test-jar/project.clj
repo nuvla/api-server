@@ -1,6 +1,6 @@
-(def +version+ "3.69-SNAPSHOT")
+(def +version+ "0.0.1-SNAPSHOT")
 
-(defproject sixsq.nuvla.server/cimi-test-jar "3.69-SNAPSHOT"
+(defproject sixsq.nuvla.server/cimi-test-jar "0.0.1-SNAPSHOT"
 
   :description "cimi server testing utilities"
 
@@ -31,4 +31,4 @@
                  [org.clojure/data.json]
                  [compojure]
                  [com.cemerick/url]
-                 [sixsq.nuvla.server/ring ~+version+]])
+                 [sixsq.nuvla.ring/code ~+version+]])
