@@ -2,12 +2,9 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.spec.evidence-record :as evspec]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
-
-(s/def :cimi.test/evidence-record (su/only-keys-maps evspec/evidence-record-spec))
 
 (def valid-acl {:owner {:principal "ADMIN"
                         :type      "ROLE"}
@@ -15,22 +12,30 @@
                          :type      "ROLE"
                          :right     "VIEW"}]})
 
+
 (def timestamp "1964-08-25T10:00:00.0Z")
 
-(deftest evid
-  (let [root {:end-time   timestamp
-              :start-time timestamp
-              :plan-id    "b12345"
-              :passed     true
-              :class      "className"
-              :log        ["log1", "log2"]}]
 
-    (stu/is-valid :cimi.test/evidence-record root)
+(deftest evidence-record-schema-check
+  (let [root (-> {:id "evidence-record/1234"
+                  :resource-type "evidence-record"
+                  :created timestamp
+                  :updated timestamp
+
+                  :end-time   timestamp
+                  :start-time timestamp
+                  :plan-id    "b12345"
+                  :passed     true
+                  :class      "className"
+                  :log        ["log1", "log2"]}
+                 (assoc :acl valid-acl))]
+
+    (stu/is-valid ::evidence-record/schema root)
 
     ;; mandatory keywords
     (doseq [k #{:end-time :passed :plan-id :start-time}]
-      (stu/is-invalid :cimi.test/evidence-record (dissoc root k)))
+      (stu/is-invalid ::evidence-record/schema (dissoc root k)))
 
     ;; optional keywords
     (doseq [k #{:log :class}]
-      (stu/is-valid :cimi.test/evidence-record (dissoc root k)))))
+      (stu/is-valid ::evidence-record/schema (dissoc root k)))))

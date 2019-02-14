@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.evidence-record
-  (:require [clojure.string :as str]
-            [sixsq.nuvla.auth.acl :as a]
-            [sixsq.nuvla.server.resources.common.crud :as crud]
-            [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-            [sixsq.nuvla.server.resources.common.utils :as u]
-            [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
-            [sixsq.nuvla.server.resources.service-catalog.utils :as sc]
-            [sixsq.nuvla.server.resources.spec.evidence-record :as er]))
+  (:require
+    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
+    [sixsq.nuvla.server.resources.service-catalog.utils :as sc]
+    [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -31,15 +31,17 @@
 (defn- validate-attributes
   [resource]
   (let [valid-prefixes (sn/all-prefixes)
-        resource-payload (dissoc resource :acl :id :resource-type :name :description
-                                 :created :updated :properties :operations :class :plan-id :start-time :end-time :passed)
+        resource-payload (dissoc resource
+                                 :acl :id :resource-type :name :description
+                                 :created :updated :properties :operations
+                                 :class :plan-id :start-time :end-time :passed)
         validator (partial sc/valid-attribute-name? valid-prefixes)]
     (if (sc/valid-attributes? validator resource-payload)
       resource
       (sc/throw-wrong-namespace))))
 
 
-(def validate-fn (u/create-spec-validation-fn ::er/evidence-record))
+(def validate-fn (u/create-spec-validation-fn ::evidence-record/schema))
 (defmethod crud/validate resource-type
   [resource]
   (-> resource
@@ -89,4 +91,4 @@
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::er/evidence-record))
+  (std-crud/initialize resource-type ::evidence-record/schema))
