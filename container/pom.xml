@@ -57,73 +57,26 @@
       </plugin>
 
       <plugin>
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-        <version>0.24.0</version>
-        <configuration>
-          <images>
-            <image>
-              <alias>api</alias>
-              <name>nuvla/api:${project.version}</name>
-              <build>
-                <from>nuvla/ring:${project.version}</from>
-                <optimise>false</optimise>
-                <assembly>
-                  <targetDir>/</targetDir>
-                  <inline>
-                    <fileSets>
-                      <fileSet>
-                        <directory>target/dependency/lib</directory>
-                        <outputDirectory>/opt/nuvla/server/lib.d/api</outputDirectory>
-                        <includes>
-                          <include>*.jar</include>
-                        </includes>
-                      </fileSet>
-                    </fileSets>
-                    <files>
-                      <file>
-                        <source>src/scripts/generate-auth-keys.sh</source>
-                        <outputDirectory>/opt/nuvla/server/bin</outputDirectory>
-                      </file>
-                      <file>
-                        <source>src/scripts/start-api.sh</source>
-                        <outputDirectory>/opt/nuvla/server/bin</outputDirectory>
-                      </file>
-                    </files>
-                  </inline>
-                </assembly>
-                <runCmds>
-                  <runCmd>chmod 0755 /opt/nuvla/server/bin/generate-auth-keys.sh</runCmd>
-                  <runCmd>chmod 0755 /opt/nuvla/server/bin/start-api.sh</runCmd>
-                </runCmds>
-                <env>
-                  <NUVLA_SERVER_INIT>sixsq.nuvla.server.app.server/init</NUVLA_SERVER_INIT>
-                  <NUVLA_SERVER_PORT>8201</NUVLA_SERVER_PORT>
-                  <NUVLA_SERVER_HOST>0.0.0.0</NUVLA_SERVER_HOST>
-                  <PERSISTENT_DB_BINDING>sixsq.nuvla.db.es.loader</PERSISTENT_DB_BINDING>
-                  <EPHEMERAL_DB_BINDING>sixsq.nuvla.db.es.loader</EPHEMERAL_DB_BINDING>
-                  <ES_HOST>localhost</ES_HOST>
-                  <ES_PORT>9300</ES_PORT>
-                </env>
-                <ports>
-                  <port>8201</port>
-                </ports>
-                <cmd>/opt/nuvla/server/bin/start-api.sh</cmd>
-                <tags>latest</tags>
-              </build>
-            </image>
-          </images>
-        </configuration>
-
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <version>1.4.10</version>
         <executions>
           <execution>
-            <id>docker-build</id>
-            <phase>package</phase>
+            <id>default</id>
             <goals>
               <goal>build</goal>
+              <goal>push</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <repository>docker.io/nuvla/api-server</repository>
+          <tag>${project.version}</tag>
+          <build>
+            <squash>true</squash>
+          </build>
+          <useMavenSettingsForAuth>true</useMavenSettingsForAuth>
+        </configuration>
       </plugin>
 
     </plugins>
