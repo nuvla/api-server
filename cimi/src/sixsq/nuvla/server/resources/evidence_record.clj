@@ -8,10 +8,12 @@
     [sixsq.nuvla.server.resources.service-catalog.utils :as sc]
     [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]))
 
+
 (def ^:const resource-type (u/ns->type *ns*))
 
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
+
 
 (def collection-acl {:owner {:principal "ADMIN"
                              :type      "ROLE"}
