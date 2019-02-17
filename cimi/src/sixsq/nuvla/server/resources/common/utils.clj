@@ -69,7 +69,7 @@
 
 (defn split-resource-id
   "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
-   an identifier part (e.g. the CloudEntryPoint), the document ID will be nil."
+   an identifier part (e.g. the cloud-entry-point), the document ID will be nil."
   [id]
   (let [[type docid] (str/split id #"/")]
     [type docid]))

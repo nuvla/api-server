@@ -164,26 +164,25 @@
                 (ltu/body->edn)
                 (ltu/is-status 202))
 
-            (let [abs-validation-link (str p/service-context @validation-link)]
-              (is (re-matches #"^email/.* successfully validated$"
-                              (-> session-anon
-                                  (request abs-validation-link)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  :response
-                                  :body
-                                  :message)))
+            (is (re-matches #"^email/.* successfully validated$"
+                            (-> session-anon
+                                (request @validation-link)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                :response
+                                :body
+                                :message)))
 
-              (is (true? (-> session-admin
-                             (request admin-abs-uri)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-operation-absent "edit")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-absent (:validate c/action-uri))
-                             :response
-                             :body
-                             :validated)))))))
+            (is (true? (-> session-admin
+                           (request admin-abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-operation-absent "edit")
+                           (ltu/is-operation-present "delete")
+                           (ltu/is-operation-absent (:validate c/action-uri))
+                           :response
+                           :body
+                           :validated))))))
 
       ;; verify contents of user email
       (let [email (-> session-user

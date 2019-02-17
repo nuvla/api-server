@@ -8,10 +8,10 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::baseURI
+(s/def ::base-uri
   (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "baseURI"
-             :json-schema/name "baseURI"
+      (assoc :name "base-uri"
+             :json-schema/name "base-uri"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
@@ -56,5 +56,5 @@
 
 (s/def ::resource
   (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::baseURI]
+                     {:req-un [::base-uri]
                       :opt-un [::collections]}))

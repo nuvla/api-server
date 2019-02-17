@@ -14,7 +14,7 @@
               :created       timestamp
               :updated       timestamp
               :acl           resource-acl
-              :baseURI       "http://cloud.example.org/"
+              :base-uri      "http://cloud.example.org/"
               :collections   {:collection-alpha {:href "resource/alpha"}
                               :collection-beta  {:href "resource/beta"}}}]
 
@@ -22,7 +22,7 @@
 
     (stu/is-invalid ::cep/resource (assoc root :collections {}))
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :baseURI}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :base-uri}]
       (stu/is-invalid ::cep/resource (dissoc root attr)))
 
     (doseq [attr #{:collections}]

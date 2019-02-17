@@ -27,7 +27,7 @@
 
 
 ;; FIXME: Fix ugliness around needing to create ring requests with authentication!
-(defn create-callback [email-id baseURI]
+(defn create-callback [email-id base-uri]
   (let [callback-request {:params   {:resource-name callback/resource-type}
                           :body     {:action         email-callback/action-name
                                      :targetResource {:href email-id}}
@@ -38,7 +38,7 @@
     (if (= 201 status)
       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]
         (if-let [validate-op (u/get-op callback-resource "execute")]
-          (str baseURI validate-op)
+          (str base-uri validate-op)
           (let [msg "callback does not have execute operation"]
             (throw (ex-info msg (r/map-response msg 500 resource-id)))))
         (let [msg "cannot retrieve email validation callback"]

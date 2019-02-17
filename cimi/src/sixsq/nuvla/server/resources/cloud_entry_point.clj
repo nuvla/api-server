@@ -36,11 +36,11 @@ curl https://nuv.la/api/cloud-entry-point
 ```json
 {
   \"id\" : \"cloud-entry-point\",
-  \"resource-type\" : \"http://schemas.dmtf.org/cimi/2/CloudEntryPoint\",
+  \"resource-type\" : \"http://schemas.dmtf.org/cimi/2/cloud-entry-point\",
   \"created\" : \"2016-06-21T17:31:14.950Z\",
   \"updated\" : \"2016-06-21T17:31:14.950Z\",
 
-  \"baseURI\" : \"https://nuv.la/api/\",
+  \"base-uri\" : \"https://nuv.la/api/\",
 
   \"connectors\" : {
     \"href\" : \"connector\"
@@ -55,7 +55,7 @@ curl https://nuv.la/api/cloud-entry-point
 
 The primary directory of resources is the **Cloud Entry Point** (CEP),
 which contains a list of named resource collections and their URLs (in
-the `href` field) relative to the `baseURI` value.  The CEP also
+the `href` field) relative to the `base-uri` value.  The CEP also
 contains some other metadata.
 
 > WARNING: Although SlipStream maintains consistent naming throughout the API,
@@ -375,9 +375,9 @@ include aggregating values over a collection of resources.
 ;;
 
 (defn add
-  "The CloudEntryPoint resource is only created automatically at server startup
+  "The cloud-entry-point resource is only created automatically at server startup
    if necessary.  It cannot be added through the API.  This function
-   adds the minimal CloudEntryPoint resource to the database."
+   adds the minimal cloud-entry-point resource to the database."
   []
   (let [record (u/update-timestamps
                  {:acl           resource-acl
@@ -389,7 +389,7 @@ include aggregating values over a collection of resources.
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
   (r/response (-> (db/retrieve resource-type {})
-                  (assoc :baseURI base-uri
+                  (assoc :base-uri base-uri
                          :collections resource-links)
                   (crud/set-operations request))))
 
@@ -405,7 +405,7 @@ include aggregating values over a collection of resources.
                     (assoc :acl resource-acl)
                     (a/can-modify? request))
         updated (-> body
-                    (assoc :baseURI "http://example.org")
+                    (assoc :base-uri "http://example.org")
                     (u/strip-service-attrs))
         updated (-> (merge current updated)
                     (u/update-timestamps)
@@ -438,7 +438,7 @@ include aggregating values over a collection of resources.
 
 
 ;;
-;; CloudEntryPoint doesn't follow the usual service-context + '/resource-name/UUID'
+;; cloud-entry-point doesn't follow the usual service-context + '/resource-name/UUID'
 ;; pattern, so the routes must be defined explicitly.
 ;;
 

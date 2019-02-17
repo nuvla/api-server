@@ -8,7 +8,9 @@
     [sixsq.nuvla.server.resources.cloud-entry-point :as t]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
+    [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -21,7 +23,7 @@
 
 (deftest lifecycle
 
-  ;; CloudEntryPoint will have been initialized in the test server fixture.
+  ;; cloud-entry-point will have been initialized in the test server fixture.
 
   (let [session-anon (-> (ltu/ring-app)
                          session
@@ -29,14 +31,18 @@
         session-admin (header session-anon authn-info-header "root ADMIN")
         session-user (header session-anon authn-info-header "jane-updater")]
 
-    ; retrieve root resource (anonymously should work)
-    (-> session-anon
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-resource-uri t/resource-type)
-        (ltu/is-operation-absent "edit")
-        (ltu/is-operation-absent "delete"))
+    ; retrieve root resource (anonymously should work) and verify schema
+    (let [cep (-> session-anon
+                  (request base-uri)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-resource-uri t/resource-type)
+                  (ltu/is-operation-absent "edit")
+                  (ltu/is-operation-absent "delete")
+                  :response
+                  :body)]
+
+      (stu/is-valid ::cep/resource cep))
 
     ;; retrieve root resource (root should have edit rights)
     (-> session-admin

@@ -122,12 +122,12 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;;
 
 (defmethod crud/do-action [resource-type "validate"]
-  [{{uuid :uuid} :params baseURI :baseURI}]
+  [{{uuid :uuid} :params base-uri :base-uri}]
   (let [id (str resource-type "/" uuid)]
     (when-let [{:keys [address validated]} (crud/retrieve-by-id-as-admin id)]
       (if-not validated
         (try
-          (-> (email-utils/create-callback id baseURI)
+          (-> (email-utils/create-callback id base-uri)
               (email-utils/send-validation-email address))
           (r/map-response "check your mailbox for a validation message" 202)
           (catch Exception e
