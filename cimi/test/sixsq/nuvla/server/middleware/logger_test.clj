@@ -11,7 +11,7 @@
 
 (defn header-authn-info
   [user roles]
-  {"slipstream-authn-info" (str/join " " (concat [user] roles))})
+  {"nuvla-authn-info" (str/join " " (concat [user] roles))})
 
 (defn req
   [{:keys [user roles query-string]}]

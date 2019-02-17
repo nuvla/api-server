@@ -7,7 +7,7 @@
 
 ;; NOTE: ring uses lower-cased values of header names!
 (def ^:const authn-info-header
-  "slipstream-authn-info")
+  "nuvla-authn-info")
 
 (def ^:const authn-cookie
   "com.sixsq.slipstream.cookie")
@@ -81,9 +81,9 @@
     request))
 
 (defn wrap-authn-info-header
-  "Middleware that adds an identity map to the request based on
-   information in the slipstream-authn-info header or authentication
-   cookie.  If both are provided, the header takes precedence."
+  "Middleware that adds an identity map to the request based on information in
+   the nuvla-authn-info header or authentication cookie. If both are provided,
+   the header takes precedence."
   [handler]
   (fn [request]
     (->> request
