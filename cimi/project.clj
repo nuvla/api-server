@@ -12,7 +12,7 @@
 
   :plugins [[lein-parent "0.3.2"]]
 
-  :parent-project {:coords  [sixsq.nuvla/parent "6.0.0"]
+  :parent-project {:coords  [sixsq.nuvla/parent "6.1.0"]
                    :inherit [:plugins
                              :min-lein-version
                              :managed-dependencies
@@ -44,10 +44,8 @@
    [org.apache.logging.log4j/log4j-api]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
-   [org.clojure/tools.cli]
    [org.clojure/tools.logging]
    [org.clojure/tools.namespace]
-   [potemkin]
    [ring/ring-core]
    [ring/ring-json]
    [zookeeper-clj]

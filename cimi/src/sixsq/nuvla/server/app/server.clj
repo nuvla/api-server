@@ -14,8 +14,10 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [wrap-authn-info-header]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
+    [sixsq.nuvla.server.middleware.default-content-type :refer [default-content-type]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
+    [sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as resources]
     [sixsq.nuvla.server.util.zookeeper :as zku]))
 
@@ -44,6 +46,8 @@
       wrap-authn-info-header
       (wrap-json-body {:keywords? true})
       (wrap-json-response {:pretty true :escape-non-ascii true})
+      (default-content-type "application/json")
+      redirect-cep
       wrap-logger
       wrap-cookies))
 
