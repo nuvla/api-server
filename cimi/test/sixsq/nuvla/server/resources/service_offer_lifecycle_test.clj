@@ -12,44 +12,79 @@
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
     [sixsq.nuvla.server.resources.service-offer :refer :all]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context resource-type))
 
+
+(def ns1-prefix (ltu/random-string "ns1-"))
+
+
+(def ns2-prefix (ltu/random-string "ns2-"))
+
+
+(def invalid-prefix (ltu/random-string))
+
+
+(def ns1 {:prefix ns1-prefix
+          :uri    (str "https://example.org/" ns1-prefix)})
+
+
+(def ns2 {:prefix ns2-prefix
+          :uri    (str "https://example.org/" ns2-prefix)})
+
+
 (def valid-entry
-  {:connector       {:href "cloud-software-solution-1"}
-   :schema-org:att1 "123.456"})
+  {:connector                         {:href "cloud-software-solution-1"}
+   (keyword (str ns1-prefix ":att1")) "123.456"})
+
 
 (def valid-nested-2-levels
-  {:connector       {:href "cloud-software-solution-2"}
-   :schema-org:att1 {:schema-org:att2 "456"}})
+  {:connector                         {:href "cloud-software-solution-2"}
+   (keyword (str ns1-prefix ":att3")) {(keyword (str ns1-prefix ":att4")) "456"}})
+
 
 (def valid-nested-entry
-  {:connector       {:href "cloud-software-solution-3"}
-   :schema-org:att1 "hi"
-   :schema-org:attnested
-                    {:schema-com:subnested
-                     {:schema-com:subsubnested
-                      {:schema-org:subsubsubnested "enough of nested"}}}})
+  {:connector                              {:href "cloud-software-solution-3"}
+   (keyword (str ns1-prefix ":att1"))      "hi"
+   (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
+                                            {(keyword (str ns2-prefix ":subsubnested"))
+                                             {(keyword (str ns1-prefix ":subsubsubnested")) "enough of nested"}}}})
+
 
 (def invalid-nested-entry
-  (assoc-in valid-nested-entry [:schema-org:attnested
-                                :schema-com:subnested
-                                :schema-com:subsubnested]
-            {:schema-XXX:subsubsubnested "so sad"}))
+  (assoc-in valid-nested-entry [(keyword (str ns1-prefix ":attnested"))
+                                (keyword (str ns2-prefix ":subnested"))
+                                (keyword (str ns2-prefix ":subsubnested"))]
+            {(keyword (str invalid-prefix ":subsubsubnested")) "so sad"}))
+
 
 (def invalid-entry
   {:other "BAD"})
 
+
 (def entry-wrong-namespace
-  {:connector  {:href "cloud-software-solution"}
-   :wrong:att1 "123.456"})
+  {:connector                             {:href "cloud-software-solution"}
+   (keyword (str invalid-prefix ":att1")) "123.456"})
 
-(def valid-namespace {:prefix "schema-org"
-                      :uri    "https://schema-org/a/b/c.md"})
 
-(def namespace-com {:prefix "schema-com"
-                    :uri    "https://avida/dollar"})
+(defn create-service-attribute-namespaces-fixture
+  [f]
+  (let [session-admin (-> (session (ltu/ring-app))
+                          (content-type "application/json")
+                          (header authn-info-header "super ADMIN USER ANON"))]
+
+    (doseq [namespace [ns1 ns2]]
+      (-> session-admin
+          (request (str p/service-context sn/resource-type)
+                   :request-method :post
+                   :body (json/write-str namespace))
+          (ltu/body->edn)
+          (ltu/is-status 201))))
+  (f))
+
+
+(use-fixtures :once (join-fixtures [ltu/with-test-server-fixture create-service-attribute-namespaces-fixture]))
+
 
 (deftest lifecycle
 
@@ -57,14 +92,6 @@
                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")]
-
-    ;; create namespace
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
 
     ;; anonymous create should fail
     (-> session-anon
@@ -181,21 +208,6 @@
             (t/is-status 404))))))
 
 
-(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
-    (doall
-      (for [[uri method] [[base-uri :options]
-                          [base-uri :delete]
-                          [resource-uri :options]
-                          [resource-uri :post]]]
-        (do
-          (-> (session (ltu/ring-app))
-              (request uri
-                       :request-method method
-                       :body (json/write-str {:dummy "value"}))
-              (t/is-status 405)))))))
-
-
 (deftest uris-as-keys
 
   (let [session-anon (-> (session (ltu/ring-app))
@@ -203,17 +215,11 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")]
 
-    ;; create namespace
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
-
     (let [connector-with-namespaced-key
-          (str "{\"connector\":{\"href\":\"cloud-software-solution\"},"
-               "\"schema-org:attr-name\":\"123.456\"}")
+          (format "
+          {\"connector\":{\"href\":\"cloud-software-solution\"},
+          \"%s:attr-name\":\"123.456\"}
+          " ns1-prefix)
 
           uri-of-posted (-> session-user
                             (request base-uri
@@ -231,8 +237,8 @@
                   (t/is-status 200)
                   (get-in [:response :body]))]
 
-      (is (:schema-org:attr-name doc))
-      (is (= "123.456" (:schema-org:attr-name doc))))))
+      (is ((keyword (str ns1-prefix ":attr-name")) doc))
+      (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
 
 (deftest nested-values
 
@@ -240,21 +246,6 @@
                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")]
-
-    ;; create namespaces
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
-
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str namespace-com))
-        (t/body->edn)
-        (t/is-status 201))
 
     (let [uri (-> session-user
                   (request base-uri
@@ -271,10 +262,10 @@
                   (t/is-status 200)
                   (get-in [:response :body]))]
 
-      (is (= "enough of nested" (get-in doc [:schema-org:attnested
-                                             :schema-com:subnested
-                                             :schema-com:subsubnested
-                                             :schema-org:subsubsubnested]))))
+      (is (= "enough of nested" (get-in doc [(keyword (str ns1-prefix ":attnested"))
+                                             (keyword (str ns2-prefix ":subnested"))
+                                             (keyword (str ns2-prefix ":subsubnested"))
+                                             (keyword (str ns1-prefix ":subsubsubnested"))]))))
 
     (-> session-user
         (request base-uri
@@ -289,16 +280,12 @@
   (let [session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-user (header session-anon authn-info-header "jane USER ANON")
 
+        attr (ltu/random-string)
+        valid-entry {:connector                          {:href "cloud-software-solution-1"}
+                     (keyword (str ns1-prefix ":" attr)) "123.456"}]
 
-    ;; create namespaces
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
 
     (-> session-user
         (request base-uri
@@ -310,10 +297,10 @@
 
     (let [cimi-url-ok (str p/service-context
                            resource-type
-                           "?filter=schema-org:att1='123.456'")
+                           (format "?filter=%s:%s='123.456'" ns1-prefix attr))
           cimi-url-no-result (str p/service-context
                                   resource-type
-                                  "?filter=schema-org:att1='xxx'")
+                                  (format "?filter=%s:%s='xxx'" ns1-prefix attr))
 
           res-all (-> session-admin
                       (request (str p/service-context resource-type))
@@ -333,7 +320,7 @@
                         (t/is-status 200)
                         (get-in [:response :body]))]
 
-      (is (= 1 (:count res-all)))
+      (is (pos? (:count res-all)))
       (is (= 1 (:count res-ok)))
       (is (= 0 (:count res-empty))))))
 
@@ -344,21 +331,6 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")]
 
-    ;; create namespaces
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
-
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str namespace-com))
-        (t/body->edn)
-        (t/is-status 201))
-
     (let [_ (-> session-user
                 (request base-uri
                          :request-method :post
@@ -366,12 +338,13 @@
                 (t/body->edn)
                 (t/is-status 201)
                 (t/location))
+
           cimi-url-ok (str p/service-context
                            resource-type
-                           "?filter=schema-org:att1/schema-org:att2='456'")
+                           (format "?filter=%s:att3/%s:att4='456'" ns1-prefix ns1-prefix))
           cimi-url-no-result (str p/service-context
                                   resource-type
-                                  "?filter=schema-org:att1/schema-org:att2='xxx'")
+                                  (format "?filter=%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix))
           res-ok (-> session-admin
                      (request cimi-url-ok)
                      (t/body->edn)
@@ -390,7 +363,7 @@
                               (header authn-info-header "super ADMIN USER ANON")
                               (request cimi-url-ok
                                        :request-method :put
-                                       :body (rc/form-encode {:filter "schema-org:att1/schema-org:att2='456'"}))
+                                       :body (rc/form-encode {:filter (format "%s:att3/%s:att4='456'" ns1-prefix ns1-prefix)}))
                               (t/body->edn)
                               (t/is-status 200)
                               (get-in [:response :body]))
@@ -413,7 +386,7 @@
                                  (header authn-info-header "super ADMIN USER ANON")
                                  (request cimi-url-no-result
                                           :request-method :put
-                                          :body (rc/form-encode {:filter "schema-org:att1/schema-org:att2='xxx'"}))
+                                          :body (rc/form-encode {:filter (format "%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix)}))
                                  (t/body->edn)
                                  (t/is-status 200)
                                  (get-in [:response :body]))]
@@ -423,3 +396,11 @@
       (is (= 0 (:count no-result-put)))
       (is (= 1 (:count res-ok-put-body)))
       (is (= 0 (:count no-result-put-body))))))
+
+
+(deftest bad-methods
+  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+    (ltu/verify-405-status [[base-uri :options]
+                            [base-uri :delete]
+                            [resource-uri :options]
+                            [resource-uri :post]])))

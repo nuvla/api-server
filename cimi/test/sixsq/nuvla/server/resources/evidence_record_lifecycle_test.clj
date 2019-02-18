@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.evidence-record-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -12,63 +12,98 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]))
 
-(use-fixtures :each tu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 
+
+(def ns1-prefix (ltu/random-string "ns1-"))
+
+
+(def ns2-prefix (ltu/random-string "ns2-"))
+
+
+(def invalid-prefix (ltu/random-string))
+
+
+(def ns1 {:prefix ns1-prefix
+          :uri    (str "https://example.org/" ns1-prefix)})
+
+
+(def ns2 {:prefix ns2-prefix
+          :uri    (str "https://example.org/" ns2-prefix)})
+
+
 (def valid-entry
-  {:passed          true
-   :plan-id         "abcd"
-   :start-time      "1964-08-25T10:00:00.0Z"
-   :end-time        "1964-08-25T10:00:00.0Z"
-   :class           "className"
-   :schema-org:att1 "123.456"})
+  {:passed                            true
+   :plan-id                           "abcd"
+   :start-time                        "1964-08-25T10:00:00.0Z"
+   :end-time                          "1964-08-25T10:00:00.0Z"
+   :class                             "className"
+   (keyword (str ns1-prefix ":att1")) "123.456"})
+
 
 (def valid-nested-2-levels
-  {:passed          true
-   :plan-id         "abcd"
-   :start-time      "1964-08-25T10:00:00.0Z"
-   :end-time        "1964-08-25T10:00:00.0Z"
-   :class           "className"
-   :schema-org:att1 {:schema-org:att2 "456"}})
+  {:passed                            true
+   :plan-id                           "abcd"
+   :start-time                        "1964-08-25T10:00:00.0Z"
+   :end-time                          "1964-08-25T10:00:00.0Z"
+   :class                             "className"
+   (keyword (str ns1-prefix ":att1")) {(keyword (str ns1-prefix ":att2")) "456"}})
+
 
 (def valid-nested-entry
-  {:passed          true
-   :plan-id         "abcd"
-   :start-time      "1964-08-25T10:00:00.0Z"
-   :end-time        "1964-08-25T10:00:00.0Z"
-   :class           "className"
-   :schema-org:att1 "hi"
-   :schema-org:attnested
-                    {:schema-com:subnested
-                     {:schema-com:subsubnested
-                      {:schema-org:subsubsubnested "enough of nested"}}}})
+  {:passed                                 true
+   :plan-id                                "abcd"
+   :start-time                             "1964-08-25T10:00:00.0Z"
+   :end-time                               "1964-08-25T10:00:00.0Z"
+   :class                                  "className"
+   (keyword (str ns1-prefix ":att1"))      "hi"
+   (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
+                                            {(keyword (str ns2-prefix ":subsubnested"))
+                                             {(keyword (str ns1-prefix ":subsubsubnested")) "enough of nested"}}}})
+
 
 (def invalid-nested-entry
-  (assoc-in valid-nested-entry [:schema-org:attnested
-                                :schema-com:subnested
-                                :schema-com:subsubnested]
-            {:schema-XXX:subsubsubnested "so sad"}))
+  (assoc-in valid-nested-entry [(keyword (str ns1-prefix ":attnested"))
+                                (keyword (str ns2-prefix ":subnested"))
+                                (keyword (str ns2-prefix ":subsubnested"))]
+            {(keyword (str invalid-prefix ":subsubsubnested")) "so sad"}))
+
 
 (def invalid-entry
   {:other "BAD"})
+
 
 ; will be used to crosscheck with the existing namespaces (above)
 ; it will not exist thus should be rejected
 ; only schema-org and schema-com are valid and existing (see below)
 (def entry-wrong-namespace
-  {:passed     true
-   :plan-id    "abcd"
-   :start-time "1964-08-25T10:00:00.0Z"
-   :end-time   "1964-08-25T10:00:00.0Z"
-   :class      "className"
-   :wrong:att1 "123.456"})
+  {:passed                                true
+   :plan-id                               "abcd"
+   :start-time                            "1964-08-25T10:00:00.0Z"
+   :end-time                              "1964-08-25T10:00:00.0Z"
+   :class                                 "className"
+   (keyword (str invalid-prefix ":att1")) "123.456"})
 
-(def valid-namespace {:prefix "schema-org"
-                      :uri    "https://schema-org/a/b/c.md"})
 
-(def namespace-com {:prefix "schema-com"
-                    :uri    "https://avida/dollar"})
+(defn create-service-attribute-namespaces-fixture
+  [f]
+  (let [session-admin (-> (session (ltu/ring-app))
+                          (content-type "application/json")
+                          (header authn-info-header "super ADMIN USER ANON"))]
+
+    (doseq [namespace [ns1 ns2]]
+      (-> session-admin
+          (request (str p/service-context sn/resource-type)
+                   :request-method :post
+                   :body (json/write-str namespace))
+          (tu/body->edn)
+          (tu/is-status 201))))
+  (f))
+
+
+(use-fixtures :once (join-fixtures [tu/with-test-server-fixture create-service-attribute-namespaces-fixture]))
+
 
 (deftest lifecycle
 
@@ -80,14 +115,6 @@
                          (header authn-info-header "jane USER ANON"))
         session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))]
-
-    ;; create namespace
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (tu/body->edn)
-        (tu/is-status 201))
 
     ;; anonymous create should fail
     (-> session-anon
@@ -200,21 +227,14 @@
                          (content-type "application/json")
                          (header authn-info-header "jane USER ANON"))]
 
-    ;; create namespace
-    (-> session-admin
-        (request (str p/service-context sn/resource-type)
-                 :request-method :post
-                 :body (json/write-str valid-namespace))
-        (tu/body->edn)
-        (tu/is-status 201))
-
-    (let [with-namespaced-key
-          (str "{\"plan-id\":\"abcd\","
-               "\"passed\": true,"
-               "\"end-time\": \"1964-08-25T10:00:00.0Z\","
-               "\"start-time\": \"1964-08-25T10:00:00.0Z\","
-               "\"class\": \"className\","
-               "\"schema-org:attr-name\":\"123.456\"}")
+    (let [with-namespaced-key (format "
+    {\"plan-id\":\"abcd\",
+     \"passed\": true,
+     \"end-time\": \"1964-08-25T10:00:00.0Z\",
+     \"start-time\": \"1964-08-25T10:00:00.0Z\",
+     \"class\": \"className\",
+     \"%s:attr-name\":\"123.456\"}
+     " ns1-prefix)
 
           uri-of-posted (-> session-user
                             (request base-uri
@@ -232,8 +252,8 @@
                   (tu/is-status 200)
                   (get-in [:response :body]))]
 
-      (is (:schema-org:attr-name doc))
-      (is (= "123.456" (:schema-org:attr-name doc))))))
+      (is ((keyword (str ns1-prefix ":attr-name")) doc))
+      (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
 
 
 (deftest nested-values
@@ -244,15 +264,6 @@
         session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
                          (header authn-info-header "jane USER ANON"))]
-
-    ;; create namespaces
-    (doseq [namespace [valid-namespace namespace-com]]
-      (-> session-admin
-          (request (str p/service-context sn/resource-type)
-                   :request-method :post
-                   :body (json/write-str namespace))
-          (tu/body->edn)
-          (tu/is-status 201)))
 
     (let [uri (-> session-user
                   (request base-uri
@@ -269,10 +280,10 @@
                   (tu/is-status 200)
                   (get-in [:response :body]))]
 
-      (is (= "enough of nested" (get-in doc [:schema-org:attnested
-                                             :schema-com:subnested
-                                             :schema-com:subsubnested
-                                             :schema-org:subsubsubnested]))))
+      (is (= "enough of nested" (get-in doc [(keyword (str ns1-prefix ":attnested"))
+                                             (keyword (str ns2-prefix ":subnested"))
+                                             (keyword (str ns2-prefix ":subsubnested"))
+                                             (keyword (str ns1-prefix ":subsubsubnested"))]))))
 
     (-> session-user
         (request base-uri
@@ -284,19 +295,17 @@
 
 (deftest cimi-filter-namespaced-attributes
 
-  (let [session-admin (-> (session (ltu/ring-app))
+  (let [attr (ltu/random-string)
+        valid-entry {:passed                             true
+                     :plan-id                            "abcd"
+                     :start-time                         "1964-08-25T10:00:00.0Z"
+                     :end-time                           "1964-08-25T10:00:00.0Z"
+                     :class                              "className"
+                     (keyword (str ns1-prefix ":" attr)) "123.456"}
+        session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
                           (header authn-info-header "super ADMIN USER ANON"))]
 
-
-    ;; create namespaces
-    (doseq [namespace [valid-namespace namespace-com]]
-      (-> session-admin
-          (request (str p/service-context sn/resource-type)
-                   :request-method :post
-                   :body (json/write-str namespace))
-          (tu/body->edn)
-          (tu/is-status 201)))
 
     ;; create resource for testing queries
     (-> session-admin
@@ -309,11 +318,11 @@
 
     (let [cimi-url-ok (str p/service-context
                            t/resource-type
-                           "?filter=schema-org:att1='123.456'")
+                           (format "?filter=%s:%s='123.456'" ns1-prefix attr))
 
           cimi-url-no-result (str p/service-context
                                   t/resource-type
-                                  "?filter=schema-org:att1='xxx'")
+                                  (format "?filter=%s:%s='xxx'" ns1-prefix attr))
 
           res-all (-> session-admin
                       (request (str p/service-context t/resource-type))
@@ -333,7 +342,7 @@
                         (tu/is-status 200)
                         (get-in [:response :body]))]
 
-      (is (= 1 (:count res-all)))
+      (is (pos? (:count res-all)))
       (is (= 1 (:count res-ok)))
       (is (zero? (:count res-empty))))))
 
@@ -348,16 +357,16 @@
                                (content-type "application/x-www-form-urlencoded")
                                (header authn-info-header "super ADMIN USER ANON"))
         session-admin-json (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-user (header session-anon authn-info-header "jane USER ANON")
 
-    ;; create namespaces
-    (doseq [namespace [valid-namespace namespace-com]]
-      (-> session-admin-json
-          (request (str p/service-context sn/resource-type)
-                   :request-method :post
-                   :body (json/write-str namespace))
-          (tu/body->edn)
-          (tu/is-status 201)))
+        attr1 (ltu/random-string)
+        attr2 (ltu/random-string)
+        valid-nested-2-levels {:passed                              true
+                               :plan-id                             "abcd"
+                               :start-time                          "1964-08-25T10:00:00.0Z"
+                               :end-time                            "1964-08-25T10:00:00.0Z"
+                               :class                               "className"
+                               (keyword (str ns1-prefix ":" attr1)) {(keyword (str ns1-prefix ":" attr2)) "456"}}]
 
     ;; create resource for testing queries
     (-> session-user
@@ -371,7 +380,7 @@
     ;; check queries that will select the resource
     (let [cimi-url-ok (str p/service-context
                            t/resource-type
-                           "?filter=schema-org:att1/schema-org:att2='456'")
+                           (format "?filter=%s:%s/%s:%s='456'" ns1-prefix attr1 ns1-prefix attr2))
 
           res-ok (-> session-admin-json
                      (request cimi-url-ok)
@@ -389,7 +398,7 @@
           res-ok-put-body (-> session-admin-form
                               (request cimi-url-ok
                                        :request-method :put
-                                       :body (rc/form-encode {:filter "schema-org:att1/schema-org:att2='456'"}))
+                                       :body (rc/form-encode {:filter (format "%s:att1/%s:att2='456'" ns1-prefix ns1-prefix)}))
                               (tu/body->edn)
                               (tu/is-status 200)
                               (get-in [:response :body :count]))]
@@ -401,7 +410,7 @@
     ;; test queries that do not select the resource
     (let [cimi-url-no-result (str p/service-context
                                   t/resource-type
-                                  "?filter=schema-org:att1/schema-org:att2='xxx'")
+                                  (format "?filter=%s:%s/%s:%s='xxx'" ns1-prefix attr1 ns1-prefix attr2))
 
           no-result (-> session-admin-json
                         (request cimi-url-no-result)
