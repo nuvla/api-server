@@ -12,7 +12,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context resource-type))
 

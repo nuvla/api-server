@@ -12,7 +12,7 @@
     [sixsq.nuvla.server.resources.resource-metadata :as t]
     [sixsq.nuvla.server.resources.spec.resource-metadata-test :as resource-metadata]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 

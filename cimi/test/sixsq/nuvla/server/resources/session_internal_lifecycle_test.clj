@@ -17,7 +17,7 @@
     [sixsq.nuvla.server.resources.session-template-internal :as internal]))
 
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context session/resource-type))

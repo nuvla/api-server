@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (deftest check-metadata

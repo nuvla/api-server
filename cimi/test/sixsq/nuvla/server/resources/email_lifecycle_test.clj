@@ -14,7 +14,7 @@
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 

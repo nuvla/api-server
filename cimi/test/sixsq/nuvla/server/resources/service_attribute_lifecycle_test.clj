@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.resources.service-attribute :refer :all]
     [sixsq.nuvla.server.resources.service-attribute-namespace :as san]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context resource-type))
 

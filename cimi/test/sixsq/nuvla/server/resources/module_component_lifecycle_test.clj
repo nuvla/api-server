@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.module-component :as module-component]))
 
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context module-component/resource-type))

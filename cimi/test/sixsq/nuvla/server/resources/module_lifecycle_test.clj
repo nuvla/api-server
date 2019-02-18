@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.resources.module :as module]))
 
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context module/resource-type))

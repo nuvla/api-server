@@ -15,7 +15,7 @@
     [sixsq.nuvla.server.resources.user-template-self-registration :as self]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context user/resource-type))
 

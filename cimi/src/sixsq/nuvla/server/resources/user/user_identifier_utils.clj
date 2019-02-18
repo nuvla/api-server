@@ -69,23 +69,6 @@
   (when s (str/replace s #"[^a-zA-Z0-9_-]" "_")))
 
 
-(defn update-sanitized-identifiers!
-  "In case the database contains the sanitized version of the User identifier
-  (e.g for OIDC) delete the record and create a new one from the original
-  ('unsanitized') version of the external login."
-  [username authn-method instance external-login]
-  (let [exist-unsanitized? (user-identity-exists? authn-method external-login instance)
-
-        sanitized-login (sanitize-login-name external-login)
-        sanitized-record (find-user-identifier authn-method sanitized-login instance)
-        exist-sanitized? (boolean sanitized-record)]
-    (when (and (not= external-login sanitized-login)
-               exist-sanitized?
-               (not exist-unsanitized?))
-      (add-user-identifier! username authn-method external-login instance)
-      (db/delete sanitized-record {:user-name "INTERNAL", :user-roles ["ADMIN"]}))))
-
-
 (defn create-cimi-filter
   [filter]
   {:filter (parser/parse-cimi-filter filter)})
@@ -93,9 +76,7 @@
 
 (defn find-username-by-identifier
   [authn-method instance external-login]
-  (let [user-identifier-in-use (or
-                                 (find-user-identifier authn-method external-login instance)
-                                 (find-user-identifier authn-method (sanitize-login-name external-login) instance))
+  (let [user-identifier-in-use (find-user-identifier authn-method external-login instance)
 
         filter-str-fallback (format "%s='%s' and %s" (name (to-am-kw authn-method)) external-login active-user-filter)
         filter-fallback (create-cimi-filter filter-str-fallback)
@@ -121,8 +102,6 @@
                        (= (count matched-users-fallback) 1) (get-user matched-users-fallback)
                        (> (count matched-users-fallback) 1) (throw-ex matched-users-fallback))]
 
-    ;; update mangled identifiers to their unmangled version when needed
-    (update-sanitized-identifiers! username authn-method instance external-login)
     username))
 
 

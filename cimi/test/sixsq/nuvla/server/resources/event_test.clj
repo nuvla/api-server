@@ -42,7 +42,7 @@
                :body (json/write-str valid-event))))
   (f))
 
-(use-fixtures :each (join-fixtures [ltu/with-test-server-fixture
+(use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
                                     insert-some-events-fixture!]))
 
 ;;
