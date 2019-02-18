@@ -12,20 +12,15 @@
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(defn random-string
-  [& [prefix]]
-  (apply str prefix (repeatedly 15 #(rand-nth "abcdefghijklmnopqrstuvwxyz"))))
-
-
 (deftest create-user-identifier
-  (let [name (random-string "user-")
+  (let [name (ltu/random-string "user-")
         user {:id           (str "user/" name)
               :username     name
               :password     "12345"
               :emailAddress "a@b.c"}
         authn-method :sample-method
-        external-login (random-string "external-")
-        instance (random-string "instance-")
+        external-login (ltu/random-string "external-")
+        instance (ltu/random-string "instance-")
         identifier (uiu/generate-identifier authn-method external-login instance)
         user-response (th/add-user-for-test! user)
         user-id (-> user-response :body :resource-id)
@@ -40,8 +35,8 @@
 
 
 (deftest identities-for-user
-  (let [name (random-string "user-")
-        external-login (random-string "external-")
+  (let [name (ltu/random-string "user-")
+        external-login (ltu/random-string "external-")
         user {:id           (str "user/" name)
               :username     name
               :password     "12345"
@@ -59,9 +54,9 @@
 
 
 (deftest identities-for-user-with-instance
-  (let [name (random-string "user-")
-        instance (random-string "instance-")
-        external-login (random-string "external-")
+  (let [name (ltu/random-string "user-")
+        instance (ltu/random-string "instance-")
+        external-login (ltu/random-string "external-")
         user {:id           (str "user/" name)
               :username     name
               :password     "12345"
@@ -77,16 +72,16 @@
 
 
 (deftest double-user-identifier
-  (let [name (random-string "user-")
-        name2 (random-string "other-")
+  (let [name (ltu/random-string "user-")
+        name2 (ltu/random-string "other-")
         user {:id           (str "user/" name)
               :username     name
               :password     "12345"
               :emailAddress "a@b.c"}
         user2 (assoc user :username name2)
         authn-method :sample-method
-        external-login (random-string "#*$(%*#*__12345-")
-        instance (random-string "instance-")
+        external-login (ltu/random-string "#*$(%*#*__12345-")
+        instance (ltu/random-string "instance-")
         _ (th/add-user-for-test! user2)
         user-identifier-response (uiu/add-user-identifier! name authn-method external-login instance)
         user-identifier-response2 (uiu/add-user-identifier! name2 authn-method external-login instance)]

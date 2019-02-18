@@ -31,6 +31,12 @@
   (:import [org.apache.curator.test TestingServer]))
 
 
+(defn random-string
+  "provides a random string with optional prefix"
+  [& [prefix]]
+  (apply str prefix (repeatedly 15 #(rand-nth "abcdefghijklmnopqrstuvwxyz"))))
+
+
 (defn serialize-cookie-value
   "replaces the map cookie value with a serialized string"
   [{:keys [value] :as cookie}]

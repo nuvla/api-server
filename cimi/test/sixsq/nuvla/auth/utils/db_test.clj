@@ -10,12 +10,12 @@
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
-(use-fixtures :each ltu/with-test-server-fixture)
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (deftest test-user-creation-standard-username
-  (let [short-id "st"
-        long-id "485879@vho-switchaai.chhttps://aai-logon.vho-switchaai.ch/idp/shibboleth!https://fed-id.nuv.la/samlbridge/module.php/saml/sp/metadata.php/sixsq-saml-bridge!uays4u2/dk2qefyxzsv9uiicv+y="]
+  (let [short-id (ltu/random-string "st-")
+        long-id (ltu/random-string "485879@vho-switchaai.chhttps://aai-logon.vho-switchaai.ch/idp/shibboleth!https://fed-id.nuv.la/samlbridge/module.php/saml/sp/metadata.php/sixsq-saml-bridge!uays4u2/dk2qefyxzsv9uiicv+y=-")]
     (doseq [id #{short-id long-id}]
       (is (= id (db/create-user! {:authn-method "github"
                                   :authn-login  id
@@ -25,7 +25,7 @@
 
 
 (deftest test-user-creation-standard-username-oidc
-  (let [identifier "st"]
+  (let [identifier (ltu/random-string "st-")]
     (is (= identifier (db/create-user! {:authn-method "oidc"
                                         :instance     "instance"
                                         :authn-login  identifier
@@ -34,26 +34,28 @@
 
 
 (deftest test-user-creation-uuid
-  (let [uuid (u/random-uuid)]
+  (let [uuid (u/random-uuid)
+        external (ltu/random-string "external-")
+        email (str external "@sixsq.com")]
     (is (= uuid (db/create-user! {:authn-method   "github"
                                   :authn-login    uuid
-                                  :external-login "st"
-                                  :email          "st@s.com"
+                                  :external-login external
+                                  :email          email
                                   :full-name      "full name"})))
 
     (let [usernames (db/existing-user-names)
-          user (db/get-user (first usernames))]
+          user (db/get-user uuid)]
 
-      (is (= 1 (count usernames)))
-      (is (= false (:deleted user)))
-      (is (= "st@s.com" (:emailAddress user)))
-      (is (= false (:isSuperUser user)))
+      (is (contains? usernames uuid))
+      (is (false? (:deleted user)))
+      (is (= email (:emailAddress user)))
+      (is (false? (:isSuperUser user)))
       (is (= uuid (:username user)))
       (is (= "ACTIVE" (:state user)))
       (is (= "full name" (:full-name user)))
       (is (:password user))
       (is (:created user))
-      (is (= "USER ANON" (db/find-roles-for-username "st")))))
+      (is (= "USER ANON" (db/find-roles-for-username external)))))
 
 
   (is (= "st" (db/create-user! {:authn-method "github"
@@ -65,109 +67,104 @@
 
 
 (deftest test-no-creation-on-existing-user
-  (let [user-info {:authn-login    "stef"
+  (let [joe (ltu/random-string "joe-")
+        user-info {:authn-login    joe
                    :authn-method   "github"
-                   :email          "st@s.com"
+                   :email          (str joe "@sixsq.com")
                    :external-login "stef"}]
 
-    (th/add-user-for-test! {:username     "stef"
+    (th/add-user-for-test! {:username     joe
                             :password     "secret"
                             :emailAddress "st@s.com"})
 
-    (is (= "stef" (db/create-user! user-info)))
+    (is (= joe (db/create-user! user-info)))
     (is (nil? (db/create-user! (assoc user-info :fail-on-existing? true))))))
 
 
-(defn create-users
-  [n]
-  (doseq [i (range n)]
-    (let [name (str "foo_" i)
-          user {:id           (str "user/" name)
-                :username     name
-                :password     "12345"
-                :emailAddress "a@b.c"}]
-      (th/add-user-for-test! user))))
-
-
-(deftest test-existing-user-names
-  (is (empty? (db/existing-user-names)))
-  (create-users 3)
-  (is (= 3 (count (db/existing-user-names)))))
-
-
-
 (deftest test-users-by-email-skips-deleted
-  (th/add-user-for-test! {:username     "jack"
-                          :password     "123456"
-                          :emailAddress "jack@sixsq.com"
-                          :state        "DELETED"})
+  (let [jack (ltu/random-string "jack-")]
+    (th/add-user-for-test! {:username     jack
+                            :password     "123456"
+                            :emailAddress (str jack "@sixsq.com")
+                            :state        "DELETED"})
 
-  (is (= #{} (db/find-usernames-by-email "unknown@xxx.com")))
-  (is (= #{} (db/find-usernames-by-email "jack@sixsq.com"))))
+    (is (= #{} (db/find-usernames-by-email (str (ltu/random-string) "@xxx.com"))))
+    (is (= #{} (db/find-usernames-by-email (str jack "@sixsq.com"))))))
 
 
 (deftest test-users-by-email
-  (th/add-user-for-test! {:username     "jack"
-                          :password     "123456"
-                          :emailAddress "jack@sixsq.com"})
-  (th/add-user-for-test! {:username     "joe"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"})
-  (th/add-user-for-test! {:username     "joe-alias"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"})
+  (let [joe (ltu/random-string "joe-")
+        jack (ltu/random-string "jack-")
+        alias (ltu/random-string "alias-")]
 
-  (is (= #{} (db/find-usernames-by-email "unknown@xxx.com")))
-  (is (= #{"jack"} (db/find-usernames-by-email "jack@sixsq.com")))
-  (is (= #{"joe" "joe-alias"} (db/find-usernames-by-email "joe@sixsq.com"))))
+    (th/add-user-for-test! {:username     jack
+                            :password     "123456"
+                            :emailAddress (str jack "@sixsq.com")})
+    (th/add-user-for-test! {:username     joe
+                            :password     "123456"
+                            :emailAddress (str joe "@sixsq.com")})
+    (th/add-user-for-test! {:username     alias
+                            :password     "123456"
+                            :emailAddress (str joe "@sixsq.com")})
+
+    (is (= #{} (db/find-usernames-by-email (str (ltu/random-string) "@xxx.com"))))
+    (is (= #{jack} (db/find-usernames-by-email (str jack "@sixsq.com"))))
+    (is (= #{joe alias} (db/find-usernames-by-email (str joe "@sixsq.com"))))))
 
 
 (deftest test-users-by-authn-skips-deleted-legacy
-  (th/add-user-for-test! {:username     "joe-slipstream"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"
-                          :state        "DELETED"})
-  (is (nil? (uiu/find-username-by-identifier :github nil "joe"))))
+  (let [joe (ltu/random-string "joe-")]
+    (th/add-user-for-test! {:username     joe
+                            :password     "123456"
+                            :emailAddress "joe@sixsq.com"
+                            :state        "DELETED"})
+    (is (nil? (uiu/find-username-by-identifier :github nil joe)))))
 
 
 (deftest test-users-by-authn-skips-deleted
-  (th/add-user-for-test! {:username     "joe-slipstream"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"
-                          :state        "DELETED"})
-  (uiu/add-user-identifier! "joe-slipstream" :github "joe" nil)
-  (is (nil? (uiu/find-username-by-identifier :github nil "joe"))))
+  (let [joe (ltu/random-string "joe-")]
+    (th/add-user-for-test! {:username     joe
+                            :password     "123456"
+                            :emailAddress "joe@sixsq.com"
+                            :state        "DELETED"})
+    (uiu/add-user-identifier! joe :github joe nil)
+    (is (nil? (uiu/find-username-by-identifier :github nil joe)))))
 
 
 (deftest test-users-by-authn
-  (th/add-user-for-test! {:username     "joe-slipstream"
-                          :password     "123456"
-                          :emailAddress "joe@sixsq.com"})
-  (uiu/add-user-identifier! "joe-slipstream" :github "joe" nil)
+  (let [joe (ltu/random-string "joe-")
+        jack (ltu/random-string "jack-")
+        william (ltu/random-string "william-")
+        alice (ltu/random-string "alice-")]
 
-  (th/add-user-for-test! {:username     "jack-slipstream"
-                          :password     "123456"
-                          :emailAddress "jack@sixsq.com"})
-  (uiu/add-user-identifier! "jack-slipstream" :oidc "jack" "my-instance")
+    (th/add-user-for-test! {:username     joe
+                            :password     "123456"
+                            :emailAddress "joe@sixsq.com"})
+    (uiu/add-user-identifier! joe :github joe nil)
 
-  (th/add-user-for-test! {:username     "william-slipstream"
-                          :password     "123456"
-                          :emailAddress "william@sixsq.com"})
-  (uiu/add-user-identifier! "william-slipstream" :some-method "bill" "some-instance")
+    (th/add-user-for-test! {:username     jack
+                            :password     "123456"
+                            :emailAddress "jack@sixsq.com"})
+    (uiu/add-user-identifier! jack :oidc jack "my-instance")
+
+    (th/add-user-for-test! {:username     william
+                            :password     "123456"
+                            :emailAddress "william@sixsq.com"})
+    (uiu/add-user-identifier! william :some-method william "some-instance")
 
 
-  (th/add-user-for-test! {:username     "alice-slipstream"
-                          :password     "123456"
-                          :emailAddress "alice@sixsq.com"})
+    (th/add-user-for-test! {:username     alice
+                            :password     "123456"
+                            :emailAddress "alice@sixsq.com"})
 
-  (is (nil? (uiu/find-username-by-identifier :github nil "unknownid")))
-  (is (= "joe-slipstream" (uiu/find-username-by-identifier :github nil "joe")))
-  (is (= "jack-slipstream" (uiu/find-username-by-identifier :oidc "my-instance" "jack")))
-  (is (= "william-slipstream" (uiu/find-username-by-identifier :some-method "some-instance" "bill"))))
+    (is (nil? (uiu/find-username-by-identifier :github nil (ltu/random-string "unknown-"))))
+    (is (= joe (uiu/find-username-by-identifier :github nil joe)))
+    (is (= jack (uiu/find-username-by-identifier :oidc "my-instance" jack)))
+    (is (= william (uiu/find-username-by-identifier :some-method "some-instance" william)))))
 
 
 (deftest check-user-exists?
-  (let [test-username "some-long-random-user-name-that-does-not-exist"
+  (let [test-username (ltu/random-string "some-long-random-user-name-that-does-not-exist-")
         test-username-deleted (str test-username "-deleted")]
     (is (false? (db/user-exists? test-username)))
     (is (false? (db/user-exists? test-username-deleted)))
@@ -189,7 +186,7 @@
 
 
 (deftest test-find-password-for-username
-  (let [username "testuser"
+  (let [username (ltu/random-string "user-")
         password "password"
         pass-hash (ia/hash-password password)
         user {:username username
@@ -199,7 +196,7 @@
 
 
 (deftest test-find-roles-for-username
-  (let [username "testuser"
+  (let [username (ltu/random-string "user-")
         user {:username    username
               :password    "password"
               :isSuperUser false}]
