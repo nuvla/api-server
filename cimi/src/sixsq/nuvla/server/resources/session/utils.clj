@@ -18,7 +18,7 @@
   [resource-id]
   ;; FIXME: Update the implementation to use the session ID for the cookie name.
   ;;(str "slipstream." (str/replace resource-id "/" "."))
-  "com.sixsq.slipstream.cookie")
+  "com.sixsq.nuvla.cookie")
 
 
 (defn validate-action-url-unencoded

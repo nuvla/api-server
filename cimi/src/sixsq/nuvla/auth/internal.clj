@@ -50,7 +50,7 @@
         (log/info "successful login for" username)
         (assoc
           (uh/response 200)
-          :cookies (cookies/claims-cookie (create-claims username) "com.sixsq.slipstream.cookie")))
+          :cookies (cookies/claims-cookie (create-claims username) "com.sixsq.nuvla.cookie")))
       (do
         (log/warn "failed login attempt for" username)
         (uh/response-forbidden)))))                         ;; FIXME: Returns 401, but should be 403.
@@ -61,4 +61,4 @@
   (log/info "sending logout cookie")
   (assoc
     (uh/response 200)
-    :cookies (cookies/revoked-cookie "com.sixsq.slipstream.cookie")))
+    :cookies (cookies/revoked-cookie "com.sixsq.nuvla.cookie")))
