@@ -1,4 +1,6 @@
-# Nuvla Ring Container
+# Nuvla API Server
+
+[![Build Status](https://travis-ci.com/nuvla/api-server.svg?branch=master)](https://travis-ci.com/nuvla/api-server)
 
 This repository contains the code and configuration for the Nuvla API
 server, packaged as a Docker container.  The API is inspired by the
