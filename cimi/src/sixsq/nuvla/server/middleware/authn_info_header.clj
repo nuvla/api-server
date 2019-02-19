@@ -10,7 +10,7 @@
   "nuvla-authn-info")
 
 (def ^:const authn-cookie
-  "com.sixsq.slipstream.cookie")
+  "com.sixsq.nuvla.cookie")
 
 (defn parse-authn-header
   [request]

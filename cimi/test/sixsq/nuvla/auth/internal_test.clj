@@ -65,24 +65,24 @@
 
   (let [response (t/login {:params valid-creds-super})]
     (is (= 200 (:status response)))
-    (is (get-in response [:cookies "com.sixsq.slipstream.cookie" :value])))
+    (is (get-in response [:cookies "com.sixsq.nuvla.cookie" :value])))
 
   ;; FIXME: This should really return 403.
   (let [response (t/login {:params {:username "super" :password "WRONG"}})]
     (is (= 401 (:status response)))
-    (is (nil? (get-in response [:cookies "com.sixsq.slipstream.cookie" :value]))))
+    (is (nil? (get-in response [:cookies "com.sixsq.nuvla.cookie" :value]))))
 
   (let [response (t/login {:params valid-creds-jane})]
     (is (= 200 (:status response)))
-    (is (get-in response [:cookies "com.sixsq.slipstream.cookie" :value])))
+    (is (get-in response [:cookies "com.sixsq.nuvla.cookie" :value])))
 
   ;; FIXME: This should really return 403.
   (let [response (t/login {:params {:username "jane" :password "WRONG"}})]
     (is (= 401 (:status response)))
-    (is (nil? (get-in response [:cookies "com.sixsq.slipstream.cookie" :value])))))
+    (is (nil? (get-in response [:cookies "com.sixsq.nuvla.cookie" :value])))))
 
 
 (deftest check-logout
   (let [response (t/logout)]
     (is (= 200 (:status response)))
-    (is (= "INVALID" (get-in response [:cookies "com.sixsq.slipstream.cookie" :value])))))
+    (is (= "INVALID" (get-in response [:cookies "com.sixsq.nuvla.cookie" :value])))))

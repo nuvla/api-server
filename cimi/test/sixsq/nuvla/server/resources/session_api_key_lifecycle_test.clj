@@ -162,7 +162,7 @@
                        (ltu/is-status 201))
               id (get-in resp [:response :body :resource-id])
 
-              token (get-in resp [:response :cookies "com.sixsq.slipstream.cookie" :value :token])
+              token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
               claims (if token (sign/unsign-claims token) {})
 
               uri (-> resp
@@ -178,7 +178,7 @@
                         (ltu/is-status 303))
               id2 (get-in resp2 [:response :body :resource-id])
 
-              token2 (get-in resp2 [:response :cookies "com.sixsq.slipstream.cookie" :value :token])
+              token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
               claims2 (if token2 (sign/unsign-claims token2) {})
 
               uri2 (-> resp2
