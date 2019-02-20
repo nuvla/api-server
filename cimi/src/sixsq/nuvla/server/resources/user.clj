@@ -12,9 +12,12 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user :as user]
+    [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-direct :as tpl]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.util.response :as r]
+    [environ.core :as env]
+    [sixsq.nuvla.auth.internal :as internal]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -281,4 +284,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::user/schema))
+  (std-crud/initialize resource-type ::user/schema)
+  (when-let [super-pass (env/env :super-pass)]
+    (std-crud/add-if-absent (str resource-type "/super") resource-type
+                            {:template
+                             {:href         (str p/resource-type "/" tpl/registration-method)
+                              :username     "super"
+                              :password     (internal/hash-password super-pass)
+                              :emailAddress "super@example.com"
+                              :state        "ACTIVE"
+                              :isSuperUser  true}})))

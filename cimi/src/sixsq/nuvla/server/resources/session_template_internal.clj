@@ -25,7 +25,7 @@ credentials. This template is guaranteed to be present on all server instances.
                        :instance         authn-method
                        :name             "Internal"
                        :description      "Internal Authentication via Username/Password"
-                       :resourceMetadata (str p/resource-type "-" authn-method)
+                       :resourceMetadata (str "resource-metadata/" p/resource-type "-" authn-method)
                        :group            "Login with Username/Password"
                        :username         "username"
                        :password         "password"
