@@ -1,4 +1,6 @@
 (ns sixsq.nuvla.server.resources.infrastructure-template
+  "Parent resource for all infrastructure-template resources. This acts as an
+   'abstract class' and cannot be instantiated."
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]

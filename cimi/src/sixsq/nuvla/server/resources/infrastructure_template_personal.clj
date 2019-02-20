@@ -1,4 +1,6 @@
 (ns sixsq.nuvla.server.resources.infrastructure-template-personal
+  "Infrastructure template that will create a new 'personal' container
+   infrastructure and make this available from the server."
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

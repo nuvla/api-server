@@ -1,4 +1,6 @@
 (ns sixsq.nuvla.server.resources.infrastructure-template-nuvla
+  "Infrastructure template that will make a pre-existing container
+   infrastructure usable from the server."
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

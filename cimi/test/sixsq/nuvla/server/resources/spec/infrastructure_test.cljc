@@ -21,6 +21,9 @@
              :updated       timestamp
              :acl           valid-acl
 
+             :type          "nuvla"
+             :template      {:href "infrastructure-template/nuvla"}
+
              :state         "CREATED"
              :endpoint      "https://swarm.example.org/endpoint"
              :tls-key       "my-key"
@@ -29,7 +32,7 @@
 
     (stu/is-valid ::infra-nuvla/schema cfg)
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :state}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :state :type :template}]
       (stu/is-invalid ::infra-nuvla/schema (dissoc cfg attr)))
 
     (doseq [attr #{:endpoint :tls-key :tls-cert :tls-ca}]
