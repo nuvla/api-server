@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure-nuvla
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.infrastructure :as infra]
     [sixsq.nuvla.server.resources.spec.infrastructure-template :as ps]
     [sixsq.nuvla.server.resources.spec.infrastructure-template-nuvla :as nuvla]
-    [spec-tools.core :as st]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 (s/def ::endpoint
   (-> (st/spec ::cimi-core/nonblank-string)
