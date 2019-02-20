@@ -22,7 +22,7 @@
 
 (defmethod get-connector-template :default
   [cloud-service-type instanceName]
-  (let [template-url (str p/service-context cont/resource-url "/" cloud-service-type)
+  (let [template-url (str p/service-context cont/resource-type "/" cloud-service-type)
         resp (-> (session (ltu/ring-app))
                  (content-type "application/json")
                  (header authn-info-header "internal ADMIN")
@@ -30,13 +30,13 @@
                  (ltu/body->edn)
                  (ltu/is-status 200))
         template (get-in resp [:response :body])]
-    {:connectorTemplate (-> template
-                            ltu/strip-unwanted-attrs
-                            (assoc :instanceName instanceName))}))
+    {:template (-> template
+                   ltu/strip-unwanted-attrs
+                   (assoc :instanceName instanceName))}))
 
 (defn create-connector-instance
   [cloud-service-type instanceName]
-  (let [connector-create-uri (str p/service-context con/resource-url)
+  (let [connector-create-uri (str p/service-context con/resource-type)
         href-create (get-connector-template cloud-service-type instanceName)]
     (-> (session (ltu/ring-app))
         (content-type "application/json")
@@ -85,12 +85,6 @@
       (ltu/body->edn)
       (ltu/is-status 200)))
 
-(defn cred-take-first
-  [response]
-  (-> response
-      (get-in [:response :body :credentials])
-      first))
-
 (defn cloud-cred-lifecycle
   [{cloud-method-href :href :as credential-template-data} cloud-service-type]
   (create-connector-instance cloud-service-type (connector-instance-name credential-template-data))
@@ -105,7 +99,6 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href cloud-method-href
         template-url (str p/service-context cloud-method-href)
 
         template (-> session-admin
@@ -113,12 +106,12 @@
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (get-in [:response :body]))
-        create-import-no-href {:credentialTemplate (ltu/strip-unwanted-attrs template)}
+        create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href {:name               name-attr
-                            :description        description-attr
-                            :tags               tags-attr
-                            :credentialTemplate credential-template-data}]
+        create-import-href {:name        name-attr
+                            :description description-attr
+                            :tags        tags-attr
+                            :template    credential-template-data}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -190,8 +183,8 @@
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is (= (get-in create-import-href [:credentialTemplate :key]) key))
-        (is (= (get-in create-import-href [:credentialTemplate :secret]) secret))
+        (is (= (get-in create-import-href [:template :key]) key))
+        (is (= (get-in create-import-href [:template :secret]) secret))
 
         ;; delete the credential
         (-> session-user
@@ -218,7 +211,8 @@
           ;; search and get - only one is expected
           old-doc (-> (cred-find session-user conn-inst-name)
                       (ltu/is-count 1)
-                      cred-take-first)
+                      (ltu/entries)
+                      (first))
           id-old (:id old-doc)
           ;; merge
           new-doc (-> (ltu/strip-unwanted-attrs old-doc)
@@ -226,7 +220,7 @@
                       (assoc :href cloud-method-href))]
 
       ;; create new
-      (-> (cred-create session-user {:credentialTemplate new-doc})
+      (-> (cred-create session-user {:template new-doc})
           (ltu/location))
 
       (ltu/refresh-es-indices)
@@ -247,7 +241,8 @@
       ;; VALIDATION
       (let [new-doc (-> (cred-find session-user conn-inst-name)
                         (ltu/is-count 1)
-                        cred-take-first)
+                        (ltu/entries)
+                        (first))
             id-new (:id new-doc)]
 
         (is (= (:secret secret) (:secret new-doc)))
@@ -278,7 +273,8 @@
       ;; VERIFY CREATION: ensure that document is visible and has the correct ID
       (let [old-doc (-> (cred-find session-user conn-inst-name)
                         (ltu/is-count 1)
-                        cred-take-first)
+                        (ltu/entries)
+                        (first))
             check-id (:id old-doc)]
 
         (is (= check-id id))
@@ -291,7 +287,8 @@
       ;; VERIFY EDIT: one credential should be visible and secret should have been changed
       (let [new-doc (-> (cred-find session-user conn-inst-name)
                         (ltu/is-count 1)
-                        cred-take-first)
+                        (ltu/entries)
+                        (first))
             id-new (:id new-doc)]
 
         (is (= id id-new))

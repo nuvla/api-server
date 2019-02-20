@@ -78,7 +78,7 @@
              :json-schema/name "quota"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
-             :json-schema/type "long"
+             :json-schema/type "integer"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true

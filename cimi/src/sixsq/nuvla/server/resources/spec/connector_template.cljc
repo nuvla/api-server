@@ -288,8 +288,7 @@
                                             ::instanceName
                                             ::orchestratorImageid
                                             ::quotaVm
-                                            ::maxIaasWorkers]
-                                   :opt-un [::template]})
+                                            ::maxIaasWorkers]})
 
 (def resource-keys-spec
   (su/merge-keys-specs [c/common-attrs connector-template-keys-spec]))
