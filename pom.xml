@@ -25,19 +25,6 @@
     <tag>HEAD</tag>
   </scm>
 
-  <properties>
-
-    <logger.level>INFO</logger.level>
-    <logger.filepattern>${project.build.directory}/instance/server/var/log/slipstream.%g
-    </logger.filepattern>
-    <server.jre.version>1.8.0</server.jre.version>
-    
-    <!-- root URL for the nexus repositories         -->
-    <!-- The value should NOT have a trailing slash! -->
-    <nexus>https://nexus.sixsq.com/content/repositories</nexus>
-
-  </properties>
-
   <pluginRepositories>
     <pluginRepository>
       <id>clojars.org</id>
