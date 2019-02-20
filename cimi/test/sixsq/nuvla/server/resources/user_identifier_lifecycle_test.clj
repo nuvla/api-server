@@ -7,7 +7,6 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 

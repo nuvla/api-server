@@ -6,7 +6,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 "
   (:require
     [clj-time.core :as t]
+    [environ.core :as env]
     [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.internal :as internal]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -15,9 +17,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-direct :as tpl]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.util.response :as r]
-    [environ.core :as env]
-    [sixsq.nuvla.auth.internal :as internal]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

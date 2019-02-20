@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.job
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.common-operation :as cimi-common-operation]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
