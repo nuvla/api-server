@@ -54,9 +54,11 @@
            InfrastructureTemplate subtype schema."
           :type)
 
+
 (defmethod validate-subtype :default
   [resource]
   (throw (ex-info (str "unknown InfrastructureTemplate type: " (:type resource)) resource)))
+
 
 (defmethod crud/validate
   resource-type
@@ -82,25 +84,33 @@
            [request]
            (throw (r/ex-bad-method request)))
 
+
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
 
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def edit-impl (std-crud/edit-fn resource-type))
+
 
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
 
+
 (def delete-impl (std-crud/delete-fn resource-type))
+
 
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 
 (defmethod crud/query resource-type
   [request]

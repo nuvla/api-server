@@ -112,8 +112,8 @@
 (defn resolve-hrefs
   [body idmap]
   (let [credential-href (if (contains? (:template body) :credential)
-                         {:credential (get-in body [:template :credential])}
-                         {})]                               ;; to put back the unexpanded href after
+                          {:credential (get-in body [:template :credential])}
+                          {})]                              ;; to put back the unexpanded href after
     (-> body
         (check-credential-exists idmap)
         (update-in [:template] dissoc :credential)

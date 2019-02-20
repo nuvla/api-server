@@ -23,6 +23,7 @@
                             :type      "ROLE"
                             :right     "VIEW"}]})
 
+
 (def default-template {:type        infra-type
                        :name        resource-name
                        :description "import an existing infrastructure to Nuvla"
@@ -36,11 +37,13 @@
 ;;
 ;; initialization: register this template
 ;;
+
 (defn initialize
   []
   (p/register infra-type)
   (std-crud/initialize p/resource-type ::tpl/schema)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::tpl/schema)))
+
 
 ;;
 ;; multimethods for validation

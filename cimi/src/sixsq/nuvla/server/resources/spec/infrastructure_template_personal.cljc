@@ -104,10 +104,12 @@
   (su/only-keys-maps ps/resource-keys-spec
                      infrastructure-template-keys-spec))
 
+
 ;; Defines the contents of the internal template used in a create resource.
 (s/def ::template
   (su/only-keys-maps ps/template-keys-spec
                      infrastructure-template-keys-spec))
+
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec

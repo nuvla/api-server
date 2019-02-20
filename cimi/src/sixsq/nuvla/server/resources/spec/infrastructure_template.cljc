@@ -39,17 +39,21 @@
 
 (def infrastructure-template-keys-spec {:req-un [::type]})
 
+
 (def resource-keys-spec
   (su/merge-keys-specs [c/common-attrs
                         hints/ui-hints-spec
                         infrastructure-template-keys-spec]))
 
+
 ;; Used only to provide metadata resource for collection.
 (s/def ::schema
   (su/only-keys-maps resource-keys-spec))
 
+
 (def create-keys-spec
   (su/merge-keys-specs [c/create-attrs]))
+
 
 (def template-keys-spec
   (su/merge-keys-specs [c/template-attrs

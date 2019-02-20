@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+
 (s/def ::endpoint
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "endpoint"
@@ -92,6 +93,7 @@
              :json-schema/hidden false
              :json-schema/sensitive true)))
 
+
 ;; state of the full infrastructure
 (s/def ::state
   (-> (st/spec #{"CREATED",
@@ -126,6 +128,7 @@
                                                  "ERROR"]
                                        :default "CREATED"})))
 
+
 (def infra-keys-spec
   {:req-un [::state]
    :opt-un [::endpoint
@@ -133,9 +136,11 @@
             ::tls-cert
             ::tls-ca]})
 
+
 (s/def ::schema
   (su/only-keys-maps infra/infrastructure-keys-spec
                      infra-keys-spec))
+
 
 ;; multiple methods to create an ssh public key, so multiple schemas
 (s/def ::schema-create

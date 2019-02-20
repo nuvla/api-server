@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.infrastructure-personal
   (:require
-    [sixsq.nuvla.auth.acl :as acl]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure :as p]
@@ -16,6 +15,7 @@
 (defmethod p/validate-subtype tpl/infra-type
   [resource]
   (validate-fn resource))
+
 
 (def create-validate-fn (u/create-spec-validation-fn ::personal/schema-create))
 (defmethod p/create-validate-subtype tpl/infra-type
@@ -35,6 +35,7 @@
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::personal/schema))
