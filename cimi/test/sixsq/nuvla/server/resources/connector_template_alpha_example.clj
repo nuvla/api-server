@@ -16,31 +16,42 @@
 ;; schemas
 ;;
 
-(s/def :cimi.connector-template.alpha/alphaKey pos-int?)
-(s/def :cimi.connector-template.alpha/objectStoreEndpoint ::ps/objectStoreEndpoint)
+(s/def ::alphaKey pos-int?)
+(s/def ::objectStoreEndpoint ::ps/objectStoreEndpoint)
 
 ;; Defines the contents of the alpha ConnectorTemplate resource itself.
-(s/def :cimi/connector-template.alpha
+(s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
-                     {:req-un [:cimi.connector-template.alpha/alphaKey]
-                      :opt-un [:cimi.connector-template.alpha/objectStoreEndpoint]}))
+                     {:req-un [::alphaKey]
+                      :opt-un [::objectStoreEndpoint]}))
 
 ;; Defines the contents of the alpha template used in a create resource.
-(s/def :cimi.connector-template.alpha/template
+(s/def ::template
   (su/only-keys-maps ps/template-keys-spec
-                     {:opt-un [:cimi.connector-template.alpha/alphaKey
-                               :cimi.connector-template.alpha/objectStoreEndpoint]}))
+                     {:opt-un [::alphaKey
+                               ::objectStoreEndpoint]}))
 
-(s/def :cimi/connector-template.alpha-create
+(s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
-                     {:opt-un [:cimi.connector-template.alpha/template]}))
+                     {:opt-un [::template]}))
 
 ;;
 ;; resource
 ;;
+
 (def ^:const resource
   {:cloudServiceType cloud-service-type
    :alphaKey         1001})
+
+;;
+;; multimethods for validation
+;;
+
+(def validate-fn (u/create-spec-validation-fn ::schema))
+(defmethod p/validate-subtype cloud-service-type
+  [resource]
+  (validate-fn resource))
+
 
 ;;
 ;; initialization: register this connector template
@@ -48,12 +59,3 @@
 (defn initialize
   []
   (p/register resource))
-
-;;
-;; multimethods for validation
-;;
-
-(def validate-fn (u/create-spec-validation-fn :cimi/connector-template.alpha))
-(defmethod p/validate-subtype cloud-service-type
-  [resource]
-  (validate-fn resource))

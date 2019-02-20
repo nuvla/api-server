@@ -34,8 +34,7 @@
               :method        ctco/method
               :key           "foo"
               :secret        "bar"
-              :quota         7
-              :connector     {:href "connector/xyz"}}]
+              :quota         7}]
     (is (s/valid? ::docker-tpl/schema root))
     (doseq [k (into #{} (keys root))]
       (is (not (s/valid? ::docker-tpl/schema (dissoc root k)))))))

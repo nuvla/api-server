@@ -8,7 +8,7 @@
 ;; Defines the contents of the docker credential template resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
-                     ctc/credential-template-create-keys-spec))
+                     ctc/credential-template-cloud-keys-spec))
 
 ;; Defines the contents of the docker credential template used in a create resource.
 (s/def ::template

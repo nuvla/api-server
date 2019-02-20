@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.connector-alpha-example
   (:require
-    [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector :as p]
     [sixsq.nuvla.server.resources.connector-template-alpha-example :as tpl]))
@@ -8,24 +7,15 @@
 (def ^:const cloud-service-type "alpha")
 
 ;;
-;; schemas
-;;
-
-;; Trivial example has the same schema as the template.  A real
-;; resource may have different schemas for the template and resource.
-(s/def :cimi/connector.alpha :cimi/connector-template.alpha)
-
-
-;;
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn :cimi/connector.alpha))
+(def validate-fn (u/create-spec-validation-fn ::tpl/schema))
 (defmethod p/validate-subtype cloud-service-type
   [resource]
   (validate-fn resource))
 
-(def create-validate-fn (u/create-spec-validation-fn :cimi/connector-template.alpha-create))
+(def create-validate-fn (u/create-spec-validation-fn ::tpl/schema-create))
 (defmethod p/create-validate-subtype cloud-service-type
   [resource]
   (create-validate-fn resource))

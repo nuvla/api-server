@@ -153,6 +153,7 @@
                             :request-method :post
                             :body (json/write-str create-import-href))
                    (ltu/body->edn)
+                   (ltu/dump-message)
                    (ltu/is-status 201))
           _ (ltu/refresh-es-indices)
           id (get-in resp [:response :body :resource-id])

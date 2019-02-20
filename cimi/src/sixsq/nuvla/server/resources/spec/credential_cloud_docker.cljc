@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.resources.spec.credential-template-cloud-docker :as docker-tpl]
     [sixsq.nuvla.server.util.spec :as su]))
 
-(def credential-keys-spec ctc/credential-template-cloud-keys-spec)
+(def credential-keys-spec ctc/credential-template-create-keys-spec)
 
 (s/def ::schema
   (su/only-keys-maps cred/credential-keys-spec

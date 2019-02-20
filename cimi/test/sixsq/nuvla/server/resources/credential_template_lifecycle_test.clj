@@ -57,10 +57,23 @@
     (is (= #{akey/credential-type alpha/credential-type docker/credential-type} types))
 
     (doseq [entry entries]
-      (let [ops (ltu/operations->map entry)]
+      (let [ops (ltu/operations->map entry)
+            href (get ops (c/action-uri :describe))
+            entry-url (str p/service-context (:id entry))
+            describe-url (str p/service-context href)
+
+            entry-resp (-> session-user
+                           (request entry-url)
+                           (ltu/is-status 200)
+                           (ltu/body->edn))
+
+            entry-body (get-in entry-resp [:response :body])]
         (is (nil? (get ops (c/action-uri :add))))
         (is (nil? (get ops (c/action-uri :edit))))
-        (is (nil? (get ops (c/action-uri :delete))))))))
+        (is (nil? (get ops (c/action-uri :delete))))
+
+        (is (crud/validate entry-body))))))
+
 
 
 (deftest bad-methods
