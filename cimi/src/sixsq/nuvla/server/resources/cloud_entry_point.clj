@@ -323,7 +323,6 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [sixsq.nuvla.server.util.metadata :as gen-md]
