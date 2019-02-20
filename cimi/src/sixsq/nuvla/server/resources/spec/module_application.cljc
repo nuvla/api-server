@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.module-application
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.module :as module]
