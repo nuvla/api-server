@@ -13,7 +13,6 @@
 (def ^:const resource-base
   {:name        "User cloud credentials store"
    :description "Stores user cloud credentials"
-   :connector   {:href ""}
    :key         ""
    :secret      ""
    :quota       20

@@ -4,7 +4,6 @@ jdk:
 - openjdk8
 cache:
   directories:
-  - code/node_modules
   - "$HOME/.m2"
 deploy:
   provider: script

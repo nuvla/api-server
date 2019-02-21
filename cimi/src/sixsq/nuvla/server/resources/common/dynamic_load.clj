@@ -17,9 +17,8 @@
       (not (.contains ns-name "test"))
       sym)))
 
-(defn resource-namespaces
-  "Returns a sequence of the resource namespaces on the classpath."
-  []
+; Sequence of the resource namespaces on the classpath.
+(def resource-namespaces
   (dyn/load-filtered-namespaces resource?))
 
 (defn get-resource-link
@@ -44,7 +43,7 @@
   "Returns a lazy sequence of all of the routes for resources
    discovered on the classpath."
   []
-  (->> (resource-namespaces)
+  (->> resource-namespaces
        (map (partial dyn/resolve "routes"))
        (remove nil?)
        (map deref)))
@@ -53,12 +52,12 @@
   "Returns a lazy sequence of all of the resource links for resources
    discovered on the classpath."
   []
-  (->> (resource-namespaces)
+  (->> resource-namespaces
        (map get-resource-link)
        (remove nil?)))
 
 (defn initialize
   "Runs the initialize function for all resources that define it."
   []
-  (doseq [resource-namespace (resource-namespaces)]
+  (doseq [resource-namespace resource-namespaces]
     (initialize-resource resource-namespace)))

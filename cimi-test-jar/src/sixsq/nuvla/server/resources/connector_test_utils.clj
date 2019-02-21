@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector :as con]
     [sixsq.nuvla.server.resources.connector-template :as ct]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
@@ -32,8 +31,8 @@
    (connector-lifecycle cloud-service-type nil))
 
   ([cloud-service-type provided-template]
-   (let [href (str ct/resource-url "/" cloud-service-type)
-         template-url (str p/service-context ct/resource-url "/" cloud-service-type)
+   (let [href (str ct/resource-type "/" cloud-service-type)
+         template-url (str p/service-context ct/resource-type "/" cloud-service-type)
 
          session-anon (-> (ltu/ring-app)
                           session
@@ -45,12 +44,12 @@
                   (ltu/body->edn)
                   (ltu/is-status 200))
          template (or provided-template (get-in resp [:response :body]))
-         valid-create {:connectorTemplate (-> template
-                                              ltu/strip-unwanted-attrs
-                                              (assoc :instanceName (new-instance-name cloud-service-type)))}
-         href-create {:connectorTemplate (merge provided-template {:href         href
-                                                                   :instanceName (new-instance-name cloud-service-type)})}
-         invalid-create (assoc-in valid-create [:connectorTemplate :invalid] "BAD")]
+         valid-create {:template (-> template
+                                     ltu/strip-unwanted-attrs
+                                     (assoc :instanceName (new-instance-name cloud-service-type)))}
+         href-create {:template (merge provided-template {:href         href
+                                                          :instanceName (new-instance-name cloud-service-type)})}
+         invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
      ;; admin create with invalid template fails
      (-> session-admin
@@ -96,9 +95,9 @@
                          (request base-uri)
                          (ltu/body->edn)
                          (ltu/is-status 200)
-                         (ltu/is-resource-uri con/collection-uri)
+                         (ltu/is-resource-uri con/collection-type)
                          (ltu/is-count 1)
-                         (ltu/entries con/resource-tag))]
+                         (ltu/entries))]
          (is ((set (map :id entries)) uri))
 
          ;; verify that all entries are accessible
@@ -150,7 +149,7 @@
 
 (defn connector-template-is-registered
   [cloud-service-type]
-  (let [id (str ct/resource-url "/" cloud-service-type)
+  (let [id (str ct/resource-type "/" cloud-service-type)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
@@ -169,16 +168,16 @@
                     (request tpl-base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
-                    (ltu/is-resource-uri ct/collection-uri)
+                    (ltu/is-resource-uri ct/collection-type)
                     (ltu/is-count pos?)
                     (ltu/is-operation-absent "add")
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
                     (ltu/is-operation-absent "describe")
-                    (ltu/entries ct/resource-tag))
+                    (ltu/entries))
         ids (set (map :id entries))
         types (set (map :cloudServiceType entries))]
-    (is (contains? ids (str ct/resource-url "/" cloud-service-type)))
+    (is (contains? ids (str ct/resource-type "/" cloud-service-type)))
     (is (contains? types cloud-service-type))
 
     ;; Get connector template and work with it.
