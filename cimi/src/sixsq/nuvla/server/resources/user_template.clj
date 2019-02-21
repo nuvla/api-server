@@ -178,6 +178,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 ;;
 ;; initialization: create metadata for this collection
 ;;
+
 (defn initialize
   []
   (md/register (gen-md/generate-metadata ::ns ::user-tpl/schema)))

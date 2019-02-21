@@ -6,18 +6,19 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 "
   (:require
     [clj-time.core :as t]
-    [environ.core :as env]
     [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.auth.internal :as internal]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user :as user]
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.util.response :as r]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-direct :as tpl]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.util.response :as r]))
+    [environ.core :as env]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.internal :as internal]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -286,6 +287,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   []
   (std-crud/initialize resource-type ::user/schema)
   (when-let [super-pass (env/env :super-pass)]
+    ;; FIXME: this is a nasty hack to ensure user template direct is available
+    (tpl/initialize)
+    (log/info "creating super user")
     (std-crud/add-if-absent (str resource-type "/super") resource-type
                             {:template
                              {:href         (str p/resource-type "/" tpl/registration-method)
