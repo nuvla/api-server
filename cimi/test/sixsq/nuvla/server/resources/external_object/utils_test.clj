@@ -15,7 +15,7 @@
         obj-name "object/name"
         verb :put]
     (is (str/starts-with? (u/generate-url obj-store-conf bucket obj-name verb)
-                          (format "https://%s.%s/%s?" bucket os-host obj-name)))))
+                          (format "https://%s/%s/%s?" os-host bucket obj-name)))))
 
 (deftest add-size-or-md5sum
 

@@ -32,7 +32,7 @@
                                          :objectName      objectname
                                          :objectStoreCred {:href "credential/my-cred"}}
                                         {})
-                          (format "https://%s.%s/%s?" bucketname s3-host objectname)))
+                          (format "https://%s/%s/%s?" s3-host bucketname objectname)))
 
     ;; external object report
     (is (str/starts-with? (eo/upload-fn {:state           eo/state-new
@@ -42,7 +42,7 @@
                                          :runUUID         runUUID
                                          :filename        filename}
                                         {})
-                          (format "https://%s.%s/%s/%s?" bucketname s3-host runUUID filename)))))
+                          (format "https://%s/%s/%s/%s?" s3-host bucketname runUUID filename)))))
 
 (deftest test-download-fn
   (with-redefs [s3/expand-cred (fn [cred-href] (get my-cloud-creds (:href cred-href)))]
@@ -56,4 +56,4 @@
                                                 :objectName      objectname
                                                 :objectStoreCred {:href "credential/my-cred"}}
                                                {})
-                          (format "https://%s.%s/%s?" bucketname s3-host objectname)))))
+                          (format "https://%s/%s/%s?" s3-host bucketname objectname)))))
