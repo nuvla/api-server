@@ -17,7 +17,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-direct :as tpl]
     [environ.core :as env]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.internal :as internal]))
 
 
@@ -289,7 +288,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (when-let [super-pass (env/env :super-pass)]
     ;; FIXME: this is a nasty hack to ensure user template direct is available
     (tpl/initialize)
-    (log/info "creating super user")
     (std-crud/add-if-absent (str resource-type "/super") resource-type
                             {:template
                              {:href         (str p/resource-type "/" tpl/registration-method)
