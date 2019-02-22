@@ -10,7 +10,7 @@
 ;; convert template to credential
 ;;
 
-(defmethod p/tpl->credential tpl/credential-type
+(defmethod p/tpl->credential tpl/cred-type
            [{:keys [type method exoscale-api-key exoscale-api-secret-key acl]} request]
            (let [resource (cond-> {:resource-type p/resource-type
                                    :type          type
@@ -26,12 +26,12 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::driver/schema))
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl/cred-type
            [resource]
            (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::driver/schema-create))
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl/cred-type
            [resource]
            (create-validate-fn resource))
 
