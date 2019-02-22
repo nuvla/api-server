@@ -11,7 +11,6 @@
   (su/only-keys-maps infra/infrastructure-keys-spec))
 
 
-;; multiple methods to create an ssh public key, so multiple schemas
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
                      {:req-un [::personal/template]}))

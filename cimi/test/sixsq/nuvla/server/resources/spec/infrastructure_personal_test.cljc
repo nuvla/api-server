@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.infrastructure-test
+(ns sixsq.nuvla.server.resources.spec.infrastructure-personal-test
   (:require
     [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.infrastructure :as infra]
-    [sixsq.nuvla.server.resources.spec.infrastructure-nuvla :as infra-nuvla]
+    [sixsq.nuvla.server.resources.spec.infrastructure-personal :as infra-personal]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -30,10 +30,10 @@
              :tls-cert      "my-cert"
              :tls-ca        "my-ca"}]
 
-    (stu/is-valid ::infra-nuvla/schema cfg)
+    (stu/is-valid ::infra-personal/schema cfg)
 
     (doseq [attr #{:id :resource-type :created :updated :acl :state :type :template}]
-      (stu/is-invalid ::infra-nuvla/schema (dissoc cfg attr)))
+      (stu/is-invalid ::infra-personal/schema (dissoc cfg attr)))
 
     (doseq [attr #{:endpoint :tls-key :tls-cert :tls-ca}]
-      (stu/is-valid ::infra-nuvla/schema (dissoc cfg attr)))))
+      (stu/is-valid ::infra-personal/schema (dissoc cfg attr)))))
