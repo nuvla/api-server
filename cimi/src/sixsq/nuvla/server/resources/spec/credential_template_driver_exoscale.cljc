@@ -4,6 +4,7 @@
            [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
            [sixsq.nuvla.server.resources.spec.common :as cimi-common]
            [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
+           [sixsq.nuvla.server.resources.spec.credential-template :as ct]
            [sixsq.nuvla.server.util.spec :as su]
            [spec-tools.core :as st]))
 
@@ -60,14 +61,14 @@
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema
-       (su/only-keys-maps ps/resource-keys-spec
+       (su/only-keys-maps ct/resource-keys-spec
                           credential-template-keys-spec))
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
-       (su/only-keys-maps ps/template-keys-spec
+       (su/only-keys-maps ct/template-keys-spec
                           credential-template-create-keys-spec))
 
 (s/def ::schema-create
-       (su/only-keys-maps ps/create-keys-spec
+       (su/only-keys-maps ct/create-keys-spec
                           {:req-un [::template]}))
