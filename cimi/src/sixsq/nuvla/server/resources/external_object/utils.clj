@@ -56,6 +56,7 @@
         credentials (AWSStaticCredentialsProvider. (BasicAWSCredentials. key secret))]
     (-> (AmazonS3ClientBuilder/standard)
         (.withEndpointConfiguration endpoint)
+        (.withPathStyleAccessEnabled true)
         (.withCredentials credentials)
         .build)))
 

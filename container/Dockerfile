@@ -1,4 +1,4 @@
-FROM nuvla/ring:0.0.1-SNAPSHOT
+FROM nuvla/ring:test
                 
 ADD target/dependency/lib /opt/nuvla/server/lib.d/api
 ADD src/scripts/generate-auth-keys.sh /opt/nuvla/server/bin/generate-auth-keys.sh

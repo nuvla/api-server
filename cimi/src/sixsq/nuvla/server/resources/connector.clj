@@ -93,8 +93,7 @@
   (-> resource
       (dissoc :href)
       (assoc :resource-type resource-type
-             :acl resource-acl)
-      (cond-> href (assoc :template {:href href}))))
+             :acl resource-acl)))
 
 ;;
 ;; CRUD operations

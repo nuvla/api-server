@@ -18,7 +18,7 @@
       sym)))
 
 (defn resource-namespaces
-  "Returns a sequence of the resource namespaces on the classpath."
+  "Returns sequence of the resource namespaces on the classpath."
   []
   (dyn/load-filtered-namespaces resource?))
 

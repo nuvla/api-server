@@ -1,4 +1,10 @@
 (ns sixsq.nuvla.server.resources.connector-template
+  "
+A collection of templates that are used to create a variety of connectors.
+
+**NOTE**: connector templates resources are in-memory resources and
+consequently do **not** support the CIMI filtering parameters.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]

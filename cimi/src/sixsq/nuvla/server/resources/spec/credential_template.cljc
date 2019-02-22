@@ -70,7 +70,6 @@
                                                  ::method]})
 
 (def resource-keys-spec
-
   (su/merge-keys-specs [c/common-attrs
                         credential-template-keys-spec]))
 

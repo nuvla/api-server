@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector-template :refer :all]
     [sixsq.nuvla.server.resources.connector-template-alpha-example :as example]
+    [sixsq.nuvla.server.resources.connector-template-docker :as docker]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import (clojure.lang ExceptionInfo)))
 
@@ -54,8 +55,10 @@
                       (ltu/entries))
           ids (set (map :id entries))
           types (set (map :cloudServiceType entries))]
-      (is (= #{(str resource-type "/" example/cloud-service-type)} ids))
-      (is (= #{example/cloud-service-type} types))
+      (is (= #{(str resource-type "/" example/cloud-service-type)
+               (str resource-type "/" docker/cloud-service-type)} ids))
+      (is (= #{example/cloud-service-type
+               docker/cloud-service-type} types))
 
       (doseq [entry entries]
         (let [ops (ltu/operations->map entry)
