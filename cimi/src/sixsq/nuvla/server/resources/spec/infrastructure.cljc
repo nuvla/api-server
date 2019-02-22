@@ -1,20 +1,32 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.infrastructure-template :as infrastructure-tpl]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
-(s/def ::type ::infrastructure-tpl/type)
+(s/def ::services
+  (-> (st/spec (s/coll-of ::cimi-common/resource-link :min-count 1 :kind vector?))
+      (assoc :name "services"
+             :json-schema/name "services"
+             :json-schema/type "Array"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+             :json-schema/indexed false
+
+             :json-schema/displayName "services"
+             :json-schema/description "list of associated services"
+             :json-schema/help "list of associated service references"
+             :json-schema/group "data"
+             :json-schema/category "data"
+             :json-schema/order 20
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 
-;; reference to the template that was used to create the infrastructure
-(s/def ::template (s/merge
-                    (s/keys :req-un [::infrastructure-tpl/href])
-                    (s/map-of #{:href} any?)))
-
-
-(def infrastructure-keys-spec (su/merge-keys-specs [c/common-attrs
-                                                    {:req-un [::type
-                                                              ::template]}]))
+(s/def ::schema
+  (su/only-keys-maps cimi-common/common-attrs
+                     {:opt-un [::services]}))
