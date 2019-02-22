@@ -10,4 +10,6 @@
    the configuration parameters from the environmental variables ES_HOST and
    ES_PORT. These default to 'localhost' and '9300' if not specified."
   []
-  (-> (esu/create-es-client) esu/wait-for-cluster esb/->ESBindingLocal))
+  (-> (esu/create-es-client)
+      esu/wait-for-cluster
+      esb/->ESBindingLocal))

@@ -7,6 +7,12 @@
   {:prefix {term prefix}})
 
 
+(defn full-text-search
+  [term value]
+  {:simple_query_string {:query  value
+                         :fields [term]}})
+
+
 (defn exists
   [term]
   {:exists {:field term}})

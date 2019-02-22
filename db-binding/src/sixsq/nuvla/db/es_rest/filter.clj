@@ -55,6 +55,8 @@
 
           ["^=" :Attribute] (query/prefix Attribute Value)
 
+          ["==" :Attribute] (query/full-text-search Attribute Value)
+
           [">=" :Attribute] (query/gte Attribute Value)
           [">" :Attribute] (query/gt Attribute Value)
           ["<=" :Attribute] (query/lte Attribute Value)

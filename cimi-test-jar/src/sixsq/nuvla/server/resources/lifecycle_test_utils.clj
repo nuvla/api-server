@@ -14,9 +14,9 @@
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
-    [sixsq.nuvla.db.es.binding :as esb]
+    [sixsq.nuvla.db.es-rest.binding :as esrb]
     [sixsq.nuvla.db.es.common.utils :as escu]
-    [sixsq.nuvla.db.es.utils :as esu]
+    [sixsq.nuvla.db.es-rest.utils :as esru]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.dbtest.es.utils :as esut]
     [sixsq.nuvla.server.app.routes :as routes]
@@ -298,9 +298,8 @@
   []
   (log/info "creating elasticsearch node and client")
   (let [node (esut/create-test-node)
-        client (-> node
-                   esu/node-client
-                   esu/wait-for-cluster)]
+        client (-> (esru/create-es-client)
+                   esru/wait-for-cluster)]
     [node client]))
 
 
@@ -343,8 +342,8 @@
    allocated resources by closing both the client and the node."
   [& body]
   `(let [client# (second (set-es-node-client-cache))]
-     (db/set-impl! (esb/->ESBindingLocal client#))
-     (esu/reset-index client# (str escu/default-index-prefix "*"))
+     (db/set-impl! (esrb/->ElasticsearchRestBinding client#))
+     (esru/reset-index client# (str escu/default-index-prefix "*"))
      ~@body))
 
 

@@ -90,13 +90,14 @@
   [client {:keys [id] :as data}]
   (let [[collection-id uuid] (cu/split-id id)
         index (escu/collection-id->index collection-id)
+        updated-doc (prepare-data data)
         response (spandex/request client {:url          [index :_doc uuid]
                                           :query-string {:refresh "wait_for"}
                                           :method       :put
-                                          :body         (prepare-data data)})
+                                          :body         updated-doc})
         success? (pos? (get-in response [:body :_shards :successful]))]
     (if success?
-      (response/response-updated id)
+      (response/json-response data)
       (response/response-conflict id))))
 
 

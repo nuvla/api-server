@@ -267,7 +267,7 @@
     (.. client
         (admin)
         (indices)
-        (delete (DeleteIndexRequest. "_all"))
+        (delete (DeleteIndexRequest. index-name))
         (get))))
 
 (defn get-all-indices
