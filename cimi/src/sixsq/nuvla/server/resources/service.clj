@@ -1,12 +1,17 @@
 (ns sixsq.nuvla.server.resources.service
+  "
+This resource represents a service with an endpoint. This should be included
+in an infrastructure resource. Associated credentials should make an explicit
+reference to the relevant service resources.
+"
   (:require
     [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.service :as service]))
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.service :as service]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -27,7 +32,8 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::service/schema))
+  (std-crud/initialize resource-type ::service/schema)
+  (md/register (gen-md/generate-metadata ::ns ::service/schema)))
 
 
 ;;
@@ -40,6 +46,15 @@
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
+
+
+;;
+;; multimethod for ACLs
+;;
+
+(defmethod crud/add-acl resource-type
+  [resource request]
+  (a/add-acl (dissoc resource :acl) request))
 
 
 ;;

@@ -61,9 +61,7 @@
              :json-schema/group "body"
              :json-schema/order 22
              :json-schema/hidden false
-             :json-schema/sensitive false
-
-             :json-schema/value-scope {:default true})))
+             :json-schema/sensitive false)))
 
 
 (s/def ::schema

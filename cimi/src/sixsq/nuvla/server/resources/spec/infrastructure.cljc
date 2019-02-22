@@ -20,8 +20,8 @@
              :json-schema/displayName "services"
              :json-schema/description "list of associated services"
              :json-schema/help "list of associated service references"
-             :json-schema/group "data"
-             :json-schema/category "data"
+             :json-schema/group "body"
+             :json-schema/category "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))

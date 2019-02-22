@@ -1,17 +1,14 @@
 (ns sixsq.nuvla.server.resources.infrastructure-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
-    [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.email :as t]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.infrastructure :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.service :as service]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -21,7 +18,7 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def md-uri (str p/service-context md/resource-type "/" t/resource-type))
+(def service-base-uri (str p/service-context service/resource-type))
 
 
 (def valid-acl {:owner {:principal "ADMIN"
@@ -36,95 +33,104 @@
 
 
 (deftest lifecycle
+
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
-        infra-name "my-infrastructure"
-        services [{:href "service/service-1"}
-                  {:href "service/service-2"}]
-        valid-infra {:name        infra-name
-                     :description "my-description"
-                     :services    services}]
+        valid-service {:acl        valid-acl
+                       :type       "docker"
+                       :endpoint   "https://docker.example.org/api"
+                       :accessible true}
 
-    ;; admin query succeeds but is empty
-    (-> session-admin
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        service-ids (for [_ (range 3)]
+                      (-> session-user
+                          (request service-base-uri
+                                   :request-method :post
+                                   :body (json/write-str valid-service))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          :response
+                          :body
+                          :resource-id))
 
-    ;; user query succeeds but is empty
-    (-> session-user
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        services (mapv (fn [id] {:href id}) service-ids)]
 
-    ;; anon query fails
-    (-> session-anon
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 403))
+    (let [infra-name "my-infrastructure"
+          valid-infra {:name        infra-name
+                       :description "my-description"
+                       :services    services}]
 
-    ;; anon create must fail
-    (-> session-anon
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-infra))
-        (ltu/body->edn)
-        (ltu/is-status 403))
+      ;; admin query succeeds but is empty
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?)
+          (ltu/is-operation-present "add")
+          (ltu/is-operation-absent "delete")
+          (ltu/is-operation-absent "edit"))
 
-    ;; check creation
-    (doseq [session [session-admin session-user]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str valid-infra))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
-            abs-uri (str p/service-context uri)]
+      ;; user query succeeds but is empty
+      (-> session-user
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?)
+          (ltu/is-operation-present "add")
+          (ltu/is-operation-absent "delete")
+          (ltu/is-operation-absent "edit"))
 
-        (-> session
-            (request base-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-resource-uri t/collection-type)
-            (ltu/is-count 1))
+      ;; anon query fails
+      (-> session-anon
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-        ;; verify contents
-        (let [infra (-> session
-                        (request abs-uri)
-                        (ltu/body->edn)
-                        (ltu/is-status 200)
-                        (ltu/is-operation-absent "edit")
-                        (ltu/is-operation-present "delete")
-                        :response
-                        :body)]
+      ;; anon create must fail
+      (-> session-anon
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-infra))
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-          (is (= infra-name (:name infra)))
-          (is (= services (:services infra))))
+      ;; check creation
+      (doseq [session [session-admin session-user]]
+        (let [uri (-> session
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-infra))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
+              abs-uri (str p/service-context uri)]
 
-        ;; infrastructure can be deleted
-        (-> session
-            (request abs-uri :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))))))
+          ;; verify contents
+          (let [infra (-> session
+                          (request abs-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-operation-present "edit")
+                          (ltu/is-operation-present "delete")
+                          :response
+                          :body)]
+
+            (is (= infra-name (:name infra)))
+            (is (= services (:services infra))))
+
+          ;; infrastructure can be deleted
+          (-> session
+              (request abs-uri :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200)))))))
 
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
-                            [resource-uri :put]
                             [resource-uri :options]
                             [resource-uri :post]])))

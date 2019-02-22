@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.credential-service
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
