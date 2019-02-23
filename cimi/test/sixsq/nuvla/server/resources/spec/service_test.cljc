@@ -28,5 +28,9 @@
     (stu/is-valid ::service/schema service)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :type :endpoint :accessible}]
-      (stu/is-invalid ::service/schema (dissoc service k)))))
+    (doseq [k #{:id :resource-type :created :updated :acl :type :accessible}]
+      (stu/is-invalid ::service/schema (dissoc service k)))
+
+    ;;optional keywords
+    (doseq [k #{:endpoint}]
+      (stu/is-valid ::service/schema (dissoc service k)))))

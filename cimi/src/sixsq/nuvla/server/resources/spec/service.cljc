@@ -67,5 +67,5 @@
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::type
-                               ::endpoint
-                               ::accessible]}))
+                               ::accessible]
+                      :opt-un [::endpoint]}))
