@@ -27,7 +27,7 @@
 
 
 (s/def ::endpoint
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::cimi-core/url)
       (assoc :name "endpoint"
              :json-schema/name "endpoint"
              :json-schema/type "string"

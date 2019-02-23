@@ -6,8 +6,8 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.provider :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.provider :as t]
     [sixsq.nuvla.server.resources.service :as service]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -113,7 +113,7 @@
           ;; creating services that have a parent attribute referencing the provider
           ;; should show up automatically in the provider
           (let [service-ids (set (for [_ (range 3)]
-                                   (-> session-user
+                                   (-> session
                                        (request service-base-uri
                                                 :request-method :post
                                                 :body (json/write-str (assoc valid-service :parent uri)))
@@ -138,14 +138,37 @@
                                    set)]
 
             (is (vector? (:services updated-provider)))
-            (is (= service-ids service-hrefs))))
+            (is (= service-ids service-hrefs))
 
-        ;; provider can be deleted
-        ;; FIXME: Should be able to be deleted ONLY when there are no associated services!
-        (-> session
-            (request abs-uri :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))))))
+            ;; provider with linked services cannot be deleted
+            (-> session
+                (request abs-uri :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 409))
+
+            ;; remove the services
+            (doseq [service-id service-ids]
+              (-> session
+                  (request (str p/service-context service-id)
+                           :request-method :delete)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)))
+
+            ;; verify that the services are gone
+            (doseq [service-id service-ids]
+              (-> session
+                  (request (str p/service-context service-id))
+                  (ltu/body->edn)
+                  (ltu/is-status 404)))
+
+            ;; FIXME: sleep to allow index to be refreshed.  Better solution?
+            (Thread/sleep 2000)
+
+            ;; now provider can be deleted
+            (-> session
+                (request abs-uri :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 200))))))))
 
 
 (deftest bad-methods

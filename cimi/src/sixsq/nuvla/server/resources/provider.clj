@@ -11,14 +11,15 @@ contain the `id` of the provider resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.service :as service]
     [sixsq.nuvla.server.resources.spec.provider :as provider]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.service :as service]
-    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -74,28 +75,41 @@ contain the `id` of the provider resource.
   (assoc request :body (dissoc body :services)))
 
 
-(defn service-query
-  [initial-request resource-id]
-  (let [filter (-> {:filter (str "parent='" resource-id "'")}
-                   (cimi-params-impl/cimi-filter))
-        request (-> (select-keys initial-request [:identity
-                                                  :sixsq.slipstream.authn/claims
-                                                  :user-name
-                                                  :user-roles])
-                    (assoc :params {:resource-name service/resource-type}
-                           :route-params {:resource-name service/resource-type}
-                           :cimi-params {:filter filter
-                                         :select ["id"]}))]
+(defn extract-authn-info
+  [request]
+  (select-keys request [:identity
+                        :sixsq.slipstream.authn/claims
+                        :user-name
+                        :user-roles]))
 
-    (try
-      (->> request
-           crud/query
-           :body
-           :resources
-           (map :id)
-           (mapv (fn [id] {:href id})))
-      (catch Exception e
-        []))))
+
+(defn service-query
+  ([resource-id]
+   (service-query {:identity                      {:current         "internal",
+                                                   :authentications {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}
+                   :sixsq.slipstream.authn/claims {:username "internal"
+                                                   :roles    "ADMIN USER ANON"}
+                   :user-name                     "internal"
+                   :user-roles                    #{"ADMIN" "USER" "ANON"}}
+                  resource-id))
+  ([initial-request resource-id]
+   (let [filter (-> {:filter (str "parent='" resource-id "'")}
+                    (cimi-params-impl/cimi-filter))
+         request (-> (extract-authn-info initial-request)
+                     (assoc :params {:resource-name service/resource-type}
+                            :route-params {:resource-name service/resource-type}
+                            :cimi-params {:filter filter
+                                          :select ["id"]}))]
+
+     (try
+       (->> request
+            crud/query
+            :body
+            :resources
+            (map :id)
+            (mapv (fn [id] {:href id})))
+       (catch Exception _
+         [])))))
 
 
 (defn assoc-services
@@ -136,8 +150,12 @@ contain the `id` of the provider resource.
 
 
 (defmethod crud/delete resource-type
-  [request]
-  (delete-impl request))
+  [{{:keys [resource-name uuid]} :route-params :as request}]
+  (let [id (str resource-name "/" uuid)
+        service-count (count (service-query id))]
+    (if (zero? service-count)
+      (delete-impl request)
+      (throw (r/ex-response (str "cannot delete " id ": " service-count " linked services remain") 409)))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
