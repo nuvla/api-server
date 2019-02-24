@@ -2,7 +2,8 @@
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.service :as p]
-    [sixsq.nuvla.server.resources.spec.service-template-swarm :as tpl-swarm]))
+    [sixsq.nuvla.server.resources.spec.service-template-swarm :as tpl-swarm]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const method "swarm")
@@ -29,3 +30,15 @@
   (-> resource
       (dissoc resource :href :resourceMetadata :endpoint :cloud-service :service-credential)
       (assoc :state "CREATED")))
+
+
+;;
+;; post-add hook that creates a job that will deploy a swarm
+;;
+
+(defmethod p/post-add-hook method
+  [service template]
+  (log/error "SWARM POST ADD HOOK:\n"
+             (with-out-str (clojure.pprint/pprint service)) "\n"
+             (with-out-str (clojure.pprint/pprint template)))
+  nil)

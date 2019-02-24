@@ -15,9 +15,7 @@ existing service-template resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.service :as service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -109,6 +107,21 @@ existing service-template resource.
 
 
 ;;
+;; multimethod for a post-add hook
+;;
+
+(defmulti post-add-hook
+          (fn [service template]
+            (:method service)))
+
+
+;; default post-add hook is a no-op
+(defmethod post-add-hook :default
+  [service template]
+  nil)
+
+
+;;
 ;; CRUD operations
 ;;
 
@@ -125,16 +138,18 @@ existing service-template resource.
   (let [idmap {:identity (:identity request)}
         body (:body request)
         desc-attrs (u/select-desc-keys body)
-        service (-> body
-                    (assoc :resource-type create-type)
-                    (std-crud/resolve-hrefs idmap true)
-                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                    crud/validate
-                    :template
-                    tpl->service)]
-    (-> request
-        (assoc :body service)
-        add-impl)))
+        validated-template (-> body
+                               (assoc :resource-type create-type)
+                               (std-crud/resolve-hrefs idmap true)
+                               (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                               crud/validate
+                               :template)
+        service (tpl->service validated-template)]
+    (let [response (add-impl (assoc request :body service))
+          id (-> response :body :resource-id)
+          service (assoc service :id id)]
+      (post-add-hook service validated-template)
+      response)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
