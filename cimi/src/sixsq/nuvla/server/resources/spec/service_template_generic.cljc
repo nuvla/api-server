@@ -13,8 +13,7 @@ services that are managed separately.
 
 
 (def service-template-keys-spec
-  {:req-un [::service/type
-            ::service/endpoint]
+  {:req-un [::service/endpoint]
    :opt-un [::service/accessible]})
 
 

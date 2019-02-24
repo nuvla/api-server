@@ -1,15 +1,16 @@
-(ns sixsq.nuvla.server.resources.service-generic-lifecycle-test
+(ns sixsq.nuvla.server.resources.service-create-swarm-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service :as t]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.provider :as provider]))
+    [sixsq.nuvla.server.resources.provider :as provider]
+    [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
+    [sixsq.nuvla.server.resources.credential-template :as ct]
+    [sixsq.nuvla.server.resources.credential :as credential]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -19,6 +20,9 @@
 
 
 (def provider-base-uri (str p/service-context provider/resource-type))
+
+
+(def credential-base-uri (str p/service-context credential/resource-type))
 
 
 (def valid-acl {:owner {:principal "ADMIN"
@@ -35,6 +39,7 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
+        ;; setup a provider to act as parent for service
         valid-provider {:name          "my-provider"
                         :description   "my-description"
                         :documentation "http://my-documentation.org"}
@@ -47,47 +52,53 @@
                         (ltu/is-status 201)
                         (ltu/location))
 
+        ;; setup a generic service to act as the 'cloud'
+        valid-create {:name        "my-cloud-service"
+                      :description "my-cloud-description"
+                      :tags        ["alpha"]
+                      :template    {:href       "service-template/generic"
+                                    :acl        valid-acl
+                                    :parent     provider-id
+                                    :type       "cloud"
+                                    :endpoint   "https://cloud.example.org/api"
+                                    :accessible true}}
+
+        cloud-service-id (-> session-user
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-create))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        ;; setup a credential (not the right type) to reference
+        href (str ct/resource-type "/" akey/method)
+
+        create-import-href {:name        "my-credential"
+                            :description "my-credential-description"
+                            :tags        ["one" "two"]
+                            :template    {:href href
+                                          :ttl  1000}}
+
+        credential-id (-> session-user
+                          (request credential-base-uri
+                                   :request-method :post
+                                   :body (json/write-str create-import-href))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
+
         service-name "my-service"
         service-desc "my-description"
         service-tags ["alpha" "beta" "gamma"]
 
-        valid-service {:acl        valid-acl
-                       :parent     provider-id
-                       :type       "docker"
-                       :endpoint   "https://docker.example.org/api"
-                       :accessible true}
-
         valid-create {:name        service-name
                       :description service-desc
                       :tags        service-tags
-                      :template    (merge {:href "service-template/generic"}
-                                          valid-service)}]
-
-    ;; admin query succeeds but is empty
-    (-> session-admin
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
-
-    ;; user query succeeds but is empty
-    (-> session-user
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 200)
-        (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
-
-    ;; anon query fails
-    (-> session-anon
-        (request base-uri)
-        (ltu/body->edn)
-        (ltu/is-status 403))
+                      :template    {:href               "service-template/swarm"
+                                    :parent             provider-id
+                                    :cloud-service      {:href cloud-service-id}
+                                    :service-credential {:href credential-id}}}]
 
     ;; anon create must fail
     (-> session-anon
@@ -122,8 +133,8 @@
           (is (= service-desc (:description service)))
           (is (= service-tags (:tags service)))
           (is (:type service))
-          (is (:endpoint service))
-          (is (true? (:accessible service))))
+          (is (nil? (:endpoint service)))
+          (is (false? (:accessible service))))
 
         ;; can delete resource
         (-> session
