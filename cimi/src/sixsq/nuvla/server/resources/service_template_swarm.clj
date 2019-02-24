@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-template-create-swarm
+(ns sixsq.nuvla.server.resources.service-template-swarm
   "
 Template that requires information necessary to create a new Docker Swarm
 cluster on a given cloud infrastructure.
@@ -7,7 +7,7 @@ cluster on a given cloud infrastructure.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.service-template :as tpl]
-    [sixsq.nuvla.server.resources.spec.service-template-create-swarm :as tpl-swarm]
+    [sixsq.nuvla.server.resources.spec.service-template-swarm :as tpl-swarm]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 

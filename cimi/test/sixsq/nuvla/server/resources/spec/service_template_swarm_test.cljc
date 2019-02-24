@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.service-template-create-swarm-test
+(ns sixsq.nuvla.server.resources.spec.service-template-swarm-test
   (:require
     [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.service-template :as tpl]
-    [sixsq.nuvla.server.resources.service-template-generic :as tpl-generic]
-    [sixsq.nuvla.server.resources.spec.service-template-create-swarm :as spec-swarm]
+    [sixsq.nuvla.server.resources.service-template-swarm :as tpl-swarm]
+    [sixsq.nuvla.server.resources.spec.service-template-swarm :as spec-swarm]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -22,7 +22,8 @@
              :updated            timestamp
              :acl                valid-acl
 
-             :method             tpl-generic/method
+             :method             tpl-swarm/method
+             :type               tpl-swarm/method
 
              :cloud-service      {:href "service/my-cloud-service"}
              :service-credential {:href "credential/my-cloud-credential"}}]

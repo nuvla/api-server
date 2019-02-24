@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-create-swarm-lifecycle-test
+(ns sixsq.nuvla.server.resources.service-swarm-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]

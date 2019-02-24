@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.service-template-create-swarm
+(ns sixsq.nuvla.server.resources.spec.service-template-swarm
   "
 This template requires the parameters necessary to create a new Docker Swarm
 on a cloud infrastructure.
