@@ -45,6 +45,12 @@
                        :endpoint   "https://docker.example.org/api"
                        :accessible true}
 
+        valid-service-create {:name        "my-service"
+                              :description "my-description"
+                              :tags        ["alpha" "beta" "gamma"]
+                              :template    (merge {:href "service-template/generic"}
+                                                  valid-service)}
+
         provider-name "my-provider"
         valid-provider {:name          provider-name
                         :description   "my-description"
@@ -116,7 +122,7 @@
                                    (-> session
                                        (request service-base-uri
                                                 :request-method :post
-                                                :body (json/write-str (assoc valid-service :parent uri)))
+                                                :body (json/write-str (assoc-in valid-service-create [:template :parent] uri)))
                                        (ltu/body->edn)
                                        (ltu/is-status 201)
                                        :response

@@ -7,6 +7,26 @@
     [spec-tools.core :as st]))
 
 
+(s/def ::method
+  (-> (st/spec ::cimi-core/identifier)
+      (assoc :name "method"
+             :json-schema/name "method"
+             :json-schema/type "string"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory true
+             :json-schema/mutable true
+             :json-schema/consumerWritable false
+             :json-schema/templateMutable true
+
+             :json-schema/displayName "method"
+             :json-schema/description "service creation method"
+             :json-schema/help "service creation method"
+             :json-schema/group "body"
+             :json-schema/order 20
+             :json-schema/hidden true
+             :json-schema/sensitive false)))
+
+
 (s/def ::type
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "type"
@@ -21,7 +41,7 @@
              :json-schema/description "kebab-case identifier for the service type"
              :json-schema/help "kebab-case identifier for the service type"
              :json-schema/group "body"
-             :json-schema/order 20
+             :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -40,7 +60,7 @@
              :json-schema/description "public API endpoint for the service"
              :json-schema/help "public endpoint from where the service API is accessible"
              :json-schema/group "body"
-             :json-schema/order 21
+             :json-schema/order 22
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -59,13 +79,15 @@
              :json-schema/description "flag to indicate if the service is accessible"
              :json-schema/help "flag to indicate if the service is accessible"
              :json-schema/group "body"
-             :json-schema/order 22
+             :json-schema/order 23
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::type
+                     {:req-un [::cimi-common/parent         ;; required for services
+                               ::method
+                               ::type
                                ::accessible]
                       :opt-un [::endpoint]}))

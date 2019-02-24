@@ -13,7 +13,7 @@
                          :right     "VIEW"}]})
 
 
-(deftest check-job
+(deftest check-service
   (let [timestamp "1964-08-25T10:00:00.0Z"
         service {:id            (str service-resource/resource-type "/uuid")
                  :resource-type service-resource/resource-type
@@ -21,6 +21,9 @@
                  :updated       timestamp
                  :acl           valid-acl
 
+                 :parent        "provider/abcdef"
+
+                 :method        "generic"
                  :type          "docker"
                  :endpoint      "https://docker.example.org/api"
                  :accessible    true}]
@@ -28,7 +31,7 @@
     (stu/is-valid ::service/schema service)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :type :accessible}]
+    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :type :accessible}]
       (stu/is-invalid ::service/schema (dissoc service k)))
 
     ;;optional keywords

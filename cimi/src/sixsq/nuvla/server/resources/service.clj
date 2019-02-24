@@ -1,8 +1,12 @@
 (ns sixsq.nuvla.server.resources.service
   "
-This resource represents a service with an endpoint. This should be included
-in an infrastructure resource. Associated credentials should make an explicit
-reference to the relevant service resources.
+This resource represents a service with an endpoint. Instances of a service
+resource must reference a provider resource via the `parent` attribute.
+Associated credentials should make an explicit reference to the relevant
+service resources.
+
+This is a templated resource. All creation requests must be done via an
+existing service-template resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
@@ -11,13 +15,18 @@ reference to the relevant service resources.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.service :as service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
 
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
+
+
+(def ^:const create-type (u/ns->create-type *ns*))
 
 
 (def collection-acl {:owner {:principal "ADMIN"
@@ -49,6 +58,27 @@ reference to the relevant service resources.
 
 
 ;;
+;; validate create requests for service resources
+;;
+
+(defn dispatch-on-method [resource]
+  (get-in resource [:template :method]))
+
+
+(defmulti create-validate-subtype dispatch-on-method)
+
+
+(defmethod create-validate-subtype :default
+  [resource]
+  (throw (ex-info (str "unknown service create type: " (dispatch-on-method resource)) resource)))
+
+
+(defmethod crud/validate create-type
+  [resource]
+  (create-validate-subtype resource))
+
+
+;;
 ;; multimethod for ACLs
 ;;
 
@@ -58,15 +88,53 @@ reference to the relevant service resources.
 
 
 ;;
+;; template processing multimethod
+;;
+;; dispatches on the :method key, must return created service
+;; resource from template
+;;
+
+(defmulti tpl->service :method)
+
+
+;;
+;; All concrete service types MUST provide an implementation of this
+;; multimethod. The default implementation will throw an 'internal
+;; server error' exception.
+;;
+
+(defmethod tpl->service :default
+  [{:keys [method] :as resource}]
+  [{:status 500, :message (str "invalid service resource implementation '" method "'")} nil])
+
+
+;;
 ;; CRUD operations
 ;;
+
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
+;; requires a service-template to create a new service
 (defmethod crud/add resource-type
   [request]
-  (add-impl request))
+
+  ;; name, description, and tags values are taken from
+  ;; the create wrapper, NOT the contents of :template
+  (let [idmap {:identity (:identity request)}
+        body (:body request)
+        desc-attrs (u/select-desc-keys body)
+        service (-> body
+                    (assoc :resource-type create-type)
+                    (std-crud/resolve-hrefs idmap true)
+                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                    crud/validate
+                    :template
+                    tpl->service)]
+    (-> request
+        (assoc :body service)
+        add-impl)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

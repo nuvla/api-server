@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-lifecycle-test
+(ns sixsq.nuvla.server.resources.service-generic-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -8,13 +8,18 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service :as t]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.service-template-generic :as tpl-generic]
+    [sixsq.nuvla.server.resources.provider :as provider]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type))
+
+
+(def provider-base-uri (str p/service-context provider/resource-type))
 
 
 (def valid-acl {:owner {:principal "ADMIN"
@@ -35,11 +40,34 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
+        valid-provider {:name          "my-provider"
+                        :description   "my-description"
+                        :documentation "http://my-documentation.org"}
+
+        provider-id (-> session-user
+                        (request provider-base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-provider))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
+
         service-name "my-service"
+        service-desc "my-description"
+        service-tags ["alpha" "beta" "gamma"]
+
         valid-service {:acl        valid-acl
+                       :parent     provider-id
+                       ;:method     tpl-generic/method
                        :type       "docker"
                        :endpoint   "https://docker.example.org/api"
-                       :accessible true}]
+                       :accessible true}
+
+        valid-create {:name        service-name
+                      :description service-desc
+                      :tags        service-tags
+                      :template    (merge {:href "service-template/generic"}
+                                          valid-service)}]
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -71,16 +99,16 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-service))
+                 :body (json/write-str valid-create))
         (ltu/body->edn)
-        (ltu/is-status 403))
+        (ltu/is-status 400))
 
     ;; check creation
     (doseq [session [session-admin session-user]]
       (let [uri (-> session
                     (request base-uri
                              :request-method :post
-                             :body (json/write-str valid-service))
+                             :body (json/write-str valid-create))
                     (ltu/body->edn)
                     (ltu/is-status 201)
                     (ltu/location))
@@ -96,6 +124,9 @@
                           :response
                           :body)]
 
+          (is (= service-name (:name service)))
+          (is (= service-desc (:description service)))
+          (is (= service-tags (:tags service)))
           (is (:type service))
           (is (:endpoint service))
           (is (true? (:accessible service))))
