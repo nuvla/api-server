@@ -8,19 +8,36 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::service
+(s/def ::service-link
   (-> (st/spec ::cimi-common/resource-link)
-      (assoc :name "service"
-             :json-schema/name "service"
+      (assoc :name "service-link"
+             :json-schema/name "service-link"
              :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
-             :json-schema/mutable false
+             :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "service"
+             :json-schema/displayName "service-link"
              :json-schema/description "reference to service associated with this credential"
              :json-schema/help "reference to service associated with this credential"
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
+
+
+(s/def ::services
+  (-> (st/spec (s/coll-of ::service-link :min-count 1 :kind vector?))
+      (assoc :name "services"
+             :json-schema/name "services"
+             :json-schema/type "Array"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory true
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+
+             :json-schema/displayName "services"
+             :json-schema/description "references to services associated with this credential"
+             :json-schema/help "references to services associated with this credential"
              :json-schema/group "body"
              :json-schema/order 30
              :json-schema/hidden false
@@ -28,4 +45,4 @@
 
 
 (def credential-service-keys-spec (su/merge-keys-specs [cred/credential-keys-spec
-                                                        {:req-un [::service]}]))
+                                                        {:req-un [::services]}]))

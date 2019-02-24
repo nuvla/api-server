@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as alpha]
     [sixsq.nuvla.server.resources.credential-template-cloud-docker :as docker]
+    [sixsq.nuvla.server.resources.credential-template-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -51,16 +52,21 @@
         types (set (map :type entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" alpha/method)
-             (str ct/resource-type "/" docker/method)}
+             (str ct/resource-type "/" docker/method)
+             (str ct/resource-type "/" service-swarm/method)}
            ids))
-    (is (= #{akey/method alpha/method docker/method} methods))
-    (is (= #{akey/credential-type alpha/credential-type docker/credential-type} types))
+    (is (= #{akey/method
+             alpha/method
+             docker/method
+             service-swarm/method} methods))
+    (is (= #{akey/credential-type
+             alpha/credential-type
+             docker/credential-type
+             service-swarm/credential-type} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)
-            href (get ops (c/action-uri :describe))
             entry-url (str p/service-context (:id entry))
-            describe-url (str p/service-context href)
 
             entry-resp (-> session-user
                            (request entry-url)

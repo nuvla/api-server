@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-service-docker :as cred-docker]
+    [sixsq.nuvla.server.resources.spec.credential-service-swarm :as cred-docker]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -21,10 +21,11 @@
               :updated       timestamp
               :acl           valid-acl
 
-              :type          "docker"
-              :method        "docker-static"
+              :type          "swarm"
+              :method        "swarm"
 
-              :service       {:href "service/service-1"}
+              :services      [{:href "service/service-1"}
+                              {:href "service/service-2"}]
 
               :ca            "ca-public-certificate"
               :cert          "client-public-certificate"
@@ -33,5 +34,5 @@
     (stu/is-valid ::cred-docker/schema cred)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :ca :cert :key}]
+    (doseq [k #{:id :resource-type :created :updated :acl :services :ca :cert :key}]
       (stu/is-invalid ::cred-docker/schema (dissoc cred k)))))

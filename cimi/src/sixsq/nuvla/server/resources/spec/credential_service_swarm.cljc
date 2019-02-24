@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-service-docker
+(ns sixsq.nuvla.server.resources.spec.credential-service-swarm
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]

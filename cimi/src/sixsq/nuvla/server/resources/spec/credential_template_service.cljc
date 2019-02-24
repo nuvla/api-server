@@ -3,7 +3,7 @@
     [sixsq.nuvla.server.resources.spec.credential-service :as cred-service]))
 
 
-(def credential-template-service-keys-spec {:req-un [::cred-service/service]})
+(def credential-template-service-keys-spec {:req-un [::cred-service/services]})
 
 
-(def credential-template-service-create-keys-spec {:req-un [::cred-service/service]})
+(def credential-template-service-create-keys-spec {:req-un [::cred-service/services]})
