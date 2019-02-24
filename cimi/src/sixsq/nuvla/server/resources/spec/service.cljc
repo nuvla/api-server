@@ -8,7 +8,7 @@
 
 
 (s/def ::type
-  (-> (st/spec ::cimi-core/kebab-identifier)
+  (-> (st/spec ::cimi-core/identifier)
       (assoc :name "type"
              :json-schema/name "type"
              :json-schema/type "string"
