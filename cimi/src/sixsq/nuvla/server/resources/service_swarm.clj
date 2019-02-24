@@ -28,4 +28,4 @@
   [resource]
   (-> resource
       (dissoc resource :href :resourceMetadata :endpoint :cloud-service :service-credential)
-      (assoc :accessible false)))
+      (assoc :state "CREATED")))

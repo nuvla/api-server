@@ -26,12 +26,12 @@
                  :method        "generic"
                  :type          "docker"
                  :endpoint      "https://docker.example.org/api"
-                 :accessible    true}]
+                 :state         "STARTED"}]
 
     (stu/is-valid ::service/schema service)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :type :accessible}]
+    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :type :state}]
       (stu/is-invalid ::service/schema (dissoc service k)))
 
     ;;optional keywords

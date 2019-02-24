@@ -40,10 +40,10 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
-        valid-service {:acl        valid-acl
-                       :type       "docker"
-                       :endpoint   "https://docker.example.org/api"
-                       :accessible true}
+        valid-service {:acl      valid-acl
+                       :type     "docker"
+                       :endpoint "https://docker.example.org/api"
+                       :state    "STARTED"}
 
         valid-service-create {:name        "my-service"
                               :description "my-description"

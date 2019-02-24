@@ -24,7 +24,7 @@ Template that requires all the core attributes of a service resource.
 
                :type             "my-service"
                :endpoint         "https://service.example.org:1234"
-               :accessible       true
+               :state            "STARTED"
 
                :acl              tpl/resource-acl})
 

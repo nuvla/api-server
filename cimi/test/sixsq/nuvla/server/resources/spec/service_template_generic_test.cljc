@@ -26,14 +26,14 @@
 
              :type          "s3"
              :endpoint      "https://s3.example.org:2000"
-             :accessible    true}]
+             :state         "STARTED"}]
 
     (stu/is-valid ::spec-generic/schema cfg)
 
     (doseq [attr #{:id :resource-type :created :updated :acl :method :type :endpoint}]
       (stu/is-invalid ::spec-generic/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:accessible}]
+    (doseq [attr #{:state}]
       (stu/is-valid ::spec-generic/schema (dissoc cfg attr)))))
 
 

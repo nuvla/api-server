@@ -65,23 +65,36 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::accessible
-  (-> (st/spec boolean?)
-      (assoc :name "accessible"
-             :json-schema/name "accessible"
+(s/def ::state
+  (-> (st/spec #{"CREATED",
+                 "STARTING", "STARTED",
+                 "STOPPING", "STOPPED",
+                 "PAUSING", "PAUSED",
+                 "SUSPENDING", "SUSPENDED",
+                 "ERROR"})
+      (assoc :name "state"
+             :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
+             :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "accessible"
-             :json-schema/description "flag to indicate if the service is accessible"
-             :json-schema/help "flag to indicate if the service is accessible"
+             :json-schema/displayName "state"
+             :json-schema/description "state of service"
+             :json-schema/help "current state of the service"
              :json-schema/group "body"
              :json-schema/order 23
              :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/sensitive false
+
+             :json-schema/value-scope {:values  ["CREATED",
+                                                 "STARTING", "STARTED",
+                                                 "STOPPING", "STOPPED",
+                                                 "PAUSING", "PAUSED",
+                                                 "SUSPENDING", "SUSPENDED",
+                                                 "ERROR"]
+                                       :default "CREATED"})))
 
 
 (s/def ::schema
@@ -89,5 +102,5 @@
                      {:req-un [::cimi-common/parent         ;; required for services
                                ::method
                                ::type
-                               ::accessible]
+                               ::state]
                       :opt-un [::endpoint]}))

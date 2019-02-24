@@ -14,7 +14,7 @@ services that are managed separately.
 
 (def service-template-keys-spec
   {:req-un [::service/endpoint]
-   :opt-un [::service/accessible]})
+   :opt-un [::service/state]})
 
 
 ;; Defines the contents of the this service-template resource.

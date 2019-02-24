@@ -56,12 +56,12 @@
         valid-create {:name        "my-cloud-service"
                       :description "my-cloud-description"
                       :tags        ["alpha"]
-                      :template    {:href       "service-template/generic"
-                                    :acl        valid-acl
-                                    :parent     provider-id
-                                    :type       "cloud"
-                                    :endpoint   "https://cloud.example.org/api"
-                                    :accessible true}}
+                      :template    {:href     "service-template/generic"
+                                    :acl      valid-acl
+                                    :parent   provider-id
+                                    :type     "cloud"
+                                    :endpoint "https://cloud.example.org/api"
+                                    :state    "STARTED"}}
 
         cloud-service-id (-> session-user
                              (request base-uri
@@ -134,7 +134,7 @@
           (is (= service-tags (:tags service)))
           (is (:type service))
           (is (nil? (:endpoint service)))
-          (is (false? (:accessible service))))
+          (is (= "CREATED" (:state service))))
 
         ;; can delete resource
         (-> session

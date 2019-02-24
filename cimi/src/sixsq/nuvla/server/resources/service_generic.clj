@@ -25,6 +25,6 @@
 ;;
 
 (defmethod p/tpl->service method
-  [{:keys [accessible] :as resource}]
+  [{:keys [state] :as resource}]
   (cond-> (dissoc resource :href :resourceMetadata)
-          (nil? accessible) (assoc :accessible true)))
+          (nil? state) (assoc :state "STARTED")))

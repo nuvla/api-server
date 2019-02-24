@@ -51,11 +51,11 @@
         service-desc "my-description"
         service-tags ["alpha" "beta" "gamma"]
 
-        valid-service {:acl        valid-acl
-                       :parent     provider-id
-                       :type       "docker"
-                       :endpoint   "https://docker.example.org/api"
-                       :accessible true}
+        valid-service {:acl      valid-acl
+                       :parent   provider-id
+                       :type     "docker"
+                       :endpoint "https://docker.example.org/api"
+                       :state    "STARTED"}
 
         valid-create {:name        service-name
                       :description service-desc
@@ -123,7 +123,7 @@
           (is (= service-tags (:tags service)))
           (is (:type service))
           (is (:endpoint service))
-          (is (true? (:accessible service))))
+          (is (= "STARTED" (:state service))))
 
         ;; can delete resource
         (-> session
