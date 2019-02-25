@@ -1,4 +1,6 @@
 (ns sixsq.nuvla.server.resources.credential-template-driver-exoscale
+    "This CredentialTemplate allows creating a Credential instance to hold
+    cloud credentials for the Exoscale's Docker Machine driver."
   (:require
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.common.utils :as u]

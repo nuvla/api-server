@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-driver-exoscale
+    "
+Sets the docker-machine compliant attribute names and values
+for the Exoscale driver
+"
     (:require
       [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
       [sixsq.nuvla.server.resources.common.utils :as u]

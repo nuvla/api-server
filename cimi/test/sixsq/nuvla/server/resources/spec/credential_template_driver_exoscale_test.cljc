@@ -8,7 +8,7 @@
     [sixsq.nuvla.server.resources.spec.credential-template-driver-exoscale :as driver-spec]))
 
 
-(def valid-acl driver/resource-acl-default)
+(def valid-acl driver/resource-acl)
 
 
 (deftest test-credential-template-driver-exoscale-create-schema-check
@@ -28,8 +28,8 @@
               :created       timestamp
               :updated       timestamp
               :acl           valid-acl
-              :type          driver/cred-type
-              :method        driver/cred-method
+              :type          driver/credential-type
+              :method        driver/method
               :exoscale-api-key           "foo"
               :exoscale-api-secret-key    "bar"
               }]
