@@ -6,13 +6,19 @@
     [clojure.tools.logging :as log]
     [clojure.tools.namespace.find :as nsf]))
 
+
 (defn filter-namespaces
   "Returns symbols for all of the namespaces that match the given filter
    function."
-  [f]
-  (->> (cp/classpath)
+  [cp f]
+  (log/info "finding and filtering namespaces on classpath")
+  (->> cp
        (nsf/find-namespaces)
        (filter f)))
+
+
+(def filter-namespaces-memoized (memoize filter-namespaces))
+
 
 (defn load-namespace
   "Dynamically loads the given namespace, returning the namespace.
@@ -26,13 +32,15 @@
       (log/error "could not load namespace:" ns-sym " ===>>> " (.getMessage e))
       nil)))
 
+
 (defn load-filtered-namespaces
   "Returns a sequence of the requested namespaces on the classpath."
   [f]
   (->> f
-       (filter-namespaces)
+       (filter-namespaces-memoized (cp/classpath))
        (map load-namespace)
        (remove nil?)))
+
 
 (defn resolve
   "Retrieves the named var in the given namespace, returning
