@@ -22,7 +22,7 @@
     [sixsq.nuvla.server.util.zookeeper :as zku]))
 
 
-(def default-db-binding-ns "sixsq.nuvla.db.es-rest.loader")
+(def default-db-binding-ns "sixsq.nuvla.db.es.loader")
 
 
 (defn- create-ring-handler

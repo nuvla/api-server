@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.db.es-rest.query
+(ns sixsq.nuvla.db.es.query
   (:refer-clojure :exclude [and or]))
 
 

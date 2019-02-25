@@ -14,11 +14,10 @@
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
-    [sixsq.nuvla.db.es-rest.binding :as esrb]
+    [sixsq.nuvla.db.es.binding :as esb]
     [sixsq.nuvla.db.es.common.utils :as escu]
-    [sixsq.nuvla.db.es-rest.utils :as esru]
+    [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.dbtest.es.utils :as esut]
     [sixsq.nuvla.server.app.routes :as routes]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [wrap-authn-info-header]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
@@ -27,8 +26,14 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [zookeeper :as zk])
-  (:import [org.apache.curator.test TestingServer]))
+    [zookeeper :as zk]
+    [me.raynes.fs :as fs])
+  (:import [org.apache.curator.test TestingServer]
+           (java.util UUID)
+           (org.elasticsearch.node MockNode)
+           (org.elasticsearch.common.logging LogConfigurator)
+           (org.elasticsearch.common.settings Settings)
+           (org.elasticsearch.transport Netty4Plugin)))
 
 
 (defn random-string
@@ -294,12 +299,40 @@
 ;; Handling of Elasticsearch node and client for tests
 ;;
 
+
+(defn create-test-node
+  "Creates a local elasticsearch node that holds data that can be access
+   through the native or HTTP protocols."
+  ([]
+   (create-test-node (str (UUID/randomUUID))))
+  ([^String cluster-name]
+   (let [tempDir (str (fs/temp-dir "es-data-"))
+         settings (.. (Settings/builder)
+                      (put "cluster.name" cluster-name)
+                      (put "action.auto_create_index" true)
+                      (put "path.home" tempDir)
+                      (put "transport.netty.worker_count" 3)
+                      (put "node.data" true)
+                      (put "http.enabled" true)
+                      (put "logger.level" "ERROR")
+                      (put "http.type" "netty4")
+                      (put "http.port" "9200-9300")
+                      (put "transport.type" "netty4")
+                      (put "network.host" "127.0.0.1")
+                      (build))
+         plugins [Netty4Plugin]]
+
+     (LogConfigurator/configureWithoutConfig settings)
+     (.. (MockNode. ^Settings settings plugins)
+         (start)))))
+
+
 (defn create-es-node-client
   []
   (log/info "creating elasticsearch node and client")
-  (let [node (esut/create-test-node)
-        client (-> (esru/create-es-client)
-                   esru/wait-for-cluster)]
+  (let [node (create-test-node)
+        client (-> (esu/create-es-client)
+                   esu/wait-for-cluster)]
     [node client]))
 
 
@@ -342,8 +375,8 @@
    allocated resources by closing both the client and the node."
   [& body]
   `(let [client# (second (set-es-node-client-cache))]
-     (db/set-impl! (esrb/->ElasticsearchRestBinding client#))
-     (esru/reset-index client# (str escu/default-index-prefix "*"))
+     (db/set-impl! (esb/->ElasticsearchRestBinding client#))
+     (esu/reset-index client# (str escu/default-index-prefix "*"))
      ~@body))
 
 

@@ -72,7 +72,6 @@
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [sixsq.nuvla.server/db-testing-jar ~+version+]
                                [sixsq.nuvla.server/cimi-test-jar ~+version+]]
               :resource-paths ["test-resources"]
               :env            {:config-name      "config-params.edn"

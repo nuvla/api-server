@@ -73,7 +73,6 @@
   ([key-to-count base-uri auth-name expected-count expected-paginated-count query-string]
    (-> (exec-request base-uri query-string auth-name)
        (ltu/is-status 200)
-       (ltu/dump-message)
        (ltu/is-key-value :count expected-count)
        (ltu/is-key-value count key-to-count expected-paginated-count))))
 
