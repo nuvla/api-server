@@ -1,13 +1,13 @@
-(ns sixsq.nuvla.server.resources.provider
+(ns sixsq.nuvla.server.resources.service-group
   "
-This resource represents a 'provider', which provides a number of related
+This resource represents a 'service-group', which provides a number of related
 services, for example, a Docker Swarm and an S3 service, that are optimized to
 work together.
 
-The resource contains metadata concerning the provider and an automatically
-generated list of associated services. The service resources are tied to an
-infrastructure via the service resource's `parent` attribute, which will
-contain the `id` of the provider resource.
+The resource contains metadata concerning the service-group and an
+automatically generated list of associated services. The service resources are
+tied to an infrastructure via the service resource's `parent` attribute, which
+will contain the `id` of the service-group resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
@@ -17,7 +17,7 @@ contain the `id` of the provider resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.service :as service]
-    [sixsq.nuvla.server.resources.spec.provider :as provider]
+    [sixsq.nuvla.server.resources.spec.service-group :as service-group]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]))
 
@@ -40,15 +40,15 @@ contain the `id` of the provider resource.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::provider/schema)
-  (md/register (gen-md/generate-metadata ::ns ::provider/schema)))
+  (std-crud/initialize resource-type ::service-group/schema)
+  (md/register (gen-md/generate-metadata ::ns ::service-group/schema)))
 
 
 ;;
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::provider/schema))
+(def validate-fn (u/create-spec-validation-fn ::service-group/schema))
 
 
 (defmethod crud/validate resource-type
@@ -163,5 +163,5 @@ contain the `id` of the provider resource.
 
 (defmethod crud/query resource-type
   [{:keys [resources] :as request}]
-  (let [updated-providers (map #(assoc-services % request) resources)]
-    (-> request query-impl (assoc :resources updated-providers))))
+  (let [updated-service-groups (map #(assoc-services % request) resources)]
+    (-> request query-impl (assoc :resources updated-service-groups))))

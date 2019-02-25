@@ -8,8 +8,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service :as t]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.provider :as provider]))
+    [sixsq.nuvla.server.resources.service-group :as service-group]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -18,7 +17,7 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def provider-base-uri (str p/service-context provider/resource-type))
+(def service-group-base-uri (str p/service-context service-group/resource-type))
 
 
 (def valid-acl {:owner {:principal "ADMIN"
@@ -35,24 +34,24 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
-        valid-provider {:name          "my-provider"
-                        :description   "my-description"
-                        :documentation "http://my-documentation.org"}
+        valid-service-group {:name          "my-service-group"
+                             :description   "my-description"
+                             :documentation "http://my-documentation.org"}
 
-        provider-id (-> session-user
-                        (request provider-base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-provider))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+        service-group-id (-> session-user
+                             (request service-group-base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-service-group))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
         service-name "my-service"
         service-desc "my-description"
         service-tags ["alpha" "beta" "gamma"]
 
         valid-service {:acl      valid-acl
-                       :parent   provider-id
+                       :parent   service-group-id
                        :type     "docker"
                        :endpoint "https://docker.example.org/api"
                        :state    "STARTED"}

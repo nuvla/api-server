@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.service :as t]
-    [sixsq.nuvla.server.resources.provider :as provider]
+    [sixsq.nuvla.server.resources.service-group :as service-group]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential :as credential]))
@@ -19,7 +19,7 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def provider-base-uri (str p/service-context provider/resource-type))
+(def service-group-base-uri (str p/service-context service-group/resource-type))
 
 
 (def credential-base-uri (str p/service-context credential/resource-type))
@@ -39,18 +39,18 @@
         session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
         session-user (header session-anon authn-info-header "jane USER ANON")
 
-        ;; setup a provider to act as parent for service
-        valid-provider {:name          "my-provider"
-                        :description   "my-description"
-                        :documentation "http://my-documentation.org"}
+        ;; setup a service-group to act as parent for service
+        valid-service-group {:name          "my-service-group"
+                             :description   "my-description"
+                             :documentation "http://my-documentation.org"}
 
-        provider-id (-> session-user
-                        (request provider-base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-provider))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+        service-group-id (-> session-user
+                             (request service-group-base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-service-group))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
         ;; setup a generic service to act as the 'cloud'
         valid-create {:name        "my-cloud-service"
@@ -58,7 +58,7 @@
                       :tags        ["alpha"]
                       :template    {:href     "service-template/generic"
                                     :acl      valid-acl
-                                    :parent   provider-id
+                                    :parent   service-group-id
                                     :type     "cloud"
                                     :endpoint "https://cloud.example.org/api"
                                     :state    "STARTED"}}
@@ -96,7 +96,7 @@
                       :description service-desc
                       :tags        service-tags
                       :template    {:href               "service-template/swarm"
-                                    :parent             provider-id
+                                    :parent             service-group-id
                                     :cloud-service      {:href cloud-service-id}
                                     :service-credential {:href credential-id}}}]
 

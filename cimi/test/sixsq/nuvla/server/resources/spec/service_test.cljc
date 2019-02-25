@@ -21,7 +21,7 @@
                  :updated       timestamp
                  :acl           valid-acl
 
-                 :parent        "provider/abcdef"
+                 :parent        "service-group/abcdef"
 
                  :method        "generic"
                  :type          "docker"

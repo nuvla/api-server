@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.provider-lifecycle-test
+(ns sixsq.nuvla.server.resources.service-group-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.provider :as t]
+    [sixsq.nuvla.server.resources.service-group :as t]
     [sixsq.nuvla.server.resources.service :as service]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -51,10 +51,10 @@
                               :template    (merge {:href "service-template/generic"}
                                                   valid-service)}
 
-        provider-name "my-provider"
-        valid-provider {:name          provider-name
-                        :description   "my-description"
-                        :documentation "http://my-documentation.org"}]
+        service-group-name "my-service-group"
+        valid-service-group {:name          service-group-name
+                             :description   "my-description"
+                             :documentation "http://my-documentation.org"}]
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -86,7 +86,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-provider))
+                 :body (json/write-str valid-service-group))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -95,29 +95,29 @@
       (let [uri (-> session
                     (request base-uri
                              :request-method :post
-                             :body (json/write-str valid-provider))
+                             :body (json/write-str valid-service-group))
                     (ltu/body->edn)
                     (ltu/is-status 201)
                     (ltu/location))
             abs-uri (str p/service-context uri)]
 
         ;; verify contents
-        (let [provider (-> session
-                           (request abs-uri)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/is-operation-present "edit")
-                           (ltu/is-operation-present "delete")
-                           :response
-                           :body)]
+        (let [service-group (-> session
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present "edit")
+                                (ltu/is-operation-present "delete")
+                                :response
+                                :body)]
 
-          (is (= provider-name (:name provider)))
-          (is (= "http://my-documentation.org" (:documentation provider)))
-          (is (vector? (:services provider)))
-          (is (zero? (count (:services provider))))
+          (is (= service-group-name (:name service-group)))
+          (is (= "http://my-documentation.org" (:documentation service-group)))
+          (is (vector? (:services service-group)))
+          (is (zero? (count (:services service-group))))
 
-          ;; creating services that have a parent attribute referencing the provider
-          ;; should show up automatically in the provider
+          ;; creating services that have a parent attribute referencing the service-group
+          ;; should show up automatically in the service-group
           (let [service-ids (set (for [_ (range 3)]
                                    (-> session
                                        (request service-base-uri
@@ -129,24 +129,24 @@
                                        :body
                                        :resource-id)))
 
-                updated-provider (-> session
-                                     (request abs-uri)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present "edit")
-                                     (ltu/is-operation-present "delete")
-                                     :response
-                                     :body)
+                updated-service-group (-> session
+                                          (request abs-uri)
+                                          (ltu/body->edn)
+                                          (ltu/is-status 200)
+                                          (ltu/is-operation-present "edit")
+                                          (ltu/is-operation-present "delete")
+                                          :response
+                                          :body)
 
-                service-hrefs (->> updated-provider
+                service-hrefs (->> updated-service-group
                                    :services
                                    (map :href)
                                    set)]
 
-            (is (vector? (:services updated-provider)))
+            (is (vector? (:services updated-service-group)))
             (is (= service-ids service-hrefs))
 
-            ;; provider with linked services cannot be deleted
+            ;; service-group with linked services cannot be deleted
             (-> session
                 (request abs-uri :request-method :delete)
                 (ltu/body->edn)
@@ -169,7 +169,7 @@
 
             (ltu/refresh-es-indices)
 
-            ;; now provider can be deleted
+            ;; now service-group can be deleted
             (-> session
                 (request abs-uri :request-method :delete)
                 (ltu/body->edn)
