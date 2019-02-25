@@ -1,8 +1,6 @@
 (ns sixsq.nuvla.auth.acl
   (:require
     [clojure.string :as str]
-    [ring.util.response :as r]
-    [sixsq.nuvla.util.convert :as cu]
     [sixsq.nuvla.util.response :as ru]))
 
 (def rights-hierarchy (-> (make-hierarchy)
@@ -78,7 +76,7 @@
   [resource request action]
   (let [rights (extract-rights
                  (current-authentication request)
-                 (cu/walk-clojurify (:acl resource)))
+                 (:acl resource))
         action (get rights-keywords action)]
     (some #(isa? rights-hierarchy % action) rights)))
 
