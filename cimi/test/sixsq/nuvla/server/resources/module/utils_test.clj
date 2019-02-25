@@ -20,7 +20,7 @@
 
 
 (deftest check-set-parent-path
-  (are [expected arg] (= expected (:parentPath (t/set-parent-path arg)))
-                      "ok" {:parentPath "bad-value"
-                            :path       "ok/go"}
+  (are [expected arg] (= expected (:parent-path (t/set-parent-path arg)))
+                      "ok" {:parent-path "bad-value"
+                            :path        "ok/go"}
                       nil {}))

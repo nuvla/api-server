@@ -31,6 +31,7 @@
   [resource]
   (validate-fn resource))
 
+
 ;;
 ;; use default ACL method
 ;;
@@ -39,11 +40,13 @@
   [resource request]
   (assoc resource :acl resource-acl))
 
+
 ;;
 ;; CRUD operations
 ;;
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
 
 (defmethod crud/add resource-type
   [request]
@@ -52,9 +55,11 @@
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
+
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
@@ -62,6 +67,7 @@
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
+
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
@@ -73,6 +79,7 @@
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
+
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
@@ -81,6 +88,7 @@
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::module-image/module-image))

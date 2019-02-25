@@ -7,43 +7,30 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::commit ::cimi-core/nonblank-string)
 (s/def ::author ::cimi-core/nonblank-string)
 
-(s/def ::cpu nat-int?)
-(s/def ::ram nat-int?)
-(s/def ::disk nat-int?)
-(s/def ::volatileDisk nat-int?)
-(s/def ::networkType #{"public" "private"})
 
-(s/def ::os #{"CentOS" "Debian" "Fedora" "OpenSuSE" "RedHat" "SLES" "Ubuntu" "Windows" "Other"})
+(s/def ::commit ::cimi-core/nonblank-string)
 
-(s/def ::connector keyword?)
 
-(s/def ::loginUser ::cimi-core/nonblank-string)
-(s/def ::sudo boolean?)
+(s/def ::architecture ::cimi-core/nonblank-string)
 
-(s/def ::imageID ::cimi-core/nonblank-string)
 
-(s/def ::imageIDs (s/map-of ::connector ::imageID))
+(s/def ::image ::cimi-core/nonblank-string)
 
-(s/def ::connectors (s/nilable (s/coll-of ::connector :min-count 1 :kind vector?)))
 
-(s/def ::relatedImage ::module/link)
+(s/def ::ports (s/coll-of ::cimi-core/nonblank-string :kind vector?))
+
+
+(s/def ::related-image ::module/link)
 
 
 (def module-image-keys-spec (su/merge-keys-specs [c/common-attrs
-                                                  {:req-un [::os
-                                                            ::loginUser
-                                                            ::networkType
-                                                            ::author]
-                                                   :opt-un [::imageIDs
-                                                            ::sudo
-                                                            ::relatedImage
-                                                            ::cpu
-                                                            ::ram
-                                                            ::disk
-                                                            ::volatileDisk
-                                                            ::commit]}]))
+                                                  {:req-un [::author
+                                                            ::architecture
+                                                            ::image]
+                                                   :opt-un [::commit
+                                                            ::ports
+                                                            ::related-image]}]))
 
 (s/def ::module-image (su/only-keys-maps module-image-keys-spec))

@@ -26,29 +26,20 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-entry {:id            (str module-image/resource-type "/connector-uuid")
+(def valid-entry {:id            (str module-image/resource-type "/module-image-uuid")
                   :resource-type module-image/resource-type
                   :created       timestamp
                   :updated       timestamp
                   :acl           valid-acl
 
-                  :os            "Ubuntu"
-                  :loginUser     "ubuntu"
-                  :sudo          true
-
-                  :cpu           2
-                  :ram           2048
-                  :disk          100
-                  :volatileDisk  500
-                  :networkType   "public"
-
-                  :imageIDs      {:some-cloud       "my-great-image-1"
-                                  :some-other-cloud "great-stuff"}
-
-                  :relatedImage  {:href "module/other"}
-
                   :author        "someone"
-                  :commit        "wip"})
+                  :commit        "wip"
+
+                  :architecture  "x86"
+                  :image         "ubuntu:16.04"
+                  :ports         ["8022:22"]
+
+                  :related-image {:href "module/other"}})
 
 
 (deftest lifecycle
@@ -79,8 +70,6 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count 0))
-
-
 
     ;; adding, retrieving and  deleting entry as user should succeed
     (let [uri (-> session-admin
