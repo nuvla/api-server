@@ -12,6 +12,7 @@
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as alpha]
     [sixsq.nuvla.server.resources.credential-template-cloud-docker :as docker]
     [sixsq.nuvla.server.resources.credential-template-driver-exoscale :as driver-exo]
+    [sixsq.nuvla.server.resources.credential-template-driver-gce :as driver-gce]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -53,10 +54,11 @@
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" alpha/method)
              (str ct/resource-type "/" docker/method)
+             (str ct/resource-type "/" driver-gce/method)
              (str ct/resource-type "/" driver-exo/method)}
            ids))
-    (is (= #{akey/method alpha/method docker/method driver-exo/method} methods))
-    (is (= #{akey/credential-type alpha/credential-type docker/credential-type driver-exo/credential-type} types))
+    (is (= #{akey/method alpha/method docker/method driver-exo/method driver-gce/method} methods))
+    (is (= #{akey/credential-type alpha/credential-type docker/credential-type driver-exo/credential-type driver-gce/credential-type} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)

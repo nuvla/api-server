@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-driver-exoscale-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-driver-gce-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-driver-exoscale :as driver-tpl]
+    [sixsq.nuvla.server.resources.credential-template-driver-gce :as driver-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -46,10 +46,11 @@
                             :description description-attr
                             :tags        tags-attr
                             :template    {:href                    href
-                                          :exoscale-api-key        "abc"
-                                          :exoscale-api-secret-key "def"}}]
-
-    ;create-import-href-no-ttl {:template {:href href}}]
+                                          :project-id              "my-project-id"
+                                          :private-key-id          "abcde1234"
+                                          :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
+                                          :client-email            "1234-compute@developer.gserviceaccount.com"
+                                          :client-id               "98765"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -115,7 +116,7 @@
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
-                    exoscale-api-key exoscale-api-secret-key]} (-> session-user
+                    project-id private-key-id private-key client-email client-id]} (-> session-user
                                                                    (request abs-uri)
                                                                    (ltu/body->edn)
                                                                    (ltu/is-status 200)
@@ -124,9 +125,12 @@
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is exoscale-api-key)
+        (is project-id)
         ;(is (key-utils/valid? secret-key digest))
-        (is exoscale-api-secret-key))
+        (is private-key-id)
+         (is private-key)
+         (is client-email)
+         (is client-id))
 
       ;; delete the credential
       (-> session-user
