@@ -1,10 +1,16 @@
-(ns sixsq.nuvla.db.es-rest.query
+(ns sixsq.nuvla.db.es.query
   (:refer-clojure :exclude [and or]))
 
 
 (defn prefix
   [term prefix]
   {:prefix {term prefix}})
+
+
+(defn full-text-search
+  [term value]
+  {:simple_query_string {:query  value
+                         :fields [term]}})
 
 
 (defn exists
