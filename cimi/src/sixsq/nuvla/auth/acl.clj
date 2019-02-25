@@ -78,7 +78,7 @@
   [resource request action]
   (let [rights (extract-rights
                  (current-authentication request)
-                 (cu/walk-clojurify (:acl resource)))
+                 (:acl resource))
         action (get rights-keywords action)]
     (some #(isa? rights-hierarchy % action) rights)))
 

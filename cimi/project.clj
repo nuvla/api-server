@@ -29,6 +29,9 @@
   :dependencies
   [[org.clojure/clojure]
    [aleph "0.4.4"]
+   [buddy/buddy-core]
+   [buddy/buddy-hashers]
+   [buddy/buddy-sign]
    [cheshire]                                               ;; newer version needed for ring-json
    [compojure]
    [clj-stacktrace]
@@ -53,14 +56,9 @@
    [com.draines/postal]
 
    ; dependencies for auth
-   [buddy/buddy-core]
-   [buddy/buddy-hashers]
-   [buddy/buddy-sign]
    [clj-http]
-   [peridot]
    [sixsq.nuvla.server/utils ~+version+]
-   [sixsq.nuvla.server/db-binding-jar ~+version+]
-   [sixsq.nuvla.server/token ~+version+]]
+   [sixsq.nuvla.server/db-binding-jar ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]
 
