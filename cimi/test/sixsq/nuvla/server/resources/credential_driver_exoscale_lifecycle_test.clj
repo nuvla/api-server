@@ -5,12 +5,9 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential-driver-exoscale :as t]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-driver-exoscale :as driver-tpl]
-    [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -34,8 +31,8 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href (str ct/resource-type "/" driver-tpl/cred-method)
-        template-url (str p/service-context ct/resource-type "/" driver-tpl/cred-method)
+        href (str ct/resource-type "/" driver-tpl/method)
+        template-url (str p/service-context ct/resource-type "/" driver-tpl/method)
 
         template (-> session-admin
                      (request template-url)
@@ -48,11 +45,11 @@
         create-import-href {:name        name-attr
                             :description description-attr
                             :tags        tags-attr
-                            :template    {:href href
-                                          :exoscale-api-key  "abc"
-                                          :exoscale-api-secret-key  "def"}}]
+                            :template    {:href                    href
+                                          :exoscale-api-key        "abc"
+                                          :exoscale-api-secret-key "def"}}]
 
-        ;create-import-href-no-ttl {:template {:href href}}]
+    ;create-import-href-no-ttl {:template {:href href}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -119,11 +116,11 @@
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
                     exoscale-api-key exoscale-api-secret-key]} (-> session-user
-                                               (request abs-uri)
-                                               (ltu/body->edn)
-                                               (ltu/is-status 200)
-                                               :response
-                                               :body)]
+                                                                   (request abs-uri)
+                                                                   (ltu/body->edn)
+                                                                   (ltu/is-status 200)
+                                                                   :response
+                                                                   :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
@@ -279,6 +276,6 @@
     ;               :request-method :delete)
     ;      (ltu/body->edn)
     ;      (ltu/is-status 200)))
-     ))
+    ))
 
 

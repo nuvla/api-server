@@ -7,55 +7,37 @@
     [sixsq.nuvla.server.resources.spec.credential-template-driver-exoscale :as driver]))
 
 
-(def ^:const resource-acl-default {:owner {:principal "ADMIN"
-                                           :type      "ROLE"}
-                                   :rules [{:principal "USER"
-                                            :type      "ROLE"
-                                            :right     "VIEW"}]})
+(def ^:const credential-type "cloud-driver-cred-exoscale")
 
-
-(def ^:const resource-base
-  {:name        "User cloud credentials store"
-   :description "Stores user cloud credentials"
-   :exoscale-api-key         ""
-   :exoscale-api-secret-key  ""
-   :acl         resource-acl-default})
-
-
-
-(def ^:const cred-type "cloud-driver-cred-exoscale")
-(def ^:const cred-method "store-cloud-driver-cred-exoscale")
 
 (def ^:const resource-name "Exoscale driver API keys")
 
-(def ^:const resource-url cred-type)
+
+(def ^:const resource-url credential-type)
 
 
-
-;(defn cred-type
-;  [cloud-service-type]
-;  (str "cloud-driver-cred-" cloud-service-type))
-;
-;
-;(defn cred-method
-;  [cloud-service-type]
-;  (str "store-cloud-driver-cred-" cloud-service-type))
+(def ^:const method "store-cloud-driver-cred-exoscale")
 
 
-(defn gen-resource
-  [cred-instance-map cloud-service-type]
-  (merge resource-base
-         {:name        (str "User cloud credentials store for driver " cloud-service-type)
-          :description (str "Stores user cloud credentials for cloud driver " cloud-service-type)
-          :type        cred-type
-          :method      cred-method}
-         cred-instance-map))
+(def resource-acl {:owner {:principal "ADMIN"
+                           :type      "ROLE"}
+                   :rules [{:principal "USER"
+                            :type      "ROLE"
+                            :right     "VIEW"}]})
 
+;;
+;; resource
+;;
 
-(defn register
-  [cred-instance-map cloud-service-type]
-  (p/register (gen-resource cred-instance-map cloud-service-type)))
-
+(def ^:const resource
+  {:type                    credential-type
+   :method                  method
+   :name                    "docker-machine-driver-exo"
+   :description             "Driver exoscale for docker machine"
+   :exoscale-api-key        ""
+   :exoscale-api-secret-key ""
+   :acl                     resource-acl
+   :resourceMetadata        "resource-metadata/credential-template-driver-exoscale"})
 
 
 ;;
@@ -63,9 +45,9 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::driver/schema))
-(defmethod p/validate-subtype cred-method
-           [resource]
-           (validate-fn resource))
+(defmethod p/validate-subtype method
+  [resource]
+  (validate-fn resource))
 
 
 ;;
@@ -73,6 +55,6 @@
 ;;
 
 (defn initialize
-      []
-      (p/register resource-base)
-      (md/register (gen-md/generate-metadata ::ns ::p/ns ::driver/schema)))
+  []
+  (p/register resource)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::driver/schema)))
