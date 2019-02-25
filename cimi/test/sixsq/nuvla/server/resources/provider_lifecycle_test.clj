@@ -167,8 +167,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 404)))
 
-            ;; FIXME: sleep to allow index to be refreshed.  Better solution?
-            (Thread/sleep 2000)
+            (ltu/refresh-es-indices)
 
             ;; now provider can be deleted
             (-> session
