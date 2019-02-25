@@ -40,7 +40,7 @@ provide the following environmental variables as well:
 
  - ES_HOST: hostname or address for the Elasticsearch database.
    Defaults to 'localhost'.
- - ES_PORT: port for the Elasticsearch database.  Defaults to 9300.
+ - ES_PORT: port for the Elasticsearch database.  Defaults to 9200.
 
 To run this, do the following:
 
