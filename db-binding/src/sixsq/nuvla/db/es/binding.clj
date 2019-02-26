@@ -72,7 +72,7 @@
     (let [[collection-id uuid] (cu/split-id id)
           index (escu/collection-id->index collection-id)
           response (spandex/request client {:url          [index :_doc uuid :_create]
-                                            :query-string {:refresh "wait_for"}
+                                            :query-string {:refresh true}
                                             :method       :put
                                             :body         (prepare-data data)})
           success? (pos? (get-in response [:body :_shards :successful]))]
@@ -92,7 +92,7 @@
         index (escu/collection-id->index collection-id)
         updated-doc (prepare-data data)
         response (spandex/request client {:url          [index :_doc uuid]
-                                          :query-string {:refresh "wait_for"}
+                                          :query-string {:refresh true}
                                           :method       :put
                                           :body         updated-doc})
         success? (pos? (get-in response [:body :_shards :successful]))]
@@ -126,7 +126,7 @@
     (let [[collection-id uuid] (cu/split-id id)
           index (escu/collection-id->index collection-id)
           response (spandex/request client {:url          [index :_doc uuid]
-                                            :query-string {:refresh "wait_for"}
+                                            :query-string {:refresh true}
                                             :method       :delete})
           success? (pos? (get-in response [:body :_shards :successful]))
           deleted? (= "deleted" (get-in response [:body :result]))]
