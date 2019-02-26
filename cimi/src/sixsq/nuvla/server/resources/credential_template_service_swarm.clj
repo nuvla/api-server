@@ -6,7 +6,7 @@ This credential-template creates a credential for a Docker Swarm service.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-swarm :as tpl-swarm]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm :as ct-infra-service-swarm]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -42,7 +42,7 @@ This credential-template creates a credential for a Docker Swarm service.
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::tpl-swarm/schema))
+(def validate-fn (u/create-spec-validation-fn ::ct-infra-service-swarm/schema))
 (defmethod p/validate-subtype method
   [resource]
   (validate-fn resource))
@@ -55,4 +55,4 @@ This credential-template creates a credential for a Docker Swarm service.
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::tpl-swarm/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema)))

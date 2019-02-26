@@ -19,7 +19,7 @@
   [client indexes]
   (-> client
       (spandex/request {:url          [:_cluster :health (str/join "," indexes)]
-                        :query-string {:wait_for_status "green"
+                        :query-string {:wait_for_status "yellow"
                                        :timeout         "15s"}
                         :method       :get})
       :body

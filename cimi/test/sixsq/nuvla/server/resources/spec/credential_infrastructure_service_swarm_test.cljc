@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.credential-service-docker-test
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm-test
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-service-swarm :as cred-docker]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -31,8 +31,8 @@
               :cert          "client-public-certificate"
               :key           "client-private-certificate"}]
 
-    (stu/is-valid ::cred-docker/schema cred)
+    (stu/is-valid ::cred-infra-service-swarm/schema cred)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl :services :ca :cert :key}]
-      (stu/is-invalid ::cred-docker/schema (dissoc cred k)))))
+      (stu/is-invalid ::cred-infra-service-swarm/schema (dissoc cred k)))))
