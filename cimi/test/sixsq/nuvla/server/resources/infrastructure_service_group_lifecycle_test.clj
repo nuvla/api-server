@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-group-lifecycle-test
+(ns sixsq.nuvla.server.resources.infrastructure-service-group-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -7,8 +7,8 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.service-group :as t]
-    [sixsq.nuvla.server.resources.service :as service]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as t]
+    [sixsq.nuvla.server.resources.infrastructure-service :as service]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 

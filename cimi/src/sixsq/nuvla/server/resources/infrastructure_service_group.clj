@@ -1,13 +1,13 @@
-(ns sixsq.nuvla.server.resources.service-group
+(ns sixsq.nuvla.server.resources.infrastructure-service-group
   "
-This resource represents a 'service-group', which provides a number of related
-services, for example, a Docker Swarm and an S3 service, that are optimized to
-work together.
+The infrastructure-service-group resource represents a group of
+infrastructure-service resources, which are intended to be used together.
 
-The resource contains metadata concerning the service-group and an
-automatically generated list of associated services. The service resources are
-tied to an infrastructure via the service resource's `parent` attribute, which
-will contain the `id` of the service-group resource.
+The resource contains metadata concerning the infrastructure-service-group and
+an automatically generated list of associated infrastructure-service resources.
+The resources are tied to an infrastructure via the infrastructure-service
+resource's `parent` attribute, which will contain the `id` of the
+infrastructure-service-group resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
@@ -16,8 +16,8 @@ will contain the `id` of the service-group resource.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.service :as service]
-    [sixsq.nuvla.server.resources.spec.service-group :as service-group]
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-group :as infra-service-group]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]))
 
@@ -40,15 +40,15 @@ will contain the `id` of the service-group resource.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::service-group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::service-group/schema)))
+  (std-crud/initialize resource-type ::infra-service-group/schema)
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-group/schema)))
 
 
 ;;
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::service-group/schema))
+(def validate-fn (u/create-spec-validation-fn ::infra-service-group/schema))
 
 
 (defmethod crud/validate resource-type
@@ -96,8 +96,8 @@ will contain the `id` of the service-group resource.
    (let [filter (-> {:filter (str "parent='" resource-id "'")}
                     (cimi-params-impl/cimi-filter))
          request (-> (extract-authn-info initial-request)
-                     (assoc :params {:resource-name service/resource-type}
-                            :route-params {:resource-name service/resource-type}
+                     (assoc :params {:resource-name infra-service/resource-type}
+                            :route-params {:resource-name infra-service/resource-type}
                             :cimi-params {:filter filter
                                           :select ["id"]}))]
 

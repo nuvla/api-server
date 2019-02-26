@@ -1,13 +1,13 @@
-(ns sixsq.nuvla.server.resources.spec.service-template
+(ns sixsq.nuvla.server.resources.spec.infrastructure-service-template
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.service :as service]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service :as infrastructure-service]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
 ;; Restrict the href used to create services.
-(def service-template-regex #"^service-template/[a-z]+(-[a-z]+)*$")
+(def service-template-regex #"^infrastructure-service-template/[a-z]+(-[a-z]+)*$")
 (s/def ::href (s/and string? #(re-matches service-template-regex %)))
 
 ;;
@@ -16,8 +16,8 @@
 ;; is no sense in defining map resources for the resource itself.
 ;;
 
-(def service-template-keys-spec {:req-un [::service/type
-                                          ::service/method]})
+(def service-template-keys-spec {:req-un [::infrastructure-service/type
+                                          ::infrastructure-service/method]})
 
 
 (def resource-keys-spec
