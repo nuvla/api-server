@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.service-group
+(ns sixsq.nuvla.server.resources.spec.infrastructure-service-group
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]

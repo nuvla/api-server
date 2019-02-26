@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.service-group-test
+(ns sixsq.nuvla.server.resources.spec.infrastructure-service-group-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.service :as service]
-    [sixsq.nuvla.server.resources.spec.service-group :as service-group]
+    [sixsq.nuvla.server.resources.infrastructure-service :as service]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-group :as infrastructure-service-group]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -22,17 +22,17 @@
                        :acl           valid-acl
 
                        :documentation "http://example.com/documentation"
-                       :services      [{:href "service/service-1"}
-                                       {:href "service/service-2"}]}]
+                       :services      [{:href "infrastructure-service/service-1"}
+                                       {:href "infrastructure-service/service-2"}]}]
 
-    (stu/is-valid ::service-group/schema service-group)
+    (stu/is-valid ::infrastructure-service-group/schema service-group)
 
-    (stu/is-valid ::service-group/schema (assoc service-group :services []))
+    (stu/is-valid ::infrastructure-service-group/schema (assoc service-group :services []))
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl}]
-      (stu/is-invalid ::service-group/schema (dissoc service-group k)))
+      (stu/is-invalid ::infrastructure-service-group/schema (dissoc service-group k)))
 
     ;; optional keywords
     (doseq [k #{:documentation :services}]
-      (stu/is-valid ::service-group/schema (dissoc service-group k)))))
+      (stu/is-valid ::infrastructure-service-group/schema (dissoc service-group k)))))

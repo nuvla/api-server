@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.service-template-generic-test
+(ns sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic-test
   (:require
     [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.resources.service-template :as tpl]
-    [sixsq.nuvla.server.resources.service-template-generic :as tpl-generic]
-    [sixsq.nuvla.server.resources.spec.service-template-generic :as spec-generic]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as spec-generic]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -16,13 +16,13 @@
 
 (deftest check-service-template-generic-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id            (str tpl/resource-type "/generic")
-             :resource-type tpl/resource-type
+        cfg {:id            (str infra-service-tpl/resource-type "/generic")
+             :resource-type infra-service-tpl/resource-type
              :created       timestamp
              :updated       timestamp
              :acl           valid-acl
 
-             :method        tpl-generic/method
+             :method        infra-service-tpl-generic/method
 
              :type          "s3"
              :endpoint      "https://s3.example.org:2000"

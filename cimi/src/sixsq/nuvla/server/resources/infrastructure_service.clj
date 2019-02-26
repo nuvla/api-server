@@ -1,12 +1,13 @@
-(ns sixsq.nuvla.server.resources.service
+(ns sixsq.nuvla.server.resources.infrastructure-service
   "
-This resource represents a service with an endpoint. Instances of a service
-resource must reference a provider resource via the `parent` attribute.
-Associated credentials should make an explicit reference to the relevant
-service resources.
+This resource represents an infrastructure service with an endpoint. Instances
+of a infrastructure-service resource must reference a
+infrastructure-service-group resource via the `parent` attribute. Associated
+credentials should make an explicit reference to the relevant
+infrastructure-service resources.
 
 This is a templated resource. All creation requests must be done via an
-existing service-template resource.
+existing infrastructure-service-template resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
@@ -14,7 +15,7 @@ existing service-template resource.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.service :as service]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -39,15 +40,15 @@ existing service-template resource.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::service/schema)))
+  (std-crud/initialize resource-type ::infra-service/schema)
+  (md/register (gen-md/generate-metadata ::ns ::infra-service/schema)))
 
 
 ;;
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::service/schema))
+(def validate-fn (u/create-spec-validation-fn ::infra-service/schema))
 
 
 (defmethod crud/validate resource-type

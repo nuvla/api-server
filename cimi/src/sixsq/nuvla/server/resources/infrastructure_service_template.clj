@@ -1,12 +1,12 @@
-(ns sixsq.nuvla.server.resources.service-template
+(ns sixsq.nuvla.server.resources.infrastructure-service-template
   "
-A collection of templates that allow users to create service resources that
-identify other services that will be used by Nuvla, for example Docker Swarm
-clusters or S3 object stores.
+A collection of templates that allow users to create infrastructure-service
+resources that identify other services that will be used by Nuvla, for example
+Docker Swarm clusters or S3 object stores.
 
-An ephemeral, in-memory 'database' of service-template resources is used to
-store the collection. As a consequence, the filtering, paging, etc. parameters
-are not supported.
+An ephemeral, in-memory 'database' of infrastructure-service-template
+resources is used to store the collection. As a consequence, the filtering,
+paging, etc. parameters are not supported.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -15,7 +15,7 @@ are not supported.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.service-template :as service-tpl]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]))
 
@@ -165,5 +165,5 @@ are not supported.
 
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::service-tpl/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/schema)))
 

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-generic-lifecycle-test
+(ns sixsq.nuvla.server.resources.infrastructure-service-generic-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -7,8 +7,10 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.service :as t]
-    [sixsq.nuvla.server.resources.service-group :as service-group]))
+    [sixsq.nuvla.server.resources.infrastructure-service :as t]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -59,7 +61,8 @@
         valid-create {:name        service-name
                       :description service-desc
                       :tags        service-tags
-                      :template    (merge {:href "service-template/generic"}
+                      :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                      infra-service-tpl-generic/method)}
                                           valid-service)}]
 
     ;; admin query succeeds but is empty
