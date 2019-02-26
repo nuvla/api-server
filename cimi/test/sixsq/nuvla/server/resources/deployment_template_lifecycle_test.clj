@@ -17,31 +17,6 @@
 
 (def collection-uri (str p/service-context dt/resource-type))
 
-(defn valid-comp [image-id] {:parentModule     {:href image-id}
-
-                             :networkType      "public"
-
-                             :disk             200
-
-                             :inputParameters  [{:parameter "iparam-1" :description "desc2" :value "100"}
-                                                {:parameter "iparam-2" :description "desc2"}
-                                                {:parameter "iparam-3"}]
-
-                             :outputParameters [{:parameter "oparam-1" :description "desc2" :value "100"}
-                                                {:parameter "oparam-2" :description "desc2"}
-                                                {:parameter "oparam-3"}]
-
-                             :targets          {:preinstall  "preinstall"
-                                                :packages    ["emacs-nox" "vim"]
-                                                :postinstall "postinstall"
-                                                :deployment  "deployment"
-                                                :reporting   "reporting"
-                                                :onVmAdd     "onVmAdd"
-                                                :onVmRemove  "onVmRemove"
-                                                :prescale    "prescale"
-                                                :postscale   "postscale"}
-                             :author           "someone"
-                             :commit           "wip"})
 
 (deftest lifecycle
 
@@ -56,27 +31,15 @@
                            (request module-test/base-uri
                                     :request-method :post
                                     :body (json/write-str (assoc module-test/valid-entry
-                                                            :content module-test/valid-image)))
+                                                            :content (dissoc module-test/valid-image :related-image))))
                            (ltu/body->edn)
                            (ltu/is-status 201)
                            (ltu/location))
 
-        module-uri (-> session-user
-                       (request module-test/base-uri
-                                :request-method :post
-                                :body (json/write-str (assoc {:resource-type module/resource-type
-                                                              :parentPath    "a/b"
-                                                              :path          "a/b/c"
-                                                              :type          "COMPONENT"}
-                                                        :content (valid-comp module-img-uri))))
-                       (ltu/body->edn)
-                       (ltu/is-status 201)
-                       (ltu/location))
-
-        valid-create {:module {:href module-uri}}]
+        valid-create {:module {:href module-img-uri}}]
 
     (-> session-user
-        (request (str p/service-context module-uri))
+        (request (str p/service-context module-img-uri))
         (ltu/body->edn)
         (ltu/is-status 200))
 
@@ -87,7 +50,6 @@
                  :body (json/write-str valid-create))
         (ltu/body->edn)
         (ltu/is-status 403))
-
 
     ;; full deployment template lifecycle as user should work
     (let [deployment-template-uri (-> session-user

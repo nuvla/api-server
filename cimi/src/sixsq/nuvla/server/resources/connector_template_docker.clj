@@ -2,10 +2,10 @@
   "Connector template for Docker"
   (:require
     [clojure.set :as set]
-    [sixsq.nuvla.server.resources.spec.connector-template-docker :as ctd]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.connector-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.connector-template-docker :as ctd]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 

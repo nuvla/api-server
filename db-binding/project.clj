@@ -41,15 +41,13 @@
    [org.clojure/data.json]
    [org.clojure/tools.logging]
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
-   [org.elasticsearch/elasticsearch]
-   [org.elasticsearch.client/transport]
    [org.slf4j/slf4j-api]
-   [ring/ring-json]
-   ]
+   [ring/ring-json]]
 
   :profiles {:test     {:aot            :all
                         :resource-paths ["test-resources"]
                         :dependencies   [[org.slf4j/slf4j-log4j12]
                                          [me.raynes/fs]
+                                         [org.elasticsearch.client/transport]
                                          [org.elasticsearch.test/framework]]}
              :provided {:dependencies [[org.clojure/clojure]]}})

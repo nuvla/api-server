@@ -14,7 +14,7 @@
                        [-1 10] [0 10]                       ;; invalid first defaults to 1
                        [nil nil] [0 t/max-size]             ;; default values when missing args
                        [nil 10] [0 10]                      ;; missing first value
-                       [3 nil] [2 t/max-size]               ;; missing last value
+                       [3 nil] [2 (- t/max-size 2)]               ;; missing last value
 
                        [0 1] [0 1]                          ;; invalid first defaults to 1
                        [1 0] [0 0]                          ;; zero last -> zero size, always

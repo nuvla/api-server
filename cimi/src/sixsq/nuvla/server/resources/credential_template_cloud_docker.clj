@@ -2,12 +2,12 @@
     "This CredentialTemplate allows creating a Cloud Credential instance to hold
     cloud credentials for Docker cloud."
   (:require
-    [sixsq.nuvla.server.resources.connector-template-docker :as ct]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.connector-template-docker :as ct]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.credential-template-cloud :as ctc]
-    [sixsq.nuvla.server.resources.spec.credential-template-cloud-docker :as docker-tpl]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.credential-template-cloud-docker :as docker-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 

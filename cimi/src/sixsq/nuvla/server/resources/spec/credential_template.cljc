@@ -13,8 +13,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "type"
              :json-schema/name "type"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -36,8 +34,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
              :json-schema/name "method"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
