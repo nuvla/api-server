@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.credential-service-swarm
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
-    [sixsq.nuvla.server.resources.spec.credential-service :as cred-service]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
     [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -68,7 +68,7 @@
 
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
-                     cred-service/credential-service-keys-spec
+                     cred-infra-service/credential-service-keys-spec
                      {:req-un [::ca
                                ::cert
                                ::key]}))

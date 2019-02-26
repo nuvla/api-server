@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-service
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
@@ -26,7 +26,7 @@
 
 
 (s/def ::services
-  (-> (st/spec (s/coll-of ::service-link :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of ::service-link :kind vector?))
       (assoc :name "services"
              :json-schema/name "services"
              :json-schema/type "Array"
