@@ -12,11 +12,15 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module-lifecycle-test :as module-test]))
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context deployment/resource-type))
 
+
 (def deployment-template-collection-uri (str p/service-context deployment-template/resource-type))
+
 
 (deftest lifecycle
 
@@ -29,7 +33,7 @@
                        (request module-test/base-uri
                                 :request-method :post
                                 :body (json/write-str (assoc module-test/valid-entry
-                                                        :content module-test/valid-image)))
+                                                        :content (dissoc module-test/valid-image :related-image))))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
@@ -200,6 +204,7 @@
             (ltu/is-count 3))
 
         ))))
+
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id deployment/resource-type))]

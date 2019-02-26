@@ -19,29 +19,28 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-entry {:id            (str module/resource-type "/connector-uuid")
-                  :resource-type module/resource-type
-                  :created       timestamp
-                  :updated       timestamp
-                  :parentPath    "a/b"
-                  :path          "a/b/c"
-                  :type          "IMAGE"})
+(def valid-entry {:id                        (str module/resource-type "/connector-uuid")
+                  :resource-type             module/resource-type
+                  :created                   timestamp
+                  :updated                   timestamp
+                  :parent-path               "a/b"
+                  :path                      "a/b/c"
+                  :type                      "IMAGE"
 
-(def valid-image {:os           "Ubuntu"
-                  :loginUser    "ubuntu"
-                  :sudo         true
+                  :logo-url                  "https://example.org/logo"
 
-                  :cpu          2
-                  :ram          2048
-                  :disk         100
-                  :volatileDisk 500
-                  :networkType  "public"
+                  :data-accept-content-types ["application/json" "application/x-something"]
+                  :data-access-protocols     ["http+s3" "posix+nfs"]})
 
-                  :imageIDs     {:some-cloud       "my-great-image-1"
-                                 :some-other-cloud "great-stuff"}
 
-                  :author       "someone"
-                  :commit       "wip"})
+(def valid-image {:author        "someone"
+                  :commit        "wip"
+
+                  :architecture  "x86"
+                  :image         "ubuntu:16.04"
+                  :ports         ["8022:22"]
+
+                  :related-image {:href "module/other"}})
 
 
 (deftest lifecycle
@@ -71,7 +70,6 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)))
-
 
     ;; invalid module type
     (-> session-admin
@@ -126,7 +124,6 @@
                        :body (json/write-str (assoc valid-entry :content valid-image)))
               (ltu/body->edn)
               (ltu/is-status 200)))
-
 
         (let [versions (-> session-admin
                            (request abs-uri
