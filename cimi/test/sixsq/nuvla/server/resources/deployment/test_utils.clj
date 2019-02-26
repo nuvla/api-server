@@ -63,7 +63,7 @@
              :type          "COMPONENT",
              :created       "2018-07-25T10:08:49.035Z",
              :id            "module/comp-a",
-             :parentPath    "examples/tutorials/service-testing",
+             :parent-path   "examples/tutorials/service-testing",
              :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def comp-b {:description   "Apache web server ++",
@@ -89,7 +89,7 @@
              :type          "COMPONENT",
              :created       "2018-07-25T10:08:49.035Z",
              :id            "module/comp-b",
-             :parentPath    "examples/tutorials/service-testing",
+             :parent-path   "examples/tutorials/service-testing",
              :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def comp-c {:description   "Apache web server +++",
@@ -110,7 +110,7 @@
              :type          "COMPONENT",
              :created       "2018-07-25T10:08:49.035Z",
              :id            "module/comp-b",
-             :parentPath    "examples/tutorials/service-testing",
+             :parent-path   "examples/tutorials/service-testing",
              :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 (def app-a {:description   "Deployment",
@@ -135,7 +135,7 @@
             :type          "APPLICATION",
             :created       "2018-07-25T10:09:18.583Z",
             :id            "module/app",
-            :parentPath    "examples/tutorials/service-testing",
+            :parent-path   "examples/tutorials/service-testing",
             :resource-type "http://sixsq.com/slipstream/1/Module"})
 
 
@@ -276,7 +276,7 @@
            :description   "Apache web server appliance with custom landing page."
            :id            "module/comp-a"
            :name          "apache"
-           :parentPath    "examples/tutorials/service-testing"
+           :parent-path   "examples/tutorials/service-testing"
            :path          "examples/tutorials/service-testing/apache"
            :resource-type "http://sixsq.com/slipstream/1/Module"
            :type          "COMPONENT"
@@ -335,7 +335,7 @@
            :description   "Apache web server ++"
            :id            "module/comp-b"
            :name          "apache++"
-           :parentPath    "examples/tutorials/service-testing"
+           :parent-path   "examples/tutorials/service-testing"
            :path          "examples/tutorials/service-testing/apache++"
            :resource-type "http://sixsq.com/slipstream/1/Module"
            :type          "COMPONENT"
@@ -397,7 +397,7 @@
            :description   "Apache web server +++"
            :id            "module/comp-b"
            :name          "apache++"
-           :parentPath    "examples/tutorials/service-testing"
+           :parent-path   "examples/tutorials/service-testing"
            :path          "examples/tutorials/service-testing/apache+++"
            :resource-type "http://sixsq.com/slipstream/1/Module"
            :type          "COMPONENT"

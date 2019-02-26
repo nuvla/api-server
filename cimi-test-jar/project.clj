@@ -23,12 +23,14 @@
 
   :pom-location "target/"
 
-  :dependencies [[sixsq.nuvla.server/db-binding-jar ~+version+]
-                 [sixsq.nuvla.server/db-testing-jar ~+version+ :scope "compile"]
-                 [org.apache.curator/curator-test :scope "compile"]
-                 [peridot :scope "compile"]
-                 [expound :scope "compile"]
-                 [org.clojure/data.json]
-                 [compojure]
+  :dependencies [[compojure]
                  [com.cemerick/url]
-                 [sixsq.nuvla.ring/code ~+version+]])
+                 [me.raynes/fs]
+                 [sixsq.nuvla.ring/code ~+version+]
+                 [sixsq.nuvla.server/db-binding-jar ~+version+]
+                 [org.apache.curator/curator-test :scope "compile"]
+                 [org.clojure/data.json]
+                 [org.elasticsearch.client/transport]
+                 [org.elasticsearch.test/framework]
+                 [peridot :scope "compile"]
+                 [expound :scope "compile"]])

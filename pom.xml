@@ -10,11 +10,9 @@
 
   <modules>
     <module>utils</module>
-    <module>token</module>
     <module>cimi</module>
     <module>cimi-test-jar</module>
     <module>db-binding</module>
-    <module>db-testing</module>
     <module>container</module>
   </modules>
 

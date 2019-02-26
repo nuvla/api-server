@@ -57,6 +57,14 @@
              :json-schema/type "string")))
 
 
+;; FIXME: Replace this spec with one that enforces the URL grammar.
+(s/def ::url
+  (-> (st/spec ::nonblank-string)
+      (assoc :name "URL"
+             :json-schema/description "Uniform Resource Locator"
+             :json-schema/type "string")))
+
+
 (s/def ::username
   (-> (st/spec (s/and string? #(re-matches #"^[a-zA-Z0-9_]+$" %)))
       (assoc :name "username"

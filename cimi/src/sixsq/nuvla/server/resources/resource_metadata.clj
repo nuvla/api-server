@@ -39,6 +39,7 @@
 ;;
 ;; atom to keep track of the resource metadata documents for loaded resources
 ;;
+
 (def templates (atom {}))
 
 
@@ -57,10 +58,9 @@
 
 
 (defn register
-  "Registers a given ConfigurationTemplate resource and its description
-   with the server.  The resource document (resource) and the description
-   (desc) must be valid.  The key will be used to create the id of
-   the resource as 'configuration-template/key'."
+  "Registers a given resource-metadata resource with the server. The resource
+   document must be valid. The `typeURI` attribute will be used to create the
+   id of the resource as 'resource-metadata/typeURI'."
   [{:keys [typeURI] :as resource}]
   (when-let [full-resource (complete-resource typeURI resource)]
     (let [id (:id full-resource)]

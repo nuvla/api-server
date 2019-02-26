@@ -29,6 +29,9 @@
   :dependencies
   [[org.clojure/clojure]
    [aleph "0.4.4"]
+   [buddy/buddy-core]
+   [buddy/buddy-hashers]
+   [buddy/buddy-sign]
    [cheshire]                                               ;; newer version needed for ring-json
    [compojure]
    [clj-stacktrace]
@@ -53,14 +56,9 @@
    [com.draines/postal]
 
    ; dependencies for auth
-   [buddy/buddy-core]
-   [buddy/buddy-hashers]
-   [buddy/buddy-sign]
    [clj-http]
-   [peridot]
    [sixsq.nuvla.server/utils ~+version+]
-   [sixsq.nuvla.server/db-binding-jar ~+version+]
-   [sixsq.nuvla.server/token ~+version+]]
+   [sixsq.nuvla.server/db-binding-jar ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]
 
@@ -72,7 +70,6 @@
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [sixsq.nuvla.server/db-testing-jar ~+version+]
                                [sixsq.nuvla.server/cimi-test-jar ~+version+]]
               :resource-paths ["test-resources"]
               :env            {:config-name      "config-params.edn"
