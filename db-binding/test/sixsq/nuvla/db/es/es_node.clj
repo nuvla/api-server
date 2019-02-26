@@ -28,7 +28,7 @@
                       (put "http.enabled" true)
                       (put "logger.level" "ERROR")
                       (put "http.type" "netty4")
-                      (put "http.port" "9200-9300")
+                      (put "http.port" "9200")
                       (put "transport.type" "netty4")
                       (put "network.host" "127.0.0.1")
                       (build))
