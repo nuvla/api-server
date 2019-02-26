@@ -9,7 +9,9 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as t]
     [sixsq.nuvla.server.resources.infrastructure-service :as service]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -48,7 +50,8 @@
         valid-service-create {:name        "my-service"
                               :description "my-description"
                               :tags        ["alpha" "beta" "gamma"]
-                              :template    (merge {:href "service-template/generic"}
+                              :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                              infra-service-tpl-generic/method)}
                                                   valid-service)}
 
         service-group-name "my-service-group"
