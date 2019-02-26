@@ -16,11 +16,11 @@ for the Exoscale driver
 
 (defmethod p/tpl->credential tpl/credential-type
            [{:keys [type method exoscale-api-key exoscale-api-secret-key acl]} request]
-           (let [resource (cond-> {:resource-type p/resource-type
-                                   :type          type
-                                   :method        method
-                                   :exoscale-api-key           exoscale-api-key
-                                   :exoscale-api-secret-key    exoscale-api-secret-key}
+           (let [resource (cond-> {:resource-type           p/resource-type
+                                   :type                    type
+                                   :method                  method
+                                   :exoscale-api-key        exoscale-api-key
+                                   :exoscale-api-secret-key exoscale-api-secret-key}
                                   acl (assoc :acl acl))]
                 [nil resource]))
 
