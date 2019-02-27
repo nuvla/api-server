@@ -1,21 +1,21 @@
-(ns sixsq.nuvla.server.resources.credential-template-driver-exoscale
+(ns sixsq.nuvla.server.resources.credential-template-service-exoscale
     "This CredentialTemplate allows creating a Credential instance to hold
-    cloud credentials for the Exoscale's Docker Machine driver."
+    cloud credentials for the Exoscale's services."
     (:require
       [sixsq.nuvla.server.resources.credential-template :as p]
       [sixsq.nuvla.server.resources.common.utils :as u]
       [sixsq.nuvla.server.resources.resource-metadata :as md]
       [sixsq.nuvla.server.util.metadata :as gen-md]
-      [sixsq.nuvla.server.resources.spec.credential-template-driver-exoscale :as driver]))
+      [sixsq.nuvla.server.resources.spec.credential-template-service-exoscale :as service]))
 
 
-(def ^:const credential-type "cloud-driver-cred-exoscale")
+(def ^:const credential-type "cloud-service-cred-exoscale")
 
 
-(def ^:const resource-name "Exoscale driver API keys")
+(def ^:const resource-name "Exoscale API keys")
 
 
-(def ^:const method "store-cloud-driver-cred-exoscale")
+(def ^:const method "store-cloud-service-cred-exoscale")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
@@ -35,6 +35,7 @@
    :description             "Driver exoscale for docker machine"
    :exoscale-api-key        ""
    :exoscale-api-secret-key ""
+   :services                []
    :acl                     resource-acl
    :resourceMetadata        "resource-metadata/credential-template-driver-exoscale"})
 
@@ -43,7 +44,7 @@
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::driver/schema))
+(def validate-fn (u/create-spec-validation-fn ::service/schema))
 (defmethod p/validate-subtype method
            [resource]
            (validate-fn resource))
@@ -56,4 +57,4 @@
 (defn initialize
       []
       (p/register resource)
-      (md/register (gen-md/generate-metadata ::ns ::p/ns ::driver/schema)))
+      (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema)))

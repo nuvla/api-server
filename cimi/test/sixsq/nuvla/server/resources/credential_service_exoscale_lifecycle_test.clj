@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-driver-exoscale-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-service-exoscale-lifecycle-test
     (:require
       [clojure.data.json :as json]
       [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,7 +7,7 @@
       [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
       [sixsq.nuvla.server.resources.credential :as credential]
       [sixsq.nuvla.server.resources.credential-template :as ct]
-      [sixsq.nuvla.server.resources.credential-template-driver-exoscale :as driver-tpl]
+      [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-tpl]
       [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -26,8 +26,8 @@
                description-attr "description"
                tags-attr ["one", "two"]
 
-               href (str ct/resource-type "/" driver-tpl/method)
-               template-url (str p/service-context ct/resource-type "/" driver-tpl/method)
+               href (str ct/resource-type "/" service-tpl/method)
+               template-url (str p/service-context ct/resource-type "/" service-tpl/method)
 
                template (-> session-admin
                             (request template-url)
@@ -42,7 +42,8 @@
                                    :tags        tags-attr
                                    :template    {:href                    href
                                                  :exoscale-api-key        "abc"
-                                                 :exoscale-api-secret-key "def"}}]
+                                                 :exoscale-api-secret-key "def"
+                                                 :services                []}}]
 
               ;; admin/user query should succeed but be empty (no credentials created yet)
               (doseq [session [session-admin session-user]]
