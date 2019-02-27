@@ -22,11 +22,26 @@
 (s/def ::ports (s/coll-of ::cimi-core/nonblank-string :kind vector?))
 
 
+;; this is a 'friendly' name for a given URL, intended mainly for display
+(s/def ::url-name ::cimi-core/nonblank-string)
+
+
+;; pattern, e.g. "https://${host}:${port-443}/some/path", is used to create URL from dynamic info
+(s/def ::url-pattern ::cimi-core/nonblank-string)
+
+
+(s/def ::url-tuple (s/tuple ::url-name ::url-pattern))
+
+
+(s/def ::urls (s/coll-of ::url-tuple :min-count 1 :kind vector?))
+
+
 (def module-image-keys-spec (su/merge-keys-specs [c/common-attrs
                                                   {:req-un [::author
                                                             ::architecture
                                                             ::image]
                                                    :opt-un [::commit
-                                                            ::ports]}]))
+                                                            ::ports
+                                                            ::urls]}]))
 
 (s/def ::module-image (su/only-keys-maps module-image-keys-spec))

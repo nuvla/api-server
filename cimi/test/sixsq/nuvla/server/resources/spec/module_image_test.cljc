@@ -26,7 +26,9 @@
 
               :architecture  "x86"
               :image         "ubuntu:16.04"
-              :ports         ["8022:22"]}]
+              :ports         ["8022:22"]
+              :urls          [["primary" "https://${host}:${port-443}/my/path"]
+                              ["other" "http://${host}:${port-80}/path"]]}]
 
     (stu/is-valid ::module-image/module-image root)
     (stu/is-invalid ::module-image/module-image (assoc root :badKey "badValue"))
@@ -37,5 +39,5 @@
       (stu/is-invalid ::module-image/module-image (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :ports}]
+    (doseq [k #{:commit :ports :urls}]
       (stu/is-valid ::module-image/module-image (dissoc root k)))))
