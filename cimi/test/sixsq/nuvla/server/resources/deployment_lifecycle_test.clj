@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment :as deployment]
-    [sixsq.nuvla.server.resources.deployment-template :as deployment-template]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module-lifecycle-test :as module-test]))
 
@@ -17,9 +16,6 @@
 
 
 (def base-uri (str p/service-context deployment/resource-type))
-
-
-(def deployment-template-collection-uri (str p/service-context deployment-template/resource-type))
 
 
 (deftest lifecycle
@@ -37,16 +33,8 @@
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
-        valid-deployment-template-create {:module {:href module-uri}}
-        deployment-template-uri (-> session-user
-                                    (request deployment-template-collection-uri
-                                             :request-method :post
-                                             :body (json/write-str valid-deployment-template-create))
-                                    (ltu/body->edn)
-                                    (ltu/is-status 201)
-                                    (ltu/location))
-        valid-deployment {:template {:href deployment-template-uri} :name "dep1" :description "dep1 desc"}
-        valid-deployment-from-module {:template {:module {:href module-uri}}}]
+
+        valid-deployment {:module {:href module-uri} :name "dep1" :description "dep1 desc"}]
 
     ;; anonymous create should fail
     (-> session-anon
@@ -70,23 +58,16 @@
                   (ltu/body->edn)
                   (ltu/is-status 201)
                   (ltu/location))
-          uri-deployment-fron-module (-> session-user
-                                         (request base-uri
-                                                  :request-method :post
-                                                  :body (json/write-str valid-deployment-from-module))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 201)
-                                         (ltu/location))
           abs-uri (str p/service-context uri)
           deployment (-> session-user
                          (request (str abs-uri "?select=description")
                                   :request-method :put
-                                  :body (json/write-str {:name         "dep 1 new name"
-                                                         :clientAPIKey "this field should be ignored, not editable"}))
+                                  :body (json/write-str {:name            "dep 1 new name"
+                                                         :api-credentials "this field should be ignored, not editable"}))
                          (ltu/body->edn)
                          (ltu/is-status 200))
           cred-uri (str p/service-context
-                        (get-in deployment [:response :body :clientAPIKey :href]))]
+                        (get-in deployment [:response :body :api-credentials :api-key]))]
 
       ;; user query: ok
       (-> session-user
@@ -94,7 +75,7 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-resource-uri deployment/collection-type)
-          (ltu/is-count #(= 2 %))
+          (ltu/is-count #(= 1 %))
           (ltu/entries))
 
       ;; user is able to change name and remove existing description attribute
@@ -108,7 +89,7 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-key-value :name "dep 1 new name")
-          (ltu/is-key-value map? :clientAPIKey true)
+          (ltu/is-key-value map? :api-credentials true)
           (#(is (not (contains? (-> % :response :body) :description)))))
 
       ;; generated api key secret are with user identity claims
@@ -124,7 +105,7 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-resource-uri deployment/collection-type)
-          (ltu/is-count #(= 2 %))
+          (ltu/is-count #(= 1 %))
           (ltu/entries))
 
       ;; user view: OK
@@ -201,7 +182,7 @@
         (-> session-user
             (request (str p/service-context "event"))
             (ltu/body->edn)
-            (ltu/is-count 3))
+            (ltu/is-count 2))
 
         ))))
 
