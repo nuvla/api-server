@@ -12,7 +12,10 @@
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as alpha]
     [sixsq.nuvla.server.resources.credential-template-cloud-docker :as docker]
     [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-exo]
+<<<<<<< HEAD
     [sixsq.nuvla.server.resources.credential-template-service-gce :as service-gce]
+=======
+>>>>>>> 039ada7e3c0e4e39b4c9b668d546ceebe427a1d5
     [sixsq.nuvla.server.resources.credential-template-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -77,6 +80,8 @@
             entry-url (str p/service-context (:id entry))
 
             entry-resp (-> session-user
+
+
                            (request entry-url)
                            (ltu/is-status 200)
                            (ltu/body->edn))
