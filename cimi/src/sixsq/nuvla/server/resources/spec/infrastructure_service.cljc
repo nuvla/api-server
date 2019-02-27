@@ -97,10 +97,28 @@
                                        :default "CREATED"})))
 
 
+(s/def ::management-credential-id
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "management-credential-id"
+             :json-schema/name "management-credential-id"
+             :json-schema/type "string"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+
+             :json-schema/displayName "management credential id"
+             :json-schema/description "id of the credential used to manage this service"
+             :json-schema/help "id of the credential used to manage this service"
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
+
+
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::cimi-common/parent         ;; required for services
                                ::method
                                ::type
                                ::state]
-                      :opt-un [::endpoint]}))
+                      :opt-un [::endpoint
+                               ::management-credential-id]}))

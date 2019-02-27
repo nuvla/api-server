@@ -33,7 +33,7 @@
                        (request module-test/base-uri
                                 :request-method :post
                                 :body (json/write-str (assoc module-test/valid-entry
-                                                        :content (dissoc module-test/valid-image :related-image))))
+                                                        :content module-test/valid-image)))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
