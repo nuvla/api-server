@@ -92,7 +92,7 @@ curl https://nuv.la/api/credential-template
   [resource]
   (when-let [{:keys [id] :as full-resource} (complete-resource resource)]
     (swap! templates assoc id full-resource)
-    (log/info "loaded CredentialTemplate" id)))
+    (log/info "loaded credential-template" id)))
 
 
 ;;

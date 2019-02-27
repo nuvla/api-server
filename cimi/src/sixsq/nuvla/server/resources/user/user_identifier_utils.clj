@@ -19,8 +19,7 @@
    (str (or instance (name authn-method)) ":" external-login)))
 
 
-(defn
-  add-user-identifier!
+(defn add-user-identifier!
   [username authn-method external-login instance]
   (let [user-id (str "user/" username)
         identifier (generate-identifier authn-method external-login instance)]

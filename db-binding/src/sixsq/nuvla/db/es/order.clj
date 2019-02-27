@@ -1,10 +1,9 @@
-(ns sixsq.nuvla.db.es.order
-  (:import
-    (org.elasticsearch.action.search SearchRequestBuilder)
-    (org.elasticsearch.search.sort SortOrder)))
+(ns sixsq.nuvla.db.es.order)
 
-(def sort-order {:asc  SortOrder/ASC
-                 :desc SortOrder/DESC})
+
+(def sort-order {:asc  "asc"
+                 :desc "desc"})
+
 
 (defn direction->sort-order
   "Returns the elasticsearch SortOrder constant associated with the :asc and
@@ -14,14 +13,18 @@
   (or (sort-order direction)
       (throw (IllegalArgumentException. (str "invalid sorting direction '" direction "', must be :asc or :desc")))))
 
-(defn add-sorter
+
+(defn sort-entry
   "Give a tuple with the field-name and direction, adds the sort clause to the
    request builder. Intended to be used in a reduction."
-  [^SearchRequestBuilder request-builder [field-name direction]]
-  (.addSort request-builder field-name (direction->sort-order direction)))
+  [[field-name direction]]
+  {field-name (direction->sort-order direction)})
 
-(defn add-sorters
+
+(defn sorters
   "Given the sorting information in the :cimi-params parameter, add all of the
-   sorting clauses to the request builder."
-  [request-builder {:keys [orderby] :as cimi-params}]
-  (reduce add-sorter request-builder orderby))
+   sorting clauses to the sort map."
+  [{:keys [orderby] :as cimi-params}]
+  (let [entries (mapv sort-entry orderby)]
+    (when (seq entries)
+      {:sort entries})))

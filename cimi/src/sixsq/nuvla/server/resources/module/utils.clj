@@ -19,9 +19,9 @@
 
 
 (defn set-parent-path
-  "Updates the :parentPath key in the module resource to ensure that it is
+  "Updates the :parent-path key in the module resource to ensure that it is
    consistent with the value of :path."
   [{:keys [path] :as resource}]
-  (assoc resource :parentPath (get-parent-path path)))
+  (assoc resource :parent-path (get-parent-path path)))
 
 

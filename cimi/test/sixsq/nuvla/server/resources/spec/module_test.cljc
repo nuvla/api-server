@@ -15,32 +15,33 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id                     (str t/resource-type "/connector-uuid")
-              :resource-type          t/resource-type
-              :created                timestamp
-              :updated                timestamp
-              :acl                    valid-acl
-              :parentPath             "a/b"
-              :path                   "a/b/c"
-              :type                   "IMAGE"
-              :versions               [{:href   "module-image/xyz"
-                                        :author "someone"
-                                        :commit "wip"}
-                                       nil
-                                       {:href "module-image/abc"}]
-              :logoURL                "https://example.org/logo"
+        root {:id                        (str t/resource-type "/connector-uuid")
+              :resource-type             t/resource-type
+              :created                   timestamp
+              :updated                   timestamp
+              :acl                       valid-acl
+              :parent-path               "a/b"
+              :path                      "a/b/c"
+              :type                      "IMAGE"
+              :versions                  [{:href   "module-image/xyz"
+                                           :author "someone"
+                                           :commit "wip"}
+                                          nil
+                                          {:href "module-image/abc"}]
+              :logo-url                  "https://example.org/logo"
 
-              :dataAcceptContentTypes ["application/json" "application/x-something"]
-              :dataAccessProtocols    ["http+s3" "posix+nfs"]}]
+              :data-accept-content-types ["application/json" "application/x-something"]
+              :data-access-protocols     ["http+s3" "posix+nfs"]}]
 
     (stu/is-valid ::module/module root)
-    (stu/is-invalid ::module/module (assoc root :badKey "badValue"))
+    (stu/is-invalid ::module/module (assoc root :bad-key "badValue"))
     (stu/is-invalid ::module/module (assoc root :type "BAD_VALUE"))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :path :type}]
+    (doseq [k #{:id :resource-type :created :updated :acl :path :type
+                :data-accept-content-types :data-access-protocols}]
       (stu/is-invalid ::module/module (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:logoURL :versions :dataAcceptContentTypes :dataAccessProtocols}]
+    (doseq [k #{:logo-url :versions}]
       (stu/is-valid ::module/module (dissoc root k)))))

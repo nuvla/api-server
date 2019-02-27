@@ -1,4 +1,5 @@
-(ns sixsq.nuvla.db.es.common.pagination)
+(ns sixsq.nuvla.db.es.common.pagination
+  (:require [clojure.tools.logging :as log]))
 
 (def ^:const max-size 10000)
 
@@ -10,11 +11,11 @@
   (let [first (max 1 (or first 1))
         from (dec first)
         size (cond
-               (nil? last) max-size
+               (nil? last) (- max-size from)
                (zero? last) 0
                (>= last first) (inc (- last first))
                :else 0)]
-    (if (<= size max-size)
+    (if (<= (+ from size) max-size)
       [from size]
       (throw (IllegalArgumentException.
                (str "size " size " too large; limit is " max-size))))))

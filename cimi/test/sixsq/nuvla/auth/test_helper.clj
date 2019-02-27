@@ -2,13 +2,10 @@
   (:refer-clojure :exclude [update])
   (:require
     [sixsq.nuvla.auth.internal :as ia]
-    [sixsq.nuvla.db.es.binding :as esb]
-    [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.user :as ur]
     [sixsq.nuvla.server.resources.user-template :as ct]
-    [sixsq.nuvla.server.resources.user-template-direct :as direct]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
+    [sixsq.nuvla.server.resources.user-template-direct :as direct]))
 
 
 (def rname ur/resource-type)
