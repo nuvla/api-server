@@ -51,10 +51,10 @@
 (def module-keys-spec (su/merge-keys-specs [c/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
-                                                      ::type
-                                                      ::data-accept-content-types
-                                                      ::data-access-protocols]
+                                                      ::type]
                                              :opt-un [::logo-url
+                                                      ::data-accept-content-types
+                                                      ::data-access-protocols
                                                       ::versions]}]))
 
 (s/def ::module (su/only-keys-maps module-keys-spec))

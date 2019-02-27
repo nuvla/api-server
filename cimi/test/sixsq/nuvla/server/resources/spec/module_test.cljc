@@ -38,10 +38,9 @@
     (stu/is-invalid ::module/module (assoc root :type "BAD_VALUE"))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :path :type
-                :data-accept-content-types :data-access-protocols}]
+    (doseq [k #{:id :resource-type :created :updated :acl :path :type}]
       (stu/is-invalid ::module/module (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:logo-url :versions}]
+    (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols}]
       (stu/is-valid ::module/module (dissoc root k)))))
