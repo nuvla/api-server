@@ -22,15 +22,11 @@
 (s/def ::ports (s/coll-of ::cimi-core/nonblank-string :kind vector?))
 
 
-(s/def ::related-image ::module/link)
-
-
 (def module-image-keys-spec (su/merge-keys-specs [c/common-attrs
                                                   {:req-un [::author
                                                             ::architecture
                                                             ::image]
                                                    :opt-un [::commit
-                                                            ::ports
-                                                            ::related-image]}]))
+                                                            ::ports]}]))
 
 (s/def ::module-image (su/only-keys-maps module-image-keys-spec))
