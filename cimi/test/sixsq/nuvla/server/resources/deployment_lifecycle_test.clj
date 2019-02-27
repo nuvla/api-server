@@ -34,7 +34,10 @@
                        (ltu/is-status 201)
                        (ltu/location))
 
-        valid-deployment {:module {:href module-uri} :name "dep1" :description "dep1 desc"}]
+        valid-deployment {:name          "dep1"
+                          :description   "dep1 desc"
+                          :module        {:href module-uri}
+                          :credential-id "credential/my-cloud-credential"}]
 
     ;; anonymous create should fail
     (-> session-anon

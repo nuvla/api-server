@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -111,6 +112,8 @@
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
+(s/def ::credential-id ::cimi-core/nonblank-string)
+
 
 (def ^:const external-object-id-regex #"^external-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn external-object-id? [s] (re-matches external-object-id-regex s))
@@ -176,7 +179,8 @@
   (su/merge-keys-specs [cimi-common/common-attrs
                         {:req-un [::module
                                   ::state
-                                  ::api-credentials]
+                                  ::api-credentials
+                                  ::credential-id]
                          :opt-un [::external-objects
                                   ::service-offers]}]))
 

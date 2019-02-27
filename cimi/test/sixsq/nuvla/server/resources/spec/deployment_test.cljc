@@ -26,6 +26,8 @@
                        :api-credentials  {:api-key    "credential/uuid"
                                           :api-secret "api secret"}
 
+                       :credential-id    "credential/my-cloud-credential"
+
                        :module           {:href "module-image/my-module-image-uuid"}
 
                        :external-objects ["external-object/uuid1" "external-object/uuid2"]
@@ -43,7 +45,7 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :service-offers {"BAD_ID" nil}))
 
   ;; required attributes
-  (doseq [k #{:id :resource-type :created :updated :acl :state :module}]
+  (doseq [k #{:id :resource-type :created :updated :acl :state :module :credential-id}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
