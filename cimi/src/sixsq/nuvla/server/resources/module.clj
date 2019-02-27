@@ -161,31 +161,36 @@
     (let [id (str resource-type "/" (-> request :params :uuid))
           [module-meta {:keys [author commit] :as module-content}]
           (-> body u/strip-service-attrs module-utils/split-resource)
-          {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)
+          {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
 
-          _ (a/can-modify? {:acl acl} request)
+      (a/can-modify? {:acl acl} request)
 
-          content-url (type->resource-name type)
-          content-uri (type->resource-uri type)
+      (if (= "PROJECT" type)
+        (let [module-meta (-> (assoc module-meta :type type)
+                              module-utils/set-parent-path)]
 
-          content-body (merge module-content {:resource-type content-uri})
+          (edit-impl (assoc request :body module-meta)))
+        (let [content-url (type->resource-name type)
+              content-uri (type->resource-uri type)
 
-          content-request {:params   {:resource-name content-url}
-                           :identity std-crud/internal-identity
-                           :body     content-body}
+              content-body (merge module-content {:resource-type content-uri})
 
-          response (crud/add content-request)
+              content-request {:params   {:resource-name content-url}
+                               :identity std-crud/internal-identity
+                               :body     content-body}
 
-          content-id (-> response :body :resource-id)
+              response (crud/add content-request)
 
-          versions (conj versions (cond-> {:href   content-id
-                                           :author author}
-                                          commit (assoc :commit commit)))
-          module-meta (-> (assoc module-meta :versions versions
-                                             :type type)
-                          module-utils/set-parent-path)]
+              content-id (-> response :body :resource-id)
 
-      (edit-impl (assoc request :body module-meta)))
+              versions (conj versions (cond-> {:href   content-id
+                                               :author author}
+                                              commit (assoc :commit commit)))
+              module-meta (-> (assoc module-meta :versions versions
+                                                 :type type)
+                              module-utils/set-parent-path)]
+
+          (edit-impl (assoc request :body module-meta)))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
