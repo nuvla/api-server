@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.service-attribute-namespace
+(ns sixsq.nuvla.server.resources.spec.data-record-key-prefix
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
@@ -12,7 +12,7 @@
 (s/def ::prefix (s/and string? #(re-matches prefix-regex %)))
 
 
-(s/def ::service-attribute-namespace
+(s/def ::schema
   (su/only-keys-maps c/common-attrs
                      {:req-un [::prefix
                                ::cimi-core/uri]}))

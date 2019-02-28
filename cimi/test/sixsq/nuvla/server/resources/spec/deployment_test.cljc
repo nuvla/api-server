@@ -31,9 +31,9 @@
                        :module           {:href "module-image/my-module-image-uuid"}
 
                        :external-objects ["external-object/uuid1" "external-object/uuid2"]
-                       :service-offers   {:service-offer/uuid1 ["service-offer/dataset1" "service-offer/dataset2"]
-                                          :service-offer/uuid2 nil
-                                          :service-offer/uuid3 ["service-offer/dataset3"]}})
+                       :data-records     {:data-record/uuid1 ["data-record/dataset1" "data-record/dataset2"]
+                                          :data-record/uuid2 nil
+                                          :data-record/uuid3 ["data-record/dataset3"]}})
 
 
 (deftest test-schema-check
@@ -42,12 +42,12 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :module "must-be-href"))
 
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :external-objects ["BAD_ID"]))
-  (stu/is-invalid ::ds/deployment (assoc valid-deployment :service-offers {"BAD_ID" nil}))
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-records {"BAD_ID" nil}))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state :module :credential-id}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:external-objects :service-offers}]
+  (doseq [k #{:external-objects :data-records}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

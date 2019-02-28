@@ -143,17 +143,17 @@
              :json-schema/sensitive false)))
 
 
-(def ^:const service-offer-id-regex #"^service-offer/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn service-offer-id? [s] (re-matches service-offer-id-regex s))
-(defn service-offer-id-keyword? [s] (-> s symbol str service-offer-id?))
+(def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(defn data-record-id? [s] (re-matches data-record-id-regex s))
+(defn data-record-id-keyword? [s] (-> s symbol str data-record-id?))
 
-(s/def ::service-offer-id (s/and string? service-offer-id?))
-(s/def ::service-offer-id-keyword (s/and keyword? service-offer-id-keyword?))
-(s/def ::data-set-ids (s/nilable (s/coll-of ::service-offer-id :min-count 1 :kind vector?)))
+(s/def ::data-record-id (s/and string? data-record-id?))
+(s/def ::data-record-id-keyword (s/and keyword? data-record-id-keyword?))
+(s/def ::data-set-ids (s/nilable (s/coll-of ::data-record-id :min-count 1 :kind vector?)))
 
 
-(s/def ::service-offers
-  (-> (st/spec (s/map-of ::service-offer-id-keyword ::data-set-ids :min-count 1))
+(s/def ::data-records
+  (-> (st/spec (s/map-of ::data-record-id-keyword ::data-set-ids :min-count 1))
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
              :json-schema/namespace common-ns/slipstream-namespace
@@ -182,6 +182,6 @@
                                   ::api-credentials
                                   ::credential-id]
                          :opt-un [::external-objects
-                                  ::service-offers]}]))
+                                  ::data-records]}]))
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

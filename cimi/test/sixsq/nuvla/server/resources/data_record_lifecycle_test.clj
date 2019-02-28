@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-offer-lifecycle-test
+(ns sixsq.nuvla.server.resources.data-record-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
@@ -9,8 +9,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
-    [sixsq.nuvla.server.resources.service-offer :refer :all]))
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
+    [sixsq.nuvla.server.resources.data-record :refer :all]))
 
 
 (def base-uri (str p/service-context resource-type))
@@ -34,17 +34,17 @@
 
 
 (def valid-entry
-  {:connector                         {:href "cloud-software-solution-1"}
+  {:infrastructure-service            {:href "infrastructure-service/cloud-software-solution-1"}
    (keyword (str ns1-prefix ":att1")) "123.456"})
 
 
 (def valid-nested-2-levels
-  {:connector                         {:href "cloud-software-solution-2"}
+  {:infrastructure-service            {:href "infrastructure-service/cloud-software-solution-2"}
    (keyword (str ns1-prefix ":att3")) {(keyword (str ns1-prefix ":att4")) "456"}})
 
 
 (def valid-nested-entry
-  {:connector                              {:href "cloud-software-solution-3"}
+  {:infrastructure-service                 {:href "infrastructure-service/cloud-software-solution-3"}
    (keyword (str ns1-prefix ":att1"))      "hi"
    (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
                                             {(keyword (str ns2-prefix ":subsubnested"))
@@ -63,7 +63,7 @@
 
 
 (def entry-wrong-namespace
-  {:connector                             {:href "cloud-software-solution"}
+  {:infrastructure-service                {:href "infrastructure-service/cloud-software-solution"}
    (keyword (str invalid-prefix ":att1")) "123.456"})
 
 
@@ -217,7 +217,7 @@
 
     (let [connector-with-namespaced-key
           (format "
-          {\"connector\":{\"href\":\"cloud-software-solution\"},
+          {\"service\":{\"href\":\"infrastructure-service/cloud-software-solution\"},
           \"%s:attr-name\":\"123.456\"}
           " ns1-prefix)
 
@@ -283,10 +283,12 @@
         session-user (header session-anon authn-info-header "jane USER ANON")
 
         attr (ltu/random-string)
-        valid-entry {:connector                          {:href "cloud-software-solution-1"}
+        valid-entry {:infrastructure-service             {:href "infrastructure-service/cloud-software-solution-1"}
                      (keyword (str ns1-prefix ":" attr)) "123.456"}]
 
 
+    (clojure.pprint/pprint valid-entry)
+    (println (json/write-str valid-entry))
     (-> session-user
         (request base-uri
                  :request-method :post

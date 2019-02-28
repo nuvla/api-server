@@ -1,28 +1,17 @@
-(ns sixsq.nuvla.server.resources.service-attribute
+(ns sixsq.nuvla.server.resources.data-record-key
   "
-A ServiceAttribute resource provides semantic information concerning an
-attribute that appears in ServiceOffer resources. This resource is intended to
-provide information that helps humans understand the information provided in a
-ServiceOffer resource.
-
-Currently, only an administrator can create, update, or delete
-ServiceAttribute resources. These actions follow the standard CIMI patterns.
-Most users will only search these resources and look at the details for a
-particular ServiceAttribute resource.
+A data-record-key resource provides semantic information concerning an key
+that appears in data-record resources. This resource is intended to provide
+information that helps humans understand the information provided in a
+data-record resource.
 
 Parameter | Required  | Description
 --------- | --------  | -----------
 name | true | short human-readable tag
 description | true | longer human-readable description
 prefix | true | namespace prefix
-attributeName | true | name of the attribute itself
+key | true | name of the attribute itself
 type | true | type of the attribute's value
-
-Show all of the ServiceAttribute resources.
-
-```shell
-curl https://nuv.la/api/service-attribute
-```
 "
   (:require
     [ring.util.response :as r]
@@ -30,8 +19,8 @@ curl https://nuv.la/api/service-attribute
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.service-attribute-namespace :as san]
-    [sixsq.nuvla.server.resources.spec.service-attribute :as sa]
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
+    [sixsq.nuvla.server.resources.spec.data-record-key :as data-record-key]
     [sixsq.nuvla.util.response :as sr])
   (:import
     [java.math BigInteger]
@@ -68,7 +57,7 @@ curl https://nuv.la/api/service-attribute
                        (r/status code))]
       (throw (ex-info msg response)))))
 
-(def validate-fn (u/create-spec-validation-fn ::sa/service-attribute))
+(def validate-fn (u/create-spec-validation-fn ::data-record-key/schema))
 (defmethod crud/validate resource-type
   [resource]
   (-> resource
@@ -105,7 +94,7 @@ curl https://nuv.la/api/service-attribute
 
 (defmethod crud/new-identifier resource-type
   [json resource-name]
-  (let [new-id (str resource-type "/" (uri->id (str (:prefix json) ":" (:attributeName json))))]
+  (let [new-id (str resource-type "/" (uri->id (str (:prefix json) ":" (:key json))))]
     (assoc json :id new-id)))
 
 (defmethod crud/add resource-type
@@ -142,4 +131,4 @@ curl https://nuv.la/api/service-attribute
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::sa/service-attribute))
+  (std-crud/initialize resource-type ::data-record-key/schema))

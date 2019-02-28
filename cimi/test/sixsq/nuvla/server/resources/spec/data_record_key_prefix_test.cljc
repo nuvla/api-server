@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.service-attribute-namespace-test
+(ns sixsq.nuvla.server.resources.spec.data-record-key-prefix-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]
-    [sixsq.nuvla.server.resources.spec.service-attribute-namespace :as san]
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as key-prefix-record]
+    [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -18,12 +18,12 @@
 
 (def valid-namespace
   {:acl           valid-acl
-   :id            (str sn/resource-type "/uuid")
+   :id            (str key-prefix-record/resource-type "/uuid")
    :prefix        "schema-org"
    :uri           "https://schema.org/schema1"
    :updated       timestamp
    :created       timestamp
-   :resource-type sn/resource-type})
+   :resource-type key-prefix-record/resource-type})
 
 
 (deftest check-prefix
@@ -37,24 +37,24 @@
               "-bad"
               "bad-"
               "0bad"}]
-    (stu/is-invalid ::san/prefix k))
+    (stu/is-invalid ::key-prefix/prefix k))
 
   (doseq [k #{"a"
               "a1"
               "alpha"
               "alpha-beta"
               "alpha1"}]
-    (stu/is-valid ::san/prefix k)))
+    (stu/is-valid ::key-prefix/prefix k)))
 
 
 (deftest check-service-namespace
 
-  (stu/is-valid ::san/service-attribute-namespace valid-namespace)
+  (stu/is-valid ::key-prefix/schema valid-namespace)
 
-  (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :uri {:href ""}))
-  (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :uri {}))
-  (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :uri ""))
-  (stu/is-invalid ::san/service-attribute-namespace (assoc valid-namespace :prefix ""))
+  (stu/is-invalid ::key-prefix/schema (assoc valid-namespace :uri {:href ""}))
+  (stu/is-invalid ::key-prefix/schema (assoc valid-namespace :uri {}))
+  (stu/is-invalid ::key-prefix/schema (assoc valid-namespace :uri ""))
+  (stu/is-invalid ::key-prefix/schema (assoc valid-namespace :prefix ""))
 
   (doseq [k #{:id :resource-type :created :updated :acl :prefix :uri}]
-    (stu/is-invalid ::san/service-attribute-namespace (dissoc valid-namespace k))))
+    (stu/is-invalid ::key-prefix/schema (dissoc valid-namespace k))))
