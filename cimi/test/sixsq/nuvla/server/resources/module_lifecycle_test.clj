@@ -38,9 +38,7 @@
 
                   :architecture  "x86"
                   :image         "ubuntu:16.04"
-                  :ports         ["8022:22"]
-
-                  :related-image {:href "module/other"}})
+                  :ports         ["8022:22"]})
 
 
 (deftest lifecycle

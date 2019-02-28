@@ -139,7 +139,8 @@
           (is (= service-tags (:tags service)))
           (is (:type service))
           (is (nil? (:endpoint service)))
-          (is (= "CREATED" (:state service))))
+          (is (= "CREATED" (:state service)))
+          (is (= credential-id (:management-credential-id service))))
 
         ;; can delete resource
         (-> session
