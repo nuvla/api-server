@@ -33,8 +33,8 @@
 
 
 (defn parameter->uiid
-  [deployment-href nodeID name]
-  (let [id (str/join ":" [deployment-href nodeID name])]
+  [deployment-href node-id name]
+  (let [id (str/join ":" [deployment-href node-id name])]
     (u/from-data-uuid id)))
 
 
@@ -119,8 +119,8 @@
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [deployment nodeID name] :as parameter} resource-name]
-  (->> (parameter->uiid (:href deployment) nodeID name)
+  [{:keys [deployment node-id name] :as parameter} resource-name]
+  (->> (parameter->uiid (:href deployment) node-id name)
        (str resource-type "/")
        (assoc parameter :id)))
 

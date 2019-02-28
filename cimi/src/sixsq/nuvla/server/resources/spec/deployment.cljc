@@ -115,32 +115,32 @@
 (s/def ::credential-id ::cimi-core/nonblank-string)
 
 
-(def ^:const external-object-id-regex #"^external-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn external-object-id? [s] (re-matches external-object-id-regex s))
+(def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(defn data-object-id? [s] (re-matches data-object-id-regex s))
 
-(s/def ::external-object-id (s/and string? external-object-id?))
+(s/def ::data-object-id (s/and string? data-object-id?))
 
-(s/def ::external-objects
-  (-> (st/spec (s/coll-of ::external-object-id :min-count 1 :kind vector?))
-      (assoc :name "externalObjects"
-             :json-schema/name "externalObjects"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
-             :json-schema/type "Array"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-             :json-schema/indexed false
+(s/def ::data-objects
+       (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
+           (assoc :name "data-objects"
+                  :json-schema/name "data-objects"
+                  :json-schema/namespace common-ns/slipstream-namespace
+                  :json-schema/uri common-ns/slipstream-uri
+                  :json-schema/type "Array"
+                  :json-schema/providerMandatory false
+                  :json-schema/consumerMandatory false
+                  :json-schema/mutable true
+                  :json-schema/consumerWritable true
+                  :json-schema/indexed false
 
-             :json-schema/displayName "external objects"
-             :json-schema/description "list of external object identifiers"
-             :json-schema/help "list of external object identifiers to make available to deployment"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+                  :json-schema/displayName "data objects"
+                  :json-schema/description "list of data object identifiers"
+                  :json-schema/help "list of data object identifiers to make available to deployment"
+                  :json-schema/group "data"
+                  :json-schema/category "data"
+                  :json-schema/order 30
+                  :json-schema/hidden false
+                  :json-schema/sensitive false)))
 
 
 (def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -181,7 +181,8 @@
                                   ::state
                                   ::api-credentials
                                   ::credential-id]
-                         :opt-un [::external-objects
+                         :opt-un [::data-objects
                                   ::data-records]}]))
+
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

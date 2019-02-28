@@ -25,7 +25,7 @@
                   :updated                   timestamp
                   :parent-path               "a/b"
                   :path                      "a/b/c"
-                  :type                      "IMAGE"
+                  :type                      "COMPONENT"
 
                   :logo-url                  "https://example.org/logo"
 
@@ -33,12 +33,12 @@
                   :data-access-protocols     ["http+s3" "posix+nfs"]})
 
 
-(def valid-image {:author        "someone"
-                  :commit        "wip"
+(def valid-component {:author       "someone"
+                      :commit       "wip"
 
-                  :architecture  "x86"
-                  :image         "ubuntu:16.04"
-                  :ports         ["8022:22"]})
+                      :architecture "x86"
+                      :image        "ubuntu:16.04"
+                      :ports        ["8022:22"]})
 
 
 (deftest lifecycle
@@ -52,7 +52,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-entry :content valid-image)))
+                 :body (json/write-str (assoc valid-entry :content valid-component)))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -74,7 +74,7 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str (assoc valid-entry
-                                         :content valid-image
+                                         :content valid-component
                                          :type "bad-module-type")))
         (ltu/body->edn)
         (ltu/is-status 400))
@@ -84,7 +84,7 @@
       (let [uri (-> session
                     (request base-uri
                              :request-method :post
-                             :body (json/write-str (assoc valid-entry :content valid-image)))
+                             :body (json/write-str (assoc valid-entry :content valid-component)))
                     (ltu/body->edn)
                     (ltu/is-status 201)
                     (ltu/location))
@@ -104,13 +104,13 @@
                           :response
                           :body
                           :content)]
-          (is (= valid-image (select-keys content (keys valid-image)))))
+          (is (= valid-component (select-keys content (keys valid-component)))))
 
         ;; edit: NOK for anon
         (-> session-anon
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str (assoc valid-entry :content valid-image)))
+                     :body (json/write-str (assoc valid-entry :content valid-component)))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -119,14 +119,14 @@
           (-> session-admin
               (request abs-uri
                        :request-method :put
-                       :body (json/write-str (assoc valid-entry :content valid-image)))
+                       :body (json/write-str (assoc valid-entry :content valid-component)))
               (ltu/body->edn)
               (ltu/is-status 200)))
 
         (let [versions (-> session-admin
                            (request abs-uri
                                     :request-method :put
-                                    :body (json/write-str (assoc valid-entry :content valid-image)))
+                                    :body (json/write-str (assoc valid-entry :content valid-component)))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            :response
