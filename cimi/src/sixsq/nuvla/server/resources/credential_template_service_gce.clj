@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-gce
+(ns sixsq.nuvla.server.resources.credential-template-service-gce
     "This CredentialTemplate allows creating a Credential instance to hold
     cloud credentials for the GCE's services."
     (:require
@@ -41,6 +41,7 @@
    :private-key      "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
    :client-email     "1234-compute@developer.gserviceaccount.com"
    :client-id        "98765"
+   :services         []
    :acl              resource-acl
    :resourceMetadata "resource-metadata/credential-template-driver-gce"})
 
