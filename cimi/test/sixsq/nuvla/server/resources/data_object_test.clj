@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.external-object-test
+(ns sixsq.nuvla.server.resources.data-object-test
   (:require
     [clojure.string :as str]
     [clojure.test :refer :all]
-    [sixsq.nuvla.server.resources.external-object :as eo]
-    [sixsq.nuvla.server.resources.external-object.utils :as s3])
+    [sixsq.nuvla.server.resources.data-object :as eo]
+    [sixsq.nuvla.server.resources.data-object.utils :as s3])
   (:import (clojure.lang ExceptionInfo)))
 
 (def s3-host "s3.cloud.com")
@@ -25,22 +25,22 @@
       (is (thrown-with-msg? ExceptionInfo (re-pattern expected-msg)
                             (eo/upload-fn {:state eo/state-ready} {}))))
 
-    ;; generic external object
-    (is (str/starts-with? (eo/upload-fn {:state           eo/state-new
-                                         :contentType     "application/tar+gzip"
-                                         :bucketName      bucketname
-                                         :objectName      objectname
-                                         :objectStoreCred {:href "credential/my-cred"}}
+    ;; generic data object
+    (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
+                                         :content-type      "application/tar+gzip"
+                                         :bucket-name       bucketname
+                                         :object-name       objectname
+                                         :object-store-cred {:href "credential/my-cred"}}
                                         {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))
 
-    ;; external object report
-    (is (str/starts-with? (eo/upload-fn {:state           eo/state-new
-                                         :contentType     "application/tar+gzip"
-                                         :bucketName      bucketname
-                                         :objectStoreCred {:href "credential/my-cred"}
-                                         :runUUID         runUUID
-                                         :filename        filename}
+    ;; data object report
+    (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
+                                         :content-type      "application/tar+gzip"
+                                         :bucket-name       bucketname
+                                         :object-store-cred {:href "credential/my-cred"}
+                                         :runUUID           runUUID
+                                         :filename          filename}
                                         {})
                           (format "https://%s/%s/%s/%s?" s3-host bucketname runUUID filename)))))
 
@@ -51,9 +51,9 @@
       (is (thrown-with-msg? ExceptionInfo (re-pattern expected-msg)
                             (eo/download-subtype {:state eo/state-new} {}))))
 
-    (is (str/starts-with? (eo/download-subtype {:state           eo/state-ready
-                                                :bucketName      bucketname
-                                                :objectName      objectname
-                                                :objectStoreCred {:href "credential/my-cred"}}
+    (is (str/starts-with? (eo/download-subtype {:state             eo/state-ready
+                                                :bucket-name       bucketname
+                                                :object-name       objectname
+                                                :object-store-cred {:href "credential/my-cred"}}
                                                {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))))

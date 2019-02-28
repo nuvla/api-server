@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object-template-lifecycle-test
+(ns sixsq.nuvla.server.resources.data-object-template-lifecycle-test
   (:require
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
@@ -7,21 +7,21 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.external-object-template :as eot]
-    [sixsq.nuvla.server.resources.external-object-template-alpha-example :as eotae]
-    [sixsq.nuvla.server.resources.external-object-template-generic :as eotg]
+    [sixsq.nuvla.server.resources.data-object-template :as dot]
+    [sixsq.nuvla.server.resources.data-object-template-alpha-example :as dotae]
+    [sixsq.nuvla.server.resources.data-object-template-generic :as dotg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
-(def collection-uri (str p/service-context eot/resource-type))
+(def collection-uri (str p/service-context dot/resource-type))
 
-(def eo-tmpl-ids (map #(format "%s/%s" eot/resource-type %) [eotg/objectType
-                                                             eotae/objectType]))
+(def do-tmpl-ids (map #(format "%s/%s" dot/resource-type %) [dotg/object-type
+                                                             dotae/object-type]))
 
 (deftest check-retrieve-by-id
-  (doseq [eo-tmpl-id eo-tmpl-ids]
+  (doseq [eo-tmpl-id do-tmpl-ids]
     (let [doc (crud/retrieve-by-id eo-tmpl-id)]
       (is (= eo-tmpl-id (:id doc))))))
 
@@ -52,7 +52,7 @@
                       (request (str collection-uri))
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-resource-uri eot/collection-type)
+                      (ltu/is-resource-uri dot/collection-type)
                       (ltu/is-count pos?)
                       (ltu/is-operation-absent "add")
                       (ltu/is-operation-absent "delete")

@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.external-object.utils-test
+(ns sixsq.nuvla.server.resources.data-object.utils-test
   (:require
     [clojure.string :as str]
     [clojure.test :refer :all]
-    [sixsq.nuvla.server.resources.external-object.utils :as u])
+    [sixsq.nuvla.server.resources.data-object.utils :as u])
   (:import (com.amazonaws AmazonServiceException)))
 
 

@@ -16,7 +16,7 @@
 
 (def valid-entry
   {:name       "param1"
-   :nodeID     "machine"
+   :node-id    "machine"
    :deployment {:href "deployment/uuid"}
    :acl        {:owner {:principal "ADMIN"
                         :type      "ROLE"}
@@ -37,7 +37,7 @@
 
 (def valid-complete-entry
   {:name       "complete"
-   :nodeID     "machine"
+   :node-id    "machine"
    :deployment {:href "deployment/uuid"}
    :acl        {:owner {:principal "ADMIN"
                         :type      "ROLE"}

@@ -15,23 +15,23 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-deployment {:id               (str d/resource-type "/connector-uuid")
-                       :resource-type    d/resource-type
-                       :created          timestamp
-                       :updated          timestamp
-                       :acl              valid-acl
+(def valid-deployment {:id              (str d/resource-type "/connector-uuid")
+                       :resource-type   d/resource-type
+                       :created         timestamp
+                       :updated         timestamp
+                       :acl             valid-acl
 
-                       :state            "STARTED"
+                       :state           "STARTED"
 
-                       :api-credentials  {:api-key    "credential/uuid"
+                       :api-credentials {:api-key     "credential/uuid"
                                           :api-secret "api secret"}
 
-                       :credential-id    "credential/my-cloud-credential"
+                       :credential-id   "credential/my-cloud-credential"
 
                        :module           {:href "module-component/my-module-component-uuid"}
 
-                       :external-objects ["external-object/uuid1" "external-object/uuid2"]
-                       :service-offers   {:service-offer/uuid1 ["service-offer/dataset1" "service-offer/dataset2"]
+                       :data-objects    ["data-object/uuid1" "data-object/uuid2"]
+                       :service-offers  {:service-offer/uuid1  ["service-offer/dataset1" "service-offer/dataset2"]
                                           :service-offer/uuid2 nil
                                           :service-offer/uuid3 ["service-offer/dataset3"]}})
 
@@ -41,7 +41,7 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :badKey "badValue"))
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :module "must-be-href"))
 
-  (stu/is-invalid ::ds/deployment (assoc valid-deployment :external-objects ["BAD_ID"]))
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-objects ["BAD_ID"]))
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :service-offers {"BAD_ID" nil}))
 
   ;; required attributes
@@ -49,5 +49,5 @@
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:external-objects :service-offers}]
+  (doseq [k #{:data-objects :service-offers}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

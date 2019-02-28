@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object-lifecycle-test-utils
+(ns sixsq.nuvla.server.resources.data-object-lifecycle-test-utils
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -13,8 +13,8 @@
     [sixsq.nuvla.server.resources.credential :as cred]
     [sixsq.nuvla.server.resources.credential-template :as credt]
     [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as cred-alpha]
-    [sixsq.nuvla.server.resources.external-object :as eo]
-    [sixsq.nuvla.server.resources.external-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data-object :as eo]
+    [sixsq.nuvla.server.resources.data-object.utils :as s3]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import (com.amazonaws AmazonServiceException)))
 
@@ -166,7 +166,7 @@
   (let [template (get-template template-url)
         create-href {:template (-> template-obj
                                    (assoc :href (:id template))
-                                   (dissoc :objectType))}
+                                   (dissoc :object-type))}
         create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute
@@ -182,7 +182,7 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        ;; full external object lifecycle as administrator/user should work
+        ;; full data object lifecycle as administrator/user should work
         (doseq [session [session-admin session-user]]
 
           ;; create with invalid template fails
@@ -224,7 +224,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 403)))
 
-              ;; another user should not be able to delete external object
+              ;; another user should not be able to delete data object
               (with-redefs [s3/bucket-exists? (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found]
                 (-> session-other
@@ -322,7 +322,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 403))
 
-            ;; update the ACL to allow another user to view the external object
+            ;; update the ACL to allow another user to view the data object
             (let [{:keys [acl] :as current-eo} (-> session
                                                    (request abs-uri)
                                                    (ltu/body->edn)
@@ -412,7 +412,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
-                ;; after getting upload URL the state is set to 'uploading'
+                ;; after getting upload url the state is set to 'uploading'
                 ;; 'ready', 'upload', and 'delete' actions are present
                 (-> session
                     (request abs-uri)
@@ -438,7 +438,7 @@
                     (ltu/is-operation-absent "upload")
                     (ltu/is-operation-absent "download"))
 
-                ;; doing it again should succeed, a new upload URL can be obtained
+                ;; doing it again should succeed, a new upload url can be obtained
                 ;; in 'uploading' state
                 (-> session
                     (request abs-upload-uri

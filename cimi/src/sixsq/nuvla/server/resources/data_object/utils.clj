@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object.utils
+(ns sixsq.nuvla.server.resources.data-object.utils
   (:require
     [clj-time.coerce :as tc]
     [clj-time.core :as t]
@@ -102,8 +102,8 @@
 
 (defn bucket-exists?
   "Function mocked in unit tests"
-  [s3client bucketName]
-  (.doesBucketExist s3client bucketName))
+  [s3client bucket-name]
+  (.doesBucketExist s3client bucket-name))
 
 
 (defn head-bucket
@@ -134,28 +134,28 @@
   "Returns credential document after expanding `href-obj-store-cred`
    credential href.
 
-  Deriving objectType from request is not directly possible as this is a
+  Deriving object-type from request is not directly possible as this is a
   request on action resource. We would need to get resource id, load the
-  resource and get objectType from it. Instead, requiring objectType as
+  resource and get object-type from it. Instead, requiring object-type as
   parameter. It should be known to the callers."
   [href-obj-store-cred]
   (std-crud/resolve-hrefs href-obj-store-cred request-admin true))
 
 
 (defn bucket-creation-ok?
-  "When the requested bucket doesn't exist and can't be created. The external
+  "When the requested bucket doesn't exist and can't be created. The data
   object resource must not be created."
-  [s3client bucketName]
+  [s3client bucket-name]
   (try
-    (or (bucket-exists? s3client bucketName)
-        (create-bucket! s3client bucketName))
+    (or (bucket-exists? s3client bucket-name)
+        (create-bucket! s3client bucket-name))
     (catch Exception e
-      (log/errorf "Error when creating bucket %s: %s" bucketName (.getMessage e))
+      (log/errorf "Error when creating bucket %s: %s" bucket-name (.getMessage e))
       false)))
 
 
 (defn uploadable-bucket?
-  "When the bucket exists, but the user can't create the object. The external
+  "When the bucket exists, but the user can't create the object. The data
   object resource must not be created."
   [obj-store-conf bucket]
   (let [s3client (get-s3-client obj-store-conf)]
@@ -164,7 +164,7 @@
 
 
 (defn format-creds-for-s3-api
-  "Need objectType to dispatch on when loading credentials."
+  "Need object-type to dispatch on when loading credentials."
   [href-obj-store-cred]
   (let [{:keys [key secret connector]} (expand-cred href-obj-store-cred)]
     {:key      key
@@ -172,21 +172,21 @@
      :endpoint (:objectStoreEndpoint connector)}))
 
 
-(defn ok-to-add-external-resource?
+(defn ok-to-add-data-resource?
   "Determines if S3 conditions are met on S3 for the user to safely add an
   external object resource. If everything is OK, then the resource itself is
   returned. Otherwise an error response map is thrown"
-  [{:keys [bucketName objectStoreCred] :as resource} request]
-  (let [obj-store-conf (format-creds-for-s3-api objectStoreCred)
+  [{:keys [bucket-name object-store-cred] :as resource} request]
+  (let [obj-store-conf (format-creds-for-s3-api object-store-cred)
         s3client (get-s3-client obj-store-conf)]
 
     ;; When the requested bucket exists, but the user doesn't have permission to it :
     ;; The external object resource must not be created."
-    (uploadable-bucket? obj-store-conf bucketName)          ;; Throws if the bucket can't be written to.
+    (uploadable-bucket? obj-store-conf bucket-name)          ;; Throws if the bucket can't be written to.
 
-    (if (bucket-creation-ok? s3client bucketName)
+    (if (bucket-creation-ok? s3client bucket-name)
       resource
-      (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucketName)))))
+      (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket-name)))))
 
 
 (defn s3-object-metadata
@@ -217,30 +217,30 @@
 
 (defn add-s3-size
   "Adds a size attribute to external object if present in metadata
-  or returns untouched external object. Ignore any S3 exception "
-  [{:keys [objectStoreCred bucketName objectName] :as resource}]
-  (let [s3client (-> objectStoreCred
+  or returns untouched data object. Ignore any S3 exception "
+  [{:keys [object-store-cred bucket-name object-name] :as resource}]
+  (let [s3client (-> object-store-cred
                      (format-creds-for-s3-api)
                      (get-s3-client))
         size (try
-               (:contentLength (s3-object-metadata s3client bucketName objectName))
+               (:contentLength (s3-object-metadata s3client bucket-name object-name))
                (catch Exception _
-                 (log/warn (str "Could not access the metadata for S3 object " objectName))))]
+                 (log/warn (str "Could not access the metadata for S3 object " object-name))))]
     (cond-> resource
             size (assoc :size size))))
 
 
 (defn add-s3-md5sum
-  "Adds a md5sum attribute to external object if present in metadata
-  or returns untouched external object. Ignore any S3 exception"
-  [{:keys [objectStoreCred bucketName objectName] :as resource}]
-  (let [s3client (-> objectStoreCred
+  "Adds a md5sum attribute to data object if present in metadata
+  or returns untouched data object. Ignore any S3 exception"
+  [{:keys [object-store-cred bucket-name object-name] :as resource}]
+  (let [s3client (-> object-store-cred
                      (format-creds-for-s3-api)
                      (get-s3-client))
         md5 (try
-              (:contentMD5 (s3-object-metadata s3client bucketName objectName))
+              (:contentMD5 (s3-object-metadata s3client bucket-name object-name))
               (catch Exception _
-                (log/warn (str "Could not access the metadata for S3 object " objectName))))]
+                (log/warn (str "Could not access the metadata for S3 object " object-name))))]
     (cond-> resource
             md5 (assoc :md5sum md5))))
 
@@ -261,11 +261,11 @@
 
 (defn set-public-read-object
   "Returns the untouched resource. Side effect is only on S3 permissions"
-  [{:keys [objectStoreCred bucketName objectName] :as resource}]
-  (let [s3client (-> objectStoreCred
+  [{:keys [object-store-cred bucket-name object-name] :as resource}]
+  (let [s3client (-> object-store-cred
                      (format-creds-for-s3-api)
                      (get-s3-client))]
-    (try-set-public-read-object s3client bucketName objectName)
+    (try-set-public-read-object s3client bucket-name object-name)
     resource))
 
 
@@ -275,8 +275,8 @@
 
 
 (defn add-s3-url
-  [{:keys [objectStoreCred bucketName objectName] :as resource}]
-  (let [s3client (-> objectStoreCred
+  [{:keys [object-store-cred bucket-name object-name] :as resource}]
+  (let [s3client (-> object-store-cred
                      (format-creds-for-s3-api)
                      (get-s3-client))]
-    (assoc resource :URL (s3-url s3client bucketName objectName))))
+    (assoc resource :url (s3-url s3client bucket-name object-name))))
