@@ -1,21 +1,24 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-exoscale
+(ns sixsq.nuvla.server.resources.credential-template-service-gce
     "This CredentialTemplate allows creating a Credential instance to hold
-    cloud credentials for the Exoscale's services."
+    cloud credentials for the GCE's services."
     (:require
       [sixsq.nuvla.server.resources.credential-template :as p]
       [sixsq.nuvla.server.resources.common.utils :as u]
       [sixsq.nuvla.server.resources.resource-metadata :as md]
       [sixsq.nuvla.server.util.metadata :as gen-md]
-      [sixsq.nuvla.server.resources.spec.credential-template-service-exoscale :as service]))
+      [sixsq.nuvla.server.resources.spec.credential-template-service-gce :as service]))
 
 
-(def ^:const credential-type "cloud-service-cred-exoscale")
+(def ^:const credential-type "cloud-service-cred-gce")
 
 
-(def ^:const resource-name "Exoscale API keys")
+(def ^:const resource-name "GCE service account private key")
 
 
-(def ^:const method "store-cloud-service-cred-exoscale")
+(def ^:const resource-url credential-type)
+
+
+(def ^:const method "store-cloud-service-cred-gce")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
@@ -29,15 +32,18 @@
 ;;
 
 (def ^:const resource
-  {:type                    credential-type
-   :method                  method
-   :name                    resource-name
-   :description             "Exoscale cloud credentials"
-   :exoscale-api-key        ""
-   :exoscale-api-secret-key ""
-   :services                []
-   :acl                     resource-acl
-   :resourceMetadata        "resource-metadata/credential-template-driver-exoscale"})
+  {:type             credential-type
+   :method           method
+   :name             resource-name
+   :description      "GCE service account credentials"
+   :project-id       "my-project-id"
+   :private-key-id   "abcde1234"
+   :private-key      "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
+   :client-email     "1234-compute@developer.gserviceaccount.com"
+   :client-id        "98765"
+   :services         []
+   :acl              resource-acl
+   :resourceMetadata "resource-metadata/credential-template-driver-gce"})
 
 
 ;;

@@ -28,7 +28,7 @@
 
                        :credential-id   "credential/my-cloud-credential"
 
-                       :module          {:href "module-image/my-module-image-uuid"}
+                       :module           {:href "module-component/my-module-component-uuid"}
 
                        :data-objects    ["data-object/uuid1" "data-object/uuid2"]
                        :service-offers  {:service-offer/uuid1  ["service-offer/dataset1" "service-offer/dataset2"]

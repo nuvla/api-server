@@ -22,12 +22,12 @@
               :acl                       valid-acl
               :parent-path               "a/b"
               :path                      "a/b/c"
-              :type                      "IMAGE"
-              :versions                  [{:href   "module-image/xyz"
+              :type                      "COMPONENT"
+              :versions                  [{:href   "module-component/xyz"
                                            :author "someone"
                                            :commit "wip"}
                                           nil
-                                          {:href "module-image/abc"}]
+                                          {:href "module-component/abc"}]
               :logo-url                  "https://example.org/logo"
 
               :data-accept-content-types ["application/json" "application/x-something"]

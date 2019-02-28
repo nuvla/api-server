@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.module-image
+(ns sixsq.nuvla.server.resources.module-component
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.module-image :as module-image]))
+    [sixsq.nuvla.server.resources.spec.module-component :as module-component]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -26,7 +26,7 @@
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::module-image/module-image))
+(def validate-fn (u/create-spec-validation-fn ::module-component/module-component))
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -91,4 +91,4 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::module-image/module-image))
+  (std-crud/initialize resource-type ::module-component/module-component))
