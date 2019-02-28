@@ -23,7 +23,7 @@
               :acl           valid-acl
 
               :deployment    {:href "deployment-uuid"}
-              :nodeID        "node-uuid"
+              :node-id       "node-uuid"
               :name          "my-parameter"
               :value         "my-parameter-value"}]
 
@@ -36,5 +36,5 @@
       (stu/is-invalid ::dp/deployment-parameter (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:values :nodeID}]
+    (doseq [k #{:values :node-id}]
       (stu/is-valid ::dp/deployment-parameter (dissoc root k)))))

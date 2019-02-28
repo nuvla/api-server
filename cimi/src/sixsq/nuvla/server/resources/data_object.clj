@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object
+(ns sixsq.nuvla.server.resources.data-object
   (:require
     [buddy.core.codecs :as co]
     [buddy.core.hash :as ha]
@@ -11,8 +11,8 @@
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.external-object-template :as eot]
-    [sixsq.nuvla.server.resources.external-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data-object-template :as dot]
+    [sixsq.nuvla.server.resources.data-object.utils :as s3]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.util.response :as r]))
 
@@ -46,16 +46,16 @@
 
 
 ;;
-;; validate subclasses of externalObject
+;; validate subclasses of data-object
 ;;
 
 (defmulti validate-subtype
-          :objectType)
+          :object-type)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown External object type: '" (:objectType resource) "'") resource)))
+  (throw (ex-info (str "unknown External object type: '" (:object-type resource) "'") resource)))
 
 
 (defmethod crud/validate resource-type
@@ -63,11 +63,11 @@
   (validate-subtype resource))
 
 ;;
-;; validate create requests for subclasses of external objects
+;; validate create requests for subclasses of data objects
 ;;
 
 (defn dispatch-on-object-type [resource]
-  (get-in resource [:template :objectType]))
+  (get-in resource [:template :object-type]))
 
 
 (defmulti create-validate-subtype dispatch-on-object-type)
@@ -83,18 +83,18 @@
   (create-validate-subtype resource))
 
 ;;
-;; multimethods for validation for the external objects
+;; multimethods for validation for the data objects
 ;;
 
 (defmulti validate-subtype
           "Validates the given resource against the specific
-           ExternalObjectTemplate subtype schema."
-          :objectType)
+           DataObjectTemplate subtype schema."
+          :object-type)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown ExternalObjectTemplate type: " (:objectType resource)) resource)))
+  (throw (ex-info (str "unknown DataObjectTemplate type: " (:object-type resource)) resource)))
 
 
 (defmethod crud/validate
@@ -127,13 +127,13 @@
       (assoc resource :acl (create-acl user-id)))))
 
 
-(defn standard-external-object-collection-operations
+(defn standard-data-object-collection-operations
   [{:keys [id] :as resource} request]
   (when (a/authorized-modify? resource request)
     [{:rel (:add c/action-uri) :href id}]))
 
 
-(defn standard-external-object-resource-operations
+(defn standard-data-object-resource-operations
   [{:keys [id state] :as resource} request]
   (let [viewable? (a/authorized-view? resource request)
         modifiable? (a/authorized-modify? resource request)
@@ -150,19 +150,19 @@
       (vec ops))))
 
 
-(defn standard-external-object-operations
-  "Provides a list of the standard external object operations, depending
-   on the user's authentication and whether this is a ExternalObject or
-   a ExternalObjectCollection."
+(defn standard-data-object-operations
+  "Provides a list of the standard data object operations, depending
+   on the user's authentication and whether this is a DataObject or
+   a DataObjectCollection."
   [{:keys [resource-type] :as resource} request]
   (if (u/is-collection? resource-type)
-    (standard-external-object-collection-operations resource request)
-    (standard-external-object-resource-operations resource request)))
+    (standard-data-object-collection-operations resource request)
+    (standard-data-object-resource-operations resource request)))
 
 
 (defmethod crud/set-operations resource-type
   [resource request]
-  (let [ops (standard-external-object-operations resource request)]
+  (let [ops (standard-data-object-operations resource request)]
     (cond-> (dissoc resource :operations)
             (seq ops) (assoc :operations ops))))
 
@@ -172,21 +172,21 @@
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [objectName bucketName] :as resource} resource-name]
-  (if-let [new-id (co/bytes->hex (ha/md5 (str objectName bucketName)))]
+  [{:keys [object-name bucket-name] :as resource} resource-name]
+  (if-let [new-id (co/bytes->hex (ha/md5 (str object-name bucket-name)))]
     (assoc resource :id (str resource-name "/" new-id))))
 
 ;;
 ;; template processing
 ;;
 
-(defmulti tpl->externalObject
-          "Transforms the ExternalObjectTemplate into a ExternalObject resource."
-          :objectType)
+(defmulti tpl->data-object
+          "Transforms the DataObjectTemplate into a DataObject resource."
+          :object-type)
 
 ;; default implementation just updates the resource-type
 
-(defmethod tpl->externalObject :default
+(defmethod tpl->data-object :default
   [resource]
   (assoc resource :resource-type resource-type))
 
@@ -196,19 +196,19 @@
 
 (defn check-cred-exists
   [body idmap]
-  (let [href (get-in body [:template :objectStoreCred])]
+  (let [href (get-in body [:template :object-store-cred])]
     (std-crud/resolve-hrefs href idmap))
   body)
 
 (defn resolve-hrefs
   [body idmap]
-  (let [os-cred-href (if (contains? (:template body) :objectStoreCred)
-                       {:objectStoreCred (get-in body [:template :objectStoreCred])}
+  (let [os-cred-href (if (contains? (:template body) :object-store-cred)
+                       {:object-store-cred (get-in body [:template :object-store-cred])}
                        {})]                                 ;; to put back the unexpanded href after
     (-> body
         (check-cred-exists idmap)
         ;; remove connector href (if any); regular user MAY NOT have rights to see it
-        (update-in [:template] dissoc :objectStoreCred)
+        (update-in [:template] dissoc :object-store-cred)
         (std-crud/resolve-hrefs idmap)
         ;; put back unexpanded connector href
         (update-in [:template] merge os-cred-href))))
@@ -220,7 +220,7 @@
 (defn merge-into-tmpl
   [body]
   (if-let [href (get-in body [:template :href])]
-    (let [tmpl (-> (get @eot/templates href)
+    (let [tmpl (-> (get @dot/templates href)
                    u/strip-service-attrs
                    u/strip-common-attrs
                    (dissoc :acl))
@@ -230,7 +230,7 @@
       (assoc-in body [:template] (merge tmpl user-resource)))
     body))
 
-;; requires a ExternalObjectTemplate to create new ExternalObject
+;; requires a DataObjectTemplate to create new DataObject
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
@@ -242,9 +242,9 @@
                  (resolve-hrefs idmap)
                  (crud/validate)
                  :template
-                 (tpl->externalObject)
+                 (tpl->data-object)
                  (assoc :state state-new))]
-    (s3/ok-to-add-external-resource? body request)
+    (s3/ok-to-add-data-resource? body request)
     (add-impl (assoc request :body body))))
 
 
@@ -304,15 +304,15 @@
 (defn upload-fn
   "Provided 'resource' and 'request', returns object storage upload URL.
   It is assumed that the bucket already exists and the user has access to it."
-  [{:keys [objectType contentType bucketName objectName objectStoreCred runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [object-type content-type bucket-name object-name object-store-cred runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-new state-uploading} "upload")
-  (let [object-name (if (not-empty objectName)
-                      objectName
+  (let [object-name (if (not-empty object-name)
+                      object-name
                       (format "%s/%s" runUUID filename))
-        obj-store-conf (s3/format-creds-for-s3-api objectStoreCred)]
+        obj-store-conf (s3/format-creds-for-s3-api object-store-cred)]
     (log/info "Requesting upload url:" object-name)
-    (s3/generate-url obj-store-conf bucketName object-name :put
-                     {:ttl (or ttl s3/default-ttl) :content-type contentType :filename filename})))
+    (s3/generate-url obj-store-conf bucket-name object-name :put
+                     {:ttl (or ttl s3/default-ttl) :content-type content-type :filename filename})))
 
 
 (defn upload
@@ -337,7 +337,7 @@
 
 
 (defmulti ready-subtype
-          (fn [resource _] (:objectType resource)))
+          (fn [resource _] (:object-type resource)))
 
 (defmethod ready-subtype :default
   [resource request]
@@ -361,16 +361,16 @@
 
 (defmulti download-subtype
           "Provided 'resource' and 'request', returns object storage download URL."
-          (fn [resource _] (:objectType resource)))
+          (fn [resource _] (:object-type resource)))
 
 
 
 (defmethod download-subtype :default
-  [{:keys [bucketName objectName objectStoreCred] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [bucket-name object-name object-store-cred] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-ready} "download")
-  (log/info "Requesting download url: " objectName)
-  (s3/generate-url (s3/format-creds-for-s3-api objectStoreCred)
-                   bucketName objectName :get
+  (log/info "Requesting download url: " object-name)
+  (s3/generate-url (s3/format-creds-for-s3-api object-store-cred)
+                   bucket-name object-name :get
                    {:ttl (or ttl s3/default-ttl)}))
 
 
@@ -402,15 +402,15 @@
 
 
 (defn delete
-  [{:keys [objectName bucketName objectStoreCred] :as resource}
+  [{:keys [object-name bucket-name object-store-cred] :as resource}
    {{keep-object? :keep-s3-object, keep-bucket? :keep-s3-bucket} :body :as request}]
   (when-not keep-object?
     (try
-      (s3/try-delete-s3-object (s3/format-creds-for-s3-api objectStoreCred) bucketName objectName)
-      (log/infof "object %s from bucket %s has been deleted" objectName bucketName)
+      (s3/try-delete-s3-object (s3/format-creds-for-s3-api object-store-cred) bucket-name object-name)
+      (log/infof "object %s from bucket %s has been deleted" object-name bucket-name)
       (catch Exception e
         ;; When the user requests to delete an S3 object that no longer exists,
-        ;; the external object resource should be deleted normally.
+        ;; the data object resource should be deleted normally.
         ;; Ignore 404 exceptions.
         (let [status (:status (ex-data e))]
           (when-not (= 404 status)
@@ -419,8 +419,8 @@
   ;; Request will fail when the bucket isn't empty.  These errors are ignored.
   (when-not keep-bucket?
     (try
-      (s3/try-delete-s3-bucket (s3/format-creds-for-s3-api objectStoreCred) bucketName)
-      (log/debugf "bucket %s became empty and was deleted" bucketName)
+      (s3/try-delete-s3-bucket (s3/format-creds-for-s3-api object-store-cred) bucket-name)
+      (log/debugf "bucket %s became empty and was deleted" bucket-name)
       (catch Exception _)))
   (delete-impl request))
 

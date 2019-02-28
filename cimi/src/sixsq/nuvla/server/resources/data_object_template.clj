@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object-template
+(ns sixsq.nuvla.server.resources.data-object-template
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
@@ -38,7 +38,7 @@
 ;; Resource defaults
 ;;
 
-(def external-object-reference-attrs-defaults
+(def data-object-reference-attrs-defaults
   {})
 
 
@@ -46,11 +46,11 @@
 ;; Template validation
 ;;
 
-(defmulti validate-subtype-template :objectType)
+(defmulti validate-subtype-template :object-type)
 
 (defmethod validate-subtype-template :default
   [resource]
-  (throw (ex-info (str "unknown External object template type: '" (:objectType resource) "'") resource)))
+  (throw (ex-info (str "unknown External object template type: '" (:object-type resource) "'") resource)))
 
 (defmethod crud/validate resource-type
   [resource]
@@ -58,7 +58,7 @@
 
 
 ;;
-;; atom to keep track of the loaded ExternalObjectTemplate resources
+;; atom to keep track of the loaded DataObjectTemplate resources
 ;;
 ;;
 (def templates (atom {}))
@@ -68,30 +68,30 @@
 (defn complete-resource
   "Completes the given document with server-managed information:
    resource-type, timestamps, operations, and ACL."
-  [{:keys [objectType] :as resource}]
-  (when objectType
-    (let [id (str resource-type "/" objectType)]
+  [{:keys [object-type] :as resource}]
+  (when object-type
+    (let [id (str resource-type "/" object-type)]
       (-> resource
           (merge {:id            id
                   :resource-type resource-type
                   :acl           resource-acl})
-          (merge external-object-reference-attrs-defaults)
+          (merge data-object-reference-attrs-defaults)
           u/update-timestamps))))
 
 
 (defn register
-  "Registers a given ExternalObjectTemplate resource with the server.
+  "Registers a given DataObjectTemplate resource with the server.
    The resource document (resource) must be valid.
    The key will be used to create the id of
-   the resource as 'external-object-template/key'."
+   the resource as 'data-object-template/key'."
   [resource & [name-kw-map]]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded ExternalObjectTemplate" id)
+      (log/info "loaded DataObjectTemplate" id)
       (when name-kw-map
         (swap! name->kw assoc id name-kw-map)
-        (log/info "added name->kw mapping from ExternalObjectTemplate" id)))))
+        (log/info "added name->kw mapping from DataObjectTemplate" id)))))
 
 
 ;;
@@ -102,10 +102,10 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [objectType]} :body :as request}]
-  (if (get @templates objectType)
+  [{{:keys [object-type]} :body :as request}]
+  (if (get @templates object-type)
     (add-impl request)
-    (throw (r/ex-bad-request (str "invalid external object type '" objectType "'")))))
+    (throw (r/ex-bad-request (str "invalid data object type '" object-type "'")))))
 
 
 (defmethod crud/retrieve resource-type
