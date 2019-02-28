@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.credential-template-cloud-docker :as docker]
     [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-exo]
     [sixsq.nuvla.server.resources.credential-template-service-gce :as service-gce]
+    [sixsq.nuvla.server.resources.credential-template-service-aws :as service-aws]
     [sixsq.nuvla.server.resources.credential-template-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -57,6 +58,7 @@
              (str ct/resource-type "/" docker/method)
              (str ct/resource-type "/" service-gce/method)
              (str ct/resource-type "/" service-exo/method)
+             (str ct/resource-type "/" service-aws/method)
              (str ct/resource-type "/" service-swarm/method)}
            ids))
     (is (= #{akey/method
@@ -64,12 +66,14 @@
              docker/method
              service-swarm/method
              service-exo/method
+             service-aws/method
              service-gce/method} methods))
     (is (= #{akey/credential-type
              alpha/credential-type
              docker/credential-type
              service-swarm/credential-type
              service-exo/credential-type
+             service-aws/credential-type
              service-gce/credential-type} types))
 
     (doseq [entry entries]
