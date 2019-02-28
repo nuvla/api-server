@@ -32,7 +32,7 @@
 (s/def ::parent-path (s/and string? parent-path?))
 
 
-(s/def ::type #{"PROJECT" "IMAGE"})
+(s/def ::type #{"PROJECT" "COMPONENT"})
 
 
 (s/def ::versions (s/coll-of (s/nilable ::cimi-common/resource-link) :min-count 1))
