@@ -2,11 +2,13 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
-    [sixsq.nuvla.server.resources.spec.deployment-template :as deployment-template]
+    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
+
+
+(s/def ::module ::cimi-common/resource-link)
 
 
 (s/def ::state
@@ -43,15 +45,13 @@
                                        :default "CREATED"})))
 
 
-(s/def ::module ::cimi-common/resource-link)
-
 (def ^:const credential-href-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 
 
-(s/def ::href
+(s/def ::api-key
   (-> (st/spec (s/and string? #(re-matches credential-href-regex %)))
-      (assoc :name "href"
-             :json-schema/name "href"
+      (assoc :name "api-key"
+             :json-schema/name "api-key"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
@@ -60,7 +60,7 @@
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "href"
+             :json-schema/displayName "API key"
              :json-schema/description "credential identifier of API key pair"
              :json-schema/help "credential identifier of API key pair"
              :json-schema/group "body"
@@ -69,10 +69,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::secret
+(s/def ::api-secret
   (-> (st/spec string?)
-      (assoc :name "secret"
-             :json-schema/name "secret"
+      (assoc :name "api-secret"
+             :json-schema/name "api-secret"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
@@ -81,7 +81,7 @@
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "secret"
+             :json-schema/displayName "API secret"
              :json-schema/description "secret of API key pair"
              :json-schema/help "secret of API key pair"
              :json-schema/group "body"
@@ -90,10 +90,10 @@
              :json-schema/sensitive true)))
 
 
-(s/def ::clientAPIKey
-  (-> (st/spec (su/only-keys :req-un [::href ::secret]))
-      (assoc :name "clientAPIKey"
-             :json-schema/name "clientAPIKey"
+(s/def ::api-credentials
+  (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
+      (assoc :name "api-credentials"
+             :json-schema/name "api-credentials"
              :json-schema/namespace common-ns/slipstream-namespace
              :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
@@ -103,39 +103,16 @@
              :json-schema/consumerWritable true
              :json-schema/indexed false
 
-             :json-schema/displayName "client API key"
-             :json-schema/description "client API key used to access SlipStream API"
-             :json-schema/help "client API key used to access SlipStream API"
+             :json-schema/displayName "Nuvla credentials"
+             :json-schema/description "Nuvla deployment API credentials"
+             :json-schema/help "Nuvla deployment API credentials"
              :json-schema/group "data"
              :json-schema/category "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
-
-(s/def ::sshPublicKeys
-  (-> (st/spec (s/coll-of ::cimi-core/nonblank-string :min-count 1 :kind vector?))
-      (assoc :name "sshPublicKeys"
-             :json-schema/name "sshPublicKeys"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
-             :json-schema/type "Array"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-             :json-schema/indexed false
-
-             :json-schema/displayName "SSH Public Keys"
-             :json-schema/description "SSH public keys to add to deployment"
-             :json-schema/help "SSH public keys to add to deployment"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::template ::cimi-common/resource-link)
+(s/def ::credential-id ::cimi-core/nonblank-string)
 
 
 (def ^:const external-object-id-regex #"^external-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -143,7 +120,7 @@
 
 (s/def ::external-object-id (s/and string? external-object-id?))
 
-(s/def ::externalObjects
+(s/def ::external-objects
   (-> (st/spec (s/coll-of ::external-object-id :min-count 1 :kind vector?))
       (assoc :name "externalObjects"
              :json-schema/name "externalObjects"
@@ -175,7 +152,7 @@
 (s/def ::data-set-ids (s/nilable (s/coll-of ::service-offer-id :min-count 1 :kind vector?)))
 
 
-(s/def ::serviceOffers
+(s/def ::service-offers
   (-> (st/spec (s/map-of ::service-offer-id-keyword ::data-set-ids :min-count 1))
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
@@ -200,12 +177,11 @@
 
 (def deployment-keys-spec
   (su/merge-keys-specs [cimi-common/common-attrs
-                        deployment-template/deployment-template-keys-spec
-                        {:req-un [::state
-                                  ::clientAPIKey]
-                         :opt-un [::template
-                                  ::sshPublicKeys
-                                  ::externalObjects
-                                  ::serviceOffers]}]))
+                        {:req-un [::module
+                                  ::state
+                                  ::api-credentials
+                                  ::credential-id]
+                         :opt-un [::external-objects
+                                  ::service-offers]}]))
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

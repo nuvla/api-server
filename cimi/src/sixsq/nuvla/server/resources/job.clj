@@ -136,3 +136,19 @@
         (db/edit request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+;;
+;; internal crud
+;;
+
+(defn create-job
+  [targetResource action acl & {:keys [priority]}]
+  (let [job-map (cond-> {:action         action
+                         :targetResource {:href targetResource}
+                         :acl            acl}
+                        priority (assoc :priority priority))
+        create-request {:params   {:resource-name resource-type}
+                        :identity std-crud/internal-identity
+                        :body     job-map}]
+    (crud/add create-request)))
