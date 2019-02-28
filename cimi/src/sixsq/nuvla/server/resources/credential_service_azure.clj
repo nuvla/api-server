@@ -7,7 +7,7 @@ for Azure
       [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
       [sixsq.nuvla.server.resources.common.utils :as u]
       [sixsq.nuvla.server.resources.credential :as p]
-      [sixsq.nuvla.server.resources.credential-template-service-aws :as tpl]
+      [sixsq.nuvla.server.resources.credential-template-service-azure :as tpl]
       [sixsq.nuvla.server.resources.spec.credential-service-azure :as service]))
 
 ;;
