@@ -51,8 +51,8 @@
       (assoc :name "endpoint"
              :json-schema/name "endpoint"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
