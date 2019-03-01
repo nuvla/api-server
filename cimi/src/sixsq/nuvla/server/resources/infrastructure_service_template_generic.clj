@@ -11,9 +11,6 @@ resource.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const resource-type (u/ns->type *ns*))
-
-
 (def ^:const method "generic")
 
 
