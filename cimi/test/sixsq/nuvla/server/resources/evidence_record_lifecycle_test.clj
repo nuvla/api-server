@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.evidence-record :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as tu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.service-attribute-namespace :as sn]))
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]))
 
 
 (def base-uri (str p/service-context t/resource-type))

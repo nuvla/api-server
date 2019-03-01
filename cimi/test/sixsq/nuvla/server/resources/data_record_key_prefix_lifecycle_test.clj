@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-attribute-namespace-lifecycle-test
+(ns sixsq.nuvla.server.resources.data-record-key-prefix-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
@@ -7,25 +7,34 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.service-attribute-namespace :refer :all]))
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as key-prefix]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-type))
+
+(def base-uri (str p/service-context key-prefix/resource-type))
+
 
 (def valid-namespace
   {:prefix "schema-org"
    :uri    "https://schema-org/a/b/c.md"})
 
+
 (def namespace-same-prefix
   {:prefix "schema-org"
    :uri    "https://schema-com/z"})
+
+
 (def namespace-same-uri
   {:prefix "schema-com"
    :uri    "https://schema-org/a/b/c.md"})
+
+
 (def another-valid-namespace
   {:prefix "schema-com"
    :uri    "https://schema-com/z"})
+
 
 (deftest lifecycle
   (let [session-anon (-> (ltu/ring-app)
@@ -66,10 +75,10 @@
 
       (is (= "schema-org" (:prefix doc)))
       (is (= "https://schema-org/a/b/c.md" (:uri doc)))
-      (is (= "service-attribute-namespace/schema-org" uri))
+      (is (= "data-record-key-prefix/schema-org" uri))
 
       (-> session-user
-          (request "/api/service-attribute-namespace")
+          (request "/api/data-record-key-prefix")
           (ltu/body->edn)
           (ltu/is-status 200)
           (get-in [:response :body]))
