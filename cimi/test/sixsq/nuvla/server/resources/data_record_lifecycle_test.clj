@@ -217,7 +217,7 @@
 
     (let [connector-with-namespaced-key
           (format "
-          {\"service\":{\"href\":\"infrastructure-service/cloud-software-solution\"},
+          {\"infrastructure-service\":{\"href\":\"infrastructure-service/cloud-software-solution\"},
           \"%s:attr-name\":\"123.456\"}
           " ns1-prefix)
 
@@ -286,9 +286,6 @@
         valid-entry {:infrastructure-service             {:href "infrastructure-service/cloud-software-solution-1"}
                      (keyword (str ns1-prefix ":" attr)) "123.456"}]
 
-
-    (clojure.pprint/pprint valid-entry)
-    (println (json/write-str valid-entry))
     (-> session-user
         (request base-uri
                  :request-method :post

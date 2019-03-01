@@ -17,7 +17,9 @@ and the key itself **may** be described in a data-record-key resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [sixsq.nuvla.server.resources.spec.data-record :as data-record]
-    [sixsq.nuvla.util.response :as sr]))
+    [sixsq.nuvla.util.response :as sr]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -145,4 +147,6 @@ and the key itself **may** be described in a data-record-key resource.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::data-record/schema))
+  (std-crud/initialize resource-type ::data-record/schema)
+  (md/register (gen-md/generate-metadata ::ns ::data-record/schema)))
+
