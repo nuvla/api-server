@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/email)
       (assoc :name "address"
              :json-schema/name "address"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -33,8 +30,6 @@
   (-> (st/spec boolean?)
       (assoc :name "validated"
              :json-schema/name "validated"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "boolean"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
