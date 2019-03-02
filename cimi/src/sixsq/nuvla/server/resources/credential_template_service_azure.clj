@@ -2,11 +2,11 @@
   "This CredentialTemplate allows creating a Credential instance to hold
   cloud credentials for the Azure's services."
   (:require
-    [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-azure :as service]))
+    [sixsq.nuvla.server.resources.spec.credential-template-service-azure :as service]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const credential-type "cloud-service-cred-azure")

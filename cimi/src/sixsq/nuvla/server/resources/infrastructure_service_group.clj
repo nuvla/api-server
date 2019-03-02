@@ -15,8 +15,8 @@ infrastructure-service-group resource.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-group :as infra-service-group]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]))

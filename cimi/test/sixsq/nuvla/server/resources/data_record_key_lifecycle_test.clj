@@ -6,10 +6,10 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.data-record-key :refer :all]
-    [sixsq.nuvla.server.resources.data-record-key-prefix :as san]))
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

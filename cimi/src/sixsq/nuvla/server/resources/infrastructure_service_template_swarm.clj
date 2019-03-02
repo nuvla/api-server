@@ -5,8 +5,8 @@ cluster on a given cloud infrastructure.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 

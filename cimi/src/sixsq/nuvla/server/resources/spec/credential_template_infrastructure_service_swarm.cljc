@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
     [sixsq.nuvla.server.util.spec :as su]))
 
 

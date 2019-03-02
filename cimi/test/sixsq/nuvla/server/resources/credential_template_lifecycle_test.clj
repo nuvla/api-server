@@ -7,17 +7,19 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
-    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-exo]
-    [sixsq.nuvla.server.resources.credential-template-service-gce :as service-gce]
     [sixsq.nuvla.server.resources.credential-template-service-aws :as service-aws]
     [sixsq.nuvla.server.resources.credential-template-service-azure :as service-azure]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
+    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-exo]
+    [sixsq.nuvla.server.resources.credential-template-service-gce :as service-gce]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context ct/resource-type))
 
@@ -77,8 +79,6 @@
             entry-url (str p/service-context (:id entry))
 
             entry-resp (-> session-user
-
-
                            (request entry-url)
                            (ltu/is-status 200)
                            (ltu/body->edn))
@@ -89,7 +89,6 @@
         (is (nil? (get ops (c/action-uri :delete))))
 
         (is (crud/validate entry-body))))))
-
 
 
 (deftest bad-methods

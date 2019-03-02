@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm
   "
 This credential-template creates a credential for a Docker Swarm service.
+These credentials include a certificate authority's public certificate ('ca'),
+the user's public certificate ('cert'), and the user's private key ('key').
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -10,10 +12,10 @@ This credential-template creates a credential for a Docker Swarm service.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "service-swarm")
+(def ^:const credential-type "infrastructure-service-swarm")
 
 
-(def ^:const method "service-swarm")
+(def ^:const method "infrastructure-service-swarm")
 
 
 (def ^:const template-acl {:owner {:principal "ADMIN"
@@ -23,6 +25,8 @@ This credential-template creates a credential for a Docker Swarm service.
                                     :right     "VIEW"}]})
 
 
+;; No reasonable defaults for :services, :ca, :cert, :key.
+;; Do not provide values for those in the template
 (def ^:const template {:id            (str p/resource-type "/" method)
                        :resource-type p/resource-type
                        :acl           template-acl
@@ -30,8 +34,8 @@ This credential-template creates a credential for a Docker Swarm service.
                        :type          credential-type
                        :method        method
 
-                       :services      [{:href "service/service-example-1"}
-                                       {:href "service/service-example-2"}]
+                       :services      ["infrastructure-service/service-example-1"
+                                       "infrastructure-service/service-example-2"]
 
                        :ca            "ca-public-certificate"
                        :cert          "client-public-certificate"

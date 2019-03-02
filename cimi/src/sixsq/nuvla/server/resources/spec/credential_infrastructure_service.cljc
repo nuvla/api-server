@@ -8,25 +8,27 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::service-link
-  (-> (st/spec ::cimi-common/resource-link)
-      (assoc :name "service-link"
-             :json-schema/name "service-link"
-             :json-schema/type "map"
+(def ^:const infrastructure-service-id-regex #"^infrastructure-service/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+
+(s/def ::service-id
+  (-> (st/spec (s/and string? #(re-matches infrastructure-service-id-regex %)))
+      (assoc :name "service-id"
+             :json-schema/name "service-id"
+             :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "service-link"
-             :json-schema/description "reference to service associated with this credential"
-             :json-schema/help "reference to service associated with this credential"
+             :json-schema/displayName "service-id"
+             :json-schema/description "id of service associated with this credential"
+             :json-schema/help "id of service associated with this credential"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
 (s/def ::services
-  (-> (st/spec (s/coll-of ::service-link :kind vector?))
+  (-> (st/spec (s/coll-of ::service-id :kind vector?))
       (assoc :name "services"
              :json-schema/name "services"
              :json-schema/type "Array"
@@ -36,8 +38,8 @@
              :json-schema/consumerWritable true
 
              :json-schema/displayName "services"
-             :json-schema/description "references to services associated with this credential"
-             :json-schema/help "references to services associated with this credential"
+             :json-schema/description "ids of services associated with this credential"
+             :json-schema/help "ids of services associated with this credential"
              :json-schema/group "body"
              :json-schema/order 30
              :json-schema/hidden false
@@ -45,4 +47,4 @@
 
 
 (def credential-service-keys-spec (su/merge-keys-specs [cred/credential-keys-spec
-                                                        {:req-un [::services]}]))
+                                                        {:opt-un [::services]}]))

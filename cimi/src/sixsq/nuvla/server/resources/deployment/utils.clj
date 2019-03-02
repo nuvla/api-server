@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
-  (:require [sixsq.nuvla.server.resources.common.crud :as crud]
-            [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-            [sixsq.nuvla.server.resources.credential :as credential]
+  (:require [clojure.string :as str]
+            [sixsq.nuvla.server.resources.common.crud :as crud]
+            [sixsq.nuvla.server.resources.common.schema :as c]
             [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+            [sixsq.nuvla.server.resources.credential :as credential]
+            [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
             [sixsq.nuvla.server.resources.module :as module]
-            [clojure.string :as str]
-            [sixsq.nuvla.util.response :as r]
-            [sixsq.nuvla.server.resources.common.schema :as c]))
+            [sixsq.nuvla.util.response :as r]))
 
 
 (defn generate-api-key-secret
