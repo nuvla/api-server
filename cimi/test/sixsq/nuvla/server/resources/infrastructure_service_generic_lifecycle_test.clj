@@ -6,11 +6,11 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.infrastructure-service :as t]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
-    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

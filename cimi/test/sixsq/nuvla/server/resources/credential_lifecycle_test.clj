@@ -7,7 +7,9 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context credential/resource-type))
 

@@ -4,8 +4,8 @@
       [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
       [sixsq.nuvla.server.resources.spec.common :as cimi-common]
       [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
-      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
       [sixsq.nuvla.server.resources.spec.credential-template :as ct]
+      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
       [sixsq.nuvla.server.util.spec :as su]
       [spec-tools.core :as st]))
 

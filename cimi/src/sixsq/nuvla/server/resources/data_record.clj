@@ -16,10 +16,10 @@ and the key itself **may** be described in a data-record-key resource.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record :as data-record]
-    [sixsq.nuvla.util.response :as sr]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.util.response :as sr]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

@@ -6,17 +6,14 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.connector :as c]
-    [sixsq.nuvla.server.resources.connector-template :as cont]
-    [sixsq.nuvla.server.resources.connector-template-alpha-example :as con-alpha]
     [sixsq.nuvla.server.resources.credential :as cred]
     [sixsq.nuvla.server.resources.credential-template :as credt]
-    [sixsq.nuvla.server.resources.credential-template-cloud-alpha :as cred-alpha]
+    [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
-  (:import (com.amazonaws AmazonServiceException)))
+  (:import
+    (com.amazonaws AmazonServiceException)))
 
 
 (def ^:const user-info-header "jane USER ANON")
@@ -49,10 +46,10 @@
 
 (def ^:dynamic *cred-uri* nil)
 
-(defn create-cloud-cred
+#_(defn create-cloud-cred
   [user-session]
   (let [cred-create {:template
-                     {:href      (str credt/resource-type "/" cred-alpha/method)
+                     {:href      (str credt/resource-type "/" cred-api-key/method)
                       :key       "key"
                       :secret    "secret"
                       :quota     7
@@ -66,17 +63,17 @@
                 (ltu/location))]
     (alter-var-root #'*cred-uri* (constantly uri))))
 
-(defn create-cloud-cred-fixture-other-user!
+#_(defn create-cloud-cred-fixture-other-user!
   [f]
   (create-cloud-cred session-user-creds)
   (f))
 
-(defn create-cloud-cred-fixture!
+#_(defn create-cloud-cred-fixture!
   [f]
   (create-cloud-cred session-user)
   (f))
 
-(defn create-connector-fixture!
+#_(defn create-connector-fixture!
   [f]
   (let [con-create {:template {:href                (str cont/resource-type "/" con-alpha/cloud-service-type)
                                :alphaKey            1234

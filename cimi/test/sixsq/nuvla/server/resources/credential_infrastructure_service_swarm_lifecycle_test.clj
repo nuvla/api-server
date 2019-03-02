@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-gce-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-swarm-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,12 +7,15 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-gce :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context credential/resource-type))
+
 
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)
@@ -26,6 +29,10 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
+        ca-value "my-ca-certificate"
+        cert-value "my-public-certificate"
+        key-value "my-private-key"
+
         href (str ct/resource-type "/" service-tpl/method)
         template-url (str p/service-context ct/resource-type "/" service-tpl/method)
 
@@ -33,20 +40,18 @@
                      (request template-url)
                      (ltu/body->edn)
                      (ltu/is-status 200)
-                     (get-in [:response :body]))
+                     :response
+                     :body)
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
         create-import-href {:name        name-attr
                             :description description-attr
                             :tags        tags-attr
-                            :template    {:href           href
-                                          :project-id     "my-project-id"
-                                          :private-key-id "abcde1234"
-                                          :private-key    "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-                                          :client-email   "1234-compute@developer.gserviceaccount.com"
-                                          :client-id      "98765"
-                                          :services       []}}]
+                            :template    {:href href
+                                          :ca   ca-value
+                                          :cert cert-value
+                                          :key  key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -107,21 +112,19 @@
             (ltu/is-operation-present "edit")))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags
-                    project-id private-key-id private-key client-email client-id]} (-> session-user
-                                                                                       (request abs-uri)
-                                                                                       (ltu/body->edn)
-                                                                                       (ltu/is-status 200)
-                                                                                       :response
-                                                                                       :body)]
+      (let [{:keys [name description tags ca cert key]} (-> session-user
+                                                            (request abs-uri)
+                                                            (ltu/body->edn)
+                                                            (ltu/is-status 200)
+                                                            :response
+                                                            :body)]
+
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is project-id)
-        (is private-key-id)
-        (is private-key)
-        (is client-email)
-        (is client-id))
+        (is (= ca ca-value))
+        (is (= cert cert-value))
+        (is (= key key-value)))
 
       ;; delete the credential
       (-> session-user
