@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-swarm
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm
   "
 This credential-template creates a credential for a Docker Swarm service.
 "
