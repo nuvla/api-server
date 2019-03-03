@@ -150,5 +150,5 @@
                  attributes (merge attributes)
                  (seq actions) (assoc :actions actions)
                  (seq capabilities) (assoc :capabilities capabilities))
-         (log/error "namespace documentation, spec, and resource-uri cannot be null for" (str parent-ns))))
+         (log/error "namespace documentation and spec cannot be null for" (str parent-ns))))
      (log/error "cannot find namespace for" (str parent-ns)))))

@@ -1,11 +1,17 @@
 (ns sixsq.nuvla.server.resources.configuration-template
+  "
+The configuration-template resources allow administrators to provide
+configuration information for the micro-services of the Nuvla platform.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.configuration-template]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.configuration-template :as ct]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.util.response :as r]))
 
 
@@ -56,6 +62,16 @@
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
       (log/info "loaded ConfigurationTemplate" id))))
+
+
+;;
+;; initialization: create metadata for this collection
+;;
+
+(defn initialize
+  []
+  (md/register (gen-md/generate-metadata ::ns ::ct/schema)))
+
 
 ;;
 ;; multimethods for validation
