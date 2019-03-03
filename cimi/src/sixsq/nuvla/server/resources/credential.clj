@@ -35,19 +35,31 @@ CredentialTemplate resource.
 
 
 ;;
+;; initialization: no schema for this parent resource
+;;
+
+(defn initialize
+  []
+  (std-crud/initialize resource-type nil))
+
+
+;;
 ;; validate the created credential resource
 ;; must dispatch on the type because each credential has a different schema
 ;;
 
 (defmulti validate-subtype :type)
 
+
 (defmethod validate-subtype :default
   [resource]
   (logu/log-and-throw-400 (str "unknown Credential type: '" resource (:type resource) "'")))
 
+
 (defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
+
 
 ;;
 ;; validate create requests for subclasses of credentials
@@ -57,12 +69,15 @@ CredentialTemplate resource.
 (defn dispatch-on-registration-method [resource]
   (get-in resource [:template :type]))
 
+
 (defmulti create-validate-subtype dispatch-on-registration-method)
+
 
 (defmethod create-validate-subtype :default
   [resource]
   (logu/log-and-throw-400 (str "cannot validate CredentialTemplate create document with type: '"
                                (dispatch-on-registration-method resource) "'")))
+
 
 (defmethod crud/validate create-type
   [resource]
@@ -80,12 +95,14 @@ CredentialTemplate resource.
             :type      "USER"
             :right     "MODIFY"}]})
 
+
 (defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
     (let [user-id (:identity (a/current-authentication request))]
       (assoc resource :acl (create-acl user-id)))))
+
 
 ;;
 ;; template processing
@@ -95,13 +112,16 @@ CredentialTemplate resource.
   [resource _]
   (:type resource))
 
+
 (defmulti tpl->credential dispatch-conversion)
+
 
 ;; default implementation throws if the credential type is unknown
 (defmethod tpl->credential :default
   [resource request]
   (logu/log-and-throw-400
-    (str "cannot transform CredentialTemplate document to template for type: '" (:type resource) "'")))
+    (str "cannot transform credential-template document to template for type: '" (:type resource) "'")))
+
 
 ;;
 ;; CRUD operations
@@ -109,23 +129,27 @@ CredentialTemplate resource.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+
 ;;
-;; available operations
+;; Credentials can have their own actions, dispatch to subtypes
+;; to allow them to set their own.  Defaults to setting the standard
+;; operations.
 ;;
 
-;; Use standard method for setting operations.
-#_(defmethod crud/set-operations resource-type
-    [resource request]
-    (try
-      (a/can-modify? resource request)
-      (let [href (:id resource)
-            ^String resource-type (:resource-type resource)
-            ops (if (is-collection? resource-type)
-                  [{:rel (:add c/action-uri) :href href}]
-                  [{:rel (:delete c/action-uri) :href href}])]
-        (assoc resource :operations ops))
-      (catch Exception e
-        (dissoc resource :operations))))
+(defmulti set-credential-operations dispatch-conversion)
+
+
+(defmethod set-credential-operations :default
+  [resource request]
+  (crud/set-standard-operations resource request))
+
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (set-credential-operations resource request))
+
+
+;; FIXME: Update this for services.
 
 (defn check-connector-exists
   "Use ADMIN role as we only want to check if href points to an existing
@@ -136,6 +160,7 @@ CredentialTemplate resource.
         href (get-in body [:template :connector])]
     (std-crud/resolve-hrefs href admin))
   body)
+
 
 (defn resolve-hrefs
   [body idmap]
@@ -150,7 +175,8 @@ CredentialTemplate resource.
         ;; put back unexpanded connector href
         (update-in [:template] merge connector-href))))
 
-;; requires a CredentialTemplate to create new Credential
+
+;; requires a credential-template to create new credential
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [idmap {:identity (:identity request)}
@@ -169,13 +195,18 @@ CredentialTemplate resource.
         add-impl
         (update-in [:body] merge create-resp))))
 
+
 (defmulti special-edit dispatch-conversion)
+
 
 (defmethod special-edit :default
   [resource _]
   resource)
 
+
 (def edit-impl (std-crud/edit-fn resource-type))
+
+
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
   (let [type (-> (str resource-type "/" uuid)
@@ -186,25 +217,20 @@ CredentialTemplate resource.
                      (special-edit request))]
     (edit-impl (assoc request :body new-body))))
 
+
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
+
 
 (def delete-impl (std-crud/delete-fn resource-type))
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
-
-;;
-;; initialization: no schema for this parent resource
-;;
-(defn initialize
-  []
-  (std-crud/initialize resource-type nil))
