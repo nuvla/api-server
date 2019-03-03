@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.configuration-template-slipstream
+(ns sixsq.nuvla.server.resources.configuration-template-nuvla
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-template :as p]
-    [sixsq.nuvla.server.resources.spec.configuration-template-slipstream :as configuration-template]))
+    [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as configuration-template]))
 
 
 (def ^:const service "slipstream")

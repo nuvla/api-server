@@ -3,7 +3,7 @@
     [clojure.spec.alpha :as s]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.configuration :refer :all]
-    [sixsq.nuvla.server.resources.configuration-template-slipstream :as tpl]
+    [sixsq.nuvla.server.resources.configuration-template-nuvla :as tpl]
     [sixsq.nuvla.server.resources.spec.configuration-template :as cts]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.util.spec :as su]))

@@ -9,7 +9,7 @@
     [sixsq.nuvla.server.resources.configuration :refer :all]
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
-    [sixsq.nuvla.server.resources.configuration-template-slipstream :as slipstream]
+    [sixsq.nuvla.server.resources.configuration-template-nuvla :as slipstream]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
