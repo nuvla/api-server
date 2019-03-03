@@ -7,25 +7,26 @@ Hashed value of a password.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-password]
+    [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
+    [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
+    [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
     [sixsq.nuvla.server.util.log :as logu]))
 
 
 ;;
-;; initialization: no schema for this parent resource
+;; initialization
 ;;
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::hashed-password/schema))
+  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema))
 
 
 ;;
 ;; convert template to credential: hash the plain text password.
 ;;
 
-(defmethod p/tpl->credential tpl/credential-type
+(defmethod p/tpl->credential tpl-hashed-pwd/credential-type
   [{:keys [type method password password-repeated]} request]
   (if (= password password-repeated)
     (let [hash (hashers/derive password)]
@@ -40,27 +41,27 @@ Hashed value of a password.
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::hashed-password/schema))
+(def validate-fn (u/create-spec-validation-fn ::hashed-pwd-spec/schema))
 
 
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl-hashed-pwd/credential-type
   [resource]
   (validate-fn resource))
 
 
-(def create-validate-fn (u/create-spec-validation-fn ::hashed-password/schema-create))
+(def create-validate-fn (u/create-spec-validation-fn ::ct-hashed-pwd-spec/schema-create))
 
 
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl-hashed-pwd/credential-type
   [resource]
   (create-validate-fn resource))
 
 
 ;;
-;; multimethod for edition
+;; multimethod for editing; remove keys user cannot change
 ;;
 
-(defmethod p/special-edit tpl/credential-type
+(defmethod p/special-edit tpl-hashed-pwd/credential-type
   [resource request]
   (dissoc resource :hash))
 

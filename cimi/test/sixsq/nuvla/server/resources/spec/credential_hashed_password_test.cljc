@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-password]
+    [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -26,12 +26,12 @@
 
              :hash          "some-hash-of-a-password"}]
 
-    (stu/is-valid ::hashed-password/schema tpl)
+    (stu/is-valid ::hashed-pwd/schema tpl)
 
     ;; mandatory keywords
     (doseq [k (-> tpl (dissoc :services) keys set)]
-      (stu/is-invalid ::hashed-password/schema (dissoc tpl k)))
+      (stu/is-invalid ::hashed-pwd/schema (dissoc tpl k)))
 
     ;; optional keywords
     (doseq [k #{:services}]
-      (stu/is-valid ::hashed-password/schema (dissoc tpl k)))))
+      (stu/is-valid ::hashed-pwd/schema (dissoc tpl k)))))

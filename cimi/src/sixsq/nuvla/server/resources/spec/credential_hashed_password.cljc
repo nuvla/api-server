@@ -34,8 +34,3 @@
 (s/def ::schema
   (su/only-keys-maps cred/credential-keys-spec
                      credential-keys-spec))
-
-
-(s/def ::schema-create
-  (su/only-keys-maps ps/create-keys-spec
-                     {:req-un [::hash]}))
