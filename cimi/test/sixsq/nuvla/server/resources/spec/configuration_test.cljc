@@ -21,7 +21,7 @@
 
 (deftest test-configuration-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id            (str resource-type "/slipstream")
+        cfg {:id            (str resource-type "/test")
              :resource-type resource-type
              :created       timestamp
              :updated       timestamp

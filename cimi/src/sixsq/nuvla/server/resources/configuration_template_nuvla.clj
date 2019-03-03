@@ -1,11 +1,17 @@
 (ns sixsq.nuvla.server.resources.configuration-template-nuvla
+  "
+This configuration-template contains the core configuration attributes of the
+Nuvla platform.
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-template :as p]
-    [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as configuration-template]))
+    [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
-(def ^:const service "slipstream")
+(def ^:const service "nuvla")
 
 
 ;;
@@ -13,63 +19,33 @@
 ;;
 
 (def ^:const resource
-  {
-   :service                      service
-   :name                         "SlipStream"
-   :description                  "SlipStream Service Configuration"
-   :serviceURL                   "https://localhost"
-   :supportEmail                 "support@example.com"
-   :clientBootstrapURL           "https://localhost/downloads/slipstream.bootstrap"
-   :clientURL                    "https://localhost/downloads/slipstreamclient.tgz"
-   :connectorOrchPrivateSSHKey   "/opt/slipstream/server/.ssh/id_rsa"
-   :connectorOrchPublicSSHKey    "/opt/slipstream/server/.ssh/id_rsa.pub"
-   :connectorLibcloudURL         "https://localhost/downloads/libcloud.tgz"
+  {:service                      service
+   :name                         "Nuvla"
+   :description                  "Nuvla Service Configuration"
 
-   :mailUsername                 "mailer"
-   :mailPassword                 "change-me"
-   :mailHost                     "smtp.example.com"
-   :mailPort                     465
-   :mailSSL                      true
-   :mailDebug                    true
+   :smtp-port                     465
+   :smtp-ssl                      true
+   :smtp-debug                    true
+   })
 
-   ;; Optional, without a good default.
-   ;;:termsAndConditions           "https://example.com/terms/update-or-remove"
 
-   :quotaEnable                  true
+;;
+;; initialization: register this configuration-template
+;;
 
-   :registrationEnable           true
-   :registrationEmail            "register@example.com"
-
-   :meteringEnable               false
-   :meteringEndpoint             "http://localhost:2005"
-
-   :serviceCatalogEnable         false
-
-   :slipstreamVersion            "UNKNOWN"
-
-   :cloudConnectorClass          ""
-
-   :metricsLoggerEnable          false
-   :metricsGraphiteEnable        false
-
-   :reportsObjectStoreBucketName "slipstream-reports"
-   :reportsObjectStoreCreds      "credential/<CHANGE-ME-UUID>"})
+(defn initialize
+  []
+  (p/register resource)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema)))
 
 
 ;;
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::configuration-template/slipstream))
+(def validate-fn (u/create-spec-validation-fn ::ct-nuvla/schema))
+
+
 (defmethod p/validate-subtype service
   [resource]
   (validate-fn resource))
-
-
-;;
-;; initialization: register this Configuration template
-;;
-
-(defn initialize
-  []
-  (p/register resource))

@@ -105,3 +105,7 @@
                         configuration-template-keys-spec
                         {:opt-un [::href]}]))
 
+
+;; Used only to provide metadata resource for collection.
+(s/def ::schema
+  (su/only-keys-maps resource-keys-spec))
