@@ -6,9 +6,9 @@ Nuvla platform.
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-template :as p]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const service "nuvla")

@@ -9,10 +9,10 @@ configuration information for the micro-services of the Nuvla platform.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.configuration-template :as ct]
-    [sixsq.nuvla.util.response :as r]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
