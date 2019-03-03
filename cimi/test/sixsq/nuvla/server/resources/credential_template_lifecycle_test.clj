@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
+    [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.credential-template-service-aws :as service-aws]
     [sixsq.nuvla.server.resources.credential-template-service-azure :as service-azure]
@@ -33,7 +34,9 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists ct/resource-type)
-  (mdtu/check-metadata-exists (str ct/resource-type "-" akey/resource-url)))
+
+  (doseq [resource-url [akey/resource-url]]
+    (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url))))
 
 
 ;; check that all templates are visible as normal user
@@ -55,23 +58,26 @@
         methods (set (map :method entries))
         types (set (map :type entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
-             (str ct/resource-type "/" service-gce/method)
-             (str ct/resource-type "/" service-exo/method)
+             (str ct/resource-type "/" hashed-password/method)
+             (str ct/resource-type "/" service-swarm/method)
              (str ct/resource-type "/" service-aws/method)
              (str ct/resource-type "/" service-azure/method)
-             (str ct/resource-type "/" service-swarm/method)}
+             (str ct/resource-type "/" service-exo/method)
+             (str ct/resource-type "/" service-gce/method)}
            ids))
     (is (= #{akey/method
+             hashed-password/method
              service-swarm/method
-             service-exo/method
              service-aws/method
              service-azure/method
+             service-exo/method
              service-gce/method} methods))
     (is (= #{akey/credential-type
+             hashed-password/credential-type
              service-swarm/credential-type
-             service-exo/credential-type
              service-aws/credential-type
              service-azure/credential-type
+             service-exo/credential-type
              service-gce/credential-type} types))
 
     (doseq [entry entries]
