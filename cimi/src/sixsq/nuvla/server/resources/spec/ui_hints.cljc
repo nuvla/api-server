@@ -3,7 +3,6 @@
    other visual) user interfaces."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [spec-tools.core :as st]))
 
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "group"
              :json-schema/name "group"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -34,8 +31,6 @@
   (-> (st/spec nat-int?)
       (assoc :name "order"
              :json-schema/name "order"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "integer"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -59,8 +54,6 @@
   (-> (st/spec boolean?)
       (assoc :name "hidden"
              :json-schema/name "hidden"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "boolean"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -81,8 +74,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "icon"
              :json-schema/name "icon"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -103,8 +94,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "redirectURI"
              :json-schema/name "redirectURI"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false

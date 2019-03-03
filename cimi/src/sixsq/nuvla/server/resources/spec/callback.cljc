@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.session-template]
     [sixsq.nuvla.server.util.spec :as su]
@@ -13,8 +12,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "action"
              :json-schema/name "action"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -34,8 +31,6 @@
   (-> (st/spec #{"WAITING" "FAILED" "SUCCEEDED"})
       (assoc :name "state"
              :json-schema/name "state"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -58,8 +53,6 @@
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "targetResource"
              :json-schema/name "targetResource"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -79,8 +72,6 @@
   (-> (st/spec (su/constrained-map keyword? any?))
       (assoc :name "data"
              :json-schema/name "data"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -101,8 +92,6 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "expires"
              :json-schema/name "expires"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
