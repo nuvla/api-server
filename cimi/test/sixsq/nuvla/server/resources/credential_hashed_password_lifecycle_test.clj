@@ -25,6 +25,7 @@
                     (content-type "application/json"))
         session-admin (header session authn-info-header "root ADMIN USER ANON")
         session-user (header session authn-info-header "jane USER ANON")
+        session-other (header session authn-info-header "tarzan USER ANON")
         session-anon (header session authn-info-header "unknown ANON")
 
         name-attr "name"
@@ -111,7 +112,15 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present "edit")
+            (ltu/is-operation-present "validate-password")
+            (ltu/is-operation-present "change-password")))
+
+      ;; other users should not be able to see the credential
+      (-> session-other
+          (request abs-uri)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags hash]} (-> session-user

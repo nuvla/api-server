@@ -4,17 +4,17 @@ Hashed value of a password.
 "
   (:require
     [buddy.hashers :as hashers]
+    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.util.response :as r]
-    [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.server.resources.common.schema :as c]))
+    [sixsq.nuvla.util.response :as r]))
 
 
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
@@ -104,7 +104,8 @@ Hashed value of a password.
           ^String resource-type (:resource-type resource)
           ops (if (u/is-collection? resource-type)
                 [{:rel (:add c/action-uri) :href href}]
-                [{:rel (:delete c/action-uri) :href href}
+                [{:rel (:edit c/action-uri) :href href}
+                 {:rel (:delete c/action-uri) :href href}
                  {:rel (:validate-password c/action-uri) :href href}
                  {:rel (:change-password c/action-uri) :href href}])]
       (assoc resource :operations ops))

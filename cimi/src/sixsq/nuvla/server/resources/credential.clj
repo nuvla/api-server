@@ -144,6 +144,11 @@ CredentialTemplate resource.
   (crud/set-standard-operations resource request))
 
 
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (set-credential-operations resource request))
+
+
 ;; FIXME: Update this for services.
 
 (defn check-connector-exists
