@@ -31,7 +31,7 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        plaintext-password "hello-nuvla"
+        plaintext-password "HELLO-nuvla-69"
 
         href (str ct/resource-type "/" ct-hashed-pwd/method)
         template-url (str p/service-context ct/resource-type "/" ct-hashed-pwd/method)
