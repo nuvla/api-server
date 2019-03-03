@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
     [sixsq.nuvla.server.util.spec :as su]
@@ -14,8 +13,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
              :json-schema/name "method"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -37,8 +34,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
              :json-schema/name "instance"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -60,8 +55,6 @@
   (-> (st/spec (s/and string? #(re-matches user-template-regex %)))
       (assoc :name "href"
              :json-schema/name "href"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false

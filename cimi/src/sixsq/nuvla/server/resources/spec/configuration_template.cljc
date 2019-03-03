@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "service"
              :json-schema/name "service"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -33,8 +30,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
              :json-schema/name "instance"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -56,8 +51,6 @@
   (-> (st/spec (s/and string? #(re-matches configuration-template-regex %)))
       (assoc :name "href"
              :json-schema/name "href"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -77,8 +70,6 @@
   (-> (st/spec (su/only-keys-maps {:req-un [::href]}))
       (assoc :name "template"
              :json-schema/name "template"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true

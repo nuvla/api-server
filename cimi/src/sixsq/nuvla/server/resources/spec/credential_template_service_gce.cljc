@@ -1,9 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-service-gce
     (:require
       [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
-      [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-      [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
       [sixsq.nuvla.server.resources.spec.credential-template :as ct]
       [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
       [sixsq.nuvla.server.util.spec :as su]
@@ -14,8 +11,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "project_id"
              :json-schema/name "project_id"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -35,8 +30,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "private_key_id"
              :json-schema/name "private_key_id"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -56,8 +49,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "private_key"
              :json-schema/name "private_key"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -77,8 +68,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "client_email"
              :json-schema/name "client_email"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -98,8 +87,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "client_id"
              :json-schema/name "client_id"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -119,8 +106,6 @@
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "auth_uri"
 ;                  :json-schema/name "auth_uri"
-;                  :json-schema/namespace common-ns/slipstream-namespace
-;                  :json-schema/uri common-ns/slipstream-uri
 ;                  :json-schema/type "string"
 ;                  :json-schema/providerMandatory false
 ;                  :json-schema/consumerMandatory false
@@ -140,8 +125,6 @@
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "token_uri"
 ;                  :json-schema/name "token_uri"
-;                  :json-schema/namespace common-ns/slipstream-namespace
-;                  :json-schema/uri common-ns/slipstream-uri
 ;                  :json-schema/type "string"
 ;                  :json-schema/providerMandatory false
 ;                  :json-schema/consumerMandatory false
@@ -161,8 +144,6 @@
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "auth_provider_x509_cert_url"
 ;                  :json-schema/name "auth_provider_x509_cert_url"
-;                  :json-schema/namespace common-ns/slipstream-namespace
-;                  :json-schema/uri common-ns/slipstream-uri
 ;                  :json-schema/type "string"
 ;                  :json-schema/providerMandatory false
 ;                  :json-schema/consumerMandatory false
@@ -182,8 +163,6 @@
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "client_x509_cert_url"
 ;                  :json-schema/name "client_x509_cert_url"
-;                  :json-schema/namespace common-ns/slipstream-namespace
-;                  :json-schema/uri common-ns/slipstream-uri
 ;                  :json-schema/type "string"
 ;                  :json-schema/providerMandatory false
 ;                  :json-schema/consumerMandatory false

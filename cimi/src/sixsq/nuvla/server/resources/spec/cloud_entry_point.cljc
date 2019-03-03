@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "base-uri"
              :json-schema/name "base-uri"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -35,8 +32,6 @@
                          :min-count 1))
       (assoc :name "collections"
              :json-schema/name "collections"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false

@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -11,8 +10,6 @@
   (-> (st/spec string?)
       (assoc :name "identifier"
              :json-schema/name "identifier"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -37,8 +34,6 @@
   (-> (st/spec ::resource-link)
       (assoc :name "user"
              :json-schema/name "user"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "ref"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true

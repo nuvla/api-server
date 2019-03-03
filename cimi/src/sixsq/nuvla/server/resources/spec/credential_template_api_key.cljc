@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-api-key
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -11,8 +10,6 @@
   (-> (st/spec nat-int?)
       (assoc :name "ttl"
              :json-schema/name "ttl"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "integer"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false

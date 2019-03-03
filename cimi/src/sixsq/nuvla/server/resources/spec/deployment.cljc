@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -20,8 +19,6 @@
                  "ERROR"})
       (assoc :name "state"
              :json-schema/name "state"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -52,8 +49,6 @@
   (-> (st/spec (s/and string? #(re-matches credential-href-regex %)))
       (assoc :name "api-key"
              :json-schema/name "api-key"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory true
@@ -73,8 +68,6 @@
   (-> (st/spec string?)
       (assoc :name "api-secret"
              :json-schema/name "api-secret"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory true
@@ -94,8 +87,6 @@
   (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
       (assoc :name "api-credentials"
              :json-schema/name "api-credentials"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -124,8 +115,6 @@
        (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
            (assoc :name "data-objects"
                   :json-schema/name "data-objects"
-                  :json-schema/namespace common-ns/slipstream-namespace
-                  :json-schema/uri common-ns/slipstream-uri
                   :json-schema/type "Array"
                   :json-schema/providerMandatory false
                   :json-schema/consumerMandatory false
@@ -156,8 +145,6 @@
   (-> (st/spec (s/map-of ::data-record-id-keyword ::data-set-ids :min-count 1))
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
