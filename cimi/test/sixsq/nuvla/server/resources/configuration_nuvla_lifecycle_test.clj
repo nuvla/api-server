@@ -1,24 +1,25 @@
-(ns sixsq.nuvla.server.resources.configuration-slipstream-lifecycle-test
+(ns sixsq.nuvla.server.resources.configuration-nuvla-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :refer :all]
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
-    [sixsq.nuvla.server.resources.configuration-template-slipstream :as slipstream]
+    [sixsq.nuvla.server.resources.configuration-template-nuvla :as ct-nuvla]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context resource-type))
 
-;; must have specialized checks for slipstream configuration because
-;; the initialization function creates a default slipstream configuration
+
+;; must have specialized checks for the nuvla configuration because
+;; the initialization function creates a default nuvla configuration
 ;; resource
 
 (defn check-existing-configuration
@@ -70,5 +71,5 @@
 
 
 (deftest lifecycle-slipstream
-  (check-existing-configuration slipstream/service :registrationEnable true)
-  (test-utils/check-lifecycle slipstream/service :registrationEnable true false))
+  (check-existing-configuration ct-nuvla/service :support-email "admin@example.org")
+  (test-utils/check-lifecycle ct-nuvla/service :support-email "admin@example.org" "admin@example.com"))
