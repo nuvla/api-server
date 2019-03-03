@@ -75,7 +75,6 @@
               :env            {:config-name      "config-params.edn"
                                :auth-private-key "test-resources/auth_privkey.pem"
                                :auth-public-key  "test-resources/auth_pubkey.pem"}
-              ;:aot            :all
-              }
+              :aot            :all}
    :dev      {:resource-paths ["test-resources"]}
    })

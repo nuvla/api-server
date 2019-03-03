@@ -113,7 +113,7 @@
             (ltu/is-status 200)
             (ltu/is-operation-present "delete")
             (ltu/is-operation-present "edit")
-            (ltu/is-operation-present "validate-password")
+            (ltu/is-operation-present "check-password")
             (ltu/is-operation-present "change-password")))
 
       ;; other users should not be able to see the credential
@@ -123,16 +123,72 @@
           (ltu/is-status 403))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags hash]} (-> session-user
-                                                     (request abs-uri)
-                                                     (ltu/body->edn)
-                                                     (ltu/is-status 200)
-                                                     :response
-                                                     :body)]
+      (let [{:keys [name description tags hash] :as cred} (-> session-user
+                                                              (request abs-uri)
+                                                              (ltu/body->edn)
+                                                              (ltu/is-status 200)
+                                                              :response
+                                                              :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is hash))
+        (is hash)
+
+        ;; ensure that the check-password action works
+        (let [op-url (-> session-user
+                         (request abs-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/get-op "check-password"))
+              check-url (str p/service-context op-url)]
+
+          (-> session-user
+              (request check-url
+                       :request-method :post
+                       :body (json/write-str {:password plaintext-password}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (-> session-user
+              (request check-url
+                       :request-method :post
+                       :body (json/write-str {:password "WRONG_password_69"}))
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          ;; ensure that the change-password action works
+          (let [new-password "GOODBYE-nuvla-96"
+                op-url (-> session-user
+                           (request abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op "change-password"))
+                change-pwd-url (str p/service-context op-url)]
+
+            (-> session-user
+                (request change-pwd-url
+                         :request-method :post
+                         :body (json/write-str {:current-password      plaintext-password
+                                                :new-password          new-password
+                                                :new-password-repeated "WRONG_password_69"}))
+                (ltu/body->edn)
+                (ltu/is-status 400))
+
+            (-> session-user
+                (request change-pwd-url
+                         :request-method :post
+                         :body (json/write-str {:current-password      plaintext-password
+                                                :new-password          new-password
+                                                :new-password-repeated new-password}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-user
+                (request check-url
+                         :request-method :post
+                         :body (json/write-str {:password new-password}))
+                (ltu/body->edn)
+                (ltu/is-status 200)))))
 
       ;; delete the credential
       (-> session-user

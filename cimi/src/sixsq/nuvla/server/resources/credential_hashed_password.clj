@@ -106,8 +106,8 @@ Hashed value of a password.
                 [{:rel (:add c/action-uri) :href href}]
                 [{:rel (:edit c/action-uri) :href href}
                  {:rel (:delete c/action-uri) :href href}
-                 {:rel (:validate-password c/action-uri) :href href}
-                 {:rel (:change-password c/action-uri) :href href}])]
+                 {:rel (:check-password c/action-uri) :href (str href "/check-password")}
+                 {:rel (:change-password c/action-uri) :href (str href "/change-password")}])]
       (assoc resource :operations ops))
     (catch Exception e
       (dissoc resource :operations))))
@@ -117,14 +117,13 @@ Hashed value of a password.
 ;; actions
 ;;
 
-(defmethod crud/do-action [p/resource-type "validate-password"]
+(defmethod crud/do-action [p/resource-type "check-password"]
   [{{uuid :uuid} :params :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
       (a/can-modify? resource request)
-      (let [current-password (get-in request [:body :password])
-            current-password-hash (when current-password (hashers/derive current-password))]
-        (if (= hash current-password-hash)
+      (let [current-password (get-in request [:body :password])]
+        (if (hashers/check current-password hash)
           (r/map-response "valid password" 200)
           (throw (r/ex-response "invalid password" 403)))))))
 
@@ -134,9 +133,8 @@ Hashed value of a password.
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
       (a/can-modify? resource request)
-      (let [current-password (get-in request [:body :current-password])
-            current-password-hash (when current-password (hashers/derive current-password))]
-        (if (= hash current-password-hash)
+      (let [current-password (get-in request [:body :current-password])]
+        (if (hashers/check current-password hash)
           (let [{:keys [new-password new-password-repeated]} (:body request)]
             (if (= new-password new-password-repeated)
               (if (acceptable-password? new-password)
