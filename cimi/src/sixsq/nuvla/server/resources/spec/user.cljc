@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -16,8 +15,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "username"
              :json-schema/name "username"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -37,8 +34,6 @@
   (-> (st/spec ::cimi-core/email)
       (assoc :name "emailAddress"
              :json-schema/name "emailAddress"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -58,8 +53,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "password"
              :json-schema/name "password"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -79,8 +72,6 @@
   (-> (st/spec string?)
       (assoc :name "full-name"
              :json-schema/name "full-name"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -100,8 +91,6 @@
   (-> (st/spec #{"NEW" "ACTIVE" "DELETED" "SUSPENDED"})
       (assoc :name "state"
              :json-schema/name "state"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -121,8 +110,6 @@
   (-> (st/spec boolean?)
       (assoc :name "isSuperUser"
              :json-schema/name "isSuperUser"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "boolean"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -142,8 +129,6 @@
   (-> (st/spec boolean?)
       (assoc :name "deleted"
              :json-schema/name "deleted"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "boolean"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -163,8 +148,6 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
              :json-schema/name "method"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -184,8 +167,6 @@
   (-> (st/spec string?)
       (assoc :name "href"
              :json-schema/name "href"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false

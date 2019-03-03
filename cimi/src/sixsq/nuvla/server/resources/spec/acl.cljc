@@ -2,7 +2,6 @@
   "Access Control Lists (an extension to the CIMI standard)."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -37,8 +36,6 @@
   (-> (st/spec (su/only-keys :req-un [::principal ::type]))
       (assoc :name "owner"
              :json-schema/name "owner"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -61,8 +58,6 @@
                                       ::right]))
       (assoc :name "rule"
              :json-schema/name "rule"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "map"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -83,8 +78,6 @@
   (-> (st/spec (s/coll-of ::rule :min-count 1 :kind vector?))
       (assoc :name "rules"
              :json-schema/name "rules"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "Array"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false

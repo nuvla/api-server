@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.session-template-api-key
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.session-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "key"
              :json-schema/name "key"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -33,8 +30,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "secret"
              :json-schema/name "secret"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
