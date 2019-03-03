@@ -1,9 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-service-exoscale
     (:require
       [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
-      [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-      [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
       [sixsq.nuvla.server.resources.spec.credential-template :as ct]
       [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
       [sixsq.nuvla.server.util.spec :as su]
@@ -14,8 +11,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-key"
              :json-schema/name "exoscale-api-key"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -35,8 +30,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-secret-key"
              :json-schema/name "exoscale-api-secret-key"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true

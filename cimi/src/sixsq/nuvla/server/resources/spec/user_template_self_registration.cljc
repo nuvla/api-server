@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.user-template-self-registration
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
@@ -12,8 +11,6 @@
   (-> (st/spec string?)
       (assoc :name "password"
              :json-schema/name "password"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -33,8 +30,6 @@
   (-> (st/spec string?)
       (assoc :name "passwordRepeat"
              :json-schema/name "passwordRepeat"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true

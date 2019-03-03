@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.configuration-template-session-mitreid
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common-namespaces :as common-ns]
     [sixsq.nuvla.server.resources.spec.configuration-template :as ps]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
@@ -12,8 +11,6 @@
   (-> (st/spec ::cimi-core/token)
       (assoc :name "clientID"
              :json-schema/name "clientID"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -33,8 +30,6 @@
   (-> (st/spec ::cimi-core/token)
       (assoc :name "clientSecret"
              :json-schema/name "clientSecret"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -54,8 +49,6 @@
   (-> (st/spec ::cimi-core/token)
       (assoc :name "authorizeURL"
              :json-schema/name "authorizeURL"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -75,8 +68,6 @@
   (-> (st/spec ::cimi-core/token)
       (assoc :name "tokenURL"
              :json-schema/name "tokenURL"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -96,8 +87,6 @@
   (-> (st/spec ::cimi-core/token)
       (assoc :name "userProfileURL"
              :json-schema/name "userProfileURL"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
@@ -117,8 +106,6 @@
   (-> (st/spec ::cimi-core/nonblank-string)                 ;; allows jwk JSON representation
       (assoc :name "publicKey"
              :json-schema/name "publicKey"
-             :json-schema/namespace common-ns/slipstream-namespace
-             :json-schema/uri common-ns/slipstream-uri
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
