@@ -35,7 +35,16 @@
 (s/def ::urls (s/coll-of ::url-tuple :min-count 1 :kind vector?))
 
 
-(s/def ::output-parameters (s/coll-of ::cimi-core/nonblank-string :kind vector?))
+(s/def ::name ::cimi-core/nonblank-string)
+
+
+(s/def ::description ::cimi-core/nonblank-string)
+
+
+(s/def ::parameter (su/only-keys :req-un [::name ::description]))
+
+
+(s/def ::output-parameters (s/coll-of ::parameter :kind vector?))
 
 
 (def module-component-keys-spec (su/merge-keys-specs [c/common-attrs

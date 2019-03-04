@@ -29,7 +29,12 @@
               :ports             ["8022:22"]
               :urls              [["primary" "https://${host}:${port-443}/my/path"]
                                   ["other" "http://${host}:${port-80}/path"]]
-              :output-parameters ["alpha" "beta" "gamma"]}]
+              :output-parameters [{:name        "alpha"
+                                   :description "my-alpha"}
+                                  {:name        "beta"
+                                   :description "my-beta"}
+                                  {:name        "gamma"
+                                   :description "my-gamma"}]}]
 
     (stu/is-valid ::module-component/module-component root)
     (stu/is-invalid ::module-component/module-component (assoc root :badKey "badValue"))
