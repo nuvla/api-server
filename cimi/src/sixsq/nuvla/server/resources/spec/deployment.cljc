@@ -106,6 +106,9 @@
 (s/def ::credential-id ::cimi-core/nonblank-string)
 
 
+(s/def ::infrastructure-service-id ::cimi-core/nonblank-string)
+
+
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn data-object-id? [s] (re-matches data-object-id-regex s))
 
@@ -167,7 +170,8 @@
                         {:req-un [::module
                                   ::state
                                   ::api-credentials
-                                  ::credential-id]
+                                  ::credential-id
+                                  ::infrastructure-service-id]
                          :opt-un [::data-objects
                                   ::data-records]}]))
 

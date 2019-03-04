@@ -15,20 +15,21 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id            (str t/resource-type "/module-component-uuid")
-              :resource-type t/resource-type
-              :created       timestamp
-              :updated       timestamp
-              :acl           valid-acl
+        root {:id                (str t/resource-type "/module-component-uuid")
+              :resource-type     t/resource-type
+              :created           timestamp
+              :updated           timestamp
+              :acl               valid-acl
 
-              :author        "someone"
-              :commit        "wip"
+              :author            "someone"
+              :commit            "wip"
 
-              :architecture  "x86"
-              :image         "ubuntu:16.04"
-              :ports         ["8022:22"]
-              :urls          [["primary" "https://${host}:${port-443}/my/path"]
-                              ["other" "http://${host}:${port-80}/path"]]}]
+              :architecture      "x86"
+              :image             "ubuntu:16.04"
+              :ports             ["8022:22"]
+              :urls              [["primary" "https://${host}:${port-443}/my/path"]
+                                  ["other" "http://${host}:${port-80}/path"]]
+              :output-parameters ["alpha" "beta" "gamma"]}]
 
     (stu/is-valid ::module-component/module-component root)
     (stu/is-invalid ::module-component/module-component (assoc root :badKey "badValue"))
@@ -39,5 +40,5 @@
       (stu/is-invalid ::module-component/module-component (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :ports :urls}]
+    (doseq [k #{:commit :ports :urls :output-parameters}]
       (stu/is-valid ::module-component/module-component (dissoc root k)))))
