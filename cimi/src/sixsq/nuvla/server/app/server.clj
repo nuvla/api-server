@@ -76,10 +76,6 @@
 (defn init
   []
 
-  (try
-    (catch Exception e
-      (log/warn "error registering instrumentation metrics:" (str e))))
-
   (db-loader/load-and-set-persistent-db-binding
     (env/env :persistent-db-binding-ns default-db-binding-ns))
 
@@ -89,12 +85,14 @@
   (try
     (zku/set-client! (zku/create-client))
     (catch Exception e
-      (log/warn "error creating zookeeper client:" (str e))))
+      (log/error "error creating zookeeper client:" (str e))
+      (throw e)))
 
   (try
     (resources/initialize)
     (catch Exception e
-      (log/warn "error initializing resources:" (str e))))
+      (log/error "error initializing resources:" (str e))
+      (throw e)))
 
   ;; returns tuple with handler and stop function
   [(create-ring-handler) stop])

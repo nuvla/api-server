@@ -1,4 +1,4 @@
-FROM nuvla/ring:test
+FROM nuvladev/ring:master
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
