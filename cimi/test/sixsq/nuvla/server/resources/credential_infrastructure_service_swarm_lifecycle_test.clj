@@ -33,6 +33,9 @@
         cert-value "my-public-certificate"
         key-value "my-private-key"
 
+        services-value ["infrastructure-service/alpha"
+                        "infrastructure-service/beta"]
+
         href (str ct/resource-type "/" service-tpl/method)
         template-url (str p/service-context ct/resource-type "/" service-tpl/method)
 
@@ -48,10 +51,11 @@
         create-import-href {:name        name-attr
                             :description description-attr
                             :tags        tags-attr
-                            :template    {:href href
-                                          :ca   ca-value
-                                          :cert cert-value
-                                          :key  key-value}}]
+                            :template    {:href     href
+                                          :services services-value
+                                          :ca       ca-value
+                                          :cert     cert-value
+                                          :key      key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -112,19 +116,22 @@
             (ltu/is-operation-present "edit")))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags ca cert key]} (-> session-user
-                                                            (request abs-uri)
-                                                            (ltu/body->edn)
-                                                            (ltu/is-status 200)
-                                                            :response
-                                                            :body)]
+      (let [{:keys [name description tags
+                    ca cert key
+                    services]} (-> session-user
+                                   (request abs-uri)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   :response
+                                   :body)]
 
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
         (is (= ca ca-value))
         (is (= cert cert-value))
-        (is (= key key-value)))
+        (is (= key key-value))
+        (is (= services services-value)))
 
       ;; delete the credential
       (-> session-user
