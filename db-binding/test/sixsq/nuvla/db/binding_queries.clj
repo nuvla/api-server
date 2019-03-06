@@ -3,8 +3,7 @@
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.db.binding :as db]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.db.filter.parser :as parser]))
 
 (s/def ::id string?)
 (s/def ::sequence int?)
