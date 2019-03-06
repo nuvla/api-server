@@ -104,5 +104,4 @@
        utils/as-vector
        (mapcat utils/comma-split)
        (map utils/aggregation-clause)
-       (remove nil?)
-       (reduce utils/update-aggregation-map {})))
+       (remove nil?)))

@@ -8,6 +8,7 @@
     [sixsq.nuvla.db.es.acl :as acl]
     [sixsq.nuvla.db.es.filter :as filter]
     [sixsq.nuvla.db.es.order :as order]
+    [sixsq.nuvla.db.es.aggregation :as aggregation]
     [sixsq.nuvla.db.es.pagination :as paging]
     [sixsq.nuvla.db.es.select :as select]
     [sixsq.nuvla.db.es.common.es-mapping :as mapping]
@@ -146,9 +147,10 @@
   (let [index (escu/collection-id->index collection-id)
         paging (paging/paging cimi-params)
         orderby (order/sorters cimi-params)
+        aggregation (aggregation/aggregators cimi-params)
         selected (select/select cimi-params)
         query {:query (acl/and-acl (filter/filter cimi-params) options)}
-        body (merge paging orderby selected query)
+        body (merge paging orderby selected query aggregation)
         response (spandex/request client {:url    [index :_doc :_search]
                                           :method :post
                                           :body   body})

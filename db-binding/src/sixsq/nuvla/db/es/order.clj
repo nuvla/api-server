@@ -16,7 +16,7 @@
 
 (defn sort-entry
   "Give a tuple with the field-name and direction, adds the sort clause to the
-   request builder. Intended to be used in a reduction."
+   request builder."
   [[field-name direction]]
   {field-name (direction->sort-order direction)})
 
