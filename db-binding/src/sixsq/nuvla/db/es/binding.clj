@@ -156,7 +156,7 @@
                                           :body   body})
         success? (-> response :body :_shards :successful pos?)
         count-before-pagination (-> response :body :hits :total)
-        aggregations (-> response :body :hits :aggregations)
+        aggregations (-> response :body :aggregations)
         meta (cond-> {:count count-before-pagination}
                      aggregations (assoc :aggregations aggregations))
         hits (->> response :body :hits :hits (map :_source) (map acl-utils/normalize-acl))]
