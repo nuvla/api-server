@@ -56,6 +56,8 @@
                                  :sequence uuid
                                  :attr1    "attr1"
                                  :attr2    "attr2"
+                                 :number   1
+                                 :nested   {:child "child1"}
                                  :admin    true
                                  :acl      admin-acl}))
             user-docs (doall (for [uuid (range n (* 2 n))]
@@ -63,7 +65,9 @@
                                 :sequence uuid
                                 :attr1    "attr1"
                                 :attr2    "attr2"
+                                :nested   {:child "child2"}
                                 :user     true
+                                :number   2
                                 :acl      user-acl}))
             docs (vec (concat admin-docs user-docs))]
 
@@ -199,6 +203,31 @@
         (let [[query-meta query-hits] (db/query db collection-id user-role)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
+
+        ;; aggregation
+        (let [[query-meta query-hits] (db/query db collection-id (merge admin-role
+                                                                        {:cimi-params {:aggregation
+                                                                                       [[:terms "attr1"]
+                                                                                        [:terms "nested/child"]
+                                                                                        [:min "number"]
+                                                                                        [:max "number"]
+                                                                                        [:sum "number"]
+                                                                                        [:avg "number"]
+                                                                                        [:count "id"]
+                                                                                        [:cardinality "id"]]}}))]
+
+          (is (= {:terms:nested/child {:doc_count_error_upper_bound 0,
+                                       :sum_other_doc_count         0,
+                                       :buckets                     [{:key "child1", :doc_count 2}
+                                                                     {:key "child2", :doc_count 2}]},
+                  :cardinality:id     {:value 4},
+                  :terms:attr1        {:doc_count_error_upper_bound 0, :sum_other_doc_count 0,
+                                       :buckets                     [{:key "attr1", :doc_count 4}]},
+                  :avg:number         {:value 1.5},
+                  :min:number         {:value 1.0},
+                  :value_count:id     {:value 4},
+                  :max:number         {:value 2.0},
+                  :sum:number         {:value 6.0}} (:aggregations query-meta))))
 
         ;; delete all of the docs
         (doseq [doc docs]

@@ -90,8 +90,3 @@
                     [:extended-algo "attr"] "extended-algo:attr"
                     [:sum "attr:name"] "sum:attr:name"))
 
-(deftest check-update-aggregation-map
-  (are [expect initial] (t/update-aggregation-map initial (t/aggregation-clause "attr1:sum"))
-                        {:sum ["attr1"]} {}
-                        {:sum ["attr0" "attr1"]} {:sum ["attr0"]}
-                        {:min ["attr0"], :sum ["attr0" "attr1"]} {:min ["attr0"], :sum ["attr0"]}))

@@ -80,8 +80,10 @@
                    "(a=1 or c=3) and (b=2)" ["a=1 or c=3" "b=2"]))
 
 (deftest check-params->aggregation
-  (is (= {:sum ["attr0" "attr1" "attr4"]
-          :min ["attr2/child"]
-          :max ["attr3"]}
+  (is (= [[:sum "attr0"]
+          [:sum "attr1"]
+          [:min "attr2/child"]
+          [:max "attr3"]
+          [:sum "attr4"]]
          (t/cimi-aggregation {:aggregation ["sum:attr0,sum:attr1", "invalid", "min:attr2/child",
                                             "max:attr3", "sum:attr4"]}))))

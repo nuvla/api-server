@@ -105,11 +105,3 @@
                          (map str/trim))]
     (when-not (str/blank? attr)
       [(keyword algo) attr])))
-
-(defn update-aggregation-map
-  "Takes a aggregation map and a key-value pair. Updates the entry in the map
-   corresponding to the key by appending the value to the end of the key's
-   value. This is intended to be used in `reduce` where it will group the
-   results by key and map these keys to a vector of the values."
-  [m [k v]]
-  (update m k #(conj (or % []) v)))
