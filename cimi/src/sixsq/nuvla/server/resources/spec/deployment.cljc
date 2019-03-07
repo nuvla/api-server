@@ -169,10 +169,10 @@
   (su/merge-keys-specs [cimi-common/common-attrs
                         {:req-un [::module
                                   ::state
-                                  ::api-credentials
-                                  ::credential-id
-                                  ::infrastructure-service-id]
-                         :opt-un [::data-objects
+                                  ::api-credentials]
+                         :opt-un [::credential-id
+                                  ::infrastructure-service-id
+                                  ::data-objects
                                   ::data-records]}]))
 
 

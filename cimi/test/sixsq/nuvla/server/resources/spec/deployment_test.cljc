@@ -46,9 +46,9 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-records {"BAD_ID" nil}))
 
   ;; required attributes
-  (doseq [k #{:id :resource-type :created :updated :acl :state :module :credential-id :infrastructure-service-id}]
+  (doseq [k #{:id :resource-type :created :updated :acl :state :module}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:data-objects :data-records}]
+  (doseq [k #{:data-objects :data-records :credential-id :infrastructure-service-id}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))
