@@ -8,7 +8,7 @@
                            :avg           "avg"
                            :stats         "stats"
                            :extendedstats "extended_stats"
-                           :count         "value_count"
+                           :value_count   "value_count"
                            :percentiles   "percentiles"
                            :cardinality   "cardinality"
                            :missing       "missing"
