@@ -40,10 +40,10 @@
         create-import-href {:name        name-attr
                             :description description-attr
                             :tags        tags-attr
-                            :template    {:href                 href
-                                          :amazonec2-access-key "abc"
-                                          :amazonec2-secret-key "def"
-                                          :services             []}}]
+                            :template    {:href                    href
+                                          :amazonec2-access-key    "abc"
+                                          :amazonec2-secret-key    "def"
+                                          :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

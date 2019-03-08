@@ -25,21 +25,21 @@ the user's public certificate ('cert'), and the user's private key ('key').
                                     :right     "VIEW"}]})
 
 
-;; No reasonable defaults for :services, :ca, :cert, :key.
+;; No reasonable defaults for :infrastructure-services, :ca, :cert, :key.
 ;; Do not provide values for those in the template
-(def ^:const template {:id            (str p/resource-type "/" method)
-                       :resource-type p/resource-type
-                       :acl           template-acl
+(def ^:const template {:id                      (str p/resource-type "/" method)
+                       :resource-type           p/resource-type
+                       :acl                     template-acl
 
-                       :type          credential-type
-                       :method        method
+                       :type                    credential-type
+                       :method                  method
 
-                       :services      ["infrastructure-service/service-example-1"
-                                       "infrastructure-service/service-example-2"]
+                       :infrastructure-services ["infrastructure-service/service-example-1"
+                                                 "infrastructure-service/service-example-2"]
 
-                       :ca            "ca-public-certificate"
-                       :cert          "client-public-certificate"
-                       :key           "client-private-certificate"})
+                       :ca                      "ca-public-certificate"
+                       :cert                    "client-public-certificate"
+                       :key                     "client-private-certificate"})
 
 
 ;;

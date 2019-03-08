@@ -34,17 +34,17 @@
 
 
 (def valid-entry
-  {:infrastructure-service            {:href "infrastructure-service/cloud-software-solution-1"}
+  {:infrastructure-service            "infrastructure-service/cloud-software-solution-1"
    (keyword (str ns1-prefix ":att1")) "123.456"})
 
 
 (def valid-nested-2-levels
-  {:infrastructure-service            {:href "infrastructure-service/cloud-software-solution-2"}
+  {:infrastructure-service            "infrastructure-service/cloud-software-solution-2"
    (keyword (str ns1-prefix ":att3")) {(keyword (str ns1-prefix ":att4")) "456"}})
 
 
 (def valid-nested-entry
-  {:infrastructure-service                 {:href "infrastructure-service/cloud-software-solution-3"}
+  {:infrastructure-service                 "infrastructure-service/cloud-software-solution-3"
    (keyword (str ns1-prefix ":att1"))      "hi"
    (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
                                             {(keyword (str ns2-prefix ":subsubnested"))
@@ -63,7 +63,7 @@
 
 
 (def entry-wrong-namespace
-  {:infrastructure-service                {:href "infrastructure-service/cloud-software-solution"}
+  {:infrastructure-service                "infrastructure-service/cloud-software-solution"
    (keyword (str invalid-prefix ":att1")) "123.456"})
 
 
@@ -217,7 +217,7 @@
 
     (let [connector-with-namespaced-key
           (format "
-          {\"infrastructure-service\":{\"href\":\"infrastructure-service/cloud-software-solution\"},
+          {\"infrastructure-service\":\"infrastructure-service/cloud-software-solution\",
           \"%s:attr-name\":\"123.456\"}
           " ns1-prefix)
 
@@ -283,7 +283,7 @@
         session-user (header session-anon authn-info-header "jane USER ANON")
 
         attr (ltu/random-string)
-        valid-entry {:infrastructure-service             {:href "infrastructure-service/cloud-software-solution-1"}
+        valid-entry {:infrastructure-service             "infrastructure-service/cloud-software-solution-1"
                      (keyword (str ns1-prefix ":" attr)) "123.456"}]
 
     (-> session-user

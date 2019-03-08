@@ -32,18 +32,18 @@
 ;;
 
 (def ^:const resource
-  {:type             credential-type
-   :method           method
-   :name             resource-name
-   :description      "GCE service account credentials"
-   :project-id       "my-project-id"
-   :private-key-id   "abcde1234"
-   :private-key      "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-   :client-email     "1234-compute@developer.gserviceaccount.com"
-   :client-id        "98765"
-   :services         []
-   :acl              resource-acl
-   :resourceMetadata "resource-metadata/credential-template-driver-gce"})
+  {:type                    credential-type
+   :method                  method
+   :name                    resource-name
+   :description             "GCE service account credentials"
+   :project-id              "my-project-id"
+   :private-key-id          "abcde1234"
+   :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
+   :client-email            "1234-compute@developer.gserviceaccount.com"
+   :client-id               "98765"
+   :infrastructure-services []
+   :acl                     resource-acl
+   :resourceMetadata        "resource-metadata/credential-template-driver-gce"})
 
 
 ;;

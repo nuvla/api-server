@@ -35,7 +35,7 @@
    :description             "Exoscale cloud credentials"
    :exoscale-api-key        ""
    :exoscale-api-secret-key ""
-   :services                []
+   :infrastructure-services []
    :acl                     resource-acl
    :resourceMetadata        "resource-metadata/credential-template-driver-exoscale"})
 

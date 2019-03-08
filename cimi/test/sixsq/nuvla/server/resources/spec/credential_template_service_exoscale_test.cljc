@@ -21,7 +21,7 @@
              :acl                     valid-acl
              :type                    service/credential-type
              :method                  service/method
-             :services                ["infrastructure-service/service-1"
+             :infrastructure-services ["infrastructure-service/service-1"
                                        "infrastructure-service/service-2"]
              :exoscale-api-key        "foo"
              :exoscale-api-secret-key "bar"}]
@@ -29,9 +29,9 @@
     (is (s/valid? ::service-spec/schema tpl))
 
     ;; mandatory keys
-    (doseq [k (-> tpl (dissoc :services) keys set)]
+    (doseq [k (-> tpl (dissoc :infrastructure-services) keys set)]
       (stu/is-invalid ::service-spec/schema (dissoc tpl k)))
 
     ;; optional keys
-    (doseq [k #{:services}]
+    (doseq [k #{:infrastructure-services}]
       (stu/is-valid ::service-spec/schema (dissoc tpl k)))))

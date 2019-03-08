@@ -15,28 +15,28 @@
 
 (deftest check-credential-service-docker
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        tpl {:id            (str cred/resource-type "/uuid")
-             :resource-type cred/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        tpl {:id                      (str cred/resource-type "/uuid")
+             :resource-type           cred/resource-type
+             :created                 timestamp
+             :updated                 timestamp
+             :acl                     valid-acl
 
-             :type          "swarm"
-             :method        "swarm"
+             :type                    "swarm"
+             :method                  "swarm"
 
-             :services      ["infrastructure-service/service-1"
-                             "infrastructure-service/service-2"]
+             :infrastructure-services ["infrastructure-service/service-1"
+                                       "infrastructure-service/service-2"]
 
-             :ca            "ca-public-certificate"
-             :cert          "client-public-certificate"
-             :key           "client-private-certificate"}]
+             :ca                      "ca-public-certificate"
+             :cert                    "client-public-certificate"
+             :key                     "client-private-certificate"}]
 
     (stu/is-valid ::cred-infra-service-swarm/schema tpl)
 
     ;; mandatory keywords
-    (doseq [k (-> tpl (dissoc :services) keys set)]
+    (doseq [k (-> tpl (dissoc :infrastructure-services) keys set)]
       (stu/is-invalid ::cred-infra-service-swarm/schema (dissoc tpl k)))
 
     ;; optional keywords
-    (doseq [k #{:services}]
+    (doseq [k #{:infrastructure-services}]
       (stu/is-valid ::cred-infra-service-swarm/schema (dissoc tpl k)))))

@@ -15,24 +15,24 @@
 
 (deftest check-service-group
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        service-group {:id            (str service/resource-type "/uuid")
-                       :resource-type service/resource-type
-                       :created       timestamp
-                       :updated       timestamp
-                       :acl           valid-acl
+        service-group {:id                      (str service/resource-type "/uuid")
+                       :resource-type           service/resource-type
+                       :created                 timestamp
+                       :updated                 timestamp
+                       :acl                     valid-acl
 
-                       :documentation "http://example.com/documentation"
-                       :services      [{:href "infrastructure-service/service-1"}
-                                       {:href "infrastructure-service/service-2"}]}]
+                       :documentation           "http://example.com/documentation"
+                       :infrastructure-services [{:href "infrastructure-service/service-1"}
+                                                 {:href "infrastructure-service/service-2"}]}]
 
     (stu/is-valid ::infrastructure-service-group/schema service-group)
 
-    (stu/is-valid ::infrastructure-service-group/schema (assoc service-group :services []))
+    (stu/is-valid ::infrastructure-service-group/schema (assoc service-group :infrastructure-services []))
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl}]
       (stu/is-invalid ::infrastructure-service-group/schema (dissoc service-group k)))
 
     ;; optional keywords
-    (doseq [k #{:documentation :services}]
+    (doseq [k #{:documentation :infrastructure-services}]
       (stu/is-valid ::infrastructure-service-group/schema (dissoc service-group k)))))

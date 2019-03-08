@@ -67,12 +67,12 @@ infrastructure-service-group resource.
 
 ;;
 ;; utilities for dealing with the automatic generation of
-;; :services value
+;; :infrastructure-services value
 ;;
 
 (defn dissoc-services
   [{:keys [body] :as request}]
-  (assoc request :body (dissoc body :services)))
+  (assoc request :body (dissoc body :infrastructure-services)))
 
 
 (defn extract-authn-info
@@ -114,7 +114,7 @@ infrastructure-service-group resource.
 
 (defn assoc-services
   [{:keys [body] :as response} {:keys [headers] :as request}]
-  (assoc response :body (assoc body :services (service-query request (:id body)))))
+  (assoc response :body (assoc body :infrastructure-services (service-query request (:id body)))))
 
 
 ;;

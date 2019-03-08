@@ -43,7 +43,7 @@
                             :template    {:href                    href
                                           :exoscale-api-key        "abc"
                                           :exoscale-api-secret-key "def"
-                                          :services                []}}]
+                                          :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

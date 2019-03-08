@@ -40,11 +40,11 @@
         create-import-href {:name        name-attr
                             :description description-attr
                             :tags        tags-attr
-                            :template    {:href                  href
-                                          :azure-subscription-id "abc"
-                                          :azure-client-secret   "def"
-                                          :azure-client-id       "ghi"
-                                          :services              []}}]
+                            :template    {:href                    href
+                                          :azure-subscription-id   "abc"
+                                          :azure-client-secret     "def"
+                                          :azure-client-id         "ghi"
+                                          :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

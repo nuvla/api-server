@@ -29,16 +29,16 @@
 ;;
 
 (def ^:const resource
-  {:type                  credential-type
-   :method                method
-   :name                  resource-name
-   :description           "Azure cloud credentials"
-   :azure-client-id       ""
-   :azure-client-secret   ""
-   :azure-subscription-id ""
-   :services              []
-   :acl                   resource-acl
-   :resourceMetadata      "resource-metadata/credential-template-driver-azure"})
+  {:type                    credential-type
+   :method                  method
+   :name                    resource-name
+   :description             "Azure cloud credentials"
+   :azure-client-id         ""
+   :azure-client-secret     ""
+   :azure-subscription-id   ""
+   :infrastructure-services []
+   :acl                     resource-acl
+   :resourceMetadata        "resource-metadata/credential-template-driver-azure"})
 
 
 ;;

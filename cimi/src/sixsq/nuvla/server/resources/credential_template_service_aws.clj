@@ -29,15 +29,15 @@
 ;;
 
 (def ^:const resource
-  {:type                 credential-type
-   :method               method
-   :name                 resource-name
-   :description          "AWS credentials"
-   :amazonec2-access-key ""
-   :amazonec2-secret-key ""
-   :services             []
-   :acl                  resource-acl
-   :resourceMetadata     "resource-metadata/credential-template-driver-aws"})
+  {:type                    credential-type
+   :method                  method
+   :name                    resource-name
+   :description             "AWS credentials"
+   :amazonec2-access-key    ""
+   :amazonec2-secret-key    ""
+   :infrastructure-services []
+   :acl                     resource-acl
+   :resourceMetadata        "resource-metadata/credential-template-driver-aws"})
 
 
 ;;

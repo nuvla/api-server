@@ -26,10 +26,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::services
+(s/def ::infrastructure-services
   (-> (st/spec (s/coll-of ::cimi-common/resource-link :kind vector?))
-      (assoc :name "services"
-             :json-schema/name "services"
+      (assoc :name "infrastructure-services"
+             :json-schema/name "infrastructure-services"
              :json-schema/type "Array"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -37,7 +37,7 @@
              :json-schema/consumerWritable false
              :json-schema/indexed false
 
-             :json-schema/displayName "services"
+             :json-schema/displayName "infrastructure-services"
              :json-schema/description "list of associated services"
              :json-schema/help "list of associated service references"
              :json-schema/group "body"
@@ -50,4 +50,4 @@
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
                      {:opt-un [::documentation
-                               ::services]}))
+                               ::infrastructure-services]}))

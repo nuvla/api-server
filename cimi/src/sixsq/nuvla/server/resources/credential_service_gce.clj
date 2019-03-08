@@ -15,16 +15,17 @@ for GCE
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method project-id private-key-id private-key client-email client-id services acl]} request]
-  (let [resource (cond-> {:resource-type  p/resource-type
-                          :type           type
-                          :method         method
-                          :project-id     project-id
-                          :private-key-id private-key-id
-                          :private-key    private-key
-                          :client-email   client-email
-                          :client-id      client-id
-                          :services       services}
+  [{:keys [type method project-id private-key-id private-key
+           client-email client-id infrastructure-services acl]} request]
+  (let [resource (cond-> {:resource-type           p/resource-type
+                          :type                    type
+                          :method                  method
+                          :project-id              project-id
+                          :private-key-id          private-key-id
+                          :private-key             private-key
+                          :client-email            client-email
+                          :client-id               client-id
+                          :infrastructure-services infrastructure-services}
                          acl (assoc :acl acl))]
     [nil resource]))
 

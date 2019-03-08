@@ -20,7 +20,7 @@
                      :created                timestamp
                      :updated                timestamp
                      :acl                    valid-acl
-                     :infrastructure-service {:href "service/my-service-uuid"}
+                     :infrastructure-service "infrastructure-service/my-service-uuid"
                      :other                  "value"}]
 
     (stu/is-valid ::data-record/schema data-record)

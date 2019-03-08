@@ -29,9 +29,5 @@
     (stu/is-valid ::hashed-pwd/schema tpl)
 
     ;; mandatory keywords
-    (doseq [k (-> tpl (dissoc :services) keys set)]
-      (stu/is-invalid ::hashed-pwd/schema (dissoc tpl k)))
-
-    ;; optional keywords
-    (doseq [k #{:services}]
-      (stu/is-valid ::hashed-pwd/schema (dissoc tpl k)))))
+    (doseq [k (-> tpl keys set)]
+      (stu/is-invalid ::hashed-pwd/schema (dissoc tpl k)))))

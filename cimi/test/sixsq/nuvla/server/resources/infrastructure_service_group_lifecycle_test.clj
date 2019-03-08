@@ -116,10 +116,10 @@
 
           (is (= service-group-name (:name service-group)))
           (is (= "http://my-documentation.org" (:documentation service-group)))
-          (is (vector? (:services service-group)))
-          (is (zero? (count (:services service-group))))
+          (is (vector? (:infrastructure-services service-group)))
+          (is (zero? (count (:infrastructure-services service-group))))
 
-          ;; creating services that have a parent attribute referencing the service-group
+          ;; creating infrastructure-services that have a parent attribute referencing the service-group
           ;; should show up automatically in the service-group
           (let [service-ids (set (for [_ (range 3)]
                                    (-> session
@@ -142,20 +142,20 @@
                                           :body)
 
                 service-hrefs (->> updated-service-group
-                                   :services
+                                   :infrastructure-services
                                    (map :href)
                                    set)]
 
-            (is (vector? (:services updated-service-group)))
+            (is (vector? (:infrastructure-services updated-service-group)))
             (is (= service-ids service-hrefs))
 
-            ;; service-group with linked services cannot be deleted
+            ;; service-group with linked infrastructure-services cannot be deleted
             (-> session
                 (request abs-uri :request-method :delete)
                 (ltu/body->edn)
                 (ltu/is-status 409))
 
-            ;; remove the services
+            ;; remove the infrastructure-services
             (doseq [service-id service-ids]
               (-> session
                   (request (str p/service-context service-id)
@@ -163,7 +163,7 @@
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
-            ;; verify that the services are gone
+            ;; verify that the infrastructure-services are gone
             (doseq [service-id service-ids]
               (-> session
                   (request (str p/service-context service-id))
