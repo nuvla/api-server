@@ -213,7 +213,7 @@
                                                                                         [:max "number"]
                                                                                         [:sum "number"]
                                                                                         [:avg "number"]
-                                                                                        [:count "id"]
+                                                                                        [:value_count "id"]
                                                                                         [:cardinality "id"]]}}))]
 
           (is (= {:terms:nested/child {:doc_count_error_upper_bound 0,
