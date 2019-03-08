@@ -32,9 +32,9 @@
                        :module                    {:href "module-component/my-module-component-uuid"}
 
                        :data-objects              ["data-object/uuid1" "data-object/uuid2"]
-                       :data-records              {:data-record/uuid1 ["data-record/dataset1" "data-record/dataset2"]
+                       :data-records              {:data-record/uuid1 ["data-set/dataset1" "data-set/dataset2"]
                                                    :data-record/uuid2 nil
-                                                   :data-record/uuid3 ["data-record/dataset3"]}})
+                                                   :data-record/uuid3 ["data-set/dataset3"]}})
 
 
 (deftest test-schema-check

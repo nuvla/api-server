@@ -141,7 +141,12 @@
 
 (s/def ::data-record-id (s/and string? data-record-id?))
 (s/def ::data-record-id-keyword (s/and keyword? data-record-id-keyword?))
-(s/def ::data-set-ids (s/nilable (s/coll-of ::data-record-id :min-count 1 :kind vector?)))
+
+(def ^:const data-set-id-regex #"^data-set/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(defn data-set-id? [s] (re-matches data-set-id-regex s))
+(s/def ::data-set-id (s/and string? data-set-id?))
+
+(s/def ::data-set-ids (s/nilable (s/coll-of ::data-set-id :min-count 1 :kind vector?)))
 
 
 (s/def ::data-records
