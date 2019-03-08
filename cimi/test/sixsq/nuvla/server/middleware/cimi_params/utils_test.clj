@@ -87,6 +87,7 @@
                     nil " :attr-name"
                     nil "BAD:attr-name"
                     [:sum "attr"] "sum:attr"
+                    [:value_count "attr"] "value_count:attr"
                     [:extended-algo "attr"] "extended-algo:attr"
                     [:sum "attr:name"] "sum:attr:name"))
 
