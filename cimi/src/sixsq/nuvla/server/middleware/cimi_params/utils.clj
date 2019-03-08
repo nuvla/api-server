@@ -100,7 +100,7 @@
   will be returned."
   [s]
   (let [[algo attr] (->> s
-                         (re-matches #"([a-z-]+):(\S+)")
+                         (re-matches #"([a-z_-]+):(\S+)")
                          rest
                          (map str/trim))]
     (when-not (str/blank? attr)

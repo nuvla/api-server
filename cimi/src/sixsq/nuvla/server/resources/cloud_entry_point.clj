@@ -271,7 +271,7 @@ sum | sum of values
 avg | average of values
 stats | statistics of values
 extendedstats | extended statistics of values
-count | number of values/documents
+value_count | number of values/documents
 percentiles | binned percentiles of values
 cardinality | cardinality of a field
 missing | number of documents with missing field
