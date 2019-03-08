@@ -26,6 +26,7 @@
 
               :architecture      "x86"
               :image             "ubuntu:16.04"
+              :mounts            ["src=abc,dst=/var/tmp/abc,readonly" "type=bind,src=,dst=/var/tmp/abc"]
               :ports             ["8022:22"]
               :urls              [["primary" "https://${host}:${port-443}/my/path"]
                                   ["other" "http://${host}:${port-80}/path"]]

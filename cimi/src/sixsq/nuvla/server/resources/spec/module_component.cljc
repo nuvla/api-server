@@ -21,6 +21,9 @@
 (s/def ::ports (s/coll-of ::cimi-core/nonblank-string :kind vector?))
 
 
+(s/def ::mounts (s/coll-of ::cimi-core/nonblank-string :kind vector?))
+
+
 ;; this is a 'friendly' name for a given URL, intended mainly for display
 (s/def ::url-name ::cimi-core/nonblank-string)
 
@@ -53,6 +56,7 @@
                                                                 ::image]
                                                        :opt-un [::commit
                                                                 ::ports
+                                                                ::mounts
                                                                 ::urls
                                                                 ::output-parameters]}]))
 
