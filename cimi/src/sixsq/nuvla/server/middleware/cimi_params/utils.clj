@@ -4,7 +4,7 @@
   (:require
     [clojure.string :as str]
     [instaparse.core :as insta]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 (defn as-vector
   "Ensures that the given argument is a vector, coercing the given value if

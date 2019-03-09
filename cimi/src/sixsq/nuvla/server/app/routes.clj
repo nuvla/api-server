@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def collection-routes

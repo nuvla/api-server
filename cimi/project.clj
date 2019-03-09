@@ -57,7 +57,6 @@
 
    ; dependencies for auth
    [clj-http]
-   [sixsq.nuvla.server/utils ~+version+]
    [sixsq.nuvla.server/db-binding-jar ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]

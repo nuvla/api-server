@@ -21,7 +21,7 @@ type | true | type of the attribute's value
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
     [sixsq.nuvla.server.resources.spec.data-record-key :as data-record-key]
-    [sixsq.nuvla.util.response :as sr])
+    [sixsq.nuvla.server.utils :as sr])
   (:import
     [java.math BigInteger]
     [java.net URI URISyntaxException]

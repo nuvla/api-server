@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def min-password-length 8)

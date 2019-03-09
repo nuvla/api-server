@@ -6,7 +6,7 @@
             [sixsq.nuvla.server.resources.credential :as credential]
             [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
             [sixsq.nuvla.server.resources.module :as module]
-            [sixsq.nuvla.util.response :as r]))
+            [sixsq.nuvla.server.utils :as r]))
 
 
 (defn generate-api-key-secret

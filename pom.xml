@@ -9,7 +9,6 @@
   <url>http://sixsq.com/</url>
 
   <modules>
-    <module>utils</module>
     <module>cimi</module>
     <module>cimi-test-jar</module>
     <module>db-binding</module>

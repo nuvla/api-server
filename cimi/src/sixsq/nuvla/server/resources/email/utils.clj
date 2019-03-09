@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def validation-email-body

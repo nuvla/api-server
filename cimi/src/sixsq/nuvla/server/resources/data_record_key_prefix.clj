@@ -24,7 +24,7 @@ uri | true | full URI associated with the prefix
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
-    [sixsq.nuvla.util.response :as response]))
+    [sixsq.nuvla.server.utils :as response]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

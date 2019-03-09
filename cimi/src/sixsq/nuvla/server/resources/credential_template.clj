@@ -41,7 +41,7 @@ curl https://nuv.la/api/credential-template
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
