@@ -28,6 +28,72 @@
       <artifactId>cimi-jar</artifactId>
       <version>${project.version}</version>
       <type>jar</type>
+      <exclusions>
+        <exclusion>
+          <groupId>clj-time</groupId>
+          <artifactId>clj-time</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>clj-tuple</groupId>
+          <artifactId>clj-tuple</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-fileupload</groupId>
+          <artifactId>commons-fileupload</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>crypto-equality</groupId>
+          <artifactId>crypto-equality</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>crypto-random</groupId>
+          <artifactId>crypto-random</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jline</groupId>
+          <artifactId>jline</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.clojure</groupId>
+          <artifactId>clojure</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>potemkin</groupId>
+          <artifactId>potemkin</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>riddley</groupId>
+          <artifactId>riddley</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>ring</groupId>
+          <artifactId>ring-codec</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>ring</groupId>
+          <artifactId>ring-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
