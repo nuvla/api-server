@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.auth.acl
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.util.response :as ru]))
+    [sixsq.nuvla.server.utils :as ru]))
 
 (def rights-hierarchy (-> (make-hierarchy)
                           (derive ::all ::manage)

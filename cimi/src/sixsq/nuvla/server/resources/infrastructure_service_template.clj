@@ -17,7 +17,7 @@ paging, etc. parameters are not supported.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

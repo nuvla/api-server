@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-internal :as st-internal]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def ^:const authn-method "internal")

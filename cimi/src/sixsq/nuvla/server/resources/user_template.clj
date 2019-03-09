@@ -47,7 +47,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user-template :as user-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.utils :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
