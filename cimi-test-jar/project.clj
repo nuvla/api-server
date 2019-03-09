@@ -8,13 +8,13 @@
 
   :url "https://github.com/nuvla/server"
 
-  :license {:name "Apache 2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+  :license {:name         "Apache 2.0"
+            :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]]
 
-  :parent-project {:coords  [sixsq.nuvla/parent "6.1.5"]
+  :parent-project {:coords  [sixsq.nuvla/parent "6.2.0"]
                    :inherit [:plugins
                              :min-lein-version
                              :managed-dependencies
@@ -30,6 +30,8 @@
                  [expound :scope "compile"]
                  [me.raynes/fs]
                  [org.apache.curator/curator-test :scope "compile"]
+                 [org.apache.logging.log4j/log4j-core]      ;; needed for ES logging
+                 [org.apache.logging.log4j/log4j-api]       ;; needed for ES logging
                  [org.clojure/data.json]
                  [org.elasticsearch.client/transport]
                  [org.elasticsearch.test/framework]
