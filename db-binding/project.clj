@@ -28,26 +28,24 @@
   :pom-location "target/"
 
   :dependencies
-  [[cc.qbits/spandex]
-   [cheshire]                                               ;; to avoid transient dependency conflicts
+  [[cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [clj-time]
-   [com.rpl/specter]
-   [sixsq.nuvla.server/utils ~+version+]
-   [duratom]
-   [environ]
+   [duratom :exclusions [org.clojure/clojure]]
    [instaparse]
    [metosin/spec-tools]
-   [org.apache.logging.log4j/log4j-core]                    ;; required for Elasticsearch logging
-   [org.clojure/data.json]
-   [org.clojure/tools.logging]
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
-   [org.slf4j/slf4j-api]
-   [ring/ring-json]]
+
+   ;; internal dependencies
+   [sixsq.nuvla.server/utils ~+version+]]
 
   :profiles {:test     {:aot            :all
                         :resource-paths ["test-resources"]
-                        :dependencies   [[org.slf4j/slf4j-log4j12]
+                        :dependencies   [[org.slf4j/slf4j-api]
+                                         [org.slf4j/slf4j-log4j12]
                                          [me.raynes/fs]
                                          [org.elasticsearch.client/transport]
-                                         [org.elasticsearch.test/framework]]}
-             :provided {:dependencies [[org.clojure/clojure]]}})
+                                         [org.elasticsearch.test/framework]
+                                         [org.apache.logging.log4j/log4j-core]]}
+             :provided {:dependencies [[org.clojure/clojure]
+                                       [environ]
+                                       [org.clojure/tools.logging]]}})
