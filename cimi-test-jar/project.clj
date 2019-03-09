@@ -1,5 +1,7 @@
 (def +version+ "0.0.1-SNAPSHOT")
 
+(def nuvla-ring-version "0.0.1-SNAPSHOT")
+
 (defproject sixsq.nuvla.server/cimi-test-jar "0.0.1-SNAPSHOT"
 
   :description "cimi server testing utilities"
@@ -25,12 +27,16 @@
 
   :dependencies [[compojure]
                  [com.cemerick/url]
+                 [expound :scope "compile"]
                  [me.raynes/fs]
-                 [sixsq.nuvla.ring/code ~+version+]
-                 [sixsq.nuvla.server/db-binding-jar ~+version+]
                  [org.apache.curator/curator-test :scope "compile"]
                  [org.clojure/data.json]
                  [org.elasticsearch.client/transport]
                  [org.elasticsearch.test/framework]
                  [peridot :scope "compile"]
-                 [expound :scope "compile"]])
+
+                 ;; internal dependencies
+                 [sixsq.nuvla.server/db-binding-jar ~+version+]
+
+                 ;; external dependencies
+                 [sixsq.nuvla.ring/code ~nuvla-ring-version]])

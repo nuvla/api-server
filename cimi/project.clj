@@ -1,5 +1,7 @@
 (def +version+ "0.0.1-SNAPSHOT")
 
+(def nuvla-ring-version "0.0.1-SNAPSHOT")
+
 (defproject sixsq.nuvla.server/cimi-jar "0.0.1-SNAPSHOT"
 
   :description "core cimi server"
@@ -27,43 +29,37 @@
   :pom-location "target/"
 
   :dependencies
-  [[org.clojure/clojure]
-   [aleph "0.4.4"]
-   [buddy/buddy-core]
+  [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cheshire]                                               ;; newer version needed for ring-json
    [compojure]
+   [com.draines/postal]
+   [clj-http]
    [clj-stacktrace]
    [clj-time]
    [com.amazonaws/aws-java-sdk-s3]
-   [com.taoensso/timbre]
-   [environ]
    [expound]
    [instaparse]
-   [log4j]
    [metosin/spec-tools]
-   [me.raynes/fs]
-   [org.apache.logging.log4j/log4j-core]
-   [org.apache.logging.log4j/log4j-api]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
-   [org.clojure/tools.logging]
    [org.clojure/tools.namespace]
    [ring/ring-core]
    [ring/ring-json]
-   [zookeeper-clj]
-   [com.draines/postal]
+   [zookeeper-clj :exclusions [[org.clojure/clojure]
+                               [org.slf4j/slf4j-api]
+                               [org.slf4j/slf4j-log4j12]
+                               [io.netty/netty]]]
 
-   ; dependencies for auth
-   [clj-http]
+   ;; internal dependencies
    [sixsq.nuvla.server/db-binding-jar ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]
 
   :profiles
   {
-   :provided {:dependencies [[sixsq.nuvla.ring/code ~+version+]]}
+   :provided {:dependencies [[org.clojure/clojure]
+                             [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
    :test     {:dependencies   [[peridot]
                                [org.clojure/test.check]
                                [org.slf4j/slf4j-log4j12]
@@ -71,8 +67,7 @@
                                [org.apache.curator/curator-test]
                                [sixsq.nuvla.server/cimi-test-jar ~+version+]]
               :resource-paths ["test-resources"]
-              :env            {:config-name      "config-params.edn"
-                               :auth-private-key "test-resources/auth_privkey.pem"
+              :env            {:auth-private-key "test-resources/auth_privkey.pem"
                                :auth-public-key  "test-resources/auth_pubkey.pem"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]}
