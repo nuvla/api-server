@@ -21,7 +21,7 @@
     [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.db.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.util.response :as response])
+    [sixsq.nuvla.server.utils :as response])
   (:import
     (java.io Closeable)))
 

@@ -53,10 +53,7 @@
                                [org.clojure/clojure]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
-                               [io.netty/netty]]]
-
-   ;; internal dependencies
-   [sixsq.nuvla.server/utils ~+version+]]
+                               [io.netty/netty]]]]
 
   :aot [sixsq.nuvla.server.app.main]
 
