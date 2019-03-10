@@ -7,6 +7,7 @@
     [clojure.test :refer [is]]
     [clojure.tools.logging :as log]
     [compojure.core :as cc]
+    [me.raynes.fs :as fs]
     [peridot.core :refer [request session]]
     [qbits.spandex :as spandex]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -26,14 +27,14 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [zookeeper :as zk]
-    [me.raynes.fs :as fs])
-  (:import [org.apache.curator.test TestingServer]
-           (java.util UUID)
-           (org.elasticsearch.node MockNode)
-           (org.elasticsearch.common.logging LogConfigurator)
-           (org.elasticsearch.common.settings Settings)
-           (org.elasticsearch.transport Netty4Plugin)))
+    [zookeeper :as zk])
+  (:import
+    (java.util UUID)
+    (org.apache.curator.test TestingServer)
+    (org.elasticsearch.common.logging LogConfigurator)
+    (org.elasticsearch.common.settings Settings)
+    (org.elasticsearch.node MockNode)
+    (org.elasticsearch.transport Netty4Plugin)))
 
 
 (defn random-string

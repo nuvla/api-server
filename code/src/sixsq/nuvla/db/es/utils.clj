@@ -1,9 +1,10 @@
 (ns sixsq.nuvla.db.es.utils
-  (:require [qbits.spandex :as spandex]
-            [clojure.string :as str]
-            [environ.core :as env]
-            [clojure.tools.logging :as log]
-            [sixsq.nuvla.db.es.binding :as esrb]))
+  (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
+    [environ.core :as env]
+    [qbits.spandex :as spandex]
+    [sixsq.nuvla.db.es.binding :as esrb]))
 
 
 (def ^:private ok-health-statuses #{"green" "yellow"})

@@ -9,9 +9,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-template :as t]
-    ;[sixsq.nuvla.server.resources.user-template-github-registration :as github]
-    ;[sixsq.nuvla.server.resources.user-template-oidc-registration :as oidc]
-    ;[sixsq.nuvla.server.resources.user-template-self-registration :as self]
     [sixsq.nuvla.server.resources.user-template-direct :as direct]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -45,7 +42,7 @@
                     (ltu/is-status 200)
                     (ltu/is-resource-uri t/collection-type)
                     (ltu/is-count pos?)
-                    (ltu/is-operation-present "add")        ;; should really be absent, but admin always has all rights
+                    (ltu/is-operation-present "add")
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
                     (ltu/entries))
