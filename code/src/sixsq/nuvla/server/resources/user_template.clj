@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.user-template
   "
-UserTemplate resources define the 'user registration' methods that are
-permitted by the server. The UserTemplate collection follows all of the CIMI
+The user-template resources define the 'user registration' methods that are
+permitted by the server. The user-template collection follows all of the CIMI
 SCRUD patterns.
 
-The server will always contain the 'direct user template. This template is
-only acceptable to administrators and allows the direct creation of a new user
+The server will always contain the 'direct' user template. This template is
+only visible to administrators and allows the direct creation of a new user
 without any email verification, etc.
 
 The system administrator may create additional templates to allow other user
@@ -13,31 +13,6 @@ registration methods. If the ACL of the template allows for 'anonymous' access,
 then the server will support self-registration of users. The registration
 processes will typically require additional validation step, such as email
 verification.
-
-Listing of the available UserTemplate resources on Nuvla.
-
-```shell
-curl 'https://nuv.la/api/user-template?select=name,description'
-```
-
-```json
-{
-  \"count\" : 15,
-  ...
-  \"resource-type\" : \"http://sixsq.com/slipstream/1/UserTemplateCollection\",
-  \"id\" : \"user-template\",
-  \"userTemplates\" : [ {
-    \"name\" : \"ESRF Realm\",
-    \"description\" : \"Creates a new user through OIDC registration\",
-    ...
-    },
-    \"resource-type\" : \"http://sixsq.com/slipstream/1/UserTemplate\"
-  }, {
-    \"name\" : \"INFN Realm\",
-    \"description\" : \"Creates a new user through OIDC registration\",
-    ...
-
-```
 "
   (:require
     [clojure.tools.logging :as log]
@@ -58,10 +33,7 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 
 (def resource-acl {:owner {:principal "ADMIN"
                            :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "ALL"}
-                           {:principal "ANON"
+                   :rules [{:principal "ANON"
                             :type      "ROLE"
                             :right     "VIEW"}
                            {:principal "USER"
@@ -87,38 +59,39 @@ curl 'https://nuv.la/api/user-template?select=name,description'
 
 
 ;;
-;; atom to keep track of the UserTemplate descriptions
+;; atom to keep track of the available user-template methods
 ;;
 
 (def known-method (atom #{}))
 
 
 (defn register
-  "Registers a given UserTemplate id with the server."
+  "Registers a given user-template method with the server."
   [method]
   (when method
     (swap! known-method conj method)
-    (log/info "loaded UserTemplate description" method)))
+    (log/info "loaded user-template method " method)))
 
 ;;
 ;; multimethods for validation
 ;;
 
 (defmulti validate-subtype
-          "Validates the given resource against the specific
-           UserTemplate subtype schema."
+          "Validates the given resource against the specific user-template
+           subtype schema."
           :method)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown UserTemplate type: " (:method resource)) resource)))
+  (throw (ex-info (str "unknown user-template method: " (:method resource)) resource)))
 
 
 (defmethod crud/validate
   resource-type
   [resource]
   (validate-subtype resource))
+
 
 ;;
 ;; identifiers for these resources are the same as the :instance value
@@ -130,11 +103,13 @@ curl 'https://nuv.la/api/user-template?select=name,description'
        (str resource-type "/")
        (assoc resource :id)))
 
+
 ;;
 ;; CRUD operations
 ;;
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
 
 (defmethod crud/add resource-type
   [{{:keys [method]} :body :as request}]
