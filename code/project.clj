@@ -2,9 +2,9 @@
 
 (def nuvla-ring-version "0.0.1-SNAPSHOT")
 
-(defproject sixsq.nuvla.server/cimi-jar "0.0.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "0.0.1-SNAPSHOT"
 
-  :description "core cimi server"
+  :description "core api server"
 
   :url "https://github.com/nuvla/server"
 
@@ -56,8 +56,7 @@
                                [io.netty/netty]]]
 
    ;; internal dependencies
-   [sixsq.nuvla.server/utils ~+version+]
-   [sixsq.nuvla.server/db-binding-jar ~+version+]]
+   [sixsq.nuvla.server/utils ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]
 
@@ -67,7 +66,7 @@
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
 
 
-  :test     {:dependencies  [[my.raynes/fs]
+  :test     {:dependencies  [[me.raynes/fs]
                              [peridot]
                              [org.apache.logging.log4j/log4j-core]      ;; needed for ES logging
                              [org.apache.logging.log4j/log4j-api]       ;; needed for ES logging
@@ -77,8 +76,7 @@
                              [org.slf4j/slf4j-api]
                              [org.slf4j/slf4j-log4j12]
                              [com.cemerick/url]
-                             [org.apache.curator/curator-test]
-                             [sixsq.nuvla.server/cimi-test-jar ~+version+]]
+                             [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
               :env            {:auth-private-key "test-resources/auth_privkey.pem"
                                :auth-public-key  "test-resources/auth_pubkey.pem"}
