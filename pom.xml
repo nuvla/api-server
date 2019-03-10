@@ -10,7 +10,6 @@
 
   <modules>
     <module>code</module>
-    <module>cimi-test-jar</module>
     <module>container</module>
   </modules>
 
