@@ -9,9 +9,7 @@
   <url>http://sixsq.com/</url>
 
   <modules>
-    <module>cimi</module>
-    <module>cimi-test-jar</module>
-    <module>db-binding</module>
+    <module>code</module>
     <module>container</module>
   </modules>
 
