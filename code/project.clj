@@ -32,18 +32,21 @@
   [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
+   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
    [clj-time]
    [com.amazonaws/aws-java-sdk-s3]
+   [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
    [metosin/spec-tools]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
+   [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
    [zookeeper-clj :exclusions [[jline]
@@ -53,6 +56,7 @@
                                [io.netty/netty]]]
 
    ;; internal dependencies
+   [sixsq.nuvla.server/utils ~+version+]
    [sixsq.nuvla.server/db-binding-jar ~+version+]]
 
   :aot [sixsq.nuvla.server.app.main]
@@ -61,8 +65,13 @@
   {
    :provided {:dependencies [[org.clojure/clojure]
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
-   :test     {:dependencies   [[peridot]
+   :test     {:dependencies   [[my.raynes/fs]
+                               [peridot]
+                               [org.apache.logging.log4j/log4j-core]
                                [org.clojure/test.check]
+                               [org.elasticsearch.client/transport]
+                               [org.elasticsearch.test/framework]
+                               [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
