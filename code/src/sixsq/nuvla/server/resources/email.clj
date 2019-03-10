@@ -18,7 +18,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.email :as email]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

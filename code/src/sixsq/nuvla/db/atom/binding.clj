@@ -21,7 +21,7 @@
     [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.db.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.server.utils :as response])
+    [sixsq.nuvla.server.util.response :as r])
   (:import
     (java.io Closeable)))
 
@@ -29,24 +29,24 @@
 (defn atomic-retrieve [data-atom id]
   (when-let [path (cu/split-id-kw id)]
     (or (get-in @data-atom path)
-        (throw (response/ex-not-found id)))))
+        (throw (r/ex-not-found id)))))
 
 
 (defn atomic-add
   [db {:keys [id] :as data}]
   (if-let [path (cu/split-id-kw id)]
     (if (get-in db path)
-      (throw (response/ex-conflict id))
+      (throw (r/ex-conflict id))
       (->> data
            acl-utils/force-admin-role-right-all
            (assoc-in db path)))
-    (throw (response/ex-bad-request "invalid document id"))))
+    (throw (r/ex-bad-request "invalid document id"))))
 
 
 (defn add-data [data-atom {:keys [id] :as data}]
   (try
     (swap! data-atom atomic-add data)
-    (response/response-created id)
+    (r/response-created id)
     (catch Exception e
       (ex-data e))))
 
@@ -58,14 +58,14 @@
       (->> data
            acl-utils/force-admin-role-right-all
            (assoc-in db path))
-      (throw (response/ex-not-found id)))
-    (throw (response/ex-bad-request "invalid document id"))))
+      (throw (r/ex-not-found id)))
+    (throw (r/ex-bad-request "invalid document id"))))
 
 
 (defn update-data [data-atom {:keys [id] :as data}]
   (try
     (swap! data-atom atomic-update data)
-    (response/response-updated id)
+    (r/response-updated id)
     (catch Exception e
       (ex-data e))))
 
@@ -75,13 +75,13 @@
   (if-let [[collection-id doc-id :as path] (cu/split-id-kw id)]
     (if (get-in db path)
       (update-in db [collection-id] dissoc doc-id)
-      (throw (response/ex-not-found id)))
-    (throw (response/ex-bad-request "invalid document id"))))
+      (throw (r/ex-not-found id)))
+    (throw (r/ex-bad-request "invalid document id"))))
 
 
 (defn delete-data [data-atom {:keys [id] :as data}]
   (swap! data-atom atomic-delete data)
-  (response/response-deleted id))
+  (r/response-deleted id))
 
 
 (defn query-info

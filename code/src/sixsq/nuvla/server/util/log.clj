@@ -2,7 +2,7 @@
   (:require
     [clojure.tools.logging :as log]
     [ring.util.response :as ring-resp]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (defn log-and-throw
   "Logs the given message and returns an error response with the given status

@@ -14,7 +14,7 @@
     [sixsq.nuvla.server.resources.data-object-template :as dot]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

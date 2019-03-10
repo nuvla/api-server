@@ -15,7 +15,7 @@
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.server.utils :as response])
+    [sixsq.nuvla.server.util.response :as r])
   (:import
     (java.io Closeable)))
 
@@ -78,13 +78,13 @@
                                             :body         (prepare-data data)})
           success? (pos? (get-in response [:body :_shards :successful]))]
       (if success?
-        (response/response-created id)
-        (response/response-conflict id)))
+        (r/response-created id)
+        (r/response-conflict id)))
     (catch Exception e
       (let [response (ex-data e)]
         (if (= 409 (-> response :body :status))
-          (response/response-conflict id)
-          (response/response-error (str "unexpected exception: " e)))))))
+          (r/response-conflict id)
+          (r/response-error (str "unexpected exception: " e)))))))
 
 
 (defn update-data
@@ -98,8 +98,8 @@
                                           :body         updated-doc})
         success? (pos? (get-in response [:body :_shards :successful]))]
     (if success?
-      (response/json-response data)
-      (response/response-conflict id))))
+      (r/json-response data)
+      (r/response-conflict id))))
 
 
 (defn find-data
@@ -112,13 +112,13 @@
           found? (get-in response [:body :found])]
       (if found?
         (-> response :body :_source acl-utils/normalize-acl)
-        (throw (response/ex-not-found id))))
+        (throw (r/ex-not-found id))))
     (catch Exception e
       (let [response (ex-data e)
             status (:status response)]
         (if (= 404 status)
-          (throw (response/ex-not-found id))
-          (response/response-error (str "unexpected error retrieving " id)))))))
+          (throw (r/ex-not-found id))
+          (r/response-error (str "unexpected error retrieving " id)))))))
 
 
 (defn delete-data
@@ -132,14 +132,14 @@
           success? (pos? (get-in response [:body :_shards :successful]))
           deleted? (= "deleted" (get-in response [:body :result]))]
       (if (and success? deleted?)
-        (response/response-deleted id)
-        (response/response-error (str "could not delete document " id))))
+        (r/response-deleted id)
+        (r/response-error (str "could not delete document " id))))
     (catch Exception e
       (let [response (ex-data e)
             status (:status response)]
         (if (= 404 status)
-          (throw (response/ex-not-found id))
-          (response/response-error (str "unexpected error deleting " id)))))))
+          (throw (r/ex-not-found id))
+          (r/response-error (str "unexpected error deleting " id)))))))
 
 
 (defn query-data
@@ -162,7 +162,7 @@
         hits (->> response :body :hits :hits (map :_source) (map acl-utils/normalize-acl))]
     (if success?
       [meta hits]
-      (response/response-error "error when querying database"))))
+      (r/response-error "error when querying database"))))
 
 
 (deftype ElasticsearchRestBinding [client]

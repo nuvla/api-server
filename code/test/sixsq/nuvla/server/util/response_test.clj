@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.utils-test
+(ns sixsq.nuvla.server.util.response-test
   (:require
     [clojure.string :as str]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.utils :as r])
+    [sixsq.nuvla.server.util.response :as r])
   (:import
     (clojure.lang ExceptionInfo)))
 

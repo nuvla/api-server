@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.utils
+(ns sixsq.nuvla.server.util.response
   "Utilities for creating ring responses and exceptions with embedded ring
    responses."
   (:require

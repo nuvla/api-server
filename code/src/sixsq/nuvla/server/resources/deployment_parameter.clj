@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
     [sixsq.nuvla.server.resources.spec.event :as event]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

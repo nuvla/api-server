@@ -14,7 +14,7 @@ Hashed value of a password.
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})

@@ -326,7 +326,7 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.utils :as sr]))
+    [sixsq.nuvla.server.util.response :as sr]))
 
 ;;
 ;; utilities

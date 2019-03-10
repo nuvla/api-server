@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [ring.util.response :as r]
-    [sixsq.nuvla.server.utils :as sr]))
+    [sixsq.nuvla.server.util.response :as sr]))
 
 
 (defn valid-attribute-name?

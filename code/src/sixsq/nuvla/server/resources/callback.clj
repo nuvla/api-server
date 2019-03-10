@@ -28,7 +28,7 @@ appropriate users.
     [sixsq.nuvla.server.resources.spec.callback :as callback]
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

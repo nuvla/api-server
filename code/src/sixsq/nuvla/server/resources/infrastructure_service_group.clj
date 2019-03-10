@@ -19,7 +19,7 @@ infrastructure-service-group resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-group :as infra-service-group]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

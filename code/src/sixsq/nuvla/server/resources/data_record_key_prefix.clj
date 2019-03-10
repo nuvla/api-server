@@ -24,7 +24,7 @@ uri | true | full URI associated with the prefix
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
-    [sixsq.nuvla.server.utils :as response]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -102,7 +102,7 @@ uri | true | full URI associated with the prefix
 (defmethod crud/add resource-type
   [{{:keys [prefix uri]} :body :as request}]
   (if-let [id (colliding-id prefix uri)]
-    (response/response-conflict id)
+    (r/response-conflict id)
     (add-impl request)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

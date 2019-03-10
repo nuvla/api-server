@@ -4,7 +4,7 @@
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.util.log :as log-util]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "example")

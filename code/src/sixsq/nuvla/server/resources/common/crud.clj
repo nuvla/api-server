@@ -4,7 +4,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.utils :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 ;;
 ;; CRUD dispatch functions
