@@ -229,6 +229,13 @@
                   :max:number         {:value 2.0},
                   :sum:number         {:value 6.0}} (:aggregations query-meta))))
 
+        ;; full-text search
+        (let [options (merge admin-role
+                             {:cimi-params {:filter (parser/parse-cimi-filter "nested/child=='c*+-child2'")}})
+              [query-meta _] (db/query db collection-id options)]
+          (is (= 2 (:count query-meta))))
+
+
         ;; delete all of the docs
         (doseq [doc docs]
           (let [response (db/delete db doc nil)]
