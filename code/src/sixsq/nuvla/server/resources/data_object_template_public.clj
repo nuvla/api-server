@@ -14,7 +14,7 @@
 (def ^:const resource
   {:object-type       object-type
    :content-type      "content/type"
-   :object-store-cred {:href "credential/cloud-cred"}
+   :credential {:href "credential/cloud-cred"}
    :bucket-name       "bucket-name"
    :object-name       "object/name"})
 

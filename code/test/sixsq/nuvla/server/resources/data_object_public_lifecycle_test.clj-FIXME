@@ -27,7 +27,7 @@
 (defn data-object
   []
   {:bucket-name      "my-bucket"
-   :object-store-cred {:href eoltu/*cred-uri*}
+   :credential eoltu/*cred-uri*
    :content-type     "application/gzip"
    :object-name      "my/obj/name-1"})
 

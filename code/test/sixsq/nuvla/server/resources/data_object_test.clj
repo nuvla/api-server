@@ -30,7 +30,7 @@
                                          :content-type      "application/tar+gzip"
                                          :bucket-name       bucketname
                                          :object-name       objectname
-                                         :object-store-cred {:href "credential/my-cred"}}
+                                         :credential "credential/my-cred"}
                                         {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))
 
@@ -38,7 +38,7 @@
     (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
                                          :content-type      "application/tar+gzip"
                                          :bucket-name       bucketname
-                                         :object-store-cred {:href "credential/my-cred"}
+                                         :credential "credential/my-cred"
                                          :runUUID           runUUID
                                          :filename          filename}
                                         {})
@@ -54,6 +54,6 @@
     (is (str/starts-with? (eo/download-subtype {:state             eo/state-ready
                                                 :bucket-name       bucketname
                                                 :object-name       objectname
-                                                :object-store-cred {:href "credential/my-cred"}}
+                                                :credential "credential/my-cred"}
                                                {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))))

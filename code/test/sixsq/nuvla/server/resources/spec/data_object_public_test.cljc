@@ -28,7 +28,7 @@
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :object-type :state :object-name :bucket-name :object-store-cred}]
+                :object-type :state :object-name :bucket-name :credential}]
       (stu/is-invalid ::do-public/data-object (dissoc root k)))
 
     ;; optional keywords

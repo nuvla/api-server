@@ -14,7 +14,7 @@
     (stu/is-valid ::dot-generic/template root)
 
     ;; mandatory keywords
-    (doseq [k #{:object-type :object-store-cred :bucket-name :object-name}]
+    (doseq [k #{:object-type :credential :bucket-name :object-name}]
       (stu/is-invalid ::dot-generic/template (dissoc root k)))
 
     ;; optional keywords

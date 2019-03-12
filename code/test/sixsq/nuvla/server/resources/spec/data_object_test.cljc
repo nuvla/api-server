@@ -15,13 +15,13 @@
               :object-name       "object/name"
               :bucket-name       "bucket-name"
               :object-type       "alpha"
-              :object-store-cred {:href "credential/foo"}
+              :credential "credential/foo"
               :content-type      "text/html; charset=utf-8"}]
 
     (stu/is-valid :cimi.test/data-object root)
 
     ;; mandatory keywords
-    (doseq [k #{:state :object-name :bucket-name :object-type :object-store-cred}]
+    (doseq [k #{:state :object-name :bucket-name :object-type :credential}]
       (stu/is-invalid :cimi.test/data-object (dissoc root k)))
 
     ;; optional keywords

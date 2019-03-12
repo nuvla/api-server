@@ -140,11 +140,12 @@
   [{:keys [type] :as credential}]
 
   ;; FIXME: Find a better solution for dispatching on credential type.
-  (case type
-    minio/credential-type [(:access-key credential)
-                           (:secret-key credential)]
-    exoscale/credential-type [(:exoscale-api-key credential)
-                              (:exoscale-api-secret-key credential)]))
+  (cond
+    (= minio/credential-type type) [(:access-key credential)
+                                    (:secret-key credential)]
+    (= exoscale/credential-type type) [(:exoscale-api-key credential)
+                                       (:exoscale-api-secret-key credential)]
+    :else nil))
 
 
 (defn is-s3-service?
@@ -191,19 +192,20 @@
     (let [credential (crud/retrieve-by-id-as-admin s3-cred-id)
           [key secret] (extract-s3-key-secret credential)
           endpoint (extract-s3-endpoint credential)]
-      {:key      key
-       :secret   secret
-       :endpoint endpoint})))
+      (when (and key secret endpoint)
+        {:key      key
+         :secret   secret
+         :endpoint endpoint}))))
 
 
 (defn ok-to-add-data-resource?
   "Determines if S3 conditions are met on S3 for the user to safely add an
   external object resource. If everything is OK, then the resource itself is
   returned. Otherwise an error response map is thrown"
-  [{:keys [bucket-name object-store-cred] :as resource} request]
-  (let [s3-client (-> object-store-cred
-                      credential->s3-client-cfg
-                      get-s3-client)]
+  [{:keys [bucket-name credential] :as resource} request]
+  (let [s3-client (some-> credential
+                          credential->s3-client-cfg
+                          get-s3-client)]
 
     ;; When the requested bucket exists, but the user doesn't have permission to it :
     ;; The external object resource must not be created."
@@ -243,8 +245,8 @@
 (defn add-s3-size
   "Adds a size attribute to external object if present in metadata
   or returns untouched data object. Ignore any S3 exception "
-  [{:keys [object-store-cred bucket-name object-name] :as resource}]
-  (let [s3-client (-> object-store-cred
+  [{:keys [credential bucket-name object-name] :as resource}]
+  (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
         size (try
@@ -258,8 +260,8 @@
 (defn add-s3-md5sum
   "Adds a md5sum attribute to data object if present in metadata
   or returns untouched data object. Ignore any S3 exception"
-  [{:keys [object-store-cred bucket-name object-name] :as resource}]
-  (let [s3-client (-> object-store-cred
+  [{:keys [credential bucket-name object-name] :as resource}]
+  (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
         md5 (try
@@ -286,8 +288,8 @@
 
 (defn set-public-read-object
   "Returns the untouched resource. Side effect is only on S3 permissions"
-  [{:keys [object-store-cred bucket-name object-name] :as resource}]
-  (let [s3-client (-> object-store-cred
+  [{:keys [credential bucket-name object-name] :as resource}]
+  (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))]
     (try-set-public-read-object s3-client bucket-name object-name)
@@ -300,8 +302,8 @@
 
 
 (defn add-s3-url
-  [{:keys [object-store-cred bucket-name object-name] :as resource}]
-  (let [s3-client (-> object-store-cred
+  [{:keys [credential bucket-name object-name] :as resource}]
+  (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))]
     (assoc resource :url (s3-url s3-client bucket-name object-name))))

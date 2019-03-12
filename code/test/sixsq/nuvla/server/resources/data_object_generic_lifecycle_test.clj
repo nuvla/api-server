@@ -3,7 +3,6 @@
     [clojure.test :refer [deftest join-fixtures use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
@@ -22,22 +21,22 @@
 
 (defn data-object
   []
-  {:bucket-name       "my-bucket"
-   :object-store-cred {:href do-ltu/*s3-credential-id*}
-   :content-type      "application/gzip"
-   :object-name       "my/obj/name-1"})
+  {:bucket-name  "my-bucket"
+   :credential   do-ltu/*s3-credential-id*
+   :content-type "application/gzip"
+   :object-name  "my/obj/name-1"})
 
 
-#_(deftest lifecycle
+(deftest lifecycle
   (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-generic/object-type)
                             (data-object)))
 
 
 #_(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id data-obj/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
-                            [resource-uri :post]])))
+    (let [resource-uri (str p/service-context (u/new-resource-id data-obj/resource-type))]
+      (ltu/verify-405-status [[base-uri :options]
+                              [base-uri :delete]
+                              [resource-uri :options]
+                              [resource-uri :post]])))
 
 

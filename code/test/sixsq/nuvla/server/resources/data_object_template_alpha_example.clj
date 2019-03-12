@@ -19,7 +19,7 @@
 (def data-object-keys-spec
   (u/remove-req do/common-data-object-attrs #{::do/bucket-name
                                               ::do/object-name
-                                              ::do/object-store-cred}))
+                                              ::do/credential}))
 
 (def data-object-alpha-keys-spec
   (su/merge-keys-specs [data-object-keys-spec

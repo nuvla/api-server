@@ -81,7 +81,7 @@
 
         valid-service {:acl      valid-acl
                        :parent   service-group-id
-                       :type     "docker"
+                       :type     "s3"
                        :endpoint "https://minio.example.org:9000"
                        :state    "STARTED"}
 
@@ -267,7 +267,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 403)))
 
-              ;;Deleting a missing S3 object should succeed
+              ;; Deleting a missing S3 object should succeed
               (with-redefs [s3/bucket-exists? (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found
                             s3/delete-s3-bucket delete-s3-bucket-not-empty]
