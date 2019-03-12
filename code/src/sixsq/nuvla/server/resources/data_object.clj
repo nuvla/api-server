@@ -307,8 +307,8 @@
   [{:keys [type content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-new state-uploading} "upload")
   (let [object (if (not-empty object)
-                      object
-                      (format "%s/%s" runUUID filename))
+                 object
+                 (format "%s/%s" runUUID filename))
         obj-store-conf (s3/credential->s3-client-cfg credential)]
     (log/info "Requesting upload url:" object)
     (s3/generate-url obj-store-conf bucket object :put

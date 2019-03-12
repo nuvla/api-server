@@ -7,17 +7,17 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as cred]
+    [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as cred-tpl]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
     [sixsq.nuvla.server.resources.infrastructure-service :as service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic])
+    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import
     (com.amazonaws AmazonServiceException)))
 

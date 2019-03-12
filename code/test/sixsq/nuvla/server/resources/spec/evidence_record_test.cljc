@@ -17,17 +17,17 @@
 
 
 (deftest evidence-record-schema-check
-  (let [root (-> {:id "evidence-record/1234"
+  (let [root (-> {:id            "evidence-record/1234"
                   :resource-type "evidence-record"
-                  :created timestamp
-                  :updated timestamp
+                  :created       timestamp
+                  :updated       timestamp
 
-                  :end-time   timestamp
-                  :start-time timestamp
-                  :plan-id    "b12345"
-                  :passed     true
-                  :class      "className"
-                  :log        ["log1", "log2"]}
+                  :end-time      timestamp
+                  :start-time    timestamp
+                  :plan-id       "b12345"
+                  :passed        true
+                  :class         "className"
+                  :log           ["log1", "log2"]}
                  (assoc :acl valid-acl))]
 
     (stu/is-valid ::evidence-record/schema root)

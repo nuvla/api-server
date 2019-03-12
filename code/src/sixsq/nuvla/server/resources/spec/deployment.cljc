@@ -115,24 +115,24 @@
 (s/def ::data-object-id (s/and string? data-object-id?))
 
 (s/def ::data-objects
-       (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
-           (assoc :name "data-objects"
-                  :json-schema/name "data-objects"
-                  :json-schema/type "Array"
-                  :json-schema/providerMandatory false
-                  :json-schema/consumerMandatory false
-                  :json-schema/mutable true
-                  :json-schema/consumerWritable true
-                  :json-schema/indexed false
+  (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
+      (assoc :name "data-objects"
+             :json-schema/name "data-objects"
+             :json-schema/type "Array"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+             :json-schema/indexed false
 
-                  :json-schema/displayName "data objects"
-                  :json-schema/description "list of data object identifiers"
-                  :json-schema/help "list of data object identifiers to make available to deployment"
-                  :json-schema/group "data"
-                  :json-schema/category "data"
-                  :json-schema/order 30
-                  :json-schema/hidden false
-                  :json-schema/sensitive false)))
+             :json-schema/displayName "data objects"
+             :json-schema/description "list of data object identifiers"
+             :json-schema/help "list of data object identifiers to make available to deployment"
+             :json-schema/group "data"
+             :json-schema/category "data"
+             :json-schema/order 30
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 
 (def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")

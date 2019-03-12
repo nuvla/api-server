@@ -26,21 +26,21 @@
                             (eo/upload-fn {:state eo/state-ready} {}))))
 
     ;; generic data object
-    (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
-                                         :content-type      "application/tar+gzip"
+    (is (str/starts-with? (eo/upload-fn {:state        eo/state-new
+                                         :content-type "application/tar+gzip"
                                          :bucket       bucketname
                                          :object       objectname
-                                         :credential "credential/my-cred"}
+                                         :credential   "credential/my-cred"}
                                         {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))
 
     ;; data object report
-    (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
-                                         :content-type      "application/tar+gzip"
+    (is (str/starts-with? (eo/upload-fn {:state        eo/state-new
+                                         :content-type "application/tar+gzip"
                                          :bucket       bucketname
-                                         :credential "credential/my-cred"
-                                         :runUUID           runUUID
-                                         :filename          filename}
+                                         :credential   "credential/my-cred"
+                                         :runUUID      runUUID
+                                         :filename     filename}
                                         {})
                           (format "https://%s/%s/%s/%s?" s3-host bucketname runUUID filename)))))
 
@@ -51,9 +51,9 @@
       (is (thrown-with-msg? ExceptionInfo (re-pattern expected-msg)
                             (eo/download-subtype {:state eo/state-new} {}))))
 
-    (is (str/starts-with? (eo/download-subtype {:state             eo/state-ready
-                                                :bucket       bucketname
-                                                :object       objectname
+    (is (str/starts-with? (eo/download-subtype {:state      eo/state-ready
+                                                :bucket     bucketname
+                                                :object     objectname
                                                 :credential "credential/my-cred"}
                                                {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))))

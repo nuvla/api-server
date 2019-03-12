@@ -38,16 +38,16 @@
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
         create-import-href
-        {:name                    name-attr
-         :description             description-attr
-                            :tags tags-attr
-         :template                {:href                    href
-                                   :project-id              "my-project-id"
-                                   :private-key-id          "abcde1234"
-                                   :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-                                   :client-email            "1234-compute@developer.gserviceaccount.com"
-                                   :client-id               "98765"
-                                   :infrastructure-services []}}]
+        {:name        name-attr
+         :description description-attr
+         :tags        tags-attr
+         :template    {:href                    href
+                       :project-id              "my-project-id"
+                       :private-key-id          "abcde1234"
+                       :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
+                       :client-email            "1234-compute@developer.gserviceaccount.com"
+                       :client-id               "98765"
+                       :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

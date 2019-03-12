@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.data-object-generic-lifecycle-test
   (:require
     [clojure.test :refer [deftest join-fixtures use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.data-object-template-generic :as data-obj-generic]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
@@ -21,10 +21,10 @@
 
 (defn data-object
   []
-  {:bucket  "my-bucket"
+  {:bucket       "my-bucket"
    :credential   do-ltu/*s3-credential-id*
    :content-type "application/gzip"
-   :object  "my/obj/name-1"})
+   :object       "my/obj/name-1"})
 
 
 (deftest lifecycle

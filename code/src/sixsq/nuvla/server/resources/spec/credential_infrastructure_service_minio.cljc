@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-minio
-    (:require
-      [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.credential :as cred]
-      [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
-      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as service]
-      [sixsq.nuvla.server.util.spec :as su]))
+  (:require
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential :as cred]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as service]
+    [sixsq.nuvla.server.util.spec :as su]))
 
 
 (s/def ::schema

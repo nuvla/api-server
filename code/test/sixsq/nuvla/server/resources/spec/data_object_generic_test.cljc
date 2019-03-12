@@ -28,8 +28,8 @@
 
     (stu/is-valid ::do-generic/data-object
                   (merge root {:content-type "content-type"
-                               :size        42
-                               :md5sum      "3deb5ba5d971c85dd979b7466debfdee"}))
+                               :size         42
+                               :md5sum       "3deb5ba5d971c85dd979b7466debfdee"}))
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl

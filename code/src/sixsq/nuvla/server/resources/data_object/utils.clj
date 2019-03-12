@@ -3,10 +3,10 @@
     [clj-time.coerce :as tc]
     [clj-time.core :as t]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
     [sixsq.nuvla.server.resources.credential-template-service-exoscale :as exoscale]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.resources.common.crud :as crud])
+    [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.amazonaws AmazonServiceException HttpMethod SdkClientException)
     (com.amazonaws.auth AWSStaticCredentialsProvider BasicAWSCredentials)
@@ -209,7 +209,7 @@
 
     ;; When the requested bucket exists, but the user doesn't have permission to it :
     ;; The external object resource must not be created."
-    (uploadable-bucket? s3-client bucket)              ;; Throws if the bucket can't be written to.
+    (uploadable-bucket? s3-client bucket)                   ;; Throws if the bucket can't be written to.
 
     (if (bucket-creation-ok? s3-client bucket)
       resource

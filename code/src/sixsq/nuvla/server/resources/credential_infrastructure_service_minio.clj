@@ -5,8 +5,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as cred]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-mino]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as cred-tpl-mino-spec]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-minio :as cred-minio]))
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-minio :as cred-minio]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as cred-tpl-mino-spec]))
 
 
 ;;

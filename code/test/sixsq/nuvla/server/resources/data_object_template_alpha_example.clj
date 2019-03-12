@@ -46,8 +46,8 @@
 ;;
 
 (def ^:const resource-template
-  {:type type
-   :alphaKey   1001})
+  {:type     type
+   :alphaKey 1001})
 
 
 ;;
