@@ -11,9 +11,24 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
+    [sixsq.nuvla.server.resources.infrastructure-service :as service]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic])
   (:import
     (com.amazonaws AmazonServiceException)))
+
+
+(def service-group-base-uri (str p/service-context service-group/resource-type))
+
+
+(def service-base-uri (str p/service-context service/resource-type))
+
+
+(def credential-base-uri (str p/service-context credential/resource-type))
 
 
 (def ^:const user-info-header "jane USER ANON")
@@ -27,8 +42,6 @@
 (def ^:const username-no-view "other")
 (def ^:const user-no-view-info-header (str username-no-view " USER ANON"))
 
-(def obj-store-endpoint "https://s3.cloud.com")
-(def connector-name "connector-name")
 
 (defn build-session
   [identity]
@@ -38,7 +51,6 @@
 
 (def session-admin (build-session admin-info-header))
 (def session-user (build-session user-info-header))
-(def session-user-creds (build-session user-creds-info-header))
 
 (def session-user-view (build-session user-view-info-header))
 (def session-user-no-view (build-session user-no-view-info-header))
@@ -49,49 +61,70 @@
 
 (defn create-cloud-cred
   [user-session]
-  (let [cred-create {:template
-                     {:href      (str cred-tpl/resource-type "/" cred-api-key/method)
-                      :key       "key"
-                      :secret    "secret"
-                      :quota     7
-                      :connector {:href (str cred/resource-type "/" connector-name)}}}
-        uri (-> user-session
-                (request (str p/service-context cred/resource-type)
-                         :request-method :post
-                         :body (json/write-str cred-create))
-                (ltu/body->edn)
-                (ltu/is-status 201)
-                (ltu/location))]
-    (alter-var-root #'*s3-credential-id* (constantly uri))))
+  (let [valid-service-group {:name          "my-service-group"
+                             :description   "my-description"
+                             :documentation "http://my-documentation.org"}
+
+        service-group-id (-> user-session
+                             (request service-group-base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-service-group))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        valid-acl {:owner {:principal "ADMIN"
+                           :type      "ROLE"}
+                   :rules [{:principal "USER"
+                            :type      "ROLE"
+                            :right     "VIEW"}]}
+
+        valid-service {:acl      valid-acl
+                       :parent   service-group-id
+                       :type     "docker"
+                       :endpoint "https://minio.example.org:9000"
+                       :state    "STARTED"}
+
+        valid-create {:name        "minio"
+                      :description "minio"
+                      :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                      infra-service-tpl-generic/method)}
+                                          valid-service)}
+
+        service-id (-> user-session
+                       (request service-base-uri
+                                :request-method :post
+                                :body (json/write-str valid-create))
+                       (ltu/body->edn)
+                       (ltu/is-status 201)
+                       (ltu/location))
+
+        infrastructure-services-value [service-id]
+
+        href (str cred-tpl/resource-type "/" cred-tpl-minio/method)
+
+        create-import-href {:name        "minio credential"
+                            :description "minio credential"
+                            :template    {:href                    href
+                                          :infrastructure-services infrastructure-services-value
+                                          :access-key              "my-access-key"
+                                          :secret-key              "my-secret-key"}}
+
+        cred-id (-> user-session
+                    (request credential-base-uri
+                             :request-method :post
+                             :body (json/write-str create-import-href))
+                    (ltu/body->edn)
+                    (ltu/is-status 201)
+                    (ltu/location))]
+
+    (alter-var-root #'*s3-credential-id* (constantly cred-id))))
 
 
-(defn create-cloud-cred-fixture-other-user!
-  [f]
-  (create-cloud-cred session-user-creds)
-  (f))
-
-
-(defn create-cloud-cred-fixture!
+(defn create-s3-credential!
   [f]
   (create-cloud-cred session-user)
   (f))
-
-
-#_(defn create-connector-fixture!
-  [f]
-  (let [con-create {:template {:href                (str cred-tpl/resource-type "/" con-alpha/cloud-service-type)
-                               :alphaKey            1234
-                               :instanceName        connector-name
-                               :objectStoreEndpoint obj-store-endpoint}}]
-    (-> session-admin
-        (request (str p/service-context cred/resource-type)
-                 :request-method :post
-                 :body (json/write-str con-create))
-        (ltu/body->edn)
-        (ltu/is-status 201)
-        (ltu/location))
-    (f)))
-
 
 
 (defn delete-s3-object-not-authorized [_ _]

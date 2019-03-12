@@ -27,8 +27,8 @@
              :infrastructure-services ["infrastructure-service/service-1"
                                        "infrastructure-service/service-2"]
 
-             :username                "username"
-             :password                "password"}]
+             :access-key              "access-key"
+             :secret-key              "secret-key"}]
 
     (stu/is-valid ::cred-infra-service-minio/schema tpl)
 

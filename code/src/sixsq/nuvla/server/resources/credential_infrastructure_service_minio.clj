@@ -14,12 +14,12 @@
 ;;
 
 (defmethod cred/tpl->credential cred-tpl-mino/credential-type
-  [{:keys [type method username password infrastructure-services acl]} request]
+  [{:keys [type method access-key secret-key infrastructure-services acl]} request]
   (let [resource (cond-> {:resource-type           cred/resource-type
                           :type                    type
                           :method                  method
-                          :username                username
-                          :password                password
+                          :access-key              access-key
+                          :secret-key              secret-key
                           :infrastructure-services infrastructure-services}
                          acl (assoc :acl acl))]
     [nil resource]))

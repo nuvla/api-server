@@ -7,7 +7,7 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::username
+(s/def ::access-key
   (-> (st/spec string?)
       (assoc :name "username"
              :json-schema/name "username"
@@ -26,7 +26,7 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::password
+(s/def ::secret-key
   (-> (st/spec string?)
       (assoc :name "password"
              :json-schema/name "password"
@@ -46,13 +46,13 @@
 
 
 (def credential-template-keys-spec-opt
-  {:opt-un [::username
-            ::password]})
+  {:opt-un [::access-key
+            ::secret-key]})
 
 
 (def credential-template-keys-spec-req
-  {:req-un [::username
-            ::password]})
+  {:req-un [::access-key
+            ::secret-key]})
 
 
 ;; Defines the contents of the credential-template resource itself.

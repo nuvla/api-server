@@ -23,15 +23,15 @@
              :method                  service/method
              :infrastructure-services ["infrastructure-service/service-1"
                                        "infrastructure-service/service-2"]
-             :username                "foo"
-             :password                "bar"}]
+             :access-key              "foo"
+             :secret-key              "bar"}]
 
     (is (s/valid? ::service-spec/schema tpl))
 
     ;; mandatory keys
-    (doseq [k (-> tpl (dissoc :infrastructure-services :username :password) keys set)]
+    (doseq [k (-> tpl (dissoc :infrastructure-services :access-key :secret-key) keys set)]
       (stu/is-invalid ::service-spec/schema (dissoc tpl k)))
 
     ;; optional keys
-    (doseq [k #{:infrastructure-services :username :password}]
+    (doseq [k #{:infrastructure-services :access-key :secret-key}]
       (stu/is-valid ::service-spec/schema (dissoc tpl k)))))

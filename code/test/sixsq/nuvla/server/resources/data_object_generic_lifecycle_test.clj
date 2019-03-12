@@ -13,11 +13,12 @@
 
 
 (use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
-                                    #_do-ltu/create-connector-fixture!
-                                    #_do-ltu/create-cloud-cred-fixture!
+                                    do-ltu/create-s3-credential!
                                     do-ltu/s3-redefs!]))
 
+
 (def base-uri (str p/service-context data-obj/resource-type))
+
 
 (defn data-object
   []

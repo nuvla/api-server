@@ -29,8 +29,8 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        username-value "my-username"
-        password-value "my-password"
+        access-key-value "my-access-key"
+        secret-key-value "my-secret-key"
 
         infrastructure-services-value ["infrastructure-service/alpha"
                                        "infrastructure-service/beta"]
@@ -52,8 +52,8 @@
                             :tags        tags-attr
                             :template    {:href                    href
                                           :infrastructure-services infrastructure-services-value
-                                          :username                username-value
-                                          :password                password-value}}]
+                                          :access-key              access-key-value
+                                          :secret-key              secret-key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -115,7 +115,7 @@
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
-                    username password
+                    access-key secret-key
                     infrastructure-services]} (-> session-user
                                                   (request abs-uri)
                                                   (ltu/body->edn)
@@ -126,8 +126,8 @@
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is (= username username-value))
-        (is (= password password-value))
+        (is (= access-key access-key-value))
+        (is (= secret-key secret-key-value))
         (is (= infrastructure-services infrastructure-services-value)))
 
       ;; delete the credential
@@ -136,15 +136,3 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))))
-
-
-
-
-
-
-
-
-
-
-
-

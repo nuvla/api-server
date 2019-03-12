@@ -309,7 +309,7 @@
   (let [object-name (if (not-empty object-name)
                       object-name
                       (format "%s/%s" runUUID filename))
-        obj-store-conf (s3/format-creds-for-s3-api object-store-cred)]
+        obj-store-conf (s3/credential->s3-client-cfg object-store-cred)]
     (log/info "Requesting upload url:" object-name)
     (s3/generate-url obj-store-conf bucket-name object-name :put
                      {:ttl (or ttl s3/default-ttl) :content-type content-type :filename filename})))
@@ -369,7 +369,7 @@
   [{:keys [bucket-name object-name object-store-cred] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-ready} "download")
   (log/info "Requesting download url: " object-name)
-  (s3/generate-url (s3/format-creds-for-s3-api object-store-cred)
+  (s3/generate-url (s3/credential->s3-client-cfg object-store-cred)
                    bucket-name object-name :get
                    {:ttl (or ttl s3/default-ttl)}))
 
@@ -406,7 +406,7 @@
    {{keep-object? :keep-s3-object, keep-bucket? :keep-s3-bucket} :body :as request}]
   (when-not keep-object?
     (try
-      (s3/try-delete-s3-object (s3/format-creds-for-s3-api object-store-cred) bucket-name object-name)
+      (s3/try-delete-s3-object (s3/credential->s3-client-cfg object-store-cred) bucket-name object-name)
       (log/infof "object %s from bucket %s has been deleted" object-name bucket-name)
       (catch Exception e
         ;; When the user requests to delete an S3 object that no longer exists,
@@ -419,7 +419,7 @@
   ;; Request will fail when the bucket isn't empty.  These errors are ignored.
   (when-not keep-bucket?
     (try
-      (s3/try-delete-s3-bucket (s3/format-creds-for-s3-api object-store-cred) bucket-name)
+      (s3/try-delete-s3-bucket (s3/credential->s3-client-cfg object-store-cred) bucket-name)
       (log/debugf "bucket %s became empty and was deleted" bucket-name)
       (catch Exception _)))
   (delete-impl request))
