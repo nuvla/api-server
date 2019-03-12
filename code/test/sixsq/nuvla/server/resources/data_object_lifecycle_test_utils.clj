@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.credential-template :as credt]
+    [sixsq.nuvla.server.resources.credential-template :as cred-tpl]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
@@ -44,16 +44,17 @@
 (def session-user-no-view (build-session user-no-view-info-header))
 
 
-(def ^:dynamic *cred-uri* nil)
+(def ^:dynamic *s3-credential-id* nil)
 
-#_(defn create-cloud-cred
+
+(defn create-cloud-cred
   [user-session]
   (let [cred-create {:template
-                     {:href      (str credt/resource-type "/" cred-api-key/method)
+                     {:href      (str cred-tpl/resource-type "/" cred-api-key/method)
                       :key       "key"
                       :secret    "secret"
                       :quota     7
-                      :connector {:href (str c/resource-type "/" connector-name)}}}
+                      :connector {:href (str cred/resource-type "/" connector-name)}}}
         uri (-> user-session
                 (request (str p/service-context cred/resource-type)
                          :request-method :post
@@ -61,26 +62,29 @@
                 (ltu/body->edn)
                 (ltu/is-status 201)
                 (ltu/location))]
-    (alter-var-root #'*cred-uri* (constantly uri))))
+    (alter-var-root #'*s3-credential-id* (constantly uri))))
 
-#_(defn create-cloud-cred-fixture-other-user!
+
+(defn create-cloud-cred-fixture-other-user!
   [f]
   (create-cloud-cred session-user-creds)
   (f))
 
-#_(defn create-cloud-cred-fixture!
+
+(defn create-cloud-cred-fixture!
   [f]
   (create-cloud-cred session-user)
   (f))
 
+
 #_(defn create-connector-fixture!
   [f]
-  (let [con-create {:template {:href                (str cont/resource-type "/" con-alpha/cloud-service-type)
+  (let [con-create {:template {:href                (str cred-tpl/resource-type "/" con-alpha/cloud-service-type)
                                :alphaKey            1234
                                :instanceName        connector-name
                                :objectStoreEndpoint obj-store-endpoint}}]
     (-> session-admin
-        (request (str p/service-context c/resource-type)
+        (request (str p/service-context cred/resource-type)
                  :request-method :post
                  :body (json/write-str con-create))
         (ltu/body->edn)
