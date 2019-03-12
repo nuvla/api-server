@@ -6,14 +6,14 @@
     [sixsq.nuvla.server.resources.spec.data-object-generic :as do-generic]
     [sixsq.nuvla.server.resources.spec.data-object-template-generic :as dot-generic]))
 
-(def ^:const type "generic")
+(def ^:const data-object-type "generic")
 
 
 ;;
 ;; resource
 ;;
 (def ^:const resource
-  {:type         type
+  {:type         data-object-type
    :content-type "content/type"
    :credential   "credential/cloud-cred"
    :bucket       "bucket"
@@ -32,16 +32,16 @@
 ;; multimethods for validation
 ;;
 (def validate-fn (u/create-spec-validation-fn ::do-generic/data-object))
-(defmethod do/validate-subtype type
+(defmethod do/validate-subtype data-object-type
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::dot-generic/data-object-create))
-(defmethod do/create-validate-subtype type
+(defmethod do/create-validate-subtype data-object-type
   [resource]
   (create-validate-fn resource))
 
 (def validate-fn (u/create-spec-validation-fn ::dot-generic/template))
-(defmethod dot/validate-subtype-template type
+(defmethod dot/validate-subtype-template data-object-type
   [resource]
   (validate-fn resource))

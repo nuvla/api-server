@@ -6,13 +6,13 @@
     [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]
     [sixsq.nuvla.server.resources.spec.data-object-template-public :as dot-public]))
 
-(def ^:const type "public")
+(def ^:const data-object-type "public")
 
 ;;
 ;; resource
 ;;
 (def ^:const resource
-  {:type         type
+  {:type         data-object-type
    :content-type "content/type"
    :credential   "credential/cloud-cred"
    :bucket       "bucket"
@@ -31,16 +31,16 @@
 ;; multimethods for validation
 ;;
 (def validate-fn (u/create-spec-validation-fn ::do-public/data-object))
-(defmethod do/validate-subtype type
+(defmethod do/validate-subtype data-object-type
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::dot-public/data-object-create))
-(defmethod do/create-validate-subtype type
+(defmethod do/create-validate-subtype data-object-type
   [resource]
   (create-validate-fn resource))
 
 (def validate-fn (u/create-spec-validation-fn ::dot-public/template))
-(defmethod dot/validate-subtype-template type
+(defmethod dot/validate-subtype-template data-object-type
   [resource]
   (validate-fn resource))
