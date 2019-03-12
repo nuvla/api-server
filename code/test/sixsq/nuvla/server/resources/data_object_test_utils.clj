@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.external-object-test-utils
+(ns sixsq.nuvla.server.resources.data-object-test-utils
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
@@ -7,28 +7,33 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
-    [sixsq.nuvla.server.resources.common.utils :as u]   ;;con
-    [sixsq.nuvla.server.resources.data-object :as eo] ;;ct
-    [sixsq.nuvla.server.resources.data-object-template :as eot]
+    [sixsq.nuvla.server.resources.data-object :as data-obj]
+    [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
-  (:import (clojure.lang ExceptionInfo)))
+  (:import
+    (clojure.lang ExceptionInfo)))
 
 
-(def base-uri (str p/service-context eo/resource-type))
-(def tpl-base-uri (str p/service-context eot/resource-type))
+(def base-uri (str p/service-context data-obj/resource-type))
+
+
+(def tpl-base-uri (str p/service-context data-obj-tpl/resource-type))
+
 
 (defn new-instance-name
   [objectType]
   (str objectType "-" (System/currentTimeMillis)))
 
+
 ;;
 ;; Tests.
 ;;
 
-(defn external-object-lifecycle
+(defn data-object-lifecycle
   [objectType]
-  (let [href (str eot/resource-type "/" objectType)
-        template-url (str p/service-context eot/resource-type "/" objectType)
+
+  (let [href (str data-obj-tpl/resource-type "/" objectType)
+        template-url (str p/service-context data-obj-tpl/resource-type "/" objectType)
 
         session-anon (-> (ltu/ring-app)
                          session
@@ -40,12 +45,12 @@
                  (ltu/body->edn)
                  (ltu/is-status 200))
         template (get-in resp [:response :body])
-        valid-create {:externalObjectTemplate (-> template
-                                                  ltu/strip-unwanted-attrs
-                                                  (assoc :instanceName (new-instance-name objectType)))}
-        href-create {:externalObjectTemplate {:href         href
-                                              :instanceName (new-instance-name objectType)}}
-        invalid-create (assoc-in valid-create [:externalObjectTemplate :invalid] "BAD")]
+        valid-create {:template (-> template
+                                    ltu/strip-unwanted-attrs
+                                    (assoc :instanceName (new-instance-name objectType)))}
+        href-create {:template {:href         href
+                                :instanceName (new-instance-name objectType)}}
+        invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
     ;; admin create with invalid template fails
     (-> session-admin
@@ -56,7 +61,7 @@
         (ltu/is-status 400))
 
 
-    ;; full external object lifecycle as administrator should work
+    ;; full data object lifecycle as administrator should work
     (let [uri (-> session-admin
                   (request base-uri
                            :request-method :post
@@ -67,7 +72,7 @@
           abs-uri (str p/service-context uri)]
 
 
-      ;; create again with the same external object instance name should fail
+      ;; create again with the same data object instance name should fail
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -92,9 +97,9 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri eo/collection-uri)
+                        (ltu/is-resource-uri data-obj/collection-type)
                         (ltu/is-count 1)
-                        (ltu/entries eo/resource-tag))]
+                        (ltu/entries))]
         (is ((set (map :id entries)) uri))
 
         ;; verify that all entries are accessible
@@ -143,17 +148,17 @@
           (ltu/body->edn)
           (ltu/is-status 404)))))
 
-(defn external-object-template-is-registered
+(defn data-object-template-is-registered
   [objectType]
-  (let [id (str eot/resource-type "/" objectType)
+  (let [id (str data-obj-tpl/resource-type "/" objectType)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
 (defn template-lifecycle
   [objectType]
 
-  ;; Get all registered external object templates.
-  ;; There should be only one external object of this type.
+  ;; Get all registered data object templates.
+  ;; There should be only one data object of this type.
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
@@ -163,19 +168,19 @@
                     (request tpl-base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
-                    (ltu/is-resource-uri eot/collection-uri)
+                    (ltu/is-resource-uri data-obj-tpl/collection-type)
                     (ltu/is-count pos?)
                     (ltu/is-operation-absent "add")
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
                     (ltu/is-operation-absent "describe")
-                    (ltu/entries eot/resource-tag))
+                    (ltu/entries))
         ids (set (map :id entries))
         types (set (map :objectType entries))]
-    (is (contains? ids (str eot/resource-type "/" objectType)))
+    (is (contains? ids (str data-obj-tpl/resource-type "/" objectType)))
     (is (contains? types objectType))
 
-    ;; Get external object template and work with it.
+    ;; Get data object template and work with it.
     (let [entry (first (filter #(= objectType (:objectType %)) entries))
           ops (ltu/operations->map entry)
           href (get ops (c/action-uri :describe))

@@ -9,7 +9,7 @@
 ;; multimethods for validation
 
 (def validate-fn (u/create-spec-validation-fn ::do-generic/data-object))
-(defmethod do/validate-subtype dot/object-type
+(defmethod do/validate-subtype dot/data-object-type
   [resource]
   (validate-fn resource))
 

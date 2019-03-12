@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
     [sixsq.nuvla.server.resources.data-object-template-alpha-example :as dotae]
     [sixsq.nuvla.server.resources.data-object-template-generic :as dotg]
@@ -17,8 +16,8 @@
 
 (def collection-uri (str p/service-context dot/resource-type))
 
-(def do-tmpl-ids (map #(format "%s/%s" dot/resource-type %) [dotg/object-type
-                                                             dotae/object-type]))
+(def do-tmpl-ids (map #(format "%s/%s" dot/resource-type %) [dotg/data-object-type
+                                                             dotae/data-object-type]))
 
 (deftest check-retrieve-by-id
   (doseq [eo-tmpl-id do-tmpl-ids]

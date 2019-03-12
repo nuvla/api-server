@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-service-gce
-    (:require
-      [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.credential-template :as ct]
-      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
-      [sixsq.nuvla.server.util.spec :as su]
-      [spec-tools.core :as st]))
+  (:require
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential-template :as ct]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (s/def ::project-id

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-aws
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
@@ -7,64 +7,67 @@
     [spec-tools.core :as st]))
 
 
-
-(s/def ::amazonec2-access-key
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "amazonec2-access-key"
-             :json-schema/name "amazonec2-access-key"
+(s/def ::access-key
+  (-> (st/spec string?)
+      (assoc :name "username"
+             :json-schema/name "username"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "amazonec2-access-key"
-             :json-schema/description "AWS API key"
-             :json-schema/help "AWS API key"
+             :json-schema/displayName "username"
+             :json-schema/description "username for Minio service"
+             :json-schema/help "username for Minio service"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
-(s/def ::amazonec2-secret-key
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "amazonec2-secret-key"
-             :json-schema/name "amazonec2-secret-key"
+(s/def ::secret-key
+  (-> (st/spec string?)
+      (assoc :name "password"
+             :json-schema/name "password"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "amazonec2-secret-key"
-             :json-schema/description "AWS secret API key"
-             :json-schema/help "AWS secret API key"
+             :json-schema/displayName "password"
+             :json-schema/description "password for Minio service"
+             :json-schema/help "password for Minio service"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
-(def credential-template-keys-spec
-  {:req-un [::amazonec2-access-key
-            ::amazonec2-secret-key]})
+(def credential-template-keys-spec-opt
+  {:opt-un [::access-key
+            ::secret-key]})
 
-(def credential-template-create-keys-spec
-  {:req-un [::amazonec2-access-key
-            ::amazonec2-secret-key]})
 
-;; Defines the contents of the api-key CredentialTemplate resource itself.
+(def credential-template-keys-spec-req
+  {:req-un [::access-key
+            ::secret-key]})
+
+
+;; Defines the contents of the credential-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
                      ct-infra-service/credential-template-service-keys-spec
-                     credential-template-keys-spec))
+                     credential-template-keys-spec-opt))
 
-;; Defines the contents of the api-key template used in a create resource.
+
+;; Defines the contents of the credential-template used in a create resource.
 (s/def ::template
   (su/only-keys-maps ct/template-keys-spec
                      ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-create-keys-spec))
+                     credential-template-keys-spec-req))
+
 
 (s/def ::schema-create
   (su/only-keys-maps ct/create-keys-spec

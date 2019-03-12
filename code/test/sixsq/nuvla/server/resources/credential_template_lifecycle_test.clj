@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as service-minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
     [sixsq.nuvla.server.resources.credential-template-service-aws :as service-aws]
     [sixsq.nuvla.server.resources.credential-template-service-azure :as service-azure]
@@ -59,6 +60,7 @@
         types (set (map :type entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" hashed-password/method)
+             (str ct/resource-type "/" service-minio/method)
              (str ct/resource-type "/" service-swarm/method)
              (str ct/resource-type "/" service-aws/method)
              (str ct/resource-type "/" service-azure/method)
@@ -67,6 +69,7 @@
            ids))
     (is (= #{akey/method
              hashed-password/method
+             service-minio/method
              service-swarm/method
              service-aws/method
              service-azure/method
@@ -74,6 +77,7 @@
              service-gce/method} methods))
     (is (= #{akey/credential-type
              hashed-password/credential-type
+             service-minio/credential-type
              service-swarm/credential-type
              service-aws/credential-type
              service-azure/credential-type

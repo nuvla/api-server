@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.spec.credential-service-gce
-    (:require
-      [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.credential :as cred]
-      [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
-      [sixsq.nuvla.server.resources.spec.credential-template :as ps]
-      [sixsq.nuvla.server.resources.spec.credential-template-service-gce :as service]
-      [sixsq.nuvla.server.util.spec :as su]))
+  (:require
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential :as cred]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
+    [sixsq.nuvla.server.resources.spec.credential-template :as ps]
+    [sixsq.nuvla.server.resources.spec.credential-template-service-gce :as service]
+    [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::schema
   (su/only-keys-maps service/credential-template-keys-spec
