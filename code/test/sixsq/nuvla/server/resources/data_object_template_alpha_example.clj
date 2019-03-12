@@ -8,7 +8,7 @@
     [sixsq.nuvla.server.resources.spec.data-object :as do]
     [sixsq.nuvla.server.util.spec :as su]))
 
-(def ^:const object-type "alpha")
+(def ^:const type "alpha")
 
 ;;
 ;; schemas
@@ -17,8 +17,8 @@
 (s/def :cimi.data-object.alpha/alphaKey pos-int?)
 
 (def data-object-keys-spec
-  (u/remove-req do/common-data-object-attrs #{::do/bucket-name
-                                              ::do/object-name
+  (u/remove-req do/common-data-object-attrs #{::do/bucket
+                                              ::do/object
                                               ::do/credential}))
 
 (def data-object-alpha-keys-spec
@@ -46,7 +46,7 @@
 ;;
 
 (def ^:const resource-template
-  {:object-type object-type
+  {:type type
    :alphaKey   1001})
 
 
@@ -63,16 +63,16 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn :cimi/data-object.alpha))
-(defmethod do-resource/validate-subtype object-type
+(defmethod do-resource/validate-subtype type
   [resource]
   (validate-fn resource))
 
 (def validate-fn (u/create-spec-validation-fn :cimi/data-object-template.alpha-create))
-(defmethod do-resource/create-validate-subtype object-type
+(defmethod do-resource/create-validate-subtype type
   [resource]
   (validate-fn resource))
 
 (def validate-fn (u/create-spec-validation-fn :cimi.data-object-template.alpha/template))
-(defmethod dot/validate-subtype-template object-type
+(defmethod dot/validate-subtype-template type
   [resource]
   (validate-fn resource))

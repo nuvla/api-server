@@ -12,7 +12,7 @@
         obj-store-conf {:endpoint (str "https://" os-host)
                         :key      "key"
                         :secret   "secret"}
-        bucket "bucket-name"
+        bucket "bucket"
         obj-name "object/name"
         verb :put]
     (is (str/starts-with? (u/generate-url obj-store-conf bucket obj-name verb)

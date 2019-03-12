@@ -26,14 +26,14 @@
 
 (defn data-object
   []
-  {:bucket-name      "my-bucket"
+  {:bucket      "my-bucket"
    :credential eoltu/*cred-uri*
    :content-type     "application/gzip"
-   :object-name      "my/obj/name-1"})
+   :object      "my/obj/name-1"})
 
 
 (deftest lifecycle
-  (eoltu/full-eo-lifecycle (str p/service-context eot/resource-url "/" public/object-type)
+  (eoltu/full-eo-lifecycle (str p/service-context eot/resource-url "/" public/type)
                            (data-object)))
 
 
@@ -50,10 +50,10 @@
                          (content-type "application/json"))
         session-user (header session-anon authn-info-header eoltu/user-info-header)
         base-uri (str p/service-context eo/resource-name)
-        template (eoltu/get-template (str p/service-context eot/resource-url "/" public/object-type))
+        template (eoltu/get-template (str p/service-context eot/resource-url "/" public/type))
         create-href {:template (-> (data-object)
                                    (assoc :href (:id template))
-                                   (dissoc :object-type))}]
+                                   (dissoc :type))}]
 
     ;; Create the test object.
     (-> session-user

@@ -1,14 +1,13 @@
 (ns sixsq.nuvla.server.resources.spec.data-object
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]))
 
 
-(s/def ::object-type ::cimi-core/identifier)
+(s/def ::type ::cimi-core/identifier)
 
 
-(s/def ::state #{"new" "ready"})
+(s/def ::state #{"NEW" "UPLOADING" "READY"})
 
 
 (def credential-id-regex #"^credential/.*$")
@@ -17,10 +16,10 @@
 (s/def ::credential (s/and string? #(re-matches credential-id-regex %)))
 
 
-(s/def ::object-name ::cimi-core/nonblank-string)
+(s/def ::object ::cimi-core/nonblank-string)
 
 
-(s/def ::bucket-name ::cimi-core/nonblank-string)
+(s/def ::bucket ::cimi-core/nonblank-string)
 
 
 (s/def ::content-type ::cimi-core/nonblank-string)
@@ -38,10 +37,10 @@
 (s/def ::href (s/and string? #(re-matches data-object-template-regex %)))
 
 
-(def common-data-object-attrs {:req-un [::object-type
+(def common-data-object-attrs {:req-un [::type
                                         ::state
-                                        ::object-name
-                                        ::bucket-name
+                                        ::object
+                                        ::bucket
                                         ::credential]
                                :opt-un [::content-type
                                         ::href

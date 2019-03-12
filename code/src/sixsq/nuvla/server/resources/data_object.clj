@@ -36,13 +36,13 @@
                               :right     "MODIFY"}]})
 
 
-(def ^:const state-new "new")
+(def ^:const state-new "NEW")
 
 
-(def ^:const state-uploading "uploading")
+(def ^:const state-uploading "UPLOADING")
 
 
-(def ^:const state-ready "ready")
+(def ^:const state-ready "READY")
 
 
 ;;
@@ -50,12 +50,12 @@
 ;;
 
 (defmulti validate-subtype
-          :object-type)
+          :type)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown External object type: '" (:object-type resource) "'") resource)))
+  (throw (ex-info (str "unknown External object type: '" (:type resource) "'") resource)))
 
 
 (defmethod crud/validate resource-type
@@ -66,16 +66,16 @@
 ;; validate create requests for subclasses of data objects
 ;;
 
-(defn dispatch-on-object-type [resource]
-  (get-in resource [:template :object-type]))
+(defn dispatch-on-type [resource]
+  (get-in resource [:template :type]))
 
 
-(defmulti create-validate-subtype dispatch-on-object-type)
+(defmulti create-validate-subtype dispatch-on-type)
 
 
 (defmethod create-validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown External Object create type: " (dispatch-on-object-type resource) resource) resource)))
+  (throw (ex-info (str "unknown External Object create type: " (dispatch-on-type resource) resource) resource)))
 
 
 (defmethod crud/validate create-type
@@ -89,12 +89,12 @@
 (defmulti validate-subtype
           "Validates the given resource against the specific
            DataObjectTemplate subtype schema."
-          :object-type)
+          :type)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown DataObjectTemplate type: " (:object-type resource)) resource)))
+  (throw (ex-info (str "unknown DataObjectTemplate type: " (:type resource)) resource)))
 
 
 (defmethod crud/validate
@@ -172,8 +172,8 @@
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [object-name bucket-name] :as resource} resource-name]
-  (if-let [new-id (co/bytes->hex (ha/md5 (str object-name bucket-name)))]
+  [{:keys [object bucket] :as resource} resource-name]
+  (if-let [new-id (co/bytes->hex (ha/md5 (str object bucket)))]
     (assoc resource :id (str resource-name "/" new-id))))
 
 ;;
@@ -182,7 +182,7 @@
 
 (defmulti tpl->data-object
           "Transforms the DataObjectTemplate into a DataObject resource."
-          :object-type)
+          :type)
 
 ;; default implementation just updates the resource-type
 
@@ -304,14 +304,14 @@
 (defn upload-fn
   "Provided 'resource' and 'request', returns object storage upload URL.
   It is assumed that the bucket already exists and the user has access to it."
-  [{:keys [object-type content-type bucket-name object-name credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [type content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-new state-uploading} "upload")
-  (let [object-name (if (not-empty object-name)
-                      object-name
+  (let [object (if (not-empty object)
+                      object
                       (format "%s/%s" runUUID filename))
         obj-store-conf (s3/credential->s3-client-cfg credential)]
-    (log/info "Requesting upload url:" object-name)
-    (s3/generate-url obj-store-conf bucket-name object-name :put
+    (log/info "Requesting upload url:" object)
+    (s3/generate-url obj-store-conf bucket object :put
                      {:ttl (or ttl s3/default-ttl) :content-type content-type :filename filename})))
 
 
@@ -337,7 +337,7 @@
 
 
 (defmulti ready-subtype
-          (fn [resource _] (:object-type resource)))
+          (fn [resource _] (:type resource)))
 
 (defmethod ready-subtype :default
   [resource request]
@@ -361,16 +361,16 @@
 
 (defmulti download-subtype
           "Provided 'resource' and 'request', returns object storage download URL."
-          (fn [resource _] (:object-type resource)))
+          (fn [resource _] (:type resource)))
 
 
 
 (defmethod download-subtype :default
-  [{:keys [bucket-name object-name credential] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [bucket object credential] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-ready} "download")
-  (log/info "Requesting download url: " object-name)
+  (log/info "Requesting download url: " object)
   (s3/generate-url (s3/credential->s3-client-cfg credential)
-                   bucket-name object-name :get
+                   bucket object :get
                    {:ttl (or ttl s3/default-ttl)}))
 
 
@@ -402,12 +402,12 @@
 
 
 (defn delete
-  [{:keys [object-name bucket-name credential] :as resource}
+  [{:keys [object bucket credential] :as resource}
    {{keep-object? :keep-s3-object, keep-bucket? :keep-s3-bucket} :body :as request}]
   (when-not keep-object?
     (try
-      (s3/try-delete-s3-object (s3/credential->s3-client-cfg credential) bucket-name object-name)
-      (log/infof "object %s from bucket %s has been deleted" object-name bucket-name)
+      (s3/try-delete-s3-object (s3/credential->s3-client-cfg credential) bucket object)
+      (log/infof "object %s from bucket %s has been deleted" object bucket)
       (catch Exception e
         ;; When the user requests to delete an S3 object that no longer exists,
         ;; the data object resource should be deleted normally.
@@ -419,8 +419,8 @@
   ;; Request will fail when the bucket isn't empty.  These errors are ignored.
   (when-not keep-bucket?
     (try
-      (s3/try-delete-s3-bucket (s3/credential->s3-client-cfg credential) bucket-name)
-      (log/debugf "bucket %s became empty and was deleted" bucket-name)
+      (s3/try-delete-s3-bucket (s3/credential->s3-client-cfg credential) bucket)
+      (log/debugf "bucket %s became empty and was deleted" bucket)
       (catch Exception _)))
   (delete-impl request))
 

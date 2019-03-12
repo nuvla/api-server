@@ -11,17 +11,17 @@
 
 
 (deftest test-schema-check
-  (let [root {:state             "new"
-              :object-name       "object/name"
-              :bucket-name       "bucket-name"
-              :object-type       "alpha"
-              :credential "credential/foo"
-              :content-type      "text/html; charset=utf-8"}]
+  (let [root {:state        "NEW"
+              :object       "object/name"
+              :bucket       "bucket"
+              :type         "alpha"
+              :credential   "credential/foo"
+              :content-type "text/html; charset=utf-8"}]
 
     (stu/is-valid :cimi.test/data-object root)
 
     ;; mandatory keywords
-    (doseq [k #{:state :object-name :bucket-name :object-type :credential}]
+    (doseq [k #{:state :object :bucket :type :credential}]
       (stu/is-invalid :cimi.test/data-object (dissoc root k)))
 
     ;; optional keywords

@@ -46,11 +46,11 @@
 ;; Template validation
 ;;
 
-(defmulti validate-subtype-template :object-type)
+(defmulti validate-subtype-template :type)
 
 (defmethod validate-subtype-template :default
   [resource]
-  (throw (ex-info (str "unknown External object template type: '" (:object-type resource) "'") resource)))
+  (throw (ex-info (str "unknown External object template type: '" (:type resource) "'") resource)))
 
 (defmethod crud/validate resource-type
   [resource]
@@ -68,9 +68,9 @@
 (defn complete-resource
   "Completes the given document with server-managed information:
    resource-type, timestamps, operations, and ACL."
-  [{:keys [object-type] :as resource}]
-  (when object-type
-    (let [id (str resource-type "/" object-type)]
+  [{:keys [type] :as resource}]
+  (when type
+    (let [id (str resource-type "/" type)]
       (-> resource
           (merge {:id            id
                   :resource-type resource-type
@@ -102,10 +102,10 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [object-type]} :body :as request}]
-  (if (get @templates object-type)
+  [{{:keys [type]} :body :as request}]
+  (if (get @templates type)
     (add-impl request)
-    (throw (r/ex-bad-request (str "invalid data object type '" object-type "'")))))
+    (throw (r/ex-bad-request (str "invalid data object type '" type "'")))))
 
 
 (defmethod crud/retrieve resource-type

@@ -200,7 +200,7 @@
   (let [template (get-template template-url)
         create-href {:template (-> template-obj
                                    (assoc :href (:id template))
-                                   (dissoc :object-type))}
+                                   (dissoc :type))}
         create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute

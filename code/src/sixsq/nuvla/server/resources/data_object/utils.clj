@@ -106,8 +106,8 @@
 
 (defn bucket-exists?
   "Function mocked in unit tests"
-  [s3-client bucket-name]
-  (.doesBucketExist s3-client bucket-name))
+  [s3-client bucket]
+  (.doesBucketExist s3-client bucket))
 
 
 (defn head-bucket
@@ -129,8 +129,8 @@
   "Caller should have checked that bucket does not exist yet. If creation
   fails, an Exception is thrown; otherwise true is returned. Mocked in unit
   tests."
-  [s3-client bucket-name]
-  (.createBucket s3-client (CreateBucketRequest. bucket-name))
+  [s3-client bucket]
+  (.createBucket s3-client (CreateBucketRequest. bucket))
   true)
 
 
@@ -168,12 +168,12 @@
 (defn bucket-creation-ok?
   "When the requested bucket doesn't exist and can't be created. The data
   object resource must not be created."
-  [s3-client bucket-name]
+  [s3-client bucket]
   (try
-    (or (bucket-exists? s3-client bucket-name)
-        (create-bucket! s3-client bucket-name))
+    (or (bucket-exists? s3-client bucket)
+        (create-bucket! s3-client bucket))
     (catch Exception e
-      (log/errorf "Error when creating bucket %s: %s" bucket-name (.getMessage e))
+      (log/errorf "Error when creating bucket %s: %s" bucket (.getMessage e))
       false)))
 
 
@@ -186,7 +186,7 @@
 
 
 (defn credential->s3-client-cfg
-  "Need object-type to dispatch on when loading credentials."
+  "Need type to dispatch on when loading credentials."
   [s3-cred-id]
   (when s3-cred-id
     (let [credential (crud/retrieve-by-id-as-admin s3-cred-id)
@@ -202,18 +202,18 @@
   "Determines if S3 conditions are met on S3 for the user to safely add an
   external object resource. If everything is OK, then the resource itself is
   returned. Otherwise an error response map is thrown"
-  [{:keys [bucket-name credential] :as resource} request]
+  [{:keys [bucket credential] :as resource} request]
   (let [s3-client (some-> credential
                           credential->s3-client-cfg
                           get-s3-client)]
 
     ;; When the requested bucket exists, but the user doesn't have permission to it :
     ;; The external object resource must not be created."
-    (uploadable-bucket? s3-client bucket-name)              ;; Throws if the bucket can't be written to.
+    (uploadable-bucket? s3-client bucket)              ;; Throws if the bucket can't be written to.
 
-    (if (bucket-creation-ok? s3-client bucket-name)
+    (if (bucket-creation-ok? s3-client bucket)
       resource
-      (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket-name)))))
+      (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket)))))
 
 
 (defn s3-object-metadata
@@ -245,14 +245,14 @@
 (defn add-s3-size
   "Adds a size attribute to external object if present in metadata
   or returns untouched data object. Ignore any S3 exception "
-  [{:keys [credential bucket-name object-name] :as resource}]
+  [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
         size (try
-               (:contentLength (s3-object-metadata s3-client bucket-name object-name))
+               (:contentLength (s3-object-metadata s3-client bucket object))
                (catch Exception _
-                 (log/warn (str "Could not access the metadata for S3 object " object-name))))]
+                 (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
             size (assoc :size size))))
 
@@ -260,14 +260,14 @@
 (defn add-s3-md5sum
   "Adds a md5sum attribute to data object if present in metadata
   or returns untouched data object. Ignore any S3 exception"
-  [{:keys [credential bucket-name object-name] :as resource}]
+  [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
         md5 (try
-              (:contentMD5 (s3-object-metadata s3-client bucket-name object-name))
+              (:contentMD5 (s3-object-metadata s3-client bucket object))
               (catch Exception _
-                (log/warn (str "Could not access the metadata for S3 object " object-name))))]
+                (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
             md5 (assoc :md5sum md5))))
 
@@ -288,11 +288,11 @@
 
 (defn set-public-read-object
   "Returns the untouched resource. Side effect is only on S3 permissions"
-  [{:keys [credential bucket-name object-name] :as resource}]
+  [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))]
-    (try-set-public-read-object s3-client bucket-name object-name)
+    (try-set-public-read-object s3-client bucket object)
     resource))
 
 
@@ -302,8 +302,8 @@
 
 
 (defn add-s3-url
-  [{:keys [credential bucket-name object-name] :as resource}]
+  [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))]
-    (assoc resource :url (s3-url s3-client bucket-name object-name))))
+    (assoc resource :url (s3-url s3-client bucket object))))

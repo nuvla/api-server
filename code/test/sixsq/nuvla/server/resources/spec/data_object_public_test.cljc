@@ -7,11 +7,13 @@
     [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
+
 (def valid-acl {:owner {:principal "ADMIN"
                         :type      "ROLE"}
                 :rules [{:principal "USER"
                          :type      "ROLE"
                          :right     "VIEW"}]})
+
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.0Z"
@@ -28,7 +30,7 @@
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :object-type :state :object-name :bucket-name :credential}]
+                :type :state :object :bucket :credential}]
       (stu/is-invalid ::do-public/data-object (dissoc root k)))
 
     ;; optional keywords

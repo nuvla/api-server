@@ -13,7 +13,7 @@
                      :secret   "secret"
                      :endpoint s3-endpoint})
 
-(def bucketname "bucket-name")
+(def bucketname "bucket")
 (def runUUID "1-2-3-4-5")
 (def filename "component.1.tgz")
 (def objectname "object/name")
@@ -28,8 +28,8 @@
     ;; generic data object
     (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
                                          :content-type      "application/tar+gzip"
-                                         :bucket-name       bucketname
-                                         :object-name       objectname
+                                         :bucket       bucketname
+                                         :object       objectname
                                          :credential "credential/my-cred"}
                                         {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))
@@ -37,7 +37,7 @@
     ;; data object report
     (is (str/starts-with? (eo/upload-fn {:state             eo/state-new
                                          :content-type      "application/tar+gzip"
-                                         :bucket-name       bucketname
+                                         :bucket       bucketname
                                          :credential "credential/my-cred"
                                          :runUUID           runUUID
                                          :filename          filename}
@@ -52,8 +52,8 @@
                             (eo/download-subtype {:state eo/state-new} {}))))
 
     (is (str/starts-with? (eo/download-subtype {:state             eo/state-ready
-                                                :bucket-name       bucketname
-                                                :object-name       objectname
+                                                :bucket       bucketname
+                                                :object       objectname
                                                 :credential "credential/my-cred"}
                                                {})
                           (format "https://%s/%s/%s?" s3-host bucketname objectname)))))

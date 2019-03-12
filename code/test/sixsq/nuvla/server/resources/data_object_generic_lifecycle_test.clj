@@ -21,14 +21,14 @@
 
 (defn data-object
   []
-  {:bucket-name  "my-bucket"
+  {:bucket  "my-bucket"
    :credential   do-ltu/*s3-credential-id*
    :content-type "application/gzip"
-   :object-name  "my/obj/name-1"})
+   :object  "my/obj/name-1"})
 
 
 (deftest lifecycle
-  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-generic/object-type)
+  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-generic/type)
                             (data-object)))
 
 

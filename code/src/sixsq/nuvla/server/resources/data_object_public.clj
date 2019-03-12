@@ -14,7 +14,7 @@
 ;; multimethods for validation
 
 (def validate-fn (u/create-spec-validation-fn ::do-public/data-object))
-(defmethod do/validate-subtype dot/object-type
+(defmethod do/validate-subtype dot/type
   [resource]
   (validate-fn resource))
 
@@ -26,7 +26,7 @@
   []
   (std-crud/initialize do/resource-type ::do-public/data-object))
 
-(defmethod do/ready-subtype dot/object-type
+(defmethod do/ready-subtype dot/type
   [resource request]
   (-> resource
       (a/can-modify? request)
@@ -38,7 +38,7 @@
       (s3/add-s3-md5sum)
       (db/edit request)))
 
-(defmethod do/download-subtype dot/object-type
+(defmethod do/download-subtype dot/type
   [{:keys [url] :as resource} request]
   (do/verify-state resource #{do/state-ready} "download")
   (log/info "Public download url: " url)
