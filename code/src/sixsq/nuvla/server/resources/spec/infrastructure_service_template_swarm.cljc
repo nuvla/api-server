@@ -50,8 +50,8 @@ on a cloud infrastructure.
 
 
 (def service-template-keys-spec
-  {:req-un [::cloud-service
-            ::service-credential]})
+  {:req-un [::service-credential]
+   :opt-un [::cloud-service]})
 
 
 ;; Defines the contents of the this service-template resource.
