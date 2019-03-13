@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-amazonec2
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-amazonec2
   "
 Sets the service compliant attribute names and values
 for AWS
@@ -7,8 +7,8 @@ for AWS
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-service-amazonec2 :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-service-amazonec2 :as service]))
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as tpl]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-amazonec2 :as service]))
 
 ;;
 ;; convert template to credential
