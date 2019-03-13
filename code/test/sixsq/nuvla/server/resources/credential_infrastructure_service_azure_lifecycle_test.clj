@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-azure-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-azure-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-azure :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as service-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)

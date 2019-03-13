@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-gce-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-exoscale-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-gce :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as service-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -37,17 +37,13 @@
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href
-        {:name        name-attr
-         :description description-attr
-         :tags        tags-attr
-         :template    {:href                    href
-                       :project-id              "my-project-id"
-                       :private-key-id          "abcde1234"
-                       :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-                       :client-email            "1234-compute@developer.gserviceaccount.com"
-                       :client-id               "98765"
-                       :infrastructure-services []}}]
+        create-import-href {:name        name-attr
+                            :description description-attr
+                            :tags        tags-attr
+                            :template    {:href                    href
+                                          :exoscale-api-key        "abc"
+                                          :exoscale-api-secret-key "def"
+                                          :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -109,20 +105,17 @@
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
-                    project-id private-key-id private-key client-email client-id]} (-> session-user
-                                                                                       (request abs-uri)
-                                                                                       (ltu/body->edn)
-                                                                                       (ltu/is-status 200)
-                                                                                       :response
-                                                                                       :body)]
+                    exoscale-api-key exoscale-api-secret-key]} (-> session-user
+                                                                   (request abs-uri)
+                                                                   (ltu/body->edn)
+                                                                   (ltu/is-status 200)
+                                                                   :response
+                                                                   :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is project-id)
-        (is private-key-id)
-        (is private-key)
-        (is client-email)
-        (is client-id))
+        (is exoscale-api-key)
+        (is exoscale-api-secret-key))
 
       ;; delete the credential
       (-> session-user

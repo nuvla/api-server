@@ -1,21 +1,21 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-exoscale
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2
   "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the Exoscale's services."
+  cloud credentials for the AWS's services."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-exoscale :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-amazonec2 :as service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-exoscale")
+(def ^:const credential-type "infrastructure-service-amazonec2")
 
 
-(def ^:const resource-name "Exoscale API keys")
+(def ^:const resource-name "AWS API keys")
 
 
-(def ^:const method "store-cloud-service-cred-exoscale")
+(def ^:const method "store-infrastructure-service-amazonec2")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
@@ -32,12 +32,12 @@
   {:type                    credential-type
    :method                  method
    :name                    resource-name
-   :description             "Exoscale cloud credentials"
-   :exoscale-api-key        ""
-   :exoscale-api-secret-key ""
+   :description             "AWS credentials"
+   :amazonec2-access-key    ""
+   :amazonec2-secret-key    ""
    :infrastructure-services []
    :acl                     resource-acl
-   :resourceMetadata        "resource-metadata/credential-template-driver-exoscale"})
+   :resourceMetadata        "resource-metadata/credential-template-driver-aws"})
 
 
 ;;

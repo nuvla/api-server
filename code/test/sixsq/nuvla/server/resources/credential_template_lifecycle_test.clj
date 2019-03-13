@@ -12,10 +12,10 @@
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as service-minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
-    [sixsq.nuvla.server.resources.credential-template-service-aws :as service-aws]
-    [sixsq.nuvla.server.resources.credential-template-service-azure :as service-azure]
-    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-exo]
-    [sixsq.nuvla.server.resources.credential-template-service-gce :as service-gce]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as service-aws]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as service-azure]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as service-exo]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as service-gce]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 

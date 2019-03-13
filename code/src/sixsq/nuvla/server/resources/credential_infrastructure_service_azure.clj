@@ -1,30 +1,27 @@
-(ns sixsq.nuvla.server.resources.credential-service-gce
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-azure
   "
 Sets the service compliant attribute names and values
-for GCE
+for Azure
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-service-gce :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-service-gce :as service]))
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as tpl]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-azure :as service]))
 
 ;;
 ;; convert template to credential
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method project-id private-key-id private-key
-           client-email client-id infrastructure-services acl]} request]
+  [{:keys [type method azure-subscription-id azure-client-secret azure-client-id infrastructure-services acl]} request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :type                    type
                           :method                  method
-                          :project-id              project-id
-                          :private-key-id          private-key-id
-                          :private-key             private-key
-                          :client-email            client-email
-                          :client-id               client-id
+                          :azure-subscription-id   azure-subscription-id
+                          :azure-client-secret     azure-client-secret
+                          :azure-client-id         azure-client-id
                           :infrastructure-services infrastructure-services}
                          acl (assoc :acl acl))]
     [nil resource]))
