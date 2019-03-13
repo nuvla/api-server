@@ -21,7 +21,6 @@ cluster on a given cloud infrastructure.
                :resourceMetadata   (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
                :type               "swarm"
-               :cloud-service      {:href "service/change-me"}
                :service-credential {:href "credential/change-me"}
 
                :acl                infra-service-tpl/resource-acl})

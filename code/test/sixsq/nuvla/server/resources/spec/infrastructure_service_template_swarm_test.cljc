@@ -25,12 +25,11 @@
              :method             tpl-swarm/method
              :type               tpl-swarm/method
 
-             :cloud-service      {:href "infrastructure-service/my-cloud-service"}
              :service-credential {:href "credential/my-cloud-credential"}}]
 
     (stu/is-valid ::spec-swarm/schema cfg)
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :method :cloud-service :service-credential}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :service-credential}]
       (stu/is-invalid ::spec-swarm/schema (dissoc cfg attr)))))
 
 
