@@ -24,8 +24,8 @@ pair.
                        :instance    authn-method
                        :name        "API Key"
                        :description "Authentication with API Key and Secret"
-                       :username    "key"
-                       :password    "secret"
+                       :key         "key"
+                       :secret      "secret"
                        :acl         p/resource-acl})
 
 
@@ -36,6 +36,8 @@ pair.
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-api-key/schema)
+  (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
+
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema)))
 
 ;;

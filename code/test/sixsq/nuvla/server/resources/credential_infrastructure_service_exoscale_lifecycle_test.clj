@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-aws-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-exoscale-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-aws :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as service-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -41,8 +41,8 @@
                             :description description-attr
                             :tags        tags-attr
                             :template    {:href                    href
-                                          :amazonec2-access-key    "abc"
-                                          :amazonec2-secret-key    "def"
+                                          :exoscale-api-key        "abc"
+                                          :exoscale-api-secret-key "def"
                                           :infrastructure-services []}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
@@ -105,17 +105,17 @@
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
-                    amazonec2-access-key amazonec2-secret-key]} (-> session-user
-                                                                    (request abs-uri)
-                                                                    (ltu/body->edn)
-                                                                    (ltu/is-status 200)
-                                                                    :response
-                                                                    :body)]
+                    exoscale-api-key exoscale-api-secret-key]} (-> session-user
+                                                                   (request abs-uri)
+                                                                   (ltu/body->edn)
+                                                                   (ltu/is-status 200)
+                                                                   :response
+                                                                   :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is amazonec2-access-key)
-        (is amazonec2-secret-key))
+        (is exoscale-api-key)
+        (is exoscale-api-secret-key))
 
       ;; delete the credential
       (-> session-user

@@ -12,22 +12,22 @@
 
 
 (s/def ::username
-       (-> (st/spec ::cimi-core/nonblank-string)
-           (assoc :name "username"
-                  :json-schema/name "username"
-                  :json-schema/type "string"
-                  :json-schema/providerMandatory true
-                  :json-schema/consumerMandatory true
-                  :json-schema/mutable true
-                  :json-schema/consumerWritable true
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "username"
+             :json-schema/name "username"
+             :json-schema/type "string"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory true
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
 
-                  :json-schema/displayName "username"
-                  :json-schema/description "username for your account"
-                  :json-schema/help "username for your account"
-                  :json-schema/group "body"
-                  :json-schema/order 20
-                  :json-schema/hidden false
-                  :json-schema/sensitive false)))
+             :json-schema/displayName "username"
+             :json-schema/description "username for your account"
+             :json-schema/help "username for your account"
+             :json-schema/group "body"
+             :json-schema/order 20
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 
 (s/def ::emailAddress

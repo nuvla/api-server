@@ -1,45 +1,44 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-aws
-    (:require
-      [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.credential-template :as ct]
-      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
-      [sixsq.nuvla.server.util.spec :as su]
-      [spec-tools.core :as st]))
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-exoscale
+  (:require
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential-template :as ct]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
-
-(s/def ::amazonec2-access-key
+(s/def ::exoscale-api-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "amazonec2-access-key"
-             :json-schema/name "amazonec2-access-key"
+      (assoc :name "exoscale-api-key"
+             :json-schema/name "exoscale-api-key"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "amazonec2-access-key"
-             :json-schema/description "AWS API key"
-             :json-schema/help "AWS API key"
+             :json-schema/displayName "exoscale-api-key"
+             :json-schema/description "API key for Exoscale"
+             :json-schema/help "API key for Exoscale"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
-(s/def ::amazonec2-secret-key
+(s/def ::exoscale-api-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "amazonec2-secret-key"
-             :json-schema/name "amazonec2-secret-key"
+      (assoc :name "exoscale-api-secret-key"
+             :json-schema/name "exoscale-api-secret-key"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "amazonec2-secret-key"
-             :json-schema/description "AWS secret API key"
-             :json-schema/help "AWS secret API key"
+             :json-schema/displayName "exoscale-api-secret-key"
+             :json-schema/description "API secret key for Exoscale"
+             :json-schema/help "API secret key for Exoscale"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
@@ -47,12 +46,12 @@
 
 
 (def credential-template-keys-spec
-  {:req-un [::amazonec2-access-key
-            ::amazonec2-secret-key]})
+  {:req-un [::exoscale-api-key
+            ::exoscale-api-secret-key]})
 
 (def credential-template-create-keys-spec
-  {:req-un [::amazonec2-access-key
-            ::amazonec2-secret-key]})
+  {:req-un [::exoscale-api-key
+            ::exoscale-api-secret-key]})
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema

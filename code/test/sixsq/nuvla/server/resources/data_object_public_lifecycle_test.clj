@@ -2,39 +2,39 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest join-fixtures use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.data-object :as eo]
-    [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as eoltu]
-    [sixsq.nuvla.server.resources.data-object-template :as eot]
-    [sixsq.nuvla.server.resources.data-object-template-public :as public]
+    [sixsq.nuvla.server.resources.data-object :as data-obj]
+    [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
+    [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
+    [sixsq.nuvla.server.resources.data-object-template-public :as data-obj-tpl-public]
     [sixsq.nuvla.server.resources.data-object.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [peridot.core :refer :all])
-  (:import (com.amazonaws AmazonServiceException)))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+  (:import
+    (com.amazonaws AmazonServiceException)))
 
 
 (use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
-                                    eoltu/create-connector-fixture!
-                                    eoltu/create-cloud-cred-fixture!
-                                    eoltu/s3-redefs!]))
+                                    do-ltu/create-s3-credential!
+                                    do-ltu/s3-redefs!]))
 
 
-(def base-uri (str p/service-context eo/resource-name))
+(def base-uri (str p/service-context data-obj/resource-type))
 
 
 (defn data-object
   []
-  {:bucket-name      "my-bucket"
-   :object-store-cred {:href eoltu/*cred-uri*}
-   :content-type     "application/gzip"
-   :object-name      "my/obj/name-1"})
+  {:bucket       "my-bucket"
+   :credential   do-ltu/*s3-credential-id*
+   :content-type "application/gzip"
+   :object       "my/public-obj/name-1"})
 
 
 (deftest lifecycle
-  (eoltu/full-eo-lifecycle (str p/service-context eot/resource-url "/" public/object-type)
-                           (data-object)))
+  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type)
+                            (data-object)))
 
 
 (defn throw-any-aws-exception [_ _ _]
@@ -44,16 +44,32 @@
     (throw ex)))
 
 
+(defn delete-s3-object-not-found [_ _]
+  (let [ex (doto
+             (AmazonServiceException. "Simulated AWS Exception for object missing on S3")
+             (.setStatusCode 404))]
+    (throw ex)))
+
+
+(defn delete-s3-bucket-not-empty [_ _]
+  (let [ex (doto
+             (AmazonServiceException. "Simulated AWS Exception for deletion of not empty S3 bucket")
+             (.setStatusCode 409))]
+    (throw ex)))
+
+
 (deftest check-public-access
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header eoltu/user-info-header)
-        base-uri (str p/service-context eo/resource-name)
-        template (eoltu/get-template (str p/service-context eot/resource-url "/" public/object-type))
+        session-user (header session-anon authn-info-header do-ltu/user-info-header)
+        base-uri (str p/service-context data-obj/resource-type)
+        template (do-ltu/get-template (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type))
+
         create-href {:template (-> (data-object)
+                                   (assoc :bucket "my-public-bucket") ;; to avoid conflict with existing data-object
                                    (assoc :href (:id template))
-                                   (dissoc :object-type))}]
+                                   (dissoc :type))}]
 
     ;; Create the test object.
     (-> session-user
@@ -68,7 +84,7 @@
                     (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
-                    (ltu/is-resource-uri eo/collection-uri)
+                    (ltu/is-resource-uri data-obj/collection-type)
                     (ltu/is-count 1)
                     (ltu/entries)
                     first)
@@ -120,11 +136,21 @@
                        :request-method :post)
               (ltu/body->edn)
               (ltu/is-key-value :url "https://my-object.s3.com")
+              (ltu/is-status 200)))
+
+        ;; Must delete the created object to avoid conflict with other tests.
+        (with-redefs [s3/bucket-exists? (fn [_ _] true)
+                      s3/delete-s3-object delete-s3-object-not-found
+                      s3/delete-s3-bucket delete-s3-bucket-not-empty]
+          (-> session-user
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
               (ltu/is-status 200)))))))
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id eo/resource-name))]
+  (let [resource-uri (str p/service-context (u/new-resource-id data-obj/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

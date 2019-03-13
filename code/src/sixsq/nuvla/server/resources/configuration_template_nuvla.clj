@@ -19,13 +19,13 @@ Nuvla platform.
 ;;
 
 (def ^:const resource
-  {:service                      service
-   :name                         "Nuvla"
-   :description                  "Nuvla Service Configuration"
+  {:service     service
+   :name        "Nuvla"
+   :description "Nuvla Service Configuration"
 
-   :smtp-port                     465
-   :smtp-ssl                      true
-   :smtp-debug                    true
+   :smtp-port   465
+   :smtp-ssl    true
+   :smtp-debug  true
    })
 
 

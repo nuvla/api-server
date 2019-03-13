@@ -1,15 +1,15 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-gce
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-google
   "This CredentialTemplate allows creating a Credential instance to hold
   cloud credentials for the GCE's services."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-gce :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-google :as service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-gce")
+(def ^:const credential-type "infrastructure-service-google")
 
 
 (def ^:const resource-name "GCE service account private key")
@@ -18,7 +18,7 @@
 (def ^:const resource-url credential-type)
 
 
-(def ^:const method "store-cloud-service-cred-gce")
+(def ^:const method "store-infrastructure-service-google")
 
 
 (def resource-acl {:owner {:principal "ADMIN"

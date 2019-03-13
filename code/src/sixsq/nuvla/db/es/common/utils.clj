@@ -8,7 +8,7 @@
 
 (defn id->index
   ([id]
-    (id->index default-index-prefix id))
+   (id->index default-index-prefix id))
   ([index-prefix id]
    (->> id cu/split-id first (str index-prefix))))
 

@@ -1,10 +1,10 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-azure
-    (:require
-      [clojure.spec.alpha :as s]
-      [sixsq.nuvla.server.resources.spec.credential-template :as ct]
-      [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
-      [sixsq.nuvla.server.util.spec :as su]
-      [spec-tools.core :as st]))
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-azure
+  (:require
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.credential-template :as ct]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (s/def ::azure-client-id
@@ -71,8 +71,8 @@
 
 (def credential-template-create-keys-spec
   {:req-un [::azure-subscription-id
-             ::azure-client-secret
-             ::azure-client-id]})
+            ::azure-client-secret
+            ::azure-client-id]})
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema

@@ -69,15 +69,15 @@
                          "sixsq.nuvla.db.es.common.es-mapping-test/c" {:type "keyword"}
                          "sixsq.nuvla.db.es.common.es-mapping-test/d" {:type "keyword"}
                          "sixsq.nuvla.db.es.common.es-mapping-test/e" {:type "keyword"}
-                         "a"                                                   {:type "keyword"}
-                         "b"                                                   {:type "keyword"}
-                         "c"                                                   {:type "keyword"}
-                         "d"                                                   {:type "keyword"}
-                         "e"                                                   {:type "keyword"}}}))
+                         "a"                                          {:type "keyword"}
+                         "b"                                          {:type "keyword"}
+                         "c"                                          {:type "keyword"}
+                         "d"                                          {:type "keyword"}
+                         "e"                                          {:type "keyword"}}}))
     (is (= (t/transform ::keys-no-req)
            {:type       "object"
             :properties {"sixsq.nuvla.db.es.common.es-mapping-test/e" {:type "keyword"}
-                         "e"                                                   {:type "keyword"}}}))
+                         "e"                                          {:type "keyword"}}}))
     ;; NOTE: ES mappings cannot have more than one type.  Ensure type matches one of the defined values.
     (let [multiple-types (t/transform (s/or :int integer? :string string?))]
       (is (or (= multiple-types {:type "long"})
@@ -133,13 +133,13 @@
   (is (= {:type "object"
           :properties
                 {"sixsq.nuvla.db.es.common.es-mapping-test/id" {:type "long"}
-                 "age"                                                  {:type "long"}
-                 "name"                                                 {:type "keyword"}
-                 "likes"                                                {:type "object"}
-                 "languages"                                            {:type "keyword"}
-                 "address"                                              {:type       "object"
-                                                                         :properties {"street" {:type "keyword"}
-                                                                                      "zip"    {:type "keyword"}}}}}
+                 "age"                                         {:type "long"}
+                 "name"                                        {:type "keyword"}
+                 "likes"                                       {:type "object"}
+                 "languages"                                   {:type "keyword"}
+                 "address"                                     {:type       "object"
+                                                                :properties {"street" {:type "keyword"}
+                                                                             "zip"    {:type "keyword"}}}}}
          (t/transform person-spec))))
 
 (deftest additional-json-schema-data-test

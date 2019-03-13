@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-service-exoscale-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-minio-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
@@ -6,13 +6,16 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template :as cred-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context credential/resource-type))
+
 
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)
@@ -26,14 +29,21 @@
         description-attr "description"
         tags-attr ["one", "two"]
 
-        href (str ct/resource-type "/" service-tpl/method)
-        template-url (str p/service-context ct/resource-type "/" service-tpl/method)
+        access-key-value "my-access-key"
+        secret-key-value "my-secret-key"
+
+        infrastructure-services-value ["infrastructure-service/alpha"
+                                       "infrastructure-service/beta"]
+
+        href (str cred-tpl/resource-type "/" cred-tpl-minio/method)
+        template-url (str p/service-context cred-tpl/resource-type "/" cred-tpl-minio/method)
 
         template (-> session-admin
                      (request template-url)
                      (ltu/body->edn)
                      (ltu/is-status 200)
-                     (get-in [:response :body]))
+                     :response
+                     :body)
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
@@ -41,9 +51,9 @@
                             :description description-attr
                             :tags        tags-attr
                             :template    {:href                    href
-                                          :exoscale-api-key        "abc"
-                                          :exoscale-api-secret-key "def"
-                                          :infrastructure-services []}}]
+                                          :infrastructure-services infrastructure-services-value
+                                          :access-key              access-key-value
+                                          :secret-key              secret-key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -105,17 +115,20 @@
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
-                    exoscale-api-key exoscale-api-secret-key]} (-> session-user
-                                                                   (request abs-uri)
-                                                                   (ltu/body->edn)
-                                                                   (ltu/is-status 200)
-                                                                   :response
-                                                                   :body)]
+                    access-key secret-key
+                    infrastructure-services]} (-> session-user
+                                                  (request abs-uri)
+                                                  (ltu/body->edn)
+                                                  (ltu/is-status 200)
+                                                  :response
+                                                  :body)]
+
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is exoscale-api-key)
-        (is exoscale-api-secret-key))
+        (is (= access-key access-key-value))
+        (is (= secret-key secret-key-value))
+        (is (= infrastructure-services infrastructure-services-value)))
 
       ;; delete the credential
       (-> session-user

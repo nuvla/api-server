@@ -22,10 +22,10 @@
                      :secret      "secret"
                      :acl         st/resource-acl})
 
-
 (deftest check-metadata
   (mdtu/check-metadata-exists (str st/resource-type "-" api-key/resource-url)))
 
 
 (deftest lifecycle
+  (stu/check-existing-session-template base-uri valid-template)
   (stu/session-template-lifecycle base-uri valid-template))
