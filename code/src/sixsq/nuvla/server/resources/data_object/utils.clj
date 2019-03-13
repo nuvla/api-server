@@ -165,18 +165,6 @@
        :endpoint))
 
 
-(defn bucket-creation-ok?
-  "When the requested bucket doesn't exist and can't be created. The data
-  object resource must not be created."
-  [s3-client bucket]
-  (try
-    (or (bucket-exists? s3-client bucket)
-        (create-bucket! s3-client bucket))
-    (catch Exception e
-      (log/errorf "Error when creating bucket %s: %s" bucket (.getMessage e))
-      false)))
-
-
 (defn uploadable-bucket?
   "When the bucket exists, but the user can't create the object. The data
   object resource must not be created."
@@ -198,22 +186,25 @@
          :endpoint endpoint}))))
 
 
-(defn ok-to-add-data-resource?
-  "Determines if S3 conditions are met on S3 for the user to safely add an
-  external object resource. If everything is OK, then the resource itself is
-  returned. Otherwise an error response map is thrown"
+(defn ensure-bucket-exists
+  "This function ensures that the bucket that we're using to exists and can be
+   written to. If it doesn't exist, this function will create it. This function
+   throws an exception when either the bucket isn't writable or can't be
+   created."
   [{:keys [bucket credential] :as resource} request]
   (let [s3-client (some-> credential
                           credential->s3-client-cfg
                           get-s3-client)]
 
-    ;; When the requested bucket exists, but the user doesn't have permission to it :
-    ;; The external object resource must not be created."
-    (uploadable-bucket? s3-client bucket)                   ;; Throws if the bucket can't be written to.
-
-    (if (bucket-creation-ok? s3-client bucket)
-      resource
-      (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket)))))
+    (if (bucket-exists? s3-client bucket)
+      (do
+        (uploadable-bucket? s3-client bucket)
+        resource)
+      (try
+        (create-bucket! s3-client bucket)
+        resource
+        (catch Exception e
+          (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket)))))))
 
 
 (defn s3-object-metadata

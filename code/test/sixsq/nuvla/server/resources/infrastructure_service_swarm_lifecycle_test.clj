@@ -67,13 +67,6 @@
                                     :endpoint "https://cloud.example.org/api"
                                     :state    "STARTED"}}
 
-        cloud-service-id (-> session-user
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-create))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
 
         ;; setup a credential (not the right type) to reference
         href (str ct/resource-type "/" akey/method)
@@ -102,7 +95,6 @@
                       :template    {:href               (str infra-service-tpl/resource-type "/"
                                                              infra-service-tpl-swarm/method)
                                     :parent             service-group-id
-                                    :cloud-service      {:href cloud-service-id}
                                     :service-credential {:href credential-id}}}]
 
     ;; anon create must fail
