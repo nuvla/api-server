@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-gce
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-google
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
