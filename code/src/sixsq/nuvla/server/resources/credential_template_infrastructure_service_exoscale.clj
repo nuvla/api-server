@@ -9,13 +9,13 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-exoscale")
+(def ^:const credential-type "infrastructure-service-exoscale")
 
 
 (def ^:const resource-name "Exoscale API keys")
 
 
-(def ^:const method "store-cloud-service-cred-exoscale")
+(def ^:const method "store-infrastructure-service-exoscale")
 
 
 (def resource-acl {:owner {:principal "ADMIN"

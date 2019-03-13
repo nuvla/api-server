@@ -9,13 +9,13 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-azure")
+(def ^:const credential-type "infrastructure-service-azure")
 
 
 (def ^:const resource-name "Azure client credentials")
 
 
-(def ^:const method "store-cloud-service-cred-azure")
+(def ^:const method "store-infrastructure-service-azure")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
