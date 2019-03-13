@@ -11,25 +11,6 @@ on a cloud infrastructure.
     [spec-tools.core :as st]))
 
 
-(s/def ::cloud-service
-  (-> (st/spec ::cimi-common/resource-link)
-      (assoc :name "cloud-service"
-             :json-schema/name "cloud-service"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory true
-             :json-schema/mutable false
-             :json-schema/consumerWritable true
-             :json-schema/templateMutable false
-
-             :json-schema/displayName "cloud service"
-             :json-schema/description "reference to cloud service"
-             :json-schema/help "reference to cloud service where the Docker Swarm will be created"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
-
-
 (s/def ::service-credential
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
@@ -50,8 +31,7 @@ on a cloud infrastructure.
 
 
 (def service-template-keys-spec
-  {:req-un [::service-credential]
-   :opt-un [::cloud-service]})
+  {:req-un [::service-credential]})
 
 
 ;; Defines the contents of the this service-template resource.
