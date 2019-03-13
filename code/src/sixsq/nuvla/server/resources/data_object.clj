@@ -214,9 +214,6 @@
         (update-in [:template] merge os-cred-href))))
 
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
-
 (defn merge-into-tmpl
   [body]
   (if-let [href (get-in body [:template :href])]
@@ -232,6 +229,9 @@
 
 ;; requires a DataObjectTemplate to create new DataObject
 
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (a/can-modify? {:acl collection-acl} request)
@@ -244,7 +244,7 @@
                  :template
                  (tpl->data-object)
                  (assoc :state state-new))]
-    (s3/ok-to-add-data-resource? body request)
+    (s3/ensure-bucket-exists body request)
     (add-impl (assoc request :body body))))
 
 
