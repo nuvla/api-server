@@ -1,24 +1,21 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-gce
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure
   "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the GCE's services."
+  cloud credentials for the Azure's services."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-gce :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-azure :as service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-gce")
+(def ^:const credential-type "cloud-service-cred-azure")
 
 
-(def ^:const resource-name "GCE service account private key")
+(def ^:const resource-name "Azure client credentials")
 
 
-(def ^:const resource-url credential-type)
-
-
-(def ^:const method "store-cloud-service-cred-gce")
+(def ^:const method "store-cloud-service-cred-azure")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
@@ -35,15 +32,13 @@
   {:type                    credential-type
    :method                  method
    :name                    resource-name
-   :description             "GCE service account credentials"
-   :project-id              "my-project-id"
-   :private-key-id          "abcde1234"
-   :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-   :client-email            "1234-compute@developer.gserviceaccount.com"
-   :client-id               "98765"
+   :description             "Azure cloud credentials"
+   :azure-client-id         ""
+   :azure-client-secret     ""
+   :azure-subscription-id   ""
    :infrastructure-services []
    :acl                     resource-acl
-   :resourceMetadata        "resource-metadata/credential-template-driver-gce"})
+   :resourceMetadata        "resource-metadata/credential-template-driver-azure"})
 
 
 ;;

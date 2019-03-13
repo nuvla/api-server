@@ -1,11 +1,11 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-exoscale-test
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-exoscale-test
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as service]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-exoscale :as service-spec]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-exoscale :as service-spec]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 

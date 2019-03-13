@@ -1,21 +1,24 @@
-(ns sixsq.nuvla.server.resources.credential-template-service-azure
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-google
   "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the Azure's services."
+  cloud credentials for the GCE's services."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-service-azure :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-google :as service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "cloud-service-cred-azure")
+(def ^:const credential-type "infrastructure-service-google")
 
 
-(def ^:const resource-name "Azure client credentials")
+(def ^:const resource-name "GCE service account private key")
 
 
-(def ^:const method "store-cloud-service-cred-azure")
+(def ^:const resource-url credential-type)
+
+
+(def ^:const method "store-infrastructure-service-google")
 
 
 (def resource-acl {:owner {:principal "ADMIN"
@@ -32,13 +35,15 @@
   {:type                    credential-type
    :method                  method
    :name                    resource-name
-   :description             "Azure cloud credentials"
-   :azure-client-id         ""
-   :azure-client-secret     ""
-   :azure-subscription-id   ""
+   :description             "GCE service account credentials"
+   :project-id              "my-project-id"
+   :private-key-id          "abcde1234"
+   :private-key             "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
+   :client-email            "1234-compute@developer.gserviceaccount.com"
+   :client-id               "98765"
    :infrastructure-services []
    :acl                     resource-acl
-   :resourceMetadata        "resource-metadata/credential-template-driver-azure"})
+   :resourceMetadata        "resource-metadata/credential-template-driver-gce"})
 
 
 ;;

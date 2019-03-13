@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-exoscale
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-azure
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
@@ -7,51 +7,72 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::exoscale-api-key
+(s/def ::azure-client-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "exoscale-api-key"
-             :json-schema/name "exoscale-api-key"
+      (assoc :name "azure-client-id"
+             :json-schema/name "azure-client-id"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "exoscale-api-key"
-             :json-schema/description "API key for Exoscale"
-             :json-schema/help "API key for Exoscale"
+             :json-schema/displayName "azure-client-id"
+             :json-schema/description "Azure client ID"
+             :json-schema/help "Azure client ID"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
-(s/def ::exoscale-api-secret-key
+(s/def ::azure-client-secret
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "exoscale-api-secret-key"
-             :json-schema/name "exoscale-api-secret-key"
+      (assoc :name "azure-client-secret"
+             :json-schema/name "azure-client-secret"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "exoscale-api-secret-key"
-             :json-schema/description "API secret key for Exoscale"
-             :json-schema/help "API secret key for Exoscale"
+             :json-schema/displayName "azure-client-secret"
+             :json-schema/description "Azure client secret"
+             :json-schema/help "Azure client secret"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
+(s/def ::azure-subscription-id
+  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+      (assoc :name "azure-subscription-id"
+             :json-schema/name "azure-subscription-id"
+             :json-schema/type "string"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory true
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+
+             :json-schema/displayName "azure-subscription-id"
+             :json-schema/description "Azure subscription ID"
+             :json-schema/help "Azure subscription ID"
+             :json-schema/group "body"
+             :json-schema/order 22
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
+
+
 (def credential-template-keys-spec
-  {:req-un [::exoscale-api-key
-            ::exoscale-api-secret-key]})
+  {:req-un [::azure-subscription-id
+            ::azure-client-secret
+            ::azure-client-id]})
 
 (def credential-template-create-keys-spec
-  {:req-un [::exoscale-api-key
-            ::exoscale-api-secret-key]})
+  {:req-un [::azure-subscription-id
+            ::azure-client-secret
+            ::azure-client-id]})
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema

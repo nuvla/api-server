@@ -1,26 +1,30 @@
-(ns sixsq.nuvla.server.resources.credential-service-exoscale
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-google
   "
 Sets the service compliant attribute names and values
-for Exoscale
+for GCE
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-service-exoscale :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-service-exoscale :as service]))
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as tpl]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-google :as service]))
 
 ;;
 ;; convert template to credential
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method exoscale-api-key exoscale-api-secret-key infrastructure-services acl]} request]
+  [{:keys [type method project-id private-key-id private-key
+           client-email client-id infrastructure-services acl]} request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :type                    type
                           :method                  method
-                          :exoscale-api-key        exoscale-api-key
-                          :exoscale-api-secret-key exoscale-api-secret-key
+                          :project-id              project-id
+                          :private-key-id          private-key-id
+                          :private-key             private-key
+                          :client-email            client-email
+                          :client-id               client-id
                           :infrastructure-services infrastructure-services}
                          acl (assoc :acl acl))]
     [nil resource]))

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-service-azure
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-amazonec2
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
@@ -7,72 +7,52 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::azure-client-id
+
+(s/def ::amazonec2-access-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "azure-client-id"
-             :json-schema/name "azure-client-id"
+      (assoc :name "amazonec2-access-key"
+             :json-schema/name "amazonec2-access-key"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "azure-client-id"
-             :json-schema/description "Azure client ID"
-             :json-schema/help "Azure client ID"
+             :json-schema/displayName "amazonec2-access-key"
+             :json-schema/description "AWS API key"
+             :json-schema/help "AWS API key"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
-(s/def ::azure-client-secret
+(s/def ::amazonec2-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "azure-client-secret"
-             :json-schema/name "azure-client-secret"
+      (assoc :name "amazonec2-secret-key"
+             :json-schema/name "amazonec2-secret-key"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory true
              :json-schema/mutable true
              :json-schema/consumerWritable true
 
-             :json-schema/displayName "azure-client-secret"
-             :json-schema/description "Azure client secret"
-             :json-schema/help "Azure client secret"
+             :json-schema/displayName "amazonec2-secret-key"
+             :json-schema/description "AWS secret API key"
+             :json-schema/help "AWS secret API key"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
-(s/def ::azure-subscription-id
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "azure-subscription-id"
-             :json-schema/name "azure-subscription-id"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "azure-subscription-id"
-             :json-schema/description "Azure subscription ID"
-             :json-schema/help "Azure subscription ID"
-             :json-schema/group "body"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
 (def credential-template-keys-spec
-  {:req-un [::azure-subscription-id
-            ::azure-client-secret
-            ::azure-client-id]})
+  {:req-un [::amazonec2-access-key
+            ::amazonec2-secret-key]})
 
 (def credential-template-create-keys-spec
-  {:req-un [::azure-subscription-id
-            ::azure-client-secret
-            ::azure-client-id]})
+  {:req-un [::amazonec2-access-key
+            ::amazonec2-secret-key]})
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema
