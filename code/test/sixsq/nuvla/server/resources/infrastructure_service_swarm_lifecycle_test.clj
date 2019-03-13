@@ -102,7 +102,6 @@
                       :template    {:href               (str infra-service-tpl/resource-type "/"
                                                              infra-service-tpl-swarm/method)
                                     :parent             service-group-id
-                                    :cloud-service      {:href cloud-service-id}
                                     :service-credential {:href credential-id}}}]
 
     ;; anon create must fail
