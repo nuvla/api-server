@@ -20,13 +20,17 @@ pair.
 
 (def ^:const resource-url authn-method)
 
-(def default-template {:method      authn-method
-                       :instance    authn-method
-                       :name        "API Key"
-                       :description "Authentication with API Key and Secret"
-                       :key         "key"
-                       :secret      "secret"
-                       :acl         p/resource-acl})
+(def default-template {:method           authn-method
+                       :instance         authn-method
+                       :name             "API Key"
+                       :description      "Authentication with API Key and Secret"
+                       :resourceMetadata (str "resource-metadata/" p/resource-type "-" authn-method)
+                       :group            "Login with API key/secret"
+                       :key              "key"
+                       :secret           "secret"
+                       :order            1
+                       :icon             "key"
+                       :acl              p/resource-acl})
 
 
 ;;

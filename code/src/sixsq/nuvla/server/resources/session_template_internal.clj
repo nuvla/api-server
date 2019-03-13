@@ -29,6 +29,8 @@ credentials. This template is guaranteed to be present on all server instances.
                        :group            "Login with Username/Password"
                        :username         "username"
                        :password         "password"
+                       :order            0
+                       :icon             "user"
                        :acl              p/resource-acl})
 
 
