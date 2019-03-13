@@ -107,13 +107,7 @@
             ;;
             ;; create the session template to use for these tests
             ;;
-            href (-> session-admin
-                     (request session-template-base-uri
-                              :request-method :post
-                              :body (json/write-str session-template-api-key))
-                     (ltu/body->edn)
-                     (ltu/is-status 201)
-                     (ltu/location))
+            href (str st/resource-type "/api-key")
 
             template-url (str p/service-context href)
 

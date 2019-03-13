@@ -26,15 +26,6 @@
 (def session-template-base-uri (str p/service-context ct/resource-type))
 
 
-(def session-template-internal {:method      internal/authn-method
-                                :instance    internal/authn-method
-                                :name        "Internal"
-                                :description "Internal Authentication via Username/Password"
-                                :username    "username"
-                                :password    "password"
-                                :acl         st/resource-acl})
-
-
 (defn mock-login-valid?
   "Will return true if the username and password are identical;
    false otherwise.  Avoids having to start a real database and
