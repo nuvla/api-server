@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.string :as str]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -66,7 +67,7 @@
                        (assoc :state "CREATED")
                        (assoc :module (deployment-utils/resolve-module (:module body) identity))
                        (assoc :api-credentials (deployment-utils/generate-api-key-secret request))
-                       (assoc :api-endpoint base-uri))
+                       (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
