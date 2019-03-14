@@ -57,7 +57,7 @@
 
 
 (defmethod crud/add resource-type
-  [{:keys [identity body] :as request}]
+  [{:keys [identity body base-uri] :as request}]
 
   (a/can-modify? {:acl collection-acl} request)
 
@@ -65,7 +65,8 @@
                        (assoc :resource-type resource-type)
                        (assoc :state "CREATED")
                        (assoc :module (deployment-utils/resolve-module (:module body) identity))
-                       (assoc :api-credentials (deployment-utils/generate-api-key-secret request)))
+                       (assoc :api-credentials (deployment-utils/generate-api-key-secret request))
+                       (assoc :api-endpoint base-uri))
 
         create-response (add-impl (assoc request :body deployment))
 
