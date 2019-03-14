@@ -84,24 +84,44 @@
 
 
 (s/def ::api-credentials
-  (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
-      (assoc :name "api-credentials"
-             :json-schema/name "api-credentials"
-             :json-schema/type "map"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-             :json-schema/indexed false
+       (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
+           (assoc :name "api-credentials"
+                  :json-schema/name "api-credentials"
+                  :json-schema/type "map"
+                  :json-schema/providerMandatory false
+                  :json-schema/consumerMandatory false
+                  :json-schema/mutable true
+                  :json-schema/consumerWritable true
+                  :json-schema/indexed false
 
-             :json-schema/displayName "Nuvla credentials"
-             :json-schema/description "Nuvla deployment API credentials"
-             :json-schema/help "Nuvla deployment API credentials"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+                  :json-schema/displayName "Nuvla credentials"
+                  :json-schema/description "Nuvla deployment API credentials"
+                  :json-schema/help "Nuvla deployment API credentials"
+                  :json-schema/group "data"
+                  :json-schema/category "data"
+                  :json-schema/order 20
+                  :json-schema/hidden false
+                  :json-schema/sensitive false)))
+
+(s/def ::api-endpoint
+       (-> (st/spec ::cimi-core/nonblank-string)
+           (assoc :name "api-endpoint"
+                  :json-schema/name "api-endpoint"
+                  :json-schema/type "string"
+                  :json-schema/providerMandatory true
+                  :json-schema/consumerMandatory false
+                  :json-schema/mutable false
+                  :json-schema/consumerWritable false
+                  :json-schema/indexed false
+
+                  :json-schema/displayName "Nuvla endpoint"
+                  :json-schema/description "Nuvla endpoint"
+                  :json-schema/help "Nuvla endpoint"
+                  :json-schema/group "data"
+                  :json-schema/category "data"
+                  :json-schema/order 22
+                  :json-schema/hidden false
+                  :json-schema/sensitive false)))
 
 (s/def ::credential-id ::cimi-core/nonblank-string)
 
@@ -174,7 +194,8 @@
   (su/merge-keys-specs [cimi-common/common-attrs
                         {:req-un [::module
                                   ::state
-                                  ::api-credentials]
+                                  ::api-credentials
+                                  ::api-endpoint]
                          :opt-un [::credential-id
                                   ::infrastructure-service-id
                                   ::data-objects
