@@ -25,6 +25,7 @@
 
                        :api-credentials           {:api-key    "credential/uuid"
                                                    :api-secret "api secret"}
+                       :api-endpoint              "http://blah.example.com"
 
                        :credential-id             "credential/my-cloud-credential"
                        :infrastructure-service-id "infrastructure-service/my-service"
@@ -46,7 +47,7 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-records {"BAD_ID" nil}))
 
   ;; required attributes
-  (doseq [k #{:id :resource-type :created :updated :acl :state :module}]
+  (doseq [k #{:id :resource-type :created :updated :acl :state :module :api-credentials :api-endpoint}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
