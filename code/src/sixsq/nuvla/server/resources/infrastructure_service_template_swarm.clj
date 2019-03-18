@@ -22,6 +22,7 @@ cluster on a given cloud infrastructure.
 
                :type               "swarm"
                :service-credential {:href "credential/change-me"}
+               :nodes              []
 
                :acl                infra-service-tpl/resource-acl})
 
