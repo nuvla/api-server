@@ -29,7 +29,7 @@
 
     (stu/is-valid ::spec-swarm/schema cfg)
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :method :nodes :service-credential}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :service-credential}]
       (stu/is-invalid ::spec-swarm/schema (dissoc cfg attr)))))
 
 
