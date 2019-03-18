@@ -25,8 +25,6 @@
              :method             tpl-swarm/method
              :type               tpl-swarm/method
 
-             :nodes              []
-
              :service-credential {:href "credential/my-cloud-credential"}}]
 
     (stu/is-valid ::spec-swarm/schema cfg)

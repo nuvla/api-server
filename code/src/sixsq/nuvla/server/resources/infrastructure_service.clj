@@ -57,6 +57,21 @@ existing infrastructure-service-template resource.
 
 
 ;;
+;;
+
+(defmulti validate-subtype :type)
+
+
+(defmethod validate-subtype :default
+           [resource]
+           (logu/log-and-throw-400 (str "unknown infrastructure service type: '" resource (:type resource) "'")))
+
+
+(defmethod crud/validate resource-type
+           [resource]
+           (validate-subtype resource))
+
+;;
 ;; validate create requests for service resources
 ;;
 
