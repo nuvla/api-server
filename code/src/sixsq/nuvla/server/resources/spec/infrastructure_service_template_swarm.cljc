@@ -30,6 +30,9 @@ on a cloud infrastructure.
              :json-schema/sensitive false)))
 
 
+(s/def ::machine-name ::cimi-core/nonblank-string)
+(s/def ::machine-config-base64 ::cimi-core/nonblank-string)
+
 (s/def ::node
   (-> (st/spec (su/only-keys :req-un [::machine-name
                                       ::machine-config-base64]))
