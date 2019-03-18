@@ -65,6 +65,11 @@ existing infrastructure-service-template resource.
   (get-in resource [:template :method]))
 
 
+(defn dispatch-conversion
+      [resource _]
+      (:type resource))
+
+
 ;;
 ;;
 
@@ -181,14 +186,33 @@ existing infrastructure-service-template resource.
   [request]
   (retrieve-impl request))
 
+;
+;(def edit-impl (std-crud/edit-fn resource-type))
+;
+;
+;(defmethod crud/edit resource-type
+;  [request]
+;  (edit-impl request))
+(defmulti special-edit dispatch-conversion)
+
+
+(defmethod special-edit :default
+           [resource _]
+           resource)
+
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
-
+           [{{uuid :uuid} :params body :body :as request}]
+           (let [type (-> (str resource-type "/" uuid)
+                          (db/retrieve request)
+                          :type)
+                 new-body (-> body
+                              (assoc :type type)
+                              (special-edit request))]
+                (edit-impl (assoc request :body new-body))))
 
 (def delete-impl (std-crud/delete-fn resource-type))
 

@@ -4,7 +4,8 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]))
+    [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as tpl]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-swarm :as tpl-swarm]))
 
 
 (def ^:const method "swarm")
@@ -40,6 +41,22 @@
       (dissoc resource :href :resourceMetadata :endpoint :service-credential)
       (assoc :state "CREATED"
              :management-credential-id href)))
+
+
+
+;;
+;; multimethods for validation
+;;
+
+;(def validate-fn (u/create-spec-validation-fn ::tpl-swarm/schema))
+;(defmethod infra-service/validate-subtype tpl/method
+;           [resource]
+;           (validate-fn resource))
+
+(def create-validate-fn (u/create-spec-validation-fn ::tpl-swarm/schema-create))
+(defmethod infra-service/create-validate-subtype tpl/method
+           [resource]
+           (create-validate-fn resource))
 
 
 ;;
