@@ -56,6 +56,15 @@ existing infrastructure-service-template resource.
   (validate-fn resource))
 
 
+
+;;
+;; validate create requests for service resources
+;;
+
+(defn dispatch-on-method [resource]
+  (get-in resource [:template :method]))
+
+
 ;;
 ;;
 
@@ -64,19 +73,16 @@ existing infrastructure-service-template resource.
 
 (defmethod validate-subtype :default
            [resource]
-           (logu/log-and-throw-400 (str "unknown infrastructure service type: '" resource (:type resource) "'")))
+           (throw (ex-info (str "unknown service create type: " (dispatch-on-method resource)) resource)))
 
 
 (defmethod crud/validate resource-type
            [resource]
            (validate-subtype resource))
 
-;;
-;; validate create requests for service resources
-;;
 
-(defn dispatch-on-method [resource]
-  (get-in resource [:template :method]))
+;;
+;;
 
 
 (defmulti create-validate-subtype dispatch-on-method)
