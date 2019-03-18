@@ -73,6 +73,6 @@
 
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
-                     ::infrastructure-service/schema
+                     infrastructure-service/infra-service-keys-spec
                      {:req-un [::service-credential]
                       :opt-un [::nodes]}))

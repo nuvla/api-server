@@ -114,6 +114,14 @@
              :json-schema/sensitive false)))
 
 
+(def infra-service-keys-spec (su/merge-keys-specs [cimi-common/common-attrs
+                                                        {:req-un [::cimi-common/parent         ;; required for services
+                                                                  ::method
+                                                                  ::type
+                                                                  ::state]
+                                                         :opt-un [::endpoint
+                                                                  ::management-credential-id]}]))
+
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::cimi-common/parent         ;; required for services
