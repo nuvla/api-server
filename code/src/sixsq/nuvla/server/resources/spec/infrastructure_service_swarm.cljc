@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infrastructure-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -76,3 +77,8 @@
                      infrastructure-service/infra-service-keys-spec
                      {:req-un [::service-credential]
                       :opt-un [::nodes]}))
+
+
+(s/def ::schema-create
+  (su/only-keys-maps infra-service-tpl/create-keys-spec
+                     {:req-un [::tpl/template]}))
