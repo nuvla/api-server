@@ -68,17 +68,17 @@ existing infrastructure-service-template resource.
 ;;
 ;;
 
-(defmulti validate-subtype :type)
-
-
-(defmethod validate-subtype :default
-           [resource]
-           (throw (ex-info (str "unknown service create type: " (dispatch-on-method resource)) resource)))
-
-
-(defmethod crud/validate resource-type
-           [resource]
-           (validate-subtype resource))
+;(defmulti validate-subtype :type)
+;
+;
+;(defmethod validate-subtype :default
+;           [resource]
+;           (throw (ex-info (str "unknown service create type: " (dispatch-on-method resource)) resource)))
+;
+;
+;(defmethod crud/validate resource-type
+;           [resource]
+;           (validate-subtype resource))
 
 
 ;;
