@@ -3,6 +3,10 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]))
 
@@ -59,7 +63,7 @@
                       (a/can-modify? request)
                       (assoc :state "STARTING")
                       (db/edit request))
-                  (event-utils/create-event id job-msg (acl/default-acl (acl/current-authentication request)))
+                  (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
                   (r/map-response job-msg 202 id job-id))
              (catch Exception e
                (or (ex-data e) (throw e)))))
