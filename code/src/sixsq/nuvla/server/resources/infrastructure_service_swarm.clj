@@ -43,7 +43,7 @@
 ;;
 
 (defmethod infra-service/post-add-hook method
-  [uuid user-id]
+  [uuid user-id request]
            (try
              (let [id (str uuid)
                    user-id (:identity user-id)
