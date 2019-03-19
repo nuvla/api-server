@@ -123,6 +123,20 @@ existing infrastructure-service-template resource.
 
 
 ;;
+;; multimethod for a post-delete hook
+;;
+
+(defmulti post-delete-hook
+          (fn [request]))
+
+
+;; default post-delete hook is a no-op
+(defmethod post-delete-hook :default
+           [request]
+           nil)
+
+
+;;
 ;; CRUD operations
 ;;
 
@@ -174,7 +188,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (post-delete-hook request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
