@@ -26,6 +26,7 @@
                  :method        "generic"
                  :type          "docker"
                  :endpoint      "https://docker.example.org/api"
+                 :nodes         [{:machine-name "testmachine" :machine-config-base64 "base64=="}]
                  :state         "STARTED"}]
 
     (stu/is-valid ::infrastructure-service/schema service)

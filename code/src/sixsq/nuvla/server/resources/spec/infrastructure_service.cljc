@@ -114,6 +114,56 @@
              :json-schema/sensitive false)))
 
 
+;;
+;; this is meant for COE services only
+;; TODO: move this to COE specific schemas
+;;
+(s/def ::machine-name ::cimi-core/nonblank-string)
+(s/def ::machine-config-base64 ::cimi-core/nonblank-string)
+
+(s/def ::node
+  (-> (st/spec (su/only-keys :req-un [::machine-name
+                                      ::machine-config-base64]))
+      (assoc :name "node"
+             :json-schema/name "node"
+             :json-schema/type "map"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable false
+             :json-schema/consumerWritable false
+
+             :json-schema/displayName "node"
+             :json-schema/description "node within the swarm cluster"
+             :json-schema/help "node within the swarm cluster"
+             :json-schema/group "body"
+             :json-schema/order 23
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
+
+
+(s/def ::nodes
+  (-> (st/spec (s/coll-of ::node :kind vector?))
+      (assoc :name "nodes"
+             :json-schema/name "nodes"
+             :json-schema/type "Array"
+             :json-schema/providerMandatory false
+             :json-schema/consumerMandatory false
+             :json-schema/mutable false
+             :json-schema/consumerWritable false
+             :json-schema/templateMutable false
+
+             :json-schema/displayName "nodes"
+             :json-schema/description "List of base64 encoded configurations for each Swarm machine"
+             :json-schema/help "List of base64 encoded configurations for each Swarm machine"
+             :json-schema/group "body"
+             :json-schema/order 24
+             :json-schema/hidden true
+             :json-schema/sensitive false)))
+
+;;
+;; -------
+;;
+
 (s/def ::schema
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::cimi-common/parent         ;; required for services
@@ -121,4 +171,5 @@
                                ::type
                                ::state]
                       :opt-un [::endpoint
-                               ::management-credential-id]}))
+                               ::management-credential-id
+                               ::nodes]}))
