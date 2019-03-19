@@ -112,13 +112,13 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [service template]
+          (fn [service request]
             (:method service)))
 
 
 ;; default post-add hook is a no-op
 (defmethod post-add-hook :default
-  [service template]
+  [service request]
   nil)
 
 
@@ -149,7 +149,7 @@ existing infrastructure-service-template resource.
     (let [response (add-impl (assoc request :body service))
           id (-> response :body :resource-id)
           service (assoc service :id id)]
-      (post-add-hook service validated-template)
+      (post-add-hook service request)
       response)))
 
 
