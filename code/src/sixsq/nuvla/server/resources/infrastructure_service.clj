@@ -149,7 +149,7 @@ existing infrastructure-service-template resource.
     (let [response (add-impl (assoc request :body service))
           id (-> response :body :resource-id)
           service (assoc service :id id)]
-      (post-add-hook service validated-template)
+      (post-add-hook id idmap)
       response)))
 
 
