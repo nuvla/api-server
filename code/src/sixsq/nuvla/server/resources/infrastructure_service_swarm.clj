@@ -46,7 +46,7 @@
   [service request]
            (try
              (let [id (:id service)
-                   user-id (:identity request)
+                   user-id (:identity (a/current-authentication request))
                    {{job-id     :resource-id
                      job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
                                                                 {:owner {:principal "ADMIN"
