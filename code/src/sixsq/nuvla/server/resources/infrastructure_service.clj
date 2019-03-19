@@ -112,13 +112,13 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [service template]
+          (fn [id usermap request]
             (:method service)))
 
 
 ;; default post-add hook is a no-op
 (defmethod post-add-hook :default
-  [service template]
+  [id usermap request]
   nil)
 
 
