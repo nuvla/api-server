@@ -112,13 +112,13 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [id usermap request]
+          (fn [service request]
             (:method service)))
 
 
 ;; default post-add hook is a no-op
 (defmethod post-add-hook :default
-  [id usermap request]
+  [service request]
   nil)
 
 
@@ -149,7 +149,7 @@ existing infrastructure-service-template resource.
     (let [response (add-impl (assoc request :body service))
           id (-> response :body :resource-id)
           service (assoc service :id id)]
-      (post-add-hook id idmap request)
+      (post-add-hook service request)
       response)))
 
 

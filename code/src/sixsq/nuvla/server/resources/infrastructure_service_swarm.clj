@@ -43,10 +43,10 @@
 ;;
 
 (defmethod infra-service/post-add-hook method
-  [uuid user-id request]
+  [service request]
            (try
-             (let [id (str uuid)
-                   user-id (:identity user-id)
+             (let [id (:id service)
+                   user-id (:identity request)
                    {{job-id     :resource-id
                      job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
                                                                 {:owner {:principal "ADMIN"
