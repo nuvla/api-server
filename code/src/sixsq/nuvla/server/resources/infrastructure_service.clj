@@ -196,8 +196,8 @@ existing infrastructure-service-template resource.
              (catch Exception e
                (or (ex-data e) (throw e))))
 
-           (let [service (db/retrieve request)])
-  (post-delete-hook service))
+           (let [service (db/retrieve request)]
+                (post-delete-hook service)))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
