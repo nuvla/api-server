@@ -173,10 +173,10 @@
             (ltu/refresh-es-indices)
 
             ;; now service-group can be deleted
-            (-> session
-                (request abs-uri :request-method :delete)
-                (ltu/body->edn)
-                (ltu/is-status 200))
+            ;(-> session
+            ;    (request abs-uri :request-method :delete)
+            ;    (ltu/body->edn)
+            ;    (ltu/is-status 200))
             ))))))
 
 
