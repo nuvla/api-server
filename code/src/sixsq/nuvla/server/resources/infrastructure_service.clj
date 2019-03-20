@@ -127,12 +127,13 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-delete-hook
-          (fn [request]))
+          (fn [service]
+              (:method service)))
 
 
 ;; default post-delete hook is a no-op
 (defmethod post-delete-hook :default
-           [request]
+           [service]
            nil)
 
 
@@ -188,7 +189,18 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/delete resource-type
   [request]
-  (post-delete-hook request))
+
+           (try
+             (-> (str resource-name "/" uuid)
+                 (db/retrieve request)
+                 (a/can-modify? request))
+             (catch Exception e
+               (or (ex-data e) (throw e))))
+
+           (let [service (-> (str resource-type "/" uuid)
+                          (db/retrieve request))]
+
+  (post-delete-hook service))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
