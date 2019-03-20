@@ -197,7 +197,6 @@ existing infrastructure-service-template resource.
                (or (ex-data e) (throw e))))
 
            (let [service (db/retrieve request)])
-
   (post-delete-hook service))
 
 
