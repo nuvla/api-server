@@ -190,10 +190,8 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/delete resource-type
   [request]
-
            (try
-             (-> (str resource-name "/" uuid)
-                 (db/retrieve request)
+             (-> (db/retrieve request)
                  (a/can-modify? request))
              (catch Exception e
                (or (ex-data e) (throw e))))
