@@ -130,12 +130,6 @@ existing infrastructure-service-template resource.
           (fn [request]))
 
 
-;; default post-delete hook is a no-op
-(defmethod post-delete-hook :default
-           [request]
-           (delete-impl request))
-
-
 ;;
 ;; CRUD operations
 ;;
@@ -185,6 +179,10 @@ existing infrastructure-service-template resource.
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
+;; default post-delete hook is a no-op
+(defmethod post-delete-hook :default
+           [request]
+           (delete-impl request))
 
 (defmethod crud/delete resource-type
   [request]
