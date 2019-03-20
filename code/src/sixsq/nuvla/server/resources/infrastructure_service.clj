@@ -133,7 +133,7 @@ existing infrastructure-service-template resource.
 ;; default post-delete hook is a no-op
 (defmethod post-delete-hook :default
            [request]
-           nil)
+           (delete-impl request))
 
 
 ;;
