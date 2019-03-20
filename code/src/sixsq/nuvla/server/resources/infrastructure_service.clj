@@ -196,8 +196,7 @@ existing infrastructure-service-template resource.
              (catch Exception e
                (or (ex-data e) (throw e))))
 
-           (let [service (-> (str resource-type "/" uuid)
-                          (db/retrieve request))])
+           (let [service (db/retrieve request)])
 
   (post-delete-hook service))
 
