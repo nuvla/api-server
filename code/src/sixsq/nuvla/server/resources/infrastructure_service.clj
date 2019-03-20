@@ -15,6 +15,7 @@ existing infrastructure-service-template resource.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
@@ -128,14 +129,14 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-delete-hook
-          (fn [service]
-              (:method service)))
+          (fn [service request]
+            (:method service)))
 
 
 ;; default post-delete hook is a no-op
 (defmethod post-delete-hook :default
-           [service]
-           nil)
+  [service request]
+  (std-crud/delete-fn request))
 
 
 ;;
@@ -189,15 +190,18 @@ existing infrastructure-service-template resource.
 
 
 (defmethod crud/delete resource-type
-  [request]
-           (try
-             (-> (db/retrieve request)
-                 (a/can-modify? request))
-             (catch Exception e
-               (or (ex-data e) (throw e))))
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (db/retrieve request)
+        (a/can-modify? request))
+    (catch Exception e
+      (or (ex-data e) (throw e))))
 
-           (let [service (db/retrieve request)]
-                (post-delete-hook service)))
+  (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
+        service (db/retrieve request nil)]
+    (post-delete-hook service request)
+    response))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

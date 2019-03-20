@@ -161,14 +161,14 @@
                   (request (str p/service-context service-id)
                            :request-method :delete)
                   (ltu/body->edn)
-                  (ltu/is-status 200)))
+                  (ltu/is-status 202)))
 
             ;; verify that the infrastructure-services are gone
             (doseq [service-id service-ids]
               (-> session
                   (request (str p/service-context service-id))
                   (ltu/body->edn)
-                  (ltu/is-status 404)))
+                  (ltu/is-status 200)))
 
             (ltu/refresh-es-indices)
 
@@ -176,7 +176,8 @@
             (-> session
                 (request abs-uri :request-method :delete)
                 (ltu/body->edn)
-                (ltu/is-status 200))))))))
+                (ltu/is-status 200))
+            ))))))
 
 
 (deftest bad-methods

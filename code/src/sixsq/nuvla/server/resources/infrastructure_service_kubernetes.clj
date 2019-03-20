@@ -43,55 +43,55 @@
 ;;
 
 (defmethod infra-service/post-add-hook method
-           [service request]
-           (try
-             (let [id (:id service)
-                   user-id (:identity (a/current-authentication request))
-                   {{job-id     :resource-id
-                     job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"
-                                                                {:owner {:principal "ADMIN"
-                                                                         :type      "ROLE"}
-                                                                 :rules [{:principal user-id
-                                                                          :right     "VIEW"
-                                                                          :type      "USER"}]}
-                                                                :priority 50)
-                   job-msg (str "starting " id " with async " job-id)]
-                  (when (not= job-status 201)
-                        (throw (r/ex-response "unable to create async job to start infrastructure service kubernetes" 500 id)))
-                  (-> id
-                      (db/retrieve request)
-                      (a/can-modify? request)
-                      (assoc :state "STARTING")
-                      (db/edit request))
-                  (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
-                  (r/map-response job-msg 202 id job-id))
-             (catch Exception e
-               (or (ex-data e) (throw e)))))
+  [service request]
+  (try
+    (let [id (:id service)
+          user-id (:identity (a/current-authentication request))
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"
+                                                       {:owner {:principal "ADMIN"
+                                                                :type      "ROLE"}
+                                                        :rules [{:principal user-id
+                                                                 :right     "VIEW"
+                                                                 :type      "USER"}]}
+                                                       :priority 50)
+          job-msg (str "starting " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to start infrastructure service kubernetes" 500 id)))
+      (-> id
+          (db/retrieve request)
+          (a/can-modify? request)
+          (assoc :state "STARTING")
+          (db/edit request))
+      (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod infra-service/post-delete-hook method
-           [request]
-           (try
-             (let [body (:body request)
-                   user-id (:identity (a/current-authentication request))
-                   id (:resource-id body)
-                   {{job-id     :resource-id
-                     job-status :status} :body} (job/create-job id "stop_infrastructure_service_kubernetes"
-                                                                {:owner {:principal "ADMIN"
-                                                                         :type      "ROLE"}
-                                                                 :rules [{:principal user-id
-                                                                          :right     "VIEW"
-                                                                          :type      "USER"}]}
-                                                                :priority 50)
-                   job-msg (str "stopping " id " with async " job-id)]
-                  (when (not= job-status 201)
-                        (throw (r/ex-response "unable to create async job to stop infrastructure service kubernetes" 500 id)))
-                  (-> id
-                      (db/retrieve request)
-                      (a/can-modify? request)
-                      (assoc :state "STOPPING")
-                      (db/edit request))
-                  (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
-                  (r/map-response job-msg 202 id job-id))
-             (catch Exception e
-               (or (ex-data e) (throw e)))))
+  [service request]
+  (try
+    (let [body (:body request)
+          user-id (:identity (a/current-authentication request))
+          id (:resource-id body)
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "stop_infrastructure_service_kubernetes"
+                                                       {:owner {:principal "ADMIN"
+                                                                :type      "ROLE"}
+                                                        :rules [{:principal user-id
+                                                                 :right     "VIEW"
+                                                                 :type      "USER"}]}
+                                                       :priority 50)
+          job-msg (str "stopping " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to stop infrastructure service kubernetes" 500 id)))
+      (-> id
+          (db/retrieve request)
+          (a/can-modify? request)
+          (assoc :state "STOPPING")
+          (db/edit request))
+      (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
