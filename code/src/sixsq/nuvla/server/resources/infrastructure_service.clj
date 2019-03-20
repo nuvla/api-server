@@ -188,8 +188,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/delete resource-type
   [request]
-  (post-delete-hook request)
-  (delete-impl request))
+  (post-delete-hook request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

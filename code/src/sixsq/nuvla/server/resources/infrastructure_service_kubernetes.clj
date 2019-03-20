@@ -74,7 +74,7 @@
            (try
              (let [body (:body request)
                    user-id (:identity (a/current-authentication request))
-                   id (-> response :body :resource-id)
+                   id (:resource-id body)
                    {{job-id     :resource-id
                      job-status :status} :body} (job/create-job id "stop_infrastructure_service_kubernetes"
                                                                 {:owner {:principal "ADMIN"
