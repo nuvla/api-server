@@ -201,7 +201,9 @@ existing infrastructure-service-template resource.
             status (:status response)]
         (if (= 412 status)
           (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
-                service (db/retrieve request nil)]
+                service (-> (str resource-type "/" uuid)
+                            (db/retrieve request)
+                            )]
             (log/info "FIRST: " service)
             (log/info "SECOND: " request)
             (post-delete-hook service request)
