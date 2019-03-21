@@ -16,6 +16,7 @@ existing infrastructure-service-template resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
@@ -201,6 +202,8 @@ existing infrastructure-service-template resource.
         (if (= 412 status)
           (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
                 service (db/retrieve request nil)]
+            (log/info "FIRST: " service)
+            (log/info "SECOND: " request)
             (post-delete-hook service request)
             response)
           (throw e))))))

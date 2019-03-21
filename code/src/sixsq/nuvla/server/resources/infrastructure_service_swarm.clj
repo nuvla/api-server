@@ -72,6 +72,7 @@
 (defmethod infra-service/post-delete-hook method
   [service request]
   (try
+    (log/info "THIRD")
     (let [body (:body request)
           user-id (:identity (a/current-authentication request))
           id (:resource-id body)
