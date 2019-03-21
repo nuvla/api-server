@@ -187,42 +187,29 @@ existing infrastructure-service-template resource.
   (edit-impl request))
 
 
-(def delete-impl (std-crud/delete-fn resource-type))
-;
-;
-;(defmethod crud/delete resource-type
-;  [{{uuid :uuid} :params body :body :as request}]
-;  (try
-;    (-> (str resource-type "/" uuid)
-;        (db/retrieve request)
-;        (a/can-modify? request))
-;    (catch Exception e
-;      (or (ex-data e) (throw e))))
-;
-;  (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
-;        service (db/retrieve request nil)]
-;    (post-delete-hook service request)
-;    response))
-
-;
-;
-(defmethod crud/delete resource-type
-  [{{uuid :uuid} :params body :body :as request}]
+(defn delete-impl
+  [{{uuid :uuid} :params :as request}]
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
         infra-service-utils/verify-can-delete
         (a/can-modify? request)
-        (delete-impl request))
+        (db/delete request))
     (catch Exception e
       (let [response (ex-data e)
             status (:status response)]
         (if (= 412 status)
-         (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
-              service (db/retrieve request nil)]
-          (post-delete-hook service request)
-          response)
+          (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
+                service (db/retrieve request nil)]
+            (post-delete-hook service request)
+            response)
           (throw e))))))
+
+
+(defmethod crud/delete resource-type
+  [request]
+  (delete-impl request))
+
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
