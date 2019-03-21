@@ -4,8 +4,8 @@
     [clj-time.core :as t]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as exoscale]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
     [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.amazonaws AmazonServiceException HttpMethod SdkClientException)

@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-swarm
   (:require
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]))
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const method "swarm")
