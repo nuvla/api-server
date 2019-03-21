@@ -72,10 +72,8 @@
 (defmethod infra-service/post-delete-hook method
   [service request]
   (try
-    (log/info "THIRD")
-    (let [body (:body request)
-          user-id (:identity (a/current-authentication request))
-          id (:resource-id body)
+    (let [user-id (:identity (a/current-authentication request))
+          id (:resource-id service)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stope_infrastructure_service_swarm"
                                                        {:owner {:principal "ADMIN"

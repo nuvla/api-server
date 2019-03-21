@@ -204,8 +204,6 @@ existing infrastructure-service-template resource.
                 service (-> (str resource-type "/" uuid)
                             (db/retrieve request)
                             )]
-            (log/info "FIRST: " service)
-            (log/info "SECOND: " request)
             (post-delete-hook service request)
             response)
           (throw e))))))
