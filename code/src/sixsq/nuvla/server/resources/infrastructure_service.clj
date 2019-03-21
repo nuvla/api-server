@@ -137,7 +137,7 @@ existing infrastructure-service-template resource.
 ;; default post-delete hook is a no-op
 (defmethod post-delete-hook :default
   [service request]
-  (std-crud/delete-fn request))
+  nil)
 
 
 ;;
