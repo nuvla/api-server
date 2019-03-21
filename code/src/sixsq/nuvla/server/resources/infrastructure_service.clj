@@ -10,7 +10,6 @@ This is a templated resource. All creation requests must be done via an
 existing infrastructure-service-template resource.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -202,8 +201,7 @@ existing infrastructure-service-template resource.
         (if (= 412 status)
           (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
                 service (-> (str resource-type "/" uuid)
-                            (db/retrieve request)
-                            )]
+                            (db/retrieve request))]
             (post-delete-hook service request)
             response)
           (throw e))))))
