@@ -17,6 +17,7 @@ existing infrastructure-service-template resource.
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
@@ -187,21 +188,41 @@ existing infrastructure-service-template resource.
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
+;
+;
+;(defmethod crud/delete resource-type
+;  [{{uuid :uuid} :params body :body :as request}]
+;  (try
+;    (-> (str resource-type "/" uuid)
+;        (db/retrieve request)
+;        (a/can-modify? request))
+;    (catch Exception e
+;      (or (ex-data e) (throw e))))
+;
+;  (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
+;        service (db/retrieve request nil)]
+;    (post-delete-hook service request)
+;    response))
 
-
+;
+;
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params body :body :as request}]
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (a/can-modify? request))
+        infra-service-utils/verify-can-delete
+        (a/can-modify? request)
+        (delete-impl request))
     (catch Exception e
-      (or (ex-data e) (throw e))))
-
-  (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
-        service (db/retrieve request nil)]
-    (post-delete-hook service request)
-    response))
+      (let [response (ex-data e)
+            status (:status response)]
+        (if (= 412 status)
+         (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
+              service (db/retrieve request nil)]
+          (post-delete-hook service request)
+          response)
+          (throw e))))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

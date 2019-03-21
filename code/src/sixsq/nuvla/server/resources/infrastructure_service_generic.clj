@@ -30,6 +30,6 @@
           (nil? state) (assoc :state "STARTED")))
 
 
-(defmethod infra-service/post-delete-hook method
-           [request]
-           (infra-service/delete-impl request))
+;(defmethod infra-service/post-delete-hook method
+;           [request]
+;           (infra-service/delete-impl request))
