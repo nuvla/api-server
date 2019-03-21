@@ -13,7 +13,7 @@
   [{:keys [id state] :as resource}]
   (if (can-delete? resource)
     resource
-    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 412 id ))))
+    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 412 id))))
 
 
 (defn remove-delete
