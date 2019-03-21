@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-swarm
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.util.response :as r]
@@ -72,12 +71,10 @@
 (defmethod infra-service/post-delete-hook method
   [service request]
   (try
-    (log/info "ONE " service)
-    (log/info "TWO " (:id service))
     (let [user-id (:identity (a/current-authentication request))
           id (:id service)
           {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "stope_infrastructure_service_swarm"
+            job-status :status} :body} (job/create-job id "stop_infrastructure_service_swarm"
                                                        {:owner {:principal "ADMIN"
                                                                 :type      "ROLE"}
                                                         :rules [{:principal user-id

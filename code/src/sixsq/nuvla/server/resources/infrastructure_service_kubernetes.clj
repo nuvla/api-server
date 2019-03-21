@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-kubernetes
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.util.response :as r]
@@ -72,9 +71,8 @@
 (defmethod infra-service/post-delete-hook method
   [service request]
   (try
-    (let [body (:body request)
-          user-id (:identity (a/current-authentication request))
-          id (:resource-id body)
+    (let [user-id (:identity (a/current-authentication request))
+          id (:id service)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_infrastructure_service_kubernetes"
                                                        {:owner {:principal "ADMIN"
