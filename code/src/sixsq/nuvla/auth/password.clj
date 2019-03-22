@@ -5,7 +5,12 @@
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
+    [sixsq.nuvla.server.resources.group :as group]
+    [clojure.string :as str]))
+
+
+(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
 (defn- extract-credentials
@@ -20,9 +25,8 @@
     (some->
       (db/query
         user-identifier/resource-type
-        {:cimi-params {:filter (parser/parse-cimi-filter
-                                 (format "identifier='%s'" username))}
-         :user-roles  ["ADMIN"]})
+        (merge admin-opts {:cimi-params {:filter (parser/parse-cimi-filter
+                                                   (format "identifier='%s'" username))}}))
       second
       first
       :parent)
@@ -73,15 +77,26 @@
     (when (valid-password? current-password credential-hash)
       user)))
 
-(defn find-roles-for-user
-  [user]
-  ;FIXME Should be fetched from new group resource.
-  (let [{super? :is-super-user} user]
-    (if super?
-      "ADMIN USER ANON"
-      "USER ANON")))
+
+(defn collect-groups-for-user
+  [id]
+  (let [group-set (->> (db/query
+                         group/resource-type
+                         (merge admin-opts
+                                {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
+                                               :select ["id"]}}))
+                       :resources
+                       (map :id)
+                       (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
+                       (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
+                       set)]
+    (str/join " " (sort (cond-> group-set
+                                (group-set "group/nuvla-admin") (conj "ADMIN")
+                                (group-set "group/nuvla-user") (conj "USER")
+                                (group-set "group/nuvla-anon") (conj "ANON"))))))
+
 
 (defn create-claims
   [{:keys [id] :as user}]
   {:username id                                             ;FIXME What it should be ? array of identifiers
-   :roles    (find-roles-for-user user)})
+   :roles    (collect-groups-for-user id)})
