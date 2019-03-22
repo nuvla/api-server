@@ -33,6 +33,8 @@
 ;; check that all templates are visible as administrator
 ;; only the 'password' template will be created automatically
 (deftest lifecycle-admin
+
+
   (let [session (-> (session (ltu/ring-app))
                     (content-type "application/json")
                     (header authn-info-header "root ADMIN"))
@@ -40,7 +42,6 @@
                     (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
-                    (ltu/dump)
                     (ltu/is-resource-uri t/collection-type)
                     (ltu/is-count pos?)
                     (ltu/is-operation-present "add")
@@ -49,8 +50,10 @@
                     (ltu/entries))
         ids (set (map :id entries))
         types (set (map :method entries))]
+
     (is (= #{(str t/resource-type "/" password/registration-method)}
            ids))
+
     (is (= #{password/registration-method}
            types))
 

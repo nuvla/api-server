@@ -9,8 +9,7 @@ optional name can also be provided.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user-template-password :as ut-password]
     [sixsq.nuvla.server.resources.user-template :as p]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const registration-method "password")
@@ -36,8 +35,10 @@ optional name can also be provided.
   {:method           registration-method
    :instance         registration-method
    :name             "Registration with Password"
-   :description      "allows user registration with email, password, and optional name"
-   :resourceMetadata (str p/resource-type "-" registration-method)
+   :description      "allows user registration with email, password, and optional username"
+   :resourceMetadata (str "resource-metadata/" p/resource-type "-" registration-method)
+   :order            0
+   :icon             "user"
    :acl              resource-acl})
 
 
@@ -49,8 +50,7 @@ optional name can also be provided.
   []
   (p/register registration-method)
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-password/schema))
-  (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource)
-  (log/error "JELLO"))
+  (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
 
 ;;
