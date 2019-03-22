@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.infrastructure-service-swarm-lifecycle-test
+(ns sixsq.nuvla.server.resources.infrastructure-service-kubernetes-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -12,7 +12,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as infra-service-tpl-swarm]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-kubernetes :as infra-service-tpl-kubernetes]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
@@ -65,6 +65,7 @@
                                     :parent   service-group-id
                                     :type     "cloud"
                                     :endpoint "https://cloud.example.org/api"
+                                    :nodes    []
                                     :state    "STARTED"}}
 
 
@@ -93,7 +94,7 @@
                       :description service-desc
                       :tags        service-tags
                       :template    {:href               (str infra-service-tpl/resource-type "/"
-                                                             infra-service-tpl-swarm/method)
+                                                             infra-service-tpl-kubernetes/method)
                                     :parent             service-group-id
                                     :service-credential {:href credential-id}}}]
 
