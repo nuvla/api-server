@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl :as a]
     [sixsq.nuvla.auth.acl :as acl]
     [sixsq.nuvla.db.impl :as db]
@@ -11,8 +12,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

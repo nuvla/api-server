@@ -11,16 +11,15 @@ existing infrastructure-service-template resource.
 "
   (:require
     [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.infrastructure-service.utils :as infra-service-utils]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -202,8 +201,7 @@ existing infrastructure-service-template resource.
         (if (= 412 status)
           (let [response (r/map-response "created job to delete infrastructure service" 202 uuid)
                 service (-> (str resource-type "/" uuid)
-                            (db/retrieve request)
-                            )]
+                            (db/retrieve request))]
             (post-delete-hook service request)
             response)
           (throw e))))))

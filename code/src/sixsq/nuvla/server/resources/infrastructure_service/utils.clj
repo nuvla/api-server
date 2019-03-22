@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service.utils
-  (:require [clojure.string :as str]
-            [sixsq.nuvla.server.resources.common.schema :as c]
-            [sixsq.nuvla.server.util.response :as r]))
+  (:require
+    [sixsq.nuvla.server.resources.common.schema :as c]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn verify-can-delete
