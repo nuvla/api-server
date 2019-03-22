@@ -29,7 +29,3 @@
   (cond-> (dissoc resource :href :resourceMetadata)
           (nil? state) (assoc :state "STARTED")))
 
-
-;(defmethod infra-service/post-delete-hook method
-;           [request]
-;           (infra-service/delete-impl request))

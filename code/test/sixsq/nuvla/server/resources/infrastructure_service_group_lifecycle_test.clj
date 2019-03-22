@@ -45,7 +45,7 @@
         valid-service {:acl      valid-acl
                        :type     "docker"
                        :endpoint "https://docker.example.org/api"
-                       :state    "STARTED"}
+                       :state    "CREATED"}
 
         valid-service-create {:name        "my-service"
                               :description "my-description"
@@ -161,22 +161,22 @@
                   (request (str p/service-context service-id)
                            :request-method :delete)
                   (ltu/body->edn)
-                  (ltu/is-status 202)))
+                  (ltu/is-status 200)))
 
             ;; verify that the infrastructure-services are gone
             (doseq [service-id service-ids]
               (-> session
                   (request (str p/service-context service-id))
                   (ltu/body->edn)
-                  (ltu/is-status 200)))
+                  (ltu/is-status 404)))
 
             (ltu/refresh-es-indices)
 
             ;; now service-group can be deleted
-            ;(-> session
-            ;    (request abs-uri :request-method :delete)
-            ;    (ltu/body->edn)
-            ;    (ltu/is-status 200))
+            (-> session
+                (request abs-uri :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 200))
             ))))))
 
 

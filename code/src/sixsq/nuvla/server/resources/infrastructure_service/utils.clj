@@ -4,18 +4,8 @@
             [sixsq.nuvla.server.util.response :as r]))
 
 
-(defn can-delete?
-  [{:keys [state] :as resource}]
-  (#{"CREATED" "STOPPED"} state))
-
-
 (defn verify-can-delete
   [{:keys [id state] :as resource}]
-  (if (can-delete? resource)
+  (if (#{"CREATED" "STOPPED"} state)
     resource
     (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 412 id ))))
-
-
-(defn remove-delete
-  [operations]
-  (vec (remove #(= (:delete c/action-uri) (:rel %)) operations)))

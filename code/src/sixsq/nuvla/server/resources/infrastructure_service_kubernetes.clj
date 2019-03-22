@@ -42,10 +42,9 @@
 ;;
 
 (defmethod infra-service/post-add-hook method
-  [service request]
+  [{:keys [id] :as service} request]
   (try
-    (let [id (:id service)
-          user-id (:identity (a/current-authentication request))
+    (let [user-id (:identity (a/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"
                                                        {:owner {:principal "ADMIN"
@@ -69,10 +68,9 @@
 
 
 (defmethod infra-service/post-delete-hook method
-  [service request]
+  [{:keys [id] :as service} request]
   (try
     (let [user-id (:identity (a/current-authentication request))
-          id (:id service)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_infrastructure_service_kubernetes"
                                                        {:owner {:principal "ADMIN"

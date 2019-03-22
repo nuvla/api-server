@@ -56,7 +56,7 @@
                        :parent   service-group-id
                        :type     "docker"
                        :endpoint "https://docker.example.org/api"
-                       :state    "STARTED"}
+                       :state    "CREATED"}
 
         valid-create {:name        service-name
                       :description service-desc
@@ -125,10 +125,10 @@
           (is (= service-tags (:tags service)))
           (is (:type service))
           (is (:endpoint service))
-          (is (= "STARTED" (:state service))))
+          (is (= "CREATED" (:state service))))
 
         ;; can delete resource
         (-> session
             (request abs-uri :request-method :delete)
             (ltu/body->edn)
-            (ltu/is-status 202))))))
+            (ltu/is-status 200))))))
