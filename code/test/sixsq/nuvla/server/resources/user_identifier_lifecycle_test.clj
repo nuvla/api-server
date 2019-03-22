@@ -38,7 +38,7 @@
 
                   :identifier    test-identifier
 
-                  :user          {:href "user/jane"}})
+                  :parent        "user/jane"})
 
 
 (deftest check-metadata
@@ -49,9 +49,9 @@
 
   (let [session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-jane (header session-anon authn-info-header "jane USER ANON")
-        session-tarzan (header session-anon authn-info-header "tarzan USER ANON")]
+        session-admin (header session-anon authn-info-header "user/super ADMIN USER ANON")
+        session-jane (header session-anon authn-info-header "user/jane USER ANON")
+        session-tarzan (header session-anon authn-info-header "user/tarzan USER ANON")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-jane session-tarzan]]
@@ -111,8 +111,8 @@
 
         (is (= {:id         expected-id
                 :identifier test-identifier
-                :user       {:href "user/jane"}}
-               (select-keys resource #{:id :identifier :user}))))
+                :parent     "user/jane"}
+               (select-keys resource #{:id :identifier :parent}))))
 
       ;; adding the same resource a second time must fail
       (-> session-admin

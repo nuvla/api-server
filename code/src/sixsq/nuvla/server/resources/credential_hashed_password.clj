@@ -51,14 +51,15 @@ Hashed value of a password.
 ;;
 
 (defmethod p/tpl->credential tpl-hashed-pwd/credential-type
-  [{:keys [type method password password-repeated]} request]
+  [{:keys [type method password password-repeated parent]} request]
   (if (= password password-repeated)
     (if (acceptable-password? password)
       (let [hash (hashers/derive password)]
-        [nil {:resource-type p/resource-type
-              :type          type
-              :method        method
-              :hash          hash}])
+        [nil (cond-> {:resource-type p/resource-type
+                      :type          type
+                      :method        method
+                      :hash          hash}
+                     parent (assoc :parent parent))])
       (throw (r/ex-response acceptable-password-msg 400)))
     (throw (r/ex-response "mismatched passwords" 400))))
 

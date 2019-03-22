@@ -6,6 +6,23 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+(s/def ::username
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "username"
+             :json-schema/name "username"
+             :json-schema/type "string"
+             :json-schema/providerMandatory true
+             :json-schema/consumerMandatory true
+             :json-schema/mutable true
+             :json-schema/consumerWritable true
+
+             :json-schema/displayName "username"
+             :json-schema/description "your username"
+             :json-schema/help "your username"
+             :json-schema/group "body"
+             :json-schema/order 20
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
 (s/def ::email
   (-> (st/spec ::cimi-core/email)
@@ -66,7 +83,8 @@
 
 ;; no good defaults for these keys, make them optional in template
 (def user-template-password-keys-opt
-  {:opt-un [::email
+  {:opt-un [::username
+            ::email
             ::password
             ::password-repeated]})
 
@@ -75,7 +93,8 @@
 (def user-template-password-keys-req
   {:req-un [::email
             ::password
-            ::password-repeated]})
+            ::password-repeated]
+   :opt-un [::username]})
 
 
 (def user-template-password-keys-href

@@ -176,7 +176,8 @@ internal-identity
     (let [request {:params   {:resource-name resource-url}
                    :identity internal-identity
                    :body     resource}
-          {:keys [status]} (crud/add request)]
+          {:keys [status] :as response} (crud/add request)]
+      (log/error response)
       (case status
         201 (log/infof "created %s resource" resource-id)
         409 (log/infof "%s resource already exists; new resource not created." resource-id)

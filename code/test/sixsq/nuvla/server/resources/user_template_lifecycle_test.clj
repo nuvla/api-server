@@ -9,7 +9,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-template :as t]
-    [sixsq.nuvla.server.resources.user-template-direct :as direct]
+    [sixsq.nuvla.server.resources.user-template-password :as password]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -24,14 +24,14 @@
 
 
 (deftest check-retrieve-by-id
-  (doseq [registration-method [direct/registration-method]]
+  (doseq [registration-method [password/registration-method]]
     (let [id (str t/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
 
 
 ;; check that all templates are visible as administrator
-;; only the 'direct' template will be created automatically
+;; only the 'password' template will be created automatically
 (deftest lifecycle-admin
   (let [session (-> (session (ltu/ring-app))
                     (content-type "application/json")
@@ -40,6 +40,7 @@
                     (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
+                    (ltu/dump)
                     (ltu/is-resource-uri t/collection-type)
                     (ltu/is-count pos?)
                     (ltu/is-operation-present "add")
@@ -48,9 +49,9 @@
                     (ltu/entries))
         ids (set (map :id entries))
         types (set (map :method entries))]
-    (is (= #{(str t/resource-type "/" direct/registration-method)}
+    (is (= #{(str t/resource-type "/" password/registration-method)}
            ids))
-    (is (= #{direct/registration-method}
+    (is (= #{password/registration-method}
            types))
 
     (doseq [entry entries]

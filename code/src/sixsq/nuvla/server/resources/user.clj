@@ -6,18 +6,25 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 "
   (:require
     [clj-time.core :as t]
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [environ.core :as env]
     [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.auth.internal :as internal]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.spec.user :as user]
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
-    [sixsq.nuvla.server.resources.user-template-direct :as tpl]
+    [sixsq.nuvla.server.resources.user-template-password :as tpl]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.password :as password]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -36,17 +43,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; be able to view the collection and post requests to it (if a template is
 ;; visible to ANON.)
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl user-utils/collection-acl)
 
 
 ;;
@@ -79,30 +76,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; multimethod for ACLs
 ;;
 
-(defn create-acl
-  [id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal "ADMIN"
-            :type      "ROLE"
-            :right     "ALL"}
-           {:principal id
-            :type      "USER"
-            :right     "MODIFY"}]})
-
 (defmethod crud/add-acl resource-type
-  [{:keys [username acl] :as resource} request]
-  (assoc
-    resource
-    :acl
-    (or acl (create-acl username))))
-
-;;
-;; set the resource identifier to "user/username"
-;;
-(defmethod crud/new-identifier resource-type
-  [{:keys [username] :as json} resource-name]
-  (assoc json :id (str resource-type "/" username)))
+  [resource request]
+  (assoc resource :acl {:owner {:principal "ADMIN"
+                                :type      "ROLE"}}))
 
 ;;
 ;; template processing
@@ -128,7 +105,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 (defmethod tpl->user :default
   [resource request]
-  [{:status 400, :message "missing or invalid UserTemplate reference"} nil])
+  [{:status 400, :message "missing or invalid user-template reference"} nil])
 
 
 ;; handles any actions that must be taken after the user is added
@@ -156,26 +133,19 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (merge user-attrs-defaults resource))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
-(defn revert-method
-  [[fragment {:keys [method] :as body}] original-method]
-  (if (and original-method (= tpl/registration-method method))
-    [fragment (assoc body :method original-method)]
-    [fragment body]))
-
 (defn merge-attrs
   [[fragment m] desc-attrs]
   [fragment (merge m desc-attrs)])
 
-;; requires a UserTemplate to create new User
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+;; requires a user-template to create new User
 (defmethod crud/add resource-type
   [{:keys [body form-params headers] :as request}]
 
   (try
     (let [idmap {:identity (:identity request)}
           body (if (u/is-form? headers) (u/convert-form :template form-params) body)
-          authn-method (-> body :template :method)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
@@ -186,8 +156,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                                     (:template)
                                                     (merge-with-defaults)
                                                     (tpl->user request) ;; returns a tuple [response-fragment, resource-body]
-                                                    (merge desc-attrs)
-                                                    (revert-method authn-method))]
+                                                    (merge-attrs desc-attrs))]
 
       (cond
 
@@ -195,7 +164,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
         (and resp-fragment (nil? body)) resp-fragment
 
         ;; requested redirect with method that created a user
-        (and resp-fragment body) (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :id id :body body))]
+        (and resp-fragment body) (let [{{:keys [status resource-id]} :body} (add-impl
+                                                                              (assoc request :id id :body body))]
                                    (when (and resource-id (= 201 status))
                                      (post-user-add (assoc body :id resource-id) request))
                                    (cond-> resp-fragment
@@ -213,42 +183,45 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))
           (or http-response (throw e)))))))
 
+
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
+(defn delete-children
+  [children-resource-types {:keys [params] :as request}]
+  (doseq [children-resource-type children-resource-types]
+    (try
+      (let [filter (format "%s='%s/%s'" "parent" resource-type (:uuid params))
+            entries (second (db/query children-resource-type {:cimi-params {:filter (parser/parse-cimi-filter filter)}
+                                                              :user-roles  ["ADMIN"]}))]
+        (doseq [{:keys [id]} entries]
+          (crud/delete {:identity std-crud/internal-identity
+                        :params   {:uuid          (some-> id (str/split #"/") second)
+                                   :resource-name children-resource-type}})))
+      (catch Exception e
+        (log/warn (ex-data e))))))
+
+
 (def delete-impl (std-crud/delete-fn resource-type))
+
 (defmethod crud/delete resource-type
   [request]
+  (delete-children
+    [email/resource-type
+     credential/resource-type
+     user-identifier/resource-type] request)
   (delete-impl request))
 
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
-(defn in?
-  "true if coll contains elm."
-  [coll elm]
-  (if (some #(= elm %) coll) true false))
-
-
-(defn admin?
-  "Expects identity map from the request."
-  [identity]
-  (-> identity
-      :authentications
-      (get (:current identity))
-      :roles
-      (in? "ADMIN")))
-
-
-(defn filter-for-regular-user
-  [user-resource request]
-  (if (admin? (:identity request))
-    user-resource
-    (dissoc user-resource :isSuperUser)))
 
 
 (defn throw-no-id
@@ -264,7 +237,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (let [current (-> (:id body)
                       (db/retrieve request)
                       (a/can-modify? request))
-          merged (merge current (filter-for-regular-user body request))]
+          merged (merge current (user-utils/filter-for-regular-user body request))]
       (-> merged
           (dissoc :href)
           (u/update-timestamps)
@@ -282,17 +255,18 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 ;; initialization: common schema for all user creation methods
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::user/schema)
   (when-let [super-pass (env/env :super-pass)]
-    ;; FIXME: this is a nasty hack to ensure user template direct is available
+    ;; FIXME: this is a nasty hack to ensure user template password is available
     (tpl/initialize)
-    (std-crud/add-if-absent (str resource-type "/super") resource-type
+    #_(std-crud/add-if-absent (str resource-type " " "super") resource-type
                             {:template
-                             {:href         (str p/resource-type "/" tpl/registration-method)
-                              :username     "super"
-                              :password     (internal/hash-password super-pass)
-                              :emailAddress "super@example.com"
-                              :state        "ACTIVE"
-                              :isSuperUser  true}})))
+                             {:href              (str p/resource-type "/" tpl/registration-method)
+                              :username          "super"
+                              :password          super-pass
+                              :password-repeated super-pass
+                              :email             "super@example.com"}})
+    #_(user-utils/update-user (password/identifier->user-id "super") {:is-super-user true})))

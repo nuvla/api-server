@@ -62,17 +62,16 @@ must delete the old one and create a new one.
 
 (defn user-acl
   [user-id]
-  (let [[_ user] (u/split-resource-id user-id)]
-    {:owner {:principal "ADMIN"
-             :type      "ROLE"}
-     :rules [{:principal user
-              :type      "USER"
-              :right     "VIEW"}]}))
+  {:owner {:principal "ADMIN"
+           :type      "ROLE"}
+   :rules [{:principal user-id
+            :type      "USER"
+            :right     "VIEW"}]})
 
 
 (defmethod crud/add-acl resource-type
-  [{{user-id :href} :user :as resource} request]
-  (assoc resource :acl (user-acl user-id)))
+  [{:keys [parent] :as resource} request]
+  (assoc resource :acl (user-acl parent)))
 
 
 ;;

@@ -17,7 +17,18 @@
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
-(defn validated-email!
+(defn validate_email!
+  [email-id]
+  (try
+    (-> (crud/retrieve-by-id-as-admin email-id)
+        (u/update-timestamps)
+        (assoc :validated true)
+        (db/edit admin-opts))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defn activate-user!
   [user-id]
   (try
     (-> (crud/retrieve-by-id-as-admin user-id)
@@ -27,13 +38,18 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn validated-email!
+  [user-id email-id]
+  (validate_email! email-id)
+  (activate-user! user-id))
+
 
 (defmethod callback/execute action-name
   [{{:keys [href]} :targetResource :as callback-resource} request]
-  (let [{:keys [id state] :as user} (crud/retrieve-by-id-as-admin href)]
+  (let [{:keys [id state email] :as user} (crud/retrieve-by-id-as-admin href)]
     (if (= "NEW" state)
       (let [msg (str "email for " id " successfully validated")]
-        (validated-email! id)
+        (validated-email! id email)
         (log/info msg)
         (r/map-response msg 200 id))
       (log-util/log-and-throw 400 (format "%s is not in the 'NEW' state" id)))))

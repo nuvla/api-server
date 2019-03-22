@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as ct-hashed-pwd]
-    [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
