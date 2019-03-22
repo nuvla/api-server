@@ -91,10 +91,10 @@
                 (ltu/is-status 200))
 
             (let [{updated-users :users :as body} (-> session-admin
-                                                       (request abs-uri)
-                                                       (ltu/body->edn)
-                                                       :response
-                                                       :body)]
+                                                      (request abs-uri)
+                                                      (ltu/body->edn)
+                                                      :response
+                                                      :body)]
               (is (= users updated-users)))))
 
         ;; delete should work
