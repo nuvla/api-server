@@ -59,18 +59,24 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; validate create requests for subclasses of users
 ;; different create (registration) requests may take different inputs
 ;;
+
 (defn dispatch-on-registration-method [resource]
   (get-in resource [:template :method]))
 
+
 (defmulti create-validate-subtype dispatch-on-registration-method)
+
 
 (defmethod create-validate-subtype :default
   [resource]
-  (logu/log-and-throw-400 "missing or invalid UserTemplate reference"))
+  (let [method (dispatch-on-registration-method resource)]
+    (logu/log-and-throw-400 (format "invalid user registration method '%s'" method))))
+
 
 (defmethod crud/validate create-type
   [resource]
   (create-validate-subtype resource))
+
 
 ;;
 ;; multimethod for ACLs

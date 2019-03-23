@@ -6,8 +6,10 @@
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-email-password :as spec-email-password]
+    [sixsq.nuvla.server.resources.spec.user-template-username-password :as spec-username-password]
     [sixsq.nuvla.server.resources.user :as p]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]))
 
 
@@ -15,13 +17,24 @@
 ;; multimethods for validation
 ;;
 
-(def create-validate-fn (u/create-spec-validation-fn ::spec-email-password/schema-create))
+;; FIXME: These should probably be in user-template resources rather than here.
+
+(def create-validate-fn-email (u/create-spec-validation-fn ::spec-email-password/schema-create))
 
 
 (defmethod p/create-validate-subtype email-password/registration-method
   [{resource :template :as create-document}]
   (user-utils/check-password-constraints resource)
-  (create-validate-fn create-document))
+  (create-validate-fn-email create-document))
+
+
+(def create-validate-fn-username (u/create-spec-validation-fn ::spec-username-password/schema-create))
+
+
+(defmethod p/create-validate-subtype username-password/registration-method
+  [{resource :template :as create-document}]
+  (user-utils/check-password-constraints resource)
+  (create-validate-fn-username create-document))
 
 
 ;;
@@ -47,6 +60,16 @@
       [nil user-map])))
 
 
+;; FIXME: Should be in separate namespace.
+(defmethod p/tpl->user username-password/registration-method
+  [{:keys [redirectURI] :as resource} request]
+  (let [user-map (-> (create-user-map resource)
+                     (assoc :state "ACTIVE"))]
+    (if redirectURI
+      [{:status 303, :headers {"Location" redirectURI}} user-map]
+      [nil user-map])))
+
+
 ;;
 ;; creates email validation callback after user is created
 ;; logs and then ignores any exceptions when creating callback
@@ -62,6 +85,16 @@
       (user-utils/create-user-subresources user-id email password username)
       (-> (create-user-email-callback base-uri user-id)
           (email-utils/send-validation-email email)))
+    (catch Exception e
+      (user-utils/delete-user user-id)
+      (throw e))))
+
+;; FIXME: Should be in separate namespace.
+(defmethod p/post-user-add username-password/registration-method
+  [{user-id :id :as resource} {:keys [base-uri body] :as request}]
+  (try
+    (let [{{:keys [password username]} :template} body]
+      (user-utils/create-user-subresources user-id nil password username))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

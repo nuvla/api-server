@@ -94,7 +94,7 @@
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
-      (throw (ex-info "" body)))))
+      (throw (ex-info (format "could not create identifier for '%s' -> '%s'" user-id identifier) body)))))
 
 
 (defn update-user
@@ -121,18 +121,20 @@
 (defn create-user-subresources
   [user-id email password username]
   (let [credential-id (create-hashed-password user-id password)
-        email-id (create-email user-id email)]
+        email-id (some->> email
+                          (create-email user-id))]
 
-    (update-user user-id {:id                  user-id
-                          :credential-password credential-id
-                          :email               email-id
-                          :acl                 {:owner {:principal "ADMIN"
-                                                        :type      "ROLE"}
-                                                :rules [{:principal user-id
-                                                         :type      "USER"
-                                                         :right     "MODIFY"}]}})
+    (update-user user-id (cond-> {:id                  user-id
+                                  :credential-password credential-id
+                                  :acl                 {:owner {:principal "ADMIN"
+                                                                :type      "ROLE"}
+                                                        :rules [{:principal user-id
+                                                                 :type      "USER"
+                                                                 :right     "MODIFY"}]}}
+                                 email-id (assoc :email email-id)))
 
-    (create-identifier user-id email)
+    (when email
+      (create-identifier user-id email))
 
     (when username
       (create-identifier user-id username))))

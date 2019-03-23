@@ -70,8 +70,8 @@
              :json-schema/sensitive false)))
 
 ;;
-;; Keys specifications for UserTemplate resources.
-;; As this is a "base class" for UserTemplate resources, there
+;; Keys specifications for user-template resources.
+;; As this is a "base class" for user-template resources, there
 ;; is no sense in defining map resources for the resource itself.
 ;;
 
