@@ -58,12 +58,12 @@
   [{identifier       :username
     current-password :password}]
   (let [user (some-> identifier
-                     (identifier->user-id)
-                     (user-id->user)
-                     (check-user-active))
+                     identifier->user-id
+                     user-id->user
+                     check-user-active)
         credential-hash (some-> user
                                 :credential-password
-                                (credential-id->credential)
+                                credential-id->credential
                                 :hash)]
     (when (valid-password? current-password credential-hash)
       user)))

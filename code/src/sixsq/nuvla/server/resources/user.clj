@@ -21,7 +21,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
@@ -265,21 +265,21 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defn initialize
   []
   (std-crud/initialize resource-type ::user/schema)
-  (when-let [super-pass (env/env :super-pass)]
-    ;; FIXME: this is a nasty hack to ensure user template password is available
-    (email-password/initialize)
+  (when-let [super-password (env/env :nuvla-super-password)]
+    ;; FIXME: this is a nasty hack to ensure username-password user-template and user-identifier index are available
+    (username-password/initialize)
+    (user-identifier/initialize)
     (if (nil? (password/identifier->user-id "super"))
       (do
-        (log/error "user 'super' does not exist; attempting to create it")
-        (std-crud/add-if-absent (str resource-type " super") resource-type
+        (log/info "user 'super' does not exist; attempting to create it")
+        (std-crud/add-if-absent (str resource-type " 'super'") resource-type
                                 {:template
-                                 {:href              (str p/resource-type "/" email-password/registration-method)
+                                 {:href              (str p/resource-type "/" username-password/registration-method)
                                   :username          "super"
-                                  :password          super-pass
-                                  :password-repeated super-pass
-                                  :email             "super@example.com"}})
+                                  :password          super-password
+                                  :password-repeated super-password}})
         (if-let [super-user-id (password/identifier->user-id "super")]
           (log/error "created user 'super' with identifier" super-user-id)
           (log/error "could not create user 'super'")))
       (do
-        (log/error "user 'super' already exists; skip trying to create it")))))
+        (log/info "user 'super' already exists; skip trying to create it")))))
