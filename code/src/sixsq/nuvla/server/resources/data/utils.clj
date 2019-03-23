@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.data-object.utils
+(ns sixsq.nuvla.server.resources.data.utils
   (:require
     [clj-time.coerce :as tc]
     [clj-time.core :as t]

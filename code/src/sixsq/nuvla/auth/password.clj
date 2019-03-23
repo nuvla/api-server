@@ -15,13 +15,12 @@
 (defn identifier->user-id
   [username]
   (try
-    (some-> (db/query
-              user-identifier/resource-type
-              (merge admin-opts {:cimi-params {:filter (parser/parse-cimi-filter
-                                                         (format "identifier='%s'" username))}}))
-            second
-            first
-            :parent)
+    (let [f (parser/parse-cimi-filter (format "identifier='%s'" username))
+          opts (merge admin-opts {:cimi-params {:filter f}})]
+      (some-> (db/query user-identifier/resource-type opts)
+              second
+              first
+              :parent))
     (catch Exception _ nil)))
 
 
@@ -51,21 +50,24 @@
 
 (defn valid-password?
   [current-password hash]
-  (hashers/check current-password hash))
+  (try
+    (boolean (hashers/check current-password hash))
+    (catch Exception _
+      false)))
 
 
+;; FIXME: This should call the check-password action on the credential instead of checking locally.
 (defn valid-user
-  [{identifier       :username
-    current-password :password}]
-  (let [user (some-> identifier
+  [{:keys [username password] :as credentials}]
+  (let [user (some-> username
                      identifier->user-id
                      user-id->user
                      check-user-active)
-        credential-hash (some-> user
-                                :credential-password
-                                credential-id->credential
-                                :hash)]
-    (when (valid-password? current-password credential-hash)
+        password-hash (some-> user
+                              :credential-password
+                              credential-id->credential
+                              :hash)]
+    (when (valid-password? password password-hash)
       user)))
 
 

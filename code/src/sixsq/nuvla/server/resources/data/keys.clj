@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.service-catalog.utils
+(ns sixsq.nuvla.server.resources.data.keys
   (:require
     [clojure.string :as str]
     [ring.util.response :as r]
