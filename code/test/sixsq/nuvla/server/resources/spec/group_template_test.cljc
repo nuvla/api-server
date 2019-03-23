@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.group-template-test
   (:require
     [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
+    [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl-spec]
-    [sixsq.nuvla.server.resources.group-template :as group-tpl]))
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
 (def valid-acl {:owner {:principal "ADMIN"

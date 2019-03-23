@@ -2,35 +2,27 @@
   (:refer-clojure :exclude [update])
   (:require
     [buddy.hashers :as hashers]
-    [sixsq.nuvla.auth.utils.http :as uh]
+    [clojure.string :as str]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.group :as group]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
-(defn- extract-credentials
-  [request]
-  {:username (->> request :params :username)
-   :password (uh/param-value request :password)})
-
-
 (defn identifier->user-id
   [username]
   (try
-    (some->
-      (db/query
-        user-identifier/resource-type
-        (merge admin-opts {:cimi-params {:filter (parser/parse-cimi-filter
-                                                   (format "identifier='%s'" username))}}))
-      second
-      first
-      :parent)
-    (catch Exception _ {})))
+    (some-> (db/query
+              user-identifier/resource-type
+              (merge admin-opts {:cimi-params {:filter (parser/parse-cimi-filter
+                                                         (format "identifier='%s'" username))}}))
+            second
+            first
+            :parent)
+    (catch Exception _ nil)))
 
 
 (defn try-retrieve-resource
@@ -38,7 +30,7 @@
   (when resource-id
     (try
       (db/retrieve resource-id {})
-      (catch Exception _ {}))))
+      (catch Exception _ nil))))
 
 
 (defn user-id->user
@@ -48,8 +40,7 @@
 
 (defn check-user-active
   [{:keys [state] :as user}]
-  (when
-    (= state "ACTIVE")
+  (when (= state "ACTIVE")
     user))
 
 
@@ -90,6 +81,7 @@
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
                        (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
                        set)]
+    ;; FIXME: Remove addition of ADMIN, USER, and ANON when we directly use the group information.
     (str/join " " (sort (cond-> group-set
                                 (group-set "group/nuvla-admin") (conj "ADMIN")
                                 (group-set "group/nuvla-user") (conj "USER")
@@ -98,5 +90,5 @@
 
 (defn create-claims
   [{:keys [id] :as user}]
-  {:username id                                             ;FIXME What it should be ? array of identifiers
+  {:username id
    :roles    (collect-groups-for-user id)})

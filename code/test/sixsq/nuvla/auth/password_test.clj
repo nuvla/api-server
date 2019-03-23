@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.auth.password-test
   (:require
+    [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.password :as t]
     [sixsq.nuvla.db.impl :as db]
-    [clojure.string :as str]
-    [peridot.core :refer :all]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.app.params :as p]
-    [clojure.data.json :as json]))
+    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
