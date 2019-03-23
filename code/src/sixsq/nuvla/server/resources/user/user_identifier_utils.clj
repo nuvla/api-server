@@ -55,19 +55,6 @@
    (find-user-identifier (generate-identifier authn-method external-login instance))))
 
 
-(defn user-identity-exists?
-  [authn-method external-login & [instance]]
-  (->> (generate-identifier authn-method external-login instance)
-       find-user-identifier
-       boolean))
-
-
-(defn sanitize-login-name
-  "Replace characters not satisfying [a-zA-Z0-9_] with underscore."
-  [s]
-  (when s (str/replace s #"[^a-zA-Z0-9_-]" "_")))
-
-
 (defn create-cimi-filter
   [filter]
   {:filter (parser/parse-cimi-filter filter)})
