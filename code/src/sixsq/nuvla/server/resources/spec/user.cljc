@@ -34,25 +34,6 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::is-super-user
-  (-> (st/spec boolean?)
-      (assoc :name "is-super-user"
-             :json-schema/name "is-super-user"
-             :json-schema/type "boolean"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "super user?"
-             :json-schema/description "flag to indicate if user is super user"
-             :json-schema/help "flag to indicate if user is super use"
-             :json-schema/group "body"
-             :json-schema/order 39
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
@@ -75,7 +56,6 @@
 (def user-keys-spec
   {:req-un [::state]
    :opt-un [::method
-            ::is-super-user
             ::credential-password
             ::email]})
 

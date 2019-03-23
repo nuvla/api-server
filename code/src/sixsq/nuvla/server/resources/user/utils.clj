@@ -42,13 +42,6 @@
       (in? "ADMIN")))
 
 
-(defn filter-for-regular-user
-  [user-resource request]
-  (if (admin? (:identity request))
-    user-resource
-    (dissoc user-resource :is-super-user)))
-
-
 (defn check-password-constraints
   [{:keys [password password-repeated]}]
   (cond

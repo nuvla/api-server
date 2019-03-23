@@ -33,7 +33,6 @@
   [{:keys [name description tags method] :as resource}]
   (cond-> {:resource-type p/resource-type
            :method        method
-           :is-super-user false
            :state         "NEW"}
           name (assoc :name name)
           description (assoc :description description)

@@ -28,8 +28,6 @@
 
              :method              "direct"
 
-             :is-super-user       false
-
              :state               "ACTIVE"
 
              :acl                 valid-acl}]
@@ -40,5 +38,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :state}]
       (stu/is-invalid ::user/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:name :method :is-super-user :credential-password :email}]
+    (doseq [attr #{:name :method :credential-password :email}]
       (stu/is-valid ::user/schema (dissoc cfg attr)))))
