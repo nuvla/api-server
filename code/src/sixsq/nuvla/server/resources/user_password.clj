@@ -5,9 +5,9 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.spec.user]
-    [sixsq.nuvla.server.resources.spec.user-template-password :as user-tpl-password]
+    [sixsq.nuvla.server.resources.spec.user-template-email-password :as spec-email-password]
     [sixsq.nuvla.server.resources.user :as p]
-    [sixsq.nuvla.server.resources.user-template-password :as user-tpl]
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]))
 
 
@@ -15,10 +15,10 @@
 ;; multimethods for validation
 ;;
 
-(def create-validate-fn (u/create-spec-validation-fn ::user-tpl-password/schema-create))
+(def create-validate-fn (u/create-spec-validation-fn ::spec-email-password/schema-create))
 
 
-(defmethod p/create-validate-subtype user-tpl/registration-method
+(defmethod p/create-validate-subtype email-password/registration-method
   [{resource :template :as create-document}]
   (user-utils/check-password-constraints resource)
   (create-validate-fn create-document))
@@ -40,7 +40,7 @@
           tags (assoc :tags tags)))
 
 
-(defmethod p/tpl->user user-tpl/registration-method
+(defmethod p/tpl->user email-password/registration-method
   [{:keys [redirectURI] :as resource} request]
   (let [user-map (create-user-map resource)]
     (if redirectURI
@@ -56,7 +56,7 @@
 (def create-user-email-callback (partial callback/create user-email-callback/action-name))
 
 
-(defmethod p/post-user-add user-tpl/registration-method
+(defmethod p/post-user-add email-password/registration-method
   [{user-id :id :as resource} {:keys [base-uri body] :as request}]
   (try
     (let [{{:keys [email password username]} :template} body]

@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.util.log
   (:require
+    [clojure.pprint :refer [pprint]]
     [clojure.tools.logging :as log]
     [ring.util.response :as ring-resp]
     [sixsq.nuvla.server.util.response :as r]))
@@ -37,7 +38,7 @@
   [o m]
   (log/info "--->>>" m)
   (let [s (new java.io.StringWriter)]
-    (clojure.pprint/pprint o s)
+    (pprint o s)
     (log/info (str s)))
   (log/info m "<<---")
   o)

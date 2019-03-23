@@ -15,7 +15,7 @@
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-password :as user-tpl-password]))
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -30,7 +30,7 @@
 (defn create-user
   [session-admin & {:keys [username password email activated?]}]
   (let [validation-link (atom nil)
-        href (str user-tpl/resource-type "/" user-tpl-password/registration-method)
+        href (str user-tpl/resource-type "/" email-password/registration-method)
         href-create {:template {:href              href
                                 :password          password
                                 :password-repeated password
@@ -147,10 +147,10 @@
           invalid-create (assoc-in valid-create [:template :invalid] "BAD")
           invalid-create-redirect (assoc-in valid-create-redirect [:template :invalid] "BAD")
           jane-user-id (create-user session-admin
-                               :username username
-                               :password plaintext-password
-                               :activated? true
-                               :email "jane@example.org")
+                                    :username username
+                                    :password plaintext-password
+                                    :activated? true
+                                    :email "jane@example.org")
           ]
 
       ; unauthorized create must return a 403 response
@@ -174,8 +174,7 @@
             token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
             claims (if token (sign/unsign-claims token) {})
 
-            uri (-> resp
-                    (ltu/location))
+            uri (ltu/location resp)
             abs-uri (str p/service-context uri)
 
             resp2 (-> session-anon
@@ -190,20 +189,30 @@
             token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
             claims2 (if token2 (sign/unsign-claims token2) {})
 
-            uri2 (-> resp2
-                     (ltu/location))
-            abs-uri2 (str p/service-context uri2)]
+            uri2 (ltu/location resp2)]
 
         ; check claims in cookie
         (is (= jane-user-id (:username claims)))
-        (is (= (str/join " " ["USER" "ANON" uri]) (:roles claims))) ;; uri is also session id
-        (is (= uri (:session claims)))                      ;; uri is also session id
+        (is (= #{"USER" "group/nuvla-user"
+                 "ANON" "group/nuvla-anon"
+                 uri}
+               (-> claims
+                   :roles
+                   (str/split #"\s")
+                   set)))
+        (is (= uri (:session claims)))
         (is (not (nil? (:exp claims))))
 
         ; check claims in cookie for redirect
         (is (= jane-user-id (:username claims2)))
-        (is (= (str/join " " ["USER" "ANON" id2]) (:roles claims2))) ;; uri is also session id
-        (is (= id2 (:session claims2)))                     ;; uri is also session id
+        (is (= #{"USER" "group/nuvla-user"
+                 "ANON" "group/nuvla-anon"
+                 id2}
+               (-> claims2
+                   :roles
+                   (str/split #"\s")
+                   set)))
+        (is (= id2 (:session claims2)))
         (is (not (nil? (:exp claims2))))
         (is (= "http://redirect.example.org" uri2))
 

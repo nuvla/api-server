@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.user-password-lifecycle-test
+(ns sixsq.nuvla.server.resources.user-email-password-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -13,7 +13,7 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-password :as user-tpl-password]
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -24,13 +24,13 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str user-tpl/resource-type "-" user-tpl-password/resource-url)))
+  (mdtu/check-metadata-exists (str user-tpl/resource-type "-" email-password/resource-url)))
 
 
 (deftest lifecycle
   (let [validation-link (atom nil)
 
-        template-url (str p/service-context user-tpl/resource-type "/" user-tpl-password/registration-method)
+        template-url (str p/service-context user-tpl/resource-type "/" email-password/registration-method)
 
         session (-> (ltu/ring-app)
                     session
@@ -59,7 +59,7 @@
                          (get-in [:response :body]))
 
 
-            href (str user-tpl/resource-type "/" user-tpl-password/registration-method)
+            href (str user-tpl/resource-type "/" email-password/registration-method)
 
             name-attr "name"
             description-attr "description"

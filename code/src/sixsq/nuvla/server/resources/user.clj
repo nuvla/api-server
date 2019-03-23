@@ -21,7 +21,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
-    [sixsq.nuvla.server.resources.user-template-password :as tpl]
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
@@ -261,13 +261,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (std-crud/initialize resource-type ::user/schema)
   (when-let [super-pass (env/env :super-pass)]
     ;; FIXME: this is a nasty hack to ensure user template password is available
-    (tpl/initialize)
+    (email-password/initialize)
     (if (nil? (password/identifier->user-id "super"))
       (do
         (log/error "user 'super' does not exist; attempting to create it")
         (std-crud/add-if-absent (str resource-type " super") resource-type
                                 {:template
-                                 {:href              (str p/resource-type "/" tpl/registration-method)
+                                 {:href              (str p/resource-type "/" email-password/registration-method)
                                   :username          "super"
                                   :password          super-pass
                                   :password-repeated super-pass

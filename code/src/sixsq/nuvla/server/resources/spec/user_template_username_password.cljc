@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.user-template-password
+(ns sixsq.nuvla.server.resources.spec.user-template-username-password
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
@@ -23,25 +23,6 @@
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
-
-(s/def ::email
-  (-> (st/spec ::cimi-core/email)
-      (assoc :name "email"
-             :json-schema/name "email"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "email address"
-             :json-schema/description "your email address"
-             :json-schema/help "your email address"
-             :json-schema/group "body"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
 
 (s/def ::password
   (-> (st/spec string?)
@@ -82,36 +63,34 @@
 
 
 ;; no good defaults for these keys, make them optional in template
-(def user-template-password-keys-opt
+(def keys-opt
   {:opt-un [::username
-            ::email
             ::password
             ::password-repeated]})
 
 
 ;; expanded template must have these keys defined
-(def user-template-password-keys-req
-  {:req-un [::email
+(def keys-req
+  {:req-un [::username
             ::password
-            ::password-repeated]
-   :opt-un [::username]})
+            ::password-repeated]})
 
 
-(def user-template-password-keys-href
+(def keys-href
   {:opt-un [::ps/href]})
 
 
 ;; Defines the contents of the password user-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
-                     user-template-password-keys-opt))
+                     keys-opt))
 
 
 ;; Defines the contents of the password template used in a create resource.
 (s/def ::template
   (su/only-keys-maps ps/template-keys-spec
-                     user-template-password-keys-req
-                     user-template-password-keys-href))
+                     keys-req
+                     keys-href))
 
 
 (s/def ::schema-create

@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.resources.session-template-password-lifecycle-test
   (:require
-    [clojure.data.json :as json]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-lifecycle-test-utils :as stu]
