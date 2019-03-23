@@ -1,16 +1,17 @@
 (ns sixsq.nuvla.server.middleware.authn-info-header
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.cookies :as cookies]
-    [sixsq.nuvla.server.resources.common.debug-utils :as du]))
+    [sixsq.nuvla.auth.cookies :as cookies]))
+
 
 ;; NOTE: ring uses lower-cased values of header names!
 (def ^:const authn-info-header
   "nuvla-authn-info")
 
+
 (def ^:const authn-cookie
   "com.sixsq.nuvla.cookie")
+
 
 (defn parse-authn-header
   [request]
@@ -19,6 +20,7 @@
                               (or "")
                               (str/split #"\s+")))))
 
+
 (defn extract-authn-info
   [request]
   (when-let [terms (parse-authn-header request)]
@@ -26,11 +28,13 @@
           roles (set (rest terms))]
       [username roles])))
 
+
 (defn is-session?
   "returns nil if the value does not look like a session; the session otherwise"
   [^String s]
   (if s
     (re-matches #"^session/.*" s)))
+
 
 (defn extract-header-claims
   [request]
@@ -43,19 +47,24 @@
               roles (assoc :roles (set roles))
               session (assoc :session session)))))
 
+
 (defn request-cookies [request]
   (get-in request [:cookies authn-cookie]))
 
+
 (defn extract-cookie-claims [request]
   (cookies/extract-cookie-claims (request-cookies request)))
+
 
 (defn extract-info [request]
   (or
     (extract-authn-info request)
     (cookies/extract-cookie-info (request-cookies request))))
 
+
 (defn add-anon-role [roles]
   (conj (set roles) "ANON"))
+
 
 (defn create-identity-map
   [[username roles]]
@@ -66,11 +75,13 @@
     {:current         current
      :authentications {current id-map}}))
 
+
 (defn add-user-name-roles
   [request]
   (let [[username roles] (extract-info request)]
     (cond-> (assoc request :user-roles (add-anon-role roles))
             username (assoc :user-name username))))
+
 
 (defn add-claims
   [request]
@@ -79,6 +90,7 @@
                     (extract-cookie-claims request))]
     (assoc request :sixsq.slipstream.authn/claims claims)
     request))
+
 
 (defn wrap-authn-info-header
   "Middleware that adds an identity map to the request based on information in

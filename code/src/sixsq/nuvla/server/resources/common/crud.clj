@@ -14,19 +14,23 @@
   [request]
   (get-in request [:params :resource-name]))
 
+
 (defn resource-id-dispatch
   [resource-id & _]
   (first (u/split-resource-id resource-id)))
 
+
 (defn resource-name-and-action-dispatch
   [request]
   ((juxt :resource-name :action) (:params request)))
+
 
 ;;
 ;; Primary CRUD multi-methods
 ;;
 
 (defmulti add resource-name-dispatch)
+
 
 (defmethod add :default
   [request]
@@ -35,6 +39,7 @@
 
 (defmulti query resource-name-dispatch)
 
+
 (defmethod query :default
   [request]
   (throw (r/ex-bad-method request)))
@@ -42,15 +47,18 @@
 
 (defmulti retrieve resource-name-dispatch)
 
+
 (defmethod retrieve :default
   [request]
   (throw (r/ex-bad-method request)))
 
 (defmulti retrieve-by-id resource-id-dispatch)
 
+
 (defmethod retrieve-by-id :default
   [resource-id & [options]]
   (db/retrieve resource-id (or options {})))
+
 
 (defn retrieve-by-id-as-admin
   "Calls the retrieve-by-id multimethod with options that set the user
@@ -60,7 +68,9 @@
   (let [opts {:user-name "INTERNAL" :user-roles ["ADMIN"]}]
     (retrieve-by-id resource-id opts)))
 
+
 (defmulti edit resource-name-dispatch)
+
 
 (defmethod edit :default
   [request]
@@ -69,15 +79,19 @@
 
 (defmulti delete resource-name-dispatch)
 
+
 (defmethod delete :default
   [request]
   (throw (r/ex-bad-method request)))
 
+
 (defmulti do-action resource-name-and-action-dispatch)
+
 
 (defmethod do-action :default
   [request]
   (throw (r/ex-bad-action request (resource-name-and-action-dispatch request))))
+
 
 ;;
 ;; Resource schema validation.
@@ -89,9 +103,11 @@
            dispatch value, the method throws an exception."
           :resource-type)
 
+
 (defmethod validate :default
   [resource]
   (throw (ex-info (str "unknown resource type: " (:resource-type resource)) (or resource {}))))
+
 
 ;;
 ;; Provide allowed operations for resources and collections
@@ -105,6 +121,7 @@
            if the current user has the MODIFY right."
           :resource-type)
 
+
 (defn set-standard-operations
   [{:keys [id resource-type] :as resource} request]
   (try
@@ -117,9 +134,11 @@
     (catch Exception e
       (dissoc resource :operations))))
 
+
 (defmethod set-operations :default
   [resource request]
   (set-standard-operations resource request))
+
 
 ;;
 ;; Determine the identifier for a new resource.
@@ -132,9 +151,11 @@
           (fn [json resource-name]
             resource-name))
 
+
 (defmethod new-identifier :default
   [json resource-name]
   (assoc json :id (u/new-resource-id resource-name)))
+
 
 ;;
 ;; Determine the ACL to use for a new resource.
@@ -144,6 +165,7 @@
 (defmulti add-acl
           (fn [{:keys [resource-type]} request]
             resource-type))
+
 
 (defmethod add-acl :default
   [json request]
