@@ -46,7 +46,7 @@
   (let [args (rest v)]
     (if (= 1 (count args))
       (first args)                                          ;; (a=1 and b=2) case
-      (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp  Value] :as m} (into {} args)
+      (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp Value] :as m} (into {} args)
             Op (or EqOp RelOp PrefixOp FullTextOp)
             order (ffirst args)]
         (case [Op order]
