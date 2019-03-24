@@ -12,7 +12,7 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
     [sixsq.nuvla.server.resources.data-object :as eo]
-    [sixsq.nuvla.server.resources.data-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data.utils :as s3]
     [sixsq.nuvla.server.resources.infrastructure-service :as service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]

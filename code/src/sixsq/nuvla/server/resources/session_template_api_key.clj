@@ -18,6 +18,8 @@ pair.
 (def ^:const resource-name "API Key")
 
 
+;TODO think about password user template on this
+
 (def ^:const resource-url authn-method)
 
 (def default-template {:method           authn-method

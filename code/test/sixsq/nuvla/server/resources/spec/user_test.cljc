@@ -15,31 +15,28 @@
 
 (deftest check-user-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        uname "120720737412@eduid.chhttps://eduid.ch/idp/shibboleth!https://fed-id.nuv.la/samlbridge/module.php/saml/sp/metadata.php/sixsq-saml-bridge!iqqrh4oiyshzcw9o40cvo0+pgka="
-        cfg {:id            (str resource-type "/" uname)
-             :resource-type resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        cfg {:id                  (str resource-type "/uuid")
 
-             :username      uname
-             :emailAddress  "me@example.com"
+             :resource-type       resource-type
 
-             :full-name     "John"
-             :method        "direct"
-             :href          "user-template/direct"
-             :password      "hashed-password"
-             :isSuperUser   false
-             :state         "ACTIVE"
-             :deleted       false
-             :name          "me@example.com"}]
+             :created             timestamp
+             :updated             timestamp
+
+             :credential-password "credential/uuid"
+
+             :email               "email/uuid"
+
+             :method              "direct"
+
+             :state               "ACTIVE"
+
+             :acl                 valid-acl}]
 
     (stu/is-valid ::user/schema cfg)
     (stu/is-invalid ::user/schema (assoc cfg :unknown "value"))
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :username :emailAddress}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :state}]
       (stu/is-invalid ::user/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:full-name :method :href :password
-                   :roles :isSuperUser :state :deleted :name}]
+    (doseq [attr #{:name :method :credential-password :email}]
       (stu/is-valid ::user/schema (dissoc cfg attr)))))

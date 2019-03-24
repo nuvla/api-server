@@ -100,6 +100,7 @@
   [m]
   (dissoc m :id :name :description :created :updated :tags))
 
+
 (defn strip-service-attrs
   "Strips common attributes from the map whose values are controlled
    entirely by the service.  These include :id, :created, :updated,
@@ -107,11 +108,13 @@
   [m]
   (dissoc m :id :created :updated :resource-type :operations))
 
+
 (defn strip-select-from-mandatory-attrs
   "Strips non removable attributes from the set. These include
   :id :created :updated :resource-type :acl"
   [s]
   (disj s :id :created :updated :resource-type :acl))
+
 
 (defn unparse-timestamp-datetime
   "Returns the string representation of the given timestamp."
@@ -132,10 +135,12 @@
       (catch Exception _
         nil))))
 
+
 (defn as-text
   "A function that marks a field as being parsable text rather than a keyword."
   [data]
   (s/and string? (complement str/blank?)))
+
 
 (defn update-timestamps
   "Sets the updated attribute and optionally the created attribute
@@ -146,11 +151,13 @@
         created (or (:created data) updated)]
     (assoc data :created created :updated updated)))
 
+
 (defn ttl->timestamp
   "Converts a Time to Live (TTL) value in seconds to timestamp string. The
    argument must be an integer value."
   [ttl]
   (unparse-timestamp-datetime (time/from-now (time/seconds ttl))))
+
 
 (defn expired?
   "This will return true if the given date (as a string) represents a moment
@@ -158,13 +165,16 @@
   [expiry]
   (boolean (and expiry (time/before? (as-datetime expiry) (time/now)))))
 
+
 (def not-expired? (complement expired?))
+
 
 (defn select-desc-keys
   "Selects the common attributes that are related to the description of the
    resource, namely 'name', 'description', and tags."
   [m]
   (select-keys m #{:name :description :tags}))
+
 
 (defn create-spec-validation-fn
   "Creates a validation function that compares a resource against the
@@ -195,15 +205,18 @@
   [m k rm-set]
   (update-in m [k] #(vec (remove rm-set %))))
 
+
 (defn remove-req
   "Removes required elements defined in `specs` set from `keys-spec` spec."
   [keys-spec specs]
   (remove-in keys-spec :req-un specs))
 
+
 (defn remove-opt
   "Removes optional elements defined in `specs` set from `keys-spec` spec."
   [keys-spec specs]
   (remove-in keys-spec :opt-un specs))
+
 
 (defn convert-form
   "Allow form encoded data to be supplied for a session. This is required to
@@ -213,6 +226,7 @@
   [tpl form-data]
   {tpl (walk/keywordize-keys form-data)})
 
+
 (defn is-content-type?
   "Checks if the given header name is 'content-type' in various forms."
   [k]
@@ -220,6 +234,7 @@
     (= :content-type (-> k name str/lower-case keyword))
     (catch Exception _
       false)))
+
 
 (defn is-form?
   "Checks the headers to see if the content type is
