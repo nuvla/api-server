@@ -2,8 +2,8 @@
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]
-    [sixsq.nuvla.server.resources.infrastructure-service.utils :as is-utils]))
+    [sixsq.nuvla.server.resources.infrastructure-service.utils :as is-utils]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]))
 
 
 (def ^:const method "swarm")

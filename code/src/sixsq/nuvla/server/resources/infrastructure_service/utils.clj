@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service.utils
   (:require
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
