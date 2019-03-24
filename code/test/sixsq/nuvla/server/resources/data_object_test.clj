@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.data-object :as eo]
-    [sixsq.nuvla.server.resources.data-object.utils :as s3])
+    [sixsq.nuvla.server.resources.data.utils :as s3])
   (:import (clojure.lang ExceptionInfo)))
 
 (def s3-host "s3.cloud.com")

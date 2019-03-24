@@ -21,13 +21,13 @@
              :updated       timestamp
              :acl           valid-acl
 
-             :identifier    "some-long-identifier"
-             :user          {:href "user/35413_univ_lyon1_frurn_mace_cru_fr_federation_univ_lyon1_fr_https___fed_id_nuv_la_samlbridge_module_php_saml_sp_metadata_php_sixsq_saml_bridge_umef2do_i7rkfnhwwkq6fxwhx9u_"}}]
+             :parent        "user/abc"
+             :identifier    "some-long-identifier"}]
 
     (stu/is-valid ::user-identifier/schema cfg)
     (stu/is-invalid ::user-identifier/schema (assoc cfg :bad-attr "BAD_ATTR"))
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :identifier :user}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :identifier}]
       (stu/is-invalid ::user-identifier/schema (dissoc cfg attr)))
 
     (doseq [attr #{:username :server :clientIP}]

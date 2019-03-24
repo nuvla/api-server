@@ -90,7 +90,8 @@
   `(is-key-value ~m :resource-type ~type-uri))
 
 
-(defn get-op [m op]
+(defn get-op
+  [m op]
   (->> (get-in m [:response :body :operations])
        (map (juxt :rel :href))
        (filter (fn [[rel href]] (.endsWith rel op)))
@@ -98,13 +99,15 @@
        second))
 
 
-(defn select-op [m op]
+(defn select-op
+  [m op]
   (let [op-list (get-in m [:response :body :operations])
         defined-ops (map :rel op-list)]
     [(some #(.endsWith % op) defined-ops) defined-ops]))
 
 
-(defmacro is-operation-present [m expected-op]
+(defmacro is-operation-present
+  [m expected-op]
   `((fn [m# expected-op#]
       (let [[op# defined-ops#] (select-op m# expected-op#)]
         (is op# (str "Missing " expected-op# " in " defined-ops#))
@@ -184,13 +187,23 @@
         m#)) ~m))
 
 
-(defn location [m]
+(defn location
+  [m]
   (let [uri (get-in m [:response :headers "Location"])]
     (is uri "Location header missing from response")
     uri))
 
 
-(defn operations->map [m]
+(defmacro is-location-value
+  [m v]
+  `((fn [m# v#]
+      (let [location# (location m#)]
+        (is (= location# v#))))
+     ~m ~v))
+
+
+(defn operations->map
+  [m]
   (into {} (map (juxt :rel :href) (:operations m))))
 
 
@@ -204,7 +217,8 @@
     m))
 
 
-(defn entries [m]
+(defn entries
+  [m]
   (some-> m :response :body :resources))
 
 

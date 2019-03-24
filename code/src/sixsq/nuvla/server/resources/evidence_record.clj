@@ -4,8 +4,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.data.keys :as key-utils]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [sixsq.nuvla.server.resources.service-catalog.utils :as sc]
     [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]))
 
 
@@ -37,10 +37,10 @@
                                  :acl :id :resource-type :name :description
                                  :created :updated :properties :operations
                                  :class :plan-id :start-time :end-time :passed)
-        validator (partial sc/valid-attribute-name? valid-prefixes)]
-    (if (sc/valid-attributes? validator resource-payload)
+        validator (partial key-utils/valid-attribute-name? valid-prefixes)]
+    (if (key-utils/valid-attributes? validator resource-payload)
       resource
-      (sc/throw-wrong-namespace))))
+      (key-utils/throw-wrong-namespace))))
 
 
 (def validate-fn (u/create-spec-validation-fn ::evidence-record/schema))
@@ -62,12 +62,14 @@
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+
 (defmethod crud/add resource-type
   [request]
   (add-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
 
 (defmethod crud/retrieve resource-type
   [request]
@@ -76,12 +78,14 @@
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
+
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 
 (defmethod crud/query resource-type
   [request]
@@ -91,6 +95,7 @@
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::evidence-record/schema))

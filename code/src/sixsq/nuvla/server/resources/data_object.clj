@@ -12,7 +12,7 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
-    [sixsq.nuvla.server.resources.data-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data.utils :as s3]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 

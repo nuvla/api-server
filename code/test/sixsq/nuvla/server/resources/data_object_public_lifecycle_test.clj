@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.data-object-template-public :as data-obj-tpl-public]
-    [sixsq.nuvla.server.resources.data-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data.utils :as s3]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import
     (com.amazonaws AmazonServiceException)))

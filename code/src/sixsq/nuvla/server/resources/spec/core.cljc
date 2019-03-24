@@ -16,6 +16,16 @@
              :json-schema/description "valid scalar value for JSON")))
 
 
+(def uuid-regex #"^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+
+
+(s/def ::uuid
+  (-> (st/spec (s/and string? #(re-matches uuid-regex %)))
+      (assoc :name "uuid"
+             :json-schema/description "UUID"
+             :json-schema/type "string")))
+
+
 (s/def ::nonblank-string
   (-> (st/spec (s/and string? (complement str/blank?)))
       (assoc :name "non-blank string"
@@ -73,7 +83,7 @@
 
 
 (s/def ::kebab-identifier
-  (-> (st/spec (s/and string? #(re-matches #"^[a-z]+(-[a-z0-9]+)*$" %)))
+  (-> (st/spec (s/and string? #(re-matches #"^[a-z][a-z0-9]*(-[a-z0-9]+)*$" %)))
       (assoc :name "kebab-identifier"
              :json-schema/description "string consisting of lowercased words separated by dashes"
              :json-schema/type "string")))

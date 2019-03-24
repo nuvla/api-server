@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as do]
     [sixsq.nuvla.server.resources.data-object-template-public :as dot]
-    [sixsq.nuvla.server.resources.data-object.utils :as s3]
+    [sixsq.nuvla.server.resources.data.utils :as s3]
     [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]))
 
 

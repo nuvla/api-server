@@ -4,6 +4,7 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.util.namespace-utils :as dyn]))
 
+
 (defn resource?
   "If the given symbol represents a resource namespace, the symbol
    is returned; false otherwise.  Resource namespaces have the prefix
@@ -17,10 +18,12 @@
       (not (.contains ns-name "test"))
       sym)))
 
+
 (defn resource-namespaces
   "Returns sequence of the resource namespaces on the classpath."
   []
   (dyn/load-filtered-namespaces resource?))
+
 
 (defn get-resource-link
   "Returns a vector with the resource type keyword and map with the :href
@@ -29,6 +32,7 @@
   [resource-ns]
   (if-let [vtag (dyn/resolve "resource-type" resource-ns)]
     [(keyword (deref vtag)) {:href (deref vtag)}]))
+
 
 (defn- initialize-resource
   "Run a resource's initialization function if it exists."
@@ -40,6 +44,7 @@
       (catch Exception e
         (log/error "initializing" (ns-name resource-ns) "failed:" (.getMessage e))))))
 
+
 (defn resource-routes
   "Returns a lazy sequence of all of the routes for resources
    discovered on the classpath."
@@ -49,6 +54,7 @@
        (remove nil?)
        (map deref)))
 
+
 (defn get-resource-links
   "Returns a lazy sequence of all of the resource links for resources
    discovered on the classpath."
@@ -56,6 +62,7 @@
   (->> (resource-namespaces)
        (map get-resource-link)
        (remove nil?)))
+
 
 (defn initialize
   "Runs the initialize function for all resources that define it."
