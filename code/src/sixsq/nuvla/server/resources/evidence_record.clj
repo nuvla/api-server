@@ -4,8 +4,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.data.keys :as key-utils]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
+    [sixsq.nuvla.server.resources.data.keys :as key-utils]
     [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]))
 
 
