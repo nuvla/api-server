@@ -38,7 +38,7 @@
 
 
 ;;
-;; post-add hook that creates a job that will deploy a swarm
+;; post-add hook that creates a job that will deploy a kubernetes cluster
 ;;
 
 (defmethod infra-service/post-add-hook method

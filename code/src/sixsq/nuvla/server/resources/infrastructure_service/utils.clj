@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service.utils
   (:require
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.util.response :as r]))
 
 
