@@ -37,7 +37,9 @@
       (let [{:keys [status]} (ex-data e)]
         (try
           (if (= 404 status)
-            (let [{{:keys [acknowledged shards_acknowledged]} :body} (spandex/request client {:url [index], :method :put})]
+            (let [{{:keys [acknowledged shards_acknowledged]} :body} (spandex/request
+                                                                       client
+                                                                       {:url [index], :method :put})]
               (if (and acknowledged shards_acknowledged)
                 (log/info index "index created")
                 (log/warn index "index may or may not have been created")))
@@ -61,12 +63,6 @@
         (log/warn index "mapping could not be updated (" status ")")))))
 
 
-(defn prepare-data [data]
-  (->> data
-       acl-utils/force-admin-role-right-all
-       acl-utils/denormalize-acl))
-
-
 (defn add-data
   [client {:keys [id] :as data}]
   (try
@@ -75,7 +71,7 @@
           response (spandex/request client {:url          [index :_doc uuid :_create]
                                             :query-string {:refresh true}
                                             :method       :put
-                                            :body         (prepare-data data)})
+                                            :body         (acl-utils/force-admin-role-right-all data)})
           success? (pos? (get-in response [:body :_shards :successful]))]
       (if success?
         (r/response-created id)
@@ -91,7 +87,7 @@
   [client {:keys [id] :as data}]
   (let [[collection-id uuid] (cu/split-id id)
         index (escu/collection-id->index collection-id)
-        updated-doc (prepare-data data)
+        updated-doc (acl-utils/force-admin-role-right-all data)
         response (spandex/request client {:url          [index :_doc uuid]
                                           :query-string {:refresh true}
                                           :method       :put
@@ -111,7 +107,7 @@
                                             :method :get})
           found? (get-in response [:body :found])]
       (if found?
-        (-> response :body :_source acl-utils/normalize-acl)
+        (-> response :body :_source)
         (throw (r/ex-not-found id))))
     (catch Exception e
       (let [response (ex-data e)
@@ -159,7 +155,7 @@
         aggregations (-> response :body :aggregations)
         meta (cond-> {:count count-before-pagination}
                      aggregations (assoc :aggregations aggregations))
-        hits (->> response :body :hits :hits (map :_source) (map acl-utils/normalize-acl))]
+        hits (->> response :body :hits :hits (map :_source))]
     (if success?
       [meta hits]
       (r/response-error "error when querying database"))))

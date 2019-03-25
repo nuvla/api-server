@@ -3,6 +3,7 @@
     [sixsq.nuvla.db.es.query :as ef]
     [sixsq.nuvla.db.utils.acl :as acl-utils]))
 
+;;TODO ACL fix and-acl
 (defn and-acl
   "Enriches query-builder by adding a clause on ACL (extracted from options)"
   [query {:keys [user-name user-roles] :as options}]

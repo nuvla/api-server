@@ -24,7 +24,7 @@
              :json-schema/displayName "add"
              :json-schema/description "list of principals that can add a new resource to a collection")))
 
-
+;;TODO ACL should be used to validate collection acl
 (s/def ::acl
   (-> (st/spec (su/only-keys :opt-un [::query ::add]))
       (assoc :name "acl"

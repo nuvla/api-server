@@ -31,21 +31,7 @@
   (extract-by-type acl role-rule?))
 
 
-(defn denormalize-acl
-  "Denormalize doc by exploding :acl in :_acl-users and :_acl-roles
-  in a form easily searchable by Elasticsearch."
-  [doc]
-  (-> doc
-      (assoc acl-users (-> doc :acl extract-users))
-      (assoc acl-roles (-> doc :acl extract-roles))))
-
-
-(defn normalize-acl
-  "Dissoc denormalized field from doc"
-  [doc]
-  (dissoc doc acl-users acl-roles))
-
-
+;;TODO ACL should be moved somewhere else
 (defn force-admin-role-right-all
   [data]
-  (update-in data [:acl :rules] #(vec (set (conj % {:type "ROLE" :principal "ADMIN" :right "ALL"})))))
+  (update-in data [:acl :edit-acl] #(vec (set (conj % "group/nuvla-admin")))))

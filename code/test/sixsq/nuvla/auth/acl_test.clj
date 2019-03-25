@@ -3,6 +3,7 @@
     [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.auth.acl :as acl]))
 
+
 (deftest check-current-authentication
   (are [expect arg] (= expect (:identity (acl/current-authentication arg)))
                     nil {}
