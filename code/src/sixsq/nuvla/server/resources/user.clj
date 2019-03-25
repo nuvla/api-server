@@ -19,6 +19,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.spec.user :as user]
+    [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
@@ -266,7 +267,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   []
   (std-crud/initialize resource-type ::user/schema)
   (when-let [super-password (env/env :nuvla-super-password)]
-    ;; FIXME: this is a nasty hack to ensure username-password user-template and user-identifier index are available
+    ;; FIXME: nasty hack to ensure username-password user-template, user-identifier and group index are available
+    (group/initialize)
     (username-password/initialize)
     (user-identifier/initialize)
     (if (nil? (password/identifier->user-id "super"))
@@ -279,7 +281,14 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                   :password          super-password
                                   :password-repeated super-password}})
         (if-let [super-user-id (password/identifier->user-id "super")]
-          (log/error "created user 'super' with identifier" super-user-id)
+          (do (log/info "created user 'super' with identifier" super-user-id)
+              (let [request {:params   {:resource-name group/resource-type
+                                        :uuid          "nuvla-admin"}
+                             :identity std-crud/internal-identity
+                             :body     {:users [super-user-id]}}
+                    {:keys [status body]} (crud/edit request)]
+                (when (not= status 200)
+                  (log/error "could not append super in nuvla-admin group!"))))
           (log/error "could not create user 'super'")))
       (do
         (log/info "user 'super' already exists; skip trying to create it")))))

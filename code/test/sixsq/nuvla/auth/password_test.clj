@@ -78,12 +78,6 @@
     ;; add user as an administrator
     (let [users [user-id]
 
-          test-group (-> session-admin
-                         (request test-group-uri)
-                         (ltu/body->edn)
-                         :response
-                         :body)
-
           {existing-users :users :as body} (-> session-admin
                                                (request admin-group-uri)
                                                (ltu/body->edn)
@@ -100,11 +94,17 @@
       (-> session-admin
           (request test-group-uri
                    :request-method :put
-                   :body (json/write-str (assoc body :users users)))
+                   :body (json/write-str {:users users}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
+      (-> session-admin
+          (request test-group-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+
       ;; check that the changes have been picked up
       (let [result (t/collect-groups-for-user user-id)]
-        (= #{"ADMIN" "USER" "ANON" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
-           (set (str/split result #"\s")))))))
+        (is (= #{"ADMIN" "USER" "ANON" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
+               (set (str/split result #"\s"))))))))
