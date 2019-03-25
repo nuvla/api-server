@@ -8,11 +8,8 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ADMIN"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-admin"]})
 
 
 (deftest check-configuration-template-nuvla

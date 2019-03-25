@@ -7,11 +7,8 @@
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE"
-                         :principal "ADMIN"
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-user-template-password-schema

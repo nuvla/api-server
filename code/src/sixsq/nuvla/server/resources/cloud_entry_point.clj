@@ -335,11 +335,8 @@ include aggregating values over a collection of resources.
 (def ^:const resource-type (u/ns->type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-anon"]})
 
 
 ;; dynamically loads all available resources

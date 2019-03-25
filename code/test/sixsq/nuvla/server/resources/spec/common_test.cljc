@@ -92,14 +92,9 @@
 
 
 (deftest check-acl
-  (let [acl {:owner {:principal "ADMIN"
-                     :type      "ROLE"}
-             :rules [{:principal "group1"
-                      :type      "ROLE"
-                      :right     "VIEW"}
-                     {:principal "group2"
-                      :type      "ROLE"
-                      :right     "MODIFY"}]}]
+  (let [acl {:owners   ["group/nuvla-admin"]
+             :view-acl ["group/nuvla-group1"]
+             :edit-acl ["group/nuvla-group2"]}]
 
     (stu/is-valid ::cimi-common/acl acl)
     (stu/is-valid ::cimi-common/acl (dissoc acl :rules))
@@ -112,14 +107,9 @@
 
 (deftest check-common-attrs
   (let [date "2012-01-01T01:23:45.678Z"
-        acl {:owner {:principal "ADMIN"
-                     :type      "ROLE"}
-             :rules [{:principal "group1"
-                      :type      "ROLE"
-                      :right     "VIEW"}
-                     {:principal "group2"
-                      :type      "ROLE"
-                      :right     "MODIFY"}]}
+        acl {:owners   ["group/nuvla-admin"]
+             :view-acl ["group/nuvla-group1"]
+             :edit-acl ["group/nuvla-group2"]}
         minimal {:id            "a"
                  :resource-type "http://example.org/data"
                  :created       date

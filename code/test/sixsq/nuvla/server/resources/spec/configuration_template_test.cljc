@@ -12,11 +12,8 @@
 (s/def ::configuration-template (su/only-keys-maps cts/resource-keys-spec))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ANON"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-anon"]})
 
 
 (deftest test-configuration-template-schema-check

@@ -13,11 +13,8 @@
 (def timestamp "1964-08-25T10:00:00.0Z")
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (def common {:id            (str t/resource-type "/abcdef")

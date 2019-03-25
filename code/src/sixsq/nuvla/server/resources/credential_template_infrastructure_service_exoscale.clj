@@ -18,11 +18,8 @@
 (def ^:const method "store-infrastructure-service-exoscale")
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 ;;
 ;; resource

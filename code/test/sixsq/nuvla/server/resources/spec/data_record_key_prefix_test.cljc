@@ -9,11 +9,8 @@
 (def timestamp "1970-04-16T08:40:00.0Z")
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ANON"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-anon"]})
 
 
 (def valid-namespace

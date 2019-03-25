@@ -12,8 +12,8 @@
 (def valid-event
   {:id            "event/262626262626262"
    :resource-type resource-type
-   :acl           {:owner {:type "USER" :principal "joe"}
-                   :rules [{:type "ROLE" :principal "ANON" :right "ALL"}]}
+   :acl           {:owners   ["user/joe"]
+                   :view-acl ["group/nuvla-anon"]}
 
    :timestamp     event-timestamp
    :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
