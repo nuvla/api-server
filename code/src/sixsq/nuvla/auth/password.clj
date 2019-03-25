@@ -78,7 +78,7 @@
                          (merge admin-opts
                                 {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
                                                :select ["id"]}}))
-                       :resources
+                       second
                        (map :id)
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
                        (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
