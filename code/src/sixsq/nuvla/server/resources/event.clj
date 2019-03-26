@@ -246,12 +246,9 @@ Delete a specific (the event-uuid is known) event.
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
-
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ANON"
-                              :type      "ROLE"
-                              :right     "ALL"}]})
+;;TODO ACL event why anon can add events?
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-anon"]})
 
 
 
@@ -292,7 +289,7 @@ Delete a specific (the event-uuid is known) event.
 (defmethod crud/set-operations resource-type
   [resource request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
           ops (if (u/is-collection? resource-type)

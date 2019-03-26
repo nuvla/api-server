@@ -5,7 +5,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]))
 
 
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
+(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
 
 (defn executable?
   [{:keys [state expires]}]

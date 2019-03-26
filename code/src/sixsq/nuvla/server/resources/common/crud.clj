@@ -65,7 +65,7 @@
    identity to the administrator to allow access to any resource. Works around
    the authentication enforcement at the database level."
   [resource-id]
-  (let [opts {:user-name "INTERNAL" :user-roles ["ADMIN"]}]
+  (let [opts {:user-name "INTERNAL" :user-roles ["group/nuvla-admin"]}]
     (retrieve-by-id resource-id opts)))
 
 
@@ -125,7 +125,7 @@
 (defn set-standard-operations
   [{:keys [id resource-type] :as resource} request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [ops (if (u/is-collection? resource-type)
                 [{:rel (:add c/action-uri) :href id}]
                 [{:rel (:edit c/action-uri) :href id}

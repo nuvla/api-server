@@ -18,41 +18,32 @@
   {:name       "param1"
    :node-id    "machine"
    :deployment {:href "deployment/uuid"}
-   :acl        {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "jane"
-                         :type      "USER"
-                         :right     "MODIFY"}]}})
+   :acl        {:owners   ["group/nuvla-admin"]
+                :edit-acl ["user/jane"]}})
 
 
 (def valid-state-entry
   {:name       "ss:state"
    :value      "Provisioning"
    :deployment {:href "deployment/uuid"}
-   :acl        {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "jane"
-                         :type      "USER"
-                         :right     "MODIFY"}]}})
+   :acl        {:owners   ["group/nuvla-admin"]
+                :edit-acl ["user/jane"]}})
 
 (def valid-complete-entry
   {:name       "complete"
    :node-id    "machine"
    :deployment {:href "deployment/uuid"}
-   :acl        {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "jane"
-                         :type      "USER"
-                         :right     "MODIFY"}]}})
+   :acl        {:owners   ["group/nuvla-admin"]
+                :edit-acl ["user/jane"]}})
 
 
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-jane (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; admin user collection query should succeed but be empty (no records created yet)
     (-> session-admin

@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]
     [sixsq.nuvla.db.binding :as db]))
 
 (s/def ::id string?)
@@ -11,23 +12,12 @@
 
 (s/def ::resource (s/keys :req-un [::id ::long ::boolean ::string]))
 
-(s/def ::type string?)
-(s/def ::principal string?)
-(s/def ::right string?)
+(s/def ::acl ::acl-resource/acl)
 
-(s/def ::owner (s/keys :req-un [::type ::principal]))
-(s/def ::rule (s/keys :req-un [::type ::principal ::right]))
-(s/def ::rules (s/coll-of ::rule :min-count 1 :kind vector?))
+(def admin-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
-(s/def ::acl (s/keys :req-un [::owner]
-                     :opt-un [::rules]))
-
-(s/def ::resource (s/keys :req-un [::id ::long ::boolean ::string ::acl]))
-
-(def admin-acl {:owner {:type "ROLE", :principal "ADMIN"}
-                :rules [{:type "ROLE", :principal "ADMIN", :right "ALL"}]})
-
-(def admin-role {:user-roles ["ADMIN"]})
+(def admin-role {:user-roles ["group/nuvla-admin"]})
 
 (defn check-binding-lifecycle [db-impl]
   (with-open [db db-impl]

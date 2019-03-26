@@ -37,11 +37,8 @@ appropriate users.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-admin"]})
 
 ;;
 ;; validate subclasses of callbacks
@@ -58,11 +55,7 @@ appropriate users.
 ;;
 
 (defn create-acl []
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal "ADMIN"
-            :type      "ROLE"
-            :right     "VIEW"}]})
+  {:owners ["group/nuvla-admin"]})
 
 
 (defmethod crud/add-acl resource-type
@@ -164,7 +157,7 @@ appropriate users.
                                              data (assoc :data data))
                            :identity {:current         "INTERNAL"
                                       :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                    :roles    ["ADMIN"]}}}}
+                                                                    :roles    ["group/nuvla-admin"]}}}}
          {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 
      (if (= 201 status)

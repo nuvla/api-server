@@ -49,18 +49,15 @@
                    user-id (:identity (a/current-authentication request))
                    {{job-id     :resource-id
                      job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
-                                                                {:owner {:principal "ADMIN"
-                                                                         :type      "ROLE"}
-                                                                 :rules [{:principal user-id
-                                                                          :right     "VIEW"
-                                                                          :type      "USER"}]}
+                                                                {:owners   ["group/nuvla-admin"]
+                                                                 :view-acl [user-id]}
                                                                 :priority 50)
                    job-msg (str "starting " id " with async " job-id)]
                   (when (not= job-status 201)
                         (throw (r/ex-response "unable to create async job to start infrastructure service swarm" 500 id)))
                   (-> id
                       (db/retrieve request)
-                      (a/can-modify? request)
+                      (a/can-edit-acl? request)
                       (assoc :state "STARTING")
                       (db/edit request))
                   (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
@@ -95,7 +92,7 @@
 ;                        (throw (r/ex-response "unable to create async job to start deployment" 500 id)))
 ;                  (-> id
 ;                      (db/retrieve request)
-;                      (a/can-modify? request)
+;                      (a/can-edit-acl? request)
 ;                      (assoc :state "STARTING")
 ;                      (db/edit request))
 ;                  (event-utils/create-event id job-msg (acl/default-acl (acl/current-authentication request)))

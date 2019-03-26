@@ -31,16 +31,16 @@
 (def credential-base-uri (str p/service-context credential/resource-type))
 
 
-(def ^:const user-info-header "jane USER ANON")
-(def ^:const admin-info-header "root ADMIN USER ANON")
-(def ^:const user-creds-info-header "creds USER ANON")
+(def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
+(def ^:const admin-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+(def ^:const user-creds-info-header "creds group/nuvla-user group/nuvla-anon")
 
-(def ^:const username-view "tarzan")
-(def ^:const user-view-info-header (str username-view " USER ANON"))
-(def ^:const tarzan-info-header (str username-view " USER ANON"))
+(def ^:const username-view "user/tarzan")
+(def ^:const user-view-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
+(def ^:const tarzan-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
 
 (def ^:const username-no-view "other")
-(def ^:const user-no-view-info-header (str username-no-view " USER ANON"))
+(def ^:const user-no-view-info-header (str username-no-view " group/nuvla-user group/nuvla-anon"))
 
 
 (defn build-session
@@ -73,11 +73,8 @@
                              (ltu/is-status 201)
                              (ltu/location))
 
-        valid-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]}
+        valid-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]}
 
         valid-service {:acl      valid-acl
                        :parent   service-group-id
@@ -368,14 +365,11 @@
                                                    (ltu/is-status 200)
                                                    :response
                                                    :body)
-                  view-rule {:principal username-view
-                             :type      "USER"
-                             :right     "VIEW"}
 
-                  updated-rules (vec (conj (:rules acl) view-rule))
+                  updated-acl (update acl :view-acl conj username-view)
 
                   updated-eo (-> current-eo
-                                 (assoc-in [:acl :rules] updated-rules)
+                                 (assoc :acl updated-acl)
                                  (assoc :name "NEW_VALUE_OK"
                                         :state "BAD_VALUE_IGNORED"))]
 

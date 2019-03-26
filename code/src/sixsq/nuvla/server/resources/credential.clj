@@ -24,14 +24,8 @@ CredentialTemplate resource.
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 
 ;;
@@ -89,11 +83,8 @@ CredentialTemplate resource.
 
 (defn create-acl
   [id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal id
-            :type      "USER"
-            :right     "MODIFY"}]})
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
 
 
 (defmethod crud/add-acl resource-type
@@ -156,7 +147,7 @@ CredentialTemplate resource.
   resource."
   [body idmap]
   (let [admin {:identity {:current         "internal",
-                          :authentications {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}}
+                          :authentications {"internal" {:roles #{"group/nuvla-admin"}, :identity "internal"}}}}
         href (get-in body [:template :connector])]
     (std-crud/resolve-hrefs href admin))
   body)

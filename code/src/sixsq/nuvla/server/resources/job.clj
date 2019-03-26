@@ -16,11 +16,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :view-acl ["group/nuvla-user"]})
 
 ;;
 ;; initialization
@@ -53,7 +50,7 @@
 ;;
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (let [id (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
@@ -83,7 +80,7 @@
   (try
     (let [current (-> (str resource-type "/" uuid)
                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/can-modify? request))
+                      (a/can-edit-acl? request))
           dissoc-keys (-> (map keyword select)
                           (set)
                           (u/strip-select-from-mandatory-attrs))
@@ -131,7 +128,7 @@
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (a/can-modify? request)
+        (a/can-edit-acl? request)
         (ju/stop)
         (db/edit request))
     (catch Exception e

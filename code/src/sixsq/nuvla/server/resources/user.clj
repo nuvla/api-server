@@ -85,8 +85,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (assoc resource :acl {:owner {:principal "ADMIN"
-                                :type      "ROLE"}}))
+  (assoc resource :acl {:owners ["group/nuvla-admin"]}))
 
 ;;
 ;; template processing
@@ -204,7 +203,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (try
       (let [filter (format "%s='%s/%s'" "parent" resource-type (:uuid params))
             entries (second (db/query children-resource-type {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-                                                              :user-roles  ["ADMIN"]}))]
+                                                              :user-roles  ["group/nuvla-admin"]}))]
         (doseq [{:keys [id]} entries]
           (crud/delete {:identity std-crud/internal-identity
                         :params   {:uuid          (some-> id (str/split #"/") second)
@@ -243,7 +242,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (try
     (let [current (-> (:id body)
                       (db/retrieve request)
-                      (a/can-modify? request))
+                      (a/can-edit-acl? request))
           merged (merge current body)]
       (-> merged
           (dissoc :href)

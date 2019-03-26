@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
@@ -54,41 +53,6 @@
 
   (doseq [v #{{}, {1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}}]
     (stu/is-invalid ::cimi-common/tags v)))
-
-
-(deftest check-owner
-  (let [id {:principal "ADMIN", :type "ROLE"}]
-
-    (stu/is-valid ::cimi-acl/owner id)
-
-    (doseq [k #{:principal :type}]
-      (stu/is-invalid ::cimi-acl/owner (dissoc id k)))
-
-    (doseq [v #{{:bad "MODIFY"}, {:type "BAD"}}]
-      (stu/is-invalid ::cimi-acl/owner (merge id v)))))
-
-
-(deftest check-rule
-  (let [rule {:principal "ADMIN", :type "ROLE", :right "VIEW"}]
-
-    (stu/is-valid ::cimi-acl/rule rule)
-
-    (doseq [v #{"MODIFY" "ALL"}]
-      (stu/is-valid ::cimi-acl/rule (merge rule {:right v})))
-
-    (doseq [v #{"BAD" nil}]
-      (stu/is-invalid ::cimi-acl/rule (merge rule {:right v})))))
-
-
-(deftest check-rules
-  (let [rules [{:principal "ADMIN", :type "ROLE", :right "VIEW"}
-               {:principal "ALPHA", :type "USER", :right "ALL"}]]
-
-    (stu/is-valid ::cimi-acl/rules rules)
-    (stu/is-valid ::cimi-acl/rules (vec (next rules)))
-
-    (stu/is-invalid ::cimi-acl/rules (nnext rules))
-    (stu/is-invalid ::cimi-acl/rules (cons 1 rules))))
 
 
 (deftest check-acl

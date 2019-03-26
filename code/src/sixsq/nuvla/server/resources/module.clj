@@ -18,11 +18,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 
 ;;
@@ -64,7 +61,7 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (let [[{:keys [type] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
@@ -121,7 +118,7 @@
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" (-> uuid split-uuid first))
       (db/retrieve request)
-      (a/can-view? request)))
+      (a/can-view-acl? request)))
 
 
 (defn retrieve-content-id
@@ -163,7 +160,7 @@
           (-> body u/strip-service-attrs module-utils/split-resource)
           {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
 
-      (a/can-modify? {:acl acl} request)
+      (a/can-edit-acl? {:acl acl} request)
 
       (if (= "PROJECT" type)
         (let [module-meta (-> (assoc module-meta :type type)
@@ -242,7 +239,7 @@
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/can-modify? module-meta request)
+          _ (a/can-edit-acl? module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
           request (assoc-in request [:params :uuid] uuid)]

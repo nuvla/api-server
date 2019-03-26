@@ -14,7 +14,7 @@
 (defn- display-authn-info
   [request]
   (let [[user roles] (aih/extract-info request)]
-    (apply str "[" user "/" (str/join "," (sort roles)) "]")))
+    (str "[" user " - " (str/join "," (sort roles)) "]")))
 
 (defn- display-elapsed-time-millis
   [start current-time-millis]

@@ -17,7 +17,7 @@ Hashed value of a password.
     [sixsq.nuvla.server.util.response :as r]))
 
 
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
+(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
 
 
 ;;
@@ -100,7 +100,7 @@ Hashed value of a password.
 (defmethod p/set-credential-operations tpl-hashed-pwd/credential-type
   [resource request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
           ops (if (u/is-collection? resource-type)
@@ -122,7 +122,7 @@ Hashed value of a password.
   [{{uuid :uuid} :params :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-modify? resource request)
+      (a/can-edit-acl? resource request)
       (let [current-password (get-in request [:body :password])]
         (if (hashers/check current-password hash)
           (r/map-response "valid password" 200)
@@ -133,7 +133,7 @@ Hashed value of a password.
   [{{uuid :uuid} :params :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-modify? resource request)
+      (a/can-edit-acl? resource request)
       (let [current-password (get-in request [:body :current-password])]
         (if (hashers/check current-password hash)
           (let [{:keys [new-password new-password-repeated]} (:body request)]

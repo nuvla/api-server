@@ -12,11 +12,7 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "ALL"}]})
+(def collection-acl {:owners ["group/nuvla-admin"]})
 
 
 (def resource-acl collection-acl)

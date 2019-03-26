@@ -27,11 +27,8 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 
 (def actions [{:name          "validate"
@@ -95,7 +92,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (defmethod crud/set-operations resource-type
   [{:keys [validated] :as resource} request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
           ops (if (u/is-collection? resource-type)

@@ -13,25 +13,12 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "VIEW"}
-                           {:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}
-                           ]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "VIEW"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :view-acl ["group/nuvla-user"]})
 
 
 ;;
@@ -113,7 +100,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/can-view-acl? request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -144,7 +131,7 @@
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/can-view-acl? {:acl collection-acl} request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])

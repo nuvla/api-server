@@ -22,14 +22,8 @@
 
 ;; only authenticated users can view and create credentials
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :view-acl ["group/nuvla-user"]})
 
 
 (defn parameter->uiid

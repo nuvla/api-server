@@ -64,12 +64,12 @@
   (let [username "root"
         server "nuv.la"
         headers {:slipstream-ssl-server-name server}
-        roles ["ADMIN" "USER" "ANON"]
+        roles ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip "127.0.0.1"]
     (is (= {:username username
             :session  session-id
-            :roles    (str/join " " ["ADMIN" "USER" "ANON" session-id])
+            :roles    (str/join " " ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" session-id])
             :server   server
             :clientIP client-ip}
            (t/create-claims username roles headers session-id client-ip)))))
@@ -87,8 +87,8 @@
                        :method api-key-tpl/method
                        :expiry (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
                        :digest digest
-                       :claims {:identity "jane"
-                                :roles    ["USER" "ANON"]}}
+                       :claims {:identity "user/jane"
+                                :roles    ["group/nuvla-user" "group/nuvla-anon"]}}
         mock-retrieve-by-id {(:id valid-api-key) valid-api-key
                              uuid                valid-api-key}]
 
@@ -100,9 +100,9 @@
 
       (let [app (ltu/ring-app)
             session-json (content-type (session app) "application/json")
-            session-anon (header session-json authn-info-header "unknown ANON")
-            session-user (header session-json authn-info-header "user USER ANON")
-            session-admin (header session-json authn-info-header "root ADMIN USER ANON")
+            session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
+            session-user (header session-json authn-info-header "user/user group/nuvla-user group/nuvla-anon")
+            session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
             ;;
             ;; create the session template to use for these tests
@@ -180,14 +180,14 @@
               abs-uri2 (str p/service-context uri2)]
 
           ;; check claims in cookie
-          (is (= "jane" (:username claims)))
-          (is (= (str/join " " ["USER" "ANON" uri]) (:roles claims))) ;; uri is also session id
+          (is (= "user/jane" (:username claims)))
+          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:roles claims))) ;; uri is also session id
           (is (= uri (:session claims)))                    ;; uri is also session id
           (is (not (nil? (:exp claims))))
 
           ;; check claims in cookie for redirect
-          (is (= "jane" (:username claims2)))
-          (is (= (str/join " " ["USER" "ANON" id2]) (:roles claims2))) ;; uri is also session id
+          (is (= "user/jane" (:username claims2)))
+          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" id2]) (:roles claims2))) ;; uri is also session id
           (is (= id2 (:session claims2)))                   ;; uri is also session id
           (is (not (nil? (:exp claims2))))
           (is (= "http://redirect.example.org" uri2))
@@ -221,7 +221,7 @@
 
           ;; user should be able to see session with session role
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request abs-uri)
               (ltu/body->edn)
               (ltu/is-status 200)
@@ -231,7 +231,7 @@
 
           ;; user query with session role should succeed but and have one entry
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user group/nuvla-user " id))
               (request base-uri)
               (ltu/body->edn)
               (ltu/is-status 200)
@@ -239,7 +239,7 @@
 
           ;; check contents of session resource
           (let [{:keys [name description tags] :as body} (-> (session app)
-                                                             (header authn-info-header (str "user USER " id))
+                                                             (header authn-info-header (str "user group/nuvla-user " id))
                                                              (request abs-uri)
                                                              (ltu/body->edn)
                                                              :response
@@ -250,7 +250,7 @@
 
           ;; user with session role can delete resource
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user group/nuvla-user " id))
               (request abs-uri
                        :request-method :delete)
               (ltu/is-unset-cookie)

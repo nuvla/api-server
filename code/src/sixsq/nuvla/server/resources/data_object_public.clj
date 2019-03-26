@@ -29,7 +29,7 @@
 (defmethod do/ready-subtype dot/data-object-type
   [resource request]
   (-> resource
-      (a/can-modify? request)
+      (a/can-edit-acl? request)
       (do/verify-state #{do/state-uploading} "ready")
       (s3/set-public-read-object)
       (assoc :state do/state-ready)

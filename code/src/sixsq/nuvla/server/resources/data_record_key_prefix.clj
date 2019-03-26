@@ -33,18 +33,12 @@ uri | true | full URI associated with the prefix
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :view-acl ["group/nuvla-user"]})
 
 
 ;;
@@ -70,9 +64,9 @@ uri | true | full URI associated with the prefix
 (def ^:private all-query-map {:identity       {:current         "slipstream",
                                                :authentications {"slipstream"
                                                                  {:identity "slipstream"
-                                                                  :roles    ["ADMIN" "USER" "ANON"]}}}
+                                                                  :roles    ["group/nuvla-admin" "group/nuvla-user" "ANON"]}}}
                               :params         {:resource-name resource-type}
-                              :user-roles     ["ADMIN" "USER" "ANON"]
+                              :user-roles     ["group/nuvla-admin" "group/nuvla-user" "ANON"]
                               :request-method :get})
 
 (defn extract-field-values

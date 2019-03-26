@@ -55,14 +55,9 @@ curl https://nuv.la/api/credential-template
 ;; able to list and view templates (if anonymous registration is
 ;; permitted)
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ANON"
-                              :type      "ROLE"
-                              :right     "VIEW"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :view-acl ["group/nuvla-user"
+                                "group/nuvla-anon"]})
 
 
 ;;
@@ -130,7 +125,7 @@ curl https://nuv.la/api/credential-template
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/can-view-acl? request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -158,14 +153,14 @@ curl https://nuv.la/api/credential-template
 
 (defn- viewable? [request {:keys [acl] :as entry}]
   (try
-    (a/can-view? {:acl acl} request)
+    (a/can-view-acl? {:acl acl} request)
     (catch Exception _
       false)))
 
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/can-view-acl? {:acl collection-acl} request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.

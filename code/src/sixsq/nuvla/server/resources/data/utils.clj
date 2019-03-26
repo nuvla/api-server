@@ -21,13 +21,13 @@
 
 
 (def request-admin {:identity                      {:current         "internal"
-                                                    :authentications {"internal" {:roles    #{"ADMIN"}
+                                                    :authentications {"internal" {:roles    #{"group/nuvla-admin"}
                                                                                   :identity "internal"}}}
                     :sixsq.slipstream.authn/claims {:username "internal"
-                                                    :roles    "ADMIN"}
+                                                    :roles    "group/nuvla-admin"}
                     :params                        {:resource-name "user"}
                     :route-params                  {:resource-name "user"}
-                    :user-roles                    #{"ANON"}})
+                    :user-roles                    #{"group/nuvla-anon"}})
 
 
 (defn log-aws-exception

@@ -26,14 +26,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 
 (def ^:const state-new "NEW")
@@ -107,11 +101,8 @@
 ;;
 
 (defn create-acl [id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal id
-            :type      "USER"
-            :right     "MODIFY"}]})
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
 
 
 (defmethod crud/add-acl resource-type
@@ -129,14 +120,14 @@
 
 (defn standard-data-object-collection-operations
   [{:keys [id] :as resource} request]
-  (when (a/authorized-modify? resource request)
+  (when (a/authorized-edit-acl? resource request)
     [{:rel (:add c/action-uri) :href id}]))
 
 
 (defn standard-data-object-resource-operations
   [{:keys [id state] :as resource} request]
-  (let [viewable? (a/authorized-view? resource request)
-        modifiable? (a/authorized-modify? resource request)
+  (let [viewable? (a/authorized-view-acl? resource request)
+        modifiable? (a/authorized-edit-acl? resource request)
         show-upload-op? (and modifiable? (#{state-new state-uploading} state))
         show-ready-op? (and modifiable? (#{state-uploading} state))
         show-download-op? (and viewable? (#{state-ready} state))
@@ -234,7 +225,7 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (let [idmap {:identity (:identity request)}
         body (-> body
                  (assoc :resource-type create-type)
@@ -318,7 +309,7 @@
 (defn upload
   [resource request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [upload-uri (upload-fn resource request)]
       (db/edit (assoc resource :state state-uploading) request)
       (r/json-response {:uri upload-uri}))
@@ -342,7 +333,7 @@
 (defmethod ready-subtype :default
   [resource request]
   (-> resource
-      (a/can-modify? request)
+      (a/can-edit-acl? request)
       (verify-state #{state-uploading} "ready")
       (assoc :state state-ready)
       (s3/add-s3-size)
@@ -391,7 +382,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-view? request)
+          (a/can-view-acl? request)
           (download request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -430,7 +421,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-modify? request)
+          (a/can-edit-acl? request)
           (delete request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

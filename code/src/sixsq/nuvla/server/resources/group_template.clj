@@ -22,12 +22,10 @@ creating a group and does not provide any useful defaults.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}})
+(def collection-acl {:owners ["group/nuvla-admin"]})
 
 
 ;;
@@ -91,7 +89,7 @@ creating a group and does not provide any useful defaults.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/can-view-acl? request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -109,14 +107,14 @@ creating a group and does not provide any useful defaults.
 
 (defn- viewable? [request {:keys [acl] :as entry}]
   (try
-    (a/can-view? {:acl acl} request)
+    (a/can-view-acl? {:acl acl} request)
     (catch Exception _
       false)))
 
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/can-view-acl? {:acl collection-acl} request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.

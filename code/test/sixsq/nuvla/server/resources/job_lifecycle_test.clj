@@ -19,8 +19,8 @@
 (def valid-job
   {:resource-type resource-type
    :action        "collect"
-   :acl           {:owner {:type "USER" :principal "admin"}
-                   :rules [{:type "USER" :principal "jane" :right "VIEW"}]}})
+   :acl           {:owners   ["group/nuvla-admin"]
+                   :view-acl ["user/jane"]}})
 
 (def zk-job-path-start-subs "/job/entries/entry-")
 
@@ -28,8 +28,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     (initialize)
 

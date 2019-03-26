@@ -9,7 +9,7 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
+(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
 
 
 (defn identifier->user-id
@@ -83,11 +83,7 @@
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
                        (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
                        set)]
-    ;; FIXME: Remove addition of ADMIN, USER, and ANON when we directly use the group information.
-    (str/join " " (sort (cond-> group-set
-                                (group-set "group/nuvla-admin") (conj "ADMIN")
-                                (group-set "group/nuvla-user") (conj "USER")
-                                (group-set "group/nuvla-anon") (conj "ANON"))))))
+    (str/join " " (sort group-set))))
 
 
 (defn create-claims

@@ -15,8 +15,7 @@
 
 (def ^:private nb-events 20)
 
-(def valid-event {:acl       {:owner {:type "USER" :principal "joe"}
-                              :rules [{:type "USER" :principal "joe" :right "ALL"}]}
+(def valid-event {:acl       {:owners ["user/joe"]}
                   :timestamp "2015-01-16T08:05:00.0Z"
                   :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                               :state    "Started"}
@@ -35,7 +34,7 @@
         state (-> app
                   (session)
                   (content-type "application/json")
-                  (header authn-info-header "joe"))]
+                  (header authn-info-header "user/joe"))]
     (doseq [valid-event valid-events]
       (request state base-uri
                :request-method :post
@@ -50,7 +49,7 @@
 ;;
 
 (def ^:private are-counts
-  (partial tu/are-counts :resources base-uri "joe"))
+  (partial tu/are-counts :resources base-uri "user/joe"))
 
 (deftest events-are-retrieved-most-recent-first
   (->> valid-events
@@ -59,14 +58,14 @@
        false?
        is)
 
-  (->> (exec-request base-uri "" "joe")
+  (->> (exec-request base-uri "" "user/joe")
        ltu/entries
        (map :timestamp)
        tu/ordered-desc?
        is))
 
 (deftest check-events-can-be-reordered
-  (->> (exec-request base-uri "?orderby=timestamp:asc" "joe")
+  (->> (exec-request base-uri "?orderby=timestamp:asc" "user/joe")
        ltu/entries
        (map :timestamp)
        (tu/ordered-asc?)
@@ -74,7 +73,7 @@
 
 (defn timestamp-paginate-single
   [n]
-  (-> (exec-request base-uri (str "?first=" n "&last=" n) "joe")
+  (-> (exec-request base-uri (str "?first=" n "&last=" n) "user/joe")
       ltu/entries
       first
       :timestamp))
@@ -150,7 +149,7 @@
   (are-counts 0 "?filter=content/resource/href^='XXX/'"))
 
 (deftest filter-wrong-param
-  (-> (exec-request base-uri "?filter=type='missing end quote" "joe")
+  (-> (exec-request base-uri "?filter=type='missing end quote" "user/joe")
       (ltu/is-status 400)
       (get-in [:response :body :message])
       (.startsWith "Invalid CIMI filter. Parse error at line 1, column 7")

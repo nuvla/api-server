@@ -28,8 +28,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "root ADMIN")
-        session-user (header session-anon authn-info-header "jane-updater")]
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane-updater")]
 
     ; retrieve root resource (anonymously should work) and verify schema
     (let [cep (-> session-anon

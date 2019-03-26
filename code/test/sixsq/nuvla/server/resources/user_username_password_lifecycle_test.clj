@@ -33,9 +33,9 @@
         session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     (let [template (-> session-admin
                        (request template-url)
@@ -48,7 +48,7 @@
           tags-attr ["one", "two"]
           plaintext-password "Plaintext-password-1"
 
-          uname-alt "jane"
+          uname-alt "user/jane"
 
           no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                 :password plaintext-password
@@ -60,7 +60,7 @@
                        :template    {:href              template-href
                                      :password          plaintext-password
                                      :password-repeated plaintext-password
-                                     :username          "jane"}}
+                                     :username          "user/jane"}}
 
           href-create-alt (assoc-in href-create [:template :username] uname-alt)
 
@@ -130,7 +130,7 @@
 
             username-id (get-in href-create [:template :username])
 
-            session-created-user (header session authn-info-header (str user-id " USER ANON"))
+            session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
 
             {:keys [credential-password] :as user} (-> session-created-user
                                                        (request (str p/service-context user-id))
@@ -186,7 +186,7 @@
         (let [resp (-> session-admin
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str (assoc-in href-create [:template :username] "jane")))
+                                :body (json/write-str (assoc-in href-create [:template :username] "user/jane")))
                        (ltu/body->edn)
                        (ltu/is-status 409))
               user-id (get-in resp [:response :body :resource-id])]
@@ -250,7 +250,7 @@
                      (ltu/is-status 303))
             user-id (get-in resp [:response :body :resource-id])
             username-id (get-in href-create-redirect [:template :username])
-            session-created-user (header session authn-info-header (str user-id " USER ANON"))
+            session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
             uri (ltu/location resp)]
 
         (is user-id)

@@ -16,13 +16,13 @@
 internal-identity
   {:current         "INTERNAL"
    :authentications {"INTERNAL" {:identity "INTERNAL"
-                                 :roles    ["ADMIN" "USER" "ANON"]}}})
+                                 :roles    ["group/nuvla-admin" "group/nuvla-user" "ANON"]}}})
 
 
 (defn add-fn
   [resource-name collection-acl resource-uri]
   (fn [{:keys [body] :as request}]
-    (a/can-modify? {:acl collection-acl} request)
+    (a/can-edit-acl? {:acl collection-acl} request)
     (db/add
       resource-name
       (-> body
@@ -41,7 +41,7 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-view? request)
+          (a/can-view-acl? request)
           (crud/set-operations request)
           (r/json-response))
       (catch Exception e
@@ -54,7 +54,7 @@ internal-identity
     (try
       (let [current (-> (str resource-name "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/can-modify? request))
+                        (a/can-edit-acl? request))
             dissoc-keys (-> (map keyword select)
                             (set)
                             (u/strip-select-from-mandatory-attrs))
@@ -74,7 +74,7 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-modify? request)
+          (a/can-edit-acl? request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -99,7 +99,7 @@ internal-identity
 (defn query-fn
   [resource-name collection-acl collection-uri]
   (fn [request]
-    (a/can-view? {:acl collection-acl} request)
+    (a/can-view-acl? {:acl collection-acl} request)
     (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
           options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
           [metadata entries] (db/query resource-name options)
@@ -128,7 +128,7 @@ internal-identity
               (str/starts-with? href "https://"))
     (if-let [refdoc (crud/retrieve-by-id href)]
       (try
-        (a/can-view? refdoc idmap)
+        (a/can-view-acl? refdoc idmap)
         (-> refdoc
             (u/strip-common-attrs)
             (u/strip-service-attrs)

@@ -50,14 +50,14 @@
 (deftest check-collect-groups-for-user
   (with-redefs [db/query (constantly nil)]
     (let [result (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")]
-      (= #{"USER" "ANON" "group/nuvla-user" "group/nuvla-anon"} (set (str/split result #"\s"))))))
+      (= #{"group/nuvla-user" "group/nuvla-anon"} (set (str/split result #"\s"))))))
 
 
 (deftest check-collect-groups-for-user-with-real-groups
 
   (let [app (ltu/ring-app)
         session-json (content-type (session app) "application/json")
-        session-admin (header session-json authn-info-header "root ADMIN USER ANON")
+        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         admin-group-uri (str p/service-context group/resource-type "/nuvla-admin")
 
@@ -106,5 +106,5 @@
 
       ;; check that the changes have been picked up
       (let [result (t/collect-groups-for-user user-id)]
-        (is (= #{"ADMIN" "USER" "ANON" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
+        (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
                (set (str/split result #"\s"))))))))

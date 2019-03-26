@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.db.filter.parser :as parser]))
 
@@ -12,32 +13,22 @@
 (s/def ::admin boolean?)
 (s/def ::user boolean?)
 
-(s/def ::type string?)
-(s/def ::principal string?)
-(s/def ::right string?)
-
-(s/def ::owner (s/keys :req-un [::type ::principal]))
-(s/def ::rule (s/keys :req-un [::type ::principal ::right]))
-(s/def ::rules (s/coll-of ::rule :min-count 1 :kind vector?))
-
-(s/def ::acl (s/keys :req-un [::owner]
-                     :opt-un [::rules]))
+(s/def ::acl ::acl-resource/acl)
 
 (s/def ::resource (s/keys :req-un [::id ::sequence ::attr1 ::attr2 ::acl]
                           :opt-un [::admin ::user]))
 
-(def admin-acl {:owner {:type "ROLE", :principal "ADMIN"}
-                :rules [{:type "ROLE", :principal "ADMIN", :right "ALL"}]})
+(def admin-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
-(def admin-role {:user-name "ADMIN", :user-roles ["ADMIN"]})
+(def admin-role {:user-name "user/super", :user-roles ["group/nuvla-admin"]})
 
-(def username "jane")
+(def user "user/jane")
 
-(def user-acl {:owner {:type "ROLE", :principal "ADMIN"}
-               :rules [{:type "ROLE", :principal "ADMIN", :right "ALL"}
-                       {:type "USER", :principal username, :right "ALL"}]})
+(def user-acl {:owners   ["group/nuvla-admin"]
+               :edit-acl ["group/nuvla-admin" user]})
 
-(def user-role {:user-name username, :user-roles ["USER"]})
+(def user-role {:user-name user, :user-roles ["group/nuvla-user"]})
 
 
 (defn check-binding-queries [db-impl]

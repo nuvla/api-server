@@ -97,7 +97,7 @@
                                      :targetResource {:href session-id}}
                           :identity {:current         "INTERNAL"
                                      :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                   :roles    ["ADMIN"]}}}}
+                                                                   :roles    ["group/nuvla-admin"]}}}}
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
     (if (= 201 status)
       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]

@@ -20,20 +20,8 @@
 
 (def md-uri (str p/service-context md/resource-type "/" t/resource-type))
 
-(def valid-acl {:owner {:principal "ADMIN",
-                        :type      "ROLE"},
-                :rules [{:principal "realm:accounting_manager",
-                         :type      "ROLE",
-                         :right     "VIEW"},
-                        {:principal "test",
-                         :type      "USER",
-                         :right     "VIEW"},
-                        {:principal "cern:cern",
-                         :type      "ROLE",
-                         :right     "VIEW"},
-                        {:principal "cern:my-accounting-group",
-                         :type      "ROLE",
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["user/test"]})
 
 
 (deftest check-metadata
@@ -44,8 +32,9 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; verify resource metadata
     (-> session-anon

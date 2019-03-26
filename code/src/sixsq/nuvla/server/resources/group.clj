@@ -25,11 +25,7 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners ["group/nuvla-admin"]})
 
 
 ;;
@@ -76,7 +72,7 @@ that start with 'nuvla-' are reserved for the server.
 
 ;; modified to retain id and not call new-identifier
 (defn add-impl [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (let [id (:id body)]
     (db/add
       resource-type
@@ -92,7 +88,7 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (let [idmap {:identity (:identity request)}
         desc-attrs (u/select-desc-keys body)
         body (-> body

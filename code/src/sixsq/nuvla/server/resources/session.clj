@@ -106,17 +106,8 @@ session.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-anon"]})
 
 ;;
 ;; validate subclasses of sessions
@@ -156,11 +147,7 @@ session.
 
 (defn create-acl
   [id]
-  {:owner {:principal id
-           :type      "ROLE"}
-   :rules [{:principal "ADMIN"
-            :type      "ROLE"
-            :right     "VIEW"}]})
+  {:owners [id]})
 
 (defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} request]
@@ -181,7 +168,7 @@ session.
    a SessionCollection."
   [{:keys [id resource-type] :as resource} request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (if (u/is-collection? resource-type)
       [{:rel (:add c/action-uri) :href id}]
       [{:rel (:delete c/action-uri) :href id}])
@@ -234,7 +221,7 @@ session.
 ;;
 
 (defn add-impl [{:keys [id body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
   (db/add
     resource-type
     (-> body

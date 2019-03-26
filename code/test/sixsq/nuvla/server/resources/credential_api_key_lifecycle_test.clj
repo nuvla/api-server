@@ -26,9 +26,9 @@
   (let [session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
 
         name-attr "name"
         description-attr "description"
@@ -235,7 +235,7 @@
                      :request-method :put
                      :body (json/write-str (assoc current :name "UPDATED!"
                                                           :claims {:identity "super",
-                                                                   :roles    ["USER" "ANON" "ADMIN"]})))
+                                                                   :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -258,14 +258,14 @@
                      :request-method :put
                      :body (json/write-str (assoc current :name "UPDATED by super!"
                                                           :claims {:identity "super",
-                                                                   :roles    ["USER" "ANON" "ADMIN"]})))
+                                                                   :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
             (ltu/body->edn)
             (ltu/is-status 200))
 
         ;; verify that the attribute has been changed
         (let [expected (assoc current :name "UPDATED by super!"
                                       :claims {:identity "super",
-                                               :roles    ["USER" "ANON" "ADMIN"]})
+                                               :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})
               reread (-> session-admin
                          (request abs-uri)
                          (ltu/body->edn)

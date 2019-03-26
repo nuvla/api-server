@@ -17,7 +17,7 @@
 
   (let [session (-> (ltu/ring-app)
                     session
-                    (header authn-info-header "ANON")
+                    (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
         md-docs (-> session
@@ -36,7 +36,7 @@
 
   (let [session (-> (ltu/ring-app)
                     session
-                    (header authn-info-header "ANON")
+                    (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
         md-docs (-> session

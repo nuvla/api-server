@@ -14,7 +14,7 @@
 (def ^:const action-name "user-email-validation")
 
 
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
+(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
 
 
 (defn validate_email!

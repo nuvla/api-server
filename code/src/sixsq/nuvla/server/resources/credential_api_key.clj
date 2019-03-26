@@ -102,7 +102,7 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 (defmethod p/special-edit tpl/credential-type
   [resource request]
-  (if ((:user-roles request) "ADMIN")
+  (if ((:user-roles request) "group/nuvla-admin")
     resource
     (dissoc resource :claims)))
 

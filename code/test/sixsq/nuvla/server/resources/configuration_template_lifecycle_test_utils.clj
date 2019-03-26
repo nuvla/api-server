@@ -27,8 +27,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "jane USER")
-        session-admin (header session-anon authn-info-header "root ADMIN")]
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user")
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous query is not authorized
     (-> session-anon
@@ -42,7 +42,7 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    ;; query as ADMIN should work correctly
+    ;; query as group/nuvla-admin should work correctly
     (let [entries (-> session-admin
                       (request base-uri)
                       (ltu/body->edn)

@@ -14,32 +14,8 @@
 
 (def ^:const resource-url "user")
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
-
-(defn in?
-  "true if coll contains elm."
-  [coll elm]
-  (if (some #(= elm %) coll) true false))
-
-
-(defn admin?
-  "Expects identity map from the request."
-  [identity]
-  (-> identity
-      :authentications
-      (get (:current identity))
-      :roles
-      (in? "ADMIN")))
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user" "group/nuvla-anon"]})
 
 
 (defn check-password-constraints
@@ -55,7 +31,7 @@
 (defn user-id-identity
   [user-id]
   {:current         user-id,
-   :authentications {user-id {:roles #{"USER"}, :identity user-id}}})
+   :authentications {user-id {:roles #{"group/nuvla-user"}, :identity user-id}}})
 
 
 (defn create-hashed-password
@@ -126,11 +102,8 @@
 
     (update-user user-id (cond-> {:id                  user-id
                                   :credential-password credential-id
-                                  :acl                 {:owner {:principal "ADMIN"
-                                                                :type      "ROLE"}
-                                                        :rules [{:principal user-id
-                                                                 :type      "USER"
-                                                                 :right     "MODIFY"}]}}
+                                  :acl                 {:owners   ["group/nuvla-admin"]
+                                                        :edit-acl [user-id]}}
                                  email-id (assoc :email email-id)))
 
     (when email

@@ -22,8 +22,7 @@ creating new accounts without email addresses.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 ;;
 ;; resource

@@ -23,11 +23,8 @@ secret to access the server. The credential can optionally be limited in time.
 (def ^:const method "generate-api-key")
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 ;;
 ;; resource

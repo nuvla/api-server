@@ -63,12 +63,12 @@
 
 
 (defn add-anon-role [roles]
-  (conj (set roles) "ANON"))
+  (conj (set roles) "group/nuvla-anon"))
 
 
 (defn create-identity-map
   [[username roles]]
-  (let [current (or username "ANON")
+  (let [current (or username "group/nuvla-anon")
         authn-roles (add-anon-role roles)
         id-map (cond-> {:roles authn-roles}
                        username (assoc :identity username))]

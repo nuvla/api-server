@@ -90,7 +90,7 @@
   [f]
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "super ADMIN USER ANON"))]
+                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))]
 
     (doseq [namespace [ns1 ns2]]
       (-> session-admin
@@ -109,10 +109,10 @@
 
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "super ADMIN USER ANON"))
+                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
         session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
-                         (header authn-info-header "jane USER ANON"))
+                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
         session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))]
 
@@ -222,10 +222,10 @@
 
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "super ADMIN USER ANON"))
+                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
         session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
-                         (header authn-info-header "jane USER ANON"))]
+                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
 
     (let [with-namespaced-key (format "
     {\"plan-id\":\"abcd\",
@@ -260,10 +260,10 @@
 
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "super ADMIN USER ANON"))
+                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
         session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
-                         (header authn-info-header "jane USER ANON"))]
+                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
 
     (let [uri (-> session-user
                   (request base-uri
@@ -304,7 +304,7 @@
                      (keyword (str ns1-prefix ":" attr)) "123.456"}
         session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "super ADMIN USER ANON"))]
+                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))]
 
 
     ;; create resource for testing queries
@@ -355,9 +355,9 @@
         session-admin-form (-> (ltu/ring-app)
                                session
                                (content-type "application/x-www-form-urlencoded")
-                               (header authn-info-header "super ADMIN USER ANON"))
-        session-admin-json (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")
+                               (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
+        session-admin-json (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         attr1 (ltu/random-string)
         attr2 (ltu/random-string)

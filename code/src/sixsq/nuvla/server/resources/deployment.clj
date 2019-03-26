@@ -24,11 +24,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners   ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 
 ;;
@@ -60,7 +57,7 @@
 (defmethod crud/add resource-type
   [{:keys [identity body base-uri] :as request}]
 
-  (a/can-modify? {:acl collection-acl} request)
+  (a/can-edit-acl? {:acl collection-acl} request)
 
   (let [deployment (-> body
                        (assoc :resource-type resource-type)
@@ -102,7 +99,7 @@
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
         deployment-utils/verify-can-delete
-        (a/can-modify? request)
+        (a/can-edit-acl? request)
         (db/delete request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -144,18 +141,15 @@
           user-id (:identity (a/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_deployment"
-                                                       {:owner {:principal "ADMIN"
-                                                                :type      "ROLE"}
-                                                        :rules [{:principal user-id
-                                                                 :right     "VIEW"
-                                                                 :type      "USER"}]}
+                                                       {:owners   ["group/nuvla-admin"]
+                                                        :edit-acl [user-id]}
                                                        :priority 50)
           job-msg (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response "unable to create async job to start deployment" 500 id)))
       (-> id
           (db/retrieve request)
-          (a/can-modify? request)
+          (a/can-edit-acl? request)
           (assoc :state "STARTING")
           (db/edit request))
       (event-utils/create-event id job-msg (acl/default-acl (acl/current-authentication request)))
@@ -171,18 +165,15 @@
           user-id (:identity (a/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_deployment"
-                                                       {:owner {:principal "ADMIN"
-                                                                :type      "ROLE"}
-                                                        :rules [{:principal user-id
-                                                                 :right     "VIEW"
-                                                                 :type      "USER"}]}
+                                                       {:owners   ["group/nuvla-admin"]
+                                                        :view-acl [user-id]}
                                                        :priority 60)
           job-msg (str "stopping " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response "unable to create async job to stop deployment" 500 id)))
       (-> id
           (db/retrieve request)
-          (a/can-modify? request)
+          (a/can-edit-acl? request)
           (assoc :state "STOPPING")
           (db/edit request))
       (r/map-response job-msg 202 id job-id))

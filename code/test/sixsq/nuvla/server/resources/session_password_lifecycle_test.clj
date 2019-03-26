@@ -73,9 +73,9 @@
 
   (let [app (ltu/ring-app)
         session-json (content-type (session app) "application/json")
-        session-anon (header session-json authn-info-header "unknown ANON")
-        session-user (header session-json authn-info-header "user USER")
-        session-admin (header session-json authn-info-header "root ADMIN")
+        session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
+        session-user (header session-json authn-info-header "user group/nuvla-user")
+        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href (str st/resource-type "/password")
 
@@ -132,7 +132,7 @@
 
 
     ;; anon with valid activated user can create session
-    (let [username "jane"
+    (let [username "user/jane"
           plaintext-password "JaneJane-0"
 
           valid-create {:name        name-attr
@@ -193,8 +193,8 @@
 
         ; check claims in cookie
         (is (= jane-user-id (:username claims)))
-        (is (= #{"USER" "group/nuvla-user"
-                 "ANON" "group/nuvla-anon"
+        (is (= #{"group/nuvla-user"
+                 "group/nuvla-anon"
                  uri}
                (-> claims
                    :roles
@@ -205,8 +205,8 @@
 
         ; check claims in cookie for redirect
         (is (= jane-user-id (:username claims2)))
-        (is (= #{"USER" "group/nuvla-user"
-                 "ANON" "group/nuvla-anon"
+        (is (= #{"group/nuvla-user"
+                 "group/nuvla-anon"
                  id2}
                (-> claims2
                    :roles
@@ -245,7 +245,7 @@
 
         ; user should be able to see session with session role
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
@@ -255,7 +255,7 @@
 
         ; check contents of session
         (let [{:keys [name description tags] :as body} (-> session-user
-                                                           (header authn-info-header (str "user USER ANON " id))
+                                                           (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            :response
@@ -266,7 +266,7 @@
 
         ; user query with session role should succeed but and have one entry
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request base-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
@@ -274,7 +274,7 @@
 
         ; user with session role can delete resource
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request abs-uri
                      :request-method :delete)
             (ltu/is-unset-cookie)

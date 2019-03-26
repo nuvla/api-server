@@ -32,21 +32,21 @@
                     {:status status} start end))))
 
 (deftest log-does-not-display-password
-  (is-request-formatted (str "GET " test-url " [super/ADMIN] ?a=1&b=2")
-                        :user "super" :roles ["ADMIN"] :query-string "a=1&password=secret&b=2"))
+  (is-request-formatted (str "GET " test-url " [super - group/nuvla-admin] ?a=1&b=2")
+                        :user "super" :roles ["group/nuvla-admin"] :query-string "a=1&password=secret&b=2"))
 
 (deftest test-formatting
-  (is-response-formatted (format (str "200 (%d ms) GET " test-url " [super/ADMIN] ?a=1&b=2") (- end start))
-                         :user "super" :roles ["ADMIN"] :query-string "a=1&password=secret&b=2"
+  (is-response-formatted (format (str "200 (%d ms) GET " test-url " [super - group/nuvla-admin] ?a=1&b=2") (- end start))
+                         :user "super" :roles ["group/nuvla-admin"] :query-string "a=1&password=secret&b=2"
                          :start start :end end :status 200)
 
-  (is-request-formatted (str "GET " test-url " [joe/] ?c=3")
+  (is-request-formatted (str "GET " test-url " [joe - ] ?c=3")
                         :user "joe" :query-string "c=3")
 
-  (is-request-formatted (str "GET " test-url " [joe/] ?")
+  (is-request-formatted (str "GET " test-url " [joe - ] ?")
                         :user "joe")
 
-  (is-request-formatted (str "GET " test-url " [joe/R1,R2] ?")
+  (is-request-formatted (str "GET " test-url " [joe - R1,R2] ?")
                         :user "joe" :roles ["R1" "R2"]))
 
 

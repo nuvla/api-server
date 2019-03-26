@@ -137,7 +137,6 @@
           (throw (r/ex-not-found id))
           (r/response-error (str "unexpected error deleting " id)))))))
 
-
 (defn query-data
   [client collection-id {:keys [cimi-params] :as options}]
   (let [index (escu/collection-id->index collection-id)

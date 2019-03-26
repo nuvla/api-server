@@ -16,26 +16,21 @@
 
 (def base-uri (str p/service-context t/resource-type))
 
-(def valid-acl {:owner {:principal "ADMIN",
-                        :type      "ROLE"},
-                :rules [{:principal "ADMIN",
-                         :type      "ROLE",
-                         :right     "MODIFY"},
-                        {:principal "ANON",
-                         :type      "ROLE",
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-anon"]})
 
 (deftest lifecycle
 
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anyone can query the metadata
     ;; because of automatic registration, the list may not be empty
-    (doseq [session [session-admin session-user session-anon]]
+    (doseq [session [session-admin #_session-user #_session-anon]]
       (-> session
           (request base-uri)
           (ltu/body->edn)
@@ -53,7 +48,7 @@
                       (dissoc :acl)
                       (assoc :typeURI identifier)))
 
-      (doseq [session [session-admin session-user session-anon]]
+      (doseq [session [session-admin #_session-user #_session-anon]]
         (-> session
             (request base-uri)
             (ltu/body->edn)

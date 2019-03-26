@@ -28,11 +28,8 @@ infrastructure-service-group resource.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:owners ["group/nuvla-admin"]
+                     :edit-acl ["group/nuvla-user"]})
 
 ;;
 ;; initialization
@@ -86,11 +83,11 @@ infrastructure-service-group resource.
 (defn service-query
   ([resource-id]
    (service-query {:identity                      {:current         "internal",
-                                                   :authentications {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}
+                                                   :authentications {"internal" {:roles #{"group/nuvla-admin"}, :identity "internal"}}}
                    :sixsq.slipstream.authn/claims {:username "internal"
-                                                   :roles    "ADMIN USER ANON"}
+                                                   :roles    "group/nuvla-admin group/nuvla-user ANON"}
                    :user-name                     "internal"
-                   :user-roles                    #{"ADMIN" "USER" "ANON"}}
+                   :user-roles                    #{"group/nuvla-admin" "group/nuvla-user" "ANON"}}
                   resource-id))
   ([initial-request resource-id]
    (let [filter (-> {:filter (str "parent='" resource-id "'")}

@@ -21,14 +21,8 @@ optional name can also be provided.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "USER"
-                            :right     "ALL"}
-                           {:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-anon"]})
 
 ;;
 ;; resource

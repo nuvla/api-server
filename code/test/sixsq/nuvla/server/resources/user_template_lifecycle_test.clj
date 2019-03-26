@@ -37,7 +37,7 @@
 
   (let [session (-> (session (ltu/ring-app))
                     (content-type "application/json")
-                    (header authn-info-header "root ADMIN"))
+                    (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
         entries (-> session
                     (request base-uri)
                     (ltu/body->edn)

@@ -18,8 +18,8 @@
   (let [session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "group/nuvla-anon")]
 
     ;; create a callback as an admin
     (let [create-callback-succeeds {:action         example/action-name
