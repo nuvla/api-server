@@ -42,24 +42,21 @@
                       nil nil
                       nil []))
 
-  #_(let [acl {:owner {:principal "USER1"
-                       :type      "USER"}
-               :rules [{:principal "ROLE1"
-                        :type      "ROLE"
-                        :right     "VIEW"}
-                       {:principal "USER2"
-                        :type      "USER"
-                        :right     "MODIFY"}]}]
+  (let [acl {:owners   ["user/user1"]
+             :view-acl ["group/role1"]
+             :edit-acl ["user/user2"]
+             :manage   ["group/role2"]}]
 
-      (are [expect arg] (= expect (acl/extract-rights arg acl))
-                        #{} nil
-                        #{} {:identity nil}
-                        #{::acl/all} {:identity "USER1"}
-                        #{::acl/all ::acl/view} {:identity "USER1" :roles ["ROLE1"]}
-                        #{} {:identity "USER_UNKNOWN" :roles ["ROLE_UNKNOWN"]}
-                        #{::acl/view} {:identity "USER_UNKNOWN" :roles ["ROLE1"]}
-                        #{::acl/view ::acl/modify} {:identity "USER2" :roles ["ROLE1"]}))
-  )
+    (are [expect arg] (= expect (acl/extract-rights arg acl))
+                      #{} nil
+                      #{} {:identity nil}
+                      #{::acl/edit-acl} {:identity "user/user1"}
+                      #{::acl/edit-acl ::acl/view-acl} {:identity "user/user1" :roles ["group/role1"]}
+                      #{} {:identity "user/unknown" :roles ["group/unknown"]}
+                      #{::acl/view-acl} {:identity "user/unknown" :roles ["group/role1"]}
+                      #{::acl/edit-acl ::acl/manage} {:identity "user/user1" :roles ["group/role2"]}
+                      #{::acl/view-acl ::acl/edit-acl} {:identity "user/user2" :roles ["group/role1"]})))
+
 
 (deftest check-hierarchy
 
@@ -112,93 +109,43 @@
     (is (not (isa? acl/rights-hierarchy right ::acl/edit-acl)))))
 
 
-
-
-#_(deftest check-hierarchy
-
-    ;; tests for legacy rights (ALL, MODIFY, VIEW)
-    (are [parent child] (isa? acl/rights-hierarchy parent child)
-                        ::acl/all ::acl/view
-                        ::acl/modify ::acl/view
-                        ::acl/modify ::acl/view)
-    (are [parent child] (not (isa? acl/rights-hierarchy parent child))
-                        ::acl/view ::acl/all
-                        ::acl/view ::acl/modify
-                        ::acl/modify ::acl/all)
-
-    ;; test relationships with 'new' rights
-    (are [parent child] (and (isa? acl/rights-hierarchy parent child) (not (isa? acl/rights-hierarchy child parent)))
-                        ::acl/view-acl ::acl/view-data
-                        ::acl/view-acl ::acl/view-meta
-                        ::acl/view-data ::acl/view-meta
-
-                        ::acl/edit-acl ::acl/edit-data
-                        ::acl/edit-acl ::acl/edit-meta
-                        ::acl/edit-data ::acl/edit-meta
-
-                        ::acl/edit-acl ::acl/view-acl
-                        ::acl/edit-acl ::acl/view-data
-                        ::acl/edit-acl ::acl/view-meta
-
-                        ::acl/edit-data ::acl/view-data
-                        ::acl/edit-data ::acl/view-meta
-
-                        ::acl/edit-meta ::acl/view-meta)
-
-    (let [independent-rights #{::acl/manage ::acl/delete ::acl/view-acl}]
-      (doseq [right1 independent-rights
-              right2 independent-rights]
-        (if (= right1 right2)
-          (is (isa? acl/rights-hierarchy right1 right2))
-          (is (not (isa? acl/rights-hierarchy right1 right2))))))
-
-    (let [all-rights (set (vals acl/rights-keywords))]
-      ;; everything is an instance of itself
-      (doseq [right all-rights]
-        (is (isa? acl/rights-hierarchy right right)))
-      ;; ::all covers everything, nothing covers ::all
-      (doseq [right (disj all-rights ::acl/all)]
-        (is (isa? acl/rights-hierarchy ::acl/all right))
-        (is (not (isa? acl/rights-hierarchy right ::acl/all))))))
-
-#_(deftest check-can-do?
-    (let [acl {:owner {:principal "USER1"
-                       :type      "USER"}
-               :rules [{:principal "ROLE1"
-                        :type      "ROLE"
-                        :right     "VIEW"}
-                       {:principal "USER2"
-                        :type      "USER"
-                        :right     "MODIFY"}]}
+(deftest check-can-do?
+  (let [acl {:owners   ["user/user1"]
+             :view-acl ["group/role1"]
+             :edit-acl ["user/user2"]}
           resource {:acl         acl
                     :resource-id "Resource/uuid"}]
 
-      (let [request {:identity {:current         "USER1"
-                                :authentications {"USER1" {:identity "USER1"}}}}]
+    (let [request {:identity {:current         "user/user1"
+                              :authentications {"user/user1" {:identity "user/user1"}}}}]
+      (is (= resource (acl/can-do? resource request ::acl/view-acl)))
+      (is (= resource (acl/can-do? resource request ::acl/edit-acl)))
+      (is (= resource (acl/can-do? resource request ::acl/edit-data)))
+      (is (= resource (acl/can-do? resource request ::acl/view-data)))
+      (is (= resource (acl/can-do? resource request ::acl/edit-meta)))
+      (is (= resource (acl/can-do? resource request ::acl/view-meta)))
+      (is (= resource (acl/can-do? resource request ::acl/delete)))
+      (is (= resource (acl/can-do? resource request ::acl/manage)))
 
-        (is (= resource (acl/can-do? resource request ::acl/all)))
-        (is (= resource (acl/can-do? resource request ::acl/modify)))
-        (is (= resource (acl/can-do? resource request ::acl/view)))
+      (let [request {:identity {:current         "user/unknown"
+                                :authentications {"user/unknown" {:identity "user/unknown"
+                                                                  :roles    ["group/role1"]}}}}]
+        (is (thrown? Exception (acl/can-do? resource request ::acl/edit-acl)))
+        (is (= resource (acl/can-do? resource request ::acl/view-acl))))
 
-        (let [request {:identity {:current         "USER_UNKNOWN"
-                                  :authentications {"USER_UNKNOWN" {:identity "USER_UNKNOWN"
-                                                                    :roles    ["ROLE1"]}}}}]
+      (let [request {:identity {:current         "user/unknown"
+                                :authentications {"user/unknown" {:identity "user/unknown"
+                                                                  :roles    ["group/unknown"]}}}}]
+        (is (thrown? Exception (acl/can-do? resource request ::acl/edit-acl)))
+        (is (thrown? Exception (acl/can-do? resource request ::acl/view-acl)))
+        (is (thrown? Exception (acl/can-do? resource request ::acl/manage))))
 
-          (is (thrown? Exception (acl/can-do? resource request ::acl/all)))
-          (is (thrown? Exception (acl/can-do? resource request ::acl/modify)))
-          (is (= resource (acl/can-do? resource request ::acl/view))))
+      (let [request {:identity {:current         "user/user2"
+                                :authentications {"user/user2" {:identity "user/user2"}}}}]
+        (is (= resource (acl/can-do? resource request ::acl/edit-acl))))
 
-        (let [request {:identity {:current         "USER2"
-                                  :authentications {"USER2" {:identity "USER2"}}}}]
-
-          (is (thrown? Exception (acl/can-do? resource request ::acl/all)))
-          (is (= resource (acl/can-do? resource request ::acl/modify)))
-          (is (= resource (acl/can-do? resource request ::acl/view))))
-
-        (let [request {:identity {:current         "USER2"
-                                  :authentications {"USER2" {:identity "USER2"
-                                                             :roles    ["ROLE1"]}}}}]
-
-          (is (thrown? Exception (acl/can-do? resource request ::acl/all)))
-          (is (= resource (acl/can-do? resource request ::acl/modify)))
-          (is (= resource (acl/can-do? resource request ::acl/view)))))))
+      (let [request {:identity {:current         "user/user2"
+                                :authentications {"user/user2" {:identity "user/user2"
+                                                                :roles    ["group/role1"]}}}}]
+        (is (= resource (acl/can-do? resource request ::acl/edit-acl)))
+        (is (= resource (acl/can-do? resource request ::acl/view-acl)))))))

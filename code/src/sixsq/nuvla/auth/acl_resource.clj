@@ -1,9 +1,6 @@
 (ns sixsq.nuvla.auth.acl-resource
   (:require
-    [clojure.string :as str]
-    [clojure.set :as set]
-    [sixsq.nuvla.server.util.response :as ru]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.response :as ru]))
 
 (def rights-hierarchy (-> (make-hierarchy)
 
@@ -57,12 +54,14 @@
   "Returns a set containing all of the applicable rights from an ACL
    for the given identity map."
   [id-map {:keys [owners] :as acl}]
-  (->> acl
-       (update :edit-acl concat owners ["group/nuvla-admin"])
-       (dissoc :owners)
-       (map (partial extract-right id-map))
-       (remove nil?)
-       (set)))
+  (let [acl-updated (-> acl
+                        (update :edit-acl concat owners ["group/nuvla-admin"])
+                        (dissoc :owners))]
+
+    (->> acl-updated
+        (map (partial extract-right id-map))
+        (remove nil?)
+        (set))))
 
 (defn authorized-do?
   "Returns true if the ACL associated with the given resource permits the
