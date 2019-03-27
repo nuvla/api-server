@@ -47,7 +47,7 @@ the plain text secret in the response. The server stores only a digest of the
 secret, so you must capture and save the plain text secret from this response!
 "
   (:require
-    [sixsq.nuvla.auth.acl :as acl]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
@@ -60,7 +60,7 @@ secret, so you must capture and save the plain text secret from this response!
   (vec (remove #(re-matches #"^session/.*" %) roles)))
 
 (defn extract-claims [request]
-  (let [{:keys [identity roles]} (acl/current-authentication request)
+  (let [{:keys [identity roles]} (a/current-authentication request)
         roles (strip-session-role roles)]
     (cond-> {:identity identity}
             (seq roles) (assoc :roles (vec roles)))))

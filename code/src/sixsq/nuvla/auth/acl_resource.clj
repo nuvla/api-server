@@ -1,7 +1,6 @@
-(ns sixsq.nuvla.auth.acl
+(ns sixsq.nuvla.auth.acl_resource
   (:require
-    [sixsq.nuvla.server.util.response :as ru]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.response :as ru]))
 
 (def rights-hierarchy (-> (make-hierarchy)
 
@@ -34,7 +33,7 @@
   "Extracts the current authentication (identity map) from the ring
    request.  Returns nil if there is no current identity."
   [{{:keys [current authentications]} :identity}]
-  (or (get authentications current) {:identifier nil, :roles ["ANON"]}))
+  (or (get authentications current) {:identifier nil, :roles ["group/nuvla-anon"]}))
 
 
 (defn extract-right

@@ -10,7 +10,7 @@ resource's `parent` attribute, which will contain the `id` of the
 infrastructure-service-group resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -85,9 +85,9 @@ infrastructure-service-group resource.
    (service-query {:identity                      {:current         "internal",
                                                    :authentications {"internal" {:roles #{"group/nuvla-admin"}, :identity "internal"}}}
                    :sixsq.slipstream.authn/claims {:username "internal"
-                                                   :roles    "group/nuvla-admin group/nuvla-user ANON"}
+                                                   :roles    "group/nuvla-admin group/nuvla-user group/nuvla-anon"}
                    :user-name                     "internal"
-                   :user-roles                    #{"group/nuvla-admin" "group/nuvla-user" "ANON"}}
+                   :user-roles                    #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}}
                   resource-id))
   ([initial-request resource-id]
    (let [filter (-> {:filter (str "parent='" resource-id "'")}

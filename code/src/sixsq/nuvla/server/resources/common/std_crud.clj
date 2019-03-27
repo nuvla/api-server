@@ -5,7 +5,7 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [clojure.walk :as w]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -16,7 +16,7 @@
 internal-identity
   {:current         "INTERNAL"
    :authentications {"INTERNAL" {:identity "INTERNAL"
-                                 :roles    ["group/nuvla-admin" "group/nuvla-user" "ANON"]}}})
+                                 :roles    ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]}}})
 
 
 (defn add-fn

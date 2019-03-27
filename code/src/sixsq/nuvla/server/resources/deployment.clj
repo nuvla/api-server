@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.server.resources.deployment
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.auth.acl :as acl]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -72,7 +71,7 @@
 
         msg (get-in create-response [:body :message])]
 
-    (event-utils/create-event href msg (acl/default-acl (acl/current-authentication request)))
+    (event-utils/create-event href msg (a/default-acl (a/current-authentication request)))
 
     create-response))
 
@@ -152,7 +151,7 @@
           (a/can-edit-acl? request)
           (assoc :state "STARTING")
           (db/edit request))
-      (event-utils/create-event id job-msg (acl/default-acl (acl/current-authentication request)))
+      (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))

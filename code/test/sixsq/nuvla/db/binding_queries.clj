@@ -2,9 +2,9 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]
     [sixsq.nuvla.db.binding :as db]
-    [sixsq.nuvla.db.filter.parser :as parser]))
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
 (s/def ::id string?)
 (s/def ::sequence int?)

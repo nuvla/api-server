@@ -85,7 +85,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 session.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]

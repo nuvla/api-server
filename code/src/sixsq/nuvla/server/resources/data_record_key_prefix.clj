@@ -60,13 +60,13 @@ uri | true | full URI associated with the prefix
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-;; FIXME: Roles are needed in two locations!  Should be unique way to specify authentication information.
+;; TODO ACL: Roles are needed in two locations!  Should be unique way to specify authentication information.
 (def ^:private all-query-map {:identity       {:current         "slipstream",
                                                :authentications {"slipstream"
                                                                  {:identity "slipstream"
-                                                                  :roles    ["group/nuvla-admin" "group/nuvla-user" "ANON"]}}}
+                                                                  :roles    ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]}}}
                               :params         {:resource-name resource-type}
-                              :user-roles     ["group/nuvla-admin" "group/nuvla-user" "ANON"]
+                              :user-roles     ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]
                               :request-method :get})
 
 (defn extract-field-values

@@ -9,7 +9,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl_resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
@@ -18,8 +18,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
-    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
@@ -42,7 +42,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 ;; creating a new user is a registration request, so anonymous users must
 ;; be able to view the collection and post requests to it (if a template is
-;; visible to ANON.)
+;; visible to group/nuvla-anon.)
 
 (def collection-acl user-utils/collection-acl)
 

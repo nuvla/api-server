@@ -65,7 +65,7 @@
 (defn add-anon-role [roles]
   (conj (set roles) "group/nuvla-anon"))
 
-
+;;TODO ACL fix identity map
 (defn create-identity-map
   [[username roles]]
   (let [current (or username "group/nuvla-anon")
