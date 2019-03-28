@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.auth.acl-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.auth.acl_resource :as a]))
+    [sixsq.nuvla.auth.acl_resource :as a]
+    [clojure.set :as set]))
 
 
 (deftest check-current-authentication
@@ -81,7 +82,7 @@
 
                       ::a/edit-meta ::a/view-meta)
 
-  (let [independent-rights #{::a/manage ::a/delete ::a/view-acl}]
+  (let [independent-rights #{::a/manage ::a/delete ::a/view-acl ::a/query ::a/add}]
     (doseq [right1 independent-rights
             right2 independent-rights]
       (if (= right1 right2)
@@ -92,18 +93,21 @@
   (doseq [right a/rights-keywords]
     (is (isa? a/rights-hierarchy right right)))
 
-  ;; ::edit-acl covers everything, nothing covers ::edit-acl
-  (let [all-rights (set (vals a/rights-keywords))]
-    ;; everything is an instance of itself
+  (let [all-rights (disj (set (vals a/rights-keywords)) ::a/query ::a/add)]
+
+    ;; ::edit-acl covers everything except ::query and ::add, nothing covers ::edit-acl
     (doseq [right all-rights]
       (is (isa? a/rights-hierarchy right right)))
 
-    ;; ::all covers everything, nothing covers ::edit-acl
-    (doseq [right (disj all-rights ::a/edit-acl)]
+    ;; ::edit-acl covers everything except ::query and ::add
+    (doseq [right (disj all-rights ::a/edit-acl ::a/query ::a/add)]
       (is (isa? a/rights-hierarchy ::a/edit-acl right))
       (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
-  (doseq [right (vals (dissoc a/rights-keywords ::a/edit-acl :edit-acl))]
+  (doseq [right (vals (dissoc a/rights-keywords
+                              ::a/edit-acl :edit-acl
+                              ::a/query :query
+                              ::a/add :add))]
     (is (isa? a/rights-hierarchy ::a/edit-acl right))
     (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 

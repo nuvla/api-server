@@ -37,8 +37,9 @@ appropriate users.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-admin"]})
+(def collection-acl {:query  ["group/nuvla-admin"]
+                     :add    ["group/nuvla-admin"]})
+
 
 ;;
 ;; validate subclasses of callbacks

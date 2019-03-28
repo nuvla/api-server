@@ -18,8 +18,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -61,7 +61,7 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-edit-acl? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [[{:keys [type] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 

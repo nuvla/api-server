@@ -30,8 +30,7 @@ paging, etc. parameters are not supported.
                    :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;

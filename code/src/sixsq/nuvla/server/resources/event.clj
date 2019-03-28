@@ -18,10 +18,9 @@ cloud application and for other important actions.
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
-;;TODO ACL event why anon can add events?
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-anon"]})
-
+;; TODO: Tests require anonymous query and add operations.  Why?
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-anon"]})
 
 
 ;;
@@ -58,17 +57,20 @@ cloud application and for other important actions.
 ;;
 ;; available operations
 ;;
+
 (defmethod crud/set-operations resource-type
-  [resource request]
+  [{:keys [id acl] :as resource} request]
   (try
-    (a/can-edit-acl? resource request)
-    (let [href (:id resource)
-          ^String resource-type (:resource-type resource)
-          ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href href}]
-                [{:rel (:delete c/action-uri) :href href}])]
-      (assoc resource :operations ops))
-    (catch Exception e
+    (if (u/is-collection? resource-type)
+      (do
+        (a/throw-cannot-add acl request)
+        (let [ops [{:rel (:add c/action-uri) :href id}]]
+          (assoc resource :operations ops)))
+      (do
+        (a/can-edit-acl? resource request)
+        (let [ops [{:rel (:delete c/action-uri) :href id}]]
+          (assoc resource :operations ops))))
+    (catch Exception _
       (dissoc resource :operations))))
 
 ;;

@@ -17,8 +17,7 @@
                    :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;
@@ -131,7 +130,7 @@
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view-acl? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])

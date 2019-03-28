@@ -28,8 +28,8 @@ existing infrastructure-service-template resource.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 ;;
 ;; initialization

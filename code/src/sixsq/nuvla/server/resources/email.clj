@@ -27,8 +27,8 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 (def actions [{:name          "validate"

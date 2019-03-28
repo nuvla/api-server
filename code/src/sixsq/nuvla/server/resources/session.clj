@@ -106,8 +106,8 @@ session.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-anon"]})
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-anon"]})
 
 ;;
 ;; validate subclasses of sessions
@@ -221,7 +221,7 @@ session.
 ;;
 
 (defn add-impl [{:keys [id body] :as request}]
-  (a/can-edit-acl? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (db/add
     resource-type
     (-> body

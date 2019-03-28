@@ -35,8 +35,8 @@ must delete the old one and create a new one.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
 (def resource-acl {:owners ["group/nuvla-admin"]})

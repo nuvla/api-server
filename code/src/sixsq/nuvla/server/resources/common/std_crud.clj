@@ -9,7 +9,8 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]))
 
 
 (def ^{:doc "Internal administrator identity for database queries."}
@@ -19,10 +20,14 @@ internal-identity
                                  :roles    ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]}}})
 
 
+(def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
+
+
 (defn add-fn
   [resource-name collection-acl resource-uri]
+  (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
-    (a/can-edit-acl? {:acl collection-acl} request)
+    (a/throw-cannot-add collection-acl request)
     (db/add
       resource-name
       (-> body
@@ -98,8 +103,9 @@ internal-identity
 
 (defn query-fn
   [resource-name collection-acl collection-uri]
+  (validate-collection-acl collection-acl)
   (fn [request]
-    (a/can-view-acl? {:acl collection-acl} request)
+    (a/throw-cannot-query collection-acl request)
     (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
           options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
           [metadata entries] (db/query resource-name options)

@@ -26,8 +26,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 (def ^:const state-new "NEW")
@@ -225,7 +225,7 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-edit-acl? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [idmap {:identity (:identity request)}
         body (-> body
                  (assoc :resource-type create-type)

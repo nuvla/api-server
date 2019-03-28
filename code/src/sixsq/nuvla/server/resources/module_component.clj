@@ -12,10 +12,11 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
-(def resource-acl collection-acl)
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
 ;;

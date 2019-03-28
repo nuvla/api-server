@@ -55,9 +55,7 @@ curl https://nuv.la/api/credential-template
 ;; able to list and view templates (if anonymous registration is
 ;; permitted)
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"
-                                "group/nuvla-anon"]})
+(def collection-acl {:query ["group/nuvla-anon"]})
 
 
 ;;
@@ -160,7 +158,7 @@ curl https://nuv.la/api/credential-template
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view-acl? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.

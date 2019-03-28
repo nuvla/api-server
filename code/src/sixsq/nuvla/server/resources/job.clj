@@ -16,8 +16,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 ;;
 ;; initialization
@@ -50,7 +50,7 @@
 ;;
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
-  (a/can-edit-acl? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [id (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body

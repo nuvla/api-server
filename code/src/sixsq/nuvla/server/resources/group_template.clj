@@ -25,7 +25,8 @@ creating a group and does not provide any useful defaults.
 (def resource-acl {:owners ["group/nuvla-admin"]})
 
 
-(def collection-acl {:owners ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -114,7 +115,7 @@ creating a group and does not provide any useful defaults.
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view-acl? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.

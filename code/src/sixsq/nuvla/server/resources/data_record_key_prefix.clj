@@ -37,8 +37,8 @@ uri | true | full URI associated with the prefix
                    :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;

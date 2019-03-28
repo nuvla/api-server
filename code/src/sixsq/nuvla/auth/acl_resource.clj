@@ -25,8 +25,14 @@
       (assoc (-> kw name keyword) kw)))
 
 
+(def collection-rights
+  [::query ::add])
+
+
+;; provides mappings between the namespaced keywords and themselves,
+;; as well as the un-namespaced keywords and the namespaced ones.
 (def rights-keywords
-  (reduce add-rights-entry {} (cons ::edit-acl (ancestors rights-hierarchy ::edit-acl))))
+  (reduce add-rights-entry {} (concat collection-rights [::edit-acl] (ancestors rights-hierarchy ::edit-acl))))
 
 
 (defn current-authentication
@@ -125,6 +131,21 @@
   #_(log/error "can-view-acl? RESOURCE:" resource "REQUEST:" request "
   RESULT: "(can-do? resource request ::view-acl))
   (can-do? resource request ::view-acl))
+
+
+(defn throw-cannot-query
+  "Will throw an error ring response if the user identified in the request
+   cannot query the given collection; it returns the request otherwise."
+  [collection-acl request]
+  (can-do? {:acl collection-acl} request ::query))
+
+
+(defn throw-cannot-add
+  "Will throw an error ring response if the user identified in the request
+   cannot add a resource to the given collection; it returns the request
+   otherwise."
+  [collection-acl request]
+  (can-do? {:acl collection-acl} request ::add))
 
 
 (defn default-acl
