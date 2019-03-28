@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.event-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -9,8 +10,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.event :refer :all]
     [sixsq.nuvla.server.resources.event.test-utils :as tu :refer [exec-request is-count urlencode-params]]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (def base-uri (str p/service-context resource-type))

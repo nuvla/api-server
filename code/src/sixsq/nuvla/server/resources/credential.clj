@@ -145,7 +145,7 @@ CredentialTemplate resource.
 (defn check-connector-exists
   "Use ADMIN role as we only want to check if href points to an existing
   resource."
-  [body idmap]
+  [body authn-info]
   (let [href (get-in body [:template :connector])]
     (std-crud/resolve-hrefs href auth/internal-identity))
   body)
@@ -168,13 +168,13 @@ CredentialTemplate resource.
 ;; requires a credential-template to create new credential
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (let [idmap (auth/current-authentication request)
+  (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
             (assoc :resource-type create-type)
             (update-in [:template] dissoc :type)            ;; forces use of template reference
-            (resolve-hrefs idmap)
+            (resolve-hrefs authn-info)
             (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
             crud/validate
             :template

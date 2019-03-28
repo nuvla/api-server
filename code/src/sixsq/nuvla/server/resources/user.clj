@@ -152,13 +152,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [{:keys [body form-params headers] :as request}]
 
   (try
-    (let [idmap (auth/current-authentication request)
+    (let [authn-info (auth/current-authentication request)
           body (if (u/is-form? headers) (u/convert-form :template form-params) body)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
                                                     (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                                                    (std-crud/resolve-hrefs idmap true)
+                                                    (std-crud/resolve-hrefs authn-info true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
                                                     (:template)

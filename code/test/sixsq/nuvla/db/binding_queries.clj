@@ -27,8 +27,8 @@
 (def user-acl {:owners   ["group/nuvla-admin"]
                :edit-acl ["group/nuvla-admin" user]})
 
-(def user-idmap {:nuvla/authn {:user-id user
-                               :claims  #{user "group/nuvla-user" "group/nuvla-anon"}}})
+(def user-authn-info {:nuvla/authn {:user-id user
+                               :claims       #{user "group/nuvla-user" "group/nuvla-anon"}}})
 
 
 (defn check-binding-queries [db-impl]
@@ -192,7 +192,7 @@
           (is (= #{(first admin-docs) (first user-docs)} (set query-hits))))
 
         ;; check that a query with an user role retrieves only user docs
-        (let [[query-meta query-hits] (db/query db collection-id user-idmap)]
+        (let [[query-meta query-hits] (db/query db collection-id user-authn-info)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
 

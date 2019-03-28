@@ -10,8 +10,8 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]))
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -40,7 +40,7 @@
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-view-acl? request)
+          (a/throw-cannot-view request)
           (crud/set-operations request)
           (r/json-response))
       (catch Exception e
@@ -53,7 +53,7 @@
     (try
       (let [current (-> (str resource-name "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/can-edit-acl? request))
+                        (a/throw-cannot-edit request))
             dissoc-keys (-> (map keyword select)
                             (set)
                             (u/strip-select-from-mandatory-attrs))

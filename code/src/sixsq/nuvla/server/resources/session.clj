@@ -247,12 +247,12 @@ session.
   [request]
 
   (try
-    (let [idmap (auth/current-authentication request)
+    (let [authn-info (auth/current-authentication request)
           body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
-                                                    (std-crud/resolve-hrefs idmap true)
+                                                    (std-crud/resolve-hrefs authn-info true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
                                                     (:template)

@@ -84,11 +84,11 @@
 ;; requires a ConfigurationTemplate to create new Configuration
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (let [idmap (auth/current-authentication request)
+  (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
         body (-> body
                  (assoc :resource-type create-type)
-                 (std-crud/resolve-hrefs idmap true)
+                 (std-crud/resolve-hrefs authn-info true)
                  (update-in [:template] merge desc-attrs)   ;; validate desc attrs
                  (crud/validate)
                  (:template)

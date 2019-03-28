@@ -187,21 +187,21 @@
 ;;
 
 (defn check-cred-exists
-  [body idmap]
+  [body authn-info]
   (let [href (get-in body [:template :credential])]
-    (std-crud/resolve-hrefs href idmap))
+    (std-crud/resolve-hrefs href authn-info))
   body)
 
 (defn resolve-hrefs
-  [body idmap]
+  [body authn-info]
   (let [os-cred-href (if (contains? (:template body) :credential)
                        {:credential (get-in body [:template :credential])}
                        {})]                                 ;; to put back the unexpanded href after
     (-> body
-        (check-cred-exists idmap)
+        (check-cred-exists authn-info)
         ;; remove connector href (if any); regular user MAY NOT have rights to see it
         (update-in [:template] dissoc :credential)
-        (std-crud/resolve-hrefs idmap)
+        (std-crud/resolve-hrefs authn-info)
         ;; put back unexpanded connector href
         (update-in [:template] merge os-cred-href))))
 

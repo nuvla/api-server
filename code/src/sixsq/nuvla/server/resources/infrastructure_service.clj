@@ -134,12 +134,12 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [idmap (auth/current-authentication request)
+  (let [authn-info (auth/current-authentication request)
         body (:body request)
         desc-attrs (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
-                               (std-crud/resolve-hrefs idmap true)
+                               (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)

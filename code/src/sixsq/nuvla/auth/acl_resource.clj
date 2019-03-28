@@ -62,6 +62,15 @@
          (set))))
 
 
+(defn extract-all-rights
+  "Returns a set containing all of the applicable rights from an ACL for the
+   given identity map and all rights implied by the explicit ones."
+  [authn-info acl]
+  (let [explicit-rights (extract-rights authn-info acl)
+        implicit-rights (mapcat (partial ancestors rights-hierarchy) explicit-rights)]
+    (set (concat explicit-rights implicit-rights))))
+
+
 (defn authorized-do?
   "Returns true if the ACL associated with the given resource permits the
    current user (in the request) the given action."
@@ -110,8 +119,8 @@
   "Will throw an error ring response if the user identified in the request
    cannot delete the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (auth/current-authentication request) acl)]
-    (if (rights ::edit-acl #_::delete)                      ;; FIXME: This should be ::delete not ::edit-acl.
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
+    (if (rights ::delete)
       resource
       (throw (ru/ex-unauthorized (:id resource))))))
 
@@ -120,7 +129,7 @@
   "Will throw an error ring response if the user identified in the request
    cannot edit the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (auth/current-authentication request) acl)]
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
     (if (or (rights ::edit-meta)
             (rights ::edit-data)
             (rights ::edit-acl))
@@ -198,7 +207,7 @@
   "Will throw an error ring response if the user identified in the request
    cannot view the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (auth/current-authentication request) acl)]
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
     (if (or (rights ::view-meta)
             (rights ::view-data)
             (rights ::view-acl))
