@@ -16,7 +16,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owners ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 ;;
 ;; validate subclasses of configurations

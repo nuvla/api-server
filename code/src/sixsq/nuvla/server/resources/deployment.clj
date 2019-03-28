@@ -24,8 +24,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -57,7 +57,7 @@
 (defmethod crud/add resource-type
   [{:keys [body base-uri] :as request}]
 
-  (a/can-edit-acl? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
 
   (let [authn-info (auth/current-authentication request)
         deployment (-> body

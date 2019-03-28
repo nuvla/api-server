@@ -14,9 +14,6 @@
 
 (def ^:const resource-url "user")
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user" "group/nuvla-anon"]})
-
 
 (defn check-password-constraints
   [{:keys [password password-repeated]}]

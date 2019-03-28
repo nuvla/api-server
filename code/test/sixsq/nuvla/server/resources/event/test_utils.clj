@@ -40,21 +40,15 @@
 
 (defn exec-request
   ([uri query-string auth-name]
-   (-> (ltu/ring-app)
-       session
-       (content-type "application/json")
-       (header authn-info-header auth-name)
-       (request (str uri (urlencode-params query-string))
-                :content-type "application/x-www-form-urlencoded")
-       (ltu/body->edn)))
+   (exec-request uri query-string auth-name :get nil))
 
   ([uri query-string auth-name http-verb body]
    (-> (ltu/ring-app)
        session
        (content-type "application/json")
-       (header authn-info-header auth-name)
+       (header authn-info-header (str/join " " [auth-name "group/nuvla-user" "group/nuvla-anon"]))
        (request (str uri (urlencode-params query-string))
-                :body (json/write-str body)
+                :body (some-> body json/write-str)
                 :request-method http-verb
                 :content-type "application/json")
        (ltu/body->edn))))

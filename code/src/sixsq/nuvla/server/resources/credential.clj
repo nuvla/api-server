@@ -24,8 +24,8 @@ CredentialTemplate resource.
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;

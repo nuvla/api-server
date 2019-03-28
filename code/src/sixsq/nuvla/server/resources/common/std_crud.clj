@@ -10,13 +10,18 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]))
+
+
+(def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
 
 
 (defn add-fn
   [resource-name collection-acl resource-uri]
+  (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
-    (a/can-edit-acl? {:acl collection-acl} request)
+    (a/throw-cannot-add collection-acl request)
     (db/add
       resource-name
       (-> body
@@ -68,7 +73,7 @@
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-edit-acl? request)
+          (a/throw-cannot-delete request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -92,13 +97,15 @@
 
 (defn query-fn
   [resource-name collection-acl collection-uri]
-  (fn [request]
-    (a/can-view-acl? {:acl collection-acl} request)
-    (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
-          options (select-keys request [:nuvla/authn :query-params :cimi-params])
-          [metadata entries] (db/query resource-name options)
-          entries-and-count (merge metadata (wrapper-fn request entries))]
-      (r/json-response entries-and-count))))
+  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)]
+    (validate-collection-acl collection-acl)
+
+    (fn [request]
+      (a/throw-cannot-query collection-acl request)
+      (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
+            [metadata entries] (db/query resource-name options)
+            entries-and-count (merge metadata (wrapper-fn request entries))]
+        (r/json-response entries-and-count)))))
 
 
 (def ^:const href-not-found-msg "requested href not found")

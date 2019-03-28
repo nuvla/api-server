@@ -9,11 +9,15 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.event :refer :all]
     [sixsq.nuvla.server.resources.event.test-utils :as tu :refer [exec-request is-count urlencode-params]]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [clojure.string :as str]))
+
 
 (def base-uri (str p/service-context resource-type))
 
+
 (def ^:private nb-events 20)
+
 
 (def valid-event {:acl       {:owners ["user/joe"]}
                   :timestamp "2015-01-16T08:05:00.0Z"
@@ -22,27 +26,30 @@
                   :type      "state"
                   :severity  "critical"})
 
+
 (def valid-events
   (for [i (range nb-events)]
     (-> valid-event
         (assoc-in [:content :resource :href] (str "run/" i))
         (assoc :timestamp (if (even? i) "2016-01-16T08:05:00.0Z" "2015-01-16T08:05:00.0Z")))))
 
+
 (defn insert-some-events-fixture!
   [f]
-  (let [app (ltu/ring-app)
-        state (-> app
-                  (session)
+  (let [state (-> (ltu/ring-app)
+                  session
                   (content-type "application/json")
-                  (header authn-info-header "user/joe"))]
+                  (header authn-info-header (str/join " " ["user/joe" "group/nuvla-user" "group/nuvla-anon"])))]
     (doseq [valid-event valid-events]
       (request state base-uri
                :request-method :post
                :body (json/write-str valid-event))))
   (f))
 
+
 (use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
                                     insert-some-events-fixture!]))
+
 
 ;;
 ;; Note that these tests need nb-events > 5
@@ -50,6 +57,7 @@
 
 (def ^:private are-counts
   (partial tu/are-counts :resources base-uri "user/joe"))
+
 
 (deftest events-are-retrieved-most-recent-first
   (->> valid-events
@@ -64,12 +72,14 @@
        tu/ordered-desc?
        is))
 
+
 (deftest check-events-can-be-reordered
   (->> (exec-request base-uri "?orderby=timestamp:asc" "user/joe")
        ltu/entries
        (map :timestamp)
        (tu/ordered-asc?)
        (is)))
+
 
 (defn timestamp-paginate-single
   [n]
@@ -78,14 +88,17 @@
       first
       :timestamp))
 
+
 ;; Here, timestamps are retrieved one by one (due to pagination)
 (deftest events-are-retrieved-most-recent-first-when-paginated
   (-> (map timestamp-paginate-single (range 1 (inc nb-events)))
       tu/ordered-desc?
       is))
 
+
 (deftest resources-pagination
   (are-counts nb-events "")
+
   ;; two different counts are checked
   ;; first one should be not impacted by pagination (so we expect nb-events)
   ;; second is the count after pagination (0 in that case with a bogus pagination)
@@ -94,10 +107,12 @@
   (are-counts nb-events 2 "?last=2")
   (are-counts nb-events 2 "?first=3&last=4"))
 
+
 (deftest pagination-occurs-after-filtering
   (are-counts 1 "?filter=content/resource/href='run/5'")
   (are-counts 1 "?filter=content/resource/href='run/5'&last=1")
   (are-counts 1 "?last=1&filter=content/resource/href='run/5'"))
+
 
 (deftest resources-filtering
   (doseq [i (range nb-events)]
@@ -113,12 +128,14 @@
   (are-counts 0 "?filter=content/resource/href='run/3' and type='WRONG'")
   (are-counts nb-events "?filter=type='state'"))
 
+
 (deftest filter-and
   (are-counts nb-events "filter=type='state' and timestamp='2015-01-16T08:05:00.0Z'")
   (are-counts 0 "?filter=type='state' and type='XXX'")
   (are-counts 0 "?filter=type='YYY' and type='state'")
   (are-counts 0 "?filter=(type='state') and (type='XXX')")
   (are-counts 0 "?filter=(type='YYY') and (type='state')"))
+
 
 (deftest filter-or
   (are-counts 0 "?filter=type='XXX'")
@@ -130,9 +147,11 @@
   (are-counts 0 "?filter=type='XXXXX' or type='YYYY'")
   (are-counts 0 "?filter=(type='XXXXX') or (type='YYYY')"))
 
+
 (deftest filter-multiple
   (are-counts 0 "?filter=type='state'&filter=type='XXX'")
   (are-counts 1 "?filter=type='state'&filter=content/resource/href='run/3'"))
+
 
 (deftest filter-nulls
   (are-counts nb-events "?filter=type!=null")
@@ -142,11 +161,13 @@
   (are-counts nb-events "?filter=(unknown=null)and(type='state')")
   (are-counts nb-events "?filter=(content/resource/href!=null)and(type='state')"))
 
+
 (deftest filter-prefix
   (are-counts nb-events "?filter=type^='st'")
   (are-counts nb-events "?filter=content/resource/href^='run/'")
   (are-counts 0 "?filter=type^='stXXX'")
   (are-counts 0 "?filter=content/resource/href^='XXX/'"))
+
 
 (deftest filter-wrong-param
   (-> (exec-request base-uri "?filter=type='missing end quote" "user/joe")

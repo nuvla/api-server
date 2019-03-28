@@ -39,8 +39,8 @@ verification.
                :view-acl ["group/nuvla-anon"]})
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-anon"]})
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;

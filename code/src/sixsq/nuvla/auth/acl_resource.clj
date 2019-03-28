@@ -1,7 +1,9 @@
 (ns sixsq.nuvla.auth.acl-resource
   (:require
+    [clojure.set :as set]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.response :as ru]))
+
 
 (def rights-hierarchy (-> (make-hierarchy)
 
@@ -26,8 +28,14 @@
       (assoc (-> kw name keyword) kw)))
 
 
+(def collection-rights
+  [::query ::add])
+
+
+;; provides mappings between the namespaced keywords and themselves,
+;; as well as the un-namespaced keywords and the namespaced ones.
 (def rights-keywords
-  (reduce add-rights-entry {} (cons ::edit-acl (ancestors rights-hierarchy ::edit-acl))))
+  (reduce add-rights-entry {} (concat collection-rights [::edit-acl] (ancestors rights-hierarchy ::edit-acl))))
 
 
 (defn extract-right
@@ -98,6 +106,28 @@
   (can-do? resource request ::edit-acl))
 
 
+(defn throw-cannot-delete
+  "Will throw an error ring response if the user identified in the request
+   cannot delete the given resource; it returns the resource otherwise."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-rights (auth/current-authentication request) acl)]
+    (if (rights ::edit-acl #_::delete)                      ;; FIXME: This should be ::delete not ::edit-acl.
+      resource
+      (throw (ru/ex-unauthorized (:id resource))))))
+
+
+(defn throw-cannot-edit
+  "Will throw an error ring response if the user identified in the request
+   cannot edit the given resource; it returns the resource otherwise."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-rights (auth/current-authentication request) acl)]
+    (if (or (rights ::edit-meta)
+            (rights ::edit-data)
+            (rights ::edit-acl))
+      resource
+      (throw (ru/ex-unauthorized (:id resource))))))
+
+
 (defn modifiable?
   "Predicate to determine if the given resource can be modified. Returns only
    true or false."
@@ -115,6 +145,80 @@
    failure."
   [resource request]
   (can-do? resource request ::view-acl))
+
+
+(def ^:const acl-keys #{:acl})
+
+
+(def ^:const metadata-keys #{:id
+                             :resource-type
+                             :created
+                             :updated
+                             :name
+                             :description
+                             :tags
+                             :parent
+                             :resourceMetadata
+                             :operations})
+
+
+;; FIXME: Decide whether this should throw when user has no right to view resource.
+(defn select-visible-keys
+  "Based on the acl and the authentication information, this function will
+   select only the keys that the user has the right to view. It returns the
+   modified resource. If the user is not allowed to view the resource at all,
+   then nil is returned."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-rights (auth/current-authentication request) acl)]
+    (cond
+      (rights ::view-acl) resource
+      (rights ::view-data) (dissoc resource :acl)
+      (rights ::view-meta) (select-keys resource metadata-keys)
+      :else nil)))
+
+
+(defn editable-keys
+  "Based on the acl and the authentication information, this function will
+   select only the keys that the user has the right to view. It returns the
+   modified resource. If the user is not allowed to view the resource at all,
+   then nil is returned."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-rights (auth/current-authentication request) acl)
+        body-keys (-> resource
+                      keys
+                      set
+                      (set/difference acl-keys metadata-keys))]
+    (cond-> #{}
+            (rights ::edit-meta) (set/union metadata-keys)
+            (rights ::edit-data) (set/union body-keys)
+            (rights ::edit-acl) (set/union acl-keys))))
+
+
+(defn throw-cannot-view
+  "Will throw an error ring response if the user identified in the request
+   cannot view the given resource; it returns the resource otherwise."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-rights (auth/current-authentication request) acl)]
+    (if (or (rights ::view-meta)
+            (rights ::view-data)
+            (rights ::view-acl))
+      resource
+      (throw (ru/ex-unauthorized (:id resource))))))
+
+
+(defn throw-cannot-query
+  "Will throw an error ring response if the user identified in the request
+   cannot query the given collection; it returns the resource otherwise."
+  [collection-acl request]
+  (can-do? {:acl collection-acl} request ::query))
+
+
+(defn throw-cannot-add
+  "Will throw an error ring response if the user identified in the request
+   cannot add a resource to the given collection; it returns the resource
+   otherwise."
+  [collection-acl request]
+  (can-do? {:acl collection-acl} request ::add))
 
 
 (defn default-acl

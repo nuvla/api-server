@@ -18,10 +18,9 @@ cloud application and for other important actions.
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
-;;TODO ACL event why anon can add events?
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :edit-acl ["group/nuvla-anon"]})
 
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -29,6 +28,8 @@ cloud application and for other important actions.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::event/event))
+
+
 (defmethod crud/validate
   resource-type
   [resource]
@@ -45,36 +46,47 @@ cloud application and for other important actions.
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def delete-impl (std-crud/delete-fn resource-type))
+
 
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
+
 ;;
 ;; available operations
 ;;
+
 (defmethod crud/set-operations resource-type
-  [resource request]
+  [{:keys [id acl] :as resource} request]
   (try
-    (a/can-edit-acl? resource request)
-    (let [href (:id resource)
-          ^String resource-type (:resource-type resource)
-          ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href href}]
-                [{:rel (:delete c/action-uri) :href href}])]
-      (assoc resource :operations ops))
-    (catch Exception e
+    (if (u/is-collection? resource-type)
+      (do
+        (a/throw-cannot-add acl request)
+        (let [ops [{:rel (:add c/action-uri) :href id}]]
+          (assoc resource :operations ops)))
+      (do
+        (a/can-edit-acl? resource request)
+        (let [ops [{:rel (:delete c/action-uri) :href id}]]
+          (assoc resource :operations ops))))
+    (catch Exception _
       (dissoc resource :operations))))
+
 
 ;;
 ;; collection
 ;;
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
+
 (defmethod crud/query resource-type
   [{{:keys [orderby]} :cimi-params :as request}]
   (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
@@ -83,6 +95,7 @@ cloud application and for other important actions.
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::event/event))

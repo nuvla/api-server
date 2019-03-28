@@ -24,7 +24,8 @@ configuration information for the micro-services of the Nuvla platform.
 (def resource-acl {:owners ["group/nuvla-admin"]})
 
 
-(def collection-acl {:owners ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -120,7 +121,7 @@ configuration information for the micro-services of the Nuvla platform.
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view-acl? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:user-id :claims :query-params :cimi-params])
