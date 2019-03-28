@@ -46,7 +46,7 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-view-acl? request)
+          (a/throw-cannot-view request)
           (crud/set-operations request)
           (r/json-response))
       (catch Exception e

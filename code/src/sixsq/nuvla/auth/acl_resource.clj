@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.auth.acl_resource
   (:require
     [sixsq.nuvla.server.util.response :as ru]
-    [clojure.set :as set]))
+    [clojure.set :as set]
+    [clojure.tools.logging :as log]))
 
 (def rights-hierarchy (-> (make-hierarchy)
 
@@ -67,6 +68,15 @@
          (map (partial extract-right id-map))
          (remove nil?)
          (set))))
+
+
+(defn extract-all-rights
+  "Returns a set containing all of the applicable rights from an ACL for the
+   given identity map and all rights implied by the explicit ones."
+  [id-map acl]
+  (let [explicit-rights (extract-rights id-map acl)
+        implicit-rights (mapcat (partial ancestors rights-hierarchy) explicit-rights)]
+    (set (concat explicit-rights implicit-rights))))
 
 
 (defn authorized-do?
@@ -207,7 +217,7 @@
   "Will throw an error ring response if the user identified in the request
    cannot view the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (current-authentication request) acl)]
+  (let [rights (extract-all-rights (current-authentication request) acl)]
     (if (or (rights ::view-meta)
             (rights ::view-data)
             (rights ::view-acl))
