@@ -79,7 +79,7 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-edit-acl? request)
+          (a/throw-cannot-delete request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))
