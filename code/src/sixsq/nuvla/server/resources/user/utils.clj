@@ -14,10 +14,6 @@
 
 (def ^:const resource-url "user")
 
-;; TODO: Should anon have the right to list users?
-(def collection-acl {:query ["group/nuvla-anon"]
-                     :add   ["group/nuvla-anon"]})
-
 
 (defn check-password-constraints
   [{:keys [password password-repeated]}]

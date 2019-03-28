@@ -44,7 +44,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; be able to view the collection and post requests to it (if a template is
 ;; visible to group/nuvla-anon.)
 
-(def collection-acl user-utils/collection-acl)
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-anon"]})
 
 
 ;;
