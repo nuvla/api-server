@@ -107,10 +107,12 @@
   (are-counts nb-events 2 "?last=2")
   (are-counts nb-events 2 "?first=3&last=4"))
 
+
 (deftest pagination-occurs-after-filtering
   (are-counts 1 "?filter=content/resource/href='run/5'")
   (are-counts 1 "?filter=content/resource/href='run/5'&last=1")
   (are-counts 1 "?last=1&filter=content/resource/href='run/5'"))
+
 
 (deftest resources-filtering
   (doseq [i (range nb-events)]
@@ -126,12 +128,14 @@
   (are-counts 0 "?filter=content/resource/href='run/3' and type='WRONG'")
   (are-counts nb-events "?filter=type='state'"))
 
+
 (deftest filter-and
   (are-counts nb-events "filter=type='state' and timestamp='2015-01-16T08:05:00.0Z'")
   (are-counts 0 "?filter=type='state' and type='XXX'")
   (are-counts 0 "?filter=type='YYY' and type='state'")
   (are-counts 0 "?filter=(type='state') and (type='XXX')")
   (are-counts 0 "?filter=(type='YYY') and (type='state')"))
+
 
 (deftest filter-or
   (are-counts 0 "?filter=type='XXX'")
@@ -143,9 +147,11 @@
   (are-counts 0 "?filter=type='XXXXX' or type='YYYY'")
   (are-counts 0 "?filter=(type='XXXXX') or (type='YYYY')"))
 
+
 (deftest filter-multiple
   (are-counts 0 "?filter=type='state'&filter=type='XXX'")
   (are-counts 1 "?filter=type='state'&filter=content/resource/href='run/3'"))
+
 
 (deftest filter-nulls
   (are-counts nb-events "?filter=type!=null")
@@ -155,11 +161,13 @@
   (are-counts nb-events "?filter=(unknown=null)and(type='state')")
   (are-counts nb-events "?filter=(content/resource/href!=null)and(type='state')"))
 
+
 (deftest filter-prefix
   (are-counts nb-events "?filter=type^='st'")
   (are-counts nb-events "?filter=content/resource/href^='run/'")
   (are-counts 0 "?filter=type^='stXXX'")
   (are-counts 0 "?filter=content/resource/href^='XXX/'"))
+
 
 (deftest filter-wrong-param
   (-> (exec-request base-uri "?filter=type='missing end quote" "user/joe")
