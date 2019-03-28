@@ -127,8 +127,8 @@
   "Will throw an error ring response if the user identified in the request
    cannot delete the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (current-authentication request) acl)]
-    (if (rights ::edit-acl #_::delete)                      ;; FIXME: This should be ::delete not ::edit-acl.
+  (let [rights (extract-all-rights (current-authentication request) acl)]
+    (if (rights ::delete)
       resource
       (throw (ru/ex-unauthorized (:id resource))))))
 
@@ -137,7 +137,7 @@
   "Will throw an error ring response if the user identified in the request
    cannot edit the given resource; it returns the resource otherwise."
   [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (current-authentication request) acl)]
+  (let [rights (extract-all-rights (current-authentication request) acl)]
     (if (or (rights ::edit-meta)
             (rights ::edit-data)
             (rights ::edit-acl))

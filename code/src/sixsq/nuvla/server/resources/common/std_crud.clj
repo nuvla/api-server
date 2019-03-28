@@ -59,7 +59,7 @@ internal-identity
     (try
       (let [current (-> (str resource-name "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/can-edit-acl? request))
+                        (a/throw-cannot-edit request))
             dissoc-keys (-> (map keyword select)
                             (set)
                             (u/strip-select-from-mandatory-attrs))
