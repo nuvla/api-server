@@ -20,16 +20,6 @@
 (def ^:const default-ttl 15)
 
 
-(def request-admin {:identity                      {:current         "internal"
-                                                    :authentications {"internal" {:roles    #{"group/nuvla-admin"}
-                                                                                  :identity "internal"}}}
-                    :sixsq.slipstream.authn/claims {:username "internal"
-                                                    :roles    "group/nuvla-admin"}
-                    :params                        {:resource-name "user"}
-                    :route-params                  {:resource-name "user"}
-                    :user-roles                    #{"group/nuvla-anon"}})
-
-
 (defn log-aws-exception
   [amazon-exception]
   (let [status (.getStatusCode amazon-exception)

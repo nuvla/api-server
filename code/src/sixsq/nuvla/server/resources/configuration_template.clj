@@ -5,7 +5,7 @@ configuration information for the micro-services of the Nuvla platform.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -123,7 +123,7 @@ configuration information for the micro-services of the Nuvla platform.
   (a/can-view-acl? {:acl collection-acl} request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
+        options (select-keys request [:user-id :claims :query-params :cimi-params])
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

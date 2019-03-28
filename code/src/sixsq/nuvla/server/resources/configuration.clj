@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.configuration
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
@@ -82,7 +83,7 @@
 ;; requires a ConfigurationTemplate to create new Configuration
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (let [idmap {:identity (:identity request)}
+  (let [idmap (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
         body (-> body
                  (assoc :resource-type create-type)

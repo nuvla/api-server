@@ -4,7 +4,7 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as service-tpl]

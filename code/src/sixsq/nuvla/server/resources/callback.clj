@@ -18,7 +18,8 @@ action. Consequently, the callback id should only be communicated to
 appropriate users.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -144,20 +145,17 @@ appropriate users.
 ;; general utility for creating a new callback in other resources
 ;;
 
-;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create
   "Creates a callback resource with the given action-name, base-uri, target
    resource, data (optional). Returns the URL to trigger the callback's action."
   ([action-name base-uri href]
    (create action-name base-uri href nil))
   ([action-name base-uri href data]
-   (let [callback-request {:params   {:resource-name resource-type}
-                           :body     (cond-> {:action         action-name
-                                              :targetResource {:href href}}
-                                             data (assoc :data data))
-                           :identity {:current         "INTERNAL"
-                                      :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                    :roles    ["group/nuvla-admin"]}}}}
+   (let [callback-request {:params {:resource-name resource-type}
+                           :body   (cond-> {:action         action-name
+                                            :targetResource {:href href}}
+                                           data (assoc :data data))
+                           :nuvla/authn auth/internal-identity}
          {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 
      (if (= 201 status)

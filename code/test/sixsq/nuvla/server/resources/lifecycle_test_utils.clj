@@ -20,7 +20,7 @@
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.routes :as routes]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [wrap-authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
@@ -407,7 +407,7 @@
       wrap-nested-params
       wrap-params
       wrap-base-uri
-      wrap-authn-info-header
+      wrap-authn-info
       wrap-exceptions
       (wrap-json-body {:keywords? true})
       (wrap-json-response {:pretty true :escape-non-ascii true})

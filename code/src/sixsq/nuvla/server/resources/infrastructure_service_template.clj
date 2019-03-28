@@ -10,7 +10,7 @@ paging, etc. parameters are not supported.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -143,7 +143,7 @@ paging, etc. parameters are not supported.
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
         entries (or (filter (partial viewable? request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])
+        options (select-keys request [:query-params :cimi-params])
         count-before-pagination (count entries)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

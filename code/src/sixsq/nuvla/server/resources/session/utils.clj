@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.session.utils
   (:require
     [ring.util.codec :as codec]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -55,7 +56,7 @@
 
   ;; supports headers that have either string or keyword keys
   ;; ring spec defines headers as lower-cased strings
-  (let [server (or (get headers "slipstream-ssl-server-name") (:slipstream-ssl-server-name headers))
+  (let [server (or (get headers "nuvla-ssl-server-name") (:nuvla-ssl-server-name headers))
         client-ip (or (get headers "x-real-ip") (:x-real-ip headers))]
     (crud/new-identifier
       (cond-> {:method   authn-method
@@ -67,37 +68,11 @@
       p/resource-type)))
 
 
-(defn retrieve-session-by-id
-  "Retrieves a Session based on its identifier. Bypasses the authentication
-   controls in the database CRUD layer by spoofing the session role."
-  [session-id]
-  (crud/retrieve-by-id session-id
-                       {:user-name  "INTERNAL"
-                        :user-roles [session-id]}))
-
-
-(defn update-session
-  "Updates the Session identified by the given identifier  Bypasses the
-   authentication controls in the database CRUD layer by spoofing the
-   session role."
-  [session-id updated-session]
-  (internal-edit {:user-name  "INTERNAL"
-                  :user-roles [session-id]
-                  :identity   {:current         "INTERNAL"
-                               :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                             :roles    [session-id]}}}
-                  :params     {:uuid (extract-session-uuid session-id)}
-                  :body       updated-session}))
-
-
-;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create-callback [base-uri session-id action]
-  (let [callback-request {:params   {:resource-name callback/resource-type}
-                          :body     {:action         action
-                                     :targetResource {:href session-id}}
-                          :identity {:current         "INTERNAL"
-                                     :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                   :roles    ["group/nuvla-admin"]}}}}
+  (let [callback-request {:params      {:resource-name callback/resource-type}
+                          :body        {:action         action
+                                        :targetResource {:href session-id}}
+                          :nuvla/authn auth/internal-identity}
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
     (if (= 201 status)
       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]

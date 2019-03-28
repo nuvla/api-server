@@ -19,6 +19,7 @@ prefix | true | namespace prefix
 uri | true | full URI associated with the prefix
 "
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -61,13 +62,9 @@ uri | true | full URI associated with the prefix
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; TODO ACL: Roles are needed in two locations!  Should be unique way to specify authentication information.
-(def ^:private all-query-map {:identity       {:current         "slipstream",
-                                               :authentications {"slipstream"
-                                                                 {:identity "slipstream"
-                                                                  :roles    ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]}}}
-                              :params         {:resource-name resource-type}
-                              :user-roles     ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]
-                              :request-method :get})
+(def ^:private all-query-map {:params         {:resource-name resource-type}
+                              :request-method :get
+                              :nuvla/authn    auth/internal-identity})
 
 (defn extract-field-values
   "returns a set of the values of the field k (as a keyword) from the

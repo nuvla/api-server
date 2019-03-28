@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
@@ -21,14 +22,13 @@
 (def admin-acl {:owners   ["group/nuvla-admin"]
                 :edit-acl ["group/nuvla-admin"]})
 
-(def admin-role {:user-name "user/super", :user-roles ["group/nuvla-admin"]})
-
 (def user "user/jane")
 
 (def user-acl {:owners   ["group/nuvla-admin"]
                :edit-acl ["group/nuvla-admin" user]})
 
-(def user-role {:user-name user, :user-roles ["group/nuvla-user"]})
+(def user-idmap {:nuvla/authn {:user-id user
+                               :claims  #{user "group/nuvla-user" "group/nuvla-anon"}}})
 
 
 (defn check-binding-queries [db-impl]
@@ -80,38 +80,38 @@
             (is (= doc retrieved-data))))
 
         ;; check that a query with an admin role retrieves everything
-        (let [[query-meta query-hits] (db/query db collection-id admin-role)]
+        (let [[query-meta query-hits] (db/query db collection-id {:nuvla/authn auth/internal-identity})]
           (is (= (* 2 n) (:count query-meta)))
           (is (= (set docs) (set query-hits))))
 
         ;; check ascending ordering of the entries
-        (let [options (merge admin-role
-                             {:cimi-params {:orderby [["sequence" :asc]]}})
+        (let [options {:cimi-params {:orderby [["sequence" :asc]]}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= (* 2 n) (:count query-meta)))
           (is (= docs (vec query-hits))))
 
         ;; check descending ordering of the entries
-        (let [options (merge admin-role
-                             {:cimi-params {:orderby [["sequence" :desc]]}})
+        (let [options {:cimi-params {:orderby [["sequence" :desc]]}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= (* 2 n) (:count query-meta)))
           (is (= (reverse docs) (vec query-hits))))
 
         ;; check paging
         (let [n-drop (int (/ n 10))
-              options (merge admin-role
-                             {:cimi-params {:first   (inc n-drop)
-                                            :last    (+ n n-drop)
-                                            :orderby [["sequence" :desc]]}})
+              options {:cimi-params {:first   (inc n-drop)
+                                     :last    (+ n n-drop)
+                                     :orderby [["sequence" :desc]]}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= (* 2 n) (:count query-meta)))
           (is (= n (count query-hits)))
           (is (= (vec (take n (drop n-drop (reverse docs)))) (vec query-hits))))
 
         ;; check selection of attributes
-        (let [options (merge admin-role
-                             {:cimi-params {:select ["attr1" "sequence"]}})
+        (let [options {:cimi-params {:select ["attr1" "sequence"]}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= (* 2 n) (:count query-meta)))
           (is (every? :attr1 query-hits))
@@ -121,91 +121,92 @@
           (is (every? #(nil? (:attr2 %)) query-hits)))
 
         ;; attribute exists
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter "admin!=null")}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter "admin!=null")}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set admin-docs) (set query-hits))))
 
         ;; attribute missing
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter "admin=null")}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter "admin=null")}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
 
         ;; eq comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence=" n))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence=" n))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= 1 (:count query-meta)))
           (is (= (first user-docs) (first query-hits))))
 
         ;; ne comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence!=" n))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence!=" n))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= (dec (* 2 n)) (:count query-meta)))
           (is (= (set (concat admin-docs (drop 1 user-docs))) (set query-hits))))
 
         ;; gte comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence>=" n))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence>=" n))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
 
         ;; gt comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence>" (dec n)))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence>" (dec n)))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
 
         ;; lt comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence<" n))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence<" n))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set admin-docs) (set query-hits))))
 
         ;; lte comparison
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence<=" (dec n)))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence<=" (dec n)))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= n (:count query-meta)))
           (is (= (set admin-docs) (set query-hits))))
 
         ;; or
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence=0 or sequence=" n))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter (str "sequence=0 or sequence=" n))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= 2 (:count query-meta)))
           (is (= #{(first admin-docs) (first user-docs)} (set query-hits))))
 
         ;; and
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
+                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                       :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= 2 (:count query-meta)))
           (is (= #{(first admin-docs) (first user-docs)} (set query-hits))))
 
         ;; check that a query with an user role retrieves only user docs
-        (let [[query-meta query-hits] (db/query db collection-id user-role)]
+        (let [[query-meta query-hits] (db/query db collection-id user-idmap)]
           (is (= n (:count query-meta)))
           (is (= (set user-docs) (set query-hits))))
 
         ;; aggregation
-        (let [[query-meta query-hits] (db/query db collection-id (merge admin-role
-                                                                        {:cimi-params {:aggregation
-                                                                                       [[:terms "attr1"]
-                                                                                        [:terms "nested/child"]
-                                                                                        [:min "number"]
-                                                                                        [:max "number"]
-                                                                                        [:sum "number"]
-                                                                                        [:avg "number"]
-                                                                                        [:value_count "id"]
-                                                                                        [:cardinality "id"]]}}))]
+        (let [[query-meta query-hits] (db/query db collection-id {:cimi-params {:aggregation
+                                                                                [[:terms "attr1"]
+                                                                                 [:terms "nested/child"]
+                                                                                 [:min "number"]
+                                                                                 [:max "number"]
+                                                                                 [:sum "number"]
+                                                                                 [:avg "number"]
+                                                                                 [:value_count "id"]
+                                                                                 [:cardinality "id"]]}
+                                                                  :nuvla/authn auth/internal-identity})]
 
           (is (= {:terms:nested/child {:doc_count_error_upper_bound 0,
                                        :sum_other_doc_count         0,
@@ -221,8 +222,8 @@
                   :sum:number         {:value 6.0}} (:aggregations query-meta))))
 
         ;; full-text search
-        (let [options (merge admin-role
-                             {:cimi-params {:filter (parser/parse-cimi-filter "nested/child=='c*+-child2'")}})
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter "nested/child=='c*+-child2'")}
+                       :nuvla/authn auth/internal-identity}
               [query-meta _] (db/query db collection-id options)]
           (is (= 2 (:count query-meta))))
 

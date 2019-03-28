@@ -4,7 +4,7 @@ These resources describe collections of data-object or data-record resources.
 It can also identify applications that are capable of analyzing these data.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

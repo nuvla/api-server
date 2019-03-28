@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.module
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -83,9 +84,9 @@
 
             content-body (merge module-content {:resource-type content-uri})
 
-            content-request {:params   {:resource-name content-url}
-                             :identity std-crud/internal-identity
-                             :body     content-body}
+            content-request {:params      {:resource-name content-url}
+                             :body        content-body
+                             :nuvla/authn auth/internal-identity}
 
             response (crud/add content-request)
 
@@ -172,9 +173,9 @@
 
               content-body (merge module-content {:resource-type content-uri})
 
-              content-request {:params   {:resource-name content-url}
-                               :identity std-crud/internal-identity
-                               :body     content-body}
+              content-request {:params      {:resource-name content-url}
+                               :body        content-body
+                               :nuvla/authn auth/internal-identity}
 
               response (crud/add content-request)
 
@@ -204,10 +205,10 @@
 
 (defn delete-content
   [content-id type]
-  (let [delete-request {:params   {:uuid          (-> content-id u/split-resource-id second)
-                                   :resource-name (type->resource-name type)}
-                        :identity std-crud/internal-identity
-                        :body     {:id content-id}}]
+  (let [delete-request {:params      {:uuid          (-> content-id u/split-resource-id second)
+                                      :resource-name (type->resource-name type)}
+                        :body        {:id content-id}
+                        :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
 
 

@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [postal.core :as postal]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -26,14 +27,12 @@
                       "\n    %s\n"])))
 
 
-;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create-callback [email-id base-uri]
-  (let [callback-request {:params   {:resource-name callback/resource-type}
-                          :body     {:action         email-callback/action-name
-                                     :targetResource {:href email-id}}
-                          :identity {:current         "INTERNAL"
-                                     :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                   :roles    ["group/nuvla-admin"]}}}}
+  (let [callback-request {:params      {:resource-name callback/resource-type}
+                          :body        {:action         email-callback/action-name
+                                        :targetResource {:href email-id}}
+                          :nuvla/authn auth/internal-identity}
+
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
     (if (= 201 status)
       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]

@@ -2,10 +2,10 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [environ.core :as env]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-api-key :as t]
     [sixsq.nuvla.server.resources.credential-template :as ct]
@@ -57,8 +57,16 @@
         create-import-href-no-ttl {:template {:href href}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
-    (doseq [session [session-admin session-user]]
-      (-> session
+    (if (env/env :nuvla-super-password)
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1)
+          (ltu/is-operation-present "add")
+          (ltu/is-operation-absent "delete")
+          (ltu/is-operation-absent "edit"))
+      (-> session-admin
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)

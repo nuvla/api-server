@@ -4,7 +4,7 @@
     [clojure.test :refer [deftest join-fixtures use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
@@ -64,7 +64,8 @@
                          (content-type "application/json"))
         session-user (header session-anon authn-info-header do-ltu/user-info-header)
         base-uri (str p/service-context data-obj/resource-type)
-        template (do-ltu/get-template (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type))
+        template (do-ltu/get-template
+                   (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type))
 
         create-href {:template (-> (data-object)
                                    (assoc :bucket "my-public-bucket") ;; to avoid conflict with existing data-object

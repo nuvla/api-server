@@ -5,7 +5,8 @@ is a kebab-case string, provided when the group is created. All group names
 that start with 'nuvla-' are reserved for the server.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -89,7 +90,7 @@ that start with 'nuvla-' are reserved for the server.
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (a/can-edit-acl? {:acl collection-acl} request)
-  (let [idmap {:identity (:identity request)}
+  (let [idmap (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
         body (-> body
                  (assoc :resource-type create-type)

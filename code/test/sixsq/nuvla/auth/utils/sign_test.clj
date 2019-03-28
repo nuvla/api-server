@@ -14,4 +14,4 @@
                 :delta true
                 :exp   (ts/expiry-later)}]
     (with-redefs [environ/env env-fixture/env-map]
-      (is (= claims (t/unsign-claims (t/sign-claims claims)))))))
+      (is (= claims (t/unsign-cookie-info (t/sign-cookie-info claims)))))))

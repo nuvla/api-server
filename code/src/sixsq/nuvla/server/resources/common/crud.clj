@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.common.crud
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -65,7 +66,7 @@
    identity to the administrator to allow access to any resource. Works around
    the authentication enforcement at the database level."
   [resource-id]
-  (let [opts {:user-name "INTERNAL" :user-roles ["group/nuvla-admin"]}]
+  (let [opts {:nuvla/authn auth/internal-identity}]
     (retrieve-by-id resource-id opts)))
 
 

@@ -3,7 +3,7 @@
     [clojure.test :refer [deftest join-fixtures use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]

@@ -21,6 +21,7 @@
 ;; that usually require creation of stub session for later validation
 (s/def ::username ::cimi-core/nonblank-string)
 
+;;TODO ACL rename roles in session spec
 ;; space-separated string of user's roles
 (s/def ::roles ::cimi-core/nonblank-string)
 

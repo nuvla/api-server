@@ -5,18 +5,12 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [clojure.walk :as w]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
-
-
-(def ^{:doc "Internal administrator identity for database queries."}
-internal-identity
-  {:current         "INTERNAL"
-   :authentications {"INTERNAL" {:identity "INTERNAL"
-                                 :roles    ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]}}})
 
 
 (defn add-fn
@@ -101,7 +95,7 @@ internal-identity
   (fn [request]
     (a/can-view-acl? {:acl collection-acl} request)
     (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
-          options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
+          options (select-keys request [:nuvla/authn :query-params :cimi-params])
           [metadata entries] (db/query resource-name options)
           entries-and-count (merge metadata (wrapper-fn request entries))]
       (r/json-response entries-and-count))))
@@ -122,13 +116,13 @@ internal-identity
 
    If a referenced document doesn't exist or if the user doesn't have read
    access to the document, then the method will throw."
-  [{:keys [href] :as resource} idmap]
+  [{:keys [href] :as resource} authn-info]
   (if-not (or (str/blank? href)
               (str/starts-with? href "http://")
               (str/starts-with? href "https://"))
     (if-let [refdoc (crud/retrieve-by-id href)]
       (try
-        (a/can-view-acl? refdoc idmap)
+        (a/can-view-acl? refdoc {:nuvla/authn authn-info})
         (-> refdoc
             (u/strip-common-attrs)
             (u/strip-service-attrs)
@@ -142,10 +136,10 @@ internal-identity
 
 (defn resolve-href
   "Like resolve-href-keep, except that the :href attributes are removed."
-  [{:keys [href] :as resource} idmap]
+  [{:keys [href] :as resource} authn-info]
   (if href
     (-> resource
-        (resolve-href-keep idmap)
+        (resolve-href-keep authn-info)
         (dissoc :href))
     resource))
 
@@ -154,9 +148,9 @@ internal-identity
   "Does a prewalk of the given argument, replacing any map with an :href
    attribute with the result of merging the referenced resource (see the
    resolve-href function)."
-  [resource idmap & [keep?]]
+  [resource authn-info & [keep?]]
   (let [f (if keep? resolve-href-keep resolve-href)]
-    (w/prewalk #(f % idmap) resource)))
+    (w/prewalk #(f % authn-info) resource)))
 
 
 (defn initialize
@@ -173,9 +167,9 @@ internal-identity
 (defn add-if-absent
   [resource-id resource-url resource]
   (try
-    (let [request {:params   {:resource-name resource-url}
-                   :identity internal-identity
-                   :body     resource}
+    (let [request {:params      {:resource-name resource-url}
+                   :body        resource
+                   :nuvla/authn auth/internal-identity}
           {:keys [status] :as response} (crud/add request)]
       (case status
         201 (log/infof "created %s resource" resource-id)

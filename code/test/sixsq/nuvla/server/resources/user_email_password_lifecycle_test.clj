@@ -5,7 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]

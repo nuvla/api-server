@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.middleware.authn-info-header :as aih]))
+    [sixsq.nuvla.server.middleware.authn-info :as aih]))
 
 (defn- display-querystring
   [request]
@@ -11,18 +11,22 @@
                (or "")
                (str/replace #"&?password=([^&]*)" ""))))
 
+
 (defn- display-authn-info
-  [request]
-  (let [[user roles] (aih/extract-info request)]
-    (str "[" user " - " (str/join "," (sort roles)) "]")))
+  [{:keys [nuvla/authn] :as request}]
+  (let [{:keys [user-id claims]} authn]
+    (str "[" user-id " - " (str/join "," (sort claims)) "]")))
+
 
 (defn- display-elapsed-time-millis
   [start current-time-millis]
   (str "(" (- current-time-millis start) " ms)"))
 
+
 (defn- display-space-separated
   [& messages]
   (str/join " " messages))
+
 
 (defn format-request
   [request]
@@ -32,12 +36,14 @@
     (display-authn-info request)
     (display-querystring request)))
 
+
 (defn format-response
   [formatted-request response start current-time-millis]
   (display-space-separated
     (:status response)
     (display-elapsed-time-millis start current-time-millis)
     formatted-request))
+
 
 (defn log-response
   [status formatted-message]
@@ -46,6 +52,7 @@
     (<= 400 status 499) (log/warn formatted-message)
     (<= 500 status 599) (log/error formatted-message)
     :else (log/error formatted-message)))
+
 
 (defn wrap-logger
   "Logs both request and response e.g:

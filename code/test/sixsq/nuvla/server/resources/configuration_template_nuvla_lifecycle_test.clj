@@ -3,7 +3,7 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as ct-nuvla]

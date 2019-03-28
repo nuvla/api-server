@@ -5,7 +5,7 @@
     [peridot.core :refer :all]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record :refer :all]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
@@ -90,7 +90,8 @@
 
   (let [session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous create should fail

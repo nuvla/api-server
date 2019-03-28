@@ -85,8 +85,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
 session.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -243,10 +244,10 @@ session.
 
 ;; requires a SessionTemplate to create new Session
 (defmethod crud/add resource-type
-  [{:keys [body form-params headers] :as request}]
+  [request]
 
   (try
-    (let [idmap {:identity (:identity request)}
+    (let [idmap (auth/current-authentication request)
           body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
@@ -298,8 +299,8 @@ session.
         cookies (delete-cookie response)]
     (merge response cookies)))
 
-(defn add-session-filter [{{:keys [session]} :sixsq.slipstream.authn/claims :as request}]
-  (->> (or session "")
+(defn add-session-filter [{:keys [nuvla/authn] :as request}]
+  (->> (or (:session authn) "")
        (format "id='%s'")
        (parser/parse-cimi-filter)
        (assoc-in request [:cimi-params :filter])))

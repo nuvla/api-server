@@ -9,7 +9,7 @@ will send an email to the user with a callback URL to validate the email
 address. When the callback is triggered, the `validated` flag is set to true.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

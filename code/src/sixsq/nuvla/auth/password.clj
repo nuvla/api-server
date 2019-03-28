@@ -3,20 +3,19 @@
   (:require
     [buddy.hashers :as hashers]
     [clojure.string :as str]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
-
-
 (defn identifier->user-id
   [username]
   (try
     (let [f (parser/parse-cimi-filter (format "identifier='%s'" username))
-          opts (merge admin-opts {:cimi-params {:filter f}})]
+          opts {:cimi-params {:filter f}
+                :nuvla/authn auth/internal-identity}]
       (some-> (db/query user-identifier/resource-type opts)
               second
               first
@@ -75,9 +74,9 @@
   [id]
   (let [group-set (->> (db/query
                          group/resource-type
-                         (merge admin-opts
-                                {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
-                                               :select ["id"]}}))
+                         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
+                                        :select ["id"]}
+                          :nuvla/authn auth/internal-identity})
                        second
                        (map :id)
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
@@ -88,5 +87,5 @@
 
 (defn create-claims
   [{:keys [id] :as user}]
-  {:username id
-   :roles    (collect-groups-for-user id)})
+  {:user-id id
+   :claims  (collect-groups-for-user id)})

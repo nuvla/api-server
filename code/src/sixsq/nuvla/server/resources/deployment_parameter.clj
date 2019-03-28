@@ -3,7 +3,8 @@
     [clojure.string :as str]
 
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -58,10 +59,10 @@
   [current-state deployment-href]
   (let [new-state (next-state current-state)
         uuid (parameter->uiid deployment-href nil "ss:state")
-        content-request {:params   {:resource-name resource-type
-                                    :uuid          uuid}
-                         :identity std-crud/internal-identity
-                         :body     {:value new-state}}
+        content-request {:params      {:resource-name resource-type
+                                       :uuid          uuid}
+                         :body        {:value new-state}
+                         :nuvla/authn auth/internal-identity}
         {:keys [status body] :as response} (-> content-request crud/edit)]
     (when (not= status 200)
       (log/error response)
@@ -95,16 +96,16 @@
       "ss:state" (let [deployment-request {:params      {:resource-name d/resource-type
                                                          :uuid          (u/document-id deployment-href)}
                                            :cimi-params {:select #{"keepRunning"}}
-                                           :identity    std-crud/internal-identity}
+                                           :nuvla/authn auth/internal-identity}
                        deployment-data (-> deployment-request crud/retrieve :body)
                        keep-running (get deployment-data :keepRunning "Always")]
                    (when (or (and (= keep-running "Never") (#{"Ready" "Aborted"} value))
                              (and (= keep-running "On Success") (= value "Aborted"))
                              (and (= keep-running "On Error") (= value "Ready")))
-                     (crud/do-action {:params   {:action        "stop"
-                                                 :resource-name d/resource-type
-                                                 :uuid          (u/document-id deployment-href)}
-                                      :identity std-crud/internal-identity})))
+                     (crud/do-action {:params      {:action        "stop"
+                                                    :resource-name d/resource-type
+                                                    :uuid          (u/document-id deployment-href)}
+                                      :nuvla/authn auth/internal-identity})))
       nil))
   (validate-fn resource))
 

@@ -315,7 +315,8 @@ include aggregating values over a collection of resources.
     [clojure.tools.logging :as log]
     [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
     [ring.util.response :as r]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -379,7 +380,7 @@ include aggregating values over a collection of resources.
                  {:acl           resource-acl
                   :id            resource-type
                   :resource-type resource-type})]
-    (db/add resource-type record {:user-roles ["group/nuvla-anon"]})))
+    (db/add resource-type record {:nuvla/authn auth/internal-identity})))
 
 
 (defn retrieve-impl

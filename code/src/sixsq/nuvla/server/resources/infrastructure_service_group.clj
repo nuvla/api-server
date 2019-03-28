@@ -10,7 +10,8 @@ resource's `parent` attribute, which will contain the `id` of the
 infrastructure-service-group resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -72,32 +73,17 @@ infrastructure-service-group resource.
   (assoc request :body (dissoc body :infrastructure-services)))
 
 
-(defn extract-authn-info
-  [request]
-  (select-keys request [:identity
-                        :sixsq.slipstream.authn/claims
-                        :user-name
-                        :user-roles]))
-
-
 (defn service-query
   ([resource-id]
-   (service-query {:identity                      {:current         "internal",
-                                                   :authentications {"internal" {:roles #{"group/nuvla-admin"}, :identity "internal"}}}
-                   :sixsq.slipstream.authn/claims {:username "internal"
-                                                   :roles    "group/nuvla-admin group/nuvla-user group/nuvla-anon"}
-                   :user-name                     "internal"
-                   :user-roles                    #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}}
-                  resource-id))
+   (service-query {:nuvla/authn auth/internal-identity} resource-id))
   ([initial-request resource-id]
    (let [filter (-> {:filter (str "parent='" resource-id "'")}
                     (cimi-params-impl/cimi-filter))
-         request (-> (extract-authn-info initial-request)
+         request (-> initial-request
                      (assoc :params {:resource-name infra-service/resource-type}
                             :route-params {:resource-name infra-service/resource-type}
                             :cimi-params {:filter filter
                                           :select ["id"]}))]
-
      (try
        (->> request
             crud/query

@@ -7,7 +7,7 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-api-key :as api-key-tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
@@ -61,18 +61,18 @@
     (is (false? (t/valid-api-key? valid-api-key "bad-secret")))))
 
 (deftest check-create-claims
-  (let [username "root"
+  (let [user-id "user/root"
         server "nuv.la"
-        headers {:slipstream-ssl-server-name server}
-        roles ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"]
+        headers {:nuvla-ssl-server-name server}
+        claims #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip "127.0.0.1"]
-    (is (= {:username username
-            :session  session-id
-            :roles    (str/join " " ["group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" session-id])
-            :server   server
-            :clientIP client-ip}
-           (t/create-claims username roles headers session-id client-ip)))))
+    (is (= {:clientIP      "127.0.0.1"
+            :claims  (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
+            :user-id "user/root"
+            :server        "nuv.la"
+            :session       "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
+           (t/create-cookie-info user-id claims headers session-id client-ip)))))
 
 (defn mock-retrieve-by-id [doc-id]
   nil)
@@ -102,7 +102,8 @@
             session-json (content-type (session app) "application/json")
             session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
             session-user (header session-json authn-info-header "user/user group/nuvla-user group/nuvla-anon")
-            session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+            session-admin (header session-json authn-info-header
+                                  "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
             ;;
             ;; create the session template to use for these tests
@@ -156,8 +157,8 @@
                        (ltu/is-status 201))
               id (get-in resp [:response :body :resource-id])
 
-              token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-              claims (if token (sign/unsign-claims token) {})
+              token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value])
+              cookie-info (if token (sign/unsign-cookie-info token) {})
 
               uri (-> resp
                       (ltu/location))
@@ -172,24 +173,24 @@
                         (ltu/is-status 303))
               id2 (get-in resp2 [:response :body :resource-id])
 
-              token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-              claims2 (if token2 (sign/unsign-claims token2) {})
+              token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value])
+              cookie-info2 (if token2 (sign/unsign-cookie-info token2) {})
 
               uri2 (-> resp2
                        (ltu/location))
               abs-uri2 (str p/service-context uri2)]
 
-          ;; check claims in cookie
-          (is (= "user/jane" (:username claims)))
-          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:roles claims))) ;; uri is also session id
-          (is (= uri (:session claims)))                    ;; uri is also session id
-          (is (not (nil? (:exp claims))))
+          ;; check cookie-info in cookie
+          (is (= "user/jane" (:user-id cookie-info)))
+          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
+          (is (= uri (:session cookie-info)))               ;; uri is also session id
+          (is (not (nil? (:exp cookie-info))))
 
-          ;; check claims in cookie for redirect
-          (is (= "user/jane" (:username claims2)))
-          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" id2]) (:roles claims2))) ;; uri is also session id
-          (is (= id2 (:session claims2)))                   ;; uri is also session id
-          (is (not (nil? (:exp claims2))))
+          ;; check cookie-info in cookie for redirect
+          (is (= "user/jane" (:user-id cookie-info2)))
+          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" id2]) (:claims cookie-info2))) ;; uri is also session id
+          (is (= id2 (:session cookie-info2)))              ;; uri is also session id
+          (is (not (nil? (:exp cookie-info2))))
           (is (= "http://redirect.example.org" uri2))
 
           ;; user should not be able to see session without session role
@@ -231,7 +232,7 @@
 
           ;; user query with session role should succeed but and have one entry
           (-> (session app)
-              (header authn-info-header (str "user group/nuvla-user " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request base-uri)
               (ltu/body->edn)
               (ltu/is-status 200)
@@ -239,7 +240,7 @@
 
           ;; check contents of session resource
           (let [{:keys [name description tags] :as body} (-> (session app)
-                                                             (header authn-info-header (str "user group/nuvla-user " id))
+                                                             (header authn-info-header (str "user/user group/nuvla-user " id))
                                                              (request abs-uri)
                                                              (ltu/body->edn)
                                                              :response

@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.deployment
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -54,15 +55,16 @@
 
 
 (defmethod crud/add resource-type
-  [{:keys [identity body base-uri] :as request}]
+  [{:keys [body base-uri] :as request}]
 
   (a/can-edit-acl? {:acl collection-acl} request)
 
-  (let [deployment (-> body
+  (let [authn-info (auth/current-authentication request)
+        deployment (-> body
                        (assoc :resource-type resource-type)
                        (assoc :state "CREATED")
-                       (assoc :module (deployment-utils/resolve-module (:module body) identity))
-                       (assoc :api-credentials (deployment-utils/generate-api-key-secret request))
+                       (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
+                       (assoc :api-credentials (deployment-utils/generate-api-key-secret authn-info))
                        (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
@@ -71,7 +73,7 @@
 
         msg (get-in create-response [:body :message])]
 
-    (event-utils/create-event href msg (a/default-acl (a/current-authentication request)))
+    (event-utils/create-event href msg (a/default-acl authn-info))
 
     create-response))
 
@@ -137,7 +139,7 @@
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)
-          user-id (:identity (a/current-authentication request))
+          user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_deployment"
                                                        {:owners   ["group/nuvla-admin"]
@@ -151,7 +153,7 @@
           (a/can-edit-acl? request)
           (assoc :state "STARTING")
           (db/edit request))
-      (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
+      (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -161,7 +163,7 @@
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)
-          user-id (:identity (a/current-authentication request))
+          user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_deployment"
                                                        {:owners   ["group/nuvla-admin"]

@@ -10,7 +10,8 @@ This is a templated resource. All creation requests must be done via an
 existing infrastructure-service-template resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -133,7 +134,7 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [idmap {:identity (:identity request)}
+  (let [idmap (auth/current-authentication request)
         body (:body request)
         desc-attrs (u/select-desc-keys body)
         validated-template (-> body

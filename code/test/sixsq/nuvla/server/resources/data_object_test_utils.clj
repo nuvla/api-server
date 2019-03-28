@@ -4,7 +4,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.data-object :as data-obj]

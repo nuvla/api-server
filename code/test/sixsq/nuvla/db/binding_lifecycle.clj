@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
@@ -16,8 +17,6 @@
 
 (def admin-acl {:owners   ["group/nuvla-admin"]
                 :edit-acl ["group/nuvla-admin"]})
-
-(def admin-role {:user-roles ["group/nuvla-admin"]})
 
 (defn check-binding-lifecycle [db-impl]
   (with-open [db db-impl]
@@ -41,7 +40,7 @@
           (is (= my-data-with-acl retrieved-data)))
 
         ;; check that it shows up in a query
-        (let [[query-meta query-hits] (db/query db collection-id admin-role)]
+        (let [[query-meta query-hits] (db/query db collection-id {:nuvla/authn auth/internal-identity})]
           (is (= 1 (:count query-meta)))
           (is (= my-data-with-acl (first query-hits))))
 
@@ -59,7 +58,7 @@
             (is (= my-data-2-with-acl retrieved-data)))
 
           ;; check that query has another entry
-          (let [[query-meta query-hits] (db/query db collection-id admin-role)]
+          (let [[query-meta query-hits] (db/query db collection-id {:nuvla/authn auth/internal-identity})]
             (is (= 2 (:count query-meta)))
             (is (= #{my-id my-id-2} (set (map :id query-hits)))))
 

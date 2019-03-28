@@ -1,33 +1,19 @@
-(ns sixsq.nuvla.auth.acl-test
+(ns sixsq.nuvla.auth.acl-resource-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.auth.acl_resource :as a]))
-
-
-(deftest check-current-authentication
-  (are [expect arg] (= expect (:identity (a/current-authentication arg)))
-                    nil {}
-                    nil {:identity {:authentications {}}}
-                    nil {:identity {:authentications {"user/user1" {:identity "user/user1"}}}}
-                    nil {:identity {:current         "user/other"
-                                    :authentications {"user/user1" {:identity "user/user1"}}}}
-                    "user/user1" {:identity {:current         "user/user1"
-                                             :authentications {"user/user1" {:identity "user/user1"}}}}))
+    [sixsq.nuvla.auth.acl-resource :as a]))
 
 
 (deftest check-extract-right
 
-  (is (= ::a/edit-acl (a/extract-right {:identity "user/anyone" :roles ["group/r1", "group/nuvla-admin"]}
+  (is (= ::a/edit-acl (a/extract-right {:claims #{"group/r1" "group/nuvla-admin" "user/anyone"}}
                                        [:edit-acl ["user/user1"]])))
 
-  (is (= ::a/view-acl (a/extract-right nil [:view-acl ["group/nuvla-anon"]])))
-  (is (= ::a/view-acl (a/extract-right {} [:view-acl ["group/nuvla-anon"]])))
-
-  (is (nil? (a/extract-right {:identity "user/unknown" :roles ["group/nuvla-anon"]}
+  (is (nil? (a/extract-right {:claims #{"group/nuvla-anon"}}
                              [:edit-acl ["group/nuvla-user"]])))
 
-  (let [id-map {:identity "user/user1" :roles ["group/r1" "group/r3"]}]
-    (are [expect arg] (= expect (a/extract-right id-map arg))
+  (let [authn-info {:claims #{"user/user1" "group/r1" "group/r3" "group/nuvla-anon"}}]
+    (are [expect arg] (= expect (a/extract-right authn-info arg))
                       ::a/edit-acl [:edit-acl ["user/user1"]]
                       nil [nil ["user/user1"]]
                       nil [:edit-acl ["group/user1"]]
@@ -46,15 +32,15 @@
              :edit-acl ["user/user2"]
              :manage   ["group/role2"]}]
 
-    (are [expect arg] (= expect (a/extract-rights arg acl))
-                      #{} nil
-                      #{} {:identity nil}
-                      #{::a/edit-acl} {:identity "user/user1"}
-                      #{::a/edit-acl ::a/view-acl} {:identity "user/user1" :roles ["group/role1"]}
-                      #{} {:identity "user/unknown" :roles ["group/unknown"]}
-                      #{::a/view-acl} {:identity "user/unknown" :roles ["group/role1"]}
-                      #{::a/edit-acl ::a/manage} {:identity "user/user1" :roles ["group/role2"]}
-                      #{::a/view-acl ::a/edit-acl} {:identity "user/user2" :roles ["group/role1"]})))
+    (are [expect authn-info] (= expect (a/extract-rights authn-info acl))
+                             #{} nil
+                             #{} {}
+                             #{::a/edit-acl} {:claims #{"user/user1"}}
+                             #{::a/view-acl} {:claims #{"group/role1"}}
+                             #{} {:claims #{"user/unknown", "group/unknown"}}
+                             #{::a/view-acl} {:claims #{"user/unknown", "group/role1"}}
+                             #{::a/edit-acl ::a/manage} {:claims #{"user/user1", "group/role2"}}
+                             #{::a/view-acl ::a/edit-acl} {:claims #{"user/user2", "group/role1"}})))
 
 
 (deftest check-hierarchy
@@ -112,11 +98,10 @@
   (let [acl {:owners   ["user/user1"]
              :view-acl ["group/role1"]
              :edit-acl ["user/user2"]}
-          resource {:acl         acl
-                    :resource-id "Resource/uuid"}]
+        resource {:acl         acl
+                  :resource-id "Resource/uuid"}]
 
-    (let [request {:identity {:current         "user/user1"
-                              :authentications {"user/user1" {:identity "user/user1"}}}}]
+    (let [request {:nuvla/authn {:claims #{"user/user1"}}}]
       (is (= resource (a/can-do? resource request ::a/view-acl)))
       (is (= resource (a/can-do? resource request ::a/edit-acl)))
       (is (= resource (a/can-do? resource request ::a/edit-data)))
@@ -126,25 +111,18 @@
       (is (= resource (a/can-do? resource request ::a/delete)))
       (is (= resource (a/can-do? resource request ::a/manage)))
 
-      (let [request {:identity {:current         "user/unknown"
-                                :authentications {"user/unknown" {:identity "user/unknown"
-                                                                  :roles    ["group/role1"]}}}}]
+      (let [request {:nuvla/authn {:claims #{"user/unknown" "group/role1"}}}]
         (is (thrown? Exception (a/can-do? resource request ::a/edit-acl)))
         (is (= resource (a/can-do? resource request ::a/view-acl))))
 
-      (let [request {:identity {:current         "user/unknown"
-                                :authentications {"user/unknown" {:identity "user/unknown"
-                                                                  :roles    ["group/unknown"]}}}}]
+      (let [request {:nuvla/authn {:claims #{"user/unknown" "group/unknown"}}}]
         (is (thrown? Exception (a/can-do? resource request ::a/edit-acl)))
         (is (thrown? Exception (a/can-do? resource request ::a/view-acl)))
         (is (thrown? Exception (a/can-do? resource request ::a/manage))))
 
-      (let [request {:identity {:current         "user/user2"
-                                :authentications {"user/user2" {:identity "user/user2"}}}}]
+      (let [request {:nuvla/authn {:claims #{"user/user2"}}}]
         (is (= resource (a/can-do? resource request ::a/edit-acl))))
 
-      (let [request {:identity {:current         "user/user2"
-                                :authentications {"user/user2" {:identity "user/user2"
-                                                                :roles    ["group/role1"]}}}}]
+      (let [request {:nuvla/authn {:claims #{"user/user2" "group/role1"}}}]
         (is (= resource (a/can-do? resource request ::a/edit-acl)))
         (is (= resource (a/can-do? resource request ::a/view-acl)))))))

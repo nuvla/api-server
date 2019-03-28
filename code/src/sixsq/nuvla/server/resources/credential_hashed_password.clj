@@ -4,7 +4,8 @@ Hashed value of a password.
 "
   (:require
     [buddy.hashers :as hashers]
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -15,9 +16,6 @@ Hashed value of a password.
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
     [sixsq.nuvla.server.util.response :as r]))
-
-
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["group/nuvla-admin"]})
 
 
 ;;
@@ -140,7 +138,7 @@ Hashed value of a password.
             (if (= new-password new-password-repeated)
               (if (acceptable-password? new-password)
                 (let [new-hash (hashers/derive new-password)]
-                  (db/edit (assoc resource :hash new-hash) admin-opts)
+                  (db/edit (assoc resource :hash new-hash) {:nuvla/authn auth/internal-identity})
                   (r/map-response "password changed" 200))
                 (throw (r/ex-response acceptable-password-msg 400)))
               (throw (r/ex-response "mismatched passwords" 400))))

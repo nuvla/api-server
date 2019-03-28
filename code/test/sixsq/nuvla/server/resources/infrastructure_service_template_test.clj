@@ -3,7 +3,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]

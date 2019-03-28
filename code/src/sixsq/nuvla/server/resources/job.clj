@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.job
   (:require
-    [sixsq.nuvla.auth.acl_resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -145,7 +146,7 @@
                          :targetResource {:href targetResource}
                          :acl            acl}
                         priority (assoc :priority priority))
-        create-request {:params   {:resource-name resource-type}
-                        :identity std-crud/internal-identity
-                        :body     job-map}]
+        create-request {:params      {:resource-name resource-type}
+                        :body        job-map
+                        :nuvla/authn auth/internal-identity}]
     (crud/add create-request)))

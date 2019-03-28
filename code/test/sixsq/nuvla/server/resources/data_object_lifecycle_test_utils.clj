@@ -5,11 +5,9 @@
     [clojure.test :refer [is]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.credential :as cred]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as cred-tpl]
-    [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-minio]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data.utils :as s3]
@@ -33,13 +31,13 @@
 
 (def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
 (def ^:const admin-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-(def ^:const user-creds-info-header "creds group/nuvla-user group/nuvla-anon")
+(def ^:const user-creds-info-header "user/creds group/nuvla-user group/nuvla-anon")
 
 (def ^:const username-view "user/tarzan")
 (def ^:const user-view-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
 (def ^:const tarzan-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
 
-(def ^:const username-no-view "other")
+(def ^:const username-no-view "user/other")
 (def ^:const user-no-view-info-header (str username-no-view " group/nuvla-user group/nuvla-anon"))
 
 

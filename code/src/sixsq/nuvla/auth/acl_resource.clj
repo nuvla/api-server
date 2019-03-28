@@ -1,5 +1,6 @@
-(ns sixsq.nuvla.auth.acl_resource
+(ns sixsq.nuvla.auth.acl-resource
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.response :as ru]))
 
 (def rights-hierarchy (-> (make-hierarchy)
@@ -29,37 +30,28 @@
   (reduce add-rights-entry {} (cons ::edit-acl (ancestors rights-hierarchy ::edit-acl))))
 
 
-(defn current-authentication
-  "Extracts the current authentication (identity map) from the ring
-   request.  Returns nil if there is no current identity."
-  [{{:keys [current authentications]} :identity}]
-  (or (get authentications current) {:identifier nil, :roles ["group/nuvla-anon"]}))
-
-
 (defn extract-right
   "Given the identity map, this extracts the associated right.
   If the right does not apply, then nil is returned."
-  [{:keys [identity roles] :as id-map} [right principals]]
-  (let [identity-roles (->> (conj roles identity "group/nuvla-anon")
-                            (remove nil?)
-                            (set))
-        principals-with-admin (conj principals "group/nuvla-admin")]
-    (when (some identity-roles principals-with-admin)
-      (get rights-keywords right))))
+  [{:keys [claims]} [right principals]]
+  (let [principals-with-admin (conj principals "group/nuvla-admin")]
+    (when claims
+      (when (some claims principals-with-admin)
+       (get rights-keywords right)))))
 
 
 (defn extract-rights
   "Returns a set containing all of the applicable rights from an ACL
    for the given identity map."
-  [id-map {:keys [owners] :as acl}]
+  [authn-info {:keys [owners] :as acl}]
   (let [acl-updated (-> acl
                         (update :edit-acl concat owners ["group/nuvla-admin"])
                         (dissoc :owners))]
 
     (->> acl-updated
-        (map (partial extract-right id-map))
-        (remove nil?)
-        (set))))
+         (map (partial extract-right authn-info))
+         (remove nil?)
+         (set))))
 
 
 (defn authorized-do?
@@ -67,7 +59,7 @@
    current user (in the request) the given action."
   [resource request action]
   (let [rights (extract-rights
-                 (current-authentication request)
+                 (auth/current-authentication request)
                  (:acl resource))
         action (get rights-keywords action)]
     (some #(isa? rights-hierarchy % action) rights)))
@@ -122,8 +114,6 @@
    Returns the request on success; throws an error ring response on
    failure."
   [resource request]
-  #_(log/error "can-view-acl? RESOURCE:" resource "REQUEST:" request "
-  RESULT: "(can-do? resource request ::view-acl))
   (can-do? resource request ::view-acl))
 
 
@@ -133,11 +123,11 @@
    rules.  The only exception is if the user is in the group/nuvla-admin,
    then the owner will be group/nuvla-admin.  If there is no identity
    then returns nil."
-  [{:keys [identity roles]}]
-  (if identity
-    (if ((set roles) "group/nuvla-admin")
+  [{:keys [user-id claims]}]
+  (when user-id
+    (if ((set claims) "group/nuvla-admin")
       {:owners ["group/nuvla-admin"]}
-      {:owners [identity]})))
+      {:owners [user-id]})))
 
 
 (defn add-acl
@@ -147,5 +137,4 @@
   (assoc
     resource
     :acl
-    (or acl (default-acl (current-authentication request)))))
-
+    (or acl (default-acl (auth/current-authentication request)))))

@@ -5,7 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [sixsq.nuvla.server.resources.evidence-record :as t]

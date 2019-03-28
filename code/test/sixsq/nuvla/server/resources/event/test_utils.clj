@@ -7,7 +7,7 @@
     [clojure.test :refer [is]]
     [peridot.core :refer :all]
     [ring.util.codec :as rc]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
