@@ -18,9 +18,9 @@ cloud application and for other important actions.
 
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
-;; TODO: Tests require anonymous query and add operations.  Why?
-(def collection-acl {:query ["group/nuvla-anon"]
-                     :add   ["group/nuvla-anon"]})
+
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -28,6 +28,8 @@ cloud application and for other important actions.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::event/event))
+
+
 (defmethod crud/validate
   resource-type
   [resource]
@@ -44,15 +46,19 @@ cloud application and for other important actions.
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def delete-impl (std-crud/delete-fn resource-type))
+
 
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
+
 
 ;;
 ;; available operations
@@ -73,10 +79,14 @@ cloud application and for other important actions.
     (catch Exception _
       (dissoc resource :operations))))
 
+
 ;;
 ;; collection
 ;;
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
+
 (defmethod crud/query resource-type
   [{{:keys [orderby]} :cimi-params :as request}]
   (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
@@ -85,6 +95,7 @@ cloud application and for other important actions.
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::event/event))

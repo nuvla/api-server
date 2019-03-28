@@ -103,14 +103,15 @@ internal-identity
 
 (defn query-fn
   [resource-name collection-acl collection-uri]
-  (validate-collection-acl collection-acl)
-  (fn [request]
-    (a/throw-cannot-query collection-acl request)
-    (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
-          options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
-          [metadata entries] (db/query resource-name options)
-          entries-and-count (merge metadata (wrapper-fn request entries))]
-      (r/json-response entries-and-count))))
+  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)]
+    (validate-collection-acl collection-acl)
+
+    (fn [request]
+      (a/throw-cannot-query collection-acl request)
+      (let [options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
+            [metadata entries] (db/query resource-name options)
+            entries-and-count (merge metadata (wrapper-fn request entries))]
+        (r/json-response entries-and-count)))))
 
 
 (def ^:const href-not-found-msg "requested href not found")
