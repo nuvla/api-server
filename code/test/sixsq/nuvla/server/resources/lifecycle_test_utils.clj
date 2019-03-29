@@ -132,9 +132,11 @@
   [m f]
   `((fn [m# f#]
       (let [count# (get-in m# [:response :body :count])]
-        (if (fn? f#)
-          (is (f# count#) "Function of count did not return truthy value")
-          (is (= f# count#) (str "Count wrong, expecting " f# ", got " (or count# "nil"))))
+        (is (number? count#) (str "Count is not a number: " count#))
+        (when (number? count#)
+          (if (fn? f#)
+            (is (f# count#) "Function of count did not return truthy value")
+            (is (= f# count#) (str "Count wrong, expecting " f# ", got " (or count# "nil")))))
         m#)) ~m ~f))
 
 

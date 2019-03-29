@@ -20,9 +20,9 @@
                     (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
+        ;; done as an unfiltered search because filtering doesn't work with in-memory resources
         md-docs (-> session
-                    (request base-uri
-                             :method :put)
+                    (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)
@@ -39,9 +39,9 @@
                     (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
+        ;; done as an unfiltered search because filtering doesn't work with in-memory resources
         md-docs (-> session
-                    (request base-uri
-                             :method :put)
+                    (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)
