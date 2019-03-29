@@ -3,7 +3,7 @@
     [clojure.test :refer [is]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as md]))
@@ -17,12 +17,12 @@
 
   (let [session (-> (ltu/ring-app)
                     session
-                    (header authn-info-header "ANON")
+                    (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
+        ;; done as an unfiltered search because filtering doesn't work with in-memory resources
         md-docs (-> session
-                    (request base-uri
-                             :method :put)
+                    (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)
@@ -36,12 +36,12 @@
 
   (let [session (-> (ltu/ring-app)
                     session
-                    (header authn-info-header "ANON")
+                    (header authn-info-header "group/nuvla-anon")
                     (content-type "application/json"))
 
+        ;; done as an unfiltered search because filtering doesn't work with in-memory resources
         md-docs (-> session
-                    (request base-uri
-                             :method :put)
+                    (request base-uri)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-count pos?)

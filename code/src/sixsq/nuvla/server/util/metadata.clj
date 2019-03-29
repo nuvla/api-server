@@ -133,8 +133,8 @@
                    :created       "1964-08-25T10:00:00.0Z"
                    :updated       "1964-08-25T10:00:00.0Z"
                    :resource-type resource-metadata/resource-type
-                   :acl           {:owner {:principal "ADMIN", :type "ROLE"}
-                                   :rules [{:principal "ANON", :type "ROLE", :right "VIEW"}]}
+                   :acl           {:owners   ["group/nuvla-admin"]
+                                   :view-acl ["group/nuvla-anon"]}
                    :typeURI       type-uri
                    :name          resource-name
                    :description   doc}

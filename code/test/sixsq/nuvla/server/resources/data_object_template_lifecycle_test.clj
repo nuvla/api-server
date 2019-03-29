@@ -3,7 +3,7 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
@@ -28,8 +28,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "jane USER")
-        session-admin (header session-anon authn-info-header "root ADMIN")]
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user")
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
 
     ;; anonymous query is not authorized
@@ -45,7 +45,7 @@
         (ltu/is-status 200))
 
 
-    ;; query as ADMIN should work correctly
+    ;; query as group/nuvla-admin should work correctly
     (let [entries (-> session-admin
                       (content-type "application/x-www-form-urlencoded")
                       (request (str collection-uri))

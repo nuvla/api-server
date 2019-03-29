@@ -4,7 +4,7 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module-component :as module-component]))
@@ -16,11 +16,7 @@
 (def base-uri (str p/service-context module-component/resource-type))
 
 
-(def valid-acl {:owner {:type      "ROLE"
-                        :principal "ADMIN"}
-                :rules [{:principal "ADMIN"
-                         :right     "ALL"
-                         :type      "ROLE"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]})
 
 
 (def timestamp "1964-08-25T10:00:00.0Z")
@@ -44,8 +40,8 @@
 
   (let [session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-user]]

@@ -2,7 +2,9 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.db.binding :as db]))
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.binding :as db]
+    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
 (s/def ::id string?)
 (s/def ::long int?)
@@ -11,23 +13,10 @@
 
 (s/def ::resource (s/keys :req-un [::id ::long ::boolean ::string]))
 
-(s/def ::type string?)
-(s/def ::principal string?)
-(s/def ::right string?)
+(s/def ::acl ::acl-resource/acl)
 
-(s/def ::owner (s/keys :req-un [::type ::principal]))
-(s/def ::rule (s/keys :req-un [::type ::principal ::right]))
-(s/def ::rules (s/coll-of ::rule :min-count 1 :kind vector?))
-
-(s/def ::acl (s/keys :req-un [::owner]
-                     :opt-un [::rules]))
-
-(s/def ::resource (s/keys :req-un [::id ::long ::boolean ::string ::acl]))
-
-(def admin-acl {:owner {:type "ROLE", :principal "ADMIN"}
-                :rules [{:type "ROLE", :principal "ADMIN", :right "ALL"}]})
-
-(def admin-role {:user-roles ["ADMIN"]})
+(def admin-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 (defn check-binding-lifecycle [db-impl]
   (with-open [db db-impl]
@@ -51,7 +40,7 @@
           (is (= my-data-with-acl retrieved-data)))
 
         ;; check that it shows up in a query
-        (let [[query-meta query-hits] (db/query db collection-id admin-role)]
+        (let [[query-meta query-hits] (db/query db collection-id {:nuvla/authn auth/internal-identity})]
           (is (= 1 (:count query-meta)))
           (is (= my-data-with-acl (first query-hits))))
 
@@ -69,7 +58,7 @@
             (is (= my-data-2-with-acl retrieved-data)))
 
           ;; check that query has another entry
-          (let [[query-meta query-hits] (db/query db collection-id admin-role)]
+          (let [[query-meta query-hits] (db/query db collection-id {:nuvla/authn auth/internal-identity})]
             (is (= 2 (:count query-meta)))
             (is (= #{my-id my-id-2} (set (map :id query-hits)))))
 

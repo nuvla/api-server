@@ -63,17 +63,17 @@
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
 
 
-  :test     {:dependencies  [[me.raynes/fs]
-                             [peridot]
-                             [org.apache.logging.log4j/log4j-core]      ;; needed for ES logging
-                             [org.apache.logging.log4j/log4j-api]       ;; needed for ES logging
-                             [org.clojure/test.check]
-                             [org.elasticsearch.client/transport]
-                             [org.elasticsearch.test/framework]
-                             [org.slf4j/slf4j-api]
-                             [org.slf4j/slf4j-log4j12]
-                             [com.cemerick/url]
-                             [org.apache.curator/curator-test]]
+   :test     {:dependencies   [[me.raynes/fs]
+                               [peridot]
+                               [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
+                               [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
+                               [org.clojure/test.check]
+                               [org.elasticsearch.client/transport]
+                               [org.elasticsearch.test/framework]
+                               [org.slf4j/slf4j-api]
+                               [org.slf4j/slf4j-log4j12]
+                               [com.cemerick/url]
+                               [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
               :env            {:auth-private-key "test-resources/auth_privkey.pem"
                                :auth-public-key  "test-resources/auth_pubkey.pem"}

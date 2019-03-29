@@ -4,7 +4,7 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
@@ -28,19 +28,16 @@
 (def credential-base-uri (str p/service-context credential/resource-type))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "USER"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-user"]})
 
 
 (deftest lifecycle
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a service-group to act as parent for service
         valid-service-group {:name          "my-service-group"

@@ -10,7 +10,7 @@ paging, etc. parameters are not supported.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -26,21 +26,11 @@ paging, etc. parameters are not supported.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "ALL"}
-                           {:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;
@@ -113,7 +103,8 @@ paging, etc. parameters are not supported.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -139,20 +130,13 @@ paging, etc. parameters are not supported.
   (throw (r/ex-bad-method request)))
 
 
-(defn- viewable? [request {:keys [acl] :as entry}]
-  (try
-    (a/can-view? {:acl acl} request)
-    (catch Exception _
-      false)))
-
-
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter (partial viewable? request) (vals @templates)) [])
+        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])
+        options (select-keys request [:query-params :cimi-params])
         count-before-pagination (count entries)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

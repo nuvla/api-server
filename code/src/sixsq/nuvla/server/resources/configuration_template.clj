@@ -5,7 +5,7 @@ configuration information for the micro-services of the Nuvla platform.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -21,18 +21,11 @@ configuration information for the micro-services of the Nuvla platform.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -104,7 +97,8 @@ configuration information for the micro-services of the Nuvla platform.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -128,10 +122,10 @@ configuration information for the micro-services of the Nuvla platform.
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
+        options (select-keys request [:user-id :claims :query-params :cimi-params])
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]

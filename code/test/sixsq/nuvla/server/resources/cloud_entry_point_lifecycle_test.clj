@@ -4,7 +4,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.cloud-entry-point :as t]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -28,8 +28,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "root ADMIN")
-        session-user (header session-anon authn-info-header "jane-updater")]
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane-updater")]
 
     ; retrieve root resource (anonymously should work) and verify schema
     (let [cep (-> session-anon

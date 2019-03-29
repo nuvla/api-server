@@ -35,15 +35,11 @@ must delete the old one and create a new one.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
 ;;
@@ -62,11 +58,8 @@ must delete the old one and create a new one.
 
 (defn user-acl
   [user-id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal user-id
-            :type      "USER"
-            :right     "VIEW"}]})
+  {:owners   ["group/nuvla-admin"]
+   :view-acl [user-id]})
 
 
 (defmethod crud/add-acl resource-type

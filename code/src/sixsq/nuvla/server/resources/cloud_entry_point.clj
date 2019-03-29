@@ -315,7 +315,8 @@ include aggregating values over a collection of resources.
     [clojure.tools.logging :as log]
     [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
     [ring.util.response :as r]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -335,11 +336,8 @@ include aggregating values over a collection of resources.
 (def ^:const resource-type (u/ns->type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-anon"]})
 
 
 ;; dynamically loads all available resources
@@ -361,12 +359,10 @@ include aggregating values over a collection of resources.
 
 (defmethod crud/set-operations resource-type
   [resource request]
-  (try
-    (a/can-modify? resource request)
+  (if (a/can-edit? resource request)
     (let [ops [{:rel (:edit c/action-uri) :href resource-type}]]
       (assoc resource :operations ops))
-    (catch Exception e
-      (dissoc resource :operations))))
+    (dissoc resource :operations)))
 
 
 ;;
@@ -382,7 +378,7 @@ include aggregating values over a collection of resources.
                  {:acl           resource-acl
                   :id            resource-type
                   :resource-type resource-type})]
-    (db/add resource-type record {:user-roles ["ANON"]})))
+    (db/add resource-type record {:nuvla/authn auth/internal-identity})))
 
 
 (defn retrieve-impl
@@ -402,7 +398,7 @@ include aggregating values over a collection of resources.
   [{:keys [body] :as request}]
   (let [current (-> (db/retrieve resource-type {})
                     (assoc :acl resource-acl)
-                    (a/can-modify? request))
+                    (a/throw-cannot-edit request))
         updated (-> body
                     (assoc :base-uri "http://example.org")
                     (u/strip-service-attrs))

@@ -6,7 +6,7 @@ secrets. Creating new Credential resources requires referencing a
 CredentialTemplate resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -24,14 +24,8 @@ CredentialTemplate resource.
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -89,18 +83,15 @@ CredentialTemplate resource.
 
 (defn create-acl
   [id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal id
-            :type      "USER"
-            :right     "MODIFY"}]})
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
 
 
 (defmethod crud/add-acl resource-type
   [{:keys [acl] :as resource} request]
   (if acl
     resource
-    (let [user-id (:identity (a/current-authentication request))]
+    (let [user-id (:user-id (auth/current-authentication request))]
       (assoc resource :acl (create-acl user-id)))))
 
 
@@ -154,24 +145,22 @@ CredentialTemplate resource.
 (defn check-connector-exists
   "Use ADMIN role as we only want to check if href points to an existing
   resource."
-  [body idmap]
-  (let [admin {:identity {:current         "internal",
-                          :authentications {"internal" {:roles #{"ADMIN"}, :identity "internal"}}}}
-        href (get-in body [:template :connector])]
-    (std-crud/resolve-hrefs href admin))
+  [body authn-info]
+  (let [href (get-in body [:template :connector])]
+    (std-crud/resolve-hrefs href auth/internal-identity))
   body)
 
 
 (defn resolve-hrefs
-  [body idmap]
+  [body authn-info]
   (let [connector-href (if (contains? (:template body) :connector)
                          {:connector (get-in body [:template :connector])}
                          {})]                               ;; to put back the unexpanded href after
     (-> body
-        (check-connector-exists idmap)
+        (check-connector-exists authn-info)
         ;; remove connector href (if any); regular user doesn't have rights to see them
         (update-in [:template] dissoc :connector)
-        (std-crud/resolve-hrefs idmap)
+        (std-crud/resolve-hrefs authn-info)
         ;; put back unexpanded connector href
         (update-in [:template] merge connector-href))))
 
@@ -179,13 +168,13 @@ CredentialTemplate resource.
 ;; requires a credential-template to create new credential
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (let [idmap {:identity (:identity request)}
+  (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
             (assoc :resource-type create-type)
             (update-in [:template] dissoc :type)            ;; forces use of template reference
-            (resolve-hrefs idmap)
+            (resolve-hrefs authn-info)
             (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
             crud/validate
             :template

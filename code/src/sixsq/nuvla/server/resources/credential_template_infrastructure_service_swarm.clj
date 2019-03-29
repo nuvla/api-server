@@ -18,11 +18,8 @@ the user's public certificate ('cert'), and the user's private key ('key').
 (def ^:const method "infrastructure-service-swarm")
 
 
-(def ^:const template-acl {:owner {:principal "ADMIN"
-                                   :type      "ROLE"}
-                           :rules [{:principal "USER"
-                                    :type      "ROLE"
-                                    :right     "VIEW"}]})
+(def ^:const template-acl {:owners   ["group/nuvla-admin"]
+                           :view-acl ["group/nuvla-user"]})
 
 
 ;; No reasonable defaults for :infrastructure-services, :ca, :cert, :key.

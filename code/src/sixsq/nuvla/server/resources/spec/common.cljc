@@ -2,7 +2,7 @@
   "Spec definitions for common types used in CIMI resources."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.acl :as cimi-acl]
+    [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]
     [sixsq.nuvla.server.resources.spec.common-operation :as cimi-common-operation]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.util.spec :as su]
@@ -284,25 +284,7 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::acl
-  (-> (st/spec (su/only-keys :req-un [::cimi-acl/owner]
-                             :opt-un [::cimi-acl/rules]))
-      (assoc :name "acl"
-             :json-schema/name "acl"
-             :json-schema/type "map"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "ACL"
-             :json-schema/description "Access Control List for the resource"
-             :json-schema/help "Access Control List (ACL) for the resource"
-             :json-schema/group "acl"
-             :json-schema/category "Access Control List"
-             :json-schema/order 0
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+(s/def ::acl (st/spec ::acl-resource/acl))
 
 
 (def ^:const common-attrs

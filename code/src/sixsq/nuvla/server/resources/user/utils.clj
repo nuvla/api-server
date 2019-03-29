@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
@@ -13,33 +13,6 @@
 
 
 (def ^:const resource-url "user")
-
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
-
-(defn in?
-  "true if coll contains elm."
-  [coll elm]
-  (if (some #(= elm %) coll) true false))
-
-
-(defn admin?
-  "Expects identity map from the request."
-  [identity]
-  (-> identity
-      :authentications
-      (get (:current identity))
-      :roles
-      (in? "ADMIN")))
 
 
 (defn check-password-constraints
@@ -54,19 +27,19 @@
 
 (defn user-id-identity
   [user-id]
-  {:current         user-id,
-   :authentications {user-id {:roles #{"USER"}, :identity user-id}}})
+  {:user-id user-id,
+   :claims  #{user-id "group/nuvla-user"}})
 
 
 (defn create-hashed-password
   [user-id password]
-  (let [request {:params   {:resource-name credential/resource-type}
-                 :identity (user-id-identity user-id)
-                 :body     {:template {:href              (str credential-template/resource-type
-                                                               "/" cthp/method)
-                                       :password          password
-                                       :password-repeated password
-                                       :parent            user-id}}}
+  (let [request {:params      {:resource-name credential/resource-type}
+                 :body        {:template {:href              (str credential-template/resource-type
+                                                                  "/" cthp/method)
+                                          :password          password
+                                          :password-repeated password
+                                          :parent            user-id}}
+                 :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
@@ -75,10 +48,10 @@
 
 (defn create-email
   [user-id email]
-  (let [request {:params   {:resource-name email/resource-type}
-                 :identity (user-id-identity user-id)
-                 :body     {:parent  user-id
-                            :address email}}
+  (let [request {:params      {:resource-name email/resource-type}
+                 :body        {:parent  user-id
+                               :address email}
+                 :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
@@ -87,10 +60,10 @@
 
 (defn create-identifier
   [user-id identifier]
-  (let [request {:params   {:resource-name user-identifier/resource-type}
-                 :identity std-crud/internal-identity
-                 :body     {:parent     user-id
-                            :identifier identifier}}
+  (let [request {:params      {:resource-name user-identifier/resource-type}
+                 :body        {:parent     user-id
+                               :identifier identifier}
+                 :nuvla/authn auth/internal-identity}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
@@ -99,10 +72,10 @@
 
 (defn update-user
   [user-id user-body]
-  (let [request {:params   {:resource-name resource-url
-                            :uuid          (second (str/split user-id #"/"))}
-                 :identity std-crud/internal-identity
-                 :body     user-body}
+  (let [request {:params      {:resource-name resource-url
+                               :uuid          (second (str/split user-id #"/"))}
+                 :body        user-body
+                 :nuvla/authn auth/internal-identity}
         {:keys [status body]} (crud/edit request)]
     (when (not= status 200)
       (throw (ex-info "" body)))))
@@ -110,9 +83,9 @@
 
 (defn delete-user
   [user-id]
-  (let [request {:params   {:resource-name resource-url
-                            :uuid          (second (str/split user-id #"/"))}
-                 :identity std-crud/internal-identity}
+  (let [request {:params      {:resource-name resource-url
+                               :uuid          (second (str/split user-id #"/"))}
+                 :nuvla/authn auth/internal-identity}
         {:keys [status body]} (crud/delete request)]
     (when (not= status 200)
       (throw (ex-info "" body)))))
@@ -126,11 +99,8 @@
 
     (update-user user-id (cond-> {:id                  user-id
                                   :credential-password credential-id
-                                  :acl                 {:owner {:principal "ADMIN"
-                                                                :type      "ROLE"}
-                                                        :rules [{:principal user-id
-                                                                 :type      "USER"
-                                                                 :right     "MODIFY"}]}}
+                                  :acl                 {:owners   ["group/nuvla-admin"]
+                                                        :edit-acl [user-id]}}
                                  email-id (assoc :email email-id)))
 
     (when email

@@ -10,7 +10,8 @@ This is a templated resource. All creation requests must be done via an
 existing infrastructure-service-template resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -28,11 +29,8 @@ existing infrastructure-service-template resource.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 ;;
 ;; initialization
@@ -136,12 +134,12 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [idmap {:identity (:identity request)}
+  (let [authn-info (auth/current-authentication request)
         body (:body request)
         desc-attrs (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
-                               (std-crud/resolve-hrefs idmap true)
+                               (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)

@@ -62,12 +62,13 @@
        (u/not-expired? expiry)
        (key-utils/valid? secret digest)))
 
-(defn create-claims [username roles headers session-id client-ip]
-  (let [server (:slipstream-ssl-server-name headers)]
-    (cond-> {:username username, :roles (str/join " " roles)}
+(defn create-cookie-info [user-id claims headers session-id client-ip]
+  (let [server (:nuvla-ssl-server-name headers)]
+    (cond-> {:user-id user-id,
+             :claims  (str/join " " claims)}
             server (assoc :server server)
             session-id (assoc :session session-id)
-            session-id (update :roles #(str % " " session-id))
+            session-id (update :claims #(str % " " session-id))
             client-ip (assoc :clientIP client-ip))))
 
 (defmethod p/tpl->session authn-method
@@ -75,13 +76,13 @@
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
       (let [session (sutils/create-session {:username identity, :href href} headers authn-method)
-            claims (create-claims identity roles headers (:id session) (:clientIP session))
-            cookie (cookies/claims-cookie claims)
+            cookie-info (create-cookie-info identity roles headers (:id session) (:clientIP session))
+            cookie (cookies/create-cookie cookie-info)
             expires (ts/rfc822->iso8601 (:expires cookie))
-            claims-roles (:roles claims)
+            claims (:claims cookie-info)
             session (cond-> (assoc session :expiry expires)
-                            claims-roles (assoc :roles claims-roles))]
-        (log/debug "api-key cookie token claims for" (u/document-id href) ":" claims)
+                            claims (assoc :roles claims))]
+        (log/debug "api-key cookie token claims for " (u/document-id href) ":" cookie-info)
         (let [cookies {(sutils/cookie-name (:id session)) cookie}]
           (if redirectURI
             [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]

@@ -1,5 +1,4 @@
-(ns sixsq.nuvla.db.es.common.pagination
-  (:require [clojure.tools.logging :as log]))
+(ns sixsq.nuvla.db.es.common.pagination)
 
 (def ^:const max-size 10000)
 

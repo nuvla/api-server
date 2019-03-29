@@ -4,7 +4,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-example :as example]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -18,8 +18,8 @@
   (let [session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "group/nuvla-anon")]
 
     ;; create a callback as an admin
     (let [create-callback-succeeds {:action         example/action-name

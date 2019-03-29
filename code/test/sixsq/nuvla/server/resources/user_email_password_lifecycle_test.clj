@@ -5,7 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -35,9 +35,9 @@
         session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     (with-redefs [email-utils/smtp-cfg (fn []
                                          {:host "smtp@example.com"
@@ -66,7 +66,7 @@
             tags-attr ["one", "two"]
             plaintext-password "Plaintext-password-1"
 
-            uname-alt "jane"
+            uname-alt "user/jane"
 
             no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                   :password plaintext-password
@@ -79,7 +79,7 @@
                          :template    {:href              href
                                        :password          plaintext-password
                                        :password-repeated plaintext-password
-                                       :username          "jane"
+                                       :username          "user/jane"
                                        :email             "jane@example.org"}}
 
             href-create-alt (assoc-in href-create [:template :username] uname-alt)
@@ -147,7 +147,7 @@
                        (ltu/body->edn)
                        (ltu/is-status 201))
               user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))]
+              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
           (let [{credential-id :credential-password,
                  email-id      :email :as user} (-> session-created-user
@@ -242,7 +242,7 @@
                        (ltu/body->edn)
                        (ltu/is-status 409))
               user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))]
+              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
           (let [{:keys [credential-password, email] :as user} (-> session-created-user
                                                                   (request (str p/service-context user-id))
@@ -282,7 +282,7 @@
                        (ltu/body->edn)
                        (ltu/is-status 303))
               user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))
+              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
               uri (-> resp
                       (ltu/location))]
           (is user-id)

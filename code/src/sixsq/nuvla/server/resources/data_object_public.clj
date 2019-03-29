@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-public
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -29,7 +29,7 @@
 (defmethod do/ready-subtype dot/data-object-type
   [resource request]
   (-> resource
-      (a/can-modify? request)
+      (a/can-edit-acl? request)
       (do/verify-state #{do/state-uploading} "ready")
       (s3/set-public-read-object)
       (assoc :state do/state-ready)

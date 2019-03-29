@@ -52,27 +52,12 @@ a username and password pair stored in SlipStream's internal database.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "ALL"}
-                           {:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}
-                           {:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-anon"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ANON"
-                              :type      "ROLE"
-                              :right     "VIEW"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;

@@ -4,7 +4,7 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
@@ -21,7 +21,7 @@
 
   (let [app (ltu/ring-app)
         session-json (content-type (session app) "application/json")
-        session-admin (header session-json authn-info-header "root ADMIN USER ANON")
+        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href (str group-tpl/resource-type "/generic")
 

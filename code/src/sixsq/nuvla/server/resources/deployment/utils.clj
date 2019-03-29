@@ -11,11 +11,10 @@
 
 
 (defn generate-api-key-secret
-  [{:keys [identity] :as request}]
-  (let [
-        request-api-key {:params   {:resource-name credential/resource-type}
-                         :body     {:template {:href (str "credential-template/" cred-api-key/method)}}
-                         :identity identity}
+  [authn-info]
+  (let [request-api-key {:params      {:resource-name credential/resource-type}
+                         :body        {:template {:href (str "credential-template/" cred-api-key/method)}}
+                         :nuvla/authn authn-info}
         {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
     (if (= status 201)
       {:api-key    resource-id
@@ -23,15 +22,15 @@
       (throw (ex-info "" body)))))
 
 
-(defn resolve-module [{:keys [href]} idmap]
-  (let [request-module {:params   {:uuid          (some-> href (str/split #"/") second)
-                                   :resource-name module/resource-type}
-                        :identity idmap}
+(defn resolve-module [{:keys [href]} authn-info]
+  (let [request-module {:params      {:uuid          (some-> href (str/split #"/") second)
+                                      :resource-name module/resource-type}
+                        :nuvla/authn authn-info}
         {:keys [body status] :as module-response} (crud/retrieve request-module)]
     (if (= status 200)
       (let [module-resolved (-> body
                                 (dissoc :versions :operations)
-                                (std-crud/resolve-hrefs idmap true))]
+                                (std-crud/resolve-hrefs authn-info true))]
         (assoc module-resolved :href href))
       (throw (ex-info nil body)))))
 

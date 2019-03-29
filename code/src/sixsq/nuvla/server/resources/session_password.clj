@@ -34,12 +34,12 @@
 ;; transform template into session resource
 ;;
 
-(defn create-claims [user headers session-id client-ip]
-  (let [server (:slipstream-ssl-server-name headers)]
+(defn create-cookie-info [user headers session-id client-ip]
+  (let [server (:nuvla-ssl-server-name headers)]
     (cond-> (auth-password/create-claims user)
             server (assoc :server server)
             session-id (assoc :session session-id)
-            session-id (update :roles #(str % " " session-id))
+            session-id (update :claims #(str % " " session-id))
             client-ip (assoc :clientIP client-ip))))
 
 (defmethod p/tpl->session authn-method
@@ -49,13 +49,13 @@
 
     (if user
       (let [session (sutils/create-session (merge credentials {:href href}) headers authn-method)
-            claims (create-claims user headers (:id session) (:clientIP session))
-            cookie (cookies/claims-cookie claims)
+            cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
+            cookie (cookies/create-cookie cookie-info)
             expires (ts/rfc822->iso8601 (:expires cookie))
-            claims-roles (:roles claims)
+            claims (:claims cookie-info)
             session (cond-> (assoc session :expiry expires)
-                            claims-roles (assoc :roles claims-roles))]
-        (log/debug "password cookie token claims for" (u/document-id href) ":" claims)
+                            claims (assoc :roles claims))]
+        (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
         (let [cookies {(sutils/cookie-name (:id session)) cookie}]
           (if redirectURI
             [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]

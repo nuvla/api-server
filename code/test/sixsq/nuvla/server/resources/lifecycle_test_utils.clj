@@ -20,7 +20,7 @@
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.routes :as routes]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [wrap-authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
@@ -132,9 +132,11 @@
   [m f]
   `((fn [m# f#]
       (let [count# (get-in m# [:response :body :count])]
-        (if (fn? f#)
-          (is (f# count#) "Function of count did not return truthy value")
-          (is (= f# count#) (str "Count wrong, expecting " f# ", got " (or count# "nil"))))
+        (is (number? count#) (str "Count is not a number: " count#))
+        (when (number? count#)
+          (if (fn? f#)
+            (is (f# count#) "Function of count did not return truthy value")
+            (is (= f# count#) (str "Count wrong, expecting " f# ", got " (or count# "nil")))))
         m#)) ~m ~f))
 
 
@@ -407,7 +409,7 @@
       wrap-nested-params
       wrap-params
       wrap-base-uri
-      wrap-authn-info-header
+      wrap-authn-info
       wrap-exceptions
       (wrap-json-body {:keywords? true})
       (wrap-json-response {:pretty true :escape-non-ascii true})

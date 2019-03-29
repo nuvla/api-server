@@ -9,8 +9,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -18,8 +19,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
-    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
@@ -42,9 +43,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 ;; creating a new user is a registration request, so anonymous users must
 ;; be able to view the collection and post requests to it (if a template is
-;; visible to ANON.)
+;; visible to group/nuvla-anon.)
 
-(def collection-acl user-utils/collection-acl)
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-anon"]})
 
 
 ;;
@@ -85,8 +87,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (assoc resource :acl {:owner {:principal "ADMIN"
-                                :type      "ROLE"}}))
+  (assoc resource :acl {:owners ["group/nuvla-admin"]}))
 
 ;;
 ;; template processing
@@ -151,13 +152,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [{:keys [body form-params headers] :as request}]
 
   (try
-    (let [idmap {:identity (:identity request)}
+    (let [authn-info (auth/current-authentication request)
           body (if (u/is-form? headers) (u/convert-form :template form-params) body)
           desc-attrs (u/select-desc-keys body)
           [resp-fragment {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
                                                     (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                                                    (std-crud/resolve-hrefs idmap true)
+                                                    (std-crud/resolve-hrefs authn-info true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
                                                     (:template)
@@ -203,12 +204,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (doseq [children-resource-type children-resource-types]
     (try
       (let [filter (format "%s='%s/%s'" "parent" resource-type (:uuid params))
-            entries (second (db/query children-resource-type {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-                                                              :user-roles  ["ADMIN"]}))]
+            entries (second (db/query children-resource-type
+                                      {:cimi-params {:filter (parser/parse-cimi-filter filter)}
+                                       :nuvla/authn auth/internal-identity}))]
         (doseq [{:keys [id]} entries]
-          (crud/delete {:identity std-crud/internal-identity
-                        :params   {:uuid          (some-> id (str/split #"/") second)
-                                   :resource-name children-resource-type}})))
+          (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
+                                      :resource-name children-resource-type}
+                        :nuvla/authn auth/internal-identity})))
       (catch Exception e
         (log/warn (ex-data e))))))
 
@@ -243,7 +245,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (try
     (let [current (-> (:id body)
                       (db/retrieve request)
-                      (a/can-modify? request))
+                      (a/can-edit-acl? request))
           merged (merge current body)]
       (-> merged
           (dissoc :href)
@@ -282,10 +284,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                   :password-repeated super-password}})
         (if-let [super-user-id (password/identifier->user-id "super")]
           (do (log/info "created user 'super' with identifier" super-user-id)
-              (let [request {:params   {:resource-name group/resource-type
-                                        :uuid          "nuvla-admin"}
-                             :identity std-crud/internal-identity
-                             :body     {:users [super-user-id]}}
+              (let [request {:params      {:resource-name group/resource-type
+                                           :uuid          "nuvla-admin"}
+                             :body        {:users [super-user-id]}
+                             :nuvla/authn auth/internal-identity}
                     {:keys [status body]} (crud/edit request)]
                 (when (not= status 200)
                   (log/error "could not append super in nuvla-admin group!"))))

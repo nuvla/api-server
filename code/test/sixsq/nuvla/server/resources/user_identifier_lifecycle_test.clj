@@ -2,9 +2,10 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [environ.core :as env]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
@@ -17,11 +18,7 @@
 (def base-uri (str p/service-context user-identifier/resource-type))
 
 
-(def valid-acl {:owner {:type      "ROLE"
-                        :principal "ADMIN"}
-                :rules [{:principal "ADMIN"
-                         :right     "ALL"
-                         :type      "ROLE"}]})
+(def valid-acl {:owners ["group/nuvla-admin"]})
 
 
 (def timestamp "1964-08-25T10:00:00.0Z")
@@ -49,9 +46,10 @@
 
   (let [session-anon (-> (session (ltu/ring-app))
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super ADMIN USER ANON")
-        session-jane (header session-anon authn-info-header "user/jane USER ANON")
-        session-tarzan (header session-anon authn-info-header "user/tarzan USER ANON")]
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-jane session-tarzan]]
@@ -68,8 +66,20 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    (doseq [session [session-jane session-tarzan session-admin]]
+    (doseq [session [session-jane session-tarzan]]
       (-> session
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0)))
+
+    (if (env/env :nuvla-super-password)
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1))
+      (-> session-admin
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)

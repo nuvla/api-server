@@ -19,6 +19,7 @@ prefix | true | namespace prefix
 uri | true | full URI associated with the prefix
 "
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -33,18 +34,12 @@ uri | true | full URI associated with the prefix
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -66,14 +61,10 @@ uri | true | full URI associated with the prefix
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-;; FIXME: Roles are needed in two locations!  Should be unique way to specify authentication information.
-(def ^:private all-query-map {:identity       {:current         "slipstream",
-                                               :authentications {"slipstream"
-                                                                 {:identity "slipstream"
-                                                                  :roles    ["ADMIN" "USER" "ANON"]}}}
-                              :params         {:resource-name resource-type}
-                              :user-roles     ["ADMIN" "USER" "ANON"]
-                              :request-method :get})
+;; TODO ACL: Roles are needed in two locations!  Should be unique way to specify authentication information.
+(def ^:private all-query-map {:params         {:resource-name resource-type}
+                              :request-method :get
+                              :nuvla/authn    auth/internal-identity})
 
 (defn extract-field-values
   "returns a set of the values of the field k (as a keyword) from the

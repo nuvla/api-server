@@ -6,11 +6,9 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ADMIN"
-                         :type      "ROLE"
-                         :right     "MODIFY"}]})
+(def valid-acl
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-callback-schema

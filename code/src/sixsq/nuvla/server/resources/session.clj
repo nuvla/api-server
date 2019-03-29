@@ -85,8 +85,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
 session.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -106,17 +107,8 @@ session.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-anon"]
+                     :add   ["group/nuvla-anon"]})
 
 ;;
 ;; validate subclasses of sessions
@@ -156,11 +148,7 @@ session.
 
 (defn create-acl
   [id]
-  {:owner {:principal id
-           :type      "ROLE"}
-   :rules [{:principal "ADMIN"
-            :type      "ROLE"
-            :right     "VIEW"}]})
+  {:owners [id]})
 
 (defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} request]
@@ -176,17 +164,14 @@ session.
   (:method resource))
 
 (defn standard-session-operations
-  "Provides a list of the standard session operations, depending
-   on the user's authentication and whether this is a Session or
-   a SessionCollection."
+  "Provides a list of the standard session operations, depending on the user's
+   authentication and whether this is a Session or a SessionCollection."
   [{:keys [id resource-type] :as resource} request]
-  (try
-    (a/can-modify? resource request)
-    (if (u/is-collection? resource-type)
-      [{:rel (:add c/action-uri) :href id}]
-      [{:rel (:delete c/action-uri) :href id}])
-    (catch Exception _
-      nil)))
+  (if (u/is-collection? resource-type)
+    (when (a/can-add? resource request)
+      [{:rel (:add c/action-uri) :href id}])
+    (when (a/can-delete? resource request)
+      [{:rel (:delete c/action-uri) :href id}])))
 
 ;; Sets the operations for the given resources.  This is a
 ;; multi-method because different types of session resources
@@ -234,7 +219,7 @@ session.
 ;;
 
 (defn add-impl [{:keys [id body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (db/add
     resource-type
     (-> body
@@ -256,15 +241,15 @@ session.
 
 ;; requires a SessionTemplate to create new Session
 (defmethod crud/add resource-type
-  [{:keys [body form-params headers] :as request}]
+  [request]
 
   (try
-    (let [idmap {:identity (:identity request)}
+    (let [authn-info (auth/current-authentication request)
           body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
-                                                    (std-crud/resolve-hrefs idmap true)
+                                                    (std-crud/resolve-hrefs authn-info true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                                     (crud/validate)
                                                     (:template)
@@ -311,8 +296,8 @@ session.
         cookies (delete-cookie response)]
     (merge response cookies)))
 
-(defn add-session-filter [{{:keys [session]} :sixsq.slipstream.authn/claims :as request}]
-  (->> (or session "")
+(defn add-session-filter [{:keys [nuvla/authn] :as request}]
+  (->> (or (:session authn) "")
        (format "id='%s'")
        (parser/parse-cimi-filter)
        (assoc-in request [:cimi-params :filter])))

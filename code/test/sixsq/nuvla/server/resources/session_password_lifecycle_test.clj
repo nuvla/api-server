@@ -7,7 +7,7 @@
     [postal.core :as postal]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
@@ -73,9 +73,9 @@
 
   (let [app (ltu/ring-app)
         session-json (content-type (session app) "application/json")
-        session-anon (header session-json authn-info-header "unknown ANON")
-        session-user (header session-json authn-info-header "user USER")
-        session-admin (header session-json authn-info-header "root ADMIN")
+        session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
+        session-user (header session-json authn-info-header "user group/nuvla-user")
+        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href (str st/resource-type "/password")
 
@@ -132,7 +132,7 @@
 
 
     ;; anon with valid activated user can create session
-    (let [username "jane"
+    (let [username "user/jane"
           plaintext-password "JaneJane-0"
 
           valid-create {:name        name-attr
@@ -171,8 +171,8 @@
                      (ltu/is-status 201))
             id (get-in resp [:response :body :resource-id])
 
-            token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-            claims (if token (sign/unsign-claims token) {})
+            token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value])
+            authn-info (if token (sign/unsign-cookie-info token) {})
 
             uri (ltu/location resp)
             abs-uri (str p/service-context uri)
@@ -186,34 +186,34 @@
                       (ltu/is-status 303))
             id2 (get-in resp2 [:response :body :resource-id])
 
-            token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-            claims2 (if token2 (sign/unsign-claims token2) {})
+            token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value])
+            authn-info2 (if token2 (sign/unsign-cookie-info token2) {})
 
             uri2 (ltu/location resp2)]
 
         ; check claims in cookie
-        (is (= jane-user-id (:username claims)))
-        (is (= #{"USER" "group/nuvla-user"
-                 "ANON" "group/nuvla-anon"
+        (is (= jane-user-id (:user-id authn-info)))
+        (is (= #{"group/nuvla-user"
+                 "group/nuvla-anon"
                  uri}
-               (-> claims
-                   :roles
+               (-> authn-info
+                   :claims
                    (str/split #"\s")
                    set)))
-        (is (= uri (:session claims)))
-        (is (not (nil? (:exp claims))))
+        (is (= uri (:session authn-info)))
+        (is (not (nil? (:exp authn-info))))
 
         ; check claims in cookie for redirect
-        (is (= jane-user-id (:username claims2)))
-        (is (= #{"USER" "group/nuvla-user"
-                 "ANON" "group/nuvla-anon"
+        (is (= jane-user-id (:user-id authn-info2)))
+        (is (= #{"group/nuvla-user"
+                 "group/nuvla-anon"
                  id2}
-               (-> claims2
-                   :roles
+               (-> authn-info2
+                   :claims
                    (str/split #"\s")
                    set)))
-        (is (= id2 (:session claims2)))
-        (is (not (nil? (:exp claims2))))
+        (is (= id2 (:session authn-info2)))
+        (is (not (nil? (:exp authn-info2))))
         (is (= "http://redirect.example.org" uri2))
 
         ; user should not be able to see session without session role
@@ -245,7 +245,7 @@
 
         ; user should be able to see session with session role
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
@@ -255,7 +255,7 @@
 
         ; check contents of session
         (let [{:keys [name description tags] :as body} (-> session-user
-                                                           (header authn-info-header (str "user USER ANON " id))
+                                                           (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            :response
@@ -266,7 +266,7 @@
 
         ; user query with session role should succeed but and have one entry
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request base-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
@@ -274,7 +274,7 @@
 
         ; user with session role can delete resource
         (-> (session app)
-            (header authn-info-header (str "user USER " id))
+            (header authn-info-header (str "user/user group/nuvla-user " id))
             (request abs-uri
                      :request-method :delete)
             (ltu/is-unset-cookie)

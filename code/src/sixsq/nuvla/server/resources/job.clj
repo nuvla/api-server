@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.job
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -16,11 +17,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 ;;
 ;; initialization
@@ -53,7 +51,7 @@
 ;;
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [id (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
         new-job (-> body
@@ -83,7 +81,7 @@
   (try
     (let [current (-> (str resource-type "/" uuid)
                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/can-modify? request))
+                      (a/can-edit-acl? request))
           dissoc-keys (-> (map keyword select)
                           (set)
                           (u/strip-select-from-mandatory-attrs))
@@ -122,8 +120,8 @@
   [{:keys [id] :as resource} request]
   (let [href (str id "/stop")
         collect-op {:rel (:stop c/action-uri) :href href}]
-    (-> (crud/set-standard-operations resource request)
-        (update-in [:operations] conj collect-op))))
+    (cond-> (crud/set-standard-operations resource request)
+            (a/can-manage? resource request) (update-in [:operations] conj collect-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]
@@ -131,7 +129,7 @@
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (a/can-modify? request)
+        (a/can-edit-acl? request)
         (ju/stop)
         (db/edit request))
     (catch Exception e
@@ -148,7 +146,7 @@
                          :targetResource {:href targetResource}
                          :acl            acl}
                         priority (assoc :priority priority))
-        create-request {:params   {:resource-name resource-type}
-                        :identity std-crud/internal-identity
-                        :body     job-map}]
+        create-request {:params      {:resource-name resource-type}
+                        :body        job-map
+                        :nuvla/authn auth/internal-identity}]
     (crud/add create-request)))

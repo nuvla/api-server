@@ -4,7 +4,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-template :as st]
@@ -17,8 +17,8 @@
         session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; should be an existing template already
     (-> session-admin
@@ -70,9 +70,9 @@
         session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; all view actions should be available to anonymous users
     ;; count may not be zero because of session template initialization

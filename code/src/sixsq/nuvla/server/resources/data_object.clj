@@ -5,7 +5,8 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [ring.util.response :as ru]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
@@ -26,14 +27,8 @@
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 (def ^:const state-new "NEW")
@@ -107,11 +102,8 @@
 ;;
 
 (defn create-acl [id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal id
-            :type      "USER"
-            :right     "MODIFY"}]})
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
 
 
 (defmethod crud/add-acl resource-type
@@ -123,26 +115,28 @@
   [{:keys [acl] :as resource} request]
   (if acl
     resource
-    (let [user-id (:identity (a/current-authentication request))]
+    (let [user-id (:user-id (auth/current-authentication request))]
       (assoc resource :acl (create-acl user-id)))))
 
 
 (defn standard-data-object-collection-operations
   [{:keys [id] :as resource} request]
-  (when (a/authorized-modify? resource request)
+  (when (a/can-add? resource request)
     [{:rel (:add c/action-uri) :href id}]))
 
 
 (defn standard-data-object-resource-operations
   [{:keys [id state] :as resource} request]
-  (let [viewable? (a/authorized-view? resource request)
-        modifiable? (a/authorized-modify? resource request)
-        show-upload-op? (and modifiable? (#{state-new state-uploading} state))
-        show-ready-op? (and modifiable? (#{state-uploading} state))
-        show-download-op? (and viewable? (#{state-ready} state))
+  (let [can-view? (a/can-view? resource request)
+        can-edit? (a/can-edit? resource request)
+        can-manage? (a/can-manage? resource request)
+        can-delete? (a/can-delete? resource request)
+        show-upload-op? (and can-manage? (#{state-new state-uploading} state))
+        show-ready-op? (and can-manage? (#{state-uploading} state))
+        show-download-op? (and can-view? (#{state-ready} state)) ;; Exception: use view rather than manage, maybe view-data?
         ops (cond-> []
-                    modifiable? (conj {:rel (:delete c/action-uri) :href id})
-                    modifiable? (conj {:rel (:edit c/action-uri) :href id})
+                    can-delete? (conj {:rel (:delete c/action-uri) :href id})
+                    can-edit? (conj {:rel (:edit c/action-uri) :href id})
                     show-upload-op? (conj {:rel (:upload c/action-uri) :href (str id "/upload")})
                     show-ready-op? (conj {:rel (:ready c/action-uri) :href (str id "/ready")})
                     show-download-op? (conj {:rel (:download c/action-uri) :href (str id "/download")}))]
@@ -195,21 +189,21 @@
 ;;
 
 (defn check-cred-exists
-  [body idmap]
+  [body authn-info]
   (let [href (get-in body [:template :credential])]
-    (std-crud/resolve-hrefs href idmap))
+    (std-crud/resolve-hrefs href authn-info))
   body)
 
 (defn resolve-hrefs
-  [body idmap]
+  [body authn-info]
   (let [os-cred-href (if (contains? (:template body) :credential)
                        {:credential (get-in body [:template :credential])}
                        {})]                                 ;; to put back the unexpanded href after
     (-> body
-        (check-cred-exists idmap)
+        (check-cred-exists authn-info)
         ;; remove connector href (if any); regular user MAY NOT have rights to see it
         (update-in [:template] dissoc :credential)
-        (std-crud/resolve-hrefs idmap)
+        (std-crud/resolve-hrefs authn-info)
         ;; put back unexpanded connector href
         (update-in [:template] merge os-cred-href))))
 
@@ -234,12 +228,12 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
-  (let [idmap {:identity (:identity request)}
+  (a/throw-cannot-add collection-acl request)
+  (let [authn-info (auth/current-authentication request)
         body (-> body
                  (assoc :resource-type create-type)
                  (merge-into-tmpl)
-                 (resolve-hrefs idmap)
+                 (resolve-hrefs authn-info)
                  (crud/validate)
                  :template
                  (tpl->data-object)
@@ -318,7 +312,7 @@
 (defn upload
   [resource request]
   (try
-    (a/can-modify? resource request)
+    (a/can-edit-acl? resource request)
     (let [upload-uri (upload-fn resource request)]
       (db/edit (assoc resource :state state-uploading) request)
       (r/json-response {:uri upload-uri}))
@@ -342,7 +336,7 @@
 (defmethod ready-subtype :default
   [resource request]
   (-> resource
-      (a/can-modify? request)
+      (a/can-edit-acl? request)
       (verify-state #{state-uploading} "ready")
       (assoc :state state-ready)
       (s3/add-s3-size)
@@ -391,7 +385,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)                     ;; exception: use view rather than manage for this
           (download request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -430,7 +424,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-modify? request)
+          (a/can-edit-acl? request)
           (delete request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

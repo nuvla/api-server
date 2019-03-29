@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.module
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -18,11 +19,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -64,7 +62,7 @@
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [[{:keys [type] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
@@ -86,9 +84,9 @@
 
             content-body (merge module-content {:resource-type content-uri})
 
-            content-request {:params   {:resource-name content-url}
-                             :identity std-crud/internal-identity
-                             :body     content-body}
+            content-request {:params      {:resource-name content-url}
+                             :body        content-body
+                             :nuvla/authn auth/internal-identity}
 
             response (crud/add content-request)
 
@@ -121,7 +119,7 @@
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" (-> uuid split-uuid first))
       (db/retrieve request)
-      (a/can-view? request)))
+      (a/throw-cannot-view request)))
 
 
 (defn retrieve-content-id
@@ -145,6 +143,7 @@
                              (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch IndexOutOfBoundsException _
       (r/response-not-found (str resource-type "/" uuid)))
@@ -163,7 +162,7 @@
           (-> body u/strip-service-attrs module-utils/split-resource)
           {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
 
-      (a/can-modify? {:acl acl} request)
+      (a/can-edit-acl? {:acl acl} request)
 
       (if (= "PROJECT" type)
         (let [module-meta (-> (assoc module-meta :type type)
@@ -175,9 +174,9 @@
 
               content-body (merge module-content {:resource-type content-uri})
 
-              content-request {:params   {:resource-name content-url}
-                               :identity std-crud/internal-identity
-                               :body     content-body}
+              content-request {:params      {:resource-name content-url}
+                               :body        content-body
+                               :nuvla/authn auth/internal-identity}
 
               response (crud/add content-request)
 
@@ -207,10 +206,10 @@
 
 (defn delete-content
   [content-id type]
-  (let [delete-request {:params   {:uuid          (-> content-id u/split-resource-id second)
-                                   :resource-name (type->resource-name type)}
-                        :identity std-crud/internal-identity
-                        :body     {:id content-id}}]
+  (let [delete-request {:params      {:uuid          (-> content-id u/split-resource-id second)
+                                      :resource-name (type->resource-name type)}
+                        :body        {:id content-id}
+                        :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
 
 
@@ -242,7 +241,7 @@
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/can-modify? module-meta request)
+          _ (a/can-edit-acl? module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
           request (assoc-in request [:params :uuid] uuid)]

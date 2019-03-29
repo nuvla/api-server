@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-kubernetes
   (:require
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
@@ -46,24 +46,21 @@
            [service request]
            (try
              (let [id (:id service)
-                   user-id (:identity (a/current-authentication request))
+                   user-id (:user-id (auth/current-authentication request))
                    {{job-id     :resource-id
                      job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"
-                                                                {:owner {:principal "ADMIN"
-                                                                         :type      "ROLE"}
-                                                                 :rules [{:principal user-id
-                                                                          :right     "VIEW"
-                                                                          :type      "USER"}]}
+                                                                {:owners   ["group/nuvla-admin"]
+                                                                 :view-acl [user-id]}
                                                                 :priority 50)
                    job-msg (str "starting " id " with async " job-id)]
-                  (when (not= job-status 201)
+               (when (not= job-status 201)
                         (throw (r/ex-response "unable to create async job to start infrastructure service kubernetes" 500 id)))
-                  (-> id
+               (-> id
                       (db/retrieve request)
-                      (a/can-modify? request)
+                      (a/can-edit-acl? request)
                       (assoc :state "STARTING")
                       (db/edit request))
-                  (event-utils/create-event id job-msg (a/default-acl (a/current-authentication request)))
-                  (r/map-response job-msg 202 id job-id))
+               (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+               (r/map-response job-msg 202 id job-id))
              (catch Exception e
                (or (ex-data e) (throw e)))))

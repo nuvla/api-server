@@ -12,14 +12,16 @@
                        common/create-attrs {}
                        common/template-attrs {}
 
-                       ::common/acl {:type       "object",
-                                     :properties {"owner" {:type       "object",
-                                                           :properties {"principal" {:type "keyword"},
-                                                                        "type"      {:type "keyword"}}},
-                                                  "rules" {:type       "object",
-                                                           :properties {"principal" {:type "keyword"},
-                                                                        "type"      {:type "keyword"},
-                                                                        "right"     {:type "keyword"}}}}}
+                       ::common/acl {:properties {"delete"    {:type "keyword"}
+                                                  "edit-acl"  {:type "keyword"}
+                                                  "edit-data" {:type "keyword"}
+                                                  "edit-meta" {:type "keyword"}
+                                                  "manage"    {:type "keyword"}
+                                                  "owners"    {:type "keyword"}
+                                                  "view-acl"  {:type "keyword"}
+                                                  "view-data" {:type "keyword"}
+                                                  "view-meta" {:type "keyword"}}
+                                     :type       "object"}
 
                        ::common/operations {:type "object", :enabled false}
 

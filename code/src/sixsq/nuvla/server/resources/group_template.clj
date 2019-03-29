@@ -6,7 +6,7 @@ creating a group and does not provide any useful defaults.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -22,12 +22,11 @@ creating a group and does not provide any useful defaults.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -91,7 +90,8 @@ creating a group and does not provide any useful defaults.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -107,20 +107,13 @@ creating a group and does not provide any useful defaults.
       (or (ex-data e) (throw e)))))
 
 
-(defn- viewable? [request {:keys [acl] :as entry}]
-  (try
-    (a/can-view? {:acl acl} request)
-    (catch Exception _
-      false)))
-
-
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
-        entries (or (filter (partial viewable? request) (vals @templates)) [])
+        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])
+        options (select-keys request [:user-id :claims :query-params :cimi-params])
         count-before-pagination (count entries)
         wrapped-entries (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
