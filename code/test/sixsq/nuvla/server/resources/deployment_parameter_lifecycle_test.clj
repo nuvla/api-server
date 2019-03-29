@@ -12,7 +12,9 @@
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context dp/resource-type))
+
 
 (def valid-entry
   {:name       "param1"
@@ -28,6 +30,7 @@
    :deployment {:href "deployment/uuid"}
    :acl        {:owners   ["group/nuvla-admin"]
                 :edit-acl ["user/jane"]}})
+
 
 (def valid-complete-entry
   {:name       "complete"
@@ -218,9 +221,7 @@
         (-> session-jane
             (request (str p/service-context "event"))
             (ltu/body->edn)
-            (ltu/is-count 5))
-
-        ))))
+            (ltu/is-count 5))))))
 
 
 (deftest bad-methods

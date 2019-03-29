@@ -45,7 +45,7 @@
   (let [principals-with-admin (conj principals "group/nuvla-admin")]
     (when claims
       (when (some claims principals-with-admin)
-       (get rights-keywords right)))))
+        (get rights-keywords right)))))
 
 
 (defn extract-rights
@@ -156,9 +156,6 @@
   (can-do? resource request ::view-acl))
 
 
-(def ^:const acl-keys #{:acl})
-
-
 (def ^:const metadata-keys #{:id
                              :resource-type
                              :created
@@ -171,36 +168,17 @@
                              :operations})
 
 
-;; FIXME: Decide whether this should throw when user has no right to view resource.
-(defn select-visible-keys
-  "Based on the acl and the authentication information, this function will
-   select only the keys that the user has the right to view. It returns the
-   modified resource. If the user is not allowed to view the resource at all,
-   then nil is returned."
-  [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (auth/current-authentication request) acl)]
-    (cond
-      (rights ::view-acl) resource
-      (rights ::view-data) (dissoc resource :acl)
-      (rights ::view-meta) (select-keys resource metadata-keys)
-      :else nil)))
-
-
 (defn editable-keys
-  "Based on the acl and the authentication information, this function will
-   select only the keys that the user has the right to view. It returns the
-   modified resource. If the user is not allowed to view the resource at all,
-   then nil is returned."
-  [{:keys [acl] :as resource} request]
-  (let [rights (extract-rights (auth/current-authentication request) acl)
-        body-keys (-> resource
-                      keys
-                      set
-                      (set/difference acl-keys metadata-keys))]
-    (cond-> #{}
-            (rights ::edit-meta) (set/union metadata-keys)
-            (rights ::edit-data) (set/union body-keys)
-            (rights ::edit-acl) (set/union acl-keys))))
+  "Based on the rights, this function returns a reduced set of keys that are
+   'editable'. The arguments can either be sequences or sets."
+  [ks rights]
+  (let [key-set (set ks)
+        rights-set (set rights)]
+    (cond
+      (rights-set ::edit-acl) key-set                       ;; no-op, all keys are editable
+      (rights-set ::edit-data) (disj key-set :acl)
+      (rights-set ::edit-meta) (set/intersection key-set metadata-keys)
+      :else #{})))
 
 
 (defn throw-cannot-view

@@ -10,8 +10,8 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -42,7 +42,7 @@
           (db/retrieve request)
           (a/throw-cannot-view request)
           (crud/set-operations request)
-          (r/json-response))
+          r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -51,17 +51,20 @@
   [resource-name]
   (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
     (try
-      (let [current (-> (str resource-name "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/throw-cannot-edit request))
+      (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
+                                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                          (a/throw-cannot-edit request))
+            rights (a/extract-all-rights (auth/current-authentication request) acl)
             dissoc-keys (-> (map keyword select)
-                            (set)
-                            (u/strip-select-from-mandatory-attrs))
+                            set
+                            u/strip-select-from-mandatory-attrs
+                            (a/editable-keys rights))
             current-without-selected (apply dissoc current dissoc-keys)
-            merged (merge current-without-selected body)]
+            editable-body (select-keys body (-> body keys (a/editable-keys rights)))
+            merged (merge current-without-selected editable-body)]
         (-> merged
-            (u/update-timestamps)
-            (crud/validate)
+            u/update-timestamps
+            crud/validate
             (db/edit request)))
       (catch Exception e
         (or (ex-data e) (throw e))))))
