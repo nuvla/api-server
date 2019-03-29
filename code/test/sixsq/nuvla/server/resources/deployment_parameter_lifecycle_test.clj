@@ -24,22 +24,6 @@
                 :edit-acl ["user/jane"]}})
 
 
-(def valid-state-entry
-  {:name       "ss:state"
-   :value      "Provisioning"
-   :deployment {:href "deployment/uuid"}
-   :acl        {:owners   ["group/nuvla-admin"]
-                :edit-acl ["user/jane"]}})
-
-
-(def valid-complete-entry
-  {:name       "complete"
-   :node-id    "machine"
-   :deployment {:href "deployment/uuid"}
-   :acl        {:owners   ["group/nuvla-admin"]
-                :edit-acl ["user/jane"]}})
-
-
 (deftest lifecycle
   (let [session (-> (ltu/ring-app)
                     session
@@ -129,99 +113,19 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;;delete
+      ;; delete
       (-> session-jane
           (request test-uri
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;;record should be deleted
+      ;; record should be deleted
       (-> session-admin
           (request test-uri
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 404))
-
-      (let [state-uri (-> session-admin
-                          (request base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-state-entry))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
-
-            state-abs-uri (str p/service-context state-uri)
-
-
-            complete-uri (-> session-admin
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-complete-entry))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-            abs-complete-uri (str p/service-context complete-uri)]
-
-        (-> session-jane
-            (request abs-complete-uri
-                     :request-method :put
-                     :body (json/write-str {:value "Provisioning"}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
-
-        (-> session-jane
-            (request state-abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :value "Executing"))
-
-        (-> session-jane
-            (request abs-complete-uri
-                     :request-method :put
-                     :body (json/write-str {:value "Executing"}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
-
-
-        (-> session-jane
-            (request state-abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :value "SendingReports"))
-
-        ;; complete same state is idempotent
-        (-> session-jane
-            (request abs-complete-uri
-                     :request-method :put
-                     :body (json/write-str {:value "Executing"}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
-
-        (-> session-jane
-            (request state-abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :value "SendingReports"))
-
-        (-> session-jane
-            (request abs-complete-uri
-                     :request-method :put
-                     :body (json/write-str {:value "SendingReports"}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
-
-        (-> session-jane
-            (request state-abs-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :value "Ready"))
-
-        ;; user should see events created
-        (-> session-jane
-            (request (str p/service-context "event"))
-            (ltu/body->edn)
-            (ltu/is-count 5))))))
+          (ltu/is-status 404)))))
 
 
 (deftest bad-methods
