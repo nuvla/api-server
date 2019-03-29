@@ -234,6 +234,17 @@
       (throw (ru/ex-unauthorized (:id resource))))))
 
 
+(defn throw-cannot-view-data
+  "Will throw an error ring response if the user identified in the request
+   cannot view the data of the given resource; it returns the resource
+   otherwise."
+  [{:keys [id acl] :as resource} request]
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
+    (if (rights ::view-data)
+      resource
+      (throw (ru/ex-unauthorized id)))))
+
+
 (defn throw-cannot-query
   "Will throw an error ring response if the user identified in the request
    cannot query the given collection; it returns the resource otherwise."

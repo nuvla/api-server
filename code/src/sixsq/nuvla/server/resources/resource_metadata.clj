@@ -19,12 +19,12 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def default-resource-acl {:owners   ["group/nuvla-admin"]
-                           :view-acl ["group/nuvla-anon"]})
+(def default-resource-acl {:owners    ["group/nuvla-admin"]
+                           :view-data ["group/nuvla-anon"]})
 
 
-(def collection-acl {:owners   ["group/nuvla-admin"]
-                     :view-acl ["group/nuvla-anon"]})
+(def collection-acl {:owners ["group/nuvla-admin"]
+                     :query  ["group/nuvla-anon"]})
 
 
 ;;
@@ -87,7 +87,8 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view-acl? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -115,7 +116,7 @@
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view-acl? {:acl collection-acl} request)
+  (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries (wrapper-fn request entries)

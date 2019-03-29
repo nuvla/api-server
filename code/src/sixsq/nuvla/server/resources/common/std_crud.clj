@@ -134,13 +134,13 @@
               (str/starts-with? href "https://"))
     (if-let [refdoc (crud/retrieve-by-id href)]
       (try
-        (a/can-view-acl? refdoc {:nuvla/authn authn-info})
+        (a/throw-cannot-view-data refdoc {:nuvla/authn authn-info})
         (-> refdoc
             (u/strip-common-attrs)
             (u/strip-service-attrs)
             (dissoc :acl)
             (merge resource))
-        (catch Exception ex
+        (catch Exception _
           (throw (r/ex-bad-request (format "%s: %s" href-not-accessible-msg href)))))
       (throw (r/ex-bad-request (format "%s: %s" href-not-found-msg href))))
     resource))

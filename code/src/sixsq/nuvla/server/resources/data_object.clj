@@ -385,7 +385,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-view-acl? request)
+          (a/throw-cannot-view request)                     ;; exception: use view rather than manage for this
           (download request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

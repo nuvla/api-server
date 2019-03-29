@@ -119,7 +119,7 @@
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" (-> uuid split-uuid first))
       (db/retrieve request)
-      (a/can-view-acl? request)))
+      (a/throw-cannot-view request)))
 
 
 (defn retrieve-content-id
@@ -143,6 +143,7 @@
                              (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch IndexOutOfBoundsException _
       (r/response-not-found (str resource-type "/" uuid)))

@@ -123,7 +123,8 @@ curl https://nuv.la/api/credential-template
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view-acl? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -149,22 +150,16 @@ curl https://nuv.la/api/credential-template
   (throw (r/ex-bad-method request)))
 
 
-(defn- viewable? [request {:keys [acl] :as entry}]
-  (try
-    (a/can-view-acl? {:acl acl} request)
-    (catch Exception _
-      false)))
-
-
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter (partial viewable? request) (vals @templates)) [])
+        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
+        updated-entries (remove nil? (map #(a/select-viewable-keys % request) entries))
         ;; FIXME: At least the paging options should be supported.
         options (select-keys request [:user-id :claims :query-params :cimi-params])
-        count-before-pagination (count entries)
-        wrapped-entries (wrapper-fn request entries)
+        count-before-pagination (count updated-entries)
+        wrapped-entries (wrapper-fn request updated-entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
