@@ -55,13 +55,22 @@
       false)))
 
 
+(defn extract-user
+  [username]
+  (some-> username
+          identifier->user-id
+          user-id->user))
+
+(defn active-user
+  [username]
+  (-> (extract-user username)
+      (check-user-active)))
+
+
 ;; FIXME: This should call the check-password action on the credential instead of checking locally.
-(defn valid-user
-  [{:keys [username password] :as credentials}]
-  (let [user (some-> username
-                     identifier->user-id
-                     user-id->user
-                     check-user-active)
+(defn valid-user-password
+  [username password]
+  (let [user (active-user username)
         password-hash (some-> user
                               :credential-password
                               credential-id->credential

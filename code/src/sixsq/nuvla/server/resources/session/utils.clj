@@ -9,19 +9,6 @@
     [sixsq.nuvla.server.resources.session :as p]
     [sixsq.nuvla.server.util.response :as r]))
 
-
-(defn cookie-name
-  "Provides the name of the cookie based on the resource ID in the
-   body of the response.  Currently this provides a fixed name to
-   remain compatible with past implementations.
-
-   FIXME: Update the implementation to use the session ID for the cookie name."
-  [resource-id]
-  ;; FIXME: Update the implementation to use the session ID for the cookie name.
-  ;;(str "slipstream." (str/replace resource-id "/" "."))
-  "com.sixsq.nuvla.cookie")
-
-
 (defn validate-action-url-unencoded
   [base-uri session-id]
   (str base-uri session-id "/validate"))
@@ -52,7 +39,7 @@
    header. The result contains the authentication method, the user's identifier,
    the client's IP address, and the virtual host being used. NOTE: The expiry
    is not included and MUST be added afterwards."
-  [{:keys [href username redirectURI]} headers authn-method]
+  [username tpl-href headers authn-method redirectURI]
 
   ;; supports headers that have either string or keyword keys
   ;; ring spec defines headers as lower-cased strings
@@ -60,7 +47,7 @@
         client-ip (or (get headers "x-real-ip") (:x-real-ip headers))]
     (crud/new-identifier
       (cond-> {:method   authn-method
-               :template {:href href}}
+               :template {:href tpl-href}}
               username (assoc :username username)
               server (assoc :server server)
               client-ip (assoc :clientIP client-ip)

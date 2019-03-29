@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-api-key :as st-api-key]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
 
 
 (def ^:const authn-method "api-key")
@@ -75,7 +76,7 @@
   [{:keys [href redirectURI key secret] :as resource} {:keys [headers base-uri] :as request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
-      (let [session (sutils/create-session {:username identity, :href href} headers authn-method)
+      (let [session (sutils/create-session identity href headers authn-method redirectURI)
             cookie-info (create-cookie-info identity roles headers (:id session) (:clientIP session))
             cookie (cookies/create-cookie cookie-info)
             expires (ts/rfc822->iso8601 (:expires cookie))
@@ -83,7 +84,7 @@
             session (cond-> (assoc session :expiry expires)
                             claims (assoc :roles claims))]
         (log/debug "api-key cookie token claims for " (u/document-id href) ":" cookie-info)
-        (let [cookies {(sutils/cookie-name (:id session)) cookie}]
+        (let [cookies {authn-info/authn-cookie cookie}]
           (if redirectURI
             [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
             [{:cookies cookies} session])))

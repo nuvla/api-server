@@ -1,20 +1,16 @@
-(ns sixsq.nuvla.server.resources.session-password-lifecycle-test
+(ns sixsq.nuvla.server.resources.session-password-reset-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
-    [postal.core :as postal]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
-    [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.user :as user]
-    [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
+    [sixsq.nuvla.server.resources.session-password-lifecycle-test :as password-test]
+    [sixsq.nuvla.server.resources.session-template :as st]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -25,49 +21,6 @@
 
 (def session-template-base-uri (str p/service-context st/resource-type))
 
-
-(defn create-user
-  [session-admin & {:keys [username password email activated?]}]
-  (let [validation-link (atom nil)
-        href (str user-tpl/resource-type "/" email-password/registration-method)
-        href-create {:template {:href              href
-                                :password          password
-                                :password-repeated password
-                                :username          username
-                                :email             email}}]
-
-    (with-redefs [email-utils/smtp-cfg (fn []
-                                         {:host "smtp@example.com"
-                                          :port 465
-                                          :ssl  true
-                                          :user "admin"
-                                          :pass "password"})
-
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
-                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
-                                          (reset! validation-link url))
-                                        {:code 0, :error :SUCCESS, :message "OK"})]
-
-      (let [user-id (-> session-admin
-                        (request (str p/service-context user/resource-type)
-                                 :request-method :post
-                                 :body (json/write-str href-create))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))]
-
-        (when activated?
-          (is (re-matches #"^email.*successfully validated$"
-                          (-> session-admin
-                              (request @validation-link)
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              :response
-                              :body
-                              :message))))
-        user-id))))
-
 (deftest lifecycle
 
   (let [app (ltu/ring-app)
@@ -76,7 +29,7 @@
         session-user (header session-json authn-info-header "user group/nuvla-user")
         session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        href (str st/resource-type "/password")
+        href (str st/resource-type "/password-reset")
 
         template-url (str p/service-context href)
 
@@ -84,25 +37,25 @@
         description-attr "description"
         tags-attr ["one", "two"]]
 
-    ;; password session template should exist
+    ;; password reset session template should exist
     (-> session-anon
         (request template-url)
         (ltu/body->edn)
         (ltu/is-status 200))
 
 
-    ;; anon without valid user can not create session
+    ; anon without valid user can not create session
     (let [username "anon"
           plaintext-password "anon"
 
           valid-create {:name        name-attr
                         :description description-attr
                         :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}
+                        :template    {:href         href
+                                      :username     username
+                                      :new-password plaintext-password}}
           valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
-          unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))]
+          unauthorized-create (update-in valid-create [:template :new-password] (constantly "BAD"))]
 
       ; anonymous query should succeed but have no entries
       (-> session-anon
@@ -111,13 +64,13 @@
           (ltu/is-status 200)
           (ltu/is-count zero?))
 
-      ; unauthorized create must return a 403 response
+      ; password not acceptable return a 400 response
       (-> session-anon
           (request base-uri
                    :request-method :post
                    :body (json/write-str unauthorized-create))
           (ltu/body->edn)
-          (ltu/is-status 403))
+          (ltu/is-status 400))
 
       ; unauthorized create with redirect must return a 303
       (-> session-anon
@@ -126,40 +79,48 @@
                    :body (json/write-str valid-create-redirect))
           (ltu/body->edn)
           (ltu/is-status 303)
-          (ltu/is-location-value "http://redirect.example.org?error=invalid%20credentials%20for%20%27anon%27"))
+          (ltu/is-location-value "http://redirect.example.org?error=password%20must%20contain%20at%20least%20one%20uppercase%20character%2C%20one%20lowercase%20character%2C%20one%20digit%2C%20one%20special%20character%2C%20and%20at%20least%208%20characters%20in%20total"))
       )
 
 
-    ;; anon with valid activated user can create session
+    ;; anon with valid activated user can create session via password reset
     (let [username "user/jane"
           plaintext-password "JaneJane-0"
 
           valid-create {:name        name-attr
                         :description description-attr
                         :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}
+                        :template    {:href         href
+                                      :username     username
+                                      :new-password plaintext-password}}
 
           valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
-          unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))
+          unauthorized-create (update-in valid-create [:template :new-password] (constantly "BAD"))
           invalid-create (assoc-in valid-create [:template :invalid] "BAD")
           invalid-create-redirect (assoc-in valid-create-redirect [:template :invalid] "BAD")
-          jane-user-id (create-user session-admin
-                                    :username username
-                                    :password plaintext-password
-                                    :activated? true
-                                    :email "jane@example.org")
-          ]
+          jane-user-id (password-test/create-user session-admin
+                                                  :username username
+                                                  :password plaintext-password
+                                                  :activated? true
+                                                  :email "jane@example.org")]
 
       ; anonymous create must succeed; also with redirect
-      (let [resp (-> session-anon
+
+      (-> session-anon
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-create))
+          (ltu/body->edn)
+          (ltu/dump)
+          (ltu/is-status 201))
+      #_(let [resp (-> session-anon
                      (request base-uri
                               :request-method :post
                               :body (json/write-str valid-create))
                      (ltu/body->edn)
                      (ltu/is-set-cookie)
                      (ltu/is-status 201))
+
             id (get-in resp [:response :body :resource-id])
 
             token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value])
@@ -180,7 +141,8 @@
             token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value])
             authn-info2 (if token2 (sign/unsign-cookie-info token2) {})
 
-            uri2 (ltu/location resp2)]
+            uri2 (ltu/location resp2)
+            ]
 
         ; check claims in cookie
         (is (= jane-user-id (:user-id authn-info)))
@@ -281,39 +243,39 @@
             (ltu/is-status 400)))
 
       ;; admin create with invalid template fails
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str invalid-create))
-          (ltu/body->edn)
-          (ltu/is-status 400))
-
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str invalid-create-redirect))
-          (ltu/body->edn)
-          (ltu/is-status 303))
+      ;(-> session-admin
+      ;    (request base-uri
+      ;             :request-method :post
+      ;             :body (json/write-str invalid-create))
+      ;    (ltu/body->edn)
+      ;    (ltu/is-status 400))
+      ;
+      ;(-> session-admin
+      ;    (request base-uri
+      ;             :request-method :post
+      ;             :body (json/write-str invalid-create-redirect))
+      ;    (ltu/body->edn)
+      ;    (ltu/is-status 303))
       )
 
     ;; anon with valid non activated user cannot create session
-    (let [username "alex"
+    #_(let [username "alex"
           plaintext-password "AlexAlex-0"
 
           valid-create {:name        name-attr
                         :description description-attr
                         :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}
+                        :template    {:href         href
+                                      :username     username
+                                      :new-password plaintext-password}}
 
           valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")]
 
-      (create-user session-admin
-                   :username username
-                   :password plaintext-password
-                   :activated? false
-                   :email "alex@example.org")
+      (password-test/create-user session-admin
+                                 :username username
+                                 :new-password plaintext-password
+                                 :activated? false
+                                 :email "alex@example.org")
 
       ; unauthorized create must return a 403 response
       (-> session-anon
