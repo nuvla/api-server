@@ -164,17 +164,14 @@ session.
   (:method resource))
 
 (defn standard-session-operations
-  "Provides a list of the standard session operations, depending
-   on the user's authentication and whether this is a Session or
-   a SessionCollection."
+  "Provides a list of the standard session operations, depending on the user's
+   authentication and whether this is a Session or a SessionCollection."
   [{:keys [id resource-type] :as resource} request]
-  (try
-    (a/can-edit-acl? resource request)
-    (if (u/is-collection? resource-type)
-      [{:rel (:add c/action-uri) :href id}]
-      [{:rel (:delete c/action-uri) :href id}])
-    (catch Exception _
-      nil)))
+  (if (u/is-collection? resource-type)
+    (when (a/can-add? resource request)
+      [{:rel (:add c/action-uri) :href id}])
+    (when (a/can-delete? resource request)
+      [{:rel (:delete c/action-uri) :href id}])))
 
 ;; Sets the operations for the given resources.  This is a
 ;; multi-method because different types of session resources

@@ -20,7 +20,8 @@
   {:resource-type resource-type
    :action        "collect"
    :acl           {:owners   ["group/nuvla-admin"]
-                   :view-acl ["user/jane"]}})
+                   :view-acl ["user/jane"]
+                   :manage   ["user/jane"]}})
 
 (def zk-job-path-start-subs "/job/entries/entry-")
 

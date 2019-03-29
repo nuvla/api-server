@@ -120,8 +120,8 @@
   [{:keys [id] :as resource} request]
   (let [href (str id "/stop")
         collect-op {:rel (:stop c/action-uri) :href href}]
-    (-> (crud/set-standard-operations resource request)
-        (update-in [:operations] conj collect-op))))
+    (cond-> (crud/set-standard-operations resource request)
+            (a/can-manage? resource request) (update-in [:operations] conj collect-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]

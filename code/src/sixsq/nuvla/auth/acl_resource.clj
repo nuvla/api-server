@@ -137,15 +137,43 @@
       (throw (ru/ex-unauthorized (:id resource))))))
 
 
-(defn modifiable?
-  "Predicate to determine if the given resource can be modified. Returns only
-   true or false."
-  [resource request]
-  (try
-    (can-edit-acl? resource request)
-    true
-    (catch Exception _
-      false)))
+(defn has-right?
+  "Based on the rights derived from the authentication information and the
+   acl, this function returns true if the given `right` is allowed."
+  [right {:keys [acl] :as resource} request]
+  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
+    (boolean (rights-set right))))
+
+
+(def can-delete? (partial has-right? ::delete))
+
+
+(def can-add? (partial has-right? ::add))
+
+
+(def can-manage? (partial has-right? ::manage))
+
+
+(defn can-edit?
+  "Based on the rights derived from the authentication information and the
+   acl, this function returns true if the given `edit-meta`, `edit-data`, or
+   `edit-acl` is allowed."
+  [{:keys [acl] :as resource} request]
+  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
+    (or (rights-set ::edit-meta)
+        (rights-set ::edit-data)
+        (rights-set ::edit-acl))))
+
+
+(defn can-view?
+  "Based on the rights derived from the authentication information and the
+   acl, this function returns true if the given `view-meta`, `view-data`, or
+   `view-acl` is allowed."
+  [{:keys [acl] :as resource} request]
+  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
+    (or (rights-set ::view-meta)
+        (rights-set ::view-data)
+        (rights-set ::view-acl))))
 
 
 (defn can-view-acl?

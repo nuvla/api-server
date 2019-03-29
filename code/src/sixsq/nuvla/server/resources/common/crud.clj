@@ -124,23 +124,20 @@
 
 
 (defn set-standard-collection-operations
-  [{:keys [id acl] :as resource} request]
-  (try
-    (a/throw-cannot-add acl request)
+  [{:keys [id] :as resource} request]
+  (if (a/can-add? resource request)
     (let [ops [{:rel (:add c/action-uri) :href id}]]
       (assoc resource :operations ops))
-    (catch Exception _
-      (dissoc resource :operations))))
+    (dissoc resource :operations)))
 
 
 (defn set-standard-resource-operations
   [{:keys [id] :as resource} request]
-  (try
-    (a/can-edit-acl? resource request)
-    (let [ops [{:rel (:edit c/action-uri) :href id}
-               {:rel (:delete c/action-uri) :href id}]]
-      (assoc resource :operations ops))
-    (catch Exception _
+  (let [ops (cond-> []
+                    (a/can-edit? resource request) (conj {:rel (:edit c/action-uri) :href id})
+                    (a/can-delete? resource request) (conj {:rel (:delete c/action-uri) :href id}))]
+    (if (seq ops)
+      (assoc resource :operations ops)
       (dissoc resource :operations))))
 
 

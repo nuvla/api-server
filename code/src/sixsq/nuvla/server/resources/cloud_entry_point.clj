@@ -359,12 +359,10 @@ include aggregating values over a collection of resources.
 
 (defmethod crud/set-operations resource-type
   [resource request]
-  (try
-    (a/can-edit-acl? resource request)
+  (if (a/can-edit? resource request)
     (let [ops [{:rel (:edit c/action-uri) :href resource-type}]]
       (assoc resource :operations ops))
-    (catch Exception e
-      (dissoc resource :operations))))
+    (dissoc resource :operations)))
 
 
 ;;
@@ -400,7 +398,7 @@ include aggregating values over a collection of resources.
   [{:keys [body] :as request}]
   (let [current (-> (db/retrieve resource-type {})
                     (assoc :acl resource-acl)
-                    (a/can-edit-acl? request))
+                    (a/throw-cannot-edit request))
         updated (-> body
                     (assoc :base-uri "http://example.org")
                     (u/strip-service-attrs))

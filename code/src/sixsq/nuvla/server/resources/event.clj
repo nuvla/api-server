@@ -66,17 +66,14 @@ cloud application and for other important actions.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id acl] :as resource} request]
-  (try
-    (if (u/is-collection? resource-type)
-      (do
-        (a/throw-cannot-add acl request)
-        (let [ops [{:rel (:add c/action-uri) :href id}]]
-          (assoc resource :operations ops)))
-      (do
-        (a/can-edit-acl? resource request)
-        (let [ops [{:rel (:delete c/action-uri) :href id}]]
-          (assoc resource :operations ops))))
-    (catch Exception _
+  (if (u/is-collection? resource-type)
+    (if (a/can-add? resource request)
+      (let [ops [{:rel (:add c/action-uri) :href id}]]
+        (assoc resource :operations ops))
+      (dissoc resource :operations))
+    (if (a/can-edit? resource request)
+      (let [ops [{:rel (:delete c/action-uri) :href id}]]
+        (assoc resource :operations ops))
       (dissoc resource :operations))))
 
 

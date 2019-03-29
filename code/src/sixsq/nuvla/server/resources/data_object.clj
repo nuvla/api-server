@@ -121,20 +121,22 @@
 
 (defn standard-data-object-collection-operations
   [{:keys [id] :as resource} request]
-  (when (a/authorized-edit-acl? resource request)
+  (when (a/can-add? resource request)
     [{:rel (:add c/action-uri) :href id}]))
 
 
 (defn standard-data-object-resource-operations
   [{:keys [id state] :as resource} request]
-  (let [viewable? (a/authorized-view-acl? resource request)
-        modifiable? (a/authorized-edit-acl? resource request)
-        show-upload-op? (and modifiable? (#{state-new state-uploading} state))
-        show-ready-op? (and modifiable? (#{state-uploading} state))
-        show-download-op? (and viewable? (#{state-ready} state))
+  (let [can-view? (a/can-view? resource request)
+        can-edit? (a/can-edit? resource request)
+        can-manage? (a/can-manage? resource request)
+        can-delete? (a/can-delete? resource request)
+        show-upload-op? (and can-manage? (#{state-new state-uploading} state))
+        show-ready-op? (and can-manage? (#{state-uploading} state))
+        show-download-op? (and can-view? (#{state-ready} state)) ;; Exception: use view rather than manage, maybe view-data?
         ops (cond-> []
-                    modifiable? (conj {:rel (:delete c/action-uri) :href id})
-                    modifiable? (conj {:rel (:edit c/action-uri) :href id})
+                    can-delete? (conj {:rel (:delete c/action-uri) :href id})
+                    can-edit? (conj {:rel (:edit c/action-uri) :href id})
                     show-upload-op? (conj {:rel (:upload c/action-uri) :href (str id "/upload")})
                     show-ready-op? (conj {:rel (:ready c/action-uri) :href (str id "/ready")})
                     show-download-op? (conj {:rel (:download c/action-uri) :href (str id "/download")}))]

@@ -128,10 +128,11 @@
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [start-op {:rel (:start c/action-uri) :href (str id "/start")}
-        stop-op {:rel (:stop c/action-uri) :href (str id "/stop")}]
+        stop-op {:rel (:stop c/action-uri) :href (str id "/stop")}
+        can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
-            (#{"CREATED"} state) (update :operations conj start-op)
-            (#{"STARTING" "STARTED" "ERROR"} state) (update :operations conj stop-op)
+            (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
+            (and can-manage? (#{"STARTING" "STARTED" "ERROR"} state)) (update :operations conj stop-op)
             (not (deployment-utils/can-delete? resource)) (update :operations deployment-utils/remove-delete))))
 
 
