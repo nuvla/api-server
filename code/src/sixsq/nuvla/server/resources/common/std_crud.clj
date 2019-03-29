@@ -42,6 +42,7 @@
           (db/retrieve request)
           (a/throw-cannot-view request)
           (crud/set-operations request)
+          (a/select-viewable-keys request)
           r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -107,7 +108,8 @@
       (a/throw-cannot-query collection-acl request)
       (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
             [metadata entries] (db/query resource-name options)
-            entries-and-count (merge metadata (wrapper-fn request entries))]
+            updated-entries (remove nil? (map #(a/select-viewable-keys % request) entries))
+            entries-and-count (merge metadata (wrapper-fn request updated-entries))]
         (r/json-response entries-and-count)))))
 
 

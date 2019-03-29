@@ -181,6 +181,19 @@
       :else #{})))
 
 
+(defn select-viewable-keys
+  "Based on the rights derived from the authentication information and the
+   acl, this function returns a reduced resource containing only keys that are
+   'viewable'. Returns nil if the resource is not viewable at all."
+  [{:keys [acl] :as resource} request]
+  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
+    (cond
+      (rights-set ::view-acl) resource                      ;; no-op, all keys are viewable
+      (rights-set ::view-data) (dissoc resource :acl)
+      (rights-set ::view-meta) (select-keys resource metadata-keys)
+      :else nil)))
+
+
 (defn throw-cannot-view
   "Will throw an error ring response if the user identified in the request
    cannot view the given resource; it returns the resource otherwise."
