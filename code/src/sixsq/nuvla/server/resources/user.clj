@@ -280,8 +280,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                 {:template
                                  {:href              (str p/resource-type "/" username-password/registration-method)
                                   :username          "super"
-                                  :password          super-password
-                                  :password-repeated super-password}})
+                                  :password          super-password}})
         (if-let [super-user-id (password/identifier->user-id "super")]
           (do (log/info "created user 'super' with identifier" super-user-id)
               (let [request {:params      {:resource-name group/resource-type

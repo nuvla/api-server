@@ -43,37 +43,16 @@
              :json-schema/sensitive true)))
 
 
-(s/def ::password-repeated
-  (-> (st/spec string?)
-      (assoc :name "password-repeated"
-             :json-schema/name "password-repeated"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "repeated password"
-             :json-schema/description "repeated password for verification"
-             :json-schema/help "repeated password for verification"
-             :json-schema/group "body"
-             :json-schema/order 23
-             :json-schema/hidden false
-             :json-schema/sensitive true)))
-
-
 ;; no good defaults for these keys, make them optional in template
 (def keys-opt
   {:opt-un [::username
-            ::password
-            ::password-repeated]})
+            ::password]})
 
 
 ;; expanded template must have these keys defined
 (def keys-req
   {:req-un [::username
-            ::password
-            ::password-repeated]})
+            ::password]})
 
 
 (def keys-href

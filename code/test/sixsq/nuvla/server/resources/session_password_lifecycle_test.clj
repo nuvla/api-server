@@ -32,7 +32,6 @@
         href (str user-tpl/resource-type "/" email-password/registration-method)
         href-create {:template {:href              href
                                 :password          password
-                                :password-repeated password
                                 :username          username
                                 :email             email}}]
 

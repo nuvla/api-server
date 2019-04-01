@@ -70,7 +70,6 @@
 
             no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                   :password plaintext-password
-                                                                  :password-repeated plaintext-password
                                                                   :username "alice"
                                                                   :email "alice@example.org"))}
             href-create {:name        name-attr
@@ -78,7 +77,6 @@
                          :tags        tags-attr
                          :template    {:href              href
                                        :password          plaintext-password
-                                       :password-repeated plaintext-password
                                        :username          "user/jane"
                                        :email             "jane@example.org"}}
 

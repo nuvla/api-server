@@ -29,7 +29,8 @@ the process. This template is guaranteed to be present on all server instances.
                        :group            "Login with Username/Password"
                        :username         "username"
                        :new-password     "new-password"
-                       :order            3
+                       :order            30
+                       :hidden           true
                        :icon             "ambulance"
                        :acl              p/resource-acl})
 

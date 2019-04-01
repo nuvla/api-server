@@ -49,17 +49,15 @@ Hashed value of a password.
 ;;
 
 (defmethod p/tpl->credential tpl-hashed-pwd/credential-type
-  [{:keys [type method password password-repeated parent]} request]
-  (if (= password password-repeated)
-    (if (acceptable-password? password)
-      (let [hash (hashers/derive password)]
-        [nil (cond-> {:resource-type p/resource-type
-                      :type          type
-                      :method        method
-                      :hash          hash}
-                     parent (assoc :parent parent))])
-      (throw (r/ex-response acceptable-password-msg 400)))
-    (throw (r/ex-response "mismatched passwords" 400))))
+  [{:keys [type method password parent]} request]
+  (if (acceptable-password? password)
+    (let [hash (hashers/derive password)]
+      [nil (cond-> {:resource-type p/resource-type
+                    :type          type
+                    :method        method
+                    :hash          hash}
+                   parent (assoc :parent parent))])
+    (throw (r/ex-response acceptable-password-msg 400))))
 
 
 ;;
@@ -139,18 +137,15 @@ Hashed value of a password.
 
 
 (defmethod crud/do-action [p/resource-type "change-password"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
       (a/can-edit-acl? resource request)
-      (let [current-password (get-in request [:body :current-password])]
+      (let [{:keys [current-password new-password]} body]
         (if (hashers/check current-password hash)
-          (let [{:keys [new-password new-password-repeated]} (:body request)]
-            (if (= new-password new-password-repeated)
-              (if (acceptable-password? new-password)
-                (let [new-hash (hashers/derive new-password)]
-                  (db/edit (assoc resource :hash new-hash) {:nuvla/authn auth/internal-identity})
-                  (r/map-response "password changed" 200))
-                (throw (r/ex-response acceptable-password-msg 400)))
-              (throw (r/ex-response "mismatched passwords" 400))))
+          (if (acceptable-password? new-password)
+            (let [new-hash (hashers/derive new-password)]
+              (db/edit (assoc resource :hash new-hash) {:nuvla/authn auth/internal-identity})
+              (r/map-response "password changed" 200))
+            (throw (r/ex-response acceptable-password-msg 400)))
           (throw (r/ex-response "invalid password" 403)))))))

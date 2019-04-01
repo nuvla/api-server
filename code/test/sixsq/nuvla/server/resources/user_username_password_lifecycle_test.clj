@@ -52,14 +52,12 @@
 
           no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                 :password plaintext-password
-                                                                :password-repeated plaintext-password
                                                                 :username "alice"))}
           href-create {:name        name-attr
                        :description description-attr
                        :tags        tags-attr
                        :template    {:href              template-href
                                      :password          plaintext-password
-                                     :password-repeated plaintext-password
                                      :username          "user/jane"}}
 
           href-create-alt (assoc-in href-create [:template :username] uname-alt)

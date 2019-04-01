@@ -23,15 +23,14 @@
              :type              hashed-password/credential-type
              :method            hashed-password/method
 
-             :password          "hello"
-             :password-repeated "hello"}]
+             :password          "hello"}]
 
     (stu/is-valid ::hashed-password-spec/schema tpl)
 
     ;; mandatory keys
-    (doseq [k (-> tpl (dissoc :password :password-repeated) keys set)]
+    (doseq [k (-> tpl (dissoc :password) keys set)]
       (stu/is-invalid ::hashed-password-spec/schema (dissoc tpl k)))
 
     ;; optional keys
-    (doseq [k #{:password :password-repeated}]
+    (doseq [k #{:password}]
       (stu/is-valid ::hashed-password-spec/schema (dissoc tpl k)))))
