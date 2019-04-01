@@ -1,20 +1,20 @@
 (ns sixsq.nuvla.server.resources.session-password-reset
   (:require
+    [buddy.hashers :as hashers]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.password :as auth-password]
+    [sixsq.nuvla.server.resources.callback :as callback]
+    [sixsq.nuvla.server.resources.callback-user-password-reset :as user-password-reset]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.session :as p]
-    [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.session-password :as session-password]
-    [sixsq.nuvla.server.resources.spec.session-template-password-reset :as st-password-reset]
-    [sixsq.nuvla.server.resources.callback-user-password-reset :as user-password-reset]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
-    [sixsq.nuvla.server.resources.callback :as callback]
-    [buddy.hashers :as hashers]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.session :as p]
+    [sixsq.nuvla.server.resources.session-password :as session-password]
+    [sixsq.nuvla.server.resources.spec.session :as session]
+    [sixsq.nuvla.server.resources.spec.session-template-password-reset :as st-password-reset]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const authn-method "password-reset")
@@ -78,7 +78,7 @@
       (-> (create-user-password-reset-callback base-uri user-id callback-data)
           (email-utils/send-password-reset-email email-address))
 
-      [{} session])))
+      [(dissoc cookie-header :cookies) session])))
 
 
 ;;

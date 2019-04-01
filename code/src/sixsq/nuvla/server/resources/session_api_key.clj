@@ -4,6 +4,7 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-api-key :as st-api-key]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const authn-method "api-key")
