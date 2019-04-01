@@ -8,8 +8,8 @@
 
   :url "https://github.com/nuvla/server"
 
-  :license {:name "Apache 2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+  :license {:name         "Apache 2.0"
+            :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
@@ -75,8 +75,8 @@
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
-              :env            {:auth-private-key "test-resources/auth_privkey.pem"
-                               :auth-public-key  "test-resources/auth_pubkey.pem"}
+              :env            {:nuvla-session-key "test-resources/session.key"
+                               :nuvla-session-crt "test-resources/session.crt"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]}
    })
