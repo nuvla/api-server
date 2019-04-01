@@ -60,6 +60,7 @@
   (let [{user-id       :id
          credential-id :credential-password
          email-id      :email :as user} (auth-password/active-user username)
+
         {email-address :address :as email} (when email-id
                                              (crud/retrieve-by-id-as-admin email-id))
         credential (when credential-id
@@ -69,11 +70,13 @@
       (throw-exception (str "invalid username '" username "'") redirectURI))
 
     (let [[cookie-header session] (session-password/create-session-password username user headers redirectURI href)
-          callback-data {:cookie-header cookie-header
+
+          callback-data {:redirectURI   redirectURI
+                         :cookies       (:cookies cookie-header)
                          :hash-password (hashers/derive new-password)}]
 
       (-> (create-user-password-reset-callback base-uri user-id callback-data)
-          (email-utils/send-validation-email email-address))
+          (email-utils/send-password-reset-email email-address))
 
       [{} session])))
 
