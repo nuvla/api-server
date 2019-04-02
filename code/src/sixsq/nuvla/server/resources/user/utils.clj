@@ -16,10 +16,8 @@
 
 
 (defn check-password-constraints
-  [{:keys [password password-repeated]}]
+  [{:keys [password]}]
   (cond
-    (not (and password password-repeated)) (throw (r/ex-bad-request "both password fields must be specified"))
-    (not= password password-repeated) (throw (r/ex-bad-request "password fields must be identical"))
     (not (hashed-password/acceptable-password? password)) (throw (r/ex-bad-request
                                                                    hashed-password/acceptable-password-msg)))
   true)
@@ -37,7 +35,6 @@
                  :body        {:template {:href              (str credential-template/resource-type
                                                                   "/" cthp/method)
                                           :password          password
-                                          :password-repeated password
                                           :parent            user-id}}
                  :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]

@@ -10,8 +10,8 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]))
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))

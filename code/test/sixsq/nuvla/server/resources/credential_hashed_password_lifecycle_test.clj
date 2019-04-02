@@ -45,15 +45,13 @@
 
         create-no-href {:template (-> template
                                       ltu/strip-unwanted-attrs
-                                      (assoc :password plaintext-password
-                                             :password-repeated plaintext-password))}
+                                      (assoc :password plaintext-password))}
 
         create-href {:name        name-attr
                      :description description-attr
                      :tags        tags-attr
                      :template    {:href              href
-                                   :password          plaintext-password
-                                   :password-repeated plaintext-password}}]
+                                   :password          plaintext-password}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -168,17 +166,7 @@
                 (request change-pwd-url
                          :request-method :post
                          :body (json/write-str {:current-password      plaintext-password
-                                                :new-password          new-password
-                                                :new-password-repeated "WRONG_password_69"}))
-                (ltu/body->edn)
-                (ltu/is-status 400))
-
-            (-> session-user
-                (request change-pwd-url
-                         :request-method :post
-                         :body (json/write-str {:current-password      plaintext-password
-                                                :new-password          new-password
-                                                :new-password-repeated new-password}))
+                                                :new-password          new-password}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 

@@ -24,7 +24,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -141,55 +140,35 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (merge user-attrs-defaults resource))
 
-(defn merge-attrs
-  [[fragment m] desc-attrs]
-  [fragment (merge m desc-attrs)])
-
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; requires a user-template to create new User
 (defmethod crud/add resource-type
-  [{:keys [body form-params headers] :as request}]
+  [{:keys [body] :as request}]
 
   (try
+
     (let [authn-info (auth/current-authentication request)
-          body (if (u/is-form? headers) (u/convert-form :template form-params) body)
           desc-attrs (u/select-desc-keys body)
-          [resp-fragment {:keys [id] :as body}] (-> body
-                                                    (assoc :resource-type create-type)
-                                                    (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                                                    (std-crud/resolve-hrefs authn-info true)
-                                                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                                                    (crud/validate)
-                                                    (:template)
-                                                    (merge-with-defaults)
-                                                    (tpl->user request) ;; returns a tuple [response-fragment, resource-body]
-                                                    (merge-attrs desc-attrs))]
+          user (-> body
+                   (assoc :resource-type create-type)
+                   (update-in [:template] dissoc :method :id) ;; forces use of template reference
+                   (std-crud/resolve-hrefs authn-info true)
+                   (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                   (crud/validate)
+                   (:template)
+                   (merge-with-defaults)
+                   (tpl->user request)                      ;; returns a tuple [response-fragment, resource-body]
+                   (merge desc-attrs))]
 
-      (cond
+      (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
+        (when (and resource-id (= 201 status))
+          (post-user-add (assoc user :id resource-id) request))
+        result))
 
-        ;; pure redirect that hasn't created a user account
-        (and resp-fragment (nil? body)) resp-fragment
-
-        ;; requested redirect with method that created a user
-        (and resp-fragment body) (let [{{:keys [status resource-id]} :body} (add-impl
-                                                                              (assoc request :id id :body body))]
-                                   (when (and resource-id (= 201 status))
-                                     (post-user-add (assoc body :id resource-id) request))
-                                   (cond-> resp-fragment
-                                           resource-id (assoc-in [:body :resource-id] resource-id)))
-
-        ;; normal case: no redirect and user was created
-        :else (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :id id :body body))]
-                (when (and resource-id (= 201 status))
-                  (post-user-add (assoc body :id resource-id) request))
-                result)))
     (catch Exception e
-      (let [redirectURI (get-in body [:template :redirectURI])
-            {:keys [status] :as http-response} (ex-data e)]
-        (if (and redirectURI (= 400 status))
-          (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))
-          (or http-response (throw e)))))))
+      (or (ex-data e)
+          (throw e)))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -280,15 +259,14 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                 {:template
                                  {:href              (str p/resource-type "/" username-password/registration-method)
                                   :username          "super"
-                                  :password          super-password
-                                  :password-repeated super-password}})
+                                  :password          super-password}})
         (if-let [super-user-id (password/identifier->user-id "super")]
           (do (log/info "created user 'super' with identifier" super-user-id)
               (let [request {:params      {:resource-name group/resource-type
                                            :uuid          "nuvla-admin"}
                              :body        {:users [super-user-id]}
                              :nuvla/authn auth/internal-identity}
-                    {:keys [status body]} (crud/edit request)]
+                    {:keys [status]} (crud/edit request)]
                 (when (not= status 200)
                   (log/error "could not append super in nuvla-admin group!"))))
           (log/error "could not create user 'super'")))

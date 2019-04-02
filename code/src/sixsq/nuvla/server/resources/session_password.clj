@@ -4,6 +4,7 @@
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session :as p]
@@ -21,11 +22,13 @@
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::session/session))
+
 (defmethod p/validate-subtype authn-method
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::st-password/schema-create))
+
 (defmethod p/create-validate-subtype authn-method
   [resource]
   (create-validate-fn resource))
@@ -42,32 +45,34 @@
             session-id (update :claims #(str % " " session-id))
             client-ip (assoc :clientIP client-ip))))
 
-(defmethod p/tpl->session authn-method
-  [{:keys [href redirectURI] :as resource} {:keys [headers base-uri] :as request}]
-  (let [{:keys [username] :as credentials} (select-keys resource #{:username :password})
-        user (auth-password/valid-user credentials)]
 
-    (if user
-      (let [session (sutils/create-session (merge credentials {:href href}) headers authn-method)
-            cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
-            cookie (cookies/create-cookie cookie-info)
-            expires (ts/rfc822->iso8601 (:expires cookie))
-            claims (:claims cookie-info)
-            session (cond-> (assoc session :expiry expires)
-                            claims (assoc :roles claims))]
-        (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
-        (let [cookies {(sutils/cookie-name (:id session)) cookie}]
-          (if redirectURI
-            [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
-            [{:cookies cookies} session])))
-      (if redirectURI
-        (throw (r/ex-redirect (str "invalid credentials for '" username "'") nil redirectURI))
-        (throw (r/ex-unauthorized username))))))
+
+(defn create-session-password
+  [username user headers href]
+  (if user
+    (let [session (sutils/create-session username href headers authn-method)
+          cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
+          cookie (cookies/create-cookie cookie-info)
+          expires (ts/rfc822->iso8601 (:expires cookie))
+          claims (:claims cookie-info)
+          session (cond-> (assoc session :expiry expires)
+                          claims (assoc :roles claims))
+          cookies {authn-info/authn-cookie cookie}]
+      (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
+      [{:cookies cookies} session])
+    (throw (r/ex-unauthorized username))))
+
+
+(defmethod p/tpl->session authn-method
+  [{:keys [href username password] :as resource} {:keys [headers] :as request}]
+  (let [user (auth-password/valid-user-password username password)]
+    (create-session-password username user headers href)))
 
 
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::session/session))

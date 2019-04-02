@@ -26,33 +26,12 @@
              :json-schema/sensitive true)))
 
 
-(s/def ::password-repeated
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "password-repeated"
-             :json-schema/name "password-repeated"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "password repeated"
-             :json-schema/description "plaintext password repeated"
-             :json-schema/help "plaintext password repeated"
-             :json-schema/group "body"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive true)))
-
-
 (def credential-template-keys-spec
-  {:opt-un [::password
-            ::password-repeated]})
+  {:opt-un [::password]})
 
 
 (def credential-template-create-keys-spec
-  {:req-un [::password
-            ::password-repeated]})
+  {:req-un [::password]})
 
 
 ;; Defines the contents of the resource itself.

@@ -79,3 +79,30 @@
     (catch Exception e
       (let [error-msg "server configuration for SMTP is missing"]
         (throw (ex-info error-msg (r/map-response error-msg 500)))))))
+
+
+(def password-reset-email-body
+  (partial format
+           (str/join "\n"
+                     ["To reset your password visit:"
+                      "\n    %s\n"
+                      "If you did not initiate this request, do NOT click on the link and report"
+                      "this to the service administrator."])))
+
+
+(defn send-password-reset-email [callback-url address]
+  (try
+    (let [{:keys [user] :as smtp} (smtp-cfg)]
+      (let [sender (or user "administrator")
+            body (password-reset-email-body callback-url)
+            msg {:from    sender
+                 :to      [address]
+                 :subject "reset password"
+                 :body    body}
+            resp (postal/send-message smtp msg)]
+        (if-not (= :SUCCESS (:error resp))
+          (let [msg (str "cannot send password reset email: " (:message resp))]
+            (throw (r/ex-bad-request msg))))))
+    (catch Exception e
+      (let [error-msg "server configuration for SMTP is missing"]
+        (throw (ex-info error-msg (r/map-response error-msg 500)))))))

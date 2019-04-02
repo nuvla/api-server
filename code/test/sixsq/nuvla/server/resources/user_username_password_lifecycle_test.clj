@@ -52,24 +52,17 @@
 
           no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                 :password plaintext-password
-                                                                :password-repeated plaintext-password
                                                                 :username "alice"))}
           href-create {:name        name-attr
                        :description description-attr
                        :tags        tags-attr
                        :template    {:href              template-href
                                      :password          plaintext-password
-                                     :password-repeated plaintext-password
                                      :username          "user/jane"}}
-
-          href-create-alt (assoc-in href-create [:template :username] uname-alt)
-
-          href-create-redirect (assoc-in href-create-alt [:template :redirectURI] "http://redirect.example.org")
 
           invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
 
-          bad-params-create (assoc-in href-create [:template :invalid] "BAD")
-          bad-params-create-redirect (assoc-in href-create-redirect [:template :invalid] "BAD")]
+          bad-params-create (assoc-in href-create [:template :invalid] "BAD")]
 
 
       ;; user collection query should succeed but be empty for all users
@@ -109,15 +102,6 @@
                      :body (json/write-str bad-params-create))
             (ltu/body->edn)
             (ltu/is-status 400)))
-
-      (doseq [session [session-anon session-user session-admin]]
-        (-> session
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str bad-params-create-redirect))
-            (ltu/body->edn)
-            (ltu/is-status 303)))
-
 
       ;; create user, username-password template is only accessible by admin
       (let [resp (-> session-admin
@@ -240,88 +224,4 @@
             (request (str p/service-context user-id))
             (ltu/body->edn)
             (ltu/is-status 404)))
-
-      ;; create user with redirect
-      (let [resp (-> session-admin
-                     (request base-uri
-                              :request-method :post
-                              :body (json/write-str href-create-redirect))
-                     (ltu/body->edn)
-                     (ltu/is-status 303))
-            user-id (get-in resp [:response :body :resource-id])
-            username-id (get-in href-create-redirect [:template :username])
-            session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
-            uri (ltu/location resp)]
-
-        (is user-id)
-        (is (= "http://redirect.example.org" uri))
-
-        (let [{:keys [credential-password] :as user} (-> session-created-user
-                                                         (request (str p/service-context user-id))
-                                                         (ltu/body->edn)
-                                                         (ltu/is-status 200)
-                                                         (get-in [:response :body]))]
-
-          ; credential password is created and visible by the created user
-          (-> session-created-user
-              (request (str p/service-context credential-password))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          (-> session-user
-              (request (str p/service-context credential-password))
-              (ltu/body->edn)
-              (ltu/is-status 403))
-
-          ; 1 identifier for the username is visible for the created user; find by identifier
-          (-> session-created-user
-              (content-type "application/x-www-form-urlencoded")
-              (request (str p/service-context user-identifier/resource-type)
-                       :request-method :put
-                       :body (rc/form-encode {:filter (format "identifier='%s'" username-id)}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count 1))
-
-          ;; find identifiers by parent
-          (-> session-created-user
-              (content-type "application/x-www-form-urlencoded")
-              (request (str p/service-context user-identifier/resource-type)
-                       :request-method :put
-                       :body (rc/form-encode {:filter (format "parent='%s'" user-id)}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count 1))
-
-          (-> session-admin
-              (request (str p/service-context user-id))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          ; user can delete his account
-          (-> session-created-user
-              (request (str p/service-context user-id)
-                       :request-method :delete)
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          (-> session-created-user
-              (request (str p/service-context credential-password))
-              (ltu/body->edn)
-              (ltu/is-status 404))
-
-          ;; password credential is gone
-          (-> session-created-user
-              (request (str p/service-context credential-password))
-              (ltu/body->edn)
-              (ltu/is-status 404))
-
-          ;; all identifiers pointing to user are gone
-          (-> session-created-user
-              (content-type "application/x-www-form-urlencoded")
-              (request (str p/service-context user-identifier/resource-type)
-                       :request-method :put
-                       :body (rc/form-encode {:filter (format "parent='%s'" user-id)}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count 0)))))))
+      )))

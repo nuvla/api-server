@@ -29,11 +29,8 @@
 ;;
 
 (defmethod p/tpl->user email-password/registration-method
-  [{:keys [redirectURI] :as resource} request]
-  (let [user-map (password-utils/create-user-map resource)]
-    (if redirectURI
-      [{:status 303, :headers {"Location" redirectURI}} user-map]
-      [nil user-map])))
+  [resource request]
+  (password-utils/create-user-map resource))
 
 
 ;;

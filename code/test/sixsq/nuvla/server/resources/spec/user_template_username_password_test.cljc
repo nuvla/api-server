@@ -27,7 +27,6 @@
              :instance          username-password/registration-method
 
              :password          "plaintext-password"
-             :password-repeated "plaintext-password"
              :username          "super"}
 
         create-tpl {:name          "my-create"
@@ -43,7 +42,7 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :method}]
       (stu/is-invalid ::spec-username-password/schema (dissoc tpl attr)))
 
-    (doseq [attr #{:name :description :tags :password :password-repeated :email}]
+    (doseq [attr #{:name :description :tags :password :email}]
       (stu/is-valid ::spec-username-password/schema (dissoc tpl attr)))
 
     ;; check the create template schema (with href)
@@ -56,7 +55,7 @@
       (stu/is-invalid ::spec-username-password/schema-create (dissoc create-tpl attr)))
 
     ;; mandatory template attributes
-    (doseq [attr #{:password :password-repeated :email}]
+    (doseq [attr #{:password :email}]
       (let [create-tpl (assoc create-tpl :template (dissoc tpl attr))]
         (stu/is-invalid ::spec-username-password/schema-create create-tpl)))
 

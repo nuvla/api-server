@@ -7,11 +7,10 @@
     [postal.core :as postal]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
-    [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
@@ -24,7 +23,7 @@
 (def base-uri (str p/service-context session/resource-type))
 
 
-(def session-template-base-uri (str p/service-context ct/resource-type))
+(def session-template-base-uri (str p/service-context st/resource-type))
 
 
 (defn create-user
@@ -33,7 +32,6 @@
         href (str user-tpl/resource-type "/" email-password/registration-method)
         href-create {:template {:href              href
                                 :password          password
-                                :password-repeated password
                                 :username          username
                                 :email             email}}]
 
@@ -102,7 +100,6 @@
                         :template    {:href     href
                                       :username username
                                       :password plaintext-password}}
-          valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
           unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))]
 
       ; anonymous query should succeed but have no entries
@@ -119,15 +116,6 @@
                    :body (json/write-str unauthorized-create))
           (ltu/body->edn)
           (ltu/is-status 403))
-
-      ; unauthorized create with redirect must return a 303
-      (-> session-anon
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str valid-create-redirect))
-          (ltu/body->edn)
-          (ltu/is-status 303)
-          (ltu/is-location-value "http://redirect.example.org?error=invalid%20credentials%20for%20%27anon%27"))
       )
 
 
@@ -142,10 +130,7 @@
                                       :username username
                                       :password plaintext-password}}
 
-          valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
-          unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))
           invalid-create (assoc-in valid-create [:template :invalid] "BAD")
-          invalid-create-redirect (assoc-in valid-create-redirect [:template :invalid] "BAD")
           jane-user-id (create-user session-admin
                                     :username username
                                     :password plaintext-password
@@ -153,15 +138,7 @@
                                     :email "jane@example.org")
           ]
 
-      ; unauthorized create must return a 403 response
-      (-> session-anon
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str unauthorized-create))
-          (ltu/body->edn)
-          (ltu/is-status 403))
-
-      ; anonymous create must succeed; also with redirect
+      ; anonymous create must succeed
       (let [resp (-> session-anon
                      (request base-uri
                               :request-method :post
@@ -171,25 +148,11 @@
                      (ltu/is-status 201))
             id (get-in resp [:response :body :resource-id])
 
-            token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value])
+            token (get-in resp [:response :cookies authn-cookie :value])
             authn-info (if token (sign/unsign-cookie-info token) {})
 
             uri (ltu/location resp)
-            abs-uri (str p/service-context uri)
-
-            resp2 (-> session-anon
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str valid-create-redirect))
-                      (ltu/body->edn)
-                      (ltu/is-set-cookie)
-                      (ltu/is-status 303))
-            id2 (get-in resp2 [:response :body :resource-id])
-
-            token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value])
-            authn-info2 (if token2 (sign/unsign-cookie-info token2) {})
-
-            uri2 (ltu/location resp2)]
+            abs-uri (str p/service-context uri)]
 
         ; check claims in cookie
         (is (= jane-user-id (:user-id authn-info)))
@@ -202,19 +165,6 @@
                    set)))
         (is (= uri (:session authn-info)))
         (is (not (nil? (:exp authn-info))))
-
-        ; check claims in cookie for redirect
-        (is (= jane-user-id (:user-id authn-info2)))
-        (is (= #{"group/nuvla-user"
-                 "group/nuvla-anon"
-                 id2}
-               (-> authn-info2
-                   :claims
-                   (str/split #"\s")
-                   set)))
-        (is (= id2 (:session authn-info2)))
-        (is (not (nil? (:exp authn-info2))))
-        (is (= "http://redirect.example.org" uri2))
 
         ; user should not be able to see session without session role
         (-> session-user
@@ -296,13 +246,6 @@
                    :body (json/write-str invalid-create))
           (ltu/body->edn)
           (ltu/is-status 400))
-
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str invalid-create-redirect))
-          (ltu/body->edn)
-          (ltu/is-status 303))
       )
 
     ;; anon with valid non activated user cannot create session
@@ -314,9 +257,7 @@
                         :tags        tags-attr
                         :template    {:href     href
                                       :username username
-                                      :password plaintext-password}}
-
-          valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")]
+                                      :password plaintext-password}}]
 
       (create-user session-admin
                    :username username

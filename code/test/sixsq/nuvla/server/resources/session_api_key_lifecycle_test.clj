@@ -7,7 +7,7 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-api-key :as api-key-tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
@@ -128,7 +128,6 @@
                           :template    {:href   href
                                         :key    uuid
                                         :secret secret}}
-            valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
             unauthorized-create (update-in valid-create [:template :secret] (constantly bad-digest))
             invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
@@ -157,41 +156,18 @@
                        (ltu/is-status 201))
               id (get-in resp [:response :body :resource-id])
 
-              token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value])
+              token (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})
 
               uri (-> resp
                       (ltu/location))
-              abs-uri (str p/service-context uri)
-
-              resp2 (-> session-anon
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create-redirect))
-                        (ltu/body->edn)
-                        (ltu/is-set-cookie)
-                        (ltu/is-status 303))
-              id2 (get-in resp2 [:response :body :resource-id])
-
-              token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value])
-              cookie-info2 (if token2 (sign/unsign-cookie-info token2) {})
-
-              uri2 (-> resp2
-                       (ltu/location))
-              abs-uri2 (str p/service-context uri2)]
+              abs-uri (str p/service-context uri)]
 
           ;; check cookie-info in cookie
           (is (= "user/jane" (:user-id cookie-info)))
           (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
           (is (= uri (:session cookie-info)))               ;; uri is also session id
           (is (not (nil? (:exp cookie-info))))
-
-          ;; check cookie-info in cookie for redirect
-          (is (= "user/jane" (:user-id cookie-info2)))
-          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" id2]) (:claims cookie-info2))) ;; uri is also session id
-          (is (= id2 (:session cookie-info2)))              ;; uri is also session id
-          (is (not (nil? (:exp cookie-info2))))
-          (is (= "http://redirect.example.org" uri2))
 
           ;; user should not be able to see session without session role
           (-> session-user
