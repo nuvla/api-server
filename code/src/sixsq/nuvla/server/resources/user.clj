@@ -140,10 +140,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [resource]
   (merge user-attrs-defaults resource))
 
-(defn merge-attrs
-  [[fragment m] desc-attrs]
-  [fragment (merge m desc-attrs)])
-
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 ;; requires a user-template to create new User
@@ -151,37 +147,25 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [{:keys [body] :as request}]
 
   (try
+
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          [resp-fragment {:keys [id] :as body}] (-> body
-                                                    (assoc :resource-type create-type)
-                                                    (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                                                    (std-crud/resolve-hrefs authn-info true)
-                                                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                                                    (crud/validate)
-                                                    (:template)
-                                                    (merge-with-defaults)
-                                                    (tpl->user request) ;; returns a tuple [response-fragment, resource-body]
-                                                    (merge-attrs desc-attrs))]
+          user (-> body
+                   (assoc :resource-type create-type)
+                   (update-in [:template] dissoc :method :id) ;; forces use of template reference
+                   (std-crud/resolve-hrefs authn-info true)
+                   (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                   (crud/validate)
+                   (:template)
+                   (merge-with-defaults)
+                   (tpl->user request)                      ;; returns a tuple [response-fragment, resource-body]
+                   (merge desc-attrs))]
 
-      (cond
+      (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
+        (when (and resource-id (= 201 status))
+          (post-user-add (assoc user :id resource-id) request))
+        result))
 
-        ;; pure redirect that hasn't created a user account
-        (and resp-fragment (nil? body)) resp-fragment
-
-        ;; requested redirect with method that created a user
-        (and resp-fragment body) (let [{{:keys [status resource-id]} :body} (add-impl
-                                                                              (assoc request :id id :body body))]
-                                   (when (and resource-id (= 201 status))
-                                     (post-user-add (assoc body :id resource-id) request))
-                                   (cond-> resp-fragment
-                                           resource-id (assoc-in [:body :resource-id] resource-id)))
-
-        ;; normal case: no redirect and user was created
-        :else (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :id id :body body))]
-                (when (and resource-id (= 201 status))
-                  (post-user-add (assoc body :id resource-id) request))
-                result)))
     (catch Exception e
       (or (ex-data e)
           (throw e)))))

@@ -33,7 +33,7 @@ On validation, the password is changed and the user is logged in."
     (update-password! credential-password hash-password)
     (log/info msg)
     (if redirectURI
-      (merge (r/map-response msg 200 id)
-             {:status 303, :headers {"Location" redirectURI}, :cookies cookies})
+      (merge (r/map-response msg 303 id)
+             {:headers {"Location" redirectURI}, :cookies cookies})
       (merge (r/map-response msg 200 id)
              {:cookies cookies}))))
