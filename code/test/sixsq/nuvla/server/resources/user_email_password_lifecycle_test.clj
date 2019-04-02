@@ -39,12 +39,12 @@
         session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
-    (with-redefs [email-utils/smtp-cfg (fn []
-                                         {:host "smtp@example.com"
-                                          :port 465
-                                          :ssl  true
-                                          :user "admin"
-                                          :pass "password"})
+    (with-redefs [email-utils/extract-smtp-cfg
+                  (fn [_] {:host "smtp@example.com"
+                           :port 465
+                           :ssl  true
+                           :user "admin"
+                           :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
