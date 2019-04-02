@@ -6,9 +6,16 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+;; provide tighter definition of user id to be used elsewhere
+(def ^:const user-id-regex #"^user/[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$")
+(defn user-id? [s] (re-matches user-id-regex s))
+(s/def ::id (s/and string? user-id?))
+
+
 (def ^:const credential-id-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn credential-id? [s] (re-matches credential-id-regex s))
 (s/def ::credential-password (s/and string? credential-id?))
+
 
 (def ^:const email-id-regex #"^email/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn email-id? [s] (re-matches email-id-regex s))

@@ -35,7 +35,7 @@
 
                   :identifier    test-identifier
 
-                  :parent        "user/jane"})
+                  :parent        "user/abcdef01-abcd-abcd-abcd-abcdef012345"})
 
 
 (deftest check-metadata
@@ -48,7 +48,7 @@
                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-jane (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
         session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
@@ -121,7 +121,7 @@
 
         (is (= {:id         expected-id
                 :identifier test-identifier
-                :parent     "user/jane"}
+                :parent     "user/abcdef01-abcd-abcd-abcd-abcdef012345"}
                (select-keys resource #{:id :identifier :parent}))))
 
       ;; adding the same resource a second time must fail
