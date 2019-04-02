@@ -2,13 +2,12 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 ; redefine parent to put it as mandatory
-(def ^:const user-id-regex #"^user/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn user-id? [s] (re-matches user-id-regex s))
-(s/def ::parent (-> (st/spec (s/and string? user-id?))
+(s/def ::parent (-> (st/spec ::user/id)
                     (assoc :name "parent"
                            :json-schema/name "parent"
                            :json-schema/type "URI"

@@ -15,7 +15,8 @@
              :created       timestamp
              :updated       timestamp
              :acl           valid-acl
-             :username      "ssuser"
+             :identifier    "ssuser"
+             :user          "user/abcdef01-abcd-abcd-abcd-abcdef012345"
              :method        "internal"
              :expiry        timestamp
              :server        "nuv.la"
@@ -28,5 +29,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :method :expiry :template}]
       (stu/is-invalid ::session/session (dissoc cfg attr)))
 
-    (doseq [attr #{:username :server :clientIP}]
+    (doseq [attr #{:identifier :server :clientIP}]
       (stu/is-valid ::session/session (dissoc cfg attr)))))
