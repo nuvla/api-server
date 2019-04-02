@@ -49,10 +49,10 @@
                                        :default "WAITING"})))
 
 
-(s/def ::targetResource
+(s/def ::target-resource
   (-> (st/spec ::cimi-common/resource-link)
-      (assoc :name "targetResource"
-             :json-schema/name "targetResource"
+      (assoc :name "target-resource"
+             :json-schema/name "target-resource"
              :json-schema/type "map"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -111,6 +111,6 @@
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::action
                                ::state]
-                      :opt-un [::targetResource
+                      :opt-un [::target-resource
                                ::data
                                ::expires]}))

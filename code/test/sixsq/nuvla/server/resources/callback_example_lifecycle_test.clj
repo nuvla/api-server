@@ -23,11 +23,11 @@
 
     ;; create a callback as an admin
     (let [create-callback-succeeds {:action         example/action-name
-                                    :targetResource {:href "example/resource-x"}
+                                    :target-resource {:href "example/resource-x"}
                                     :data           {:ok? true}}
 
           create-callback-fails {:action         example/action-name
-                                 :targetResource {:href "example/resource-y"}
+                                 :target-resource {:href "example/resource-y"}
                                  :data           {:ok? false}}
 
           uri-succeeds (str p/service-context (-> session-admin

@@ -51,7 +51,7 @@
 
     ;; create a callback as an admin
     (let [create-test-callback {:action         "action-name"
-                                :targetResource {:href "email/1234579abcdef"}
+                                :target-resource {:href "email/1234579abcdef"}
                                 :state          "SUCCEEDED"} ;; state should be ignored
 
           resp-test (-> session-admin

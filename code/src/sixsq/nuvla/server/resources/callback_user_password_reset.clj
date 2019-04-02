@@ -26,7 +26,7 @@ On validation, the password is changed and the user is logged in."
 
 
 (defmethod callback/execute action-name
-  [{{:keys [href]} :targetResource data :data :as callback-resource} request]
+  [{{:keys [href]} :target-resource data :data :as callback-resource} request]
   (let [{:keys [credential-password id] :as user} (crud/retrieve-by-id-as-admin href)
         {:keys [redirectURI cookies hash-password]} data
         msg (str "reset password for " id " successfully executed")]
