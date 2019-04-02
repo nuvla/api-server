@@ -22,26 +22,26 @@
              :action            "add"
              :started           timestamp
              :duration          30
-             :targetResource    {:href "abc/def"}
-             :affectedResources [{:href "abc/def"}]}]
+             :target-resource    {:href "abc/def"}
+             :affected-resources [{:href "abc/def"}]}]
 
     (stu/is-valid ::job/job job)
 
-    (stu/is-valid ::job/job (assoc job :parentJob "job/id"))
+    (stu/is-valid ::job/job (assoc job :parent-job "job/id"))
     (stu/is-valid ::job/job (assoc job :state "RUNNING"))
-    (stu/is-valid ::job/job (assoc job :returnCode 10000))
+    (stu/is-valid ::job/job (assoc job :return-code 10000))
     (stu/is-valid ::job/job (assoc job :progress 100))
     (stu/is-invalid ::job/job (assoc job :priority 1000))
     (stu/is-valid ::job/job (assoc job :priority 90))
 
     (stu/is-invalid ::job/job (assoc job :progress 101))
     (stu/is-invalid ::job/job (assoc job :state "XY"))
-    (stu/is-invalid ::job/job (assoc job :parentJob "notjob/id"))
+    (stu/is-invalid ::job/job (assoc job :parent-job "notjob/id"))
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl :state :progress :action}]
       (stu/is-invalid ::job/job (dissoc job k)))
 
     ;; optional keywords
-    (doseq [k #{:targetResource :affectedResources :started :duration}]
+    (doseq [k #{:target-resource :affected-resources :started :duration}]
       (stu/is-valid ::job/job (dissoc job k)))))
