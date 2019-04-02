@@ -5,8 +5,8 @@
     [clojure.tools.logging :as log]
     [environ.core :as environ]))
 
-(def ^:const default-public-key-path "/etc/nuvla/auth/auth_pubkey.pem")
-(def ^:const default-private-key-path "/etc/nuvla/auth/auth_privkey.pem")
+(def ^:const default-session-key-path "/etc/nuvla/session/session.crt")
+(def ^:const default-session-crt-path "/etc/nuvla/session/session.key")
 
 
 (defn key-path
@@ -53,10 +53,10 @@
       (parse-key-string key-string)))
 
 
-(def public-key (memoize (partial read-key keys/public-key default-public-key-path)))
+(def public-key (memoize (partial read-key keys/public-key default-session-key-path)))
 
 
-(def private-key (memoize (partial read-key keys/private-key default-private-key-path)))
+(def private-key (memoize (partial read-key keys/private-key default-session-crt-path)))
 
 
 (def str->public-key (memoize parse-public-key))
