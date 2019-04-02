@@ -13,12 +13,12 @@
       (assoc :name "hash"
              :json-schema/name "hash"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
 
-             :json-schema/displayName "hash"
+             :json-schema/display-name "hash"
              :json-schema/description "hashed password"
              :json-schema/help "hashed password"
              :json-schema/group "body"

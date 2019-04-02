@@ -12,12 +12,12 @@
       (assoc :name "address"
              :json-schema/name "address"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "address"
+             :json-schema/display-name "address"
              :json-schema/description "email address"
              :json-schema/help "unique email address"
              :json-schema/group "body"
@@ -31,12 +31,12 @@
       (assoc :name "validated"
              :json-schema/name "validated"
              :json-schema/type "boolean"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
 
-             :json-schema/displayName "validated"
+             :json-schema/display-name "validated"
              :json-schema/description "validated email address?"
              :json-schema/help "flag indicating if the associated email address has been validated"
              :json-schema/group "body"

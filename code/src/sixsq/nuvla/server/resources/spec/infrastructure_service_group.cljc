@@ -11,12 +11,12 @@
   (-> (st/spec ::cimi-core/url)
       (assoc :name "documentation"
              :json-schema/name "documentation"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "documentation URL"
+             :json-schema/display-name "documentation URL"
              :json-schema/description "URL where service documentation can be found"
              :json-schema/help "URL where service documentation can be found"
              :json-schema/group "body"
@@ -31,13 +31,13 @@
       (assoc :name "infrastructure-services"
              :json-schema/name "infrastructure-services"
              :json-schema/type "Array"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
              :json-schema/indexed false
 
-             :json-schema/displayName "infrastructure-services"
+             :json-schema/display-name "infrastructure-services"
              :json-schema/description "list of associated services"
              :json-schema/help "list of associated service references"
              :json-schema/group "body"

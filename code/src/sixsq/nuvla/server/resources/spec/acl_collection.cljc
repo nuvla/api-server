@@ -12,7 +12,7 @@
       (assoc :name "query"
              :json-schema/name "query"
              :json-schema/type "Array"
-             :json-schema/displayName "query"
+             :json-schema/display-name "query"
              :json-schema/description "list of principals that can query a collection")))
 
 
@@ -21,7 +21,7 @@
       (assoc :name "add"
              :json-schema/name "add"
              :json-schema/type "Array"
-             :json-schema/displayName "add"
+             :json-schema/display-name "add"
              :json-schema/description "list of principals that can add a new resource to a collection")))
 
 
@@ -30,12 +30,12 @@
       (assoc :name "acl"
              :json-schema/name "acl"
              :json-schema/type "map"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "ACL"
+             :json-schema/display-name "ACL"
              :json-schema/description "collection ACL"
              :json-schema/help "collection Access Control List (ACL)"
              :json-schema/group "acl"

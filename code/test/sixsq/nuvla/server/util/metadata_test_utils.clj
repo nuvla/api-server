@@ -13,7 +13,7 @@
 
 
 (defn get-generated-metadata
-  [typeURI]
+  [type-uri]
 
   (let [session (-> (ltu/ring-app)
                     session
@@ -28,11 +28,11 @@
                     (ltu/is-count pos?)
                     (ltu/entries))]
 
-    (first (filter #(-> % :typeURI (= typeURI)) md-docs))))
+    (first (filter #(-> % :type-uri (= type-uri)) md-docs))))
 
 
 (defn check-metadata-exists
-  [typeURI]
+  [type-uri]
 
   (let [session (-> (ltu/ring-app)
                     session
@@ -47,12 +47,12 @@
                     (ltu/is-count pos?)
                     (ltu/entries))
 
-        typeURIs (set (map :typeURI md-docs))
+        type-uris (set (map :type-uri md-docs))
         ids (set (map u/document-id (map :id md-docs)))]
 
-    (is (set? typeURIs))
+    (is (set? type-uris))
     (is (set? ids))
 
-    (when (and typeURIs ids)
-      (is (typeURIs typeURI))
-      (is (ids typeURI)))))
+    (when (and type-uris ids)
+      (is (type-uris type-uri))
+      (is (ids type-uri)))))

@@ -14,12 +14,12 @@
       (assoc :name "ca"
              :json-schema/name "ca"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "CA"
+             :json-schema/display-name "CA"
              :json-schema/description "public certificate of the Certificate Authority (CA)"
              :json-schema/help "public certificate of the Certificate Authority (CA)"
              :json-schema/group "body"
@@ -33,12 +33,12 @@
       (assoc :name "cert"
              :json-schema/name "cert"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "cert"
+             :json-schema/display-name "cert"
              :json-schema/description "client's public certificate"
              :json-schema/help "client's public certificate"
              :json-schema/group "body"
@@ -52,12 +52,12 @@
       (assoc :name "key"
              :json-schema/name "key"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "key"
+             :json-schema/display-name "key"
              :json-schema/description "client's private certificate"
              :json-schema/help "client's private certificate"
              :json-schema/group "body"

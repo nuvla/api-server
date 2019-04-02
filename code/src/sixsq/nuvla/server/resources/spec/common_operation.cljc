@@ -11,12 +11,12 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
 
-             :json-schema/displayName "href"
+             :json-schema/display-name "href"
              :json-schema/description "URI for operation"
              :json-schema/help "unique URI that identifies the operation"
              :json-schema/hidden false
@@ -28,12 +28,12 @@
       (assoc :name "rel"
              :json-schema/name "rel"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
 
-             :json-schema/displayName "rel"
+             :json-schema/display-name "rel"
              :json-schema/description "URL for performing action"
              :json-schema/help "URL for performing action"
              :json-schema/hidden false

@@ -14,12 +14,12 @@
       (assoc :name "infrastructure-service-id"
              :json-schema/name "infrastructure-service-id"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "infrastructure-service-id"
+             :json-schema/display-name "infrastructure-service-id"
              :json-schema/description "id of service associated with this credential"
              :json-schema/help "id of service associated with this credential"
              :json-schema/hidden false
@@ -31,12 +31,12 @@
       (assoc :name "infrastructure-services"
              :json-schema/name "infrastructure-services"
              :json-schema/type "Array"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "infrastructure-services"
+             :json-schema/display-name "infrastructure-services"
              :json-schema/description "ids of services associated with this credential"
              :json-schema/help "ids of services associated with this credential"
              :json-schema/group "body"

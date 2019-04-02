@@ -11,12 +11,12 @@
       (assoc :name "username"
              :json-schema/name "username"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "username"
+             :json-schema/display-name "username"
              :json-schema/description "your username"
              :json-schema/help "your username"
              :json-schema/group "body"
@@ -29,12 +29,12 @@
       (assoc :name "email"
              :json-schema/name "email"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "email address"
+             :json-schema/display-name "email address"
              :json-schema/description "your email address"
              :json-schema/help "your email address"
              :json-schema/group "body"
@@ -48,12 +48,12 @@
       (assoc :name "password"
              :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "password"
+             :json-schema/display-name "password"
              :json-schema/description "password for your account"
              :json-schema/help "password for your account"
              :json-schema/group "body"

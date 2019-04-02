@@ -19,12 +19,12 @@
       (assoc :name "users"
              :json-schema/name "users"
              :json-schema/type "Array"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "users"
+             :json-schema/display-name "users"
              :json-schema/description "list of users in this group"
              :json-schema/help "list of users in this group"
              :json-schema/group "body"

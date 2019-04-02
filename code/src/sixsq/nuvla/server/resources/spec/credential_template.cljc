@@ -13,12 +13,12 @@
       (assoc :name "type"
              :json-schema/name "type"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "type"
+             :json-schema/display-name "type"
              :json-schema/description "type of credential"
              :json-schema/help "type of credential"
              :json-schema/group "body"
@@ -34,12 +34,12 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "method"
+             :json-schema/display-name "method"
              :json-schema/description "method for creating credential"
              :json-schema/help "method for creating credential"
              :json-schema/group "body"

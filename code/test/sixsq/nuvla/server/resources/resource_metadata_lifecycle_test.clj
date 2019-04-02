@@ -46,7 +46,7 @@
 
       (t/register (-> resource-metadata/valid
                       (dissoc :acl)
-                      (assoc :typeURI identifier)))
+                      (assoc :type-uri identifier)))
 
       (doseq [session [session-admin #_session-user #_session-anon]]
         (-> session

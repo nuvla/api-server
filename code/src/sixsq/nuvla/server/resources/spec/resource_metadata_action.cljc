@@ -15,15 +15,15 @@
 ;; only those methods typically used in REST APIs are permitted by this implementation
 (s/def ::method #{"GET" "POST" "PUT" "DELETE"})
 
-(s/def ::inputMessage ::cimi-core/mimetype)
+(s/def ::input-message ::cimi-core/mimetype)
 
-(s/def ::outputMessage ::cimi-core/mimetype)
+(s/def ::output-message ::cimi-core/mimetype)
 
 (s/def ::action (su/only-keys :req-un [::name
                                        ::uri
                                        ::method
-                                       ::inputMessage
-                                       ::outputMessage]
+                                       ::input-message
+                                       ::output-message]
                               :opt-un [::description]))
 
 (s/def ::actions

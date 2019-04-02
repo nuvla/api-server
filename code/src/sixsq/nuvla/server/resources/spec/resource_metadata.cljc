@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::typeURI ::cimi-core/uri)
+(s/def ::type-uri ::cimi-core/uri)
 
 
 (s/def ::name ::cimi-core/resource-name)
@@ -18,7 +18,7 @@
 
 (s/def ::resource-metadata
   (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::typeURI]
+                     {:req-un [::type-uri]
                       :opt-un [::attribute/attributes
                                ::value-scope/vscope
                                ::capability/capabilities

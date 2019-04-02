@@ -12,12 +12,12 @@
       (assoc :name "service"
              :json-schema/name "service"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "service"
+             :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
              :json-schema/help "name of service associated with this resource"
              :json-schema/group "body"
@@ -31,12 +31,12 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "instance"
+             :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
              :json-schema/help "instance of service associated with this resource"
              :json-schema/group "body"
@@ -52,12 +52,12 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "href"
+             :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
              :json-schema/help "reference to the configuration template used"
              :json-schema/group "body"
@@ -71,12 +71,12 @@
       (assoc :name "template"
              :json-schema/name "template"
              :json-schema/type "map"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "template"
+             :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"
              :json-schema/help "reference to the configuration template used"
              :json-schema/group "body"

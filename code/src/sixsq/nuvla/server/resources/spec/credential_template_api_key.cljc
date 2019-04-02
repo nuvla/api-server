@@ -11,12 +11,12 @@
       (assoc :name "ttl"
              :json-schema/name "ttl"
              :json-schema/type "integer"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "TTL"
+             :json-schema/display-name "TTL"
              :json-schema/description "Time to Live (TTL) for API key/secret"
              :json-schema/help "Time to Live (TTL) for created API key/secret"
              :json-schema/group "body"

@@ -13,12 +13,12 @@
       (assoc :name "action"
              :json-schema/name "action"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "action"
+             :json-schema/display-name "action"
              :json-schema/description "name of action"
              :json-schema/help "name of action performed by callback"
              :json-schema/group "body"
@@ -32,12 +32,12 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "state"
+             :json-schema/display-name "state"
              :json-schema/description "current state of callback"
              :json-schema/help "current state of callback"
              :json-schema/group "body"
@@ -54,12 +54,12 @@
       (assoc :name "target-resource"
              :json-schema/name "target-resource"
              :json-schema/type "map"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "target resource"
+             :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
              :json-schema/help "reference to resource affected by callback"
              :json-schema/group "body"
@@ -73,13 +73,13 @@
       (assoc :name "data"
              :json-schema/name "data"
              :json-schema/type "map"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
              :json-schema/indexed false
 
-             :json-schema/displayName "data"
+             :json-schema/display-name "data"
              :json-schema/description "data required for callback"
              :json-schema/help "data required to execute the callback action"
              :json-schema/group "body"
@@ -93,12 +93,12 @@
       (assoc :name "expires"
              :json-schema/name "expires"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "expires"
+             :json-schema/display-name "expires"
              :json-schema/description "expiry timestamp for callback action"
              :json-schema/help "expiry timestamp for callback action"
              :json-schema/group "body"

@@ -15,15 +15,15 @@
 (s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
                 "map" "Array" "Any"})
 
-(s/def ::providerMandatory boolean?)
+(s/def ::provider-mandatory boolean?)
 
-(s/def ::consumerMandatory boolean?)
+(s/def ::consumer-mandatory boolean?)
 
 (s/def ::mutable boolean?)
 
-(s/def ::consumerWritable boolean?)
+(s/def ::consumer-writable boolean?)
 
-(s/def ::templateMutable boolean?)
+(s/def ::template-mutable boolean?)
 
 
 ;;
@@ -31,7 +31,7 @@
 ;; useful for rendering forms for browser-based clients
 ;;
 
-(s/def ::displayName ::cimi-core/nonblank-string)
+(s/def ::display-name ::cimi-core/nonblank-string)
 
 (s/def ::description ::cimi-core/nonblank-string)
 
@@ -58,13 +58,13 @@
 ;;
 (s/def ::attribute (su/only-keys :req-un [::name
                                           ::type
-                                          ::providerMandatory
-                                          ::consumerMandatory
+                                          ::provider-mandatory
+                                          ::consumer-mandatory
                                           ::mutable
-                                          ::consumerWritable]
+                                          ::consumer-writable]
                                  :opt-un [::namespace
                                           ::uri
-                                          ::displayName
+                                          ::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -73,7 +73,7 @@
                                           ::hidden
                                           ::sensitive
                                           ::lines
-                                          ::templateMutable]))
+                                          ::template-mutable]))
 
 (s/def ::attributes
   (st/spec {:spec                (s/coll-of ::attribute :min-count 1 :type vector?)

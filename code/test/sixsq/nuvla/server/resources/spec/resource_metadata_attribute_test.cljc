@@ -7,14 +7,14 @@
 
 (def valid {:name              "my-action"
             :type              "string"
-            :providerMandatory true
-            :consumerMandatory true
+            :provider-mandatory true
+            :consumer-mandatory true
             :mutable           true
-            :consumerWritable  true
+            :consumer-writable  true
 
             :namespace         "https://sixsq.com/slipstream/"
             :uri               "https://sixsq.com/slipstream/param-info"
-            :displayName       "my action"
+            :display-name       "my action"
             :description       "a wonderful attribute"
             :help              "just give me a value"
             :group             "body"
@@ -31,10 +31,10 @@
 
   (stu/is-valid ::spec/attribute valid)
 
-  (doseq [k #{:namespace :uri :displayName :description :help :group :category :order :hidden :sensitive :lines}]
+  (doseq [k #{:namespace :uri :display-name :description :help :group :category :order :hidden :sensitive :lines}]
     (stu/is-valid ::spec/attribute (dissoc valid k)))
 
-  (doseq [k #{:name :type :providerMandatory :consumerMandatory :mutable :consumerWritable}]
+  (doseq [k #{:name :type :provider-mandatory :consumer-mandatory :mutable :consumer-writable}]
     (stu/is-invalid ::spec/attribute (dissoc valid k)))
 
   (stu/is-invalid ::spec/attribute (assoc valid :badAttribute 1))

@@ -17,12 +17,12 @@
       (assoc :name "group-identifer"
              :json-schema/name "group-identifer"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "group identifier"
+             :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
              :json-schema/help "unique kebab-case identifier for group"
              :json-schema/group "body"

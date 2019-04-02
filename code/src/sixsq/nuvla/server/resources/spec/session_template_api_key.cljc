@@ -12,12 +12,12 @@
       (assoc :name "key"
              :json-schema/name "key"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "key"
+             :json-schema/display-name "key"
              :json-schema/description "key for API key/secret pair"
              :json-schema/help "key for API key/secret pair"
              :json-schema/group "body"
@@ -31,12 +31,12 @@
       (assoc :name "secret"
              :json-schema/name "secret"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "secret"
+             :json-schema/display-name "secret"
              :json-schema/description "secret for API key/secret pair"
              :json-schema/help "secret for API key/secret pair"
              :json-schema/group "body"

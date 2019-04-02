@@ -12,12 +12,12 @@
       (assoc :name "azure-client-id"
              :json-schema/name "azure-client-id"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "azure-client-id"
+             :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
              :json-schema/help "Azure client ID"
              :json-schema/group "body"
@@ -31,12 +31,12 @@
       (assoc :name "azure-client-secret"
              :json-schema/name "azure-client-secret"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "azure-client-secret"
+             :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
              :json-schema/help "Azure client secret"
              :json-schema/group "body"
@@ -50,12 +50,12 @@
       (assoc :name "azure-subscription-id"
              :json-schema/name "azure-subscription-id"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "azure-subscription-id"
+             :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"
              :json-schema/help "Azure subscription ID"
              :json-schema/group "body"
