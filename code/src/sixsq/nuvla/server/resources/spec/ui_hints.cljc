@@ -90,10 +90,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::redirectURI
+(s/def ::redirect-url
   (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "redirectURI"
-             :json-schema/name "redirectURI"
+      (assoc :name "redirect-url"
+             :json-schema/name "redirect-url"
              :json-schema/type "string"
              :json-schema/providerMandatory true
              :json-schema/consumerMandatory false
@@ -101,7 +101,7 @@
              :json-schema/consumerWritable false
              :json-schema/templateMutable true
 
-             :json-schema/displayName "redirectURI"
+             :json-schema/displayName "redirect-url"
              :json-schema/description "redirect URI to be used on success"
              :json-schema/help "redirect URI to be used on success to provide smoother workflow on browser UIs"
              :json-schema/group "body"
@@ -110,4 +110,4 @@
              :json-schema/sensitive false)))
 
 
-(def ui-hints-spec {:opt-un [::group ::order ::hidden ::icon ::redirectURI]})
+(def ui-hints-spec {:opt-un [::group ::order ::hidden ::icon ::redirect-url]})

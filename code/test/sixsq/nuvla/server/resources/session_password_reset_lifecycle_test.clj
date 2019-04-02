@@ -118,7 +118,7 @@
 
             redirect-uri "http://redirect.example.org"
 
-            valid-create-redirect (assoc-in valid-create [:template :redirectURI] redirect-uri)]
+            valid-create-redirect (assoc-in valid-create [:template :redirect-url] redirect-uri)]
 
         ; anonymous create must succeed; also with redirect
 
