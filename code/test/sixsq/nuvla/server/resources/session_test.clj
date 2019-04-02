@@ -12,14 +12,3 @@
                            true? "CoNtEnT-TyPe"
                            false? 1234
                            false? nil))
-
-(deftest check-is-form?
-  (are [expected-fn input] (expected-fn (u/is-form? input))
-                           true? {:content-type u/form-urlencoded}
-                           true? {"content-type" u/form-urlencoded}
-                           false? {:content-type "application/json"}
-                           false? {"content-type" "application/json"}))
-
-(deftest check-convert-form
-  (is (= {:template {:alpha "alpha", :beta "beta"}}
-         (u/convert-form :template {:alpha "alpha", "beta" "beta"}))))

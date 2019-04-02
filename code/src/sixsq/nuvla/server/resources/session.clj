@@ -90,12 +90,12 @@ session.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.log :as log-util]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as log-util]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -117,9 +117,11 @@ session.
 (defmulti validate-subtype
           :method)
 
+
 (defmethod validate-subtype :default
   [resource]
   (throw (ex-info (str "unknown Session type: '" (:method resource) "'") resource)))
+
 
 (defmethod crud/validate resource-type
   [resource]
@@ -132,11 +134,14 @@ session.
 (defn dispatch-on-authn-method [resource]
   (get-in resource [:template :method]))
 
+
 (defmulti create-validate-subtype dispatch-on-authn-method)
+
 
 (defmethod create-validate-subtype :default
   [resource]
   (throw (ex-info (str "unknown Session create type: " (dispatch-on-authn-method resource) resource) resource)))
+
 
 (defmethod crud/validate create-type
   [resource]
@@ -150,6 +155,7 @@ session.
   [id]
   {:owners [id]})
 
+
 (defmethod crud/add-acl resource-type
   [{:keys [id acl] :as resource} request]
   (assoc
@@ -157,11 +163,13 @@ session.
     :acl
     (or acl (create-acl id))))
 
+
 (defn dispatch-conversion
   "Dispatches on the Session authentication method for multimethods
    that take the resource and request as arguments."
   [resource _]
   (:method resource))
+
 
 (defn standard-session-operations
   "Provides a list of the standard session operations, depending on the user's
@@ -210,6 +218,7 @@ session.
 ;; multimethod. The default implementation will throw an 'internal
 ;; server error' exception.
 ;;
+
 (defmethod tpl->session :default
   [resource request]
   [{:status 500, :message "invalid session resource implementation"} nil])
@@ -232,20 +241,11 @@ session.
     {}))
 
 
-(defn convert-request-body
-  [{:keys [body form-params headers] :as request}]
-  (if (u/is-form? headers)
-    (u/convert-form :template form-params)
-    body))
-
-
 ;; requires a SessionTemplate to create new Session
 (defmethod crud/add resource-type
-  [request]
-
+  [{:keys [body] :as request}]
   (try
     (let [authn-info (auth/current-authentication request)
-          body (convert-request-body request)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
@@ -259,36 +259,25 @@ session.
           add-impl
           (merge cookie-header)))
     (catch Exception e
-      (let [redirectURI (-> request convert-request-body :template :redirectURI)
-            {:keys [status] :as http-response} (ex-data e)]
-        (if (and redirectURI (= 400 status))
-          (throw (r/ex-redirect (str "invalid parameter values provided") nil redirectURI))
-          (or http-response (throw e)))))))
+      (or (ex-data e) (throw e)))))
+
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
 
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def delete-impl (std-crud/delete-fn resource-type))
 
-;; FIXME: Copied to avoid dependency cycle.
-(defn cookie-name
-  "Provides the name of the cookie based on the resource ID in the
-   body of the response.  Currently this provides a fixed name to
-   remain compatible with past implementations.
-
-   FIXME: Update the implementation to use the session ID for the cookie name."
-  [resource-id]
-  ;; FIXME: Update the implementation to use the session ID for the cookie name.
-  ;;(str "slipstream." (str/replace resource-id "/" "."))
-  "com.sixsq.nuvla.cookie")
 
 (defn delete-cookie [{:keys [status] :as response}]
   (if (= status 200)
-    {:cookies (cookies/revoked-cookie (cookie-name (-> response :body :resource-id)))}
+    {:cookies (cookies/revoked-cookie authn-info/authn-cookie)}
     {}))
+
 
 (defmethod crud/delete resource-type
   [request]
@@ -296,17 +285,20 @@ session.
         cookies (delete-cookie response)]
     (merge response cookies)))
 
+
 (defn add-session-filter [{:keys [nuvla/authn] :as request}]
   (->> (or (:session authn) "")
        (format "id='%s'")
        (parser/parse-cimi-filter)
        (assoc-in request [:cimi-params :filter])))
 
+
 (defn query-wrapper
   "wraps the standard query function to always include a filter based on the session"
   [query-fn]
   (fn [request]
     (query-fn (add-session-filter request))))
+
 
 (def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-type)))
 
@@ -325,13 +317,15 @@ session.
   [resource request]
   (log-util/log-and-throw 400 (str "error executing validation callback: '" (dispatch-conversion resource request) "'")))
 
+
 (defmethod crud/do-action [resource-type "validate"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (validate-callback (crud/retrieve-by-id-as-admin id) request))
     (catch Exception e
-      (or (ex-data e) (throw e)))))
+      (or (ex-data e)
+          (throw e)))))
 
 
 ;;

@@ -48,9 +48,9 @@
 
 
 (defn create-session-password
-  [username user headers redirectURI href]
+  [username user headers href]
   (if user
-    (let [session (sutils/create-session username href headers authn-method redirectURI)
+    (let [session (sutils/create-session username href headers authn-method)
           cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
           cookie (cookies/create-cookie cookie-info)
           expires (ts/rfc822->iso8601 (:expires cookie))
@@ -59,18 +59,14 @@
                           claims (assoc :roles claims))
           cookies {authn-info/authn-cookie cookie}]
       (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
-      (if redirectURI
-        [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
-        [{:cookies cookies} session]))
-    (if redirectURI
-      (throw (r/ex-redirect (str "invalid credentials for '" username "'") nil redirectURI))
-      (throw (r/ex-unauthorized username)))))
+      [{:cookies cookies} session])
+    (throw (r/ex-unauthorized username))))
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href redirectURI username password] :as resource} {:keys [headers] :as request}]
+  [{:keys [href username password] :as resource} {:keys [headers] :as request}]
   (let [user (auth-password/valid-user-password username password)]
-    (create-session-password username user headers redirectURI href)))
+    (create-session-password username user headers href)))
 
 
 ;;

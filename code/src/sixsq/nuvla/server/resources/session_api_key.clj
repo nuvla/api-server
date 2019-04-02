@@ -73,10 +73,10 @@
             client-ip (assoc :clientIP client-ip))))
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href redirectURI key secret] :as resource} {:keys [headers base-uri] :as request}]
+  [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
-      (let [session (sutils/create-session identity href headers authn-method redirectURI)
+      (let [session (sutils/create-session identity href headers authn-method)
             cookie-info (create-cookie-info identity roles headers (:id session) (:clientIP session))
             cookie (cookies/create-cookie cookie-info)
             expires (ts/rfc822->iso8601 (:expires cookie))
@@ -85,12 +85,8 @@
                             claims (assoc :roles claims))]
         (log/debug "api-key cookie token claims for " (u/document-id href) ":" cookie-info)
         (let [cookies {authn-info/authn-cookie cookie}]
-          (if redirectURI
-            [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
-            [{:cookies cookies} session])))
-      (if redirectURI
-        (throw (r/ex-redirect (str "invalid API key/secret credentials for '" key "'") nil redirectURI))
-        (throw (r/ex-unauthorized key))))))
+          [{:cookies cookies} session]))
+      (throw (r/ex-unauthorized key)))))
 
 
 ;;

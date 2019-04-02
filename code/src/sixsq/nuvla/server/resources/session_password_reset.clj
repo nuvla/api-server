@@ -44,18 +44,11 @@
 (def create-user-password-reset-callback (partial callback/create user-password-reset/action-name))
 
 
-(defn throw-exception
-  [msg redirectURI]
-  (if redirectURI
-    (throw (r/ex-redirect msg nil redirectURI))
-    (throw (r/ex-response msg 400))))
-
-
 (defmethod p/tpl->session authn-method
   [{:keys [href username new-password redirectURI] :as resource} {:keys [base-uri headers] :as request}]
 
   (when-not (hashed-password/acceptable-password? new-password)
-    (throw-exception hashed-password/acceptable-password-msg redirectURI))
+    (throw (r/ex-response hashed-password/acceptable-password-msg 400)))
 
   (let [{user-id       :id
          credential-id :credential-password
@@ -67,9 +60,9 @@
                      (crud/retrieve-by-id-as-admin credential-id))]
 
     (when-not (and email-address credential)
-      (throw-exception (str "invalid username '" username "'") redirectURI))
+      (throw (r/ex-response (str "invalid username '" username "'") 400)))
 
-    (let [[cookie-header session] (session-password/create-session-password username user headers redirectURI href)
+    (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
           callback-data {:redirectURI   redirectURI
                          :cookies       (:cookies cookie-header)

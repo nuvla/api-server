@@ -6,6 +6,7 @@
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
@@ -69,7 +70,6 @@
                           :template    {:href         href
                                         :username     username
                                         :new-password plaintext-password}}
-            valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
             unauthorized-create (update-in valid-create [:template :new-password] (constantly "BAD"))]
 
         ; anonymous query should succeed but have no entries
@@ -85,16 +85,8 @@
                      :request-method :post
                      :body (json/write-str unauthorized-create))
             (ltu/body->edn)
-            (ltu/is-status 400))
-
-        ; unauthorized create with redirect must return a 303
-        (-> session-anon
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str valid-create-redirect))
-            (ltu/body->edn)
-            (ltu/is-status 303)
-            (ltu/is-location-value "http://redirect.example.org?error=password%20must%20contain%20at%20least%20one%20uppercase%20character%2C%20one%20lowercase%20character%2C%20one%20digit%2C%20one%20special%20character%2C%20and%20at%20least%208%20characters%20in%20total"))
+            (ltu/is-status 400)
+            (ltu/is-key-value :message hashed-password/acceptable-password-msg))
         )
 
 
@@ -164,8 +156,7 @@
                      :request-method :post
                      :body (json/write-str valid-create-redirect))
             (ltu/body->edn)
-            (ltu/is-status 303)
-            (ltu/is-location-value redirect-uri))
+            (ltu/is-status 201))
 
         (-> session-anon
             (request @reset-link)
@@ -173,5 +164,4 @@
             (ltu/is-status 303)
             (ltu/is-set-cookie)
             (ltu/is-location-value redirect-uri))))
-
     ))
