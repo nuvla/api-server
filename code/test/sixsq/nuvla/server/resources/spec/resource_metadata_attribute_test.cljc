@@ -5,24 +5,24 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid {:name              "my-action"
-            :type              "string"
+(def valid {:name               "my-action"
+            :type               "string"
             :provider-mandatory true
             :consumer-mandatory true
-            :mutable           true
+            :mutable            true
             :consumer-writable  true
 
-            :namespace         "https://sixsq.com/slipstream/"
-            :uri               "https://sixsq.com/slipstream/param-info"
+            :namespace          "https://sixsq.com/slipstream/"
+            :uri                "https://sixsq.com/slipstream/param-info"
             :display-name       "my action"
-            :description       "a wonderful attribute"
-            :help              "just give me a value"
-            :group             "body"
-            :category          "some string for a category"
-            :order             10
-            :hidden            false
-            :sensitive         false
-            :lines             3})
+            :description        "a wonderful attribute"
+            :help               "just give me a value"
+            :group              "body"
+            :category           "some string for a category"
+            :order              10
+            :hidden             false
+            :sensitive          false
+            :lines              3})
 
 
 (deftest check-attribute

@@ -27,11 +27,11 @@ Stores the hashed value of a password.
 ;;
 
 (def ^:const template
-  {:type             credential-type
-   :method           method
-   :name             "Hashed Password"
-   :description      "stores hashed value of a password"
-   :acl              resource-acl
+  {:type              credential-type
+   :method            method
+   :name              "Hashed Password"
+   :description       "stores hashed value of a password"
+   :acl               resource-acl
    :resource-metadata "resource-metadata/credential-template-hashed-password"})
 
 

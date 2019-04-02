@@ -57,7 +57,7 @@
 
 (defn create-callback [base-uri session-id action]
   (let [callback-request {:params      {:resource-name callback/resource-type}
-                          :body        {:action         action
+                          :body        {:action          action
                                         :target-resource {:href session-id}}
                           :nuvla/authn auth/internal-identity}
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]

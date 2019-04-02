@@ -30,10 +30,10 @@
   [session-admin & {:keys [username password email activated?]}]
   (let [validation-link (atom nil)
         href (str user-tpl/resource-type "/" email-password/registration-method)
-        href-create {:template {:href              href
-                                :password          password
-                                :username          username
-                                :email             email}}]
+        href-create {:template {:href     href
+                                :password password
+                                :username username
+                                :email    email}}]
 
     (with-redefs [email-utils/extract-smtp-cfg
                   (fn [_] {:host "smtp@example.com"

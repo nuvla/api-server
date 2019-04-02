@@ -32,10 +32,10 @@
 (defn create-hashed-password
   [user-id password]
   (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:template {:href              (str credential-template/resource-type
-                                                                  "/" cthp/method)
-                                          :password          password
-                                          :parent            user-id}}
+                 :body        {:template {:href     (str credential-template/resource-type
+                                                         "/" cthp/method)
+                                          :password password
+                                          :parent   user-id}}
                  :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)

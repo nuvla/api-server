@@ -67,11 +67,11 @@
         claims #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip "127.0.0.1"]
-    (is (= {:clientIP      "127.0.0.1"
-            :claims  (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
-            :user-id "user/root"
-            :server        "nuv.la"
-            :session       "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
+    (is (= {:clientIP "127.0.0.1"
+            :claims   (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
+            :user-id  "user/root"
+            :server   "nuv.la"
+            :session  "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
            (t/create-cookie-info user-id claims headers session-id client-ip)))))
 
 (defn mock-retrieve-by-id [doc-id]

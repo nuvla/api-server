@@ -34,7 +34,7 @@
    :exoscale-api-secret-key ""
    :infrastructure-services []
    :acl                     resource-acl
-   :resource-metadata        "resource-metadata/credential-template-driver-exoscale"})
+   :resource-metadata       "resource-metadata/credential-template-driver-exoscale"})
 
 
 ;;

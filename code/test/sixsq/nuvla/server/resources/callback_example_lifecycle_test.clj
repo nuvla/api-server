@@ -22,13 +22,13 @@
         session-anon (header session authn-info-header "group/nuvla-anon")]
 
     ;; create a callback as an admin
-    (let [create-callback-succeeds {:action         example/action-name
+    (let [create-callback-succeeds {:action          example/action-name
                                     :target-resource {:href "example/resource-x"}
-                                    :data           {:ok? true}}
+                                    :data            {:ok? true}}
 
-          create-callback-fails {:action         example/action-name
+          create-callback-fails {:action          example/action-name
                                  :target-resource {:href "example/resource-y"}
-                                 :data           {:ok? false}}
+                                 :data            {:ok? false}}
 
           uri-succeeds (str p/service-context (-> session-admin
                                                   (request base-uri

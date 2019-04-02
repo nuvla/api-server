@@ -56,9 +56,9 @@
           href-create {:name        name-attr
                        :description description-attr
                        :tags        tags-attr
-                       :template    {:href              template-href
-                                     :password          plaintext-password
-                                     :username          "user/jane"}}
+                       :template    {:href     template-href
+                                     :password plaintext-password
+                                     :username "user/jane"}}
 
           invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
 

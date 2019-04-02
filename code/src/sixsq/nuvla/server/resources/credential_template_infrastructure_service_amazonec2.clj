@@ -34,7 +34,7 @@
    :amazonec2-secret-key    ""
    :infrastructure-services []
    :acl                     resource-acl
-   :resource-metadata        "resource-metadata/credential-template-driver-aws"})
+   :resource-metadata       "resource-metadata/credential-template-driver-aws"})
 
 
 ;;

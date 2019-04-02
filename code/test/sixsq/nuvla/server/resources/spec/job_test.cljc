@@ -12,16 +12,16 @@
 
 (deftest check-job
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        job {:id                (str sj/resource-type "/test-job")
-             :resource-type     sj/resource-type
-             :created           timestamp
-             :updated           timestamp
-             :acl               valid-acl
-             :state             "QUEUED"
-             :progress          0
-             :action            "add"
-             :started           timestamp
-             :duration          30
+        job {:id                 (str sj/resource-type "/test-job")
+             :resource-type      sj/resource-type
+             :created            timestamp
+             :updated            timestamp
+             :acl                valid-acl
+             :state              "QUEUED"
+             :progress           0
+             :action             "add"
+             :started            timestamp
+             :duration           30
              :target-resource    {:href "abc/def"}
              :affected-resources [{:href "abc/def"}]}]
 

@@ -14,17 +14,17 @@ resource.
 (def ^:const method "generic")
 
 
-(def template {:method           method
+(def template {:method            method
 
-               :name             "generic service template"
-               :description      "template requiring basic service resource attributes"
+               :name              "generic service template"
+               :description       "template requiring basic service resource attributes"
                :resource-metadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type             "my-service"
-               :endpoint         "https://service.example.org:1234"
-               :state            "STARTED"
+               :type              "my-service"
+               :endpoint          "https://service.example.org:1234"
+               :state             "STARTED"
 
-               :acl              infra-service-tpl/resource-acl})
+               :acl               infra-service-tpl/resource-acl})
 
 
 ;;

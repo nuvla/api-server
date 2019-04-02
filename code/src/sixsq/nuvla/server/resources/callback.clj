@@ -38,8 +38,8 @@ appropriate users.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query  ["group/nuvla-admin"]
-                     :add    ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -153,10 +153,10 @@ appropriate users.
   ([action-name base-uri href]
    (create action-name base-uri href nil))
   ([action-name base-uri href data]
-   (let [callback-request {:params {:resource-name resource-type}
-                           :body   (cond-> {:action         action-name
-                                            :target-resource {:href href}}
-                                           data (assoc :data data))
+   (let [callback-request {:params      {:resource-name resource-type}
+                           :body        (cond-> {:action          action-name
+                                                 :target-resource {:href href}}
+                                                data (assoc :data data))
                            :nuvla/authn auth/internal-identity}
          {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 

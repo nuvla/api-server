@@ -40,7 +40,7 @@
    :client-id               "98765"
    :infrastructure-services []
    :acl                     resource-acl
-   :resource-metadata        "resource-metadata/credential-template-driver-gce"})
+   :resource-metadata       "resource-metadata/credential-template-driver-gce"})
 
 
 ;;

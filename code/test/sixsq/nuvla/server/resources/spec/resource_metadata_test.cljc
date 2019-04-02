@@ -24,7 +24,7 @@
              :acl           valid-acl})
 
 
-(def valid-contents {:type-uri      "https://sixsq.com/slipstream/SomeResource"
+(def valid-contents {:type-uri     "https://sixsq.com/slipstream/SomeResource"
                      :actions      [action/valid]
                      :attributes   [attribute/valid]
                      :capabilities [capability/valid]

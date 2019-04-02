@@ -5,10 +5,10 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid {:name          "my-action"
-            :uri           "http://sixsq.com/slipstream/action/my-action"
-            :description   "some descriptive text"
-            :method        "GET"
+(def valid {:name           "my-action"
+            :uri            "http://sixsq.com/slipstream/action/my-action"
+            :description    "some descriptive text"
+            :method         "GET"
             :input-message  "application/json"
             :output-message "text/plain"})
 

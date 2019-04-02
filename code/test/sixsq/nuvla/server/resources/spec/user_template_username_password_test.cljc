@@ -13,21 +13,21 @@
 
 (deftest check-user-template-password-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        tpl {:id                (str user-tpl/resource-type "/" username-password/registration-method)
-             :resource-type     user-tpl/resource-type
-             :name              "my-template"
-             :description       "my template"
-             :group             "my group"
-             :tags              #{"1", "2"}
-             :created           timestamp
-             :updated           timestamp
-             :acl               valid-acl
+        tpl {:id            (str user-tpl/resource-type "/" username-password/registration-method)
+             :resource-type user-tpl/resource-type
+             :name          "my-template"
+             :description   "my template"
+             :group         "my group"
+             :tags          #{"1", "2"}
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl
 
-             :method            username-password/registration-method
-             :instance          username-password/registration-method
+             :method        username-password/registration-method
+             :instance      username-password/registration-method
 
-             :password          "plaintext-password"
-             :username          "super"}
+             :password      "plaintext-password"
+             :username      "super"}
 
         create-tpl {:name          "my-create"
                     :description   "my create description"

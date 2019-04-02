@@ -64,7 +64,7 @@
 
     (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
-          callback-data {:redirect-url   redirect-url
+          callback-data {:redirect-url  redirect-url
                          :cookies       (:cookies cookie-header)
                          :hash-password (hashers/derive new-password)}]
 

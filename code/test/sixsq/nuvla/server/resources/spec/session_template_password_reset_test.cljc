@@ -21,7 +21,7 @@
              :method        "password"
              :instance      "password"
              :group         "Federated Identity"
-             :redirect-url   "https://nuv.la/webui/profile"
+             :redirect-url  "https://nuv.la/webui/profile"
 
              :username      "user"
              :new-password  "pass"}]

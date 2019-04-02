@@ -74,10 +74,10 @@
             href-create {:name        name-attr
                          :description description-attr
                          :tags        tags-attr
-                         :template    {:href              href
-                                       :password          plaintext-password
-                                       :username          "user/jane"
-                                       :email             "jane@example.org"}}
+                         :template    {:href     href
+                                       :password plaintext-password
+                                       :username "user/jane"
+                                       :email    "jane@example.org"}}
 
             href-create-alt (assoc-in href-create [:template :username] uname-alt)
 

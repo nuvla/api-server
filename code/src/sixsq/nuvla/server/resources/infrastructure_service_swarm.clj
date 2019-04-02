@@ -44,32 +44,32 @@
 
 (defmethod infra-service/post-add-hook method
   [service request]
-           (try
-             (let [id (:id service)
-                   user-id (:user-id (auth/current-authentication request))
-                   {{job-id     :resource-id
-                     job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
-                                                                {:owners   ["group/nuvla-admin"]
-                                                                 :view-acl [user-id]}
-                                                                :priority 50)
-                   job-msg (str "starting " id " with async " job-id)]
-               (when (not= job-status 201)
-                        (throw (r/ex-response "unable to create async job to start infrastructure service swarm" 500 id)))
-               (-> id
-                      (db/retrieve request)
-                      (a/can-edit-acl? request)
-                      (assoc :state "STARTING")
-                      (db/edit request))
-               (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
-               (r/map-response job-msg 202 id job-id))
-             (catch Exception e
-               (or (ex-data e) (throw e)))))
+  (try
+    (let [id (:id service)
+          user-id (:user-id (auth/current-authentication request))
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
+                                                       {:owners   ["group/nuvla-admin"]
+                                                        :view-acl [user-id]}
+                                                       :priority 50)
+          job-msg (str "starting " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to start infrastructure service swarm" 500 id)))
+      (-> id
+          (db/retrieve request)
+          (a/can-edit-acl? request)
+          (assoc :state "STARTING")
+          (db/edit request))
+      (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
-  ;
-  ;(log/error "SWARM POST ADD HOOK:\n"
-  ;           (with-out-str (clojure.pprint/pprint service)) "\n"
-  ;           (with-out-str (clojure.pprint/pprint template)))
-  ;nil)
+;
+;(log/error "SWARM POST ADD HOOK:\n"
+;           (with-out-str (clojure.pprint/pprint service)) "\n"
+;           (with-out-str (clojure.pprint/pprint template)))
+;nil)
 
 
 ;

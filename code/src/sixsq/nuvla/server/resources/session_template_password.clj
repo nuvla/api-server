@@ -21,17 +21,17 @@ credentials. This template is guaranteed to be present on all server instances.
 (def ^:const resource-url authn-method)
 
 
-(def default-template {:method           authn-method
-                       :instance         authn-method
-                       :name             "Password"
-                       :description      "Password Authentication via Username/Password"
+(def default-template {:method            authn-method
+                       :instance          authn-method
+                       :name              "Password"
+                       :description       "Password Authentication via Username/Password"
                        :resource-metadata (str "resource-metadata/" p/resource-type "-" authn-method)
-                       :group            "Login with Username/Password"
-                       :username         "username"
-                       :password         "password"
-                       :order            0
-                       :icon             "user"
-                       :acl              p/resource-acl})
+                       :group             "Login with Username/Password"
+                       :username          "username"
+                       :password          "password"
+                       :order             0
+                       :icon              "user"
+                       :acl               p/resource-acl})
 
 
 ;;

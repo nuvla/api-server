@@ -29,14 +29,14 @@ optional name can also be provided.
 ;;
 
 (def ^:const resource
-  {:method           registration-method
-   :instance         registration-method
-   :name             "Registration with Email and Password"
-   :description      "allows user registration with email, password, and optional username"
+  {:method            registration-method
+   :instance          registration-method
+   :name              "Registration with Email and Password"
+   :description       "allows user registration with email, password, and optional username"
    :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
-   :order            0
-   :icon             "user"
-   :acl              resource-acl})
+   :order             0
+   :icon              "user"
+   :acl               resource-acl})
 
 
 ;;

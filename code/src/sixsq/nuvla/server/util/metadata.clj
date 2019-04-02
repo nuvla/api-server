@@ -135,7 +135,7 @@
                    :resource-type resource-metadata/resource-type
                    :acl           {:owners   ["group/nuvla-admin"]
                                    :view-acl ["group/nuvla-anon"]}
-                   :type-uri       type-uri
+                   :type-uri      type-uri
                    :name          resource-name
                    :description   doc}
 

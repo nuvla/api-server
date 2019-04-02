@@ -30,7 +30,7 @@
 
 (defn create-callback [email-id base-uri]
   (let [callback-request {:params      {:resource-name callback/resource-type}
-                          :body        {:action         email-callback/action-name
+                          :body        {:action          email-callback/action-name
                                         :target-resource {:href email-id}}
                           :nuvla/authn auth/internal-identity}
 
@@ -75,7 +75,7 @@
 
 (defn send-validation-email [callback-url address]
   (let [{:keys [smtp-username conditions-url]
-         :as nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
+         :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
         body (cond-> (validation-email-body callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))

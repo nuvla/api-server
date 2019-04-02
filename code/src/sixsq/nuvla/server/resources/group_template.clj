@@ -34,10 +34,10 @@ creating a group and does not provide any useful defaults.
 ;;
 
 (def ^:const resource
-  {:id               (str resource-type "/generic")
-   :name             "Create Group"
-   :description      "used to create a new group"
-   :acl              resource-acl
+  {:id                (str resource-type "/generic")
+   :name              "Create Group"
+   :description       "used to create a new group"
+   :acl               resource-acl
    :resource-metadata "resource-metadata/group-template-generic"})
 
 

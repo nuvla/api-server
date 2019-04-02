@@ -28,7 +28,7 @@
                :edit-acl ["group/nuvla-admin" user]})
 
 (def user-authn-info {:nuvla/authn {:user-id user
-                               :claims       #{user "group/nuvla-user" "group/nuvla-anon"}}})
+                                    :claims  #{user "group/nuvla-user" "group/nuvla-anon"}}})
 
 
 (defn check-binding-queries [db-impl]

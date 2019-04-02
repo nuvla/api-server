@@ -35,7 +35,7 @@
    :azure-subscription-id   ""
    :infrastructure-services []
    :acl                     resource-acl
-   :resource-metadata        "resource-metadata/credential-template-driver-azure"})
+   :resource-metadata       "resource-metadata/credential-template-driver-azure"})
 
 
 ;;

@@ -18,7 +18,7 @@ cluster on a given cloud infrastructure.
 
                :name               "create swarm service template"
                :description        "template to create docker swarm"
-               :resource-metadata   (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
+               :resource-metadata  (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
                :type               "swarm"
                :service-credential {:href "credential/change-me"}
