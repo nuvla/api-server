@@ -26,5 +26,5 @@
 
 (defmethod infra-service/tpl->service method
   [{:keys [state] :as resource}]
-  (cond-> (dissoc resource :href :resourceMetadata)
+  (cond-> (dissoc resource :href :resource-metadata)
           (nil? state) (assoc :state "STARTED")))

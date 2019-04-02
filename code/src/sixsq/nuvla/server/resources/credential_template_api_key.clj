@@ -37,7 +37,7 @@ secret to access the server. The credential can optionally be limited in time.
    :description      "generates an API key and stores hash"
    :ttl              0
    :acl              resource-acl
-   :resourceMetadata "resource-metadata/credential-template-api-key"})
+   :resource-metadata "resource-metadata/credential-template-api-key"})
 
 
 ;;

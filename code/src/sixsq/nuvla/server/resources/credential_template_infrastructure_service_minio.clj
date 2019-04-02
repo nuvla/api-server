@@ -32,7 +32,7 @@
    :description             "Minio S3 credentials"
    :infrastructure-services []
    :acl                     resource-acl
-   :resourceMetadata        "resource-metadata/credential-template-minio"})
+   :resource-metadata        "resource-metadata/credential-template-minio"})
 
 
 ;;

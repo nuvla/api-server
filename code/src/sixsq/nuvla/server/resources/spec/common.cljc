@@ -151,10 +151,10 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::resourceMetadata
+(s/def ::resource-metadata
   (-> (st/spec ::cimi-core/resource-href)
-      (assoc :name "resourceMetadata"
-             :json-schema/name "resourceMetadata"
+      (assoc :name "resource-metadata"
+             :json-schema/name "resource-metadata"
              :json-schema/type "URI"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
@@ -299,7 +299,7 @@
             ::description
             ::tags
             ::parent
-            ::resourceMetadata
+            ::resource-metadata
             ::operations]})
 
 
@@ -315,7 +315,7 @@
             ::updated
             ::tags
             ::parent
-            ::resourceMetadata
+            ::resource-metadata
             ::operations
             ::acl]})
 
@@ -332,6 +332,6 @@
             ::updated
             ::tags
             ::parent
-            ::resourceMetadata
+            ::resource-metadata
             ::operations
             ::acl]})

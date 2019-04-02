@@ -26,7 +26,7 @@ pair.
                        :instance         authn-method
                        :name             "API Key"
                        :description      "Authentication with API Key and Secret"
-                       :resourceMetadata (str "resource-metadata/" p/resource-type "-" authn-method)
+                       :resource-metadata (str "resource-metadata/" p/resource-type "-" authn-method)
                        :group            "Login with API key/secret"
                        :key              "key"
                        :secret           "secret"

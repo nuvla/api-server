@@ -32,7 +32,7 @@ Stores the hashed value of a password.
    :name             "Hashed Password"
    :description      "stores hashed value of a password"
    :acl              resource-acl
-   :resourceMetadata "resource-metadata/credential-template-hashed-password"})
+   :resource-metadata "resource-metadata/credential-template-hashed-password"})
 
 
 ;;

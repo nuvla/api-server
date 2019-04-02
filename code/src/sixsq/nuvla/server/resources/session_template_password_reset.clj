@@ -25,7 +25,7 @@ the process. This template is guaranteed to be present on all server instances.
                        :instance         authn-method
                        :name             "Password reset"
                        :description      "Reset forgoten password via a Username"
-                       :resourceMetadata (str "resource-metadata/" p/resource-type "-" authn-method)
+                       :resource-metadata (str "resource-metadata/" p/resource-type "-" authn-method)
                        :group            "Login with Username/Password"
                        :username         "username"
                        :new-password     "new-password"

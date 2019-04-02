@@ -54,7 +54,7 @@
    :opt-un [::cimi-common/name
             ::cimi-common/description
             ::cimi-common/tags
-            ::cimi-common/resourceMetadata
+            ::cimi-common/resource-metadata
             ::cimi-common/operations]})
 
 (s/def ::schema
