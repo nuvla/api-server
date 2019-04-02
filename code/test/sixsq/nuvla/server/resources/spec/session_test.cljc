@@ -29,5 +29,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :method :expiry :template}]
       (stu/is-invalid ::session/session (dissoc cfg attr)))
 
-    (doseq [attr #{:identifier :server :clientIP}]
+    (doseq [attr #{:identifier :user :server :clientIP}]
       (stu/is-valid ::session/session (dissoc cfg attr)))))

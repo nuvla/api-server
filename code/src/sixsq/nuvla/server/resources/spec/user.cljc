@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-;; provide tighter definition of user id to be use elsewhere
+;; provide tighter definition of user id to be used elsewhere
 (def ^:const user-id-regex #"^user/[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$")
 (defn user-id? [s] (re-matches user-id-regex s))
 (s/def ::id (s/and string? user-id?))
