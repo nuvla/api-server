@@ -38,20 +38,18 @@
         description-attr "description"
         tags-attr ["one", "two"]]
 
-    (with-redefs [email-utils/smtp-cfg (fn []
-                                         {:host "smtp@example.com"
-                                          :port 465
-                                          :ssl  true
-                                          :user "admin"
-                                          :pass "password"})
+    (with-redefs [email-utils/extract-smtp-cfg
+                  (fn [_] {:host "smtp@example.com"
+                           :port 465
+                           :ssl  true
+                           :user "admin"
+                           :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! reset-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
-
-
 
       ;; password reset session template should exist
       (-> session-anon
