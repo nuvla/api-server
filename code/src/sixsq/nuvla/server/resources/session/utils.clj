@@ -39,7 +39,7 @@
    header. The result contains the authentication method, the user's identifier,
    the client's IP address, and the virtual host being used. NOTE: The expiry
    is not included and MUST be added afterwards."
-  [username tpl-href headers authn-method]
+  [username user-id tpl-href headers authn-method]
 
   ;; supports headers that have either string or keyword keys
   ;; ring spec defines headers as lower-cased strings
@@ -47,8 +47,9 @@
         client-ip (or (get headers "x-real-ip") (:x-real-ip headers))]
     (crud/new-identifier
       (cond-> {:method   authn-method
+               :user     user-id
                :template {:href tpl-href}}
-              username (assoc :username username)
+              username (assoc :identifier username)
               server (assoc :server server)
               client-ip (assoc :clientIP client-ip))
       p/resource-type)))

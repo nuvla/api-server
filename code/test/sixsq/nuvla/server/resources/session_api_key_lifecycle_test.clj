@@ -87,7 +87,7 @@
                        :method api-key-tpl/method
                        :expiry (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
                        :digest digest
-                       :claims {:identity "user/jane"
+                       :claims {:identity "user/abcdef01-abcd-abcd-abcd-abcdef012345"
                                 :roles    ["group/nuvla-user" "group/nuvla-anon"]}}
         mock-retrieve-by-id {(:id valid-api-key) valid-api-key
                              uuid                valid-api-key}]
@@ -164,7 +164,7 @@
               abs-uri (str p/service-context uri)]
 
           ;; check cookie-info in cookie
-          (is (= "user/jane" (:user-id cookie-info)))
+          (is (= "user/abcdef01-abcd-abcd-abcd-abcdef012345" (:user-id cookie-info)))
           (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
           (is (= uri (:session cookie-info)))               ;; uri is also session id
           (is (not (nil? (:exp cookie-info))))

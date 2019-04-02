@@ -18,7 +18,7 @@
              :updated       timestamp
              :acl           valid-acl
 
-             :parent        "user/abc"
+             :parent        "user/abcdef01-abcd-abcd-abcd-abcdef012345"
              :identifier    "some-long-identifier"}]
 
     (stu/is-valid ::user-identifier/schema cfg)

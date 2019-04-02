@@ -50,7 +50,8 @@
 (defn create-session-password
   [username user headers href]
   (if user
-    (let [session (sutils/create-session username href headers authn-method)
+    (let [user-id (:id user)
+          session (sutils/create-session username user-id href headers authn-method)
           cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
           cookie (cookies/create-cookie cookie-info)
           expires (ts/rfc822->iso8601 (:expires cookie))
