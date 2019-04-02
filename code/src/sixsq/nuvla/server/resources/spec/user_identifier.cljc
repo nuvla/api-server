@@ -11,12 +11,12 @@
                     (assoc :name "parent"
                            :json-schema/name "parent"
                            :json-schema/type "URI"
-                           :json-schema/providerMandatory false
-                           :json-schema/consumerMandatory true
+                           :json-schema/provider-mandatory false
+                           :json-schema/consumer-mandatory true
                            :json-schema/mutable false
-                           :json-schema/consumerWritable true
+                           :json-schema/consumer-writable true
 
-                           :json-schema/displayName "parent"
+                           :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
                            :json-schema/help "reference to the unique resource identifier of the parent resource"
                            :json-schema/group "metadata"
@@ -31,12 +31,12 @@
       (assoc :name "identifier"
              :json-schema/name "identifier"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "identifier"
+             :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
              :json-schema/help "unique (external) identifier to associate with a user"
              :json-schema/group "body"
@@ -54,7 +54,7 @@
    :opt-un [::cimi-common/name
             ::cimi-common/description
             ::cimi-common/tags
-            ::cimi-common/resourceMetadata
+            ::cimi-common/resource-metadata
             ::cimi-common/operations]})
 
 (s/def ::schema

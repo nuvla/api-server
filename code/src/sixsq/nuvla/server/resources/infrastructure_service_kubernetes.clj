@@ -33,7 +33,7 @@
 (defmethod infra-service/tpl->service method
   [{{:keys [href]} :service-credential :as resource}]
   (-> resource
-      (dissoc resource :href :resourceMetadata :endpoint :service-credential)
+      (dissoc resource :href :resource-metadata :endpoint :service-credential)
       (assoc :state "CREATED"
              :management-credential-id href)))
 

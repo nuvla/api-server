@@ -31,7 +31,7 @@
 (defn create-callback [email-id base-uri]
   (let [callback-request {:params      {:resource-name callback/resource-type}
                           :body        {:action         email-callback/action-name
-                                        :targetResource {:href email-id}}
+                                        :target-resource {:href email-id}}
                           :nuvla/authn auth/internal-identity}
 
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]

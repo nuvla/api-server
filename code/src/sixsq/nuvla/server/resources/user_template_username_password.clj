@@ -33,7 +33,7 @@ creating new accounts without email addresses.
    :instance         registration-method
    :name             "Registration with Username and Password"
    :description      "allows user registration with a username and password"
-   :resourceMetadata (str "resource-metadata/" p/resource-type "-" registration-method)
+   :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
    :order            0
    :icon             "user"
    :acl              resource-acl})

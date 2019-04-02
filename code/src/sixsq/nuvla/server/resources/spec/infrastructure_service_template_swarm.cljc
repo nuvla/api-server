@@ -15,13 +15,13 @@ on a cloud infrastructure.
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
              :json-schema/name "service-credential"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory true
              :json-schema/mutable false
-             :json-schema/consumerWritable true
-             :json-schema/templateMutable false
+             :json-schema/consumer-writable true
+             :json-schema/template-mutable false
 
-             :json-schema/displayName "service credential"
+             :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
              :json-schema/help "reference to service credential to use to create Docker Swarm"
              :json-schema/group "body"

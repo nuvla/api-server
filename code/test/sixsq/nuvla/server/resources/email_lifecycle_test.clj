@@ -45,7 +45,7 @@
                                (ltu/is-status 200)
                                :response
                                :body
-                               :typeURI)))
+                               :type-uri)))
 
     ;; admin query succeeds but is empty
     (-> session-admin

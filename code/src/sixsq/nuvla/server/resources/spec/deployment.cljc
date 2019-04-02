@@ -20,12 +20,12 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "state"
+             :json-schema/display-name "state"
              :json-schema/description "state of deployment"
              :json-schema/help "standard CIMI state of deployment"
              :json-schema/group "body"
@@ -50,12 +50,12 @@
       (assoc :name "api-key"
              :json-schema/name "api-key"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "API key"
+             :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
              :json-schema/help "credential identifier of API key pair"
              :json-schema/group "body"
@@ -69,12 +69,12 @@
       (assoc :name "api-secret"
              :json-schema/name "api-secret"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "API secret"
+             :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
              :json-schema/help "secret of API key pair"
              :json-schema/group "body"
@@ -88,13 +88,13 @@
       (assoc :name "api-credentials"
              :json-schema/name "api-credentials"
              :json-schema/type "map"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
              :json-schema/indexed false
 
-             :json-schema/displayName "Nuvla credentials"
+             :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
              :json-schema/help "Nuvla deployment API credentials"
              :json-schema/group "data"
@@ -108,13 +108,13 @@
       (assoc :name "api-endpoint"
              :json-schema/name "api-endpoint"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable false
-             :json-schema/consumerWritable false
+             :json-schema/consumer-writable false
              :json-schema/indexed false
 
-             :json-schema/displayName "Nuvla endpoint"
+             :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
              :json-schema/help "Nuvla endpoint"
              :json-schema/group "data"
@@ -139,13 +139,13 @@
       (assoc :name "data-objects"
              :json-schema/name "data-objects"
              :json-schema/type "Array"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
              :json-schema/indexed false
 
-             :json-schema/displayName "data objects"
+             :json-schema/display-name "data objects"
              :json-schema/description "list of data object identifiers"
              :json-schema/help "list of data object identifiers to make available to deployment"
              :json-schema/group "data"
@@ -174,13 +174,13 @@
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
              :json-schema/type "map"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory false
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
              :json-schema/indexed false
 
-             :json-schema/displayName "service offers"
+             :json-schema/display-name "service offers"
              :json-schema/description "data"
              :json-schema/help "list of available resource operations"
              :json-schema/group "data"

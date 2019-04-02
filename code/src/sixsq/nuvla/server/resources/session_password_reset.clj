@@ -45,7 +45,7 @@
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href username new-password redirectURI] :as resource} {:keys [base-uri headers] :as request}]
+  [{:keys [href username new-password redirect-url] :as resource} {:keys [base-uri headers] :as request}]
 
   (when-not (hashed-password/acceptable-password? new-password)
     (throw (r/ex-response hashed-password/acceptable-password-msg 400)))
@@ -64,7 +64,7 @@
 
     (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
-          callback-data {:redirectURI   redirectURI
+          callback-data {:redirect-url   redirect-url
                          :cookies       (:cookies cookie-header)
                          :hash-password (hashers/derive new-password)}]
 

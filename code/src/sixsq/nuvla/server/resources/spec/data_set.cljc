@@ -12,12 +12,12 @@
       (assoc :name "module-filter"
              :json-schema/name "module-filter"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "module filter"
+             :json-schema/display-name "module filter"
              :json-schema/description "filter for modules associated with this data set"
              :json-schema/help "filter for modules associated with this data set"
              :json-schema/group "body"
@@ -31,12 +31,12 @@
       (assoc :name "data-object-filter"
              :json-schema/name "data-object-filter"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "data object filter"
+             :json-schema/display-name "data object filter"
              :json-schema/description "filter for data-object resources associated with this data set"
              :json-schema/help "filter for data-object resources associated with this data set"
              :json-schema/group "body"
@@ -50,12 +50,12 @@
       (assoc :name "data-record-filter"
              :json-schema/name "data-record-filter"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/consumer-writable true
 
-             :json-schema/displayName "data record filter"
+             :json-schema/display-name "data record filter"
              :json-schema/description "filter for data-record resources associated with this data set"
              :json-schema/help "filter for data-record resources associated with this data set"
              :json-schema/group "body"

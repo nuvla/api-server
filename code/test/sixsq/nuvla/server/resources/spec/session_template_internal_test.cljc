@@ -21,7 +21,7 @@
              :method        "internal"
              :instance      "internal"
              :group         "Federated Identity"
-             :redirectURI   "https://nuv.la/webui/profile"
+             :redirect-url   "https://nuv.la/webui/profile"
 
              :username      "user"
              :password      "pass"}]
@@ -31,5 +31,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :method :instance :username :password}]
       (stu/is-invalid ::session-tpl/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:group :redirectURI}]
+    (doseq [attr #{:group :redirect-url}]
       (stu/is-valid ::session-tpl/schema (dissoc cfg attr)))))

@@ -11,9 +11,9 @@
 (defn strip-for-attributes
   [[attribute-name description]]
   (let [{:keys [name] :as desc} (select-keys description #{:name :namespace :uri :type
-                                                           :providerMandatory :consumerMandatory :consumerWritable
-                                                           :templateMutable :mutable
-                                                           :displayName :description :help
+                                                           :provider-mandatory :consumer-mandatory :consumer-writable
+                                                           :template-mutable :mutable
+                                                           :display-name :description :help
                                                            :group :category :order :hidden :sensitive :lines})]
     (cond-> desc
             (nil? name) (assoc :name attribute-name))))
@@ -99,8 +99,8 @@
       (string? ns) (find-ns (symbol ns)))))
 
 
-(defn ns->typeURI
-  "Uses the last term of the resource's namespace as the typeURI. For a normal
+(defn ns->type-uri
+  "Uses the last term of the resource's namespace as the type-uri. For a normal
    resource this is the same as the 'resource-url' value. This will be
    different for resources with subtypes. The argument can be any value that
    can be converted to a namespace with 'as-namespace'."
@@ -112,7 +112,7 @@
   "Returns the resource id for the metadata associated with the given namespace."
   [ns]
   (when ns
-    (str "resource-metadata/" (ns->typeURI ns))))
+    (str "resource-metadata/" (ns->type-uri ns))))
 
 
 (defn generate-metadata
@@ -127,7 +127,7 @@
                                  child-ns (str " \u2014 " (get-resource-type child-ns)))
 
            doc (get-doc (or child-ns parent-ns))
-           type-uri (ns->typeURI (or child-ns parent-ns))
+           type-uri (ns->type-uri (or child-ns parent-ns))
 
            common {:id            "resource-metadata/dummy-id"
                    :created       "1964-08-25T10:00:00.0Z"
@@ -135,7 +135,7 @@
                    :resource-type resource-metadata/resource-type
                    :acl           {:owners   ["group/nuvla-admin"]
                                    :view-acl ["group/nuvla-anon"]}
-                   :typeURI       type-uri
+                   :type-uri       type-uri
                    :name          resource-name
                    :description   doc}
 

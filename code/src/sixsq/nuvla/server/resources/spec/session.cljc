@@ -47,4 +47,4 @@
 (s/def ::session
   (su/only-keys-maps c/common-attrs
                      {:req-un [::method ::template ::expiry]
-                      :opt-un [::identifier ::user ::roles ::server ::clientIP ::hints/redirectURI]}))
+                      :opt-un [::identifier ::user ::roles ::server ::clientIP ::hints/redirect-url]}))

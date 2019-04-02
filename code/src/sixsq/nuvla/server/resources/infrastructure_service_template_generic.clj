@@ -18,7 +18,7 @@ resource.
 
                :name             "generic service template"
                :description      "template requiring basic service resource attributes"
-               :resourceMetadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
+               :resource-metadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
                :type             "my-service"
                :endpoint         "https://service.example.org:1234"

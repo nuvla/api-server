@@ -13,7 +13,7 @@
       (assoc :name "principal"
              :json-schema/name "principal"
              :json-schema/type "string"
-             :json-schema/displayName "principal"
+             :json-schema/display-name "principal"
              :json-schema/description "unique identifier for a principal")))
 
 
@@ -22,5 +22,5 @@
       (assoc :name "principals"
              :json-schema/name "principals"
              :json-schema/type "Array"
-             :json-schema/displayName "principals"
+             :json-schema/display-name "principals"
              :json-schema/description "list of principals")))

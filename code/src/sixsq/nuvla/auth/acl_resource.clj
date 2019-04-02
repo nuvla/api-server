@@ -192,7 +192,7 @@
                              :description
                              :tags
                              :parent
-                             :resourceMetadata
+                             :resource-metadata
                              :operations})
 
 

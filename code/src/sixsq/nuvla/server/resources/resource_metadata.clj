@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.resource-metadata
   "This resource provides metadata associated with other CIMI resourced. It
    can be used to understand the attributes, allow values, actions, and
-   capabilities. This information is linked to a resource through the typeURI
+   capabilities. This information is linked to a resource through the type-uri
    attribute."
   (:require
     [clojure.tools.logging :as log]
@@ -50,10 +50,10 @@
 
 (defn register
   "Registers a given resource-metadata resource with the server. The resource
-   document must be valid. The `typeURI` attribute will be used to create the
-   id of the resource as 'resource-metadata/typeURI'."
-  [{:keys [typeURI] :as resource}]
-  (when-let [full-resource (complete-resource typeURI resource)]
+   document must be valid. The `type-uri` attribute will be used to create the
+   id of the resource as 'resource-metadata/type-uri'."
+  [{:keys [type-uri] :as resource}]
+  (when-let [full-resource (complete-resource type-uri resource)]
     (let [id (:id full-resource)]
       (try
         (crud/validate full-resource)

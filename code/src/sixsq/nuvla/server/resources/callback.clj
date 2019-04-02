@@ -155,7 +155,7 @@ appropriate users.
   ([action-name base-uri href data]
    (let [callback-request {:params {:resource-name resource-type}
                            :body   (cond-> {:action         action-name
-                                            :targetResource {:href href}}
+                                            :target-resource {:href href}}
                                            data (assoc :data data))
                            :nuvla/authn auth/internal-identity}
          {{:keys [resource-id]} :body status :status} (crud/add callback-request)]

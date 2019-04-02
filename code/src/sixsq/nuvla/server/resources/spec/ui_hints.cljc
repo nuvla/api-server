@@ -12,13 +12,13 @@
       (assoc :name "group"
              :json-schema/name "group"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "group"
+             :json-schema/display-name "group"
              :json-schema/description "label for grouping related templates/forms"
              :json-schema/help "label for grouping related templates/forms"
              :json-schema/group "body"
@@ -32,13 +32,13 @@
       (assoc :name "order"
              :json-schema/name "order"
              :json-schema/type "integer"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "order"
+             :json-schema/display-name "order"
              :json-schema/description "hint for visualization order for field"
              :json-schema/help "hint for visualization order for field, larger is later"
              :json-schema/group "body"
@@ -55,13 +55,13 @@
       (assoc :name "hidden"
              :json-schema/name "hidden"
              :json-schema/type "boolean"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "hidden"
+             :json-schema/display-name "hidden"
              :json-schema/description "should template be hidden on browser UIs"
              :json-schema/help "hint for whether the template should be hidden on browser UIs"
              :json-schema/group "body"
@@ -75,13 +75,13 @@
       (assoc :name "icon"
              :json-schema/name "icon"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "icon"
+             :json-schema/display-name "icon"
              :json-schema/description "name for icon to associate to template"
              :json-schema/help "name for FontAwesome 5 icon to associate to template"
              :json-schema/group "body"
@@ -90,18 +90,18 @@
              :json-schema/sensitive false)))
 
 
-(s/def ::redirectURI
+(s/def ::redirect-url
   (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "redirectURI"
-             :json-schema/name "redirectURI"
+      (assoc :name "redirect-url"
+             :json-schema/name "redirect-url"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory false
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "redirectURI"
+             :json-schema/display-name "redirect-url"
              :json-schema/description "redirect URI to be used on success"
              :json-schema/help "redirect URI to be used on success to provide smoother workflow on browser UIs"
              :json-schema/group "body"
@@ -110,4 +110,4 @@
              :json-schema/sensitive false)))
 
 
-(def ui-hints-spec {:opt-un [::group ::order ::hidden ::icon ::redirectURI]})
+(def ui-hints-spec {:opt-un [::group ::order ::hidden ::icon ::redirect-url]})

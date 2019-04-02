@@ -14,13 +14,13 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "method"
+             :json-schema/display-name "method"
              :json-schema/description "authentication method"
              :json-schema/help "authentication method"
              :json-schema/group "body"
@@ -36,13 +36,13 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
+             :json-schema/provider-mandatory true
+             :json-schema/consumer-mandatory true
              :json-schema/mutable true
-             :json-schema/consumerWritable false
-             :json-schema/templateMutable true
+             :json-schema/consumer-writable false
+             :json-schema/template-mutable true
 
-             :json-schema/displayName "instance"
+             :json-schema/display-name "instance"
              :json-schema/description "instance name of authentication method"
              :json-schema/help "instance name of authentication method"
              :json-schema/group "body"

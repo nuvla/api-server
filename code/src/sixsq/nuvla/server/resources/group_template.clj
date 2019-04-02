@@ -38,7 +38,7 @@ creating a group and does not provide any useful defaults.
    :name             "Create Group"
    :description      "used to create a new group"
    :acl              resource-acl
-   :resourceMetadata "resource-metadata/group-template-generic"})
+   :resource-metadata "resource-metadata/group-template-generic"})
 
 
 ;;

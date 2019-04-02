@@ -141,9 +141,9 @@
 ;;
 
 (defn create-job
-  [targetResource action acl & {:keys [priority]}]
+  [target-resource action acl & {:keys [priority]}]
   (let [job-map (cond-> {:action         action
-                         :targetResource {:href targetResource}
+                         :target-resource {:href target-resource}
                          :acl            acl}
                         priority (assoc :priority priority))
         create-request {:params      {:resource-name resource-type}
