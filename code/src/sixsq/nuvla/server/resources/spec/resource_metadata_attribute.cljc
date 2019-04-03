@@ -3,6 +3,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -76,8 +77,23 @@
                                           ::sensitive
                                           ::lines
                                           ::template-mutable
-                                          ::indexed]))
+                                          ::indexed
+
+                                          ::value-scope/value-scope]))
+
+
+;; FIXME: This function shouldn't be necessary!
+;; There is a problem when using the ::value-scope spec directly in the
+;; s/map-of expression in st/spec.  Validation throws an exception when
+;; trying to validate against single-value or collection-item.  Hiding
+;; the details behind this function works, but clearly isn't ideal for
+;; error reporting. The reason for the problem needs to be determined
+;; and either worked around or fixed.
+(defn valid-attribute?
+  [x]
+  (s/valid? ::attribute x))
+
 
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of ::attribute :min-count 1 :type vector?)
+  (st/spec {:spec                (s/coll-of valid-attribute? :min-count 1 :type vector?)
             :json-schema/indexed false}))

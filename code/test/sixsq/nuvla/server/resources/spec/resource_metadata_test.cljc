@@ -26,9 +26,8 @@
 
 (def valid-contents {:type-uri     "https://sixsq.com/slipstream/SomeResource"
                      :actions      [action/valid]
-                     :attributes   [attribute/valid]
-                     :capabilities [capability/valid]
-                     :vscope       vscope/valid})
+                     :attributes   attribute/valid-attributes
+                     :capabilities [capability/valid]})
 
 
 (def valid (merge common valid-contents))

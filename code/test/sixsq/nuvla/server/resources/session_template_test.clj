@@ -15,10 +15,14 @@
 
 
 (deftest check-metadata-contents
-  (let [{:keys [attributes vscope capabilities actions]}
-        (mdtu/get-generated-metadata (str st/resource-type "-" api-key/resource-url))]
+  (let [{:keys [attributes capabilities actions]}
+        (mdtu/get-generated-metadata (str st/resource-type "-" api-key/resource-url))
+        
+        value-scope-count (->> attributes
+                               (map :value-scope)
+                               count)]
 
     (is (nil? actions))
     (is (nil? capabilities))
     (is attributes)
-    (is (pos? (count vscope)))))
+    (is (pos? value-scope-count))))

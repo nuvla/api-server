@@ -9,17 +9,19 @@
 
 
 (defn strip-for-attributes
-  [[attribute-name description]]
-  (let [{:keys [name] :as desc} (select-keys description #{:name :namespace :uri :type
+  [[attribute-name {:keys [value-scope] :as description}]]
+  (let [{:keys [name] :as desc} (select-keys description #{:name :type
                                                            :provider-mandatory :consumer-mandatory :consumer-writable
                                                            :template-mutable :mutable
                                                            :display-name :description :help
-                                                           :group :category :order :hidden :sensitive :lines})]
+                                                           :group :category :order :hidden :sensitive :lines
+                                                           :indexed})]
     (cond-> desc
-            (nil? name) (assoc :name attribute-name))))
+            (nil? name) (assoc :name attribute-name)
+            value-scope (assoc :value-scope value-scope))))
 
 
-(defn extract-value-scope
+#_(defn extract-value-scope
   [[attribute-name {:keys [value-scope] :as description}]]
   (when (and attribute-name value-scope)
     [(keyword attribute-name) value-scope]))
@@ -37,7 +39,7 @@
                         (sort-by :name)
                         vec)
 
-        vscope (->> json
+        #_vscope #_(->> json
                     :properties
                     (map extract-value-scope)
                     (remove nil?)
@@ -45,7 +47,9 @@
 
     (cond-> {}
             (seq attributes) (assoc :attributes attributes)
-            (seq vscope) (assoc :vscope vscope))))
+            ;(seq vscope)
+            ;(assoc :vscope vscope)
+            )))
 
 
 (defn get-doc
