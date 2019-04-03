@@ -8,10 +8,6 @@
 
 (s/def ::name ::cimi-core/token)
 
-(s/def ::namespace ::cimi-core/uri)
-
-(s/def ::uri ::cimi-core/uri)
-
 (s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
                 "map" "Array" "Any"})
 
@@ -51,6 +47,14 @@
 
 
 ;;
+;; this attribute helps the interaction with elasticsearch
+;; to prevent unwanted indexing of attributes
+;;
+
+(s/def ::indexed boolean?)
+
+
+;;
 ;; NOTE: The CIMI specification states that the :type attributes will
 ;; not be present for standard CIMI attributes.  This implementation
 ;; makes :type mandatory for all attribute descriptions.  This makes
@@ -62,9 +66,7 @@
                                           ::consumer-mandatory
                                           ::mutable
                                           ::consumer-writable]
-                                 :opt-un [::namespace
-                                          ::uri
-                                          ::display-name
+                                 :opt-un [::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -73,7 +75,8 @@
                                           ::hidden
                                           ::sensitive
                                           ::lines
-                                          ::template-mutable]))
+                                          ::template-mutable
+                                          ::indexed]))
 
 (s/def ::attributes
   (st/spec {:spec                (s/coll-of ::attribute :min-count 1 :type vector?)
