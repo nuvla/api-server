@@ -43,11 +43,15 @@
 
 
 (defmethod callback/execute action-name
-  [{{:keys [href]} :target-resource :as callback-resource} request]
+  [{{:keys [href]} :target-resource
+    {:keys [redirect-url]} :data :as callback-resource} request]
   (let [{:keys [id state email] :as user} (crud/retrieve-by-id-as-admin href)]
     (if (= "NEW" state)
       (let [msg (str "email for " id " successfully validated")]
         (validated-email! id email)
         (log/info msg)
-        (r/map-response msg 200 id))
+        (if redirect-url
+          (merge (r/map-response msg 303 id)
+                 {:headers {"Location" redirect-url}})
+          (r/map-response msg 200 id)))
       (log-util/log-and-throw 400 (format "%s is not in the 'NEW' state" id)))))

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.session-password-reset
   (:require
     [buddy.hashers :as hashers]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-password-reset :as user-password-reset]

@@ -47,12 +47,13 @@
 
 
 (defmethod p/post-user-add email-password/registration-method
-  [{user-id :id :as resource} {:keys [base-uri body] :as request}]
+  [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
   (try
-    (let [{{:keys [email password username]} :template} body]
-      (user-utils/create-user-subresources user-id email password username)
-      (-> (create-user-email-callback base-uri user-id)
+    (let [{{:keys [email password username]} :template} body
+          callback-data {:redirect-url redirect-url}]
+      (user-utils/create-user-subresources id email password username)
+      (-> (create-user-email-callback base-uri id callback-data)
           (email-utils/send-validation-email email)))
     (catch Exception e
-      (user-utils/delete-user user-id)
+      (user-utils/delete-user id)
       (throw e))))
