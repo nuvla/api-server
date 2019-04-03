@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.resources.spec.resource-metadata-action :as action]
     [sixsq.nuvla.server.resources.spec.resource-metadata-attribute :as attribute]
     [sixsq.nuvla.server.resources.spec.resource-metadata-capability :as capability]
-    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
@@ -20,6 +19,5 @@
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::type-uri]
                       :opt-un [::attribute/attributes
-                               ::value-scope/vscope
                                ::capability/capabilities
                                ::action/actions]}))

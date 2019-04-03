@@ -3,14 +3,11 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 (s/def ::name ::cimi-core/token)
-
-(s/def ::namespace ::cimi-core/uri)
-
-(s/def ::uri ::cimi-core/uri)
 
 (s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
                 "map" "Array" "Any"})
@@ -51,6 +48,14 @@
 
 
 ;;
+;; this attribute helps the interaction with elasticsearch
+;; to prevent unwanted indexing of attributes
+;;
+
+(s/def ::indexed boolean?)
+
+
+;;
 ;; NOTE: The CIMI specification states that the :type attributes will
 ;; not be present for standard CIMI attributes.  This implementation
 ;; makes :type mandatory for all attribute descriptions.  This makes
@@ -62,9 +67,7 @@
                                           ::consumer-mandatory
                                           ::mutable
                                           ::consumer-writable]
-                                 :opt-un [::namespace
-                                          ::uri
-                                          ::display-name
+                                 :opt-un [::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -73,8 +76,24 @@
                                           ::hidden
                                           ::sensitive
                                           ::lines
-                                          ::template-mutable]))
+                                          ::template-mutable
+                                          ::indexed
+
+                                          ::value-scope/value-scope]))
+
+
+;; FIXME: This function shouldn't be necessary!
+;; There is a problem when using the ::value-scope spec directly in the
+;; s/map-of expression in st/spec.  Validation throws an exception when
+;; trying to validate against single-value or collection-item.  Hiding
+;; the details behind this function works, but clearly isn't ideal for
+;; error reporting. The reason for the problem needs to be determined
+;; and either worked around or fixed.
+(defn valid-attribute?
+  [x]
+  (s/valid? ::attribute x))
+
 
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of ::attribute :min-count 1 :type vector?)
+  (st/spec {:spec                (s/coll-of valid-attribute? :min-count 1 :type vector?)
             :json-schema/indexed false}))
