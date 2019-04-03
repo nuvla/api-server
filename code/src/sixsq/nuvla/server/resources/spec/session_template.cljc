@@ -15,7 +15,7 @@
              :json-schema/name "method"
              :json-schema/type "string"
              :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
              :json-schema/consumer-writable false
              :json-schema/template-mutable true
@@ -37,7 +37,7 @@
              :json-schema/name "instance"
              :json-schema/type "string"
              :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
+             :json-schema/consumer-mandatory false
              :json-schema/mutable true
              :json-schema/consumer-writable false
              :json-schema/template-mutable true
