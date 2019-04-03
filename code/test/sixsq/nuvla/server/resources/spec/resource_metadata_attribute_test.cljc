@@ -12,8 +12,6 @@
             :mutable            true
             :consumer-writable  true
 
-            :namespace          "https://sixsq.com/slipstream/"
-            :uri                "https://sixsq.com/slipstream/param-info"
             :display-name       "my action"
             :description        "a wonderful attribute"
             :help               "just give me a value"
@@ -22,7 +20,8 @@
             :order              10
             :hidden             false
             :sensitive          false
-            :lines              3})
+            :lines              3
+            :indexed            true})
 
 
 (deftest check-attribute
@@ -31,11 +30,14 @@
 
   (stu/is-valid ::spec/attribute valid)
 
-  (doseq [k #{:namespace :uri :display-name :description :help :group :category :order :hidden :sensitive :lines}]
-    (stu/is-valid ::spec/attribute (dissoc valid k)))
-
+  ;; mandatory attributes
   (doseq [k #{:name :type :provider-mandatory :consumer-mandatory :mutable :consumer-writable}]
     (stu/is-invalid ::spec/attribute (dissoc valid k)))
+
+  ;; optional attributes
+  (doseq [k #{:namespace :uri :display-name :description :help :group
+              :category :order :hidden :sensitive :lines :indexed}]
+    (stu/is-valid ::spec/attribute (dissoc valid k)))
 
   (stu/is-invalid ::spec/attribute (assoc valid :badAttribute 1))
   (stu/is-invalid ::spec/attribute (assoc valid :name " bad name "))
