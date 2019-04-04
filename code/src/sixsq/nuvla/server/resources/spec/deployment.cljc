@@ -138,7 +138,7 @@
   (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
       (assoc :name "data-objects"
              :json-schema/name "data-objects"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable true

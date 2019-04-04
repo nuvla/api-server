@@ -33,7 +33,7 @@
   (-> (st/spec ::cimi-core/uri)
       (assoc :name "resource-type"
              :json-schema/name "resource-type"
-             :json-schema/type "URI"
+             :json-schema/type "uri"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory false
              :json-schema/mutable false
@@ -53,7 +53,7 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "created"
              :json-schema/name "created"
-             :json-schema/type "dateTime"
+             :json-schema/type "date-time"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory false
              :json-schema/mutable false
@@ -73,7 +73,7 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "updated"
              :json-schema/name "updated"
-             :json-schema/type "dateTime"
+             :json-schema/type "date-time"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory false
              :json-schema/mutable true
@@ -135,7 +135,7 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "parent"
              :json-schema/name "parent"
-             :json-schema/type "URI"
+             :json-schema/type "uri"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory false
              :json-schema/mutable false
@@ -155,7 +155,7 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "resource-metadata"
              :json-schema/name "resource-metadata"
-             :json-schema/type "URI"
+             :json-schema/type "uri"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable true
@@ -209,7 +209,7 @@
   (-> (st/spec (s/coll-of ::resource-link :min-count 1))
       (assoc :name "resourceLinks"
              :json-schema/name "resourceLinks"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable true
@@ -247,7 +247,7 @@
   (-> (st/spec (s/coll-of ::operation :min-count 1))
       (assoc :name "operations"
              :json-schema/name "operations"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable true
@@ -268,7 +268,7 @@
   (-> (st/spec (s/coll-of string? :min-count 1 :into #{}))
       (assoc :name "tags"
              :json-schema/name "tags"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable true

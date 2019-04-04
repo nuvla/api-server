@@ -4,13 +4,16 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
-    [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::name ::cimi-core/token)
 
-(s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
-                "map" "Array" "Any"})
+(s/def ::type #{"boolean"
+                "date-time" "duration"
+                "long" "integer" "number" "double"
+                "string" "resource-id" "uri"
+                "map" "array"
+                "any"})
 
 (s/def ::provider-mandatory boolean?)
 

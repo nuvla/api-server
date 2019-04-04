@@ -18,7 +18,7 @@
   (-> (st/spec (s/coll-of ::user-id :kind vector? :distinct true))
       (assoc :name "users"
              :json-schema/name "users"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory true
              :json-schema/mutable true

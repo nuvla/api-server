@@ -30,7 +30,7 @@
 (defn treat-children
   [{:keys [type] :as description}]
   (case type
-    "Array" (treat-array description)
+    "array" (treat-array description)
     "map" (treat-map description)
     nil))
 

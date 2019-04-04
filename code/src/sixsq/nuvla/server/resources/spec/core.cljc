@@ -56,7 +56,7 @@
   (-> (st/spec cu/as-datetime)
       (assoc :name "timestamp"
              :json-schema/description "UTC timestamp"
-             :json-schema/type "dateTime")))
+             :json-schema/type "date-time")))
 
 
 ;; FIXME: Replace this spec with one that enforces the URI grammar.
@@ -158,4 +158,4 @@
   (-> (st/spec (s/and string? #(re-matches resource-href-regex %)))
       (assoc :name "resource href"
              :json-schema/description "concatenation of a resource type and resource identifier separated with a slash"
-             :json-schema/type "ref")))
+             :json-schema/type "map")))

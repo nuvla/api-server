@@ -21,6 +21,6 @@
   (-> (st/spec (s/coll-of ::principal :kind vector? :distinct true))
       (assoc :name "principals"
              :json-schema/name "principals"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "principals"
              :json-schema/description "list of principals")))
