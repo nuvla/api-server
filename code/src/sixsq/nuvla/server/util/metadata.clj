@@ -21,15 +21,9 @@
             value-scope (assoc :value-scope value-scope))))
 
 
-#_(defn extract-value-scope
-  [[attribute-name {:keys [value-scope] :as description}]]
-  (when (and attribute-name value-scope)
-    [(keyword attribute-name) value-scope]))
-
-
 (defn generate-attributes
-  "generate the attributes and vscope fields of the resource metadata from the
-   schema definition"
+  "generate the attributes and value-scope fields of the resource metadata
+   from the schema definition"
   [spec]
   (let [json (jsc/transform spec)
 
@@ -37,19 +31,11 @@
                         :properties
                         (map strip-for-attributes)
                         (sort-by :name)
-                        vec)
+                        vec)]
 
-        #_vscope #_(->> json
-                    :properties
-                    (map extract-value-scope)
-                    (remove nil?)
-                    (into {}))]
-
-    (cond-> {}
-            (seq attributes) (assoc :attributes attributes)
-            ;(seq vscope)
-            ;(assoc :vscope vscope)
-            )))
+    (if (seq attributes)
+      {:attributes attributes}
+      {})))
 
 
 (defn get-doc
@@ -104,8 +90,8 @@
 
 
 (defn ns->type-uri
-  "Uses the last term of the resource's namespace as the type-uri. For a normal
-   resource this is the same as the 'resource-url' value. This will be
+  "Uses the last term of the resource's namespace as the type-uri. For a
+   normal resource this is the same as the 'resource-url' value. This will be
    different for resources with subtypes. The argument can be any value that
    can be converted to a namespace with 'as-namespace'."
   [ns]
@@ -113,14 +99,15 @@
 
 
 (defn ns->resource-metadata-id
-  "Returns the resource id for the metadata associated with the given namespace."
+  "Returns the resource id for the metadata associated with the given
+   namespace."
   [ns]
   (when ns
     (str "resource-metadata/" (ns->type-uri ns))))
 
 
 (defn generate-metadata
-  "Generate the ResourceMetadata from the provided namespace"
+  "Generate the resource-metadata from the provided namespace"
   ([parent-ns spec]
    (generate-metadata nil parent-ns spec))
   ([child-ns parent-ns spec]
