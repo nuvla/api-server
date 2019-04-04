@@ -13,10 +13,8 @@
       (assoc :name "action"
              :json-schema/name "action"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "action"
              :json-schema/description "name of action"
@@ -32,10 +30,8 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "state"
              :json-schema/description "current state of callback"
@@ -54,10 +50,8 @@
       (assoc :name "target-resource"
              :json-schema/name "target-resource"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
@@ -73,10 +67,8 @@
       (assoc :name "data"
              :json-schema/name "data"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable false
              :json-schema/indexed false
 
              :json-schema/display-name "data"
@@ -93,10 +85,8 @@
       (assoc :name "expires"
              :json-schema/name "expires"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "expires"
              :json-schema/description "expiry timestamp for callback action"

@@ -38,8 +38,7 @@
 (defn strip-for-attributes
   [[attribute-name {:keys [value-scope] :as description}]]
   (let [{:keys [name] :as desc} (select-keys description #{:name :type
-                                                           :provider-mandatory :consumer-mandatory :consumer-writable
-                                                           :template-mutable :mutable
+                                                           :server-managed :required :editable
                                                            :display-name :description :help
                                                            :group :category :order :hidden :sensitive :lines
                                                            :indexed})

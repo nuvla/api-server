@@ -20,10 +20,8 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "state"
              :json-schema/description "state of deployment"
@@ -50,10 +48,8 @@
       (assoc :name "api-key"
              :json-schema/name "api-key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
@@ -69,10 +65,8 @@
       (assoc :name "api-secret"
              :json-schema/name "api-secret"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
@@ -88,10 +82,8 @@
       (assoc :name "api-credentials"
              :json-schema/name "api-credentials"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla credentials"
@@ -108,10 +100,8 @@
       (assoc :name "api-endpoint"
              :json-schema/name "api-endpoint"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla endpoint"
@@ -139,10 +129,8 @@
       (assoc :name "data-objects"
              :json-schema/name "data-objects"
              :json-schema/type "array"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "data objects"
@@ -174,10 +162,8 @@
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "service offers"

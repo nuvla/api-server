@@ -12,11 +12,8 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "service creation method"
@@ -32,10 +29,8 @@
       (assoc :name "type"
              :json-schema/name "type"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "service type"
              :json-schema/description "kebab-case identifier for the service type"
@@ -51,10 +46,8 @@
       (assoc :name "endpoint"
              :json-schema/name "endpoint"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "endpoint"
              :json-schema/description "public API endpoint for the service"
@@ -75,10 +68,8 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "state"
              :json-schema/description "state of service"
@@ -102,10 +93,8 @@
       (assoc :name "management-credential-id"
              :json-schema/name "management-credential-id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "management credential id"
              :json-schema/description "id of the credential used to manage this service"
@@ -127,10 +116,8 @@
       (assoc :name "node"
              :json-schema/name "node"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "node"
              :json-schema/description "node within the swarm cluster"
@@ -146,11 +133,8 @@
       (assoc :name "nodes"
              :json-schema/name "nodes"
              :json-schema/type "array"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "nodes"
              :json-schema/description "List of base64 encoded configurations for each Swarm machine"

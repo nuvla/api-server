@@ -12,10 +12,8 @@
       (assoc :name "module-filter"
              :json-schema/name "module-filter"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "module filter"
              :json-schema/description "filter for modules associated with this data set"
@@ -31,10 +29,8 @@
       (assoc :name "data-object-filter"
              :json-schema/name "data-object-filter"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "data object filter"
              :json-schema/description "filter for data-object resources associated with this data set"
@@ -50,10 +46,8 @@
       (assoc :name "data-record-filter"
              :json-schema/name "data-record-filter"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "data record filter"
              :json-schema/description "filter for data-record resources associated with this data set"

@@ -15,19 +15,18 @@
                 "map" "array"
                 "any"})
 
-(s/def ::provider-mandatory boolean?)
+;;
+;; information about whether clients can/should specify a key
+;;
 
-(s/def ::consumer-mandatory boolean?)
+(s/def ::server-managed boolean?)
 
-(s/def ::mutable boolean?)
+(s/def ::required boolean?)
 
-(s/def ::consumer-writable boolean?)
-
-(s/def ::template-mutable boolean?)
+(s/def ::editable boolean?)
 
 
 ;;
-;; the following attributes are extensions to the standard that are
 ;; useful for rendering forms for browser-based clients
 ;;
 
@@ -74,10 +73,9 @@
                                           ::type]
                                  :opt-un [::child-types
 
-                                          ::provider-mandatory
-                                          ::consumer-mandatory
-                                          ::mutable
-                                          ::consumer-writable
+                                          ::server-managed
+                                          ::required
+                                          ::editable
 
                                           ::display-name
                                           ::description
@@ -88,7 +86,6 @@
                                           ::hidden
                                           ::sensitive
                                           ::lines
-                                          ::template-mutable
                                           ::indexed
 
                                           ::value-scope/value-scope]))

@@ -14,11 +14,8 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "authentication method"
@@ -36,11 +33,8 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "instance"
              :json-schema/description "instance name of authentication method"

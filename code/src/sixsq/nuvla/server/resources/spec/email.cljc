@@ -12,10 +12,8 @@
       (assoc :name "address"
              :json-schema/name "address"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "address"
              :json-schema/description "email address"
@@ -31,10 +29,8 @@
       (assoc :name "validated"
              :json-schema/name "validated"
              :json-schema/type "boolean"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "validated"
              :json-schema/description "validated email address?"

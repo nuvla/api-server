@@ -12,10 +12,8 @@
       (assoc :name "project_id"
              :json-schema/name "project_id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "project_id"
              :json-schema/description "Google Compute project ID to use"
@@ -31,10 +29,8 @@
       (assoc :name "private_key_id"
              :json-schema/name "private_key_id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "private_key_id"
              :json-schema/description "ID of the private key"
@@ -50,10 +46,8 @@
       (assoc :name "private_key"
              :json-schema/name "private_key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "private_key"
              :json-schema/description "Private key content"
@@ -69,10 +63,8 @@
       (assoc :name "client_email"
              :json-schema/name "client_email"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "client_email"
              :json-schema/description "Client email associated with the service account"
@@ -88,10 +80,8 @@
       (assoc :name "client_id"
              :json-schema/name "client_id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "client_id"
              :json-schema/description "Client ID associated with the service account"
@@ -107,10 +97,8 @@
 ;           (assoc :name "auth_uri"
 ;                  :json-schema/name "auth_uri"
 ;                  :json-schema/type "string"
-;                  :json-schema/provider-mandatory false
-;                  :json-schema/consumer-mandatory false
-;                  :json-schema/mutable true
-;                  :json-schema/consumer-writable true
+;                  :json-schema/required false
+;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "auth_uri"
 ;                  :json-schema/description "Authentication URI"
@@ -126,10 +114,8 @@
 ;           (assoc :name "token_uri"
 ;                  :json-schema/name "token_uri"
 ;                  :json-schema/type "string"
-;                  :json-schema/provider-mandatory false
-;                  :json-schema/consumer-mandatory false
-;                  :json-schema/mutable true
-;                  :json-schema/consumer-writable true
+;                  :json-schema/required false
+;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "token_uri"
 ;                  :json-schema/description "Token URI"
@@ -145,10 +131,8 @@
 ;           (assoc :name "auth_provider_x509_cert_url"
 ;                  :json-schema/name "auth_provider_x509_cert_url"
 ;                  :json-schema/type "string"
-;                  :json-schema/provider-mandatory false
-;                  :json-schema/consumer-mandatory false
-;                  :json-schema/mutable true
-;                  :json-schema/consumer-writable true
+;                  :json-schema/required false
+;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "auth_provider_x509_cert_url"
 ;                  :json-schema/description "Provider X509 certificates URL"
@@ -164,10 +148,8 @@
 ;           (assoc :name "client_x509_cert_url"
 ;                  :json-schema/name "client_x509_cert_url"
 ;                  :json-schema/type "string"
-;                  :json-schema/provider-mandatory false
-;                  :json-schema/consumer-mandatory false
-;                  :json-schema/mutable true
-;                  :json-schema/consumer-writable true
+;                  :json-schema/required false
+;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "client_x509_cert_url"
 ;                  :json-schema/description "Client X509 certificates URL"
