@@ -59,11 +59,12 @@
     (stu/is-valid ::spec/attribute attribute)
 
     ;; mandatory attributes
-    (doseq [k #{:name :type :provider-mandatory :consumer-mandatory :mutable :consumer-writable}]
+    (doseq [k #{:name :type}]
       (stu/is-invalid ::spec/attribute (dissoc attribute k)))
 
     ;; optional attributes
-    (doseq [k #{:namespace :uri :display-name :description :help :group
+    (doseq [k #{:provider-mandatory :consumer-mandatory :mutable :consumer-writable
+                :display-name :description :help :group
                 :category :order :hidden :sensitive :lines :indexed}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 

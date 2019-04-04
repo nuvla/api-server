@@ -68,12 +68,13 @@
 (s/def ::child-types (s/coll-of ::attribute :min-count 1 :type vector?))
 
 (s/def ::attribute (su/only-keys :req-un [::name
-                                          ::type
+                                          ::type]
+                                 :opt-un [::child-types
+
                                           ::provider-mandatory
                                           ::consumer-mandatory
                                           ::mutable
-                                          ::consumer-writable]
-                                 :opt-un [::child-types
+                                          ::consumer-writable
 
                                           ::display-name
                                           ::description
@@ -90,18 +91,8 @@
                                           ::value-scope/value-scope]))
 
 
-;; FIXME: This function shouldn't be necessary!
-;; There is a problem when using the ::attribute spec directly in the
-;; s/coll-of expression in st/spec.  Validation throws an exception when
-;; trying to validate against single-value or collection-item.  Hiding
-;; the details behind this function works, but clearly isn't ideal for
-;; error reporting. The reason for the problem needs to be determined
-;; and either worked around or fixed.
-(defn valid-attribute?
-  [x]
-  (s/valid? ::attribute x))
-
-
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of valid-attribute? :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/coll-of ::attribute :min-count 1 :type vector?))

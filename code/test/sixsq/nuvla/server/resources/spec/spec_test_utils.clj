@@ -8,7 +8,7 @@
 
 (defmacro is-valid
   "Verifies that the form conforms to the spec with s/valid?. If it does not,
-   the message will the the analysis from expound."
+   the message will the analysis from expound."
   [spec form]
   `(is (true? (s/valid? ~spec ~form)) (expound/expound-str ~spec ~form)))
 

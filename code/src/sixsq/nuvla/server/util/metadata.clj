@@ -8,6 +8,33 @@
     (clojure.lang Namespace)))
 
 
+(declare strip-for-attributes)
+
+
+(defn treat-array
+  [{:keys [items] :as description}]
+  (when (seq items)
+    ;; items is a single attribute map, not a collection
+    [(strip-for-attributes ["item" items])]))
+
+
+(defn treat-map
+  [{:keys [properties] :as description}]
+  (when (seq properties)
+    (->> properties
+         (map strip-for-attributes)
+         (remove nil?)
+         vec)))
+
+
+(defn treat-children
+  [{:keys [type] :as description}]
+  (case type
+    "Array" (treat-array description)
+    "map" (treat-map description)
+    nil))
+
+
 (defn strip-for-attributes
   [[attribute-name {:keys [value-scope] :as description}]]
   (let [{:keys [name] :as desc} (select-keys description #{:name :type
@@ -15,10 +42,12 @@
                                                            :template-mutable :mutable
                                                            :display-name :description :help
                                                            :group :category :order :hidden :sensitive :lines
-                                                           :indexed})]
+                                                           :indexed})
+        child-types (treat-children description)]
     (cond-> desc
             (nil? name) (assoc :name attribute-name)
-            value-scope (assoc :value-scope value-scope))))
+            value-scope (assoc :value-scope value-scope)
+            child-types (assoc :child-types child-types))))
 
 
 (defn generate-attributes
