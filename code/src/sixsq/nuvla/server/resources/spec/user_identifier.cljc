@@ -13,7 +13,6 @@
                            :json-schema/type "uri"
                            :json-schema/required true
                            :json-schema/editable false
-
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
                            :json-schema/help "reference to the unique resource identifier of the parent resource"
