@@ -5,16 +5,12 @@
     [clj-time.format :as time-fmt]
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
-    [clojure.walk :as walk]
     [expound.alpha :as expound]
     [sixsq.nuvla.server.util.log :as logu])
   (:import
     (java.security MessageDigest)
     (java.util UUID)
     (org.joda.time DateTime)))
-
-
-(def ^:const form-urlencoded "application/x-www-form-urlencoded")
 
 
 ;;
@@ -136,12 +132,6 @@
         nil))))
 
 
-(defn as-text
-  "A function that marks a field as being parsable text rather than a keyword."
-  [data]
-  (s/and string? (complement str/blank?)))
-
-
 (defn update-timestamps
   "Sets the updated attribute and optionally the created attribute
    in the request.  The created attribute is only set if the existing value
@@ -210,39 +200,3 @@
   "Removes required elements defined in `specs` set from `keys-spec` spec."
   [keys-spec specs]
   (remove-in keys-spec :req-un specs))
-
-
-(defn remove-opt
-  "Removes optional elements defined in `specs` set from `keys-spec` spec."
-  [keys-spec specs]
-  (remove-in keys-spec :opt-un specs))
-
-
-(defn convert-form
-  "Allow form encoded data to be supplied for a session. This is required to
-   support external authentication methods triggered via a 'submit' button in
-   an HTML form. This takes the flat list of form parameters, keywordizes the
-   keys, and adds the parent :template key."
-  [tpl form-data]
-  {tpl (walk/keywordize-keys form-data)})
-
-
-(defn is-content-type?
-  "Checks if the given header name is 'content-type' in various forms."
-  [k]
-  (try
-    (= :content-type (-> k name str/lower-case keyword))
-    (catch Exception _
-      false)))
-
-
-(defn is-form?
-  "Checks the headers to see if the content type is
-   application/x-www-form-urlencoded. Converts the header names to lowercase
-   and keywordizes the result to collect the various header name variants."
-  [headers]
-  (->> headers
-       (filter #(is-content-type? (first %)))
-       first
-       second
-       (= form-urlencoded)))
