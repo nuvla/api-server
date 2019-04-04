@@ -10,7 +10,7 @@
 (s/def ::parent (-> (st/spec ::user/id)
                     (assoc :name "parent"
                            :json-schema/name "parent"
-                           :json-schema/type "URI"
+                           :json-schema/type "uri"
                            :json-schema/provider-mandatory false
                            :json-schema/consumer-mandatory true
                            :json-schema/mutable false

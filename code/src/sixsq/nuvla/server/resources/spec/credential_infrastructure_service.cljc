@@ -30,7 +30,7 @@
   (-> (st/spec (s/coll-of ::infrastructure-service-id :kind vector?))
       (assoc :name "infrastructure-services"
              :json-schema/name "infrastructure-services"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory true
              :json-schema/mutable true

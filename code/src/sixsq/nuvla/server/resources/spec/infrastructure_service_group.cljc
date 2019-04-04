@@ -30,7 +30,7 @@
   (-> (st/spec (s/coll-of ::cimi-common/resource-link :kind vector?))
       (assoc :name "infrastructure-services"
              :json-schema/name "infrastructure-services"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory true
              :json-schema/consumer-mandatory false
              :json-schema/mutable true

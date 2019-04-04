@@ -145,7 +145,7 @@
   (-> (st/spec (s/coll-of ::node :kind vector?))
       (assoc :name "nodes"
              :json-schema/name "nodes"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
              :json-schema/consumer-mandatory false
              :json-schema/mutable false

@@ -45,12 +45,12 @@
     allOf (first allOf)
     anyOf (first anyOf)
     type (case type
-           "ref" (assoc m :type "object")
            "map" (assoc m :type "object")
-           "URI" (assoc m :type "keyword")
            "string" (if (= format "date-time")
                       (assoc-date m)
                       (assoc m :type "keyword"))
+           "resource-id" (assoc m :type "keyword")
+           "uri" (assoc m :type "keyword")
            "number" (-> m
                         (assoc :type "double")
                         (dissoc :format))
@@ -60,9 +60,8 @@
            "long" (-> m
                       (assoc :type "long")
                       (dissoc :format))
-           "dateTime" (assoc-date m)
+           "date-time" (assoc-date m)
            "array" (:items m)
-           "Array" (:items m)
            m)
     enum (let [vs (:enum m)
                type (set-type-from-first-child vs)]
