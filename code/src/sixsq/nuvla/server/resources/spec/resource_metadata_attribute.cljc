@@ -56,18 +56,27 @@
 
 
 ;;
-;; NOTE: The CIMI specification states that the :type attributes will
-;; not be present for standard CIMI attributes.  This implementation
-;; makes :type mandatory for all attribute descriptions.  This makes
-;; life easier for clients.
+;; this definition provides a recursive schema for attributes
+;; which can have a list of attributes as a child-type element
 ;;
+;; this is useful for attributes that are themselves maps or
+;; vectors
+;;
+
+(s/def ::attribute nil)
+
+(s/def ::child-types (s/coll-of ::attribute :min-count 1 :type vector?))
+
 (s/def ::attribute (su/only-keys :req-un [::name
-                                          ::type
+                                          ::type]
+                                 :opt-un [::child-types
+
                                           ::provider-mandatory
                                           ::consumer-mandatory
                                           ::mutable
-                                          ::consumer-writable]
-                                 :opt-un [::display-name
+                                          ::consumer-writable
+
+                                          ::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -82,18 +91,8 @@
                                           ::value-scope/value-scope]))
 
 
-;; FIXME: This function shouldn't be necessary!
-;; There is a problem when using the ::value-scope spec directly in the
-;; s/map-of expression in st/spec.  Validation throws an exception when
-;; trying to validate against single-value or collection-item.  Hiding
-;; the details behind this function works, but clearly isn't ideal for
-;; error reporting. The reason for the problem needs to be determined
-;; and either worked around or fixed.
-(defn valid-attribute?
-  [x]
-  (s/valid? ::attribute x))
-
-
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of valid-attribute? :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/coll-of ::attribute :min-count 1 :type vector?))
