@@ -44,6 +44,12 @@
 (def ^:const valid-attributes (doall (mapv (partial merge valid) valid-value-scopes)))
 
 
+(def ^:const nested-attribute (assoc valid :type "map"
+                                           :child-types [(assoc valid :value-scope unit/valid)
+                                                         (assoc valid :value-scope single-value/valid)]
+                                           :value-scope enumeration/valid))
+
+
 (deftest check-attribute
 
   (doseq [attribute valid-attributes]
@@ -72,4 +78,8 @@
     (stu/is-valid ::spec/attributes [attribute])
     (stu/is-valid ::spec/attributes [attribute attribute])
     (stu/is-valid ::spec/attributes (list attribute))
-    (stu/is-invalid ::spec/attributes [])))
+    (stu/is-invalid ::spec/attributes []))
+
+  ;; nested attribute
+  (stu/is-valid ::spec/attribute nested-attribute)
+  (stu/is-invalid ::spec/attribute (update-in nested-attribute [:child-types] conj (assoc valid :BAD_VALUE "NOT OK"))))

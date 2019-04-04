@@ -56,18 +56,26 @@
 
 
 ;;
-;; NOTE: The CIMI specification states that the :type attributes will
-;; not be present for standard CIMI attributes.  This implementation
-;; makes :type mandatory for all attribute descriptions.  This makes
-;; life easier for clients.
+;; this definition provides a recursive schema for attributes
+;; which can have a list of attributes as a child-type element
 ;;
+;; this is useful for attributes that are themselves maps or
+;; vectors
+;;
+
+(s/def ::attribute nil)
+
+(s/def ::child-types (s/coll-of ::attribute :min-count 1 :type vector?))
+
 (s/def ::attribute (su/only-keys :req-un [::name
                                           ::type
                                           ::provider-mandatory
                                           ::consumer-mandatory
                                           ::mutable
                                           ::consumer-writable]
-                                 :opt-un [::display-name
+                                 :opt-un [::child-types
+
+                                          ::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -83,8 +91,8 @@
 
 
 ;; FIXME: This function shouldn't be necessary!
-;; There is a problem when using the ::value-scope spec directly in the
-;; s/map-of expression in st/spec.  Validation throws an exception when
+;; There is a problem when using the ::attribute spec directly in the
+;; s/coll-of expression in st/spec.  Validation throws an exception when
 ;; trying to validate against single-value or collection-item.  Hiding
 ;; the details behind this function works, but clearly isn't ideal for
 ;; error reporting. The reason for the problem needs to be determined
