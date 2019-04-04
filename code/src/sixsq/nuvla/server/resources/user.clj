@@ -144,7 +144,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 ;; requires a user-template to create new User
 (defmethod crud/add resource-type
-  [{:keys [body] :as request}]
+  [{{:keys [redirect-url] :as body} :body :as request}]
 
   (try
 
@@ -163,7 +163,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
       (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
         (when (and resource-id (= 201 status))
-          (post-user-add (assoc user :id resource-id) request))
+          (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
         result))
 
     (catch Exception e
