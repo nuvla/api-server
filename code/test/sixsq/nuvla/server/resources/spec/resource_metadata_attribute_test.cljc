@@ -10,23 +10,22 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def ^:const valid {:name               "my-action"
-                    :type               "string"
-                    :provider-mandatory true
-                    :consumer-mandatory true
-                    :mutable            true
-                    :consumer-writable  true
+(def ^:const valid {:name           "my-action"
+                    :type           "string"
+                    :server-managed true
+                    :required       true
+                    :editable       true
 
-                    :display-name       "my action"
-                    :description        "a wonderful attribute"
-                    :help               "just give me a value"
-                    :group              "body"
-                    :category           "some string for a category"
-                    :order              10
-                    :hidden             false
-                    :sensitive          false
-                    :lines              3
-                    :indexed            true})
+                    :display-name   "my action"
+                    :description    "a wonderful attribute"
+                    :help           "just give me a value"
+                    :group          "body"
+                    :category       "some string for a category"
+                    :order          10
+                    :hidden         false
+                    :sensitive      false
+                    :lines          3
+                    :indexed        true})
 
 
 (def ^:const valid-value-scopes [{:name        "enumeration"
@@ -63,7 +62,7 @@
       (stu/is-invalid ::spec/attribute (dissoc attribute k)))
 
     ;; optional attributes
-    (doseq [k #{:provider-mandatory :consumer-mandatory :mutable :consumer-writable
+    (doseq [k #{:server-managed :required :editable
                 :display-name :description :help :group
                 :category :order :hidden :sensitive :lines :indexed}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))

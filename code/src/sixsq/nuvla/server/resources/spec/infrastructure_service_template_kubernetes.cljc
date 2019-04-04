@@ -15,11 +15,8 @@ on a cloud infrastructure.
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
              :json-schema/name "service-credential"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
-             :json-schema/template-mutable false
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"

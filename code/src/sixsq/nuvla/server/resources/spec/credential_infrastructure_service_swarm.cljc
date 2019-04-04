@@ -14,10 +14,8 @@
       (assoc :name "ca"
              :json-schema/name "ca"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "CA"
              :json-schema/description "public certificate of the Certificate Authority (CA)"
@@ -33,10 +31,8 @@
       (assoc :name "cert"
              :json-schema/name "cert"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "cert"
              :json-schema/description "client's public certificate"
@@ -52,10 +48,8 @@
       (assoc :name "key"
              :json-schema/name "key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "key"
              :json-schema/description "client's private certificate"

@@ -97,10 +97,8 @@
       (assoc :name "acl"
              :json-schema/name "acl"
              :json-schema/type "map"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "ACL"
              :json-schema/description "resource ACL"

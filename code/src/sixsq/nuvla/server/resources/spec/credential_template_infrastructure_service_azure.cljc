@@ -12,10 +12,8 @@
       (assoc :name "azure-client-id"
              :json-schema/name "azure-client-id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
@@ -31,10 +29,8 @@
       (assoc :name "azure-client-secret"
              :json-schema/name "azure-client-secret"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
@@ -50,10 +46,8 @@
       (assoc :name "azure-subscription-id"
              :json-schema/name "azure-subscription-id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"

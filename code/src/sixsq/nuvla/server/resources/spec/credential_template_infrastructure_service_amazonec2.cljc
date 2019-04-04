@@ -13,10 +13,8 @@
       (assoc :name "amazonec2-access-key"
              :json-schema/name "amazonec2-access-key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "amazonec2-access-key"
              :json-schema/description "AWS API key"
@@ -32,10 +30,8 @@
       (assoc :name "amazonec2-secret-key"
              :json-schema/name "amazonec2-secret-key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "amazonec2-secret-key"
              :json-schema/description "AWS secret API key"

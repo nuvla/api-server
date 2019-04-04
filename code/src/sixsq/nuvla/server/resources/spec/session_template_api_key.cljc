@@ -12,10 +12,8 @@
       (assoc :name "key"
              :json-schema/name "key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "key"
              :json-schema/description "key for API key/secret pair"
@@ -31,10 +29,8 @@
       (assoc :name "secret"
              :json-schema/name "secret"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "secret"
              :json-schema/description "secret for API key/secret pair"

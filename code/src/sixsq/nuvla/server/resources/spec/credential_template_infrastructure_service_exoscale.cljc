@@ -12,10 +12,8 @@
       (assoc :name "exoscale-api-key"
              :json-schema/name "exoscale-api-key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "exoscale-api-key"
              :json-schema/description "API key for Exoscale"
@@ -31,10 +29,8 @@
       (assoc :name "exoscale-api-secret-key"
              :json-schema/name "exoscale-api-secret-key"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "exoscale-api-secret-key"
              :json-schema/description "API secret key for Exoscale"

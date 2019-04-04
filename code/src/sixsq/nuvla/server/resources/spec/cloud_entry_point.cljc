@@ -12,10 +12,8 @@
       (assoc :name "base-uri"
              :json-schema/name "base-uri"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "base URI"
              :json-schema/description "base URI for relative href values"
@@ -33,10 +31,8 @@
       (assoc :name "collections"
              :json-schema/name "collections"
              :json-schema/type "map"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "collections"
              :json-schema/description "collection resources supported by the server"

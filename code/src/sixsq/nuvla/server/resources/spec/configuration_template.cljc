@@ -12,10 +12,8 @@
       (assoc :name "service"
              :json-schema/name "service"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable false
 
              :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
@@ -31,10 +29,8 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
@@ -52,10 +48,8 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
@@ -71,10 +65,8 @@
       (assoc :name "template"
              :json-schema/name "template"
              :json-schema/type "map"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"
