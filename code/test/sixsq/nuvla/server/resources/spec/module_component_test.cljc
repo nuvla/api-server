@@ -22,9 +22,30 @@
               :commit            "wip"
 
               :architecture      "x86"
-              :image             "ubuntu:16.04"
-              :mounts            ["src=abc,dst=/var/tmp/abc,readonly" "type=bind,src=,dst=/var/tmp/abc"]
-              :ports             ["8022:22"]
+              :image             {:repository "my-repo"
+                                  :image-name       "ubuntu"
+                                  :tag        "16.04"}
+              :mounts            [{:mount-type "bind"
+                                   :source     "/abc/file"
+                                   :target     "/file"
+                                   :read-only  false}
+                                  {:mount-type "volume"
+                                   :source     "/nfs-server/nfs-path"
+                                   :target     "/mnt"
+                                   :volume-options [{:option-key "o"
+                                                     :option-value "addr=1.2.3.4"}
+                                                    {:option-key "device"
+                                                     :option-value "nfs-server/nfs-path"}
+                                                    {:option-key "type"
+                                                     :option-value "nfs"}
+                                                    {:option-key "vers"
+                                                     :option-value "4"}
+                                                    {:option-key "dst"
+                                                     :option-value "/mnt"}]}]
+              :ports             [{:protocol       "tcp"
+                                   :target-port    22
+                                   :published-port 8022}
+                                  {:target-port 333}]
               :urls              [["primary" "https://${host}:${port-443}/my/path"]
                                   ["other" "http://${host}:${port-80}/path"]]
               :output-parameters [{:name        "alpha"

@@ -32,8 +32,11 @@
                   :commit        "wip"
 
                   :architecture  "x86"
-                  :image         "ubuntu:16.04"
-                  :ports         ["8022:22"]})
+                  :image         {:name "ubuntu"
+                                  :tag  "16.04"}
+                  :ports         [{:protocol       "tcp"
+                                   :target-port    22
+                                   :published-port 8022}]})
 
 
 (deftest lifecycle
