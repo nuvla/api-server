@@ -3,7 +3,9 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as c]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.resources.spec.container :as container]
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (s/def ::author ::cimi-core/nonblank-string)
@@ -14,14 +16,6 @@
 
 (s/def ::architecture ::cimi-core/nonblank-string)
 
-
-(s/def ::image ::cimi-core/nonblank-string)
-
-
-(s/def ::ports (s/coll-of ::cimi-core/nonblank-string :kind vector?))
-
-
-(s/def ::mounts (s/coll-of ::cimi-core/nonblank-string :kind vector?))
 
 
 ;; this is a 'friendly' name for a given URL, intended mainly for display
@@ -53,10 +47,10 @@
 (def module-component-keys-spec (su/merge-keys-specs [c/common-attrs
                                                       {:req-un [::author
                                                                 ::architecture
-                                                                ::image]
+                                                                ::container/image]
                                                        :opt-un [::commit
-                                                                ::ports
-                                                                ::mounts
+                                                                ::container/ports
+                                                                ::container/mounts
                                                                 ::urls
                                                                 ::output-parameters]}]))
 
