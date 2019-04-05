@@ -190,7 +190,7 @@
       (assoc :name "source"
              :json-schema/name "source"
              :json-schema/type "string"
-             :json-schema/required true
+             :json-schema/required false
              :json-schema/mutable true
              :json-schema/editable true
              :json-schema/display-name "source"
@@ -322,9 +322,9 @@
 
 (s/def ::mount
   (-> (st/spec (su/only-keys-maps {:req-un [::mount-type
-                                            ::source
                                             ::target]
-                                   :opt-un [::read-only
+                                   :opt-un [::source
+                                            ::read-only
                                             ::volume-options]}))
       (assoc :name "mount"
              :json-schema/name "mount"

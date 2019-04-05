@@ -34,11 +34,11 @@
     (stu/is-invalid ::container/mount (assoc mount :bad "value"))
 
     ; required
-    (doseq [attr #{:mount-type :source :target}]
+    (doseq [attr #{:mount-type :target}]
       (stu/is-invalid ::container/mount (dissoc mount attr)))
 
     ;optional
-    (doseq [attr #{:read-only}]
+    (doseq [attr #{:read-only :source}]
       (stu/is-valid ::container/mount (dissoc mount attr)))))
 
 
