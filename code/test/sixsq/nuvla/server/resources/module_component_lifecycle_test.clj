@@ -32,7 +32,7 @@
                   :commit        "wip"
 
                   :architecture  "x86"
-                  :image         {:name "ubuntu"
+                  :image         {:image-name "ubuntu"
                                   :tag  "16.04"}
                   :ports         [{:protocol       "tcp"
                                    :target-port    22
