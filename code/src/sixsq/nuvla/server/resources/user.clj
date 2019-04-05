@@ -244,31 +244,36 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; initialization: common schema for all user creation methods
 ;;
 
+(defn create-super-user
+  [password]
+  ;; FIXME: nasty hack to ensure username-password user-template, user-identifier and group index are available
+  (group/initialize)
+  (username-password/initialize)
+  (user-identifier/initialize)
+  (if (nil? (password/identifier->user-id "super"))
+    (do
+      (log/info "user 'super' does not exist; attempting to create it")
+      (std-crud/add-if-absent (str resource-type " 'super'") resource-type
+                              {:template
+                               {:href     (str p/resource-type "/" username-password/registration-method)
+                                :username "super"
+                                :password password}})
+      (if-let [super-user-id (password/identifier->user-id "super")]
+        (do (log/info "created user 'super' with identifier" super-user-id)
+            (let [request {:params      {:resource-name group/resource-type
+                                         :uuid          "nuvla-admin"}
+                           :body        {:users [super-user-id]}
+                           :nuvla/authn auth/internal-identity}
+                  {:keys [status]} (crud/edit request)]
+              (when (not= status 200)
+                (log/error "could not append super in nuvla-admin group!"))))
+        (log/error "could not create user 'super'")))
+    (do
+      (log/info "user 'super' already exists; skip trying to create it"))))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::user/schema)
   (when-let [super-password (env/env :nuvla-super-password)]
-    ;; FIXME: nasty hack to ensure username-password user-template, user-identifier and group index are available
-    (group/initialize)
-    (username-password/initialize)
-    (user-identifier/initialize)
-    (if (nil? (password/identifier->user-id "super"))
-      (do
-        (log/info "user 'super' does not exist; attempting to create it")
-        (std-crud/add-if-absent (str resource-type " 'super'") resource-type
-                                {:template
-                                 {:href     (str p/resource-type "/" username-password/registration-method)
-                                  :username "super"
-                                  :password super-password}})
-        (if-let [super-user-id (password/identifier->user-id "super")]
-          (do (log/info "created user 'super' with identifier" super-user-id)
-              (let [request {:params      {:resource-name group/resource-type
-                                           :uuid          "nuvla-admin"}
-                             :body        {:users [super-user-id]}
-                             :nuvla/authn auth/internal-identity}
-                    {:keys [status]} (crud/edit request)]
-                (when (not= status 200)
-                  (log/error "could not append super in nuvla-admin group!"))))
-          (log/error "could not create user 'super'")))
-      (do
-        (log/info "user 'super' already exists; skip trying to create it")))))
+    (create-super-user super-password)))
