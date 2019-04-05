@@ -12,10 +12,8 @@
       (assoc :name "smtp-username"
              :json-schema/name "smtp-username"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "SMTP username"
              :json-schema/description "SMTP username for sending email from server"
@@ -31,10 +29,8 @@
       (assoc :name "smtp-password"
              :json-schema/name "smtp-password"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "SMTP password"
              :json-schema/description "SMTP password for sending email from server"
@@ -50,10 +46,8 @@
       (assoc :name "smtp-host"
              :json-schema/name "smtp-host"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "SMTP host"
              :json-schema/description "SMTP host for sending email from server"
@@ -69,10 +63,8 @@
       (assoc :name "smtp-port"
              :json-schema/name "smtp-port"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "SMTP port"
              :json-schema/description "SMTP port for sending email from server"
@@ -88,10 +80,8 @@
       (assoc :name "smtp-ssl"
              :json-schema/name "smtp-ssl"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "SMTP SSL?"
              :json-schema/description "use SSL when interacting with SMTP server?"
@@ -107,10 +97,8 @@
       (assoc :name "smtp-debug"
              :json-schema/name "smtp-debug"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "debug SMTP?"
              :json-schema/description "turn on debugging when interacting with SMTP server?"
@@ -126,10 +114,8 @@
       (assoc :name "support-email"
              :json-schema/name "support-email"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "support email"
              :json-schema/description "email address for support"

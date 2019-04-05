@@ -12,10 +12,8 @@
       (assoc :name "password"
              :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "password"
              :json-schema/description "plaintext password"

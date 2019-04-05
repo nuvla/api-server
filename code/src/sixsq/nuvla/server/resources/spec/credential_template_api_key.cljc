@@ -11,10 +11,8 @@
       (assoc :name "ttl"
              :json-schema/name "ttl"
              :json-schema/type "integer"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "TTL"
              :json-schema/description "Time to Live (TTL) for API key/secret"

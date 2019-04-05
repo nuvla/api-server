@@ -4,27 +4,29 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
-    [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::name ::cimi-core/token)
 
-(s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
-                "map" "Array" "Any"})
+(s/def ::type #{"boolean"
+                "date-time" "duration"
+                "long" "integer" "number" "double"
+                "string" "resource-id" "uri"
+                "map" "array"
+                "any"})
 
-(s/def ::provider-mandatory boolean?)
+;;
+;; information about whether clients can/should specify a key
+;;
 
-(s/def ::consumer-mandatory boolean?)
+(s/def ::server-managed boolean?)
 
-(s/def ::mutable boolean?)
+(s/def ::required boolean?)
 
-(s/def ::consumer-writable boolean?)
-
-(s/def ::template-mutable boolean?)
+(s/def ::editable boolean?)
 
 
 ;;
-;; the following attributes are extensions to the standard that are
 ;; useful for rendering forms for browser-based clients
 ;;
 
@@ -56,18 +58,26 @@
 
 
 ;;
-;; NOTE: The CIMI specification states that the :type attributes will
-;; not be present for standard CIMI attributes.  This implementation
-;; makes :type mandatory for all attribute descriptions.  This makes
-;; life easier for clients.
+;; this definition provides a recursive schema for attributes
+;; which can have a list of attributes as a child-type element
 ;;
+;; this is useful for attributes that are themselves maps or
+;; vectors
+;;
+
+(s/def ::attribute nil)
+
+(s/def ::child-types (s/coll-of ::attribute :min-count 1 :type vector?))
+
 (s/def ::attribute (su/only-keys :req-un [::name
-                                          ::type
-                                          ::provider-mandatory
-                                          ::consumer-mandatory
-                                          ::mutable
-                                          ::consumer-writable]
-                                 :opt-un [::display-name
+                                          ::type]
+                                 :opt-un [::child-types
+
+                                          ::server-managed
+                                          ::required
+                                          ::editable
+
+                                          ::display-name
                                           ::description
                                           ::help
                                           ::group
@@ -76,24 +86,13 @@
                                           ::hidden
                                           ::sensitive
                                           ::lines
-                                          ::template-mutable
                                           ::indexed
 
                                           ::value-scope/value-scope]))
 
 
-;; FIXME: This function shouldn't be necessary!
-;; There is a problem when using the ::value-scope spec directly in the
-;; s/map-of expression in st/spec.  Validation throws an exception when
-;; trying to validate against single-value or collection-item.  Hiding
-;; the details behind this function works, but clearly isn't ideal for
-;; error reporting. The reason for the problem needs to be determined
-;; and either worked around or fixed.
-(defn valid-attribute?
-  [x]
-  (s/valid? ::attribute x))
-
-
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of valid-attribute? :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/coll-of ::attribute :min-count 1 :type vector?))

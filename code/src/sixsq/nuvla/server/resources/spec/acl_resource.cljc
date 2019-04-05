@@ -11,7 +11,7 @@
   (-> (st/spec (s/coll-of ::acl-common/principal :kind vector? :distinct true :min-count 1))
       (assoc :name "owners"
              :json-schema/name "owners"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "owners"
              :json-schema/description "list of owners of a resource")))
 
@@ -20,7 +20,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "view-meta"
              :json-schema/name "view-meta"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "view metadata"
              :json-schema/description "list of principals that can view resource metadata")))
 
@@ -29,7 +29,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "view-data"
              :json-schema/name "view-data"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "view data"
              :json-schema/description "list of principals that can view resource data")))
 
@@ -38,7 +38,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "view-acl"
              :json-schema/name "view-acl"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "view ACL"
              :json-schema/description "list of principals that can view resource ACL")))
 
@@ -47,7 +47,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "edit-meta"
              :json-schema/name "edit-meta"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "edit metadata"
              :json-schema/description "list of principals that can edit resource metadata")))
 
@@ -56,7 +56,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "edit-data"
              :json-schema/name "edit-data"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "edit data"
              :json-schema/description "list of principals that can edit resource data")))
 
@@ -65,7 +65,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "edit-acl"
              :json-schema/name "edit-acl"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "edit ACL"
              :json-schema/description "list of principals that can edit resource ACL")))
 
@@ -74,7 +74,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "manage"
              :json-schema/name "manage"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "manage"
              :json-schema/description "list of principals that can manage a resource via custom actions")))
 
@@ -83,7 +83,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "delete"
              :json-schema/name "delete"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "delete"
              :json-schema/description "list of principals that can delete a resource")))
 
@@ -97,10 +97,8 @@
       (assoc :name "acl"
              :json-schema/name "acl"
              :json-schema/type "map"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "ACL"
              :json-schema/description "resource ACL"

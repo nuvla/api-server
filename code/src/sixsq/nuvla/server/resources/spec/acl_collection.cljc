@@ -11,7 +11,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "query"
              :json-schema/name "query"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "query"
              :json-schema/description "list of principals that can query a collection")))
 
@@ -20,7 +20,7 @@
   (-> (st/spec ::acl-common/principals)
       (assoc :name "add"
              :json-schema/name "add"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/display-name "add"
              :json-schema/description "list of principals that can add a new resource to a collection")))
 
@@ -30,10 +30,8 @@
       (assoc :name "acl"
              :json-schema/name "acl"
              :json-schema/type "map"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "ACL"
              :json-schema/description "collection ACL"

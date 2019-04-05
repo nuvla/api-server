@@ -14,10 +14,8 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
@@ -35,10 +33,8 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
@@ -56,10 +52,8 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "user template"
              :json-schema/description "reference to the user template"

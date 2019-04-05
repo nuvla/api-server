@@ -10,23 +10,22 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def ^:const valid {:name               "my-action"
-                    :type               "string"
-                    :provider-mandatory true
-                    :consumer-mandatory true
-                    :mutable            true
-                    :consumer-writable  true
+(def ^:const valid {:name           "my-action"
+                    :type           "string"
+                    :server-managed true
+                    :required       true
+                    :editable       true
 
-                    :display-name       "my action"
-                    :description        "a wonderful attribute"
-                    :help               "just give me a value"
-                    :group              "body"
-                    :category           "some string for a category"
-                    :order              10
-                    :hidden             false
-                    :sensitive          false
-                    :lines              3
-                    :indexed            true})
+                    :display-name   "my action"
+                    :description    "a wonderful attribute"
+                    :help           "just give me a value"
+                    :group          "body"
+                    :category       "some string for a category"
+                    :order          10
+                    :hidden         false
+                    :sensitive      false
+                    :lines          3
+                    :indexed        true})
 
 
 (def ^:const valid-value-scopes [{:name        "enumeration"
@@ -44,6 +43,12 @@
 (def ^:const valid-attributes (doall (mapv (partial merge valid) valid-value-scopes)))
 
 
+(def ^:const nested-attribute (assoc valid :type "map"
+                                           :child-types [(assoc valid :value-scope unit/valid)
+                                                         (assoc valid :value-scope single-value/valid)]
+                                           :value-scope enumeration/valid))
+
+
 (deftest check-attribute
 
   (doseq [attribute valid-attributes]
@@ -53,11 +58,12 @@
     (stu/is-valid ::spec/attribute attribute)
 
     ;; mandatory attributes
-    (doseq [k #{:name :type :provider-mandatory :consumer-mandatory :mutable :consumer-writable}]
+    (doseq [k #{:name :type}]
       (stu/is-invalid ::spec/attribute (dissoc attribute k)))
 
     ;; optional attributes
-    (doseq [k #{:namespace :uri :display-name :description :help :group
+    (doseq [k #{:server-managed :required :editable
+                :display-name :description :help :group
                 :category :order :hidden :sensitive :lines :indexed}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 
@@ -72,4 +78,8 @@
     (stu/is-valid ::spec/attributes [attribute])
     (stu/is-valid ::spec/attributes [attribute attribute])
     (stu/is-valid ::spec/attributes (list attribute))
-    (stu/is-invalid ::spec/attributes [])))
+    (stu/is-invalid ::spec/attributes []))
+
+  ;; nested attribute
+  (stu/is-valid ::spec/attribute nested-attribute)
+  (stu/is-invalid ::spec/attribute (update-in nested-attribute [:child-types] conj (assoc valid :BAD_VALUE "NOT OK"))))

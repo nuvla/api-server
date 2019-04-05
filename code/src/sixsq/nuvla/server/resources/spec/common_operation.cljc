@@ -11,10 +11,8 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "href"
              :json-schema/description "URI for operation"
@@ -28,10 +26,8 @@
       (assoc :name "rel"
              :json-schema/name "rel"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "rel"
              :json-schema/description "URL for performing action"

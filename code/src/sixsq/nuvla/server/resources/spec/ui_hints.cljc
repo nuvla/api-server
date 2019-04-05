@@ -12,11 +12,8 @@
       (assoc :name "group"
              :json-schema/name "group"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "group"
              :json-schema/description "label for grouping related templates/forms"
@@ -32,11 +29,8 @@
       (assoc :name "order"
              :json-schema/name "order"
              :json-schema/type "integer"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "order"
              :json-schema/description "hint for visualization order for field"
@@ -55,11 +49,8 @@
       (assoc :name "hidden"
              :json-schema/name "hidden"
              :json-schema/type "boolean"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "hidden"
              :json-schema/description "should template be hidden on browser UIs"
@@ -75,11 +66,8 @@
       (assoc :name "icon"
              :json-schema/name "icon"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "icon"
              :json-schema/description "name for icon to associate to template"
@@ -95,11 +83,8 @@
       (assoc :name "redirect-url"
              :json-schema/name "redirect-url"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
-             :json-schema/template-mutable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "redirect-url"
              :json-schema/description "redirect URI to be used on success"

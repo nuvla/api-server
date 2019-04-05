@@ -18,11 +18,9 @@
   (-> (st/spec (s/coll-of ::user-id :kind vector? :distinct true))
       (assoc :name "users"
              :json-schema/name "users"
-             :json-schema/type "Array"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/type "array"
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "users"
              :json-schema/description "list of users in this group"

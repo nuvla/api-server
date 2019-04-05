@@ -14,10 +14,8 @@
       (assoc :name "id"
              :json-schema/name "id"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "identifier"
              :json-schema/description "unique resource identifier"
@@ -33,11 +31,9 @@
   (-> (st/spec ::cimi-core/uri)
       (assoc :name "resource-type"
              :json-schema/name "resource-type"
-             :json-schema/type "URI"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/type "uri"
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "resource URI"
              :json-schema/description "URI for resource type"
@@ -53,11 +49,9 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "created"
              :json-schema/name "created"
-             :json-schema/type "dateTime"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable false
+             :json-schema/type "date-time"
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "created"
              :json-schema/description "creation timestamp (UTC) for resource"
@@ -73,11 +67,9 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "updated"
              :json-schema/name "updated"
-             :json-schema/type "dateTime"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/type "date-time"
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "updated"
              :json-schema/description "latest resource update timestamp (UTC)"
@@ -94,10 +86,8 @@
       (assoc :name "name"
              :json-schema/name "name"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/searchable true
 
              :json-schema/display-name "name"
@@ -115,10 +105,8 @@
       (assoc :name "description"
              :json-schema/name "description"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/searchable true
 
              :json-schema/display-name "description"
@@ -135,11 +123,9 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "parent"
              :json-schema/name "parent"
-             :json-schema/type "URI"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable false
-             :json-schema/consumer-writable true
+             :json-schema/type "uri"
+             :json-schema/required false
+             :json-schema/editable false
 
              :json-schema/display-name "parent"
              :json-schema/description "reference to parent resource"
@@ -155,11 +141,9 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "resource-metadata"
              :json-schema/name "resource-metadata"
-             :json-schema/type "URI"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/type "uri"
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "resource metadata"
              :json-schema/description "reference to the resource's metadata"
@@ -176,10 +160,8 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "href"
              :json-schema/description "reference to another resource"
@@ -193,10 +175,8 @@
       (assoc :name "resourceLink"
              :json-schema/name "resourceLink"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "resourceLink"
              :json-schema/description "map containing a reference (href) to a resource"
@@ -209,11 +189,10 @@
   (-> (st/spec (s/coll-of ::resource-link :min-count 1))
       (assoc :name "resourceLinks"
              :json-schema/name "resourceLinks"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "resourceLinks"
              :json-schema/description "list of resourceLinks"
@@ -229,9 +208,8 @@
              :json-schema/name "operation"
              :json-schema/type "map"
              :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "operation"
              :json-schema/description "operation definition (name, URL) for a resource"
@@ -247,11 +225,10 @@
   (-> (st/spec (s/coll-of ::operation :min-count 1))
       (assoc :name "operations"
              :json-schema/name "operations"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable false
+             :json-schema/required false
+             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "operations"
@@ -268,11 +245,10 @@
   (-> (st/spec (s/coll-of string? :min-count 1 :into #{}))
       (assoc :name "tags"
              :json-schema/name "tags"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/consumer-mandatory false
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required false
+             :json-schema/editable true
 
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"

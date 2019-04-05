@@ -10,12 +10,9 @@
 (s/def ::parent (-> (st/spec ::user/id)
                     (assoc :name "parent"
                            :json-schema/name "parent"
-                           :json-schema/type "URI"
-                           :json-schema/provider-mandatory false
-                           :json-schema/consumer-mandatory true
-                           :json-schema/mutable false
-                           :json-schema/consumer-writable true
-
+                           :json-schema/type "uri"
+                           :json-schema/required true
+                           :json-schema/editable false
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
                            :json-schema/help "reference to the unique resource identifier of the parent resource"
@@ -31,10 +28,8 @@
       (assoc :name "identifier"
              :json-schema/name "identifier"
              :json-schema/type "string"
-             :json-schema/provider-mandatory true
-             :json-schema/consumer-mandatory true
-             :json-schema/mutable true
-             :json-schema/consumer-writable true
+             :json-schema/required true
+             :json-schema/editable true
 
              :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
