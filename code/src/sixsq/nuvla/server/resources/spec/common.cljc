@@ -136,7 +136,6 @@
       (assoc :name "resourceLinks"
              :json-schema/name "resourceLinks"
              :json-schema/type "array"
-             :json-schema/provider-mandatory false
 
              :json-schema/display-name "resourceLinks"
              :json-schema/description "list of resourceLinks")))
@@ -148,7 +147,6 @@
       (assoc :name "operation"
              :json-schema/name "operation"
              :json-schema/type "map"
-             :json-schema/provider-mandatory false
 
              :json-schema/display-name "operation"
              :json-schema/description "operation definition (name, URL) for a resource"
@@ -161,7 +159,6 @@
       (assoc :name "operations"
              :json-schema/name "operations"
              :json-schema/type "array"
-             :json-schema/provider-mandatory false
              :json-schema/indexed false
 
              :json-schema/display-name "operations"
@@ -175,7 +172,6 @@
       (assoc :name "tags"
              :json-schema/name "tags"
              :json-schema/type "array"
-             :json-schema/provider-mandatory false
 
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
