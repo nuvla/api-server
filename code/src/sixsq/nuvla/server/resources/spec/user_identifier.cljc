@@ -10,11 +10,12 @@
 (s/def ::parent (-> (st/spec ::user/id)
                     (assoc :name "parent"
                            :json-schema/name "parent"
-                           :json-schema/type "uri"
-                           :json-schema/editable false
+                           :json-schema/type "resource-id"
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
+
                            :json-schema/section "meta"
+                           :json-schema/editable false
                            :json-schema/order 6)))
 
 
@@ -23,10 +24,11 @@
       (assoc :name "identifier"
              :json-schema/name "identifier"
              :json-schema/type "string"
-
              :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
+
              :json-schema/order 10)))
+
 
 (def ^:const user-identifier-common-attrs
   {:req-un [::cimi-common/id
@@ -40,6 +42,7 @@
             ::cimi-common/tags
             ::cimi-common/resource-metadata
             ::cimi-common/operations]})
+
 
 (s/def ::schema
   (su/only-keys-maps user-identifier-common-attrs

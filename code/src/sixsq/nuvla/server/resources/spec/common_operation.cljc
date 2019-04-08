@@ -8,11 +8,9 @@
 
 
 (s/def ::href
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::cimi-core/uri)
       (assoc :name "href"
              :json-schema/name "href"
-             :json-schema/type "string"
-
              :json-schema/display-name "href"
              :json-schema/description "URI for operation"
 
@@ -21,11 +19,9 @@
 
 
 (s/def ::rel
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::cimi-core/url)
       (assoc :name "rel"
              :json-schema/name "rel"
-             :json-schema/type "string"
-
              :json-schema/display-name "rel"
              :json-schema/description "URL for performing action"
 
@@ -38,7 +34,6 @@
       (assoc :name "operation"
              :json-schema/name "operation"
              :json-schema/type "map"
-
              :json-schema/display-name "operation"
              :json-schema/description "operation definition (name, URL) for a resource"
 
@@ -51,9 +46,8 @@
       (assoc :name "operations"
              :json-schema/name "operations"
              :json-schema/type "array"
-
              :json-schema/display-name "operations"
-             :json-schema/description "list of resource operations"
+             :json-schema/description "list of authorized resource operations"
              :json-schema/section "meta"
 
              :json-schema/server-managed true

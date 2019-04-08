@@ -64,7 +64,7 @@
   (-> (st/spec ::nonblank-string)
       (assoc :name "URI"
              :json-schema/description "Uniform Resource Identifier"
-             :json-schema/type "string")))
+             :json-schema/type "uri")))
 
 
 ;; FIXME: Replace this spec with one that enforces the URL grammar.
@@ -72,13 +72,6 @@
   (-> (st/spec ::nonblank-string)
       (assoc :name "URL"
              :json-schema/description "Uniform Resource Locator"
-             :json-schema/type "string")))
-
-
-(s/def ::username
-  (-> (st/spec (s/and string? #(re-matches #"^[a-zA-Z0-9_]+$" %)))
-      (assoc :name "username"
-             :json-schema/description "string consisting only of letters, digits, and underscores"
              :json-schema/type "string")))
 
 
@@ -96,31 +89,10 @@
              :json-schema/type "string")))
 
 
-(s/def ::resource-identifier
-  (-> (st/spec (s/and string? #(re-matches #"^[a-zA-Z0-9]+([_-][a-zA-Z0-9]+)*$" %)))
-      (assoc :name "resource identifier"
-             :json-schema/description "string consisting of letters and digits separated by single underscores or dashes"
-             :json-schema/type "string")))
-
-
-(s/def ::resource-name
-  (-> (st/spec (s/and string? #(re-matches #"^([A-Z]+[a-z]*)+$" %)))
-      (assoc :name "resource name"
-             :json-schema/description "CIMI resource name (Pascal case)"
-             :json-schema/type "string")))
-
-
 (s/def ::identifier
   (-> (st/spec (s/and string? #(re-matches #"^[a-z0-9]+(-[a-z0-9]+)*$" %)))
       (assoc :name "identifier"
              :json-schema/description "string consisting of words of lowercase letters and digits separated by single dashes"
-             :json-schema/type "string")))
-
-
-(s/def ::resource-type
-  (-> (st/spec ::kebab-identifier)
-      (assoc :name "resource type"
-             :json-schema/description "resource type (kebab case)"
              :json-schema/type "string")))
 
 
@@ -132,7 +104,9 @@
 
 
 (def email-regex #"^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
 (defn email? [s] (re-matches email-regex s))
+
 (s/def ::email
   (-> (st/spec (s/and string? email?))
       (assoc :name "email"
@@ -141,7 +115,9 @@
 
 
 (def mimetype-regex #"[a-zA-Z0-9][a-zA-Z0-9!#$&^_-]{0,126}/[a-zA-Z0-9][a-zA-Z0-9!#$&^_-]{0,126}")
+
 (defn mimetype? [s] (re-matches mimetype-regex s))
+
 (s/def ::mimetype
   (-> (st/spec (s/and string? mimetype?))
       (assoc :name "mimetype"
@@ -154,8 +130,9 @@
 ;;
 
 (def resource-href-regex #"^[a-z]([a-z-]*[a-z])?(/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?)?$")
+
 (s/def ::resource-href
   (-> (st/spec (s/and string? #(re-matches resource-href-regex %)))
       (assoc :name "resource href"
              :json-schema/description "concatenation of a resource type and resource identifier separated with a slash"
-             :json-schema/type "map")))
+             :json-schema/type "resource-id")))

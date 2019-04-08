@@ -12,11 +12,11 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "action"
              :json-schema/name "action"
-             :json-schema/type "string"
-             :json-schema/editable false
-
              :json-schema/display-name "action"
              :json-schema/description "name of action"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
              :json-schema/order 10)))
 
 
@@ -25,9 +25,10 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-
              :json-schema/display-name "state"
              :json-schema/description "current state of callback"
+
+             :json-schema/server-managed true
              :json-schema/order 11
 
              :json-schema/value-scope {:values  ["WAITING" "FAILED" "SUCCEEDED"]
@@ -38,11 +39,10 @@
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "target-resource"
              :json-schema/name "target-resource"
-             :json-schema/type "map"
-             :json-schema/editable false
-
              :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
+
+             :json-schema/editable false
              :json-schema/order 12)))
 
 
@@ -51,11 +51,11 @@
       (assoc :name "data"
              :json-schema/name "data"
              :json-schema/type "map"
-             :json-schema/editable false
-             :json-schema/indexed false
-
              :json-schema/display-name "data"
              :json-schema/description "data required for callback"
+
+             :json-schema/editable false
+             :json-schema/indexed false
              :json-schema/order 13)))
 
 
@@ -63,11 +63,10 @@
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "expires"
              :json-schema/name "expires"
-             :json-schema/type "string"
-             :json-schema/editable false
-
              :json-schema/display-name "expires"
              :json-schema/description "expiry timestamp for callback action"
+
+             :json-schema/editable false
              :json-schema/order 14)))
 
 

@@ -15,10 +15,10 @@ on a cloud infrastructure.
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
              :json-schema/name "service-credential"
-             :json-schema/editable false
-
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
+
+             :json-schema/editable false
              :json-schema/order 22
              :json-schema/hidden true)))
 

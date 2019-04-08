@@ -12,12 +12,11 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "hash"
              :json-schema/name "hash"
-             :json-schema/type "string"
-             :json-schema/editable false
-
              :json-schema/display-name "hash"
              :json-schema/description "hashed password"
+
              :json-schema/order 20
+             :json-schema/editable false
              :json-schema/hidden true
              :json-schema/sensitive true)))
 

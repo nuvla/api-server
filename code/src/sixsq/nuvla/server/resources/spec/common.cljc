@@ -12,30 +12,26 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "href"
              :json-schema/name "href"
-             :json-schema/type "string"
-
              :json-schema/display-name "href"
              :json-schema/description "reference to another resource")))
 
 
 (s/def ::resource-link
   (-> (st/spec (s/keys :req-un [::href]))
-      (assoc :name "resourceLink"
-             :json-schema/name "resourceLink"
+      (assoc :name "resource-link"
+             :json-schema/name "resource-link"
              :json-schema/type "map"
-
-             :json-schema/display-name "resourceLink"
+             :json-schema/display-name "resource link"
              :json-schema/description "map containing a reference (href) to a resource")))
 
 
 (s/def ::resource-links
   (-> (st/spec (s/coll-of ::resource-link :min-count 1))
-      (assoc :name "resourceLinks"
-             :json-schema/name "resourceLinks"
+      (assoc :name "resource-links"
+             :json-schema/name "resource-links"
              :json-schema/type "array"
-
-             :json-schema/display-name "resourceLinks"
-             :json-schema/description "list of resourceLinks")))
+             :json-schema/display-name "resource links"
+             :json-schema/description "list of resource links")))
 
 ;;
 ;; core meta
@@ -45,8 +41,6 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "id"
              :json-schema/name "id"
-             :json-schema/type "string"
-
              :json-schema/display-name "identifier"
              :json-schema/description "unique resource identifier"
              :json-schema/section "meta"
@@ -60,8 +54,6 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "parent"
              :json-schema/name "parent"
-             :json-schema/type "uri"
-
              :json-schema/display-name "parent"
              :json-schema/description "reference to parent resource"
              :json-schema/section "meta"
@@ -75,8 +67,6 @@
   (-> (st/spec ::cimi-core/uri)
       (assoc :name "resource-type"
              :json-schema/name "resource-type"
-             :json-schema/type "uri"
-
              :json-schema/display-name "resource URI"
              :json-schema/description "URI for resource type"
              :json-schema/section "meta"
@@ -90,8 +80,6 @@
   (-> (st/spec ::cimi-core/resource-href)
       (assoc :name "resource-metadata"
              :json-schema/name "resource-metadata"
-             :json-schema/type "uri"
-
              :json-schema/display-name "resource metadata"
              :json-schema/description "reference to the resource's metadata"
              :json-schema/section "meta"
@@ -106,7 +94,6 @@
       (assoc :name "created"
              :json-schema/name "created"
              :json-schema/type "date-time"
-
              :json-schema/display-name "created"
              :json-schema/description "creation timestamp (UTC) for resource"
              :json-schema/section "meta"
@@ -121,7 +108,6 @@
       (assoc :name "updated"
              :json-schema/name "updated"
              :json-schema/type "date-time"
-
              :json-schema/display-name "updated"
              :json-schema/description "latest resource update timestamp (UTC)"
              :json-schema/section "meta"
@@ -135,14 +121,11 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "name"
              :json-schema/name "name"
-             :json-schema/type "string"
-
              :json-schema/display-name "name"
              :json-schema/description "short, human-readable name for resource"
              :json-schema/section "meta"
 
-             :json-schema/order 6
-             :json-schema/searchable true)))
+             :json-schema/order 6)))
 
 
 (s/def ::description
@@ -155,18 +138,17 @@
              :json-schema/description "human-readable description of resource"
              :json-schema/section "meta"
 
-             :json-schema/order 7
-             :json-schema/searchable true)))
+             :json-schema/order 7)))
 
 
 (s/def ::tags
-  (-> (st/spec (s/coll-of string? :min-count 1 :distinct true :type vector?))
+  (-> (st/spec (s/coll-of string? :min-count 1 :type vector? :distinct true))
       (assoc :name "tags"
              :json-schema/name "tags"
              :json-schema/type "array"
-
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
+
              :json-schema/section "meta"
              :json-schema/order 8)))
 
