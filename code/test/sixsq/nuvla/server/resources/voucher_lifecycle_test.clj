@@ -8,6 +8,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.voucher :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [clojure.pprint :as pp]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -33,14 +34,17 @@
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         valid-voucher {:name               "my-voucher"
-                        :description        "my-voucher description"
+                       :description        "my-voucher description"
 
-                        :module-filter      "(filter='module')"
-                        :data-object-filter "(filter='object')"
-                        :data-record-filter "(filter='record')"
+                       :owner              {:href "user/my-user-uuid"}
+                       :amount             50.0
+                       :currency           "EUR"
+                       :code               "vH72Hks209"
+                       :state              "new"
+                       :target-audience    "scientists@university.com"
 
-                        ;:acl                valid-acl
-                        }]
+                       ;:acl                valid-acl
+                       }]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -105,20 +109,34 @@
           (ltu/is-count 1))
 
       ;; verify contents of admin voucher
-      (let [voucher (-> session-admin
-                         (request admin-abs-uri)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         (ltu/is-operation-present "edit")
-                         (ltu/is-operation-present "delete")
-                         :response
-                         :body)]
+      (let [voucher-full (-> session-admin
+                        (request admin-abs-uri)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-operation-present "edit")
+                        (ltu/is-operation-present "delete")
+                        (ltu/is-operation-present "activate"))
+            voucher (:body (:response voucher-full))
+            activate-url (str p/service-context (ltu/get-op voucher-full "activate"))]
 
         (is (= "my-voucher" (:name voucher)))
-        (is (= "(filter='module')" (:module-filter voucher)))
+        (is (= "scientists@university.com" (:target-audience voucher)))
+
+        ;; check activation acls
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 403))
+
+        (-> session-admin
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
 
         ;; verify that an edit works
-        (let [updated (assoc voucher :module-filter "(filter='updated')")]
+        (let [updated (assoc voucher :target-audience "scientists@university.com")]
 
           (-> session-admin
               (request admin-abs-uri
@@ -136,7 +154,7 @@
                                  :response
                                  :body)]
 
-            (is (= "(filter='updated')" (:module-filter updated-body))))))
+            (is (= "scientists@university.com" (:target-audience updated-body))))))
 
       ;; admin can delete the voucher
       (-> session-admin
