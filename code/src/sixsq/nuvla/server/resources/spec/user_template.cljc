@@ -14,16 +14,11 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
-             :json-schema/help "user creation method"
-             :json-schema/group "body"
              :json-schema/order 0
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 ;; All user template resources must have a 'instance' attribute that is used as
@@ -33,16 +28,11 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
-             :json-schema/help "instance name of user creation method"
-             :json-schema/group "body"
              :json-schema/order 1
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 (def user-template-regex #"^user-template/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$")
@@ -52,16 +42,11 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "user template"
              :json-schema/description "reference to the user template"
-             :json-schema/help "reference to the user template"
-             :json-schema/group "body"
              :json-schema/order 0
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 ;;
 ;; Keys specifications for user-template resources.

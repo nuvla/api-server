@@ -12,15 +12,10 @@
       (assoc :name "password"
              :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "password"
              :json-schema/description "plaintext password"
-             :json-schema/help "plaintext password"
-             :json-schema/group "body"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 

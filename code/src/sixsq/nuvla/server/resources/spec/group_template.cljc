@@ -17,16 +17,10 @@
       (assoc :name "group-identifer"
              :json-schema/name "group-identifer"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
-             :json-schema/help "unique kebab-case identifier for group"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (def group-template-keys-spec-req

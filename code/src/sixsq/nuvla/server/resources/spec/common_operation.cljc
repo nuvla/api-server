@@ -11,14 +11,10 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "href"
-             :json-schema/description "URI for operation"
-             :json-schema/help "unique URI that identifies the operation"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "URI for operation")))
 
 
 (s/def ::rel
@@ -26,14 +22,10 @@
       (assoc :name "rel"
              :json-schema/name "rel"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "rel"
-             :json-schema/description "URL for performing action"
-             :json-schema/help "URL for performing action"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "URL for performing action")))
 
 
 

@@ -11,16 +11,10 @@
       (assoc :name "ttl"
              :json-schema/name "ttl"
              :json-schema/type "integer"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "TTL"
              :json-schema/description "Time to Live (TTL) for API key/secret"
-             :json-schema/help "Time to Live (TTL) for created API key/secret"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (def credential-template-keys-spec

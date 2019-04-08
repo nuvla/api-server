@@ -11,16 +11,11 @@
                     (assoc :name "parent"
                            :json-schema/name "parent"
                            :json-schema/type "uri"
-                           :json-schema/required true
                            :json-schema/editable false
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
-                           :json-schema/help "reference to the unique resource identifier of the parent resource"
-                           :json-schema/group "metadata"
-                           :json-schema/category "CIMI common attributes"
-                           :json-schema/order 6
-                           :json-schema/hidden false
-                           :json-schema/sensitive false)))
+                           :json-schema/section "meta"
+                           :json-schema/order 6)))
 
 
 (s/def ::identifier
@@ -28,16 +23,10 @@
       (assoc :name "identifier"
              :json-schema/name "identifier"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
-             :json-schema/help "unique (external) identifier to associate with a user"
-             :json-schema/group "body"
-             :json-schema/order 10
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 10)))
 
 (def ^:const user-identifier-common-attrs
   {:req-un [::cimi-common/id

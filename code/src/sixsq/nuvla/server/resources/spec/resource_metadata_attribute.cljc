@@ -21,7 +21,7 @@
 
 (s/def ::server-managed boolean?)
 
-(s/def ::required boolean?)
+(s/def ::required (s/coll-of string? :min-count 1 :type vector?))
 
 (s/def ::editable boolean?)
 
@@ -34,19 +34,13 @@
 
 (s/def ::description ::cimi-core/nonblank-string)
 
-(s/def ::help ::cimi-core/nonblank-string)
-
-(s/def ::group #{"metadata" "body" "operations" "acl"})
-
-(s/def ::category ::cimi-core/nonblank-string)
+(s/def ::section #{"meta" "data" "acl"})
 
 (s/def ::order nat-int?)
 
 (s/def ::hidden boolean?)
 
 (s/def ::sensitive boolean?)
-
-(s/def ::lines pos-int?)
 
 
 ;;
@@ -79,13 +73,10 @@
 
                                           ::display-name
                                           ::description
-                                          ::help
-                                          ::group
-                                          ::category
+                                          ::section
                                           ::order
                                           ::hidden
                                           ::sensitive
-                                          ::lines
                                           ::indexed
 
                                           ::value-scope/value-scope]))

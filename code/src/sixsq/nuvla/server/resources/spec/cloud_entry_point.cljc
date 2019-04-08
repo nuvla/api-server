@@ -12,16 +12,11 @@
       (assoc :name "base-uri"
              :json-schema/name "base-uri"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "base URI"
              :json-schema/description "base URI for relative href values"
-             :json-schema/help "base URI for relative href values"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::collections
@@ -31,16 +26,11 @@
       (assoc :name "collections"
              :json-schema/name "collections"
              :json-schema/type "map"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "collections"
              :json-schema/description "collection resources supported by the server"
-             :json-schema/help "collection resources supported by the server"
-             :json-schema/group "body"
              :json-schema/order 10
-             :json-schema/hidden false
-             :json-schema/sensitive false
 
              :json-schema/indexed false)))
 

@@ -15,16 +15,12 @@ on a cloud infrastructure.
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
              :json-schema/name "service-credential"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
-             :json-schema/help "reference to service credential to use to create Docker Swarm"
-             :json-schema/group "body"
              :json-schema/order 22
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 (def service-template-keys-spec
