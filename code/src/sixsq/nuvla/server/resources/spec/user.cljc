@@ -32,7 +32,6 @@
 
              :json-schema/display-name "state"
              :json-schema/description "state of user's account"
-             :json-schema/help "state of user's account"
              :json-schema/group "body"
              :json-schema/order 34
              :json-schema/hidden false
@@ -49,7 +48,6 @@
 
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
-             :json-schema/help "user creation method"
              :json-schema/group "body"
              :json-schema/order 50
              :json-schema/hidden false

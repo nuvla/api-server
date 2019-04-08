@@ -17,7 +17,6 @@
 
              :json-schema/display-name "username"
              :json-schema/description "username for Minio service"
-             :json-schema/help "username for Minio service"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -34,7 +33,6 @@
 
              :json-schema/display-name "password"
              :json-schema/description "password for Minio service"
-             :json-schema/help "password for Minio service"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false

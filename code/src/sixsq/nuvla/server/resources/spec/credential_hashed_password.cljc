@@ -18,7 +18,6 @@
 
              :json-schema/display-name "hash"
              :json-schema/description "hashed password"
-             :json-schema/help "hashed password"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden true

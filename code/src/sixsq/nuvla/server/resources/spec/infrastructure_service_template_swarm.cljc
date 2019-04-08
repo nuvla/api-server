@@ -20,7 +20,6 @@ on a cloud infrastructure.
 
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
-             :json-schema/help "reference to service credential to use to create Docker Swarm"
              :json-schema/group "body"
              :json-schema/order 22
              :json-schema/hidden true

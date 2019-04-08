@@ -19,7 +19,6 @@
 
              :json-schema/display-name "CA"
              :json-schema/description "public certificate of the Certificate Authority (CA)"
-             :json-schema/help "public certificate of the Certificate Authority (CA)"
              :json-schema/group "body"
              :json-schema/order 40
              :json-schema/hidden false
@@ -36,7 +35,6 @@
 
              :json-schema/display-name "cert"
              :json-schema/description "client's public certificate"
-             :json-schema/help "client's public certificate"
              :json-schema/group "body"
              :json-schema/order 41
              :json-schema/hidden false
@@ -53,7 +51,6 @@
 
              :json-schema/display-name "key"
              :json-schema/description "client's private certificate"
-             :json-schema/help "client's private certificate"
              :json-schema/group "body"
              :json-schema/order 42
              :json-schema/hidden false

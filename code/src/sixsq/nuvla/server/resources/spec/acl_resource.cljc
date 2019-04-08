@@ -102,7 +102,6 @@
 
              :json-schema/display-name "ACL"
              :json-schema/description "resource ACL"
-             :json-schema/help "resource Access Control List (ACL)"
              :json-schema/group "acl"
              :json-schema/category "Access Control List"
              :json-schema/order 0

@@ -25,7 +25,6 @@
 
              :json-schema/display-name "state"
              :json-schema/description "state of deployment"
-             :json-schema/help "standard CIMI state of deployment"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -53,7 +52,6 @@
 
              :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
-             :json-schema/help "credential identifier of API key pair"
              :json-schema/group "body"
              :json-schema/order 30
              :json-schema/hidden false
@@ -70,7 +68,6 @@
 
              :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
-             :json-schema/help "secret of API key pair"
              :json-schema/group "body"
              :json-schema/order 31
              :json-schema/hidden false
@@ -88,7 +85,6 @@
 
              :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
-             :json-schema/help "Nuvla deployment API credentials"
              :json-schema/group "data"
              :json-schema/category "data"
              :json-schema/order 20
@@ -106,7 +102,6 @@
 
              :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
-             :json-schema/help "Nuvla endpoint"
              :json-schema/group "data"
              :json-schema/category "data"
              :json-schema/order 22
@@ -135,7 +130,6 @@
 
              :json-schema/display-name "data objects"
              :json-schema/description "list of data object identifiers"
-             :json-schema/help "list of data object identifiers to make available to deployment"
              :json-schema/group "data"
              :json-schema/category "data"
              :json-schema/order 30
@@ -168,7 +162,6 @@
 
              :json-schema/display-name "service offers"
              :json-schema/description "data"
-             :json-schema/help "list of available resource operations"
              :json-schema/group "data"
              :json-schema/category "data"
              :json-schema/order 31

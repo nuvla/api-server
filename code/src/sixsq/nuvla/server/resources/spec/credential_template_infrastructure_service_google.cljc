@@ -17,7 +17,6 @@
 
              :json-schema/display-name "project_id"
              :json-schema/description "Google Compute project ID to use"
-             :json-schema/help "Project ID associated with the GCE service account"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -34,7 +33,6 @@
 
              :json-schema/display-name "private_key_id"
              :json-schema/description "ID of the private key"
-             :json-schema/help "ID of the private key"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
@@ -51,7 +49,6 @@
 
              :json-schema/display-name "private_key"
              :json-schema/description "Private key content"
-             :json-schema/help "Private key content in a single line"
              :json-schema/group "body"
              :json-schema/order 22
              :json-schema/hidden false
@@ -68,7 +65,6 @@
 
              :json-schema/display-name "client_email"
              :json-schema/description "Client email associated with the service account"
-             :json-schema/help "Client email associated with the service account"
              :json-schema/group "body"
              :json-schema/order 23
              :json-schema/hidden false
@@ -85,7 +81,6 @@
 
              :json-schema/display-name "client_id"
              :json-schema/description "Client ID associated with the service account"
-             :json-schema/help "Client ID associated with the service account"
              :json-schema/group "body"
              :json-schema/order 24
              :json-schema/hidden false
@@ -102,7 +97,6 @@
 ;
 ;                  :json-schema/display-name "auth_uri"
 ;                  :json-schema/description "Authentication URI"
-;                  :json-schema/help "Authentication URI"
 ;                  :json-schema/group "body"
 ;                  :json-schema/order 25
 ;                  :json-schema/hidden false
@@ -119,7 +113,6 @@
 ;
 ;                  :json-schema/display-name "token_uri"
 ;                  :json-schema/description "Token URI"
-;                  :json-schema/help "Token URI"
 ;                  :json-schema/group "body"
 ;                  :json-schema/order 26
 ;                  :json-schema/hidden false
@@ -136,7 +129,6 @@
 ;
 ;                  :json-schema/display-name "auth_provider_x509_cert_url"
 ;                  :json-schema/description "Provider X509 certificates URL"
-;                  :json-schema/help "Provider X509 certificates URL"
 ;                  :json-schema/group "body"
 ;                  :json-schema/order 27
 ;                  :json-schema/hidden false
@@ -153,7 +145,6 @@
 ;
 ;                  :json-schema/display-name "client_x509_cert_url"
 ;                  :json-schema/description "Client X509 certificates URL"
-;                  :json-schema/help "Client X509 certificates URL"
 ;                  :json-schema/group "body"
 ;                  :json-schema/order 27
 ;                  :json-schema/hidden false

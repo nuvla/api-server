@@ -18,7 +18,6 @@
 
                     :display-name   "my action"
                     :description    "a wonderful attribute"
-                    :help           "just give me a value"
                     :group          "body"
                     :category       "some string for a category"
                     :order          10
@@ -63,7 +62,7 @@
 
     ;; optional attributes
     (doseq [k #{:server-managed :required :editable
-                :display-name :description :help :group
+                :display-name :description :group
                 :category :order :hidden :sensitive :lines :indexed}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 

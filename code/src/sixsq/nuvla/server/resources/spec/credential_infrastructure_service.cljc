@@ -19,7 +19,6 @@
 
              :json-schema/display-name "infrastructure-service-id"
              :json-schema/description "id of service associated with this credential"
-             :json-schema/help "id of service associated with this credential"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -34,7 +33,6 @@
 
              :json-schema/display-name "infrastructure-services"
              :json-schema/description "ids of services associated with this credential"
-             :json-schema/help "ids of services associated with this credential"
              :json-schema/group "body"
              :json-schema/order 30
              :json-schema/hidden false

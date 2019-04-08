@@ -18,7 +18,6 @@
 
              :json-schema/display-name "action"
              :json-schema/description "name of action"
-             :json-schema/help "name of action performed by callback"
              :json-schema/group "body"
              :json-schema/order 10
              :json-schema/hidden false
@@ -35,7 +34,6 @@
 
              :json-schema/display-name "state"
              :json-schema/description "current state of callback"
-             :json-schema/help "current state of callback"
              :json-schema/group "body"
              :json-schema/order 11
              :json-schema/hidden false
@@ -55,7 +53,6 @@
 
              :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
-             :json-schema/help "reference to resource affected by callback"
              :json-schema/group "body"
              :json-schema/order 12
              :json-schema/hidden false
@@ -73,7 +70,6 @@
 
              :json-schema/display-name "data"
              :json-schema/description "data required for callback"
-             :json-schema/help "data required to execute the callback action"
              :json-schema/group "body"
              :json-schema/order 13
              :json-schema/hidden false
@@ -90,7 +86,6 @@
 
              :json-schema/display-name "expires"
              :json-schema/description "expiry timestamp for callback action"
-             :json-schema/help "expiry timestamp for callback action"
              :json-schema/group "body"
              :json-schema/order 14
              :json-schema/hidden false

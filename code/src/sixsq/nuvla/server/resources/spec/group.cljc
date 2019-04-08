@@ -24,7 +24,6 @@
 
              :json-schema/display-name "users"
              :json-schema/description "list of users in this group"
-             :json-schema/help "list of users in this group"
              :json-schema/group "body"
              :json-schema/category "body"
              :json-schema/order 20

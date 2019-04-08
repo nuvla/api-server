@@ -22,7 +22,6 @@
 
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
-             :json-schema/help "unique kebab-case identifier for group"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false

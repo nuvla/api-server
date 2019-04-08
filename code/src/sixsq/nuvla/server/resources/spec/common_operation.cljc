@@ -16,7 +16,6 @@
 
              :json-schema/display-name "href"
              :json-schema/description "URI for operation"
-             :json-schema/help "unique URI that identifies the operation"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -31,7 +30,6 @@
 
              :json-schema/display-name "rel"
              :json-schema/description "URL for performing action"
-             :json-schema/help "URL for performing action"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 

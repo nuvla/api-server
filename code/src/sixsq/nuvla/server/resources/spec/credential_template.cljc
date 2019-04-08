@@ -18,7 +18,6 @@
 
              :json-schema/display-name "type"
              :json-schema/description "type of credential"
-             :json-schema/help "type of credential"
              :json-schema/group "body"
              :json-schema/order 0
              :json-schema/hidden true
@@ -37,7 +36,6 @@
 
              :json-schema/display-name "method"
              :json-schema/description "method for creating credential"
-             :json-schema/help "method for creating credential"
              :json-schema/group "body"
              :json-schema/order 1
              :json-schema/hidden true

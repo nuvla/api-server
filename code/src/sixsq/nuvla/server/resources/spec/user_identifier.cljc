@@ -15,7 +15,6 @@
                            :json-schema/editable false
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
-                           :json-schema/help "reference to the unique resource identifier of the parent resource"
                            :json-schema/group "metadata"
                            :json-schema/category "CIMI common attributes"
                            :json-schema/order 6
@@ -33,7 +32,6 @@
 
              :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
-             :json-schema/help "unique (external) identifier to associate with a user"
              :json-schema/group "body"
              :json-schema/order 10
              :json-schema/hidden false

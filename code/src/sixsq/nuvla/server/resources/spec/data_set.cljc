@@ -17,7 +17,6 @@
 
              :json-schema/display-name "module filter"
              :json-schema/description "filter for modules associated with this data set"
-             :json-schema/help "filter for modules associated with this data set"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -34,7 +33,6 @@
 
              :json-schema/display-name "data object filter"
              :json-schema/description "filter for data-object resources associated with this data set"
-             :json-schema/help "filter for data-object resources associated with this data set"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -51,7 +49,6 @@
 
              :json-schema/display-name "data record filter"
              :json-schema/description "filter for data-record resources associated with this data set"
-             :json-schema/help "filter for data-record resources associated with this data set"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false

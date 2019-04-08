@@ -17,7 +17,6 @@
 
              :json-schema/display-name "exoscale-api-key"
              :json-schema/description "API key for Exoscale"
-             :json-schema/help "API key for Exoscale"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -34,7 +33,6 @@
 
              :json-schema/display-name "exoscale-api-secret-key"
              :json-schema/description "API secret key for Exoscale"
-             :json-schema/help "API secret key for Exoscale"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
