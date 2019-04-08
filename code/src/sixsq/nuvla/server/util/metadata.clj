@@ -49,11 +49,10 @@
     (cond-> desc
             (nil? name) (assoc :name attribute-name)
             (nil? server-managed) (assoc :server-managed false)
-            (nil? required) (assoc :required false)
             (nil? editable) (assoc :editable true)
             (nil? section) (assoc :section "data")
-            (nil? hidden) (assoc :hidden "false")
-            (nil? sensitive) (assoc :sensitive "false")
+            (nil? hidden) (assoc :hidden false)
+            (nil? sensitive) (assoc :sensitive false)
             value-scope (assoc :value-scope value-scope)
             child-types (assoc :child-types child-types))))
 

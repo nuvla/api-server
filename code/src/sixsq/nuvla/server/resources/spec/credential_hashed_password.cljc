@@ -13,12 +13,10 @@
       (assoc :name "hash"
              :json-schema/name "hash"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "hash"
              :json-schema/description "hashed password"
-             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden true
              :json-schema/sensitive true)))

@@ -20,15 +20,10 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "state"
              :json-schema/description "state of deployment"
-             :json-schema/section "data"
              :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false
 
              :json-schema/value-scope {:values  ["CREATED",
                                                  "STARTING", "STARTED",
@@ -47,15 +42,10 @@
       (assoc :name "api-key"
              :json-schema/name "api-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
-             :json-schema/section "data"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 30)))
 
 
 (s/def ::api-secret
@@ -63,14 +53,10 @@
       (assoc :name "api-secret"
              :json-schema/name "api-secret"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
-             :json-schema/section "data"
              :json-schema/order 31
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -79,32 +65,23 @@
       (assoc :name "api-credentials"
              :json-schema/name "api-credentials"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 (s/def ::api-endpoint
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "api-endpoint"
              :json-schema/name "api-endpoint"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
-             :json-schema/section "data"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 22)))
 
 (s/def ::credential-id ::cimi-core/nonblank-string)
 
@@ -122,16 +99,11 @@
       (assoc :name "data-objects"
              :json-schema/name "data-objects"
              :json-schema/type "array"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "data objects"
              :json-schema/description "list of data object identifiers"
-             :json-schema/section "data"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 30)))
 
 
 (def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -153,16 +125,11 @@
       (assoc :name "serviceOffers"
              :json-schema/name "serviceOffers"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "service offers"
              :json-schema/description "data"
-             :json-schema/section "data"
-             :json-schema/order 31
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 31)))
 
 
 (def deployment-keys-spec

@@ -13,8 +13,8 @@
 (def ^:const valid {:name           "my-action"
                     :type           "string"
                     :server-managed true
-                    :required       true
                     :editable       true
+                    :required       ["dummy"]               ;; really only meaningful for maps
 
                     :display-name   "my action"
                     :description    "a wonderful attribute"

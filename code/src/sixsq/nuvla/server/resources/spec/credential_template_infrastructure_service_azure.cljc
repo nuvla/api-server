@@ -12,15 +12,10 @@
       (assoc :name "azure-client-id"
              :json-schema/name "azure-client-id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::azure-client-secret
@@ -28,14 +23,10 @@
       (assoc :name "azure-client-secret"
              :json-schema/name "azure-client-secret"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
-             :json-schema/section "data"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -44,15 +35,10 @@
       (assoc :name "azure-subscription-id"
              :json-schema/name "azure-subscription-id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"
-             :json-schema/section "data"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 22)))
 
 
 (def credential-template-keys-spec

@@ -12,15 +12,12 @@
       (assoc :name "service"
              :json-schema/name "service"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
-             :json-schema/section "data"
              :json-schema/order 10
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 (s/def ::instance
@@ -28,15 +25,11 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
-             :json-schema/section "data"
-             :json-schema/order 11
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 11)))
 
 
 (def configuration-template-regex #"^configuration-template/[a-z0-9]+(-[a-z0-9]+)*$")
@@ -46,15 +39,11 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/section "data"
-             :json-schema/order 12
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 12)))
 
 
 (s/def ::template
@@ -62,15 +51,10 @@
       (assoc :name "template"
              :json-schema/name "template"
              :json-schema/type "map"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/section "data"
-             :json-schema/order 13
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 13)))
 
 
 ;;

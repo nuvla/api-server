@@ -14,13 +14,9 @@
       (assoc :name "infrastructure-service-id"
              :json-schema/name "infrastructure-service-id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "infrastructure-service-id"
-             :json-schema/description "id of service associated with this credential"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "id of service associated with this credential")))
 
 
 (s/def ::infrastructure-service
@@ -28,15 +24,10 @@
       (assoc :name "infrastructure-service"
              :json-schema/name "infrastructure-service"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "infrastructure service"
              :json-schema/description "reference to infrastructure-service resource"
-             :json-schema/section "data"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 21)))
 
 
 (s/def ::schema

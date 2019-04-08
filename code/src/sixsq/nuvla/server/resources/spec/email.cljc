@@ -12,15 +12,10 @@
       (assoc :name "address"
              :json-schema/name "address"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "address"
              :json-schema/description "email address"
-             :json-schema/section "data"
-             :json-schema/order 10
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 10)))
 
 
 (s/def ::validated
@@ -28,15 +23,10 @@
       (assoc :name "validated"
              :json-schema/name "validated"
              :json-schema/type "boolean"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "validated"
              :json-schema/description "validated email address?"
-             :json-schema/section "data"
-             :json-schema/order 11
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 11)))
 
 
 (s/def ::schema

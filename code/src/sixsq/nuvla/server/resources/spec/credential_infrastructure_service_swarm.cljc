@@ -14,15 +14,11 @@
       (assoc :name "ca"
              :json-schema/name "ca"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "CA"
              :json-schema/description "public certificate of the Certificate Authority (CA)"
-             :json-schema/section "data"
-             :json-schema/order 40
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 40)))
 
 
 (s/def ::cert
@@ -30,15 +26,11 @@
       (assoc :name "cert"
              :json-schema/name "cert"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "cert"
              :json-schema/description "client's public certificate"
-             :json-schema/section "data"
-             :json-schema/order 41
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 41)))
 
 
 (s/def ::key
@@ -46,14 +38,11 @@
       (assoc :name "key"
              :json-schema/name "key"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/editable false
 
              :json-schema/display-name "key"
              :json-schema/description "client's private certificate"
-             :json-schema/section "data"
              :json-schema/order 42
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 

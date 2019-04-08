@@ -30,12 +30,8 @@
       (assoc :name "acl"
              :json-schema/name "acl"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "ACL"
              :json-schema/description "collection ACL"
              :json-schema/section "acl"
-             :json-schema/order 0
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 0)))

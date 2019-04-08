@@ -12,15 +12,10 @@
       (assoc :name "smtp-username"
              :json-schema/name "smtp-username"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "SMTP username"
              :json-schema/description "SMTP username for sending email from server"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::smtp-password
@@ -28,14 +23,10 @@
       (assoc :name "smtp-password"
              :json-schema/name "smtp-password"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "SMTP password"
              :json-schema/description "SMTP password for sending email from server"
-             :json-schema/section "data"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -44,15 +35,10 @@
       (assoc :name "smtp-host"
              :json-schema/name "smtp-host"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "SMTP host"
              :json-schema/description "SMTP host for sending email from server"
-             :json-schema/section "data"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 22)))
 
 
 (s/def ::smtp-port
@@ -60,15 +46,10 @@
       (assoc :name "smtp-port"
              :json-schema/name "smtp-port"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "SMTP port"
              :json-schema/description "SMTP port for sending email from server"
-             :json-schema/section "data"
-             :json-schema/order 23
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 23)))
 
 
 (s/def ::smtp-ssl
@@ -76,15 +57,10 @@
       (assoc :name "smtp-ssl"
              :json-schema/name "smtp-ssl"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "SMTP SSL?"
              :json-schema/description "use SSL when interacting with SMTP server?"
-             :json-schema/section "data"
-             :json-schema/order 24
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 24)))
 
 
 (s/def ::smtp-debug
@@ -92,15 +68,10 @@
       (assoc :name "smtp-debug"
              :json-schema/name "smtp-debug"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "debug SMTP?"
              :json-schema/description "turn on debugging when interacting with SMTP server?"
-             :json-schema/section "data"
-             :json-schema/order 25
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 25)))
 
 
 (s/def ::support-email
@@ -108,15 +79,10 @@
       (assoc :name "support-email"
              :json-schema/name "support-email"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "support email"
              :json-schema/description "email address for support"
-             :json-schema/section "data"
-             :json-schema/order 26
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 26)))
 
 
 (def configuration-template-keys-spec

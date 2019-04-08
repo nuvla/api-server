@@ -14,15 +14,11 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "authentication method"
-             :json-schema/section "data"
              :json-schema/order 0
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 ;; All session resources must have a 'instance' attribute that is used in
@@ -32,15 +28,11 @@
       (assoc :name "instance"
              :json-schema/name "instance"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "instance"
              :json-schema/description "instance name of authentication method"
-             :json-schema/section "data"
              :json-schema/order 1
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 ;; Restrict the href used to create sessions.

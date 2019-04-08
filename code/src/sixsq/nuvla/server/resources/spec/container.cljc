@@ -12,15 +12,10 @@
       (assoc :name "registry"
              :json-schema/name "registry"
              :json-schema/type "uri"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
 
              :json-schema/display-name "registry"
-             :json-schema/description "registry"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "registry")))
 
 
 (s/def ::repository
@@ -28,15 +23,10 @@
       (assoc :name "repository"
              :json-schema/name "repository"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
 
              :json-schema/display-name "repository"
-             :json-schema/description "repository"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "repository")))
 
 
 (s/def ::image-name
@@ -44,15 +34,10 @@
       (assoc :name "image-name"
              :json-schema/name "image-name"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
 
              :json-schema/display-name "image name"
-             :json-schema/description "image name"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "image name")))
 
 
 (s/def ::tag
@@ -60,15 +45,10 @@
       (assoc :name "tag"
              :json-schema/name "tag"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
 
              :json-schema/display-name "tag"
              :json-schema/description "tag"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false
              :json-schema/value-scope {:default "latest"})))
 
 
@@ -80,15 +60,10 @@
       (assoc :name "image"
              :json-schema/name "image"
              :json-schema/type "map"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
 
              :json-schema/display-name "image"
-             :json-schema/description "image"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "image")))
 
 
 ;; ports spec
@@ -98,14 +73,9 @@
       (assoc :name "image"
              :json-schema/name "protocol"
              :json-schema/type "map"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "protocol"
              :json-schema/description "protocol"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false
              :json-schema/value-scope {:values  ["tcp", "udp", "sctp"]
                                        :default "tcp"})))
 
@@ -114,28 +84,18 @@
   (-> (st/spec ::cimi-core/port)
       (assoc :name "target-port"
              :json-schema/name "target-port"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "target port"
-             :json-schema/description "target port"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "target port")))
 
 
 (s/def ::published-port
   (-> (st/spec ::cimi-core/port)
       (assoc :name "published-port"
              :json-schema/name "published-port"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "published port"
-             :json-schema/description "published port"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "published port")))
 
 
 (s/def ::port
@@ -145,14 +105,9 @@
       (assoc :name "port"
              :json-schema/name "port"
              :json-schema/type "map"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "port"
-             :json-schema/description "port"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "port")))
 
 
 (s/def ::ports
@@ -160,15 +115,10 @@
       (assoc :name "ports"
              :json-schema/name "ports"
              :json-schema/type "array"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/indexed false
              :json-schema/display-name "ports"
-             :json-schema/description "list of port"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "list of port")))
 
 
 ;; mounts spec
@@ -179,14 +129,9 @@
       (assoc :name "source"
              :json-schema/name "source"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "source"
-             :json-schema/description "source"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "source")))
 
 
 (s/def ::target
@@ -194,14 +139,9 @@
       (assoc :name "target"
              :json-schema/name "target"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "target"
-             :json-schema/description "target"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "target")))
 
 
 (s/def ::mount-type
@@ -209,14 +149,9 @@
       (assoc :name "image"
              :json-schema/name "mount-type"
              :json-schema/type "map"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "mount type"
              :json-schema/description "mount type"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false
              :json-schema/value-scope {:values ["bind", "volume"]})))
 
 
@@ -225,14 +160,9 @@
       (assoc :name "read-only"
              :json-schema/name "read-only"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "read only"
-             :json-schema/description "read only"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "read only")))
 
 
 (s/def ::option-key
@@ -240,14 +170,9 @@
       (assoc :name "option-key"
              :json-schema/name "option-key"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "option key"
-             :json-schema/description "option key"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "option key")))
 
 
 (s/def ::option-value
@@ -255,14 +180,9 @@
       (assoc :name "option-value"
              :json-schema/name "option-value"
              :json-schema/type "string"
-             :json-schema/required true
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "option value"
-             :json-schema/description "option value"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "option value")))
 
 
 (s/def ::volume-option
@@ -271,14 +191,9 @@
       (assoc :name "volume-option"
              :json-schema/name "volume-option"
              :json-schema/type "map"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "volume option"
-             :json-schema/description "volume option"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "volume option")))
 
 
 (s/def ::volume-options
@@ -286,15 +201,10 @@
       (assoc :name "volume-options"
              :json-schema/name "volume-options"
              :json-schema/type "array"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/indexed false
              :json-schema/display-name "volume options"
-             :json-schema/description "list of volume option"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "list of volume option")))
 
 
 
@@ -307,14 +217,9 @@
       (assoc :name "mount"
              :json-schema/name "mount"
              :json-schema/type "map"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/display-name "mount"
-             :json-schema/description "mount"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "mount")))
 
 
 (s/def ::mounts
@@ -322,12 +227,7 @@
       (assoc :name "mounts"
              :json-schema/name "mounts"
              :json-schema/type "array"
-             :json-schema/required false
              :json-schema/mutable true
-             :json-schema/editable true
              :json-schema/indexed false
              :json-schema/display-name "mounts"
-             :json-schema/description "list of mount"
-             :json-schema/section "data"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "list of mount")))

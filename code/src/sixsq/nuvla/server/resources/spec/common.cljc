@@ -14,15 +14,12 @@
       (assoc :name "id"
              :json-schema/name "id"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "identifier"
              :json-schema/description "unique resource identifier"
              :json-schema/section "meta"
-             :json-schema/order 0
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 0)))
 
 
 (s/def ::resource-type
@@ -30,15 +27,12 @@
       (assoc :name "resource-type"
              :json-schema/name "resource-type"
              :json-schema/type "uri"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "resource URI"
              :json-schema/description "URI for resource type"
              :json-schema/section "meta"
-             :json-schema/order 1
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 1)))
 
 
 (s/def ::created
@@ -46,15 +40,12 @@
       (assoc :name "created"
              :json-schema/name "created"
              :json-schema/type "date-time"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "created"
              :json-schema/description "creation timestamp (UTC) for resource"
              :json-schema/section "meta"
-             :json-schema/order 2
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 2)))
 
 
 (s/def ::updated
@@ -62,15 +53,11 @@
       (assoc :name "updated"
              :json-schema/name "updated"
              :json-schema/type "date-time"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "updated"
              :json-schema/description "latest resource update timestamp (UTC)"
              :json-schema/section "meta"
-             :json-schema/order 3
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 3)))
 
 
 (s/def ::name
@@ -78,16 +65,12 @@
       (assoc :name "name"
              :json-schema/name "name"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/searchable true
 
              :json-schema/display-name "name"
              :json-schema/description "short, human-readable name for resource"
              :json-schema/section "meta"
-             :json-schema/order 4
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 4)))
 
 
 (s/def ::description
@@ -95,16 +78,12 @@
       (assoc :name "description"
              :json-schema/name "description"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/searchable true
 
              :json-schema/display-name "description"
              :json-schema/description "human-readable description of resource"
              :json-schema/section "meta"
-             :json-schema/order 5
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 5)))
 
 
 (s/def ::parent
@@ -112,15 +91,12 @@
       (assoc :name "parent"
              :json-schema/name "parent"
              :json-schema/type "uri"
-             :json-schema/required false
              :json-schema/editable false
 
              :json-schema/display-name "parent"
              :json-schema/description "reference to parent resource"
              :json-schema/section "meta"
-             :json-schema/order 6
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 6)))
 
 
 (s/def ::resource-metadata
@@ -128,15 +104,11 @@
       (assoc :name "resource-metadata"
              :json-schema/name "resource-metadata"
              :json-schema/type "uri"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "resource metadata"
              :json-schema/description "reference to the resource's metadata"
              :json-schema/section "meta"
-             :json-schema/order 7
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 7)))
 
 
 (s/def ::href
@@ -144,13 +116,9 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "href"
-             :json-schema/description "reference to another resource"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "reference to another resource")))
 
 
 (s/def ::resource-link
@@ -158,13 +126,9 @@
       (assoc :name "resourceLink"
              :json-schema/name "resourceLink"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "resourceLink"
-             :json-schema/description "map containing a reference (href) to a resource"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "map containing a reference (href) to a resource")))
 
 
 (s/def ::resource-links
@@ -173,13 +137,9 @@
              :json-schema/name "resourceLinks"
              :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "resourceLinks"
-             :json-schema/description "list of resourceLinks"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/description "list of resourceLinks")))
 
 
 (s/def ::operation
@@ -189,15 +149,11 @@
              :json-schema/name "operation"
              :json-schema/type "map"
              :json-schema/provider-mandatory false
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "operation"
              :json-schema/description "operation definition (name, URL) for a resource"
              :json-schema/section "meta"
-             :json-schema/order 0
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 0)))
 
 
 (s/def ::operations
@@ -206,16 +162,12 @@
              :json-schema/name "operations"
              :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "operations"
              :json-schema/description "list of resource operations"
              :json-schema/section "meta"
-             :json-schema/order 0
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 0)))
 
 
 (s/def ::tags
@@ -224,15 +176,11 @@
              :json-schema/name "tags"
              :json-schema/type "array"
              :json-schema/provider-mandatory false
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
              :json-schema/section "meta"
-             :json-schema/order 15
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 15)))
 
 
 (s/def ::acl (st/spec ::acl-resource/acl))

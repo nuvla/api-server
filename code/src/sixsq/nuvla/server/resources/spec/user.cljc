@@ -27,15 +27,10 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "state"
              :json-schema/description "state of user's account"
-             :json-schema/section "data"
-             :json-schema/order 34
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 34)))
 
 
 (s/def ::method
@@ -43,15 +38,10 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
-             :json-schema/section "data"
-             :json-schema/order 50
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 50)))
 
 
 (def user-keys-spec

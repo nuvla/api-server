@@ -13,15 +13,11 @@
       (assoc :name "type"
              :json-schema/name "type"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "type"
              :json-schema/description "type of credential"
-             :json-schema/section "data"
              :json-schema/order 0
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 ;; A given credential may have more than one method for creating it.  All
@@ -31,15 +27,11 @@
       (assoc :name "method"
              :json-schema/name "method"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "method"
              :json-schema/description "method for creating credential"
-             :json-schema/section "data"
              :json-schema/order 1
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+             :json-schema/hidden true)))
 
 
 (def credential-template-regex #"^credential-template/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$")

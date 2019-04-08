@@ -21,7 +21,7 @@
 
 (s/def ::server-managed boolean?)
 
-(s/def ::required boolean?)
+(s/def ::required (s/coll-of string? :min-count 1 :type vector?))
 
 (s/def ::editable boolean?)
 

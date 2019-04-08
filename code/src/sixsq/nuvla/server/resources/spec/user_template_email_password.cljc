@@ -11,30 +11,20 @@
       (assoc :name "username"
              :json-schema/name "username"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "username"
              :json-schema/description "your username"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 (s/def ::email
   (-> (st/spec ::cimi-core/email)
       (assoc :name "email"
              :json-schema/name "email"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "email address"
              :json-schema/description "your email address"
-             :json-schema/section "data"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 21)))
 
 
 (s/def ::password
@@ -42,14 +32,10 @@
       (assoc :name "password"
              :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "password"
              :json-schema/description "password for your account"
-             :json-schema/section "data"
              :json-schema/order 22
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 

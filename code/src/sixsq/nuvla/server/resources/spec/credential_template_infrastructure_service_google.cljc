@@ -12,15 +12,10 @@
       (assoc :name "project_id"
              :json-schema/name "project_id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "project_id"
              :json-schema/description "Google Compute project ID to use"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::private-key-id
@@ -28,15 +23,10 @@
       (assoc :name "private_key_id"
              :json-schema/name "private_key_id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "private_key_id"
              :json-schema/description "ID of the private key"
-             :json-schema/section "data"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 21)))
 
 
 (s/def ::private-key
@@ -44,14 +34,10 @@
       (assoc :name "private_key"
              :json-schema/name "private_key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "private_key"
              :json-schema/description "Private key content"
-             :json-schema/section "data"
              :json-schema/order 22
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -60,15 +46,10 @@
       (assoc :name "client_email"
              :json-schema/name "client_email"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "client_email"
              :json-schema/description "Client email associated with the service account"
-             :json-schema/section "data"
-             :json-schema/order 23
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 23)))
 
 
 (s/def ::client-id
@@ -76,15 +57,10 @@
       (assoc :name "client_id"
              :json-schema/name "client_id"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "client_id"
              :json-schema/description "Client ID associated with the service account"
-             :json-schema/section "data"
-             :json-schema/order 24
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 24)))
 
 
 ;(s/def ::auth-uri
@@ -92,15 +68,10 @@
 ;           (assoc :name "auth_uri"
 ;                  :json-schema/name "auth_uri"
 ;                  :json-schema/type "string"
-;                  :json-schema/required false
-;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "auth_uri"
 ;                  :json-schema/description "Authentication URI"
-;                  :json-schema/section "data"
-;                  :json-schema/order 25
-;                  :json-schema/hidden false
-;                  :json-schema/sensitive false)))
+;                  :json-schema/order 25)))
 
 ;
 ;(s/def ::token-uri
@@ -108,15 +79,10 @@
 ;           (assoc :name "token_uri"
 ;                  :json-schema/name "token_uri"
 ;                  :json-schema/type "string"
-;                  :json-schema/required false
-;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "token_uri"
 ;                  :json-schema/description "Token URI"
-;                  :json-schema/section "data"
-;                  :json-schema/order 26
-;                  :json-schema/hidden false
-;                  :json-schema/sensitive false)))
+;                  :json-schema/order 26)))
 
 ;
 ;(s/def ::auth-provider-x509-cert-url
@@ -124,15 +90,10 @@
 ;           (assoc :name "auth_provider_x509_cert_url"
 ;                  :json-schema/name "auth_provider_x509_cert_url"
 ;                  :json-schema/type "string"
-;                  :json-schema/required false
-;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "auth_provider_x509_cert_url"
 ;                  :json-schema/description "Provider X509 certificates URL"
-;                  :json-schema/section "data"
-;                  :json-schema/order 27
-;                  :json-schema/hidden false
-;                  :json-schema/sensitive false)))
+;                  :json-schema/order 27)))
 ;
 ;
 ;(s/def ::client-x509-cert-url
@@ -140,15 +101,10 @@
 ;           (assoc :name "client_x509_cert_url"
 ;                  :json-schema/name "client_x509_cert_url"
 ;                  :json-schema/type "string"
-;                  :json-schema/required false
-;                  :json-schema/editable true
 ;
 ;                  :json-schema/display-name "client_x509_cert_url"
 ;                  :json-schema/description "Client X509 certificates URL"
-;                  :json-schema/section "data"
-;                  :json-schema/order 27
-;                  :json-schema/hidden false
-;                  :json-schema/sensitive false)))
+;                  :json-schema/order 27)))
 
 
 

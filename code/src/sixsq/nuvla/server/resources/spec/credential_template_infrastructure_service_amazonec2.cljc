@@ -13,15 +13,10 @@
       (assoc :name "amazonec2-access-key"
              :json-schema/name "amazonec2-access-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "amazonec2-access-key"
              :json-schema/description "AWS API key"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::amazonec2-secret-key
@@ -29,14 +24,10 @@
       (assoc :name "amazonec2-secret-key"
              :json-schema/name "amazonec2-secret-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "amazonec2-secret-key"
              :json-schema/description "AWS secret API key"
-             :json-schema/section "data"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 

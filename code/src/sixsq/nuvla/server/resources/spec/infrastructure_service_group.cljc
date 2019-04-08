@@ -11,15 +11,10 @@
   (-> (st/spec ::cimi-core/url)
       (assoc :name "documentation"
              :json-schema/name "documentation"
-             :json-schema/required false
-             :json-schema/editable true
 
              :json-schema/display-name "documentation URL"
              :json-schema/description "URL where service documentation can be found"
-             :json-schema/section "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::infrastructure-services
@@ -27,16 +22,11 @@
       (assoc :name "infrastructure-services"
              :json-schema/name "infrastructure-services"
              :json-schema/type "array"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "infrastructure-services"
              :json-schema/description "list of associated services"
-             :json-schema/section "data"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 21)))
 
 
 (s/def ::schema
