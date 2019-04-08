@@ -16,7 +16,7 @@
 
              :json-schema/display-name "documentation URL"
              :json-schema/description "URL where service documentation can be found"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/order 20
              :json-schema/hidden false
@@ -34,7 +34,7 @@
 
              :json-schema/display-name "infrastructure-services"
              :json-schema/description "list of associated services"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/order 21
              :json-schema/hidden false

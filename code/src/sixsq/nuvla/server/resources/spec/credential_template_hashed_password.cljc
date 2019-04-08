@@ -17,7 +17,7 @@
 
              :json-schema/display-name "password"
              :json-schema/description "plaintext password"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))

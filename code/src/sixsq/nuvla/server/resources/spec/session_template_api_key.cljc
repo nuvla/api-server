@@ -17,7 +17,7 @@
 
              :json-schema/display-name "key"
              :json-schema/description "key for API key/secret pair"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "secret"
              :json-schema/description "secret for API key/secret pair"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))

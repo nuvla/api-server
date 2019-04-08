@@ -33,7 +33,7 @@
 
              :json-schema/display-name "infrastructure-services"
              :json-schema/description "ids of services associated with this credential"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 30
              :json-schema/hidden false
              :json-schema/sensitive false)))

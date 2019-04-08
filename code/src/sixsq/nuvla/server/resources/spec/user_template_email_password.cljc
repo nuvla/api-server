@@ -16,7 +16,7 @@
 
              :json-schema/display-name "username"
              :json-schema/description "your username"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -31,7 +31,7 @@
 
              :json-schema/display-name "email address"
              :json-schema/description "your email address"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -47,7 +47,7 @@
 
              :json-schema/display-name "password"
              :json-schema/description "password for your account"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 22
              :json-schema/hidden false
              :json-schema/sensitive true)))

@@ -17,7 +17,7 @@
 
              :json-schema/display-name "base URI"
              :json-schema/description "base URI for relative href values"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -35,7 +35,7 @@
 
              :json-schema/display-name "collections"
              :json-schema/description "collection resources supported by the server"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 10
              :json-schema/hidden false
              :json-schema/sensitive false

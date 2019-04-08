@@ -35,7 +35,7 @@
 
              :json-schema/display-name "ACL"
              :json-schema/description "collection ACL"
-             :json-schema/group "acl"
+             :json-schema/section "acl"
              :json-schema/category "Access Control List"
              :json-schema/order 0
              :json-schema/hidden false

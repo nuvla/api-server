@@ -17,7 +17,7 @@
 
              :json-schema/display-name "address"
              :json-schema/description "email address"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 10
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "validated"
              :json-schema/description "validated email address?"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 11
              :json-schema/hidden false
              :json-schema/sensitive false)))

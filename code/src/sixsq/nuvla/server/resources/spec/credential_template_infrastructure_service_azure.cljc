@@ -17,7 +17,7 @@
 
              :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))
@@ -49,7 +49,7 @@
 
              :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 22
              :json-schema/hidden false
              :json-schema/sensitive false)))

@@ -20,7 +20,7 @@ on a cloud infrastructure.
 
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 22
              :json-schema/hidden true
              :json-schema/sensitive false)))

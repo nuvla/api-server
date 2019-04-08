@@ -34,7 +34,7 @@
 
 (s/def ::description ::cimi-core/nonblank-string)
 
-(s/def ::group #{"metadata" "body" "operations" "acl"})
+(s/def ::section #{"meta" "data" "acl"})
 
 (s/def ::category ::cimi-core/nonblank-string)
 
@@ -77,7 +77,7 @@
 
                                           ::display-name
                                           ::description
-                                          ::group
+                                          ::section
                                           ::category
                                           ::order
                                           ::hidden

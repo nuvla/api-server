@@ -16,7 +16,7 @@
 
              :json-schema/display-name "TTL"
              :json-schema/description "Time to Live (TTL) for API key/secret"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))

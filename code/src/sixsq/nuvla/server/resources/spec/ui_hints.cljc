@@ -17,7 +17,7 @@
 
              :json-schema/display-name "group"
              :json-schema/description "label for grouping related templates/forms"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 60
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "order"
              :json-schema/description "hint for visualization order for field"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 61
              :json-schema/hidden false
              :json-schema/sensitive false
@@ -52,7 +52,7 @@
 
              :json-schema/display-name "hidden"
              :json-schema/description "should template be hidden on browser UIs"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 62
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -68,7 +68,7 @@
 
              :json-schema/display-name "icon"
              :json-schema/description "name for icon to associate to template"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 63
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -84,7 +84,7 @@
 
              :json-schema/display-name "redirect-url"
              :json-schema/description "redirect URI to be used on success"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 64
              :json-schema/hidden false
              :json-schema/sensitive false)))

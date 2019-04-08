@@ -33,7 +33,7 @@
 
              :json-schema/display-name "infrastructure service"
              :json-schema/description "reference to infrastructure-service resource"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive false)))

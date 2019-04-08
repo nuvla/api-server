@@ -19,7 +19,7 @@
 
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 0
              :json-schema/hidden true
              :json-schema/sensitive false)))
@@ -37,7 +37,7 @@
 
              :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 1
              :json-schema/hidden true
              :json-schema/sensitive false)))
@@ -55,7 +55,7 @@
 
              :json-schema/display-name "user template"
              :json-schema/description "reference to the user template"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 0
              :json-schema/hidden true
              :json-schema/sensitive false)))

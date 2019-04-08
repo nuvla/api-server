@@ -19,7 +19,7 @@
 
              :json-schema/display-name "identifier"
              :json-schema/description "unique resource identifier"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 0
              :json-schema/hidden false
@@ -36,7 +36,7 @@
 
              :json-schema/display-name "resource URI"
              :json-schema/description "URI for resource type"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 1
              :json-schema/hidden false
@@ -53,7 +53,7 @@
 
              :json-schema/display-name "created"
              :json-schema/description "creation timestamp (UTC) for resource"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 2
              :json-schema/hidden false
@@ -70,7 +70,7 @@
 
              :json-schema/display-name "updated"
              :json-schema/description "latest resource update timestamp (UTC)"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 3
              :json-schema/hidden false
@@ -88,7 +88,7 @@
 
              :json-schema/display-name "name"
              :json-schema/description "short, human-readable name for resource"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 4
              :json-schema/hidden false
@@ -106,7 +106,7 @@
 
              :json-schema/display-name "description"
              :json-schema/description "human-readable description of resource"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 5
              :json-schema/hidden false
@@ -123,7 +123,7 @@
 
              :json-schema/display-name "parent"
              :json-schema/description "reference to parent resource"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 6
              :json-schema/hidden false
@@ -140,7 +140,7 @@
 
              :json-schema/display-name "resource metadata"
              :json-schema/description "reference to the resource's metadata"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 7
              :json-schema/hidden false
@@ -202,7 +202,7 @@
 
              :json-schema/display-name "operation"
              :json-schema/description "operation definition (name, URL) for a resource"
-             :json-schema/group "operations"
+             :json-schema/section "meta"
              :json-schema/category "CIMI operations"
              :json-schema/order 0
              :json-schema/hidden false
@@ -221,7 +221,7 @@
 
              :json-schema/display-name "operations"
              :json-schema/description "list of resource operations"
-             :json-schema/group "operations"
+             :json-schema/section "meta"
              :json-schema/category "CIMI operations"
              :json-schema/order 0
              :json-schema/hidden false
@@ -239,7 +239,7 @@
 
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
-             :json-schema/group "metadata"
+             :json-schema/section "meta"
              :json-schema/category "CIMI common attributes"
              :json-schema/order 15
              :json-schema/hidden false

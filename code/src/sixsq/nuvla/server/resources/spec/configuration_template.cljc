@@ -17,7 +17,7 @@
 
              :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 10
              :json-schema/hidden true
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 11
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -51,7 +51,7 @@
 
              :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 12
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -67,7 +67,7 @@
 
              :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 13
              :json-schema/hidden false
              :json-schema/sensitive false)))

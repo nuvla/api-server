@@ -18,7 +18,7 @@
 
              :json-schema/display-name "amazonec2-access-key"
              :json-schema/description "AWS API key"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -34,7 +34,7 @@
 
              :json-schema/display-name "amazonec2-secret-key"
              :json-schema/description "AWS secret API key"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))

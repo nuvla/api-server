@@ -18,7 +18,7 @@
 
              :json-schema/display-name "registry"
              :json-schema/description "registry"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -34,7 +34,7 @@
 
              :json-schema/display-name "repository"
              :json-schema/description "repository"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -50,7 +50,7 @@
 
              :json-schema/display-name "image name"
              :json-schema/description "image name"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -66,7 +66,7 @@
 
              :json-schema/display-name "tag"
              :json-schema/description "tag"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false
              :json-schema/value-scope {:default "latest"})))
@@ -86,7 +86,7 @@
 
              :json-schema/display-name "image"
              :json-schema/description "image"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -103,7 +103,7 @@
              :json-schema/editable true
              :json-schema/display-name "protocol"
              :json-schema/description "protocol"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false
              :json-schema/value-scope {:values  ["tcp", "udp", "sctp"]
@@ -119,7 +119,7 @@
              :json-schema/editable true
              :json-schema/display-name "target port"
              :json-schema/description "target port"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -133,7 +133,7 @@
              :json-schema/editable true
              :json-schema/display-name "published port"
              :json-schema/description "published port"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -150,7 +150,7 @@
              :json-schema/editable true
              :json-schema/display-name "port"
              :json-schema/description "port"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -166,7 +166,7 @@
              :json-schema/indexed false
              :json-schema/display-name "ports"
              :json-schema/description "list of port"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -185,7 +185,7 @@
              :json-schema/editable true
              :json-schema/display-name "source"
              :json-schema/description "source"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -201,7 +201,7 @@
              :json-schema/editable true
              :json-schema/display-name "target"
              :json-schema/description "target"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -217,7 +217,7 @@
              :json-schema/editable true
              :json-schema/display-name "mount type"
              :json-schema/description "mount type"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false
              :json-schema/value-scope {:values ["bind", "volume"]})))
@@ -233,7 +233,7 @@
              :json-schema/editable true
              :json-schema/display-name "read only"
              :json-schema/description "read only"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -248,7 +248,7 @@
              :json-schema/editable true
              :json-schema/display-name "option key"
              :json-schema/description "option key"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -263,7 +263,7 @@
              :json-schema/editable true
              :json-schema/display-name "option value"
              :json-schema/description "option value"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -279,7 +279,7 @@
              :json-schema/editable true
              :json-schema/display-name "volume option"
              :json-schema/description "volume option"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -295,7 +295,7 @@
              :json-schema/indexed false
              :json-schema/display-name "volume options"
              :json-schema/description "list of volume option"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -316,7 +316,7 @@
              :json-schema/editable true
              :json-schema/display-name "mount"
              :json-schema/description "mount"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -332,7 +332,7 @@
              :json-schema/indexed false
              :json-schema/display-name "mounts"
              :json-schema/description "list of mount"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))

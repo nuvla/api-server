@@ -17,7 +17,7 @@
 
              :json-schema/display-name "method"
              :json-schema/description "service creation method"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 20
              :json-schema/hidden true
              :json-schema/sensitive false)))
@@ -33,7 +33,7 @@
 
              :json-schema/display-name "service type"
              :json-schema/description "kebab-case identifier for the service type"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -49,7 +49,7 @@
 
              :json-schema/display-name "endpoint"
              :json-schema/description "public API endpoint for the service"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 22
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -70,7 +70,7 @@
 
              :json-schema/display-name "state"
              :json-schema/description "state of service"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 23
              :json-schema/hidden false
              :json-schema/sensitive false
@@ -116,7 +116,7 @@
 
              :json-schema/display-name "node"
              :json-schema/description "node within the swarm cluster"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 23
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -132,7 +132,7 @@
 
              :json-schema/display-name "nodes"
              :json-schema/description "List of base64 encoded configurations for each Swarm machine"
-             :json-schema/group "body"
+             :json-schema/section "data"
              :json-schema/order 24
              :json-schema/hidden true
              :json-schema/sensitive false)))
