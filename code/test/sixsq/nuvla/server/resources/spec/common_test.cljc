@@ -34,24 +34,11 @@
   (stu/is-invalid ::cimi-common/resource-links []))
 
 
-(deftest check-operation
-  (stu/is-valid ::cimi-common/operation {:href "uri" :rel "add"})
-  (stu/is-invalid ::cimi-common/operation {:href "uri"})
-  (stu/is-invalid ::cimi-common/operation {:rel "add"})
-  (stu/is-invalid ::cimi-common/operation {}))
-
-
-(deftest check-operations
-  (stu/is-valid ::cimi-common/operations [{:href "uri" :rel "add"}])
-  (stu/is-valid ::cimi-common/operations [{:href "uri" :rel "add"} {:href "uri" :rel "delete"}])
-  (stu/is-invalid ::cimi-common/operations []))
-
-
 (deftest check-tags
-  (doseq [v #{["ok"], ["a", "b"], ["ok", "ok"]}]
+  (doseq [v #{["ok"], ["a", "b"], ["ok", "also-ok"]}]
     (stu/is-valid ::cimi-common/tags v))
 
-  (doseq [v #{{}, {1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}}]
+  (doseq [v #{{}, {1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}, ["bad" "bad"]}]
     (stu/is-invalid ::cimi-common/tags v)))
 
 

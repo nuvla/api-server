@@ -5,110 +5,7 @@
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]
     [sixsq.nuvla.server.resources.spec.common-operation :as cimi-common-operation]
     [sixsq.nuvla.server.resources.spec.core :as cimi-core]
-    [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
-
-
-(s/def ::id
-  (-> (st/spec ::cimi-core/resource-href)
-      (assoc :name "id"
-             :json-schema/name "id"
-             :json-schema/type "string"
-             :json-schema/editable false
-
-             :json-schema/display-name "identifier"
-             :json-schema/description "unique resource identifier"
-             :json-schema/section "meta"
-             :json-schema/order 0)))
-
-
-(s/def ::resource-type
-  (-> (st/spec ::cimi-core/uri)
-      (assoc :name "resource-type"
-             :json-schema/name "resource-type"
-             :json-schema/type "uri"
-             :json-schema/editable false
-
-             :json-schema/display-name "resource URI"
-             :json-schema/description "URI for resource type"
-             :json-schema/section "meta"
-             :json-schema/order 1)))
-
-
-(s/def ::created
-  (-> (st/spec ::cimi-core/timestamp)
-      (assoc :name "created"
-             :json-schema/name "created"
-             :json-schema/type "date-time"
-             :json-schema/editable false
-
-             :json-schema/display-name "created"
-             :json-schema/description "creation timestamp (UTC) for resource"
-             :json-schema/section "meta"
-             :json-schema/order 2)))
-
-
-(s/def ::updated
-  (-> (st/spec ::cimi-core/timestamp)
-      (assoc :name "updated"
-             :json-schema/name "updated"
-             :json-schema/type "date-time"
-
-             :json-schema/display-name "updated"
-             :json-schema/description "latest resource update timestamp (UTC)"
-             :json-schema/section "meta"
-             :json-schema/order 3)))
-
-
-(s/def ::name
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "name"
-             :json-schema/name "name"
-             :json-schema/type "string"
-             :json-schema/searchable true
-
-             :json-schema/display-name "name"
-             :json-schema/description "short, human-readable name for resource"
-             :json-schema/section "meta"
-             :json-schema/order 4)))
-
-
-(s/def ::description
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "description"
-             :json-schema/name "description"
-             :json-schema/type "string"
-             :json-schema/searchable true
-
-             :json-schema/display-name "description"
-             :json-schema/description "human-readable description of resource"
-             :json-schema/section "meta"
-             :json-schema/order 5)))
-
-
-(s/def ::parent
-  (-> (st/spec ::cimi-core/resource-href)
-      (assoc :name "parent"
-             :json-schema/name "parent"
-             :json-schema/type "uri"
-             :json-schema/editable false
-
-             :json-schema/display-name "parent"
-             :json-schema/description "reference to parent resource"
-             :json-schema/section "meta"
-             :json-schema/order 6)))
-
-
-(s/def ::resource-metadata
-  (-> (st/spec ::cimi-core/resource-href)
-      (assoc :name "resource-metadata"
-             :json-schema/name "resource-metadata"
-             :json-schema/type "uri"
-
-             :json-schema/display-name "resource metadata"
-             :json-schema/description "reference to the resource's metadata"
-             :json-schema/section "meta"
-             :json-schema/order 7)))
 
 
 (s/def ::href
@@ -140,35 +37,130 @@
              :json-schema/display-name "resourceLinks"
              :json-schema/description "list of resourceLinks")))
 
+;;
+;; core meta
+;;
 
-(s/def ::operation
-  (-> (st/spec (su/only-keys :req-un [::cimi-common-operation/href
-                                      ::cimi-common-operation/rel]))
-      (assoc :name "operation"
-             :json-schema/name "operation"
-             :json-schema/type "map"
+(s/def ::id
+  (-> (st/spec ::cimi-core/resource-href)
+      (assoc :name "id"
+             :json-schema/name "id"
+             :json-schema/type "string"
 
-             :json-schema/display-name "operation"
-             :json-schema/description "operation definition (name, URL) for a resource"
+             :json-schema/display-name "identifier"
+             :json-schema/description "unique resource identifier"
              :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
              :json-schema/order 0)))
 
 
-(s/def ::operations
-  (-> (st/spec (s/coll-of ::operation :min-count 1))
-      (assoc :name "operations"
-             :json-schema/name "operations"
-             :json-schema/type "array"
-             :json-schema/indexed false
+(s/def ::parent
+  (-> (st/spec ::cimi-core/resource-href)
+      (assoc :name "parent"
+             :json-schema/name "parent"
+             :json-schema/type "uri"
 
-             :json-schema/display-name "operations"
-             :json-schema/description "list of resource operations"
+             :json-schema/display-name "parent"
+             :json-schema/description "reference to parent resource"
              :json-schema/section "meta"
-             :json-schema/order 0)))
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 1)))
+
+
+(s/def ::resource-type
+  (-> (st/spec ::cimi-core/uri)
+      (assoc :name "resource-type"
+             :json-schema/name "resource-type"
+             :json-schema/type "uri"
+
+             :json-schema/display-name "resource URI"
+             :json-schema/description "URI for resource type"
+             :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 2)))
+
+
+(s/def ::resource-metadata
+  (-> (st/spec ::cimi-core/resource-href)
+      (assoc :name "resource-metadata"
+             :json-schema/name "resource-metadata"
+             :json-schema/type "uri"
+
+             :json-schema/display-name "resource metadata"
+             :json-schema/description "reference to the resource's metadata"
+             :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 3)))
+
+
+(s/def ::created
+  (-> (st/spec ::cimi-core/timestamp)
+      (assoc :name "created"
+             :json-schema/name "created"
+             :json-schema/type "date-time"
+
+             :json-schema/display-name "created"
+             :json-schema/description "creation timestamp (UTC) for resource"
+             :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 4)))
+
+
+(s/def ::updated
+  (-> (st/spec ::cimi-core/timestamp)
+      (assoc :name "updated"
+             :json-schema/name "updated"
+             :json-schema/type "date-time"
+
+             :json-schema/display-name "updated"
+             :json-schema/description "latest resource update timestamp (UTC)"
+             :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 5)))
+
+
+(s/def ::name
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "name"
+             :json-schema/name "name"
+             :json-schema/type "string"
+
+             :json-schema/display-name "name"
+             :json-schema/description "short, human-readable name for resource"
+             :json-schema/section "meta"
+
+             :json-schema/order 6
+             :json-schema/searchable true)))
+
+
+(s/def ::description
+  (-> (st/spec ::cimi-core/nonblank-string)
+      (assoc :name "description"
+             :json-schema/name "description"
+             :json-schema/type "string"
+
+             :json-schema/display-name "description"
+             :json-schema/description "human-readable description of resource"
+             :json-schema/section "meta"
+
+             :json-schema/order 7
+             :json-schema/searchable true)))
 
 
 (s/def ::tags
-  (-> (st/spec (s/coll-of string? :min-count 1 :into #{}))
+  (-> (st/spec (s/coll-of string? :min-count 1 :distinct true :type vector?))
       (assoc :name "tags"
              :json-schema/name "tags"
              :json-schema/type "array"
@@ -176,10 +168,15 @@
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
              :json-schema/section "meta"
-             :json-schema/order 15)))
+             :json-schema/order 8)))
 
 
-(s/def ::acl (st/spec ::acl-resource/acl))
+(s/def ::operations (-> (st/spec ::cimi-common-operation/operations)
+                        (assoc :json-schema/order 9)))
+
+
+(s/def ::acl (-> (st/spec ::acl-resource/acl)
+                 (assoc :json-schema/order 0)))
 
 
 (def ^:const common-attrs
