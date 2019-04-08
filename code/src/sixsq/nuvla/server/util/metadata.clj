@@ -40,7 +40,7 @@
   (let [{:keys [name] :as desc} (select-keys description #{:name :type
                                                            :server-managed :required :editable
                                                            :display-name :description :help
-                                                           :group :category :order :hidden :sensitive :lines
+                                                           :section :order :hidden :sensitive
                                                            :indexed})
         child-types (treat-children description)]
     (cond-> desc

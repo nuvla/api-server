@@ -86,7 +86,6 @@
              :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
              :json-schema/section "data"
-             :json-schema/category "data"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -103,7 +102,6 @@
              :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
              :json-schema/section "data"
-             :json-schema/category "data"
              :json-schema/order 22
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -131,7 +129,6 @@
              :json-schema/display-name "data objects"
              :json-schema/description "list of data object identifiers"
              :json-schema/section "data"
-             :json-schema/category "data"
              :json-schema/order 30
              :json-schema/hidden false
              :json-schema/sensitive false)))
@@ -163,7 +160,6 @@
              :json-schema/display-name "service offers"
              :json-schema/description "data"
              :json-schema/section "data"
-             :json-schema/category "data"
              :json-schema/order 31
              :json-schema/hidden false
              :json-schema/sensitive false)))

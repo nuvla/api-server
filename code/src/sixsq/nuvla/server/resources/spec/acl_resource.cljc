@@ -103,7 +103,6 @@
              :json-schema/display-name "ACL"
              :json-schema/description "resource ACL"
              :json-schema/section "acl"
-             :json-schema/category "Access Control List"
              :json-schema/order 0
              :json-schema/hidden false
              :json-schema/sensitive false)))

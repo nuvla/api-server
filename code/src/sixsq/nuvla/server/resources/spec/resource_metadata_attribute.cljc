@@ -36,15 +36,11 @@
 
 (s/def ::section #{"meta" "data" "acl"})
 
-(s/def ::category ::cimi-core/nonblank-string)
-
 (s/def ::order nat-int?)
 
 (s/def ::hidden boolean?)
 
 (s/def ::sensitive boolean?)
-
-(s/def ::lines pos-int?)
 
 
 ;;
@@ -78,11 +74,9 @@
                                           ::display-name
                                           ::description
                                           ::section
-                                          ::category
                                           ::order
                                           ::hidden
                                           ::sensitive
-                                          ::lines
                                           ::indexed
 
                                           ::value-scope/value-scope]))

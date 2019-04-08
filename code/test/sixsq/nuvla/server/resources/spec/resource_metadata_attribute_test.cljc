@@ -19,11 +19,9 @@
                     :display-name   "my action"
                     :description    "a wonderful attribute"
                     :section        "data"
-                    :category       "some string for a category"
                     :order          10
                     :hidden         false
                     :sensitive      false
-                    :lines          3
                     :indexed        true})
 
 
@@ -63,7 +61,7 @@
     ;; optional attributes
     (doseq [k #{:server-managed :required :editable
                 :display-name :description :section
-                :category :order :hidden :sensitive :lines :indexed}]
+                :order :hidden :sensitive :indexed}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 
     (stu/is-invalid ::spec/attribute (assoc attribute :badAttribute 1))

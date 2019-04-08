@@ -16,7 +16,6 @@
                            :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
                            :json-schema/section "meta"
-                           :json-schema/category "CIMI common attributes"
                            :json-schema/order 6
                            :json-schema/hidden false
                            :json-schema/sensitive false)))

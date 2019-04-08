@@ -167,7 +167,6 @@
              :json-schema/display-name "ports"
              :json-schema/description "list of port"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -186,7 +185,6 @@
              :json-schema/display-name "source"
              :json-schema/description "source"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -202,7 +200,6 @@
              :json-schema/display-name "target"
              :json-schema/description "target"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -296,7 +293,6 @@
              :json-schema/display-name "volume options"
              :json-schema/description "list of volume option"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
@@ -333,6 +329,5 @@
              :json-schema/display-name "mounts"
              :json-schema/description "list of mount"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/hidden false
              :json-schema/sensitive false)))

@@ -25,7 +25,6 @@
              :json-schema/display-name "users"
              :json-schema/description "list of users in this group"
              :json-schema/section "data"
-             :json-schema/category "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
