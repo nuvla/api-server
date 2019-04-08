@@ -8,21 +8,21 @@
     (clojure.lang Namespace)))
 
 
-(declare strip-for-attributes)
+(declare select-resource-metadata-keys)
 
 
 (defn treat-array
   [{:keys [items] :as description}]
   (when (seq items)
     ;; items is a single attribute map, not a collection
-    [(strip-for-attributes ["item" items])]))
+    [(select-resource-metadata-keys ["item" items])]))
 
 
 (defn treat-map
   [{:keys [properties] :as description}]
   (when (seq properties)
     (->> properties
-         (map strip-for-attributes)
+         (map select-resource-metadata-keys)
          (remove nil?)
          vec)))
 
@@ -35,8 +35,11 @@
     nil))
 
 
-(defn strip-for-attributes
-  [[attribute-name {:keys [value-scope] :as description}]]
+(defn select-resource-metadata-keys
+  [[attribute-name {:keys [value-scope
+                           server-managed required editable
+                           section
+                           hidden sensitive] :as description}]]
   (let [{:keys [name] :as desc} (select-keys description #{:name :type
                                                            :server-managed :required :editable
                                                            :display-name :description :help
@@ -45,6 +48,12 @@
         child-types (treat-children description)]
     (cond-> desc
             (nil? name) (assoc :name attribute-name)
+            (nil? server-managed) (assoc :server-managed false)
+            (nil? required) (assoc :required false)
+            (nil? editable) (assoc :editable true)
+            (nil? section) (assoc :section "data")
+            (nil? hidden) (assoc :hidden "false")
+            (nil? sensitive) (assoc :sensitive "false")
             value-scope (assoc :value-scope value-scope)
             child-types (assoc :child-types child-types))))
 
@@ -57,7 +66,7 @@
 
         attributes (->> json
                         :properties
-                        (map strip-for-attributes)
+                        (map select-resource-metadata-keys)
                         (sort-by :name)
                         vec)]
 
