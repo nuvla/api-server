@@ -12,9 +12,13 @@
 (s/def ::type-uri ::cimi-core/uri)
 
 
+(s/def ::required (s/coll-of string? :min-count 1 :type vector?))
+
+
 (s/def ::resource-metadata
   (su/only-keys-maps cimi-common/common-attrs
                      {:req-un [::type-uri]
                       :opt-un [::attribute/attributes
+                               ::required
                                ::capability/capabilities
                                ::action/actions]}))
