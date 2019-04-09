@@ -127,4 +127,5 @@ creating a group and does not provide any useful defaults.
 (defn initialize
   []
   (register resource)
-  (md/register (gen-md/generate-metadata ::ns ::group-tpl/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::group-tpl/schema))
+  (md/register (gen-md/generate-metadata ::ns ::group-tpl/schema-create "create")))

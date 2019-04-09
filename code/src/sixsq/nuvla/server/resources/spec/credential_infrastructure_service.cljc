@@ -12,20 +12,14 @@
 (s/def ::infrastructure-service-id
   (-> (st/spec (s/and string? #(re-matches infrastructure-service-id-regex %)))
       (assoc :name "infrastructure-service-id"
-             :json-schema/name "infrastructure-service-id"
              :json-schema/type "string"
-
-             :json-schema/display-name "infrastructure-service-id"
              :json-schema/description "id of service associated with this credential")))
 
 
 (s/def ::infrastructure-services
   (-> (st/spec (s/coll-of ::infrastructure-service-id :kind vector?))
       (assoc :name "infrastructure-services"
-             :json-schema/name "infrastructure-services"
              :json-schema/type "array"
-
-             :json-schema/display-name "infrastructure-services"
              :json-schema/description "ids of services associated with this credential"
              :json-schema/order 30)))
 

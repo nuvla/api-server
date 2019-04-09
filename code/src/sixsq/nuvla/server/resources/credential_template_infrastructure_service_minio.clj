@@ -55,4 +55,5 @@
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema-create "create")))

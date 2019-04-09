@@ -18,10 +18,7 @@
                  "SUSPENDING", "SUSPENDED",
                  "ERROR"})
       (assoc :name "state"
-             :json-schema/name "state"
              :json-schema/type "string"
-
-             :json-schema/display-name "state"
              :json-schema/description "state of deployment"
              :json-schema/order 20
 
@@ -40,7 +37,6 @@
 (s/def ::api-key
   (-> (st/spec (s/and string? #(re-matches credential-href-regex %)))
       (assoc :name "api-key"
-             :json-schema/name "api-key"
              :json-schema/type "string"
 
              :json-schema/display-name "API key"
@@ -51,7 +47,6 @@
 (s/def ::api-secret
   (-> (st/spec string?)
       (assoc :name "api-secret"
-             :json-schema/name "api-secret"
              :json-schema/type "string"
 
              :json-schema/display-name "API secret"
@@ -63,7 +58,6 @@
 (s/def ::api-credentials
   (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
       (assoc :name "api-credentials"
-             :json-schema/name "api-credentials"
              :json-schema/type "map"
              :json-schema/indexed false
 
@@ -74,7 +68,6 @@
 (s/def ::api-endpoint
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "api-endpoint"
-             :json-schema/name "api-endpoint"
              :json-schema/type "string"
              :json-schema/editable false
              :json-schema/indexed false
@@ -97,7 +90,6 @@
 (s/def ::data-objects
   (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
       (assoc :name "data-objects"
-             :json-schema/name "data-objects"
              :json-schema/type "array"
              :json-schema/indexed false
 
@@ -123,7 +115,6 @@
 (s/def ::data-records
   (-> (st/spec (s/map-of ::data-record-id-keyword ::data-set-ids :min-count 1))
       (assoc :name "serviceOffers"
-             :json-schema/name "serviceOffers"
              :json-schema/type "map"
              :json-schema/indexed false
 

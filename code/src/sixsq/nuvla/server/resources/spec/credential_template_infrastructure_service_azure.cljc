@@ -10,10 +10,8 @@
 (s/def ::azure-client-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-client-id"
-             :json-schema/name "azure-client-id"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
              :json-schema/order 20)))
 
@@ -21,10 +19,8 @@
 (s/def ::azure-client-secret
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-client-secret"
-             :json-schema/name "azure-client-secret"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
              :json-schema/order 21
              :json-schema/sensitive true)))
@@ -33,10 +29,8 @@
 (s/def ::azure-subscription-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-subscription-id"
-             :json-schema/name "azure-subscription-id"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"
              :json-schema/order 22)))
 
@@ -59,9 +53,11 @@
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-create-keys-spec))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  credential-template-create-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 (s/def ::schema-create
   (su/only-keys-maps ct/create-keys-spec

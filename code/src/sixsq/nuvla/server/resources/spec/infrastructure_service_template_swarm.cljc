@@ -14,7 +14,6 @@ on a cloud infrastructure.
 (s/def ::service-credential
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
-             :json-schema/name "service-credential"
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
 
@@ -35,8 +34,10 @@ on a cloud infrastructure.
 
 ;; Defines the contents of the template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps infra-service-tpl/template-keys-spec
-                     service-template-keys-spec))
+  (-> (st/spec (su/only-keys-maps infra-service-tpl/template-keys-spec
+                                  service-template-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

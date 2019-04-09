@@ -36,7 +36,8 @@ Nuvla platform.
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema-create "create")))
 
 
 ;;

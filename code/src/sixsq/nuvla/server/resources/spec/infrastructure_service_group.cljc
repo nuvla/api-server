@@ -10,7 +10,6 @@
 (s/def ::documentation
   (-> (st/spec ::cimi-core/url)
       (assoc :name "documentation"
-             :json-schema/name "documentation"
              :json-schema/display-name "documentation URL"
              :json-schema/description "URL where service documentation can be found"
 
@@ -20,9 +19,7 @@
 (s/def ::infrastructure-services
   (-> (st/spec (s/coll-of ::cimi-common/resource-link :kind vector?))
       (assoc :name "infrastructure-services"
-             :json-schema/name "infrastructure-services"
              :json-schema/type "array"
-             :json-schema/display-name "infrastructure-services"
              :json-schema/description "list of associated services"
 
              :json-schema/server-managed true

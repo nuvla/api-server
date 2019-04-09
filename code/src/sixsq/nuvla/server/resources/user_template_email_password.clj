@@ -47,7 +47,10 @@ optional name can also be provided.
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-email-password/schema)
+
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema-create "create"))
+
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
 

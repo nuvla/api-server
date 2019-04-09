@@ -12,7 +12,6 @@
 (s/def ::ca
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "ca"
-             :json-schema/name "ca"
              :json-schema/display-name "CA"
              :json-schema/description "public certificate of the Certificate Authority (CA)"
 
@@ -23,8 +22,6 @@
 (s/def ::cert
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "cert"
-             :json-schema/name "cert"
-             :json-schema/display-name "cert"
              :json-schema/description "client's public certificate"
 
              :json-schema/order 41
@@ -34,8 +31,6 @@
 (s/def ::key
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "key"
-             :json-schema/name "key"
-             :json-schema/display-name "key"
              :json-schema/description "client's private certificate"
 
              :json-schema/order 42

@@ -11,8 +11,6 @@
 (s/def ::action
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "action"
-             :json-schema/name "action"
-             :json-schema/display-name "action"
              :json-schema/description "name of action"
 
              :json-schema/server-managed true
@@ -23,9 +21,7 @@
 (s/def ::state
   (-> (st/spec #{"WAITING" "FAILED" "SUCCEEDED"})
       (assoc :name "state"
-             :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/display-name "state"
              :json-schema/description "current state of callback"
 
              :json-schema/server-managed true
@@ -38,7 +34,6 @@
 (s/def ::target-resource
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "target-resource"
-             :json-schema/name "target-resource"
              :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
 
@@ -49,9 +44,7 @@
 (s/def ::data
   (-> (st/spec (su/constrained-map keyword? any?))
       (assoc :name "data"
-             :json-schema/name "data"
              :json-schema/type "map"
-             :json-schema/display-name "data"
              :json-schema/description "data required for callback"
 
              :json-schema/editable false
@@ -62,8 +55,6 @@
 (s/def ::expires
   (-> (st/spec ::cimi-core/timestamp)
       (assoc :name "expires"
-             :json-schema/name "expires"
-             :json-schema/display-name "expires"
              :json-schema/description "expiry timestamp for callback action"
 
              :json-schema/editable false

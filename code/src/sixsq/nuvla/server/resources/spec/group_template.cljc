@@ -15,7 +15,6 @@
 (s/def ::group-identifier
   (-> (st/spec ::cimi-core/kebab-identifier)
       (assoc :name "group-identifer"
-             :json-schema/name "group-identifer"
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
 
@@ -40,9 +39,11 @@
 ;; Defines the contents of template used in a create resource.
 ;; This obviously must include the group-identifier.
 (s/def ::template
-  (su/only-keys-maps common/template-attrs
-                     group-template-keys-spec-req
-                     {:opt-un [::href]}))
+  (-> (st/spec (su/only-keys-maps common/template-attrs
+                                  group-template-keys-spec-req
+                                  {:opt-un [::href]}))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

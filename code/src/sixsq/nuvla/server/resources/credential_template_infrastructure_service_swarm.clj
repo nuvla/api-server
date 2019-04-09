@@ -56,4 +56,5 @@ the user's public certificate ('cert'), and the user's private key ('key').
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema-create "create")))

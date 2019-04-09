@@ -10,8 +10,6 @@
 (s/def ::username
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "username"
-             :json-schema/name "username"
-             :json-schema/display-name "username"
              :json-schema/description "username for your account"
 
              :json-schema/order 20)))
@@ -20,8 +18,6 @@
 (s/def ::new-password
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "password"
-             :json-schema/name "password"
-             :json-schema/display-name "password"
              :json-schema/description "password for your account"
 
              :json-schema/order 21
@@ -32,15 +28,20 @@
 (def session-template-keys-spec-req
   {:req-un [::username ::new-password]})
 
+
 ;; Defines the contents of the password session-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
                      session-template-keys-spec-req))
 
+
 ;; Defines the contents of the password template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     session-template-keys-spec-req))
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  session-template-keys-spec-req))
+      (assoc :name "template"
+             :json-schema/type "map")))
+
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec
