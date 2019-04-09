@@ -11,10 +11,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "key"
              :json-schema/name "key"
-             :json-schema/type "string"
-
              :json-schema/display-name "key"
              :json-schema/description "key for API key/secret pair"
+
              :json-schema/order 20)))
 
 
@@ -22,10 +21,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "secret"
              :json-schema/name "secret"
-             :json-schema/type "string"
-
              :json-schema/display-name "secret"
              :json-schema/description "secret for API key/secret pair"
+
              :json-schema/order 21
              :json-schema/sensitive true)))
 

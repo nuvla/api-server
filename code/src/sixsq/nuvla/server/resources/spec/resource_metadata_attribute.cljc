@@ -44,11 +44,13 @@
 
 
 ;;
-;; this attribute helps the interaction with elasticsearch
-;; to prevent unwanted indexing of attributes
+;; these attributes help with the interaction with elasticsearch
 ;;
 
 (s/def ::indexed boolean?)
+
+
+(s/def ::fulltext boolean?)
 
 
 ;;
@@ -78,6 +80,7 @@
                                           ::hidden
                                           ::sensitive
                                           ::indexed
+                                          ::fulltext
 
                                           ::value-scope/value-scope]))
 

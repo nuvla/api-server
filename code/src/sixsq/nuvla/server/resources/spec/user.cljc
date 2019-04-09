@@ -27,9 +27,11 @@
       (assoc :name "state"
              :json-schema/name "state"
              :json-schema/type "string"
-
              :json-schema/display-name "state"
              :json-schema/description "state of user's account"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
              :json-schema/order 34)))
 
 
@@ -37,10 +39,9 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
              :json-schema/name "method"
-             :json-schema/type "string"
-
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
+
              :json-schema/order 50)))
 
 

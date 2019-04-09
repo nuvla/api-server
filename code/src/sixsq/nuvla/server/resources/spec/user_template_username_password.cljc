@@ -6,24 +6,25 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+
 (s/def ::username
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "username"
              :json-schema/name "username"
-             :json-schema/type "string"
-
              :json-schema/display-name "username"
              :json-schema/description "your username"
+
              :json-schema/order 20)))
+
 
 (s/def ::password
   (-> (st/spec string?)
       (assoc :name "password"
              :json-schema/name "password"
              :json-schema/type "string"
-
              :json-schema/display-name "password"
              :json-schema/description "password for your account"
+
              :json-schema/order 22
              :json-schema/sensitive true)))
 

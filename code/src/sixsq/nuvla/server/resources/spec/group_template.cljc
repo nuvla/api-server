@@ -16,10 +16,9 @@
   (-> (st/spec ::cimi-core/kebab-identifier)
       (assoc :name "group-identifer"
              :json-schema/name "group-identifer"
-             :json-schema/type "string"
-
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
+
              :json-schema/order 20)))
 
 

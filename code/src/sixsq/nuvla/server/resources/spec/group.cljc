@@ -19,9 +19,9 @@
       (assoc :name "users"
              :json-schema/name "users"
              :json-schema/type "array"
-
              :json-schema/display-name "users"
              :json-schema/description "list of users in this group"
+
              :json-schema/order 20)))
 
 

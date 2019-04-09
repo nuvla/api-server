@@ -11,10 +11,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "password"
              :json-schema/name "password"
-             :json-schema/type "string"
-
              :json-schema/display-name "password"
              :json-schema/description "plaintext password"
+
              :json-schema/order 21
              :json-schema/sensitive true)))
 

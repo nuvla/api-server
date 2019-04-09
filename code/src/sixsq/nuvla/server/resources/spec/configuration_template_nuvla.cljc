@@ -11,10 +11,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "smtp-username"
              :json-schema/name "smtp-username"
-             :json-schema/type "string"
-
              :json-schema/display-name "SMTP username"
              :json-schema/description "SMTP username for sending email from server"
+
              :json-schema/order 20)))
 
 
@@ -22,10 +21,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "smtp-password"
              :json-schema/name "smtp-password"
-             :json-schema/type "string"
-
              :json-schema/display-name "SMTP password"
              :json-schema/description "SMTP password for sending email from server"
+
              :json-schema/order 21
              :json-schema/sensitive true)))
 
@@ -34,10 +32,9 @@
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "smtp-host"
              :json-schema/name "smtp-host"
-             :json-schema/type "string"
-
              :json-schema/display-name "SMTP host"
              :json-schema/description "SMTP host for sending email from server"
+
              :json-schema/order 22)))
 
 
@@ -45,10 +42,9 @@
   (-> (st/spec ::cimi-core/port)
       (assoc :name "smtp-port"
              :json-schema/name "smtp-port"
-             :json-schema/type "string"
-
              :json-schema/display-name "SMTP port"
              :json-schema/description "SMTP port for sending email from server"
+
              :json-schema/order 23)))
 
 
@@ -56,10 +52,10 @@
   (-> (st/spec boolean?)
       (assoc :name "smtp-ssl"
              :json-schema/name "smtp-ssl"
-             :json-schema/type "string"
-
+             :json-schema/type "boolean"
              :json-schema/display-name "SMTP SSL?"
              :json-schema/description "use SSL when interacting with SMTP server?"
+
              :json-schema/order 24)))
 
 
@@ -67,21 +63,20 @@
   (-> (st/spec boolean?)
       (assoc :name "smtp-debug"
              :json-schema/name "smtp-debug"
-             :json-schema/type "string"
-
+             :json-schema/type "boolean"
              :json-schema/display-name "debug SMTP?"
              :json-schema/description "turn on debugging when interacting with SMTP server?"
+
              :json-schema/order 25)))
 
 
 (s/def ::support-email
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::cimi-core/email)
       (assoc :name "support-email"
              :json-schema/name "support-email"
-             :json-schema/type "string"
-
              :json-schema/display-name "support email"
              :json-schema/description "email address for support"
+
              :json-schema/order 26)))
 
 

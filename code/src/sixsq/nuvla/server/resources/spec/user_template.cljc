@@ -13,10 +13,9 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
              :json-schema/name "method"
-             :json-schema/type "string"
-
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
+
              :json-schema/order 0
              :json-schema/hidden true)))
 
@@ -27,10 +26,9 @@
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
              :json-schema/name "instance"
-             :json-schema/type "string"
-
              :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
+
              :json-schema/order 1
              :json-schema/hidden true)))
 
@@ -42,9 +40,9 @@
       (assoc :name "href"
              :json-schema/name "href"
              :json-schema/type "map"
-
              :json-schema/display-name "user template"
              :json-schema/description "reference to the user template"
+
              :json-schema/order 0
              :json-schema/hidden true)))
 
