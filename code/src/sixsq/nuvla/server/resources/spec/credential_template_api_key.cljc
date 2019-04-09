@@ -9,7 +9,6 @@
 (s/def ::ttl
   (-> (st/spec nat-int?)
       (assoc :name "ttl"
-             :json-schema/name "ttl"
              :json-schema/type "integer"
              :json-schema/display-name "TTL"
              :json-schema/description "Time to Live (TTL) for API key/secret"

@@ -10,7 +10,6 @@
 (s/def ::service
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "service"
-             :json-schema/name "service"
              :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
 
@@ -22,7 +21,6 @@
 (s/def ::instance
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
-             :json-schema/name "instance"
              :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
 
@@ -35,7 +33,6 @@
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches configuration-template-regex %)))
       (assoc :name "href"
-             :json-schema/name "href"
              :json-schema/type "string"
              :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
@@ -47,7 +44,6 @@
 (s/def ::template
   (-> (st/spec (su/only-keys-maps {:req-un [::href]}))
       (assoc :name "template"
-             :json-schema/name "template"
              :json-schema/type "map"
              :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"

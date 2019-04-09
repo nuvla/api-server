@@ -10,7 +10,6 @@
 (s/def ::module-filter
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "module-filter"
-             :json-schema/name "module-filter"
              :json-schema/type "string"
 
              :json-schema/display-name "module filter"
@@ -21,7 +20,6 @@
 (s/def ::data-object-filter
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "data-object-filter"
-             :json-schema/name "data-object-filter"
              :json-schema/type "string"
 
              :json-schema/display-name "data object filter"
@@ -32,7 +30,6 @@
 (s/def ::data-record-filter
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "data-record-filter"
-             :json-schema/name "data-record-filter"
              :json-schema/type "string"
 
              :json-schema/display-name "data record filter"

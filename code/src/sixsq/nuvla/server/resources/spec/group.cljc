@@ -17,7 +17,6 @@
 (s/def ::users
   (-> (st/spec (s/coll-of ::user-id :kind vector? :distinct true))
       (assoc :name "users"
-             :json-schema/name "users"
              :json-schema/type "array"
              :json-schema/display-name "users"
              :json-schema/description "list of users in this group"

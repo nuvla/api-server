@@ -10,7 +10,6 @@
 (s/def ::project-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "project_id"
-             :json-schema/name "project_id"
              :json-schema/type "string"
 
              :json-schema/display-name "project_id"
@@ -21,7 +20,6 @@
 (s/def ::private-key-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "private_key_id"
-             :json-schema/name "private_key_id"
              :json-schema/type "string"
 
              :json-schema/display-name "private_key_id"
@@ -32,7 +30,6 @@
 (s/def ::private-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "private_key"
-             :json-schema/name "private_key"
              :json-schema/type "string"
 
              :json-schema/display-name "private_key"
@@ -44,7 +41,6 @@
 (s/def ::client-email
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "client_email"
-             :json-schema/name "client_email"
              :json-schema/type "string"
 
              :json-schema/display-name "client_email"
@@ -55,7 +51,6 @@
 (s/def ::client-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "client_id"
-             :json-schema/name "client_id"
              :json-schema/type "string"
 
              :json-schema/display-name "client_id"
@@ -66,7 +61,6 @@
 ;(s/def ::auth-uri
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "auth_uri"
-;                  :json-schema/name "auth_uri"
 ;                  :json-schema/type "string"
 ;
 ;                  :json-schema/display-name "auth_uri"
@@ -77,7 +71,6 @@
 ;(s/def ::token-uri
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "token_uri"
-;                  :json-schema/name "token_uri"
 ;                  :json-schema/type "string"
 ;
 ;                  :json-schema/display-name "token_uri"
@@ -88,7 +81,6 @@
 ;(s/def ::auth-provider-x509-cert-url
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "auth_provider_x509_cert_url"
-;                  :json-schema/name "auth_provider_x509_cert_url"
 ;                  :json-schema/type "string"
 ;
 ;                  :json-schema/display-name "auth_provider_x509_cert_url"
@@ -99,7 +91,6 @@
 ;(s/def ::client-x509-cert-url
 ;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
 ;           (assoc :name "client_x509_cert_url"
-;                  :json-schema/name "client_x509_cert_url"
 ;                  :json-schema/type "string"
 ;
 ;                  :json-schema/display-name "client_x509_cert_url"

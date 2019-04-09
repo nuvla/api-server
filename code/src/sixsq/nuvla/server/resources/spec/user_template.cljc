@@ -12,7 +12,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/name "method"
              :json-schema/display-name "method"
              :json-schema/description "user creation method"
 
@@ -25,7 +24,6 @@
 (s/def ::instance
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
-             :json-schema/name "instance"
              :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
 
@@ -38,7 +36,6 @@
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches user-template-regex %)))
       (assoc :name "href"
-             :json-schema/name "href"
              :json-schema/type "map"
              :json-schema/display-name "user template"
              :json-schema/description "reference to the user template"

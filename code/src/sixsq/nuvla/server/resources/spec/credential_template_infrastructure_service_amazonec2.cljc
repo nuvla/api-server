@@ -11,7 +11,6 @@
 (s/def ::amazonec2-access-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-access-key"
-             :json-schema/name "amazonec2-access-key"
              :json-schema/type "string"
 
              :json-schema/display-name "amazonec2-access-key"
@@ -22,7 +21,6 @@
 (s/def ::amazonec2-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-secret-key"
-             :json-schema/name "amazonec2-secret-key"
              :json-schema/type "string"
 
              :json-schema/display-name "amazonec2-secret-key"

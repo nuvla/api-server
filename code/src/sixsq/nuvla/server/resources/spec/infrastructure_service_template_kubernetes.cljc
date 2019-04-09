@@ -14,7 +14,6 @@ on a cloud infrastructure.
 (s/def ::service-credential
   (-> (st/spec ::cimi-common/resource-link)
       (assoc :name "service-credential"
-             :json-schema/name "service-credential"
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"
 

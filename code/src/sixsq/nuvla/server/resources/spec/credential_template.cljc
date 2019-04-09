@@ -11,7 +11,6 @@
 (s/def ::type
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "type"
-             :json-schema/name "type"
              :json-schema/display-name "type"
              :json-schema/description "type of credential"
 
@@ -24,7 +23,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/name "method"
              :json-schema/display-name "method"
              :json-schema/description "method for creating credential"
 

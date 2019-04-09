@@ -12,7 +12,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/name "method"
              :json-schema/type "string"
 
              :json-schema/display-name "method"
@@ -26,7 +25,6 @@
 (s/def ::instance
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
-             :json-schema/name "instance"
              :json-schema/type "string"
 
              :json-schema/display-name "instance"

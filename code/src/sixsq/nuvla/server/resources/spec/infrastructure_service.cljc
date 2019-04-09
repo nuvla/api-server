@@ -10,7 +10,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/name "method"
              :json-schema/display-name "method"
              :json-schema/description "service creation method"
 
@@ -21,7 +20,6 @@
 (s/def ::type
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "type"
-             :json-schema/name "type"
              :json-schema/display-name "service type"
              :json-schema/description "kebab-case identifier for the service type"
 
@@ -31,7 +29,6 @@
 (s/def ::endpoint
   (-> (st/spec ::cimi-core/url)
       (assoc :name "endpoint"
-             :json-schema/name "endpoint"
              :json-schema/display-name "endpoint"
              :json-schema/description "public API endpoint for the service"
 
@@ -46,7 +43,6 @@
                  "SUSPENDING", "SUSPENDED",
                  "ERROR"})
       (assoc :name "state"
-             :json-schema/name "state"
              :json-schema/type "string"
              :json-schema/display-name "state"
              :json-schema/description "state of service"
@@ -65,7 +61,6 @@
 (s/def ::management-credential-id
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "management-credential-id"
-             :json-schema/name "management-credential-id"
              :json-schema/display-name "management credential id"
              :json-schema/description "id of the credential used to manage this service")))
 
@@ -81,7 +76,6 @@
   (-> (st/spec (su/only-keys :req-un [::machine-name
                                       ::machine-config-base64]))
       (assoc :name "node"
-             :json-schema/name "node"
              :json-schema/type "map"
              :json-schema/display-name "node"
              :json-schema/description "node within the swarm cluster"
@@ -93,7 +87,6 @@
 (s/def ::nodes
   (-> (st/spec (s/coll-of ::node :min-count 1 :kind vector?))
       (assoc :name "nodes"
-             :json-schema/name "nodes"
              :json-schema/type "array"
              :json-schema/display-name "nodes"
              :json-schema/description "List of base64 encoded configurations for each Swarm machine"

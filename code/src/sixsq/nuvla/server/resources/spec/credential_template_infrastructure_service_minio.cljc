@@ -10,7 +10,6 @@
 (s/def ::access-key
   (-> (st/spec string?)
       (assoc :name "username"
-             :json-schema/name "username"
              :json-schema/type "string"
 
              :json-schema/display-name "username"
@@ -21,7 +20,6 @@
 (s/def ::secret-key
   (-> (st/spec string?)
       (assoc :name "password"
-             :json-schema/name "password"
              :json-schema/type "string"
 
              :json-schema/display-name "password"

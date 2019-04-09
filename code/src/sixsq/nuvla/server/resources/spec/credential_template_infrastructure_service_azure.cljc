@@ -10,7 +10,6 @@
 (s/def ::azure-client-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-client-id"
-             :json-schema/name "azure-client-id"
              :json-schema/type "string"
 
              :json-schema/display-name "azure-client-id"
@@ -21,7 +20,6 @@
 (s/def ::azure-client-secret
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-client-secret"
-             :json-schema/name "azure-client-secret"
              :json-schema/type "string"
 
              :json-schema/display-name "azure-client-secret"
@@ -33,7 +31,6 @@
 (s/def ::azure-subscription-id
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "azure-subscription-id"
-             :json-schema/name "azure-subscription-id"
              :json-schema/type "string"
 
              :json-schema/display-name "azure-subscription-id"

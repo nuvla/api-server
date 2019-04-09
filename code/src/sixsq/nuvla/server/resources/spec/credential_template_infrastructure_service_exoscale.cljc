@@ -10,7 +10,6 @@
 (s/def ::exoscale-api-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-key"
-             :json-schema/name "exoscale-api-key"
              :json-schema/type "string"
 
              :json-schema/display-name "exoscale-api-key"
@@ -21,7 +20,6 @@
 (s/def ::exoscale-api-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-secret-key"
-             :json-schema/name "exoscale-api-secret-key"
              :json-schema/type "string"
 
              :json-schema/display-name "exoscale-api-secret-key"
