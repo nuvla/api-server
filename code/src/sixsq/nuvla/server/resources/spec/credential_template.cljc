@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 ;; All credential templates must indicate the type of credential to create.
 (s/def ::type
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "type"
              :json-schema/description "type of credential"
 
@@ -20,7 +20,7 @@
 ;; A given credential may have more than one method for creating it.  All
 ;; credential templates must provide a method name.
 (s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "method"
              :json-schema/description "method for creating credential"
 
@@ -44,7 +44,7 @@
 (def credential-template-keys-spec-opt {:opt-un [::type ::method]})
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         credential-template-keys-spec]))
 
 ;; Used only to provide metadata resource for collection.
@@ -52,10 +52,10 @@
   (su/only-keys-maps resource-keys-spec))
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 ;; subclasses MUST provide the href to the template to use
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         credential-template-keys-spec-opt]))
 

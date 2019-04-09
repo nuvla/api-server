@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.cloud-entry-point
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::base-uri
-  (-> (st/spec ::cimi-core/url)
+  (-> (st/spec ::core/url)
       (assoc :name "base-uri"
              :json-schema/editable false
              :json-schema/display-name "base URI"
@@ -18,8 +18,8 @@
 
 
 (s/def ::collections
-  (-> (st/spec (s/map-of ::cimi-core/resource-type-keyword
-                         ::cimi-common/resource-link
+  (-> (st/spec (s/map-of ::core/resource-type-keyword
+                         ::core/resource-link
                          :min-count 1))
       (assoc :name "collections"
              :json-schema/type "map"
@@ -32,6 +32,6 @@
 
 
 (s/def ::resource
-  (su/only-keys-maps cimi-common/common-attrs
+  (su/only-keys-maps common/common-attrs
                      {:req-un [::base-uri]
                       :opt-un [::collections]}))

@@ -55,14 +55,14 @@
                                   {:name        "gamma"
                                    :description "my-gamma"}]}]
 
-    (stu/is-valid ::module-component/module-component root)
-    (stu/is-invalid ::module-component/module-component (assoc root :badKey "badValue"))
-    (stu/is-invalid ::module-component/module-component (assoc root :os "BAD_OS"))
+    (stu/is-valid ::module-component/schema root)
+    (stu/is-invalid ::module-component/schema (assoc root :badKey "badValue"))
+    (stu/is-invalid ::module-component/schema (assoc root :os "BAD_OS"))
 
     ;; required attributes
     (doseq [k #{:id :resource-type :created :updated :acl :author :architecture :image}]
-      (stu/is-invalid ::module-component/module-component (dissoc root k)))
+      (stu/is-invalid ::module-component/schema (dissoc root k)))
 
     ;; optional attributes
     (doseq [k #{:commit :ports :urls :output-parameters}]
-      (stu/is-valid ::module-component/module-component (dissoc root k)))))
+      (stu/is-valid ::module-component/schema (dissoc root k)))))

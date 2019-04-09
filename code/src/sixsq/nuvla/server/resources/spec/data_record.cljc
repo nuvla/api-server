@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.data-record
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -29,5 +29,5 @@
 
 (s/def ::schema
   (su/constrained-map keyword? any?
-                      c/common-attrs
+                      common/common-attrs
                       {:req-un [::infrastructure-service]}))

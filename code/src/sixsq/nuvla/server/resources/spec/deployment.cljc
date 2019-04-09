@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.spec.deployment
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
-(s/def ::module ::cimi-common/resource-link)
+(s/def ::module ::core/resource-link)
 
 
 (s/def ::state
@@ -66,7 +66,7 @@
              :json-schema/order 20)))
 
 (s/def ::api-endpoint
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "api-endpoint"
              :json-schema/type "string"
              :json-schema/editable false
@@ -76,10 +76,10 @@
              :json-schema/description "Nuvla endpoint"
              :json-schema/order 22)))
 
-(s/def ::credential-id ::cimi-core/nonblank-string)
+(s/def ::credential-id ::core/nonblank-string)
 
 
-(s/def ::infrastructure-service-id ::cimi-core/nonblank-string)
+(s/def ::infrastructure-service-id ::core/nonblank-string)
 
 
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -124,7 +124,7 @@
 
 
 (def deployment-keys-spec
-  (su/merge-keys-specs [cimi-common/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
                                   ::api-credentials

@@ -2,13 +2,13 @@
   "Spec definitions for common operation types used in CIMI resources."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::href
-  (-> (st/spec ::cimi-core/uri)
+  (-> (st/spec ::core/uri)
       (assoc :name "href"
              :json-schema/description "URI for operation"
 
@@ -17,7 +17,7 @@
 
 
 (s/def ::rel
-  (-> (st/spec ::cimi-core/url)
+  (-> (st/spec ::core/url)
       (assoc :name "rel"
              :json-schema/description "URL for performing action"
 

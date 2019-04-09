@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.user-identifier
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -27,17 +27,17 @@
 
 
 (def ^:const user-identifier-common-attrs
-  {:req-un [::cimi-common/id
-            ::cimi-common/resource-type
-            ::cimi-common/created
-            ::cimi-common/updated
-            ::cimi-common/acl
+  {:req-un [::common/id
+            ::common/resource-type
+            ::common/created
+            ::common/updated
+            ::common/acl
             ::parent]
-   :opt-un [::cimi-common/name
-            ::cimi-common/description
-            ::cimi-common/tags
-            ::cimi-common/resource-metadata
-            ::cimi-common/operations]})
+   :opt-un [::common/name
+            ::common/description
+            ::common/tags
+            ::common/resource-metadata
+            ::common/operations]})
 
 
 (s/def ::schema

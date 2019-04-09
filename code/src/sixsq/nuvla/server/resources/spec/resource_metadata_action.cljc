@@ -2,22 +2,22 @@
   "schema definitions for the 'actions' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(s/def ::name ::cimi-core/token)
+(s/def ::name ::core/token)
 
-(s/def ::uri ::cimi-core/uri)
+(s/def ::uri ::core/uri)
 
-(s/def ::description ::cimi-core/nonblank-string)
+(s/def ::description ::core/nonblank-string)
 
 ;; only those methods typically used in REST APIs are permitted by this implementation
 (s/def ::method #{"GET" "POST" "PUT" "DELETE"})
 
-(s/def ::input-message ::cimi-core/mimetype)
+(s/def ::input-message ::core/mimetype)
 
-(s/def ::output-message ::cimi-core/mimetype)
+(s/def ::output-message ::core/mimetype)
 
 (s/def ::action (su/only-keys :req-un [::name
                                        ::uri

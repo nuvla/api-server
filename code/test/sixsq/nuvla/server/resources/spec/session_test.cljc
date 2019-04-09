@@ -20,7 +20,7 @@
              :method        "internal"
              :expiry        timestamp
              :server        "nuv.la"
-             :clientIP      "127.0.0.1"
+             :client-ip      "127.0.0.1"
              :redirect-url  "https://nuv.la/webui/profile"
              :template      {:href "session-template/internal"}}]
 
@@ -29,5 +29,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :method :expiry :template}]
       (stu/is-invalid ::session/session (dissoc cfg attr)))
 
-    (doseq [attr #{:identifier :user :server :clientIP}]
+    (doseq [attr #{:identifier :user :server :client-ip}]
       (stu/is-valid ::session/session (dissoc cfg attr)))))

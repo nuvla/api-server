@@ -136,3 +136,26 @@
       (assoc :name "resource href"
              :json-schema/description "concatenation of a resource type and resource identifier separated with a slash"
              :json-schema/type "resource-id")))
+
+
+(s/def ::href
+  (-> (st/spec ::resource-href)
+      (assoc :name "href"
+             :json-schema/description "reference to another resource")))
+
+
+(s/def ::resource-link
+  (-> (st/spec (s/keys :req-un [::href]))
+      (assoc :name "resource-link"
+             :json-schema/type "map"
+             :json-schema/display-name "resource link"
+             :json-schema/description "map containing a reference (href) to a resource")))
+
+
+(s/def ::resource-links
+  (-> (st/spec (s/coll-of ::resource-link :min-count 1))
+      (assoc :name "resource-links"
+             :json-schema/type "array"
+             :json-schema/display-name "resource links"
+             :json-schema/description "list of resource links")))
+

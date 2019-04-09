@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.session-template-password
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::username
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "username"
              :json-schema/description "username for your account"
 
@@ -16,7 +16,7 @@
 
 
 (s/def ::password
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "password"
              :json-schema/description "password for your account"
 

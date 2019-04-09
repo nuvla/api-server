@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.server.resources.spec.callback
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session-template]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::action
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "action"
              :json-schema/description "name of action"
 
@@ -32,7 +32,7 @@
 
 
 (s/def ::target-resource
-  (-> (st/spec ::cimi-common/resource-link)
+  (-> (st/spec ::core/resource-link)
       (assoc :name "target-resource"
              :json-schema/display-name "target resource"
              :json-schema/description "reference to resource affected by callback"
@@ -53,7 +53,7 @@
 
 
 (s/def ::expires
-  (-> (st/spec ::cimi-core/timestamp)
+  (-> (st/spec ::core/timestamp)
       (assoc :name "expires"
              :json-schema/description "expiry timestamp for callback action"
 
@@ -62,7 +62,7 @@
 
 
 (s/def ::schema
-  (su/only-keys-maps cimi-common/common-attrs
+  (su/only-keys-maps common/common-attrs
                      {:req-un [::action
                                ::state]
                       :opt-un [::target-resource

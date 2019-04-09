@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.user-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -10,7 +10,7 @@
 
 ;; All user templates must indicate the method used to create the user.
 (s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "method"
              :json-schema/description "user creation method"
 
@@ -21,7 +21,7 @@
 ;; All user template resources must have a 'instance' attribute that is used as
 ;; the template identifier.
 (s/def ::instance
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "instance"
              :json-schema/description "instance name of user creation method"
 
@@ -53,7 +53,7 @@
                                        :opt-un [::method]})
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         hints/ui-hints-spec
                         user-template-keys-spec]))
 
@@ -64,11 +64,11 @@
 
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 ;; subclasses MUST provide the href to the template to use
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         hints/ui-hints-spec
                         user-template-template-keys-spec]))
 

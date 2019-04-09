@@ -1,50 +1,93 @@
 (ns sixsq.nuvla.server.resources.spec.module-component
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.container :as container]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
-(s/def ::author ::cimi-core/nonblank-string)
+(s/def ::author
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "author"
+             :json-schema/description "author of module"
+
+             :json-schema/order 30)))
 
 
-(s/def ::commit ::cimi-core/nonblank-string)
+(s/def ::commit
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "commit"
+             :json-schema/description "commit message"
+
+             :json-schema/order 31)))
 
 
-(s/def ::architecture ::cimi-core/nonblank-string)
+(s/def ::architecture
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "architecture"
+             :json-schema/description "component CPU architecture"
+
+             :json-schema/order 32)))
 
 
-
-;; this is a 'friendly' name for a given URL, intended mainly for display
-(s/def ::url-name ::cimi-core/nonblank-string)
-
-
-;; pattern, e.g. "https://${host}:${port-443}/some/path", is used to create URL from dynamic info
-(s/def ::url-pattern ::cimi-core/nonblank-string)
+(s/def ::url-name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "url-name"
+             :json-schema/display-name "URL name"
+             :json-schema/description "friendly name for URL")))
 
 
-(s/def ::url-tuple (s/tuple ::url-name ::url-pattern))
+(s/def ::url-pattern
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "url-pattern"
+             :json-schema/display-name "URL pattern"
+             :json-schema/description "URL pattern, e.g. 'https://${host}:${port-443}/some/path'")))
 
 
-(s/def ::urls (s/coll-of ::url-tuple :min-count 1 :kind vector?))
+(s/def ::url-tuple
+  (-> (st/spec (s/tuple ::url-name ::url-pattern))
+      (assoc :name "url-tuple"
+             :json-schema/display-name "URL tuple"
+             :json-schema/description "tuple of the URL name and pattern")))
 
 
-(s/def ::name ::cimi-core/nonblank-string)
+(s/def ::urls
+  (-> (st/spec (s/coll-of ::url-tuple :min-count 1 :kind vector?))
+      (assoc :name "urls"
+             :json-schema/description "tuple of the URL name and pattern"
+             :json-schema/order 33)))
 
 
-(s/def ::description ::cimi-core/nonblank-string)
+(s/def ::name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "name"
+             :json-schema/description "parameter name")))
 
 
-(s/def ::parameter (su/only-keys :req-un [::name ::description]))
+(s/def ::description
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "description"
+             :json-schema/description "parameter description")))
 
 
-(s/def ::output-parameters (s/coll-of ::parameter :kind vector?))
+(s/def ::parameter
+  (-> (st/spec (su/only-keys :req-un [::name ::description]))
+      (assoc :name "parameter"
+             :json-schema/description "parameter name and description"
+             :json-schema/order 33)))
 
 
-(def module-component-keys-spec (su/merge-keys-specs [c/common-attrs
+(s/def ::output-parameters
+  (-> (st/spec (s/coll-of ::parameter :kind vector?))
+      (assoc :name "output-parameters"
+             :json-schema/display-name "output parameters"
+             :json-schema/description "list of output parameters"
+             :json-schema/order 34)))
+
+
+(def module-component-keys-spec (su/merge-keys-specs [common/common-attrs
                                                       {:req-un [::author
                                                                 ::architecture
                                                                 ::container/image]
@@ -54,4 +97,5 @@
                                                                 ::urls
                                                                 ::output-parameters]}]))
 
-(s/def ::module-component (su/only-keys-maps module-component-keys-spec))
+
+(s/def ::schema (su/only-keys-maps module-component-keys-spec))

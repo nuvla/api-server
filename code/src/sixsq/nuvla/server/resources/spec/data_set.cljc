@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.data-set
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::module-filter
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "module-filter"
              :json-schema/type "string"
 
@@ -18,7 +18,7 @@
 
 
 (s/def ::data-object-filter
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "data-object-filter"
              :json-schema/type "string"
 
@@ -28,7 +28,7 @@
 
 
 (s/def ::data-record-filter
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "data-record-filter"
              :json-schema/type "string"
 
@@ -38,7 +38,7 @@
 
 
 (s/def ::schema
-  (su/only-keys-maps c/common-attrs
+  (su/only-keys-maps common/common-attrs
                      {:opt-un [::module-filter
                                ::data-object-filter
                                ::data-record-filter]}))

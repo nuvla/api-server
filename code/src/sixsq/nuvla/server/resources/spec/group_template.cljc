@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -13,7 +13,7 @@
 
 
 (s/def ::group-identifier
-  (-> (st/spec ::cimi-core/kebab-identifier)
+  (-> (st/spec ::core/kebab-identifier)
       (assoc :name "group-identifer"
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
