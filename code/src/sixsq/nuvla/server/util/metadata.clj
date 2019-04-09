@@ -43,17 +43,20 @@
    :sensitive      false
    :indexed        true})
 
+
 (defn select-resource-metadata-keys
   [[attribute-name {:keys [value-scope fulltext] :as description}]]
-  (let [{:keys [name] :as desc} (select-keys description #{:name :type
-                                                           :server-managed :required :editable
-                                                           :display-name :description :help
-                                                           :section :order :hidden :sensitive
-                                                           :indexed :fulltext})
+  (let [{:keys [name display-name] :as desc}
+        (select-keys description #{:name :type
+                                   :server-managed :required :editable
+                                   :display-name :description :help
+                                   :section :order :hidden :sensitive
+                                   :indexed :fulltext})
         child-types (treat-children description)]
     (cond-> (merge metadata-key-defaults desc)
             (nil? name) (assoc :name attribute-name)
-            (and (nil? fulltext) (#{"string" "uri" "resource-id"} type)) (assoc :fulltext true)
+            (nil? display-name) (assoc :display-name (or name attribute-name))
+            (and fulltext (#{"string" "uri" "resource-id"} type)) (assoc :fulltext fulltext)
             value-scope (assoc :value-scope value-scope)
             child-types (assoc :child-types child-types))))
 
@@ -64,6 +67,8 @@
   [spec]
   (let [json (jsc/transform spec)
 
+        required (:required json)
+
         attributes (->> json
                         :properties
                         (map select-resource-metadata-keys)
@@ -71,7 +76,8 @@
                         vec)]
 
     (if (seq attributes)
-      {:attributes attributes}
+      (cond-> {:attributes attributes}
+              required (assoc :required required))
       {})))
 
 
