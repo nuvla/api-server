@@ -24,7 +24,7 @@
              :json-schema/type "string"
              :json-schema/display-name "password"
              :json-schema/description "password for your account"
-             
+
              :json-schema/order 22
              :json-schema/sensitive true)))
 

@@ -125,6 +125,7 @@
              :json-schema/description "short, human-readable name for resource"
              :json-schema/section "meta"
 
+             :json-schema/fulltext true
              :json-schema/order 6)))
 
 
@@ -138,6 +139,7 @@
              :json-schema/description "human-readable description of resource"
              :json-schema/section "meta"
 
+             :json-schema/fulltext true
              :json-schema/order 7)))
 
 
@@ -148,8 +150,9 @@
              :json-schema/type "array"
              :json-schema/display-name "tags"
              :json-schema/description "client defined tags of the resource"
-
              :json-schema/section "meta"
+
+             :json-schema/fulltext true
              :json-schema/order 8)))
 
 

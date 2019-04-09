@@ -27,7 +27,7 @@
                        ::common/operations {:type "object", :enabled false}
 
 
-                       ::common/tags {:type "keyword"}
+                       ::common/tags {:type "keyword", :copy_to "fulltext"}
 
                        ::common/id {:type "keyword"}
                        ::common/resource-type {:type "keyword"}

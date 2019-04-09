@@ -22,7 +22,8 @@
                     :order          10
                     :hidden         false
                     :sensitive      false
-                    :indexed        true})
+                    :indexed        true
+                    :fulltext     true})
 
 
 (def ^:const valid-value-scopes [{:name        "enumeration"
@@ -61,7 +62,7 @@
     ;; optional attributes
     (doseq [k #{:server-managed :required :editable
                 :display-name :description :section
-                :order :hidden :sensitive :indexed}]
+                :order :hidden :sensitive :indexed :fulltext}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 
     (stu/is-invalid ::spec/attribute (assoc attribute :badAttribute 1))

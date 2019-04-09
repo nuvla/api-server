@@ -35,24 +35,25 @@
     nil))
 
 
+(def ^:const metadata-key-defaults
+  {:server-managed false
+   :editable       true
+   :section        "data"
+   :hidden         false
+   :sensitive      false
+   :indexed        true})
+
 (defn select-resource-metadata-keys
-  [[attribute-name {:keys [value-scope
-                           server-managed required editable
-                           section
-                           hidden sensitive] :as description}]]
+  [[attribute-name {:keys [value-scope fulltext] :as description}]]
   (let [{:keys [name] :as desc} (select-keys description #{:name :type
                                                            :server-managed :required :editable
                                                            :display-name :description :help
                                                            :section :order :hidden :sensitive
-                                                           :indexed})
+                                                           :indexed :fulltext})
         child-types (treat-children description)]
-    (cond-> desc
+    (cond-> (merge metadata-key-defaults desc)
             (nil? name) (assoc :name attribute-name)
-            (nil? server-managed) (assoc :server-managed false)
-            (nil? editable) (assoc :editable true)
-            (nil? section) (assoc :section "data")
-            (nil? hidden) (assoc :hidden false)
-            (nil? sensitive) (assoc :sensitive false)
+            (and (nil? fulltext) (#{"string" "uri" "resource-id"} type)) (assoc :fulltext true)
             value-scope (assoc :value-scope value-scope)
             child-types (assoc :child-types child-types))))
 
