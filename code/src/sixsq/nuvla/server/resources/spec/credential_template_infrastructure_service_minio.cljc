@@ -43,9 +43,11 @@
 
 ;; Defines the contents of the credential-template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-keys-spec-req))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  credential-template-keys-spec-req))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

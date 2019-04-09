@@ -18,9 +18,8 @@ pair.
 (def ^:const resource-name "API Key")
 
 
-;TODO think about password user template on this
-
 (def ^:const resource-url authn-method)
+
 
 (def default-template {:method            authn-method
                        :instance          authn-method
@@ -38,19 +37,24 @@ pair.
 ;;
 ;; initialization: register this Session template
 ;;
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-api-key/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema-create "create")))
+
 
 ;;
 ;; multimethods for validation
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::st-api-key/schema))
+
+
 (defmethod p/validate-subtype authn-method
   [resource]
   (validate-fn resource))

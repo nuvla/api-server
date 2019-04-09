@@ -152,13 +152,16 @@
 (defn generate-metadata
   "Generate the resource-metadata from the provided namespace"
   ([parent-ns spec]
-   (generate-metadata nil parent-ns spec))
+   (generate-metadata nil parent-ns spec nil))
   ([child-ns parent-ns spec]
+    (generate-metadata child-ns parent-ns spec nil))
+  ([child-ns parent-ns spec suffix]
    (if-let [parent-ns (as-namespace parent-ns)]
      (let [child-ns (as-namespace child-ns)
 
            resource-name (cond-> (get-resource-type parent-ns)
-                                 child-ns (str " \u2014 " (get-resource-type child-ns)))
+                                 child-ns (str " \u2014 " (get-resource-type child-ns))
+                                 suffix (str " \u2014 " suffix))
 
            doc (get-doc (or child-ns parent-ns))
            type-uri (ns->type-uri (or child-ns parent-ns))

@@ -47,7 +47,10 @@ creating new accounts without email addresses.
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-username-password/schema)
+
   (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-username-password/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-username-password/schema-create "create"))
+
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
 

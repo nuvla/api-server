@@ -49,9 +49,11 @@
 
 ;; Defines the contents of the password template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     keys-req
-                     keys-href))
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  keys-req
+                                  keys-href))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

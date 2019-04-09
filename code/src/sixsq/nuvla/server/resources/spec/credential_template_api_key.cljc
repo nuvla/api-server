@@ -29,8 +29,10 @@
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     credential-template-create-keys-spec))
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  credential-template-create-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec

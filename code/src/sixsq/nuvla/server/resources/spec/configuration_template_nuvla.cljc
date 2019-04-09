@@ -91,8 +91,10 @@
 
 ;; Defines the contents of the nuvla template key used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     configuration-template-keys-spec))
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  configuration-template-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create
