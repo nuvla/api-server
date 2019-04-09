@@ -57,6 +57,7 @@ secret to access the server. The credential can optionally be limited in time.
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create")))
 
 

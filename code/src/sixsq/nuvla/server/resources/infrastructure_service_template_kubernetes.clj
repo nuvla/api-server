@@ -33,7 +33,8 @@ cluster on a given cloud infrastructure.
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-kubernetes/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-kubernetes/schema))
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-kubernetes/schema-create "create")))
 
 
 ;;

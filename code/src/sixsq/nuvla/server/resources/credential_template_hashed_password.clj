@@ -42,7 +42,8 @@ Stores the hashed value of a password.
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema-create "create")))
 
 
 ;;
