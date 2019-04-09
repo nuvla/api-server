@@ -11,7 +11,6 @@
 (s/def ::hash
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "hash"
-             :json-schema/display-name "hash"
              :json-schema/description "hashed password"
 
              :json-schema/order 20

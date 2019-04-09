@@ -11,8 +11,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-key"
              :json-schema/type "string"
-
-             :json-schema/display-name "exoscale-api-key"
              :json-schema/description "API key for Exoscale"
              :json-schema/order 20)))
 
@@ -21,8 +19,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-secret-key"
              :json-schema/type "string"
-
-             :json-schema/display-name "exoscale-api-secret-key"
              :json-schema/description "API secret key for Exoscale"
              :json-schema/order 21
              :json-schema/sensitive true)))

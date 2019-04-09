@@ -58,14 +58,12 @@
 (s/def ::manage
   (-> (st/spec ::acl-common/principals)
       (assoc :name "manage"
-             :json-schema/display-name "manage"
              :json-schema/description "list of principals that can manage a resource via custom actions")))
 
 
 (s/def ::delete
   (-> (st/spec ::acl-common/principals)
       (assoc :name "delete"
-             :json-schema/display-name "delete"
              :json-schema/description "list of principals that can delete a resource")))
 
 

@@ -10,7 +10,6 @@
 (s/def ::key
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "key"
-             :json-schema/display-name "key"
              :json-schema/description "key for API key/secret pair"
 
              :json-schema/order 20)))
@@ -19,7 +18,6 @@
 (s/def ::secret
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "secret"
-             :json-schema/display-name "secret"
              :json-schema/description "secret for API key/secret pair"
 
              :json-schema/order 21

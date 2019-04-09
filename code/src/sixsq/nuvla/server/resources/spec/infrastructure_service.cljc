@@ -10,7 +10,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/display-name "method"
              :json-schema/description "service creation method"
 
              :json-schema/order 20
@@ -29,7 +28,6 @@
 (s/def ::endpoint
   (-> (st/spec ::cimi-core/url)
       (assoc :name "endpoint"
-             :json-schema/display-name "endpoint"
              :json-schema/description "public API endpoint for the service"
 
              :json-schema/order 22)))
@@ -44,7 +42,6 @@
                  "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
-             :json-schema/display-name "state"
              :json-schema/description "state of service"
 
              :json-schema/order 23
@@ -77,7 +74,6 @@
                                       ::machine-config-base64]))
       (assoc :name "node"
              :json-schema/type "map"
-             :json-schema/display-name "node"
              :json-schema/description "node within the swarm cluster"
 
              :json-schema/editable false
@@ -88,7 +84,6 @@
   (-> (st/spec (s/coll-of ::node :min-count 1 :kind vector?))
       (assoc :name "nodes"
              :json-schema/type "array"
-             :json-schema/display-name "nodes"
              :json-schema/description "List of base64 encoded configurations for each Swarm machine"
 
              :json-schema/editable false

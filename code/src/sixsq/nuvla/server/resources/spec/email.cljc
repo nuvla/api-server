@@ -10,9 +10,6 @@
 (s/def ::address
   (-> (st/spec ::cimi-core/email)
       (assoc :name "address"
-             :json-schema/type "string"
-
-             :json-schema/display-name "address"
              :json-schema/description "email address"
              :json-schema/order 10)))
 
@@ -21,8 +18,6 @@
   (-> (st/spec boolean?)
       (assoc :name "validated"
              :json-schema/type "boolean"
-
-             :json-schema/display-name "validated"
              :json-schema/description "validated email address?"
              :json-schema/order 11)))
 

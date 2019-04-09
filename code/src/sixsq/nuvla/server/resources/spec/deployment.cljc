@@ -19,8 +19,6 @@
                  "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
-
-             :json-schema/display-name "state"
              :json-schema/description "state of deployment"
              :json-schema/order 20
 

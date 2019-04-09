@@ -12,7 +12,6 @@
       (assoc :name "azure-client-id"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-client-id"
              :json-schema/description "Azure client ID"
              :json-schema/order 20)))
 
@@ -22,7 +21,6 @@
       (assoc :name "azure-client-secret"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-client-secret"
              :json-schema/description "Azure client secret"
              :json-schema/order 21
              :json-schema/sensitive true)))
@@ -33,7 +31,6 @@
       (assoc :name "azure-subscription-id"
              :json-schema/type "string"
 
-             :json-schema/display-name "azure-subscription-id"
              :json-schema/description "Azure subscription ID"
              :json-schema/order 22)))
 

@@ -14,7 +14,6 @@
       (assoc :name "infrastructure-service-id"
              :json-schema/type "string"
 
-             :json-schema/display-name "infrastructure-service-id"
              :json-schema/description "id of service associated with this credential")))
 
 

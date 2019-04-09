@@ -12,7 +12,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/display-name "method"
              :json-schema/description "user creation method"
 
              :json-schema/order 0
@@ -24,7 +23,6 @@
 (s/def ::instance
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "instance"
-             :json-schema/display-name "instance"
              :json-schema/description "instance name of user creation method"
 
              :json-schema/order 1

@@ -20,7 +20,6 @@
   (-> (st/spec (s/coll-of ::cimi-common/resource-link :kind vector?))
       (assoc :name "infrastructure-services"
              :json-schema/type "array"
-             :json-schema/display-name "infrastructure-services"
              :json-schema/description "list of associated services"
 
              :json-schema/server-managed true

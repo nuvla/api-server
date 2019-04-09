@@ -11,8 +11,6 @@
   (-> (st/spec string?)
       (assoc :name "username"
              :json-schema/type "string"
-
-             :json-schema/display-name "username"
              :json-schema/description "username for Minio service"
              :json-schema/order 20)))
 
@@ -21,8 +19,6 @@
   (-> (st/spec string?)
       (assoc :name "password"
              :json-schema/type "string"
-
-             :json-schema/display-name "password"
              :json-schema/description "password for Minio service"
              :json-schema/order 21
              :json-schema/sensitive true)))

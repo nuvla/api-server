@@ -10,14 +10,12 @@
 (s/def ::registry
   (-> (st/spec ::cimi-core/url)
       (assoc :name "registry"
-             :json-schema/display-name "registry"
              :json-schema/description "registry")))
 
 
 (s/def ::repository
   (-> (st/spec ::cimi-core/token)
       (assoc :name "repository"
-             :json-schema/display-name "repository"
              :json-schema/description "repository")))
 
 
@@ -31,7 +29,6 @@
 (s/def ::tag
   (-> (st/spec ::cimi-core/token)
       (assoc :name "tag"
-             :json-schema/display-name "tag"
              :json-schema/description "tag"
 
              :json-schema/value-scope {:default "latest"})))
@@ -44,7 +41,6 @@
                                             ::repository]}))
       (assoc :name "image"
              :json-schema/type "map"
-             :json-schema/display-name "image"
              :json-schema/description "image")))
 
 
@@ -52,9 +48,8 @@
 
 (s/def ::protocol
   (-> (st/spec #{"tcp" "udp" "sctp"})
-      (assoc :name "image"
+      (assoc :name "protocol"
              :json-schema/type "string"
-             :json-schema/display-name "protocol"
              :json-schema/description "protocol"
 
              :json-schema/value-scope {:values  ["tcp" "udp" "sctp"]
@@ -81,7 +76,6 @@
                                             ::published-port]}))
       (assoc :name "port"
              :json-schema/type "map"
-             :json-schema/display-name "port"
              :json-schema/description "port")))
 
 
@@ -89,7 +83,6 @@
   (-> (st/spec (s/coll-of ::port :kind vector?))
       (assoc :name "ports"
              :json-schema/type "array"
-             :json-schema/display-name "ports"
              :json-schema/description "list of port"
 
              :json-schema/indexed false)))
@@ -101,14 +94,12 @@
 (s/def ::source
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "source"
-             :json-schema/display-name "source"
              :json-schema/description "source")))
 
 
 (s/def ::target
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "target"
-             :json-schema/display-name "target"
              :json-schema/description "target")))
 
 
@@ -172,7 +163,6 @@
                                             ::volume-options]}))
       (assoc :name "mount"
              :json-schema/type "map"
-             :json-schema/display-name "mount"
              :json-schema/description "mount")))
 
 
@@ -180,7 +170,6 @@
   (-> (st/spec (s/coll-of ::mount :kind vector?))
       (assoc :name "mounts"
              :json-schema/type "array"
-             :json-schema/display-name "mounts"
              :json-schema/description "list of mounts"
 
              :json-schema/indexed false)))

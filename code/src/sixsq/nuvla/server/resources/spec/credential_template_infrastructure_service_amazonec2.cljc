@@ -12,8 +12,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-access-key"
              :json-schema/type "string"
-
-             :json-schema/display-name "amazonec2-access-key"
              :json-schema/description "AWS API key"
              :json-schema/order 20)))
 
@@ -22,8 +20,6 @@
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-secret-key"
              :json-schema/type "string"
-
-             :json-schema/display-name "amazonec2-secret-key"
              :json-schema/description "AWS secret API key"
              :json-schema/order 21
              :json-schema/sensitive true)))

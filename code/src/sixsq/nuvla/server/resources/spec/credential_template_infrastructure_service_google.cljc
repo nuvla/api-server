@@ -12,7 +12,6 @@
       (assoc :name "project_id"
              :json-schema/type "string"
 
-             :json-schema/display-name "project_id"
              :json-schema/description "Google Compute project ID to use"
              :json-schema/order 20)))
 
@@ -22,7 +21,6 @@
       (assoc :name "private_key_id"
              :json-schema/type "string"
 
-             :json-schema/display-name "private_key_id"
              :json-schema/description "ID of the private key"
              :json-schema/order 21)))
 
@@ -32,7 +30,6 @@
       (assoc :name "private_key"
              :json-schema/type "string"
 
-             :json-schema/display-name "private_key"
              :json-schema/description "Private key content"
              :json-schema/order 22
              :json-schema/sensitive true)))
@@ -43,7 +40,6 @@
       (assoc :name "client_email"
              :json-schema/type "string"
 
-             :json-schema/display-name "client_email"
              :json-schema/description "Client email associated with the service account"
              :json-schema/order 23)))
 
@@ -53,7 +49,6 @@
       (assoc :name "client_id"
              :json-schema/type "string"
 
-             :json-schema/display-name "client_id"
              :json-schema/description "Client ID associated with the service account"
              :json-schema/order 24)))
 
@@ -63,7 +58,6 @@
 ;           (assoc :name "auth_uri"
 ;                  :json-schema/type "string"
 ;
-;                  :json-schema/display-name "auth_uri"
 ;                  :json-schema/description "Authentication URI"
 ;                  :json-schema/order 25)))
 
@@ -73,7 +67,6 @@
 ;           (assoc :name "token_uri"
 ;                  :json-schema/type "string"
 ;
-;                  :json-schema/display-name "token_uri"
 ;                  :json-schema/description "Token URI"
 ;                  :json-schema/order 26)))
 
@@ -83,7 +76,6 @@
 ;           (assoc :name "auth_provider_x509_cert_url"
 ;                  :json-schema/type "string"
 ;
-;                  :json-schema/display-name "auth_provider_x509_cert_url"
 ;                  :json-schema/description "Provider X509 certificates URL"
 ;                  :json-schema/order 27)))
 ;
@@ -93,7 +85,6 @@
 ;           (assoc :name "client_x509_cert_url"
 ;                  :json-schema/type "string"
 ;
-;                  :json-schema/display-name "client_x509_cert_url"
 ;                  :json-schema/description "Client X509 certificates URL"
 ;                  :json-schema/order 27)))
 

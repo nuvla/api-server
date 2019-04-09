@@ -26,7 +26,6 @@
   (-> (st/spec #{"NEW" "ACTIVE" "SUSPENDED"})
       (assoc :name "state"
              :json-schema/type "string"
-             :json-schema/display-name "state"
              :json-schema/description "state of user's account"
 
              :json-schema/server-managed true
@@ -37,7 +36,6 @@
 (s/def ::method
   (-> (st/spec ::cimi-core/identifier)
       (assoc :name "method"
-             :json-schema/display-name "method"
              :json-schema/description "user creation method"
 
              :json-schema/order 50)))

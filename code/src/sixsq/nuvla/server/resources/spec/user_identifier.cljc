@@ -10,7 +10,6 @@
 (s/def ::parent (-> (st/spec ::user/id)
                     (assoc :name "parent"
                            :json-schema/type "resource-id"
-                           :json-schema/display-name "parent"
                            :json-schema/description "reference to parent resource"
 
                            :json-schema/section "meta"
@@ -22,7 +21,6 @@
   (-> (st/spec string?)
       (assoc :name "identifier"
              :json-schema/type "string"
-             :json-schema/display-name "identifier"
              :json-schema/description "identifier to associate with a user"
 
              :json-schema/order 10)))

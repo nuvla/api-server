@@ -10,7 +10,6 @@
 (s/def ::username
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "username"
-             :json-schema/display-name "username"
              :json-schema/description "username for your account"
 
              :json-schema/order 20)))
@@ -19,7 +18,6 @@
 (s/def ::new-password
   (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "password"
-             :json-schema/display-name "password"
              :json-schema/description "password for your account"
 
              :json-schema/order 21
