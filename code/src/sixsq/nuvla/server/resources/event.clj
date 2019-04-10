@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.event
   "
 Event resources provide a timestamp for the occurrence of some action. These
-are used within the SlipStream server to mark changes in the lifecycle of a
-cloud application and for other important actions.
+are used, for example, to mark changes in the lifecycle of an application and
+for other important actions.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -10,7 +10,9 @@ cloud application and for other important actions.
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.event :as event]))
+    [sixsq.nuvla.server.resources.spec.event :as event]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -65,7 +67,7 @@ cloud application and for other important actions.
 ;;
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id acl] :as resource} request]
+  [{:keys [id] :as resource} request]
   (if (u/is-collection? resource-type)
     (if (a/can-add? resource request)
       (let [ops [{:rel (:add c/action-uri) :href id}]]
@@ -95,4 +97,5 @@ cloud application and for other important actions.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::event/schema))
+  (std-crud/initialize resource-type ::event/schema)
+  (md/register (gen-md/generate-metadata ::ns ::event/schema)))
