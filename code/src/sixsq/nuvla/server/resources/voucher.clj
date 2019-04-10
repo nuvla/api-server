@@ -109,19 +109,54 @@ is to be issued by a third party and used by any Nuvla user.
 ;;
 
 (defn activate
-  [{:keys [id state] :as voucher}]
-  (throw (r/ex-response voucher 400 "id"))
-  (if (= state "new")
+  [voucher]
+  (if (= (:state voucher) "new")
     (do
       (let [activated-timestamp (u/unparse-timestamp-datetime (time/now))
             activated-voucher (-> voucher
-                                   (assoc :state "activated")
-                                   (assoc :activated activated-timestamp))]
-        [activated-voucher]))
-    (throw (r/ex-response "activation is not allowed for this voucher" 400 id))))
+                                  (assoc :state "activated")
+                                  (assoc :activated activated-timestamp))]
+        activated-voucher))
+    (throw (r/ex-response "activation is not allowed for this voucher" 400 (:id voucher)))))
 
 
 (defmethod crud/do-action [resource-type "activate"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)
+          user-id (:user-id (auth/current-authentication request))
+          voucher (db/retrieve id request)
+          new-acl (update (:acl voucher) :edit-acl conj user-id)]
+      (try
+        (-> id
+            (db/retrieve request)
+            (a/can-view-acl? request)
+            activate
+            (assoc :user {:href user-id} :acl new-acl)
+            (db/edit request))
+        (catch Exception ei
+          (ex-data ei))))
+    (catch Exception ei
+      (ex-data ei))))
+
+
+;;
+;; Redeem operation
+;;
+;
+(defn redeem
+  [voucher]
+  (if (= (:state voucher) "activated")
+    (do
+      (let [redeemed-timestamp (u/unparse-timestamp-datetime (time/now))
+            redeemed-voucher (-> voucher
+                                 (assoc :state "redeemed")
+                                 (assoc :redeemed redeemed-timestamp))]
+        redeemed-voucher))
+    (throw (r/ex-response "redeem is not allowed for this voucher" 400 (:id voucher)))))
+
+
+(defmethod crud/do-action [resource-type "redeem"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
@@ -129,15 +164,43 @@ is to be issued by a third party and used by any Nuvla user.
         (-> id
             (db/retrieve request)
             (a/can-edit-acl? request)
-            (pp/pprint )
-            ;:body
-            activate
+            redeem
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))
     (catch Exception ei
       (ex-data ei))))
 
+
+;;;
+;;; Expire operation
+;;;
+
+
+(defn expire
+  [voucher]
+  (if (not (= (:state voucher) "expired"))
+    (do
+      (let [expired-voucher (-> voucher
+                                (assoc :state "expired"))]
+        expired-voucher))
+    (throw (r/ex-response "voucher is already expired" 400 (:id voucher)))))
+
+
+(defmethod crud/do-action [resource-type "expire"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (try
+        (-> id
+            (db/retrieve request)
+            (a/can-edit-acl? request)
+            expire
+            (db/edit request))
+        (catch Exception ei
+          (ex-data ei))))
+    (catch Exception ei
+      (ex-data ei))))
 
 
 ;;
@@ -147,7 +210,15 @@ is to be issued by a third party and used by any Nuvla user.
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [href-activate (str id "/activate")
-        activate-op {:rel (:activate sc/action-uri) :href href-activate}]
+        href-redeem (str id "/redeem")
+        href-expire (str id "/expire")
+        activate-op {:rel (:activate sc/action-uri) :href href-activate}
+        expire-op {:rel (:expire sc/action-uri) :href href-expire}
+        redeem-op {:rel (:redeem sc/action-uri) :href href-redeem}
+        can-edit? (a/can-edit? resource request)
+        can-view? (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)
-            (= state "new") (update-in [:operations] conj activate-op)
+            (and can-edit? (#{"activated"} state)) (update :operations conj redeem-op)
+            (and can-edit? (#{"new" "activated" "redeemed"} state)) (update :operations conj expire-op)
+            (and can-view? (#{"new"} state)) (update :operations conj activate-op)
             )))

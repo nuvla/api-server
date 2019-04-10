@@ -19,7 +19,7 @@
 
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
-                :view-acl ["user/jane"]})
+                :view-acl ["group/nuvla-user"]})
 
 
 (deftest check-metadata
@@ -43,7 +43,7 @@
                        :state              "new"
                        :target-audience    "scientists@university.com"
 
-                       ;:acl                valid-acl
+                       :acl                valid-acl
                        }]
 
     ;; admin/user query succeeds but is empty
@@ -100,40 +100,86 @@
           (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 2))
 
-      ;; user should see only 1
+      ;; user also sees 2 cause of acls
       (-> session-user
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-resource-uri t/collection-type)
-          (ltu/is-count 1))
+          (ltu/is-count 2))
 
       ;; verify contents of admin voucher
       (let [voucher-full (-> session-admin
-                        (request admin-abs-uri)
-                        (ltu/body->edn)
-                        (ltu/is-status 200)
-                        (ltu/is-operation-present "edit")
-                        (ltu/is-operation-present "delete")
-                        (ltu/is-operation-present "activate"))
+                             (request admin-abs-uri)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-operation-present "edit")
+                             (ltu/is-operation-present "delete")
+                             (ltu/is-operation-present "activate")
+                             (ltu/is-operation-present "expire"))
             voucher (:body (:response voucher-full))
-            activate-url (str p/service-context (ltu/get-op voucher-full "activate"))]
+            activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
+            expire-url (str p/service-context (ltu/get-op voucher-full "expire"))]
 
         (is (= "my-voucher" (:name voucher)))
         (is (= "scientists@university.com" (:target-audience voucher)))
 
-        ;; check activation acls
+        ;; check activation acls - fail as anon
         (-> session-anon
             (request activate-url
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        (-> session-admin
+        ;; check expire acls - fail as anon
+        (-> session-anon
+            (request expire-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 403))
+
+        ;; success as regular user
+        (-> session-user
             (request activate-url
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 200))
+
+        ;; now the redeem url should finally exist
+        (let [voucher-updated (-> session-admin
+                                  (request admin-abs-uri)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present "redeem"))
+              redeem-url (str p/service-context (ltu/get-op voucher-updated "redeem"))]
+
+          ;; state is activated but anon cannot redeem, anon doesn't have can-edit
+          (-> session-anon
+              (request redeem-url
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          ; but user can redeem
+          (-> session-user
+              (request redeem-url
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        ;; can expire it
+        (-> session-user
+            (request expire-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; but cannot expire if already expired
+        (-> session-user
+            (request expire-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 400))
 
         ;; verify that an edit works
         (let [updated (assoc voucher :target-audience "scientists@university.com")]
@@ -162,11 +208,11 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; user can delete the voucher
+      ;; user cannot delete the voucher
       (-> session-user
           (request user-abs-uri :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)))))
+          (ltu/is-status 403)))))
 
 
 (deftest bad-methods
