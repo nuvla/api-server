@@ -40,18 +40,9 @@
 (s/def ::resource ::resource-link)
 (s/def ::content (su/only-keys :req-un [::resource ::state]))
 
-(s/def ::event
-  (su/only-keys :req-un [::common/id
-                         ::common/resource-type
-                         ::common/acl
-
-                         ::core/timestamp
-                         ::content
-                         ::type
-                         ::severity]
-                :opt-un [::common/created              ;; FIXME: should be required
-                         ::common/updated              ;; FIXME: should be required
-                         ::common/name
-                         ::common/description
-                         ::common/tags
-                         ::common/operations]))
+(s/def ::schema
+  (su/only-keys-maps common/common-attrs
+                     {:req-un [::core/timestamp
+                               ::content
+                               ::type
+                               ::severity]}))

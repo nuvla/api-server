@@ -27,7 +27,7 @@ cloud application and for other important actions.
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::event/event))
+(def validate-fn (u/create-spec-validation-fn ::event/schema))
 
 
 (defmethod crud/validate
@@ -95,4 +95,4 @@ cloud application and for other important actions.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::event/event))
+  (std-crud/initialize resource-type ::event/schema))

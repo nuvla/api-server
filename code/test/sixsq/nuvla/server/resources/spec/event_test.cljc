@@ -12,6 +12,8 @@
 (def valid-event
   {:id            "event/262626262626262"
    :resource-type resource-type
+   :created       event-timestamp
+   :updated       event-timestamp
    :acl           {:owners   ["user/joe"]
                    :view-acl ["group/nuvla-anon"]}
 
@@ -24,31 +26,31 @@
 
 (deftest check-reference
   (let [updated-event (assoc-in valid-event [:content :resource :href] "another/valid-identifier")]
-    (stu/is-valid ::event/event updated-event))
+    (stu/is-valid ::event/schema updated-event))
   (let [updated-event (assoc-in valid-event [:content :resource :href] "/not a valid reference/")]
-    (stu/is-invalid ::event/event updated-event)))
+    (stu/is-invalid ::event/schema updated-event)))
 
 
 (deftest check-severity
   (doseq [valid-severity ["critical" "high" "medium" "low"]]
-    (stu/is-valid ::event/event (assoc valid-event :severity valid-severity)))
-  (stu/is-invalid ::event/event (assoc valid-event :severity "unknown-severity")))
+    (stu/is-valid ::event/schema (assoc valid-event :severity valid-severity)))
+  (stu/is-invalid ::event/schema (assoc valid-event :severity "unknown-severity")))
 
 
 (deftest check-type
   (doseq [valid-type ["state" "alarm"]]
-    (stu/is-valid ::event/event (assoc valid-event :type valid-type)))
-  (stu/is-invalid ::event/event (assoc valid-event :type "unknown-type")))
+    (stu/is-valid ::event/schema (assoc valid-event :type valid-type)))
+  (stu/is-invalid ::event/schema (assoc valid-event :type "unknown-type")))
 
 
 (deftest check-event-schema
 
-  (stu/is-valid ::event/event valid-event)
+  (stu/is-valid ::event/schema valid-event)
 
   ;; mandatory keywords
   (doseq [k #{:id :resource-type :acl :timestamp :content :type :severity}]
-    (stu/is-invalid ::event/event (dissoc valid-event k)))
+    (stu/is-invalid ::event/schema (dissoc valid-event k)))
 
   ;; optional keywords
   (doseq [k #{}]
-    (stu/is-valid ::event/event (dissoc valid-event k))))
+    (stu/is-valid ::event/schema (dissoc valid-event k))))
