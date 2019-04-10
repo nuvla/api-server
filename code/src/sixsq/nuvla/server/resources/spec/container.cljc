@@ -31,7 +31,9 @@
       (assoc :name "tag"
              :json-schema/description "tag"
 
-             :json-schema/value-scope {:default "latest"})))
+             ;; FIXME: This value-scope definition is not legal.
+             ;:json-schema/value-scope {:default "latest"}
+             )))
 
 
 (s/def ::image

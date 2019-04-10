@@ -32,30 +32,18 @@
              :json-schema/order 32)))
 
 
-(s/def ::url-name
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "url-name"
-             :json-schema/display-name "URL name"
-             :json-schema/description "friendly name for URL")))
-
-
-(s/def ::url-pattern
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "url-pattern"
-             :json-schema/display-name "URL pattern"
-             :json-schema/description "URL pattern, e.g. 'https://${host}:${port-443}/some/path'")))
-
-
 (s/def ::url-tuple
-  (-> (st/spec (s/tuple ::url-name ::url-pattern))
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 2 :max-count 2))
       (assoc :name "url-tuple"
+             :json-schema/type "array"
              :json-schema/display-name "URL tuple"
-             :json-schema/description "tuple of the URL name and pattern")))
+             :json-schema/description "tuple of the URL label and pattern, e.g. 'https://${host}:${port-443}/some/path'")))
 
 
 (s/def ::urls
   (-> (st/spec (s/coll-of ::url-tuple :min-count 1 :kind vector?))
       (assoc :name "urls"
+             :json-schema/type "array"
              :json-schema/description "tuple of the URL name and pattern"
              :json-schema/order 33)))
 
@@ -75,6 +63,7 @@
 (s/def ::parameter
   (-> (st/spec (su/only-keys :req-un [::name ::description]))
       (assoc :name "parameter"
+             :json-schema/type "map"
              :json-schema/description "parameter name and description"
              :json-schema/order 33)))
 
@@ -82,6 +71,7 @@
 (s/def ::output-parameters
   (-> (st/spec (s/coll-of ::parameter :kind vector?))
       (assoc :name "output-parameters"
+             :json-schema/type "array"
              :json-schema/display-name "output parameters"
              :json-schema/description "list of output parameters"
              :json-schema/order 34)))

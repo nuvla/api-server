@@ -7,26 +7,6 @@
     [spec-tools.core :as st]))
 
 
-;; define schema for references to module resources
-#_(def ^:const module-href-regex #"^module/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-
-
-#_(s/def ::href
-  (-> (st/spec (s/and string? #(re-matches module-href-regex %)))
-      (assoc :name "href"
-             :json-schema/type "resource-id"
-             :json-schema/description "identifier of module resource"
-             :json-schema/order 30)))
-
-
-#_(s/def ::link
-  (-> (st/spec (s/keys :req-un [::href]))
-      (assoc :name "link"
-             :json-schema/type "map"
-             :json-schema/description "link to module resource"
-             :json-schema/order 31)))
-
-
 (def ^:const path-regex #"^[a-zA-Z0-9][\w\.-]*(/[a-zA-Z0-9][\w\.-]*)*$")
 
 
@@ -41,6 +21,7 @@
       (assoc :name "path"
              :json-schema/type "string"
              :json-schema/description "module path"
+             :json-schema/fulltext true
              :json-schema/order 32)))
 
 
@@ -63,17 +44,30 @@
              :json-schema/description "module type"
 
              :json-schema/editable false
+             :json-schema/fulltext true
              :json-schema/order 34)))
 
 
+(s/def ::version
+  (-> (st/spec (s/nilable ::core/resource-link))
+      (assoc :name "version"
+             :json-schema/type "resource-id"
+             :json-schema/description "module version identifier"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/indexed false)))
+
+
 (s/def ::versions
-  (-> (st/spec (s/coll-of (s/nilable ::core/resource-link) :min-count 1))
+  (-> (st/spec (s/coll-of ::version :min-count 1))
       (assoc :name "versions"
              :json-schema/type "array"
              :json-schema/description "list of module versions"
 
              :json-schema/server-managed true
              :json-schema/editable false
+             :json-schema/indexed false
              :json-schema/order 35)))
 
 
@@ -84,6 +78,19 @@
              :json-schema/description "URL for the module's logo"
 
              :json-schema/order 36)))
+
+
+(s/def ::content
+  (-> (st/spec map?)
+      (assoc :name "content"
+             :json-schema/type "map"
+             :json-schema/description "module content"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/indexed false
+             :json-schema/order 37)))
+
 
 ;;
 ;; data management attributes
@@ -96,6 +103,7 @@
              :json-schema/display-name "accepted content types"
              :json-schema/description "list of accepted data content types"
 
+             :json-schema/fulltext true
              :json-schema/order 37)))
 
 
@@ -106,6 +114,7 @@
              :json-schema/display-name "data access protocols"
              :json-schema/description "list of data access protocols understood by module"
 
+             :json-schema/fulltext true
              :json-schema/order 38)))
 
 
@@ -116,7 +125,8 @@
                                              :opt-un [::logo-url
                                                       ::data-accept-content-types
                                                       ::data-access-protocols
-                                                      ::versions]}]))
+                                                      ::versions
+                                                      ::content]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))
