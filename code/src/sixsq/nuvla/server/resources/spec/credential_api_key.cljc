@@ -1,19 +1,19 @@
 (ns sixsq.nuvla.server.resources.spec.credential-api-key
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.resources.spec.credential-template-api-key :as api-key]
     [sixsq.nuvla.server.util.spec :as su]))
 
-(s/def ::expiry ::cimi-core/timestamp)
+(s/def ::expiry ::core/timestamp)
 
-(s/def ::digest ::cimi-core/nonblank-string)
+(s/def ::digest ::core/nonblank-string)
 
-(s/def ::identity ::cimi-core/nonblank-string)
+(s/def ::identity ::core/nonblank-string)
 
-(s/def ::roles (s/coll-of ::cimi-core/nonblank-string
+(s/def ::roles (s/coll-of ::core/nonblank-string
                           :kind vector?
                           :into []
                           :min-count 1))

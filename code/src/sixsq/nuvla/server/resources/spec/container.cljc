@@ -1,37 +1,39 @@
 (ns sixsq.nuvla.server.resources.spec.container
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 ;; image spec
 
 (s/def ::registry
-  (-> (st/spec ::cimi-core/url)
+  (-> (st/spec ::core/url)
       (assoc :name "registry"
              :json-schema/description "registry")))
 
 
 (s/def ::repository
-  (-> (st/spec ::cimi-core/token)
+  (-> (st/spec ::core/token)
       (assoc :name "repository"
              :json-schema/description "repository")))
 
 
 (s/def ::image-name
-  (-> (st/spec ::cimi-core/token)
+  (-> (st/spec ::core/token)
       (assoc :name "image-name"
              :json-schema/display-name "image name"
              :json-schema/description "image name")))
 
 
 (s/def ::tag
-  (-> (st/spec ::cimi-core/token)
+  (-> (st/spec ::core/token)
       (assoc :name "tag"
              :json-schema/description "tag"
 
-             :json-schema/value-scope {:default "latest"})))
+             ;; FIXME: This value-scope definition is not legal.
+             ;:json-schema/value-scope {:default "latest"}
+             )))
 
 
 (s/def ::image
@@ -57,14 +59,14 @@
 
 
 (s/def ::target-port
-  (-> (st/spec ::cimi-core/port)
+  (-> (st/spec ::core/port)
       (assoc :name "target-port"
              :json-schema/display-name "target port"
              :json-schema/description "target port")))
 
 
 (s/def ::published-port
-  (-> (st/spec ::cimi-core/port)
+  (-> (st/spec ::core/port)
       (assoc :name "published-port"
              :json-schema/display-name "published port"
              :json-schema/description "published port")))
@@ -92,13 +94,13 @@
 
 
 (s/def ::source
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "source"
              :json-schema/description "source")))
 
 
 (s/def ::target
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "target"
              :json-schema/description "target")))
 
@@ -122,14 +124,14 @@
 
 
 (s/def ::option-key
-  (-> (st/spec ::cimi-core/token)
+  (-> (st/spec ::core/token)
       (assoc :name "option-key"
              :json-schema/display-name "option key"
              :json-schema/description "option key")))
 
 
 (s/def ::option-value
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "option-value"
              :json-schema/display-name "option value"
              :json-schema/description "option value")))

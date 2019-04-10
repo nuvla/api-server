@@ -30,14 +30,14 @@
               :data-accept-content-types ["application/json" "application/x-something"]
               :data-access-protocols     ["http+s3" "posix+nfs"]}]
 
-    (stu/is-valid ::module/module root)
-    (stu/is-invalid ::module/module (assoc root :bad-key "badValue"))
-    (stu/is-invalid ::module/module (assoc root :type "BAD_VALUE"))
+    (stu/is-valid ::module/schema root)
+    (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
+    (stu/is-invalid ::module/schema (assoc root :type "BAD_VALUE"))
 
     ;; required attributes
     (doseq [k #{:id :resource-type :created :updated :acl :path :type}]
-      (stu/is-invalid ::module/module (dissoc root k)))
+      (stu/is-invalid ::module/schema (dissoc root k)))
 
     ;; optional attributes
     (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols}]
-      (stu/is-valid ::module/module (dissoc root k)))))
+      (stu/is-valid ::module/schema (dissoc root k)))))

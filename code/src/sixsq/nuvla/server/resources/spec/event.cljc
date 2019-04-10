@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.event
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 ;;
@@ -41,17 +41,17 @@
 (s/def ::content (su/only-keys :req-un [::resource ::state]))
 
 (s/def ::event
-  (su/only-keys :req-un [::cimi-common/id
-                         ::cimi-common/resource-type
-                         ::cimi-common/acl
+  (su/only-keys :req-un [::common/id
+                         ::common/resource-type
+                         ::common/acl
 
-                         ::cimi-core/timestamp
+                         ::core/timestamp
                          ::content
                          ::type
                          ::severity]
-                :opt-un [::cimi-common/created              ;; FIXME: should be required
-                         ::cimi-common/updated              ;; FIXME: should be required
-                         ::cimi-common/name
-                         ::cimi-common/description
-                         ::cimi-common/tags
-                         ::cimi-common/operations]))
+                :opt-un [::common/created              ;; FIXME: should be required
+                         ::common/updated              ;; FIXME: should be required
+                         ::common/name
+                         ::common/description
+                         ::common/tags
+                         ::common/operations]))

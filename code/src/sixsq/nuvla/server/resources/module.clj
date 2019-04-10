@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.module
+  "
+This resource represents a module--the generic term for any project, image,
+component, or application.
+"
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -10,7 +14,9 @@
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.spec.module :as module]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -27,7 +33,7 @@
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::module/module))
+(def validate-fn (u/create-spec-validation-fn ::module/schema))
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -270,4 +276,5 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::module/module))
+  (std-crud/initialize resource-type ::module/schema)
+  (md/register (gen-md/generate-metadata ::ns ::module/schema)))

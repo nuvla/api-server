@@ -27,5 +27,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :identifier}]
       (stu/is-invalid ::user-identifier/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:username :server :clientIP}]
+    (doseq [attr #{:username :server :client-ip}]
       (stu/is-valid ::user-identifier/schema (dissoc cfg attr)))))

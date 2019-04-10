@@ -3,12 +3,12 @@
    other visual) user interfaces."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [spec-tools.core :as st]))
 
 
 (s/def ::group
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "group"
              :json-schema/description "label for grouping related templates/forms"
 
@@ -37,7 +37,7 @@
 
 
 (s/def ::icon
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "icon"
              :json-schema/description "name for icon to associate to template"
 
@@ -45,7 +45,7 @@
 
 
 (s/def ::redirect-url
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "redirect-url"
              :json-schema/description "redirect URI to be used on success"
 

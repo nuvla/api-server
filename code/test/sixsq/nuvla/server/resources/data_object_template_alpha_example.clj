@@ -4,7 +4,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as do-resource]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
-    [sixsq.nuvla.server.resources.spec.common :as c]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.data-object :as do]
     [sixsq.nuvla.server.util.spec :as su]))
 
@@ -31,7 +31,7 @@
 
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         data-object-alpha-keys-spec]))
 
 
@@ -40,12 +40,12 @@
 
 
 (s/def :cimi.data-object-template.alpha/template
-  (su/only-keys-maps c/template-attrs
+  (su/only-keys-maps common/template-attrs
                      (u/remove-req data-object-alpha-keys-spec #{::do/state})))
 
 
 (s/def :cimi/data-object-template.alpha-create
-  (su/only-keys-maps c/create-attrs
+  (su/only-keys-maps common/create-attrs
                      {:req-un [:cimi.data-object-template.alpha/template]}))
 
 

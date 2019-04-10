@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure-service-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infrastructure-service]
     [sixsq.nuvla.server.util.spec :as su]))
 
@@ -21,7 +21,7 @@
 
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         service-template-keys-spec]))
 
 
@@ -31,10 +31,10 @@
 
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         service-template-keys-spec
                         {:req-un [::href]}]))

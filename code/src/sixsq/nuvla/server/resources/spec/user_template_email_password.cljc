@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.user-template-email-password
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::username
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "username"
              :json-schema/description "your username"
 
@@ -16,7 +16,7 @@
 
 
 (s/def ::email
-  (-> (st/spec ::cimi-core/email)
+  (-> (st/spec ::core/email)
       (assoc :name "email"
              :json-schema/display-name "email address"
              :json-schema/description "your email address"

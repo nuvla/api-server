@@ -1,9 +1,15 @@
 (ns sixsq.nuvla.server.resources.module-component
+  "
+This resource represents a component--a module that references a single Docker
+image stored in a registry.
+"
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.spec.module-component :as module-component]))
+    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -23,7 +29,7 @@
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::module-component/module-component))
+(def validate-fn (u/create-spec-validation-fn ::module-component/schema))
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -88,4 +94,5 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::module-component/module-component))
+  (std-crud/initialize resource-type ::module-component/schema)
+  (md/register (gen-md/generate-metadata ::ns ::module-component/schema)))

@@ -43,7 +43,7 @@
             server (assoc :server server)
             session-id (assoc :session session-id)
             session-id (update :claims #(str % " " session-id))
-            client-ip (assoc :clientIP client-ip))))
+            client-ip (assoc :client-ip client-ip))))
 
 
 
@@ -52,7 +52,7 @@
   (if user
     (let [user-id (:id user)
           session (sutils/create-session username user-id href headers authn-method)
-          cookie-info (create-cookie-info user headers (:id session) (:clientIP session))
+          cookie-info (create-cookie-info user headers (:id session) (:client-ip session))
           cookie (cookies/create-cookie cookie-info)
           expires (ts/rfc822->iso8601 (:expires cookie))
           claims (:claims cookie-info)

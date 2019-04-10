@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.data-object
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]))
+    [sixsq.nuvla.server.resources.spec.core :as core]))
 
 
-(s/def ::type ::cimi-core/identifier)
+(s/def ::type ::core/identifier)
 
 
 (s/def ::state #{"NEW" "UPLOADING" "READY"})
@@ -16,19 +16,19 @@
 (s/def ::credential (s/and string? #(re-matches credential-id-regex %)))
 
 
-(s/def ::object ::cimi-core/nonblank-string)
+(s/def ::object ::core/nonblank-string)
 
 
-(s/def ::bucket ::cimi-core/nonblank-string)
+(s/def ::bucket ::core/nonblank-string)
 
 
-(s/def ::content-type ::cimi-core/nonblank-string)
+(s/def ::content-type ::core/nonblank-string)
 
 
 (s/def ::size nat-int?)
 
 
-(s/def ::md5sum ::cimi-core/token)
+(s/def ::md5sum ::core/token)
 
 
 (def data-object-template-regex #"^data-object-template/[a-z]+(-[a-z]+)*$")

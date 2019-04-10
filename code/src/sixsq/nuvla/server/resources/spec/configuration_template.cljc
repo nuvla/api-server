@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.configuration-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::service
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "service"
              :json-schema/description "name of service associated with this resource"
 
@@ -18,7 +18,7 @@
 
 
 (s/def ::instance
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "instance"
              :json-schema/description "instance of service associated with this resource"
 
@@ -57,13 +57,13 @@
                                        :opt-un [::instance ::template]})
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs configuration-template-keys-spec]))
+  (su/merge-keys-specs [common/common-attrs configuration-template-keys-spec]))
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         configuration-template-keys-spec
                         {:opt-un [::href]}]))
 

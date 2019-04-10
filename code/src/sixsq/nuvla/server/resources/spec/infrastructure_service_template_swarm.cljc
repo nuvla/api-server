@@ -5,14 +5,14 @@ on a cloud infrastructure.
   "
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::service-credential
-  (-> (st/spec ::cimi-common/resource-link)
+  (-> (st/spec ::core/resource-link)
       (assoc :name "service-credential"
              :json-schema/display-name "service credential"
              :json-schema/description "reference to service credential"

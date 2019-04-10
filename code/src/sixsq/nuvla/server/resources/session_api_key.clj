@@ -70,14 +70,14 @@
             server (assoc :server server)
             session-id (assoc :session session-id)
             session-id (update :claims #(str % " " session-id))
-            client-ip (assoc :clientIP client-ip))))
+            client-ip (assoc :client-ip client-ip))))
 
 (defmethod p/tpl->session authn-method
   [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
       (let [session (sutils/create-session identity identity href headers authn-method)
-            cookie-info (create-cookie-info identity roles headers (:id session) (:clientIP session))
+            cookie-info (create-cookie-info identity roles headers (:id session) (:client-ip session))
             cookie (cookies/create-cookie cookie-info)
             expires (ts/rfc822->iso8601 (:expires cookie))
             claims (:claims cookie-info)

@@ -2,13 +2,13 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.configuration-template :as ps]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::smtp-username
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "smtp-username"
              :json-schema/display-name "SMTP username"
              :json-schema/description "SMTP username for sending email from server"
@@ -17,7 +17,7 @@
 
 
 (s/def ::smtp-password
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "smtp-password"
              :json-schema/display-name "SMTP password"
              :json-schema/description "SMTP password for sending email from server"
@@ -27,7 +27,7 @@
 
 
 (s/def ::smtp-host
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "smtp-host"
              :json-schema/display-name "SMTP host"
              :json-schema/description "SMTP host for sending email from server"
@@ -36,7 +36,7 @@
 
 
 (s/def ::smtp-port
-  (-> (st/spec ::cimi-core/port)
+  (-> (st/spec ::core/port)
       (assoc :name "smtp-port"
              :json-schema/display-name "SMTP port"
              :json-schema/description "SMTP port for sending email from server"
@@ -65,7 +65,7 @@
 
 
 (s/def ::support-email
-  (-> (st/spec ::cimi-core/email)
+  (-> (st/spec ::core/email)
       (assoc :name "support-email"
              :json-schema/display-name "support email"
              :json-schema/description "email address for support"

@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.session-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -10,7 +10,7 @@
 
 ;; All session resources must have a 'method' attribute.
 (s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "method"
              :json-schema/description "authentication method"
              :json-schema/order 0
@@ -20,7 +20,7 @@
 ;; All session resources must have a 'instance' attribute that is used in
 ;; the template identifier.
 (s/def ::instance
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "instance"
              :json-schema/description "instance name of authentication method"
              :json-schema/order 1
@@ -40,7 +40,7 @@
 (def session-template-keys-spec {:req-un [::method ::instance]})
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         hints/ui-hints-spec
                         session-template-keys-spec]))
 
@@ -49,10 +49,10 @@
   (su/only-keys-maps resource-keys-spec))
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         hints/ui-hints-spec
                         session-template-keys-spec
                         {:req-un [::href]}]))

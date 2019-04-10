@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.data-record-key
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
@@ -10,16 +10,16 @@
 (s/def ::prefix (s/and string? #(re-matches prefix-regex %)))
 
 
-(s/def ::key ::cimi-core/nonblank-string)
+(s/def ::key ::core/nonblank-string)
 
 
-(s/def ::type ::cimi-core/nonblank-string)
+(s/def ::type ::core/nonblank-string)
 
 
 (s/def ::schema
-  (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::cimi-common/name           ;; name is required
-                               ::cimi-common/description    ;; description is required
+  (su/only-keys-maps common/common-attrs
+                     {:req-un [::common/name           ;; name is required
+                               ::common/description    ;; description is required
                                ::prefix
                                ::key
                                ::type]}))

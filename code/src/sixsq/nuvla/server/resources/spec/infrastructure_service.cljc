@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure-service
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "method"
              :json-schema/description "service creation method"
 
@@ -17,7 +17,7 @@
 
 
 (s/def ::type
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "type"
              :json-schema/display-name "service type"
              :json-schema/description "kebab-case identifier for the service type"
@@ -26,7 +26,7 @@
 
 
 (s/def ::endpoint
-  (-> (st/spec ::cimi-core/url)
+  (-> (st/spec ::core/url)
       (assoc :name "endpoint"
              :json-schema/description "public API endpoint for the service"
 
@@ -56,7 +56,7 @@
 
 
 (s/def ::management-credential-id
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "management-credential-id"
              :json-schema/display-name "management credential id"
              :json-schema/description "id of the credential used to manage this service")))
@@ -66,8 +66,8 @@
 ;; this is meant for COE services only
 ;; TODO: move this to COE specific schemas
 ;;
-(s/def ::machine-name ::cimi-core/nonblank-string)
-(s/def ::machine-config-base64 ::cimi-core/nonblank-string)
+(s/def ::machine-name ::core/nonblank-string)
+(s/def ::machine-config-base64 ::core/nonblank-string)
 
 (s/def ::node
   (-> (st/spec (su/only-keys :req-un [::machine-name
@@ -95,8 +95,8 @@
 ;;
 
 (s/def ::schema
-  (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::cimi-common/parent         ;; required for services
+  (su/only-keys-maps common/common-attrs
+                     {:req-un [::common/parent         ;; required for services
                                ::method
                                ::type
                                ::state]

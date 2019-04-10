@@ -1,12 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.common-operation-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
     [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
+
 
 (deftest check-operation
   (stu/is-valid ::common-operation/operation {:href "uri" :rel "add"})
