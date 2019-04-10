@@ -11,34 +11,17 @@
 (s/def ::amazonec2-access-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-access-key"
-             :json-schema/name "amazonec2-access-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "amazonec2-access-key"
              :json-schema/description "AWS API key"
-             :json-schema/help "AWS API key"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::amazonec2-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-secret-key"
-             :json-schema/name "amazonec2-secret-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "amazonec2-secret-key"
              :json-schema/description "AWS secret API key"
-             :json-schema/help "AWS secret API key"
-             :json-schema/group "body"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -58,9 +41,11 @@
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-create-keys-spec))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  credential-template-create-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 (s/def ::schema-create
   (su/only-keys-maps ct/create-keys-spec

@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.spec.deployment
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
-(s/def ::module ::cimi-common/resource-link)
+(s/def ::module ::core/resource-link)
 
 
 (s/def ::state
@@ -18,18 +18,9 @@
                  "SUSPENDING", "SUSPENDED",
                  "ERROR"})
       (assoc :name "state"
-             :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
-
-             :json-schema/display-name "state"
              :json-schema/description "state of deployment"
-             :json-schema/help "standard CIMI state of deployment"
-             :json-schema/group "body"
              :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false
 
              :json-schema/value-scope {:values  ["CREATED",
                                                  "STARTING", "STARTED",
@@ -46,77 +37,49 @@
 (s/def ::api-key
   (-> (st/spec (s/and string? #(re-matches credential-href-regex %)))
       (assoc :name "api-key"
-             :json-schema/name "api-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
-             :json-schema/help "credential identifier of API key pair"
-             :json-schema/group "body"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 30)))
 
 
 (s/def ::api-secret
   (-> (st/spec string?)
       (assoc :name "api-secret"
-             :json-schema/name "api-secret"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
              :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
-             :json-schema/help "secret of API key pair"
-             :json-schema/group "body"
              :json-schema/order 31
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
 (s/def ::api-credentials
   (-> (st/spec (su/only-keys :req-un [::api-key ::api-secret]))
       (assoc :name "api-credentials"
-             :json-schema/name "api-credentials"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
-             :json-schema/help "Nuvla deployment API credentials"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 (s/def ::api-endpoint
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "api-endpoint"
-             :json-schema/name "api-endpoint"
              :json-schema/type "string"
-             :json-schema/required false
              :json-schema/editable false
              :json-schema/indexed false
 
              :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
-             :json-schema/help "Nuvla endpoint"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 22)))
 
-(s/def ::credential-id ::cimi-core/nonblank-string)
+(s/def ::credential-id ::core/nonblank-string)
 
 
-(s/def ::infrastructure-service-id ::cimi-core/nonblank-string)
+(s/def ::infrastructure-service-id ::core/nonblank-string)
 
 
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -127,20 +90,12 @@
 (s/def ::data-objects
   (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
       (assoc :name "data-objects"
-             :json-schema/name "data-objects"
              :json-schema/type "array"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "data objects"
              :json-schema/description "list of data object identifiers"
-             :json-schema/help "list of data object identifiers to make available to deployment"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 30)))
 
 
 (def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -160,24 +115,16 @@
 (s/def ::data-records
   (-> (st/spec (s/map-of ::data-record-id-keyword ::data-set-ids :min-count 1))
       (assoc :name "serviceOffers"
-             :json-schema/name "serviceOffers"
              :json-schema/type "map"
-             :json-schema/required false
-             :json-schema/editable true
              :json-schema/indexed false
 
              :json-schema/display-name "service offers"
              :json-schema/description "data"
-             :json-schema/help "list of available resource operations"
-             :json-schema/group "data"
-             :json-schema/category "data"
-             :json-schema/order 31
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 31)))
 
 
 (def deployment-keys-spec
-  (su/merge-keys-specs [cimi-common/common-attrs
+  (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
                                   ::api-credentials

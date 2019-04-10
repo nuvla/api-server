@@ -1,44 +1,29 @@
 (ns sixsq.nuvla.server.resources.spec.configuration-template
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::service
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "service"
-             :json-schema/name "service"
-             :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable false
-
-             :json-schema/display-name "service"
              :json-schema/description "name of service associated with this resource"
-             :json-schema/help "name of service associated with this resource"
-             :json-schema/group "body"
-             :json-schema/order 10
-             :json-schema/hidden true
-             :json-schema/sensitive false)))
+
+             :json-schema/editable false
+             :json-schema/order 20
+             :json-schema/hidden true)))
 
 
 (s/def ::instance
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "instance"
-             :json-schema/name "instance"
-             :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable false
-
-             :json-schema/display-name "instance"
              :json-schema/description "instance of service associated with this resource"
-             :json-schema/help "instance of service associated with this resource"
-             :json-schema/group "body"
-             :json-schema/order 11
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/editable false
+             :json-schema/order 21)))
 
 
 (def configuration-template-regex #"^configuration-template/[a-z0-9]+(-[a-z0-9]+)*$")
@@ -46,35 +31,20 @@
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches configuration-template-regex %)))
       (assoc :name "href"
-             :json-schema/name "href"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable false
-
-             :json-schema/display-name "href"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/help "reference to the configuration template used"
-             :json-schema/group "body"
-             :json-schema/order 12
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/editable false
+             :json-schema/order 22)))
 
 
 (s/def ::template
   (-> (st/spec (su/only-keys-maps {:req-un [::href]}))
       (assoc :name "template"
-             :json-schema/name "template"
              :json-schema/type "map"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "template"
              :json-schema/description "reference to the configuration template used"
-             :json-schema/help "reference to the configuration template used"
-             :json-schema/group "body"
-             :json-schema/order 13
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/order 23)))
 
 
 ;;
@@ -87,13 +57,13 @@
                                        :opt-un [::instance ::template]})
 
 (def resource-keys-spec
-  (su/merge-keys-specs [c/common-attrs configuration-template-keys-spec]))
+  (su/merge-keys-specs [common/common-attrs configuration-template-keys-spec]))
 
 (def create-keys-spec
-  (su/merge-keys-specs [c/create-attrs]))
+  (su/merge-keys-specs [common/create-attrs]))
 
 (def template-keys-spec
-  (su/merge-keys-specs [c/template-attrs
+  (su/merge-keys-specs [common/template-attrs
                         configuration-template-keys-spec
                         {:opt-un [::href]}]))
 

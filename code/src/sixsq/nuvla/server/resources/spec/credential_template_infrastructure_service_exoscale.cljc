@@ -10,34 +10,17 @@
 (s/def ::exoscale-api-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-key"
-             :json-schema/name "exoscale-api-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "exoscale-api-key"
              :json-schema/description "API key for Exoscale"
-             :json-schema/help "API key for Exoscale"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::exoscale-api-secret-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "exoscale-api-secret-key"
-             :json-schema/name "exoscale-api-secret-key"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "exoscale-api-secret-key"
              :json-schema/description "API secret key for Exoscale"
-             :json-schema/help "API secret key for Exoscale"
-             :json-schema/group "body"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -57,9 +40,11 @@
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-create-keys-spec))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  credential-template-create-keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 (s/def ::schema-create
   (su/only-keys-maps ct/create-keys-spec

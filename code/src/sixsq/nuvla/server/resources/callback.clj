@@ -175,6 +175,7 @@ appropriate users.
 ;;
 ;; initialization: common schema for all subtypes
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::callback/schema)

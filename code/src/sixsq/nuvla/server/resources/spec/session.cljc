@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.session
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session-template :as session-tpl]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
     [sixsq.nuvla.server.resources.spec.user :as user]
@@ -19,7 +19,7 @@
 
 
 ;; expiration time of the cookie
-(s/def ::expiry ::cimi-core/timestamp)
+(s/def ::expiry ::core/timestamp)
 
 
 ;; identifier is optional as not all authentication methods use one
@@ -35,16 +35,16 @@
 
 ;;TODO ACL rename roles in session spec
 ;; space-separated string of user's roles
-(s/def ::roles ::cimi-core/nonblank-string)
+(s/def ::roles ::core/nonblank-string)
 
 
-(s/def ::server ::cimi-core/nonblank-string)
+(s/def ::server ::core/nonblank-string)
 
 
-(s/def ::clientIP ::cimi-core/nonblank-string)
+(s/def ::client-ip ::core/nonblank-string)
 
 
 (s/def ::session
-  (su/only-keys-maps c/common-attrs
+  (su/only-keys-maps common/common-attrs
                      {:req-un [::method ::template ::expiry]
-                      :opt-un [::identifier ::user ::roles ::server ::clientIP ::hints/redirect-url]}))
+                      :opt-un [::identifier ::user ::roles ::server ::client-ip ::hints/redirect-url]}))

@@ -1,41 +1,27 @@
 (ns sixsq.nuvla.server.resources.spec.user-template-username-password
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(s/def ::username
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "username"
-             :json-schema/name "username"
-             :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
 
-             :json-schema/display-name "username"
+(s/def ::username
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "username"
              :json-schema/description "your username"
-             :json-schema/help "your username"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/order 20)))
+
 
 (s/def ::password
   (-> (st/spec string?)
       (assoc :name "password"
-             :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "password"
              :json-schema/description "password for your account"
-             :json-schema/help "password for your account"
-             :json-schema/group "body"
+
              :json-schema/order 22
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -63,9 +49,11 @@
 
 ;; Defines the contents of the password template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     keys-req
-                     keys-href))
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  keys-req
+                                  keys-href))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

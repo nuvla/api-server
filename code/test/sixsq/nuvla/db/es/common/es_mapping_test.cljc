@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [clojure.test :refer [are deftest is testing]]
     [sixsq.nuvla.db.es.common.es-mapping :as t]
-    #_[sixsq.nuvla.server.resources.spec.common :as common]
     [spec-tools.core :as st]
     [spec-tools.data-spec :as ds]
     [spec-tools.spec :as spec]))

@@ -2,11 +2,11 @@
   "schema definitions for the 'attributes' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]))
 
-(s/def ::name ::cimi-core/token)
+(s/def ::name ::core/token)
 
 (s/def ::type #{"boolean"
                 "date-time" "duration"
@@ -21,7 +21,7 @@
 
 (s/def ::server-managed boolean?)
 
-(s/def ::required boolean?)
+(s/def ::required (s/coll-of string? :min-count 1 :type vector?))
 
 (s/def ::editable boolean?)
 
@@ -30,15 +30,11 @@
 ;; useful for rendering forms for browser-based clients
 ;;
 
-(s/def ::display-name ::cimi-core/nonblank-string)
+(s/def ::display-name ::core/nonblank-string)
 
-(s/def ::description ::cimi-core/nonblank-string)
+(s/def ::description ::core/nonblank-string)
 
-(s/def ::help ::cimi-core/nonblank-string)
-
-(s/def ::group #{"metadata" "body" "operations" "acl"})
-
-(s/def ::category ::cimi-core/nonblank-string)
+(s/def ::section #{"meta" "data" "acl"})
 
 (s/def ::order nat-int?)
 
@@ -46,15 +42,15 @@
 
 (s/def ::sensitive boolean?)
 
-(s/def ::lines pos-int?)
-
 
 ;;
-;; this attribute helps the interaction with elasticsearch
-;; to prevent unwanted indexing of attributes
+;; these attributes help with the interaction with elasticsearch
 ;;
 
 (s/def ::indexed boolean?)
+
+
+(s/def ::fulltext boolean?)
 
 
 ;;
@@ -79,14 +75,12 @@
 
                                           ::display-name
                                           ::description
-                                          ::help
-                                          ::group
-                                          ::category
+                                          ::section
                                           ::order
                                           ::hidden
                                           ::sensitive
-                                          ::lines
                                           ::indexed
+                                          ::fulltext
 
                                           ::value-scope/value-scope]))
 

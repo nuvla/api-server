@@ -10,34 +10,17 @@
 (s/def ::access-key
   (-> (st/spec string?)
       (assoc :name "username"
-             :json-schema/name "username"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "username"
              :json-schema/description "username for Minio service"
-             :json-schema/help "username for Minio service"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 20)))
 
 
 (s/def ::secret-key
   (-> (st/spec string?)
       (assoc :name "password"
-             :json-schema/name "password"
              :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "password"
              :json-schema/description "password for Minio service"
-             :json-schema/help "password for Minio service"
-             :json-schema/group "body"
              :json-schema/order 21
-             :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
@@ -60,9 +43,11 @@
 
 ;; Defines the contents of the credential-template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     credential-template-keys-spec-req))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  credential-template-keys-spec-req))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

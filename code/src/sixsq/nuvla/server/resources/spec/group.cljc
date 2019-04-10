@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.group
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -17,21 +16,12 @@
 (s/def ::users
   (-> (st/spec (s/coll-of ::user-id :kind vector? :distinct true))
       (assoc :name "users"
-             :json-schema/name "users"
              :json-schema/type "array"
-             :json-schema/required true
-             :json-schema/editable true
-
-             :json-schema/display-name "users"
              :json-schema/description "list of users in this group"
-             :json-schema/help "list of users in this group"
-             :json-schema/group "body"
-             :json-schema/category "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/order 20)))
 
 
 (s/def ::schema
-  (su/only-keys-maps c/common-attrs
+  (su/only-keys-maps common/common-attrs
                      {:req-un [::users]}))

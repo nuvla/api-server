@@ -4,7 +4,8 @@
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (def keys-spec {:req-un [::cred-infra-service-swarm/ca
@@ -21,9 +22,11 @@
 
 ;; Defines the contents of the swarm credential template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ct/template-keys-spec
-                     ct-infra-service/credential-template-service-create-keys-spec
-                     keys-spec))
+  (-> (st/spec (su/only-keys-maps ct/template-keys-spec
+                                  ct-infra-service/credential-template-service-create-keys-spec
+                                  keys-spec))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

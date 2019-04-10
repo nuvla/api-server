@@ -2,38 +2,47 @@
   "Spec definitions for common operation types used in CIMI resources."
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::href
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/uri)
       (assoc :name "href"
-             :json-schema/name "href"
-             :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable false
-
-             :json-schema/display-name "href"
              :json-schema/description "URI for operation"
-             :json-schema/help "unique URI that identifies the operation"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/server-managed true
+             :json-schema/editable false)))
 
 
 (s/def ::rel
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec ::core/url)
       (assoc :name "rel"
-             :json-schema/name "rel"
-             :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable false
-
-             :json-schema/display-name "rel"
              :json-schema/description "URL for performing action"
-             :json-schema/help "URL for performing action"
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/server-managed true
+             :json-schema/editable false)))
 
 
+(s/def ::operation
+  (-> (st/spec (su/only-keys :req-un [::href ::rel]))
+      (assoc :name "operation"
+             :json-schema/type "map"
+             :json-schema/description "operation definition (name, URL) for a resource"
 
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(s/def ::operations
+  (-> (st/spec (s/coll-of ::operation :min-count 1))
+      (assoc :name "operations"
+             :json-schema/type "array"
+             :json-schema/description "list of authorized resource operations"
+             :json-schema/section "meta"
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 0
+             :json-schema/indexed false)))

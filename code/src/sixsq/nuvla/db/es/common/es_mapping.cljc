@@ -82,14 +82,15 @@
 
 (defn json-schema->es-mapping
   "Function to be used with w/postwalk to transform a JSON schema into an
-   Elasticsearch mapping."
+   Elasticsearch mapping. The default is that the field will be indexed and be
+   included in the 'fulltext' pseudo-field when marked as an indexed keyword."
   [m]
   (if (map? m)
-    (let [{:keys [searchable indexed] :or {indexed true, searchable false}} m
-          result (cond-> (transform-type->es-type m)
-                         searchable (assoc :copy_to "fulltext")
-                         (not indexed) (assoc-not-indexed)
-                         )]
+    (let [{:keys [fulltext indexed] :or {indexed true, fulltext false}} m
+          {:keys [type] :as updated-m} (transform-type->es-type m)
+          result (cond-> updated-m
+                         (and (= type "keyword") fulltext) (assoc :copy_to "fulltext")
+                         (not indexed) (assoc-not-indexed))]
       (into {} (filter keep-key? result)))
     m))
 

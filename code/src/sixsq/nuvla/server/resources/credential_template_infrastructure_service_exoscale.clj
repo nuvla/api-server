@@ -54,4 +54,5 @@
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema-create "create")))

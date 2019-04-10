@@ -8,21 +8,21 @@
     (clojure.lang Namespace)))
 
 
-(declare strip-for-attributes)
+(declare select-resource-metadata-keys)
 
 
 (defn treat-array
   [{:keys [items] :as description}]
   (when (seq items)
     ;; items is a single attribute map, not a collection
-    [(strip-for-attributes ["item" items])]))
+    [(select-resource-metadata-keys ["item" items])]))
 
 
 (defn treat-map
   [{:keys [properties] :as description}]
   (when (seq properties)
     (->> properties
-         (map strip-for-attributes)
+         (map select-resource-metadata-keys)
          (remove nil?)
          vec)))
 
@@ -35,16 +35,28 @@
     nil))
 
 
-(defn strip-for-attributes
-  [[attribute-name {:keys [value-scope] :as description}]]
-  (let [{:keys [name] :as desc} (select-keys description #{:name :type
-                                                           :server-managed :required :editable
-                                                           :display-name :description :help
-                                                           :group :category :order :hidden :sensitive :lines
-                                                           :indexed})
+(def ^:const metadata-key-defaults
+  {:server-managed false
+   :editable       true
+   :section        "data"
+   :hidden         false
+   :sensitive      false
+   :indexed        true})
+
+
+(defn select-resource-metadata-keys
+  [[attribute-name {:keys [value-scope fulltext] :as description}]]
+  (let [{:keys [name display-name] :as desc}
+        (select-keys description #{:name :type
+                                   :server-managed :required :editable
+                                   :display-name :description :help
+                                   :section :order :hidden :sensitive
+                                   :indexed :fulltext})
         child-types (treat-children description)]
-    (cond-> desc
+    (cond-> (merge metadata-key-defaults desc)
             (nil? name) (assoc :name attribute-name)
+            (nil? display-name) (assoc :display-name (or name attribute-name))
+            (and fulltext (#{"string" "uri" "resource-id"} type)) (assoc :fulltext fulltext)
             value-scope (assoc :value-scope value-scope)
             child-types (assoc :child-types child-types))))
 
@@ -55,14 +67,17 @@
   [spec]
   (let [json (jsc/transform spec)
 
+        required (:required json)
+
         attributes (->> json
                         :properties
-                        (map strip-for-attributes)
+                        (map select-resource-metadata-keys)
                         (sort-by :name)
                         vec)]
 
     (if (seq attributes)
-      {:attributes attributes}
+      (cond-> {:attributes attributes}
+              required (assoc :required required))
       {})))
 
 
@@ -137,13 +152,16 @@
 (defn generate-metadata
   "Generate the resource-metadata from the provided namespace"
   ([parent-ns spec]
-   (generate-metadata nil parent-ns spec))
+   (generate-metadata nil parent-ns spec nil))
   ([child-ns parent-ns spec]
+    (generate-metadata child-ns parent-ns spec nil))
+  ([child-ns parent-ns spec suffix]
    (if-let [parent-ns (as-namespace parent-ns)]
      (let [child-ns (as-namespace child-ns)
 
            resource-name (cond-> (get-resource-type parent-ns)
-                                 child-ns (str " \u2014 " (get-resource-type child-ns)))
+                                 child-ns (str " \u2014 " (get-resource-type child-ns))
+                                 suffix (str " \u2014 " suffix))
 
            doc (get-doc (or child-ns parent-ns))
            type-uri (ns->type-uri (or child-ns parent-ns))

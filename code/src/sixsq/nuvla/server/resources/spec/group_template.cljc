@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -13,20 +13,12 @@
 
 
 (s/def ::group-identifier
-  (-> (st/spec ::cimi-core/kebab-identifier)
+  (-> (st/spec ::core/kebab-identifier)
       (assoc :name "group-identifer"
-             :json-schema/name "group-identifer"
-             :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
-
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
-             :json-schema/help "unique kebab-case identifier for group"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/order 20)))
 
 
 (def group-template-keys-spec-req
@@ -47,9 +39,11 @@
 ;; Defines the contents of template used in a create resource.
 ;; This obviously must include the group-identifier.
 (s/def ::template
-  (su/only-keys-maps common/template-attrs
-                     group-template-keys-spec-req
-                     {:opt-un [::href]}))
+  (-> (st/spec (su/only-keys-maps common/template-attrs
+                                  group-template-keys-spec-req
+                                  {:opt-un [::href]}))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 
 (s/def ::schema-create

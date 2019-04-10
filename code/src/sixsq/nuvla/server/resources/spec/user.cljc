@@ -1,59 +1,70 @@
 (ns sixsq.nuvla.server.resources.spec.user
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 ;; provide tighter definition of user id to be used elsewhere
+
 (def ^:const user-id-regex #"^user/[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$")
+
 (defn user-id? [s] (re-matches user-id-regex s))
-(s/def ::id (s/and string? user-id?))
+
+(s/def ::id
+  (-> (st/spec (s/and string? user-id?))
+      (assoc :name "id"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of user resource"
+
+             :json-schema/order 34)))
 
 
-(def ^:const credential-id-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn credential-id? [s] (re-matches credential-id-regex s))
-(s/def ::credential-password (s/and string? credential-id?))
+(s/def ::method
+  (-> (st/spec ::core/identifier)
+      (assoc :name "method"
+             :json-schema/description "user creation method"
 
-
-(def ^:const email-id-regex #"^email/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn email-id? [s] (re-matches email-id-regex s))
-(s/def ::email (s/and string? email-id?))
+             :json-schema/editable false
+             :json-schema/order 30)))
 
 
 (s/def ::state
   (-> (st/spec #{"NEW" "ACTIVE" "SUSPENDED"})
       (assoc :name "state"
-             :json-schema/name "state"
              :json-schema/type "string"
-             :json-schema/required false
-             :json-schema/editable true
-
-             :json-schema/display-name "state"
              :json-schema/description "state of user's account"
-             :json-schema/help "state of user's account"
-             :json-schema/group "body"
-             :json-schema/order 34
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 31)))
 
 
-(s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
-      (assoc :name "method"
-             :json-schema/name "method"
-             :json-schema/type "string"
-             :json-schema/required true
-             :json-schema/editable true
+(def ^:const email-id-regex #"^email/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 
-             :json-schema/display-name "method"
-             :json-schema/description "user creation method"
-             :json-schema/help "user creation method"
-             :json-schema/group "body"
-             :json-schema/order 50
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+(defn email-id? [s] (re-matches email-id-regex s))
+
+(s/def ::email
+  (-> (st/spec (s/and string? email-id?))
+      (assoc :name "email"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of primary email address resource"
+
+             :json-schema/order 32)))
+
+
+(def ^:const credential-id-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+
+(defn credential-id? [s] (re-matches credential-id-regex s))
+
+(s/def ::credential-password
+  (-> (st/spec (s/and string? credential-id?))
+      (assoc :name "credential-password"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of password credential"
+
+             :json-schema/order 33)))
 
 
 (def user-keys-spec
@@ -64,5 +75,5 @@
 
 
 (s/def ::schema
-  (su/only-keys-maps cimi-common/common-attrs
+  (su/only-keys-maps common/common-attrs
                      user-keys-spec))

@@ -34,7 +34,8 @@ resource.
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
+  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create")))
 
 
 ;;

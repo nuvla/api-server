@@ -51,7 +51,7 @@
                :template {:href tpl-href}}
               username (assoc :identifier username)
               server (assoc :server server)
-              client-ip (assoc :clientIP client-ip))
+              client-ip (assoc :client-ip client-ip))
       p/resource-type)))
 
 

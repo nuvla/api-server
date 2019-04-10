@@ -13,19 +13,17 @@
 (def ^:const valid {:name           "my-action"
                     :type           "string"
                     :server-managed true
-                    :required       true
                     :editable       true
+                    :required       ["dummy"]               ;; really only meaningful for maps
 
                     :display-name   "my action"
                     :description    "a wonderful attribute"
-                    :help           "just give me a value"
-                    :group          "body"
-                    :category       "some string for a category"
+                    :section        "data"
                     :order          10
                     :hidden         false
                     :sensitive      false
-                    :lines          3
-                    :indexed        true})
+                    :indexed        true
+                    :fulltext     true})
 
 
 (def ^:const valid-value-scopes [{:name        "enumeration"
@@ -63,8 +61,8 @@
 
     ;; optional attributes
     (doseq [k #{:server-managed :required :editable
-                :display-name :description :help :group
-                :category :order :hidden :sensitive :lines :indexed}]
+                :display-name :description :section
+                :order :hidden :sensitive :indexed :fulltext}]
       (stu/is-valid ::spec/attribute (dissoc attribute k)))
 
     (stu/is-invalid ::spec/attribute (assoc attribute :badAttribute 1))
