@@ -27,7 +27,14 @@
 
 
 (deftest check-retrieve-by-id
-  (doseq [registration-method [akey/method]]
+  (doseq [registration-method [akey/method
+                               hashed-password/method
+                               service-aws/method
+                               service-azure/method
+                               service-exo/method
+                               service-gce/method
+                               service-minio/method
+                               service-swarm/method]]
     (let [id (str ct/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
@@ -36,8 +43,16 @@
 (deftest check-metadata
   (mdtu/check-metadata-exists ct/resource-type)
 
-  (doseq [resource-url [akey/resource-url]]
-    (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url))))
+  (doseq [resource-url [akey/resource-url
+                        hashed-password/resource-url
+                        service-aws/credential-type
+                        service-azure/credential-type
+                        service-exo/credential-type
+                        service-gce/credential-type
+                        service-minio/credential-type
+                        service-swarm/credential-type]]
+    (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
+                                (str ct/resource-type "-" resource-url "-create"))))
 
 
 ;; check that all templates are visible as normal user
