@@ -20,6 +20,8 @@
 
 
 (def valid-event {:acl       {:owners ["user/joe"]}
+                  :created   "2015-01-16T08:05:00.0Z"
+                  :updated   "2015-01-16T08:05:00.0Z"
                   :timestamp "2015-01-16T08:05:00.0Z"
                   :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                               :state    "Started"}
@@ -41,9 +43,11 @@
                   (content-type "application/json")
                   (header authn-info-header (str/join " " ["user/joe" "group/nuvla-user" "group/nuvla-anon"])))]
     (doseq [valid-event valid-events]
-      (request state base-uri
-               :request-method :post
-               :body (json/write-str valid-event))))
+      (-> state
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-event))
+          (ltu/is-status 201))))
   (f))
 
 
