@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as infra-service-tpl-swarm]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -30,6 +31,11 @@
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
                 :view-acl ["group/nuvla-user"]})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str infra-service-tpl/resource-type "-" infra-service-tpl-swarm/method)
+                              (str infra-service-tpl/resource-type "-" infra-service-tpl-swarm/method "-create")))
 
 
 (deftest lifecycle

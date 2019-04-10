@@ -18,8 +18,9 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists ct/resource-type)
-  (mdtu/check-metadata-exists (str ct/resource-type "-" ct-nuvla/service)))
+  (mdtu/check-metadata-exists ct/resource-type
+                              (str ct/resource-type "-" ct-nuvla/service)
+                              (str ct/resource-type "-" ct-nuvla/service "-create")))
 
 
 (deftest retrieve-by-id
