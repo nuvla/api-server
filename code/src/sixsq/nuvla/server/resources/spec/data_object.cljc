@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.data-object
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as core]))
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.data :as data]))
 
 
 (s/def ::type ::core/identifier)
@@ -42,7 +43,7 @@
                                         ::object
                                         ::bucket
                                         ::credential]
-                               :opt-un [::content-type
+                               :opt-un [::data/content-type
                                         ::href
-                                        ::bytes
-                                        ::md5sum]})
+                                        ::data/bytes
+                                        ::data/md5sum]})
