@@ -32,7 +32,7 @@
 
 
 (defn check-metadata-exists
-  [type-uri]
+  [& test-type-uris]
 
   (let [session (-> (ltu/ring-app)
                     session
@@ -54,5 +54,6 @@
     (is (set? ids))
 
     (when (and type-uris ids)
-      (is (type-uris type-uri))
-      (is (ids type-uri)))))
+      (doseq [type-uri test-type-uris]
+        (is (type-uris type-uri) (str type-uri " not found in type-uris"))
+        (is (ids type-uri) (str type-uri " not found in ids"))))))
