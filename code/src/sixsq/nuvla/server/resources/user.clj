@@ -24,8 +24,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -144,7 +143,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 ;; requires a user-template to create new User
 (defmethod crud/add resource-type
-  [{{:keys [redirect-url] :as body} :body :as request}]
+  [{{:keys [template] :as body} :body :as request}]
 
   (try
 
@@ -163,7 +162,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
       (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
         (when (and resource-id (= 201 status))
-          (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
+          (post-user-add (assoc user :id resource-id, :redirect-url (:redirect-url template)) request))
         result))
 
     (catch Exception e
