@@ -154,6 +154,16 @@
 (def can-manage? (partial has-right? ::manage))
 
 
+;; TODO
+;; TO BE CHANGED
+(defn can-manage-object?
+  "Determines if the resource can be managed by the user in the request.
+   Returns the request on success; throws an error ring response on
+   failure."
+  [resource request]
+  (can-do? resource request ::manage))
+
+
 (defn can-edit?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `edit-meta`, `edit-data`, or
@@ -182,6 +192,14 @@
    failure."
   [resource request]
   (can-do? resource request ::view-acl))
+
+
+(defn can-view-data?
+  "Determines if the resource can be viewed by the user in the request.
+   Returns the request on success; throws an error ring response on
+   failure."
+  [resource request]
+  (can-do? resource request ::view-data))
 
 
 (def ^:const metadata-keys #{:id

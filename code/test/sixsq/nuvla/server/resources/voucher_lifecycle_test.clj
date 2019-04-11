@@ -6,9 +6,8 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.voucher :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [clojure.pprint :as pp]
+    [sixsq.nuvla.server.resources.voucher :as t]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -18,8 +17,11 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def valid-acl {:owners   ["group/nuvla-admin"]
-                :view-acl ["group/nuvla-user"]})
+(def valid-acl-admin {:owners   ["group/nuvla-admin"]
+                      :view-data ["group/nuvla-user"]})
+
+(def valid-acl-user {:owners   ["user/abcdef01-abcd-abcd-abcd-abcdef012346"]
+                     :view-data ["group/nuvla-user"]})
 
 
 (deftest check-metadata
@@ -30,21 +32,23 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
-        valid-voucher {:name               "my-voucher"
-                       :description        "my-voucher description"
+        valid-voucher-admin {:name               "my-voucher"
+                             :description        "my-voucher description"
 
-                       :owner              {:href "user/my-user-uuid"}
-                       :amount             50.0
-                       :currency           "EUR"
-                       :code               "vH72Hks209"
-                       :state              "new"
-                       :target-audience    "scientists@university.com"
+                             :owner              "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                             :amount             50.0
+                             :currency           "EUR"
+                             :code               "vH72Hks209"
+                             :state              "NEW"
+                             :target-audience    "scientists@university.com"
 
-                       :acl                valid-acl
-                       }]
+                             :acl                valid-acl-admin
+                             }
+
+        valid-voucher-user (assoc valid-voucher-admin :acl valid-acl-user)]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -67,7 +71,7 @@
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str valid-voucher))
+                 :body (json/write-str valid-voucher-admin))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -75,7 +79,7 @@
     (let [admin-uri (-> session-admin
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-voucher))
+                                 :body (json/write-str valid-voucher-admin))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -85,7 +89,7 @@
           user-uri (-> session-user
                        (request base-uri
                                 :request-method :post
-                                :body (json/write-str valid-voucher))
+                                :body (json/write-str valid-voucher-user))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location))
@@ -104,6 +108,7 @@
       (-> session-user
           (request base-uri)
           (ltu/body->edn)
+          ;(pp/pprint)
           (ltu/is-status 200)
           (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 2))
@@ -212,7 +217,7 @@
       (-> session-user
           (request user-abs-uri :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 403)))))
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods
