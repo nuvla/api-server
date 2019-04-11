@@ -71,9 +71,9 @@
                                        :default "NEW"})))
 
 
-(s/def ::service-info
+(s/def ::service-info-url
   (-> (st/spec ::core/url)
-      (assoc :name "service-info"
+      (assoc :name "service-info-url"
              :json-schema/type "string"
 
              :json-schema/description "URL for the service provider who issued the voucher"
@@ -155,6 +155,7 @@
                                ::target-audience]
                       :opt-un [::expiry
                                ::activated
+                               ::service-info-url
                                ::user
                                ::redeemed
                                ::wave

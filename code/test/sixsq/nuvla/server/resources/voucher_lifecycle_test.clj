@@ -108,7 +108,6 @@
       (-> session-user
           (request base-uri)
           (ltu/body->edn)
-          ;(pp/pprint)
           (ltu/is-status 200)
           (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 2))

@@ -26,6 +26,7 @@
                  :code               "vH72Hks209"
                  :state              "NEW"
                  :target-audience    "scientists@university.com"
+                 :service-info-url   "https://url.com"
                  :expiry             timestamp
                  :activated          timestamp
                  :redeemed           timestamp
