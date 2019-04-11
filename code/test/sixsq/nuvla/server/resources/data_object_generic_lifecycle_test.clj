@@ -6,10 +6,12 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
+    [sixsq.nuvla.server.resources.data-object-generic :as data-obj-generic]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
-    [sixsq.nuvla.server.resources.data-object-template-generic :as data-obj-generic]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.data-object-template-generic :as data-obj-tpl-generic]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once (join-fixtures [ltu/with-test-server-fixture
@@ -28,8 +30,12 @@
    :object       "my/obj/name-1"})
 
 
+(deftest check-metadata
+  (mdtu/check-metadata-exists data-obj-generic/resource-type))
+
+
 (deftest lifecycle
-  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-generic/data-object-type)
+  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-generic/data-object-type)
                             (data-object)))
 
 

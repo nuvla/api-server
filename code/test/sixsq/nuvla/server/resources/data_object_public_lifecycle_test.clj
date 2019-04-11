@@ -7,11 +7,13 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
+    [sixsq.nuvla.server.resources.data-object-public :as data-obj-public]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.data-object-template-public :as data-obj-tpl-public]
     [sixsq.nuvla.server.resources.data.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu])
   (:import
     (com.amazonaws AmazonServiceException)))
 
@@ -30,6 +32,10 @@
    :credential   do-ltu/*s3-credential-id*
    :content-type "application/gzip"
    :object       "my/public-obj/name-1"})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists data-obj-public/resource-type))
 
 
 (deftest lifecycle

@@ -31,9 +31,18 @@
              :json-schema/order 22)))
 
 
+(s/def ::timestamp
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "timestamp"
+             :json-schema/description "timestamp (UTC) associated with the data"
+
+             :json-schema/order 23)))
+
+
 (s/def ::lon
   (-> (st/spec (s/double-in :min -180.0 :max 180.0 :NaN? false :infinite? false))
       (assoc :name "lon"
+             :json-schema/type "double"
              :json-schema/display-name "longitude"
              :json-schema/description "longitude")))
 
@@ -41,6 +50,7 @@
 (s/def ::lat
   (-> (st/spec (s/double-in :min -90.0 :max 90.0 :NaN? false :infinite? false))
       (assoc :name "lat"
+             :json-schema/type "double"
              :json-schema/display-name "latitude"
              :json-schema/description "latitude")))
 
@@ -48,6 +58,7 @@
 (s/def ::alt
   (-> (st/spec (s/double-in :NaN? false :infinite? false))
       (assoc :name "alt"
+             :json-schema/type "double"
              :json-schema/display-name "altitude"
              :json-schema/description "altitude")))
 
@@ -59,13 +70,5 @@
              :json-schema/type "geo-point"
              :json-schema/display-name "location"
              :json-schema/description "location (longitude, latitude, altitude) associated with the data"
-
-             :json-schema/order 23)))
-
-
-(s/def ::timestamp
-  (-> (st/spec ::core/timestamp)
-      (assoc :name "timestamp"
-             :json-schema/description "timestamp (UTC) associated with the data"
 
              :json-schema/order 24)))

@@ -32,6 +32,7 @@
   (case type
     "array" (treat-array description)
     "map" (treat-map description)
+    "geo-point" (treat-map description)
     nil))
 
 
