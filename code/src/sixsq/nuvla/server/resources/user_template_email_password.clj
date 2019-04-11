@@ -33,6 +33,7 @@ optional name can also be provided.
    :instance          registration-method
    :name              "Registration with Email and Password"
    :description       "allows user registration with email, password, and optional username"
+   :group             "Registration with Email/Password"
    :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
    :order             0
    :icon              "user"
