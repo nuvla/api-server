@@ -97,6 +97,7 @@
   [resource]
   (validate-subtype resource))
 
+
 ;;
 ;; multimethod for ACLs
 ;;
@@ -175,14 +176,18 @@
 ;;
 
 (defmulti tpl->data-object
-          "Transforms the DataObjectTemplate into a DataObject resource."
+          "Transforms the data-object-template into a data-object resource."
           :type)
 
-;; default implementation just updates the resource-type
 
+;; default implementation just updates the resource-type
+;; and renames the :href argument to :template
 (defmethod tpl->data-object :default
-  [resource]
-  (assoc resource :resource-type resource-type))
+  [{:keys [href] :as resource}]
+  (cond-> (-> resource
+              (dissoc :href)
+              (assoc :resource-type resource-type))
+          href (assoc :template href)))
 
 ;;
 ;; CRUD operations

@@ -13,10 +13,7 @@
 ;;
 (def ^:const resource
   {:type         data-object-type
-   :content-type "content/type"
-   :credential   "credential/cloud-cred"
-   :bucket       "bucket"
-   :object       "object/name"})
+   :content-type "application/octet-stream"})
 
 
 ;;
@@ -35,7 +32,7 @@
   [resource]
   (validate-fn resource))
 
-(def create-validate-fn (u/create-spec-validation-fn ::dot-public/data-object-create))
+(def create-validate-fn (u/create-spec-validation-fn ::dot-public/schema-create))
 (defmethod do/create-validate-subtype data-object-type
   [resource]
   (create-validate-fn resource))

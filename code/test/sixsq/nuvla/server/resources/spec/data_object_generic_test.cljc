@@ -19,20 +19,29 @@
                      :created       timestamp
                      :updated       timestamp
                      :acl           valid-acl
-                     :state         do/state-new})]
+                     :state         do/state-new
+
+                     :credential    "credential/cloud-cred"
+                     :bucket        "bucket"
+                     :object        "object/name"
+
+                     :template      "data-object-template/generic"
+
+                     :content-type  "text/plain"
+                     :bytes         42
+                     :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
+                     :timestamp     timestamp
+                     :location      {:lon 0.0
+                                     :lat 0.0
+                                     :alt 0.0}})]
 
     (stu/is-valid ::do-generic/schema root)
 
-    (stu/is-valid ::do-generic/schema
-                  (merge root {:content-type "content-type"
-                               :bytes        42
-                               :md5sum       "3deb5ba5d971c85dd979b7466debfdee"}))
-
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :type :state :object :bucket :credential}]
+                :type :state :credential :bucket :object}]
       (stu/is-invalid ::do-generic/schema (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:content-type :bytes :md5sum}]
+    (doseq [k #{:href :content-type :bytes :md5sum :timestamp :location}]
       (stu/is-valid ::do-generic/schema (dissoc root k)))))

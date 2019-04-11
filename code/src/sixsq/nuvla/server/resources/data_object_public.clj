@@ -22,6 +22,8 @@ Resource represents an object in S3 that can be accessed by anyone.
 ;; multimethods for validation
 
 (def validate-fn (u/create-spec-validation-fn ::do-public/schema))
+
+
 (defmethod do/validate-subtype dot/data-object-type
   [resource]
   (validate-fn resource))

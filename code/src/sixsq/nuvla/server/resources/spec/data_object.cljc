@@ -41,22 +41,22 @@
              :json-schema/order 32)))
 
 
-(s/def ::object
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "object"
-             :json-schema/description "name of the S3 object"
-
-             :json-schema/editable false
-             :json-schema/order 32)))
-
-
 (s/def ::bucket
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "bucket"
              :json-schema/description "name of the S3 bucket"
 
              :json-schema/editable false
-             :json-schema/order 32)))
+             :json-schema/order 33)))
+
+
+(s/def ::object
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "object"
+             :json-schema/description "name of the S3 object"
+
+             :json-schema/editable false
+             :json-schema/order 34)))
 
 
 (def data-object-template-regex #"^data-object-template/[a-z]+(-[a-z]+)*$")
@@ -64,12 +64,22 @@
 
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches data-object-template-regex %)))
-      (assoc :name "bucket"
+      (assoc :name "href"
              :json-schema/type "resource-id"
              :json-schema/description "reference to template"
 
              :json-schema/editable false
-             :json-schema/order 32)))
+             :json-schema/order 35)))
+
+
+(s/def ::template
+  (-> (st/spec (s/and string? #(re-matches data-object-template-regex %)))
+      (assoc :name "template"
+             :json-schema/type "resource-id"
+             :json-schema/description "reference to template"
+
+             :json-schema/editable false
+             :json-schema/order 35)))
 
 
 (def common-data-object-attrs {:req-un [::type
@@ -77,9 +87,22 @@
                                         ::object
                                         ::bucket
                                         ::credential]
-                               :opt-un [::href
+                               :opt-un [::template
                                         ::data/content-type
                                         ::data/bytes
                                         ::data/md5sum
                                         ::data/timestamp
                                         ::data/location]})
+
+
+;; :state is server managed and shouldn't appear in a template expansion
+(def common-data-object-tpl-attrs {:req-un [::type
+                                            ::object
+                                            ::bucket
+                                            ::credential]
+                                   :opt-un [::href
+                                            ::data/content-type
+                                            ::data/bytes
+                                            ::data/md5sum
+                                            ::data/timestamp
+                                            ::data/location]})

@@ -28,10 +28,17 @@
 
 (defn data-object
   []
-  {:bucket       "my-bucket"
-   :credential   do-ltu/*s3-credential-id*
+  {:credential   do-ltu/*s3-credential-id*
+   :bucket       "my-bucket"
+   :object       "my/public-obj/name-1"
+
    :content-type "application/gzip"
-   :object       "my/public-obj/name-1"})
+   :bytes         42
+   :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
+   :timestamp     "1964-08-25T10:00:00.0Z"
+   :location      {:lon 0.0
+                   :lat 0.0
+                   :alt 0.0}})
 
 
 (deftest check-metadata

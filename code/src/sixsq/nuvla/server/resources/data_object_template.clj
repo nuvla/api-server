@@ -66,18 +66,17 @@
 
 
 (defn register
-  "Registers a given DataObjectTemplate resource with the server.
-   The resource document (resource) must be valid.
-   The key will be used to create the id of
-   the resource as 'data-object-template/key'."
+  "Registers a given data-object-template resource with the server. The
+   resource document (resource) must be valid. The key will be used to create
+   the id of the resource as 'data-object-template/key'."
   [resource & [name-kw-map]]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded DataObjectTemplate" id)
+      (log/info "loaded data-object-template" id)
       (when name-kw-map
         (swap! name->kw assoc id name-kw-map)
-        (log/info "added name->kw mapping from DataObjectTemplate" id)))))
+        (log/info "added name->kw mapping from data-object-template" id)))))
 
 
 ;;

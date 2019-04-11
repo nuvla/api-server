@@ -19,6 +19,8 @@ Resource represents an object in S3 that can only be accessed via credentials
 ;; multimethods for validation
 
 (def validate-fn (u/create-spec-validation-fn ::do-generic/schema))
+
+
 (defmethod do/validate-subtype dot/data-object-type
   [resource]
   (validate-fn resource))
@@ -27,6 +29,7 @@ Resource represents an object in S3 that can only be accessed via credentials
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-generic/schema)
