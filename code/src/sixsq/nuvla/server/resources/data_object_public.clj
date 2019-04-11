@@ -21,7 +21,7 @@ Resource represents an object in S3 that can be accessed by anyone.
 
 ;; multimethods for validation
 
-(def validate-fn (u/create-spec-validation-fn ::do-public/data-object))
+(def validate-fn (u/create-spec-validation-fn ::do-public/schema))
 (defmethod do/validate-subtype dot/data-object-type
   [resource]
   (validate-fn resource))
@@ -33,8 +33,8 @@ Resource represents an object in S3 that can be accessed by anyone.
 
 (defn initialize
   []
-  (std-crud/initialize do/resource-type ::do-public/data-object)
-  (md/register (gen-md/generate-metadata ::ns ::do-public/data-object)))
+  (std-crud/initialize do/resource-type ::do-public/schema)
+  (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
 
 
 (defmethod do/ready-subtype dot/data-object-type

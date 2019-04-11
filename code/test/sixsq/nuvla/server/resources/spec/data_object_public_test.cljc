@@ -23,13 +23,13 @@
                      :state         do/state-new
                      :url           "http://bucket.s3.com"})]
 
-    (stu/is-valid ::do-public/data-object root)
+    (stu/is-valid ::do-public/schema root)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
                 :type :state :object :bucket :credential}]
-      (stu/is-invalid ::do-public/data-object (dissoc root k)))
+      (stu/is-invalid ::do-public/schema (dissoc root k)))
 
     ;; optional keywords
     (doseq [k #{:url}]
-      (stu/is-valid ::do-public/data-object (dissoc root k)))))
+      (stu/is-valid ::do-public/schema (dissoc root k)))))

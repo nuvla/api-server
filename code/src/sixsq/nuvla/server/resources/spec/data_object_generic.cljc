@@ -11,5 +11,5 @@
   (su/merge-keys-specs [common/common-attrs
                         data-object-generic-keys-spec]))
 
-(s/def ::data-object
+(s/def ::schema
   (su/only-keys-maps resource-keys-spec))
