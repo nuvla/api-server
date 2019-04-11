@@ -339,7 +339,7 @@
       (a/can-edit-acl? request)
       (verify-state #{state-uploading} "ready")
       (assoc :state state-ready)
-      (s3/add-s3-size)
+      (s3/add-s3-bytes)
       (s3/add-s3-md5sum)
       (db/edit request)))
 

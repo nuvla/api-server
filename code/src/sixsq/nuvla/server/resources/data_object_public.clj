@@ -34,7 +34,7 @@
       (s3/set-public-read-object)
       (assoc :state do/state-ready)
       (s3/add-s3-url)
-      (s3/add-s3-size)
+      (s3/add-s3-bytes)
       (s3/add-s3-md5sum)
       (db/edit request)))
 

@@ -11,20 +11,22 @@
 
 
 (deftest test-schema-check
-  (let [root {:state        "NEW"
-              :object       "object/name"
+  (let [root {:type         "alpha"
+              :state        "NEW"
               :bucket       "bucket"
-              :type         "alpha"
+              :object       "object/name"
               :credential   "credential/foo"
-              :content-type "text/html; charset=utf-8"}]
+              :content-type "text/html; charset=utf-8"
+              :bytes        10234
+              :md5sum       "abcde"}]
 
     (stu/is-valid :cimi.test/data-object root)
 
     ;; mandatory keywords
-    (doseq [k #{:state :object :bucket :type :credential}]
+    (doseq [k #{:type :state :bucket :object :credential}]
       (stu/is-invalid :cimi.test/data-object (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:href :content-type}]
+    (doseq [k #{:content-type :bytes :md5sum}]
       (stu/is-valid :cimi.test/data-object (dissoc root k)))))
 

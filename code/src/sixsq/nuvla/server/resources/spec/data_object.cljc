@@ -25,7 +25,7 @@
 (s/def ::content-type ::core/nonblank-string)
 
 
-(s/def ::size nat-int?)
+(s/def ::bytes nat-int?)
 
 
 (s/def ::md5sum ::core/token)
@@ -44,5 +44,5 @@
                                         ::credential]
                                :opt-un [::content-type
                                         ::href
-                                        ::size
+                                        ::bytes
                                         ::md5sum]})

@@ -25,7 +25,7 @@
 
     (stu/is-valid ::do-generic/data-object
                   (merge root {:content-type "content-type"
-                               :size         42
+                               :bytes        42
                                :md5sum       "3deb5ba5d971c85dd979b7466debfdee"}))
 
     ;; mandatory keywords
@@ -34,5 +34,5 @@
       (stu/is-invalid ::do-generic/data-object (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:content-type :size :md5sum}]
+    (doseq [k #{:content-type :bytes :md5sum}]
       (stu/is-valid ::do-generic/data-object (dissoc root k)))))
