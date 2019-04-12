@@ -10,6 +10,7 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
+
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
@@ -34,9 +35,11 @@
 
 (defmulti validate-subtype-template :type)
 
+
 (defmethod validate-subtype-template :default
-  [resource]
-  (throw (ex-info (str "unknown External object template type: '" (:type resource) "'") resource)))
+  [{:keys [type] :as resource}]
+  (throw (ex-info (str "unknown data-object-template type: '" type "'") resource)))
+
 
 (defmethod crud/validate resource-type
   [resource]
@@ -44,10 +47,12 @@
 
 
 ;;
-;; atom to keep track of the loaded DataObjectTemplate resources
+;; atom to keep track of the loaded data-object-template resources
 ;;
-;;
+
 (def templates (atom {}))
+
+
 (def name->kw (atom {}))
 
 
