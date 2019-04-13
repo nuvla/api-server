@@ -12,7 +12,7 @@
                 "date-time" "duration"
                 "long" "integer" "number" "double"
                 "string" "resource-id" "uri"
-                "map" "array"
+                "map" "array" "geo-point"
                 "any"})
 
 ;;

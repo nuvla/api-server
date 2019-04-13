@@ -223,19 +223,19 @@
      :versionId          (.getVersionId meta)}))
 
 
-(defn add-s3-size
+(defn add-s3-bytes
   "Adds a size attribute to external object if present in metadata
   or returns untouched data object. Ignore any S3 exception "
   [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
-        size (try
-               (:contentLength (s3-object-metadata s3-client bucket object))
-               (catch Exception _
-                 (log/warn (str "Could not access the metadata for S3 object " object))))]
+        bytes (try
+                (:contentLength (s3-object-metadata s3-client bucket object))
+                (catch Exception _
+                  (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
-            size (assoc :size size))))
+            bytes (assoc :bytes bytes))))
 
 
 (defn add-s3-md5sum

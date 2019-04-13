@@ -23,24 +23,24 @@
 
               :architecture      "x86"
               :image             {:repository "my-repo"
-                                  :image-name       "ubuntu"
+                                  :image-name "ubuntu"
                                   :tag        "16.04"}
               :mounts            [{:mount-type "bind"
                                    :source     "/abc/file"
                                    :target     "/file"
                                    :read-only  false}
-                                  {:mount-type "volume"
-                                   :source     "/nfs-server/nfs-path"
-                                   :target     "/mnt"
-                                   :volume-options [{:option-key "o"
+                                  {:mount-type     "volume"
+                                   :source         "/nfs-server/nfs-path"
+                                   :target         "/mnt"
+                                   :volume-options [{:option-key   "o"
                                                      :option-value "addr=1.2.3.4"}
-                                                    {:option-key "device"
+                                                    {:option-key   "device"
                                                      :option-value "nfs-server/nfs-path"}
-                                                    {:option-key "type"
+                                                    {:option-key   "type"
                                                      :option-value "nfs"}
-                                                    {:option-key "vers"
+                                                    {:option-key   "vers"
                                                      :option-value "4"}
-                                                    {:option-key "dst"
+                                                    {:option-key   "dst"
                                                      :option-value "/mnt"}]}]
               :ports             [{:protocol       "tcp"
                                    :target-port    22

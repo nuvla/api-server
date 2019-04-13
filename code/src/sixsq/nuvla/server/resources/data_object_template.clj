@@ -10,6 +10,7 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
+
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
@@ -34,9 +35,11 @@
 
 (defmulti validate-subtype-template :type)
 
+
 (defmethod validate-subtype-template :default
-  [resource]
-  (throw (ex-info (str "unknown External object template type: '" (:type resource) "'") resource)))
+  [{:keys [type] :as resource}]
+  (throw (ex-info (str "unknown data-object-template type: '" type "'") resource)))
+
 
 (defmethod crud/validate resource-type
   [resource]
@@ -44,10 +47,12 @@
 
 
 ;;
-;; atom to keep track of the loaded DataObjectTemplate resources
+;; atom to keep track of the loaded data-object-template resources
 ;;
-;;
+
 (def templates (atom {}))
+
+
 (def name->kw (atom {}))
 
 
@@ -66,18 +71,17 @@
 
 
 (defn register
-  "Registers a given DataObjectTemplate resource with the server.
-   The resource document (resource) must be valid.
-   The key will be used to create the id of
-   the resource as 'data-object-template/key'."
+  "Registers a given data-object-template resource with the server. The
+   resource document (resource) must be valid. The key will be used to create
+   the id of the resource as 'data-object-template/key'."
   [resource & [name-kw-map]]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded DataObjectTemplate" id)
+      (log/info "loaded data-object-template" id)
       (when name-kw-map
         (swap! name->kw assoc id name-kw-map)
-        (log/info "added name->kw mapping from DataObjectTemplate" id)))))
+        (log/info "added name->kw mapping from data-object-template" id)))))
 
 
 ;;

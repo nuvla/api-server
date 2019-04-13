@@ -21,15 +21,30 @@
                      :updated       timestamp
                      :acl           valid-acl
                      :state         do/state-new
+
+                     :credential    "credential/cloud-cred"
+                     :bucket        "bucket"
+                     :object        "object/name"
+
+                     :template      "data-object-template/generic"
+
+                     :content-type  "text/plain"
+                     :bytes         42
+                     :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
+                     :timestamp     timestamp
+                     :location      {:lon 0.0
+                                     :lat 0.0
+                                     :alt 0.0}
+
                      :url           "http://bucket.s3.com"})]
 
-    (stu/is-valid ::do-public/data-object root)
+    (stu/is-valid ::do-public/schema root)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :type :state :object :bucket :credential}]
-      (stu/is-invalid ::do-public/data-object (dissoc root k)))
+                :type :state :credential :bucket :object}]
+      (stu/is-invalid ::do-public/schema (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:url}]
-      (stu/is-valid ::do-public/data-object (dissoc root k)))))
+    (doseq [k #{:href :content-type :bytes :md5sum :timestamp :location :url}]
+      (stu/is-valid ::do-public/schema (dissoc root k)))))
