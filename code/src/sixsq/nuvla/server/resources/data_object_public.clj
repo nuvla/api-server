@@ -11,9 +11,9 @@ Resource represents an object in S3 that can be accessed by anyone.
     [sixsq.nuvla.server.resources.data-object :as do]
     [sixsq.nuvla.server.resources.data-object-template-public :as dot]
     [sixsq.nuvla.server.resources.data.utils :as s3]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

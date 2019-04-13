@@ -43,7 +43,7 @@
 
 
 (defmethod callback/execute action-name
-  [{{:keys [href]} :target-resource
+  [{{:keys [href]}         :target-resource
     {:keys [redirect-url]} :data :as callback-resource} request]
   (let [{:keys [id state email] :as user} (crud/retrieve-by-id-as-admin href)]
     (if (= "NEW" state)

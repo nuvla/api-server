@@ -7,8 +7,8 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
-    [sixsq.nuvla.server.resources.data-object-public :as data-obj-public]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
+    [sixsq.nuvla.server.resources.data-object-public :as data-obj-public]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.data-object-template-public :as data-obj-tpl-public]
     [sixsq.nuvla.server.resources.data.utils :as s3]
@@ -33,12 +33,12 @@
    :object       "my/public-obj/name-1"
 
    :content-type "application/gzip"
-   :bytes         42
-   :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
-   :timestamp     "1964-08-25T10:00:00.0Z"
-   :location      {:lon 0.0
-                   :lat 0.0
-                   :alt 0.0}})
+   :bytes        42
+   :md5sum       "3deb5ba5d971c85dd979b7466debfdee"
+   :timestamp    "1964-08-25T10:00:00.0Z"
+   :location     {:lon 0.0
+                  :lat 0.0
+                  :alt 0.0}})
 
 
 (deftest check-metadata

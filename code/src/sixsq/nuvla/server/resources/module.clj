@@ -13,10 +13,10 @@ component, or application.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

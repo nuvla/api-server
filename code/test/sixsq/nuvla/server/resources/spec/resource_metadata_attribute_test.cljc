@@ -23,7 +23,7 @@
                     :hidden         false
                     :sensitive      false
                     :indexed        true
-                    :fulltext     true})
+                    :fulltext       true})
 
 
 (def ^:const valid-value-scopes [{:name        "enumeration"
