@@ -19,7 +19,9 @@ Resource represents an object in S3 that can be accessed by anyone.
 (def ^:const resource-type (u/ns->type *ns*))
 
 
+;;
 ;; multimethods for validation
+;;
 
 (def validate-fn (u/create-spec-validation-fn ::do-public/schema))
 

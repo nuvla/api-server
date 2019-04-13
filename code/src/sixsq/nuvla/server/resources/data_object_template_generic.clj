@@ -32,14 +32,6 @@
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::do-generic/schema))
-
-
-(defmethod do/validate-subtype data-object-type
-  [resource]
-  (validate-fn resource))
-
-
 (def create-validate-fn (u/create-spec-validation-fn ::dot-generic/schema-create))
 
 
