@@ -20,7 +20,7 @@
              :method        "internal"
              :expiry        timestamp
              :server        "nuv.la"
-             :client-ip      "127.0.0.1"
+             :client-ip     "127.0.0.1"
              :redirect-url  "https://nuv.la/webui/profile"
              :template      {:href "session-template/internal"}}]
 

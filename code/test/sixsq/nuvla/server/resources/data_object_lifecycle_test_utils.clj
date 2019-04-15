@@ -501,7 +501,7 @@
                                        (request abs-uri)
                                        (ltu/body->edn)
                                        (ltu/is-key-value :state eo/state-ready)
-                                       (ltu/is-key-value :size 42)
+                                       (ltu/is-key-value :bytes 42)
                                        (ltu/is-key-value :md5sum "md5sum")
                                        (ltu/is-operation-present "download")
                                        (ltu/is-operation-present "delete")

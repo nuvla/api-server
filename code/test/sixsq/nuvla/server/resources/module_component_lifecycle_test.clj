@@ -33,7 +33,7 @@
 
                   :architecture  "x86"
                   :image         {:image-name "ubuntu"
-                                  :tag  "16.04"}
+                                  :tag        "16.04"}
                   :ports         [{:protocol       "tcp"
                                    :target-port    22
                                    :published-port 8022}]})

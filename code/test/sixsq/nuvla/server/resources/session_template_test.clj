@@ -17,7 +17,7 @@
 (deftest check-metadata-contents
   (let [{:keys [attributes capabilities actions]}
         (mdtu/get-generated-metadata (str st/resource-type "-" api-key/resource-url))
-        
+
         value-scope-count (->> attributes
                                (map :value-scope)
                                count)]

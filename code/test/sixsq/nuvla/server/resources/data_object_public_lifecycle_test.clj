@@ -8,10 +8,12 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-lifecycle-test-utils :as do-ltu]
+    [sixsq.nuvla.server.resources.data-object-public :as data-obj-public]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.data-object-template-public :as data-obj-tpl-public]
     [sixsq.nuvla.server.resources.data.utils :as s3]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu])
   (:import
     (com.amazonaws AmazonServiceException)))
 
@@ -26,10 +28,21 @@
 
 (defn data-object
   []
-  {:bucket       "my-bucket"
-   :credential   do-ltu/*s3-credential-id*
+  {:credential   do-ltu/*s3-credential-id*
+   :bucket       "my-bucket"
+   :object       "my/public-obj/name-1"
+
    :content-type "application/gzip"
-   :object       "my/public-obj/name-1"})
+   :bytes        42
+   :md5sum       "3deb5ba5d971c85dd979b7466debfdee"
+   :timestamp    "1964-08-25T10:00:00.0Z"
+   :location     {:lon 0.0
+                  :lat 0.0
+                  :alt 0.0}})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists data-obj-public/resource-type))
 
 
 (deftest lifecycle

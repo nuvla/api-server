@@ -1,4 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-public
+  "
+Resource represents an object in S3 that can be accessed by anyone.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -8,12 +11,21 @@
     [sixsq.nuvla.server.resources.data-object :as do]
     [sixsq.nuvla.server.resources.data-object-template-public :as dot]
     [sixsq.nuvla.server.resources.data.utils :as s3]
-    [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]))
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
+(def ^:const resource-type (u/ns->type *ns*))
+
+
+;;
 ;; multimethods for validation
+;;
 
-(def validate-fn (u/create-spec-validation-fn ::do-public/data-object))
+(def validate-fn (u/create-spec-validation-fn ::do-public/schema))
+
+
 (defmethod do/validate-subtype dot/data-object-type
   [resource]
   (validate-fn resource))
@@ -22,9 +34,12 @@
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
-  (std-crud/initialize do/resource-type ::do-public/data-object))
+  (std-crud/initialize do/resource-type ::do-public/schema)
+  (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
+
 
 (defmethod do/ready-subtype dot/data-object-type
   [resource request]
@@ -34,9 +49,10 @@
       (s3/set-public-read-object)
       (assoc :state do/state-ready)
       (s3/add-s3-url)
-      (s3/add-s3-size)
+      (s3/add-s3-bytes)
       (s3/add-s3-md5sum)
       (db/edit request)))
+
 
 (defmethod do/download-subtype dot/data-object-type
   [{:keys [url] :as resource} request]

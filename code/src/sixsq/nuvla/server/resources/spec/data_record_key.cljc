@@ -18,8 +18,8 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::common/name           ;; name is required
-                               ::common/description    ;; description is required
+                     {:req-un [::common/name                ;; name is required
+                               ::common/description         ;; description is required
                                ::prefix
                                ::key
                                ::type]}))
