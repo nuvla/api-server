@@ -137,6 +137,16 @@
       (throw (ru/ex-unauthorized (:id resource))))))
 
 
+(defn throw-cannot-manage
+  "Will throw an error ring response if the user identified in the request
+   cannot manage the given resource; it returns the resource otherwise."
+  [{:keys [acl] :as resource} request]
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
+    (if (rights ::manage)
+      resource
+      (throw (ru/ex-unauthorized (:id resource))))))
+
+
 (defn has-right?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `right` is allowed."
@@ -152,16 +162,6 @@
 
 
 (def can-manage? (partial has-right? ::manage))
-
-
-;; TODO
-;; TO BE CHANGED
-(defn can-manage-object?
-  "Determines if the resource can be managed by the user in the request.
-   Returns the request on success; throws an error ring response on
-   failure."
-  [resource request]
-  (can-do? resource request ::manage))
 
 
 (defn can-edit?

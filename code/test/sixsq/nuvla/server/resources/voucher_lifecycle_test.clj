@@ -17,10 +17,10 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def valid-acl-admin {:owners   ["group/nuvla-admin"]
+(def valid-acl-admin {:owners    ["group/nuvla-admin"]
                       :view-data ["group/nuvla-user"]})
 
-(def valid-acl-user {:owners   ["user/abcdef01-abcd-abcd-abcd-abcdef012346"]
+(def valid-acl-user {:owners    ["user/abcdef01-abcd-abcd-abcd-abcdef012346"]
                      :view-data ["group/nuvla-user"]})
 
 
@@ -35,17 +35,17 @@
         session-admin (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
-        valid-voucher-admin {:name               "my-voucher"
-                             :description        "my-voucher description"
+        valid-voucher-admin {:name            "my-voucher"
+                             :description     "my-voucher description"
 
-                             :owner              "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-                             :amount             50.0
-                             :currency           "EUR"
-                             :code               "vH72Hks209"
-                             :state              "NEW"
-                             :target-audience    "scientists@university.com"
+                             :owner           "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                             :amount          50.0
+                             :currency        "EUR"
+                             :code            "vH72Hks209"
+                             :state           "NEW"
+                             :target-audience "scientists@university.com"
 
-                             :acl                valid-acl-admin
+                             :acl             valid-acl-admin
                              }
 
         valid-voucher-user (assoc valid-voucher-admin :acl valid-acl-user)]

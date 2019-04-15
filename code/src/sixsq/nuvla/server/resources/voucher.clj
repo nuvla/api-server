@@ -173,7 +173,7 @@ can terminate the voucher via the 'expire' operation.
       (try
         (-> id
             (db/retrieve request)
-            (a/can-manage-object? request)
+            (a/throw-cannot-manage request)
             redeem
             (db/edit request))
         (catch Exception ei
@@ -203,7 +203,7 @@ can terminate the voucher via the 'expire' operation.
       (try
         (-> id
             (db/retrieve request)
-            (a/can-manage-object? request)
+            (a/throw-cannot-manage request)
             expire
             (db/edit request))
         (catch Exception ei
@@ -224,7 +224,7 @@ can terminate the voucher via the 'expire' operation.
         activate-op {:rel (:activate sc/action-uri) :href href-activate}
         expire-op {:rel (:expire sc/action-uri) :href href-expire}
         redeem-op {:rel (:redeem sc/action-uri) :href href-redeem}
-        can-manage? (a/can-manage-object? resource request)
+        can-manage? (a/can-manage? resource request)
         can-view? (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
