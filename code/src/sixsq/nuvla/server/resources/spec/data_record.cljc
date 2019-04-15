@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.data :as data]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -27,7 +28,13 @@
              :json-schema/order 21)))
 
 
+;; FIXME: Why does the presence of location cause tests to fail?
 (s/def ::schema
   (su/constrained-map keyword? any?
                       common/common-attrs
-                      {:req-un [::infrastructure-service]}))
+                      {:req-un [::infrastructure-service]
+                       :opt-un [;::data/location
+                                ::data/timestamp
+                                ::data/bytes
+                                ::data/content-type
+                                ::data/md5sum]}))

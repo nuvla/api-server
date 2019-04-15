@@ -11,14 +11,22 @@
 
 
 (deftest test-schema-check
-  (let [root {:type         "alpha"
+  (let [timestamp "2019-04-15T12:23:53.0Z"
+
+        location {:lon 6.143158,
+                  :lat 46.204391,
+                  :alt 373.0}
+
+        root {:type         "alpha"
               :state        "NEW"
               :bucket       "bucket"
               :object       "object/name"
               :credential   "credential/foo"
               :content-type "text/html; charset=utf-8"
               :bytes        10234
-              :md5sum       "abcde"}]
+              :md5sum       "abcde"
+              :timestamp    timestamp
+              :location     location}]
 
     (stu/is-valid :cimi.test/data-object root)
 
@@ -27,6 +35,6 @@
       (stu/is-invalid :cimi.test/data-object (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:content-type :bytes :md5sum}]
+    (doseq [k #{:content-type :bytes :md5sum :timestamp :location}]
       (stu/is-valid :cimi.test/data-object (dissoc root k)))))
 
