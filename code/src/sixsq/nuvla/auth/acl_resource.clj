@@ -102,24 +102,6 @@
   (can-do? resource request ::edit-acl))
 
 
-;; FIXME: Remove this.
-(defn can-view-acl?
-  "Determines if the resource can be modified by the user in the request.
-   Returns the request on success; throws an error ring response on
-   failure."
-  [resource request]
-  (can-do? resource request ::view-acl))
-
-
-;; FIXME: Remove this.
-(defn can-view-data?
-  "Determines if the resource can be viewed by the user in the request.
-   Returns the request on success; throws an error ring response on
-   failure."
-  [resource request]
-  (can-do? resource request ::view-data))
-
-
 (defn has-rights?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `right` is allowed."

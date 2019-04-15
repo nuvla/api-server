@@ -141,7 +141,7 @@ can terminate the voucher via the 'expire' operation.
       (try
         (-> id
             (db/retrieve request)
-            (a/can-view-data? request)
+            (a/throw-cannot-view-data request)
             activate
             (assoc :user user-id :acl new-acl)
             (db/edit request))
