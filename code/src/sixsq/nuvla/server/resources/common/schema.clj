@@ -7,7 +7,7 @@
 (def ^:const actions
   #{:add :edit :change :delete :start :stop :restart :pause :suspend
     :snapshot :enable :disable :validate :collect :execute
-    :activate :quarantine :upload :ready :download
+    :activate :quarantine :upload :ready :download :redeem :expire
     :check-password :change-password})
 
 (def ^:const action-uri

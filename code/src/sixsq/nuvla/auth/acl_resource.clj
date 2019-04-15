@@ -82,20 +82,6 @@
     (some #(isa? rights-hierarchy % action) rights)))
 
 
-;;TODO ACL complete the list with all rights
-
-(defn authorized-view-acl?
-  "Returns true if the user has the view-acl right on the resource; returns false otherwise."
-  [resource request]
-  (authorized-do? resource request ::view-acl))
-
-
-(defn authorized-edit-acl?
-  "Returns true if the user has the edit-acl right on the resource; returns false otherwise."
-  [resource request]
-  (authorized-do? resource request ::edit-acl))
-
-
 (defn can-do?
   "Determines if the ACL associated with the given resource permits the
    current user (in the request) the given action.  If the action is
@@ -107,6 +93,7 @@
     (throw (ru/ex-unauthorized (:resource-id resource)))))
 
 
+;; FIXME: Remove this.
 (defn can-edit-acl?
   "Determines if the resource can be modified by the user in the request.
    Returns the request on success; throws an error ring response on
@@ -115,73 +102,27 @@
   (can-do? resource request ::edit-acl))
 
 
-(defn throw-cannot-delete
-  "Will throw an error ring response if the user identified in the request
-   cannot delete the given resource; it returns the resource otherwise."
-  [{:keys [acl] :as resource} request]
-  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (if (rights ::delete)
-      resource
-      (throw (ru/ex-unauthorized (:id resource))))))
-
-
-(defn throw-cannot-edit
-  "Will throw an error ring response if the user identified in the request
-   cannot edit the given resource; it returns the resource otherwise."
-  [{:keys [acl] :as resource} request]
-  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (if (or (rights ::edit-meta)
-            (rights ::edit-data)
-            (rights ::edit-acl))
-      resource
-      (throw (ru/ex-unauthorized (:id resource))))))
-
-
-(defn has-right?
+(defn has-rights?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `right` is allowed."
-  [right {:keys [acl] :as resource} request]
-  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
-    (boolean (rights-set right))))
+  [required-rights {:keys [acl] :as resource} request]
+  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
+    (boolean (seq (set/intersection required-rights rights)))))
 
 
-(def can-delete? (partial has-right? ::delete))
+(def can-delete? (partial has-rights? #{::delete}))
 
 
-(def can-add? (partial has-right? ::add))
+(def can-add? (partial has-rights? #{::add}))
 
 
-(def can-manage? (partial has-right? ::manage))
+(def can-manage? (partial has-rights? #{::manage}))
 
 
-(defn can-edit?
-  "Based on the rights derived from the authentication information and the
-   acl, this function returns true if the given `edit-meta`, `edit-data`, or
-   `edit-acl` is allowed."
-  [{:keys [acl] :as resource} request]
-  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
-    (or (rights-set ::edit-meta)
-        (rights-set ::edit-data)
-        (rights-set ::edit-acl))))
+(def can-edit? (partial has-rights? #{::edit-meta ::edit-data ::edit-acl}))
 
 
-(defn can-view?
-  "Based on the rights derived from the authentication information and the
-   acl, this function returns true if the given `view-meta`, `view-data`, or
-   `view-acl` is allowed."
-  [{:keys [acl] :as resource} request]
-  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
-    (or (rights-set ::view-meta)
-        (rights-set ::view-data)
-        (rights-set ::view-acl))))
-
-
-(defn can-view-acl?
-  "Determines if the resource can be modified by the user in the request.
-   Returns the request on success; throws an error ring response on
-   failure."
-  [resource request]
-  (can-do? resource request ::view-acl))
+(def can-view? (partial has-rights? #{::view-meta ::view-data ::view-acl}))
 
 
 (def ^:const metadata-keys #{:id
@@ -222,27 +163,29 @@
       :else nil)))
 
 
-(defn throw-cannot-view
+(defn throw-without-rights
   "Will throw an error ring response if the user identified in the request
-   cannot view the given resource; it returns the resource otherwise."
-  [{:keys [acl] :as resource} request]
+   does not have any of the required rights; it returns the resource otherwise."
+  [required-rights {:keys [acl] :as resource} request]
   (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (if (or (rights ::view-meta)
-            (rights ::view-data)
-            (rights ::view-acl))
+    (if (seq (set/intersection required-rights rights))
       resource
       (throw (ru/ex-unauthorized (:id resource))))))
 
 
-(defn throw-cannot-view-data
-  "Will throw an error ring response if the user identified in the request
-   cannot view the data of the given resource; it returns the resource
-   otherwise."
-  [{:keys [id acl] :as resource} request]
-  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (if (rights ::view-data)
-      resource
-      (throw (ru/ex-unauthorized id)))))
+(def throw-cannot-delete (partial throw-without-rights #{::delete}))
+
+
+(def throw-cannot-edit (partial throw-without-rights #{::edit-meta ::edit-data ::edit-acl}))
+
+
+(def throw-cannot-view (partial throw-without-rights #{::view-meta ::view-data ::view-acl}))
+
+
+(def throw-cannot-view-data (partial throw-without-rights #{::view-data}))
+
+
+(def throw-cannot-manage (partial throw-without-rights #{::manage}))
 
 
 (defn throw-cannot-query
