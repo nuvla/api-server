@@ -27,7 +27,8 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str st/resource-type "-" password-reset/resource-url)))
+  (mdtu/check-metadata-exists (str st/resource-type "-" password-reset/resource-url)
+                              (str st/resource-type "-" password-reset/resource-url "-create")))
 
 
 (deftest lifecycle

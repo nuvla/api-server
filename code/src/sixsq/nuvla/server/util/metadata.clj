@@ -154,7 +154,7 @@
   ([parent-ns spec]
    (generate-metadata nil parent-ns spec nil))
   ([child-ns parent-ns spec]
-    (generate-metadata child-ns parent-ns spec nil))
+   (generate-metadata child-ns parent-ns spec nil))
   ([child-ns parent-ns spec suffix]
    (if-let [parent-ns (as-namespace parent-ns)]
      (let [child-ns (as-namespace child-ns)
@@ -164,7 +164,8 @@
                                  suffix (str " \u2014 " suffix))
 
            doc (get-doc (or child-ns parent-ns))
-           type-uri (ns->type-uri (or child-ns parent-ns))
+           type-uri (cond-> (ns->type-uri (or child-ns parent-ns))
+                            suffix (str "-" suffix))
 
            common {:id            "resource-metadata/dummy-id"
                    :created       "1964-08-25T10:00:00.0Z"

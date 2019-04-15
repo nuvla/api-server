@@ -21,7 +21,11 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists t/resource-type))
+  (mdtu/check-metadata-exists t/resource-type
+                              (str t/resource-type "-" email-password/resource-url)
+                              (str t/resource-type "-" email-password/resource-url "-create")
+                              (str t/resource-type "-" username-password/resource-url)
+                              (str t/resource-type "-" username-password/resource-url "-create")))
 
 
 (deftest check-retrieve-by-id

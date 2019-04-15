@@ -5,12 +5,12 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as t]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -24,6 +24,11 @@
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
                 :view-acl ["group/nuvla-user"]})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str infra-service-tpl/resource-type "-" infra-service-tpl-generic/method)
+                              (str infra-service-tpl/resource-type "-" infra-service-tpl-generic/method "-create")))
 
 
 (deftest lifecycle

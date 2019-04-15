@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.voucher-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.voucher :as t]
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.voucher :as voucher]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
+    [sixsq.nuvla.server.resources.voucher :as t]))
 
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
@@ -20,18 +20,19 @@
                  :updated            timestamp
                  :acl                valid-acl
 
-                 :owner              {:href "user/my-user-uuid"}
+                 :owner              "user/abcdef01-abcd-abcd-abcd-abcdef012340"
                  :amount             50.0
                  :currency           "EUR"
                  :code               "vH72Hks209"
-                 :state              "new"
+                 :state              "NEW"
                  :target-audience    "scientists@university.com"
-                 :expiration-date    timestamp
+                 :service-info-url   "https://url.com"
+                 :expiry             timestamp
                  :activated          timestamp
                  :redeemed           timestamp
-                 :user               {:href "user/my-user-uuid"}
-                 :wave-id            "wave id"
-                 :batch-reference    "abc"
+                 :user               "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                 :wave               "wave id"
+                 :batch              "abc"
                  }]
 
     (stu/is-valid ::voucher/schema voucher)
@@ -41,5 +42,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl}]
       (stu/is-invalid ::voucher/schema (dissoc voucher attr)))
 
-    (doseq [attr #{:name :description :user :activated :redeemed :expiration-date :wave-id :batch-reference}]
+    (doseq [attr #{:name :description :user :activated :redeemed :expiry :wave :batch}]
       (stu/is-valid ::voucher/schema (dissoc voucher attr)))))

@@ -2,9 +2,9 @@
   (:require
     [clojure.test :refer [are deftest is testing]]
     [sixsq.nuvla.db.es.common.es-mapping :as t]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]))
+    [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]
+    [sixsq.nuvla.server.resources.spec.core :as core]))
 
 
 (deftest common-schema
