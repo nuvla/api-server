@@ -13,9 +13,7 @@
 (deftest check-data-record
   (let [timestamp "1964-08-25T10:00:00.0Z"
 
-        location {:lon 6.143158,
-                  :lat 46.204391,
-                  :alt 373.0}
+        location [6.143158 46.204391 373.0]
 
         data-record {:id                     (str data-record-resource/resource-type "/uuid")
                      :resource-type          data-record-resource/resource-type
@@ -29,7 +27,7 @@
                      :bytes                  10234
                      :md5sum                 "abcde"
                      :timestamp              timestamp
-                     #_:location               #_location}]
+                     :location               location}]
 
     (stu/is-valid ::data-record/schema data-record)
 

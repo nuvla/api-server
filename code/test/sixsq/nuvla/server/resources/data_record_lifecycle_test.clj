@@ -29,9 +29,7 @@
                  :bytes        10234
                  :md5sum       "abcde"
                  :timestamp    "2019-04-15T12:23:53.0Z"
-                 #_:location     #_{:lon 6.143158,
-                                    :lat 46.204391,
-                                    :alt 373.0}})
+                 :location     [6.143158 46.204391 373.0]})
 
 
 (def ns1 {:prefix ns1-prefix

@@ -28,12 +28,11 @@
              :json-schema/order 21)))
 
 
-;; FIXME: Why does the presence of location cause tests to fail?
 (s/def ::schema
   (su/constrained-map keyword? any?
                       common/common-attrs
                       {:req-un [::infrastructure-service]
-                       :opt-un [;::data/location
+                       :opt-un [::data/location
                                 ::data/timestamp
                                 ::data/bytes
                                 ::data/content-type

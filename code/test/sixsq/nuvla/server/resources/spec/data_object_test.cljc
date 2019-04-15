@@ -13,9 +13,7 @@
 (deftest test-schema-check
   (let [timestamp "2019-04-15T12:23:53.0Z"
 
-        location {:lon 6.143158,
-                  :lat 46.204391,
-                  :alt 373.0}
+        location [6.143158 46.204391 373.0]
 
         root {:type         "alpha"
               :state        "NEW"
