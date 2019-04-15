@@ -12,27 +12,27 @@
 
 (deftest check-voucher-schema
   (let [timestamp "1964-08-25T10:00:00.0Z"
-        voucher {:id                 (str t/resource-type "/abcdef")
-                 :name               "my voucher"
-                 :description        "description of my voucher"
-                 :resource-type      t/resource-type
-                 :created            timestamp
-                 :updated            timestamp
-                 :acl                valid-acl
+        voucher {:id               (str t/resource-type "/abcdef")
+                 :name             "my voucher"
+                 :description      "description of my voucher"
+                 :resource-type    t/resource-type
+                 :created          timestamp
+                 :updated          timestamp
+                 :acl              valid-acl
 
-                 :owner              "user/abcdef01-abcd-abcd-abcd-abcdef012340"
-                 :amount             50.0
-                 :currency           "EUR"
-                 :code               "vH72Hks209"
-                 :state              "NEW"
-                 :target-audience    "scientists@university.com"
-                 :service-info-url   "https://url.com"
-                 :expiry             timestamp
-                 :activated          timestamp
-                 :redeemed           timestamp
-                 :user               "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-                 :wave               "wave id"
-                 :batch              "abc"
+                 :owner            "user/abcdef01-abcd-abcd-abcd-abcdef012340"
+                 :amount           50.0
+                 :currency         "EUR"
+                 :code             "vH72Hks209"
+                 :state            "NEW"
+                 :target-audience  "scientists@university.com"
+                 :service-info-url "https://url.com"
+                 :expiry           timestamp
+                 :activated        timestamp
+                 :redeemed         timestamp
+                 :user             "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                 :wave             "wave id"
+                 :batch            "abc"
                  }]
 
     (stu/is-valid ::voucher/schema voucher)
