@@ -12,13 +12,22 @@
 
 (deftest check-data-record
   (let [timestamp "1964-08-25T10:00:00.0Z"
+
+        location [6.143158 46.204391 373.0]
+
         data-record {:id                     (str data-record-resource/resource-type "/uuid")
                      :resource-type          data-record-resource/resource-type
                      :created                timestamp
                      :updated                timestamp
                      :acl                    valid-acl
                      :infrastructure-service "infrastructure-service/my-service-uuid"
-                     :other                  "value"}]
+                     :other                  "value"
+
+                     :content-type           "text/html; charset=utf-8"
+                     :bytes                  10234
+                     :md5sum                 "abcde"
+                     :timestamp              timestamp
+                     :location               location}]
 
     (stu/is-valid ::data-record/schema data-record)
 
@@ -27,5 +36,5 @@
       (stu/is-invalid ::data-record/schema (dissoc data-record k)))
 
     ;; optional keywords
-    (doseq [k #{:other}]
+    (doseq [k #{:other :content-type :bytes :md5sum :timestamp :location}]
       (stu/is-valid ::data-record/schema (dissoc data-record k)))))

@@ -39,36 +39,11 @@
              :json-schema/order 23)))
 
 
-(s/def ::lon
-  (-> (st/spec (s/double-in :min -180.0 :max 180.0 :NaN? false :infinite? false))
-      (assoc :name "lon"
-             :json-schema/type "double"
-             :json-schema/display-name "longitude"
-             :json-schema/description "longitude")))
-
-
-(s/def ::lat
-  (-> (st/spec (s/double-in :min -90.0 :max 90.0 :NaN? false :infinite? false))
-      (assoc :name "lat"
-             :json-schema/type "double"
-             :json-schema/display-name "latitude"
-             :json-schema/description "latitude")))
-
-
-(s/def ::alt
-  (-> (st/spec (s/double-in :NaN? false :infinite? false))
-      (assoc :name "alt"
-             :json-schema/type "double"
-             :json-schema/display-name "altitude"
-             :json-schema/description "altitude")))
-
-
 (s/def ::location
-  (-> (st/spec (su/only-keys :req-un [::lon ::lat]
-                             :opt-un [::alt]))
+  (-> (st/spec (s/coll-of double? :min-count 2 :max-count 3))
       (assoc :name "location"
              :json-schema/type "geo-point"
              :json-schema/display-name "location"
-             :json-schema/description "location (longitude, latitude, altitude) associated with the data"
+             :json-schema/description "location [longitude, latitude, altitude] associated with the data"
 
              :json-schema/order 24)))
