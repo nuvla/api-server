@@ -32,9 +32,7 @@
                      :bytes         42
                      :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
                      :timestamp     timestamp
-                     :location      {:lon 0.0
-                                     :lat 0.0
-                                     :alt 0.0}
+                     :location      [0.0 0.0 0.0]
 
                      :url           "http://bucket.s3.com"})]
 

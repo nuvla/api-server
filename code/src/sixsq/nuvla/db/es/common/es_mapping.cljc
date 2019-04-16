@@ -46,7 +46,8 @@
     anyOf (first anyOf)
     type (case type
            "map" (assoc m :type "object")
-           "geo-point" (assoc m :type "geo_point")
+           "geo-point" (assoc m :type "geo_point"
+                                :ignore_z_value true)
            "string" (if (= format "date-time")
                       (assoc-date m)
                       (assoc m :type "keyword"))

@@ -25,6 +25,18 @@
 (def invalid-prefix (ltu/random-string))
 
 
+(def core-attrs {:content-type "text/html; charset=utf-8"
+                 :bytes        10234
+                 :md5sum       "abcde"
+                 :timestamp    "2019-04-15T12:23:53.0Z"
+                 :location     [6.143158 46.204391 373.0]
+                 :mount        {:type    "volume"
+                                :target  "/mnt/bucket"
+                                :options {:o      "addr=127.0.0.1"
+                                          :type   "nfs"
+                                          :device ":/data/bucket"}}})
+
+
 (def ns1 {:prefix ns1-prefix
           :uri    (str "https://example.org/" ns1-prefix)})
 
@@ -34,21 +46,24 @@
 
 
 (def valid-entry
-  {:infrastructure-service            "infrastructure-service/cloud-software-solution-1"
-   (keyword (str ns1-prefix ":att1")) "123.456"})
+  (merge core-attrs
+         {:infrastructure-service            "infrastructure-service/cloud-software-solution-1"
+          (keyword (str ns1-prefix ":att1")) "123.456"}))
 
 
 (def valid-nested-2-levels
-  {:infrastructure-service            "infrastructure-service/cloud-software-solution-2"
-   (keyword (str ns1-prefix ":att3")) {(keyword (str ns1-prefix ":att4")) "456"}})
+  (merge core-attrs
+         {:infrastructure-service            "infrastructure-service/cloud-software-solution-2"
+          (keyword (str ns1-prefix ":att3")) {(keyword (str ns1-prefix ":att4")) "456"}}))
 
 
 (def valid-nested-entry
-  {:infrastructure-service                 "infrastructure-service/cloud-software-solution-3"
-   (keyword (str ns1-prefix ":att1"))      "hi"
-   (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
-                                            {(keyword (str ns2-prefix ":subsubnested"))
-                                             {(keyword (str ns1-prefix ":subsubsubnested")) "enough of nested"}}}})
+  (merge core-attrs
+         {:infrastructure-service                 "infrastructure-service/cloud-software-solution-3"
+          (keyword (str ns1-prefix ":att1"))      "hi"
+          (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
+                                                   {(keyword (str ns2-prefix ":subsubnested"))
+                                                    {(keyword (str ns1-prefix ":subsubsubnested")) "enough of nested"}}}}))
 
 
 (def invalid-nested-entry
@@ -241,6 +256,7 @@
       (is ((keyword (str ns1-prefix ":attr-name")) doc))
       (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
 
+
 (deftest nested-values
 
   (let [session-anon (-> (session (ltu/ring-app))
@@ -323,6 +339,7 @@
       (is (pos? (:count res-all)))
       (is (= 1 (:count res-ok)))
       (is (= 0 (:count res-empty))))))
+
 
 (deftest cimi-filter-nested-values
 
