@@ -169,8 +169,8 @@
                             suffix (str "-" suffix))
 
            common {:id            "resource-metadata/dummy-id"
-                   :created       "1964-08-25T10:00:00.0Z"
-                   :updated       "1964-08-25T10:00:00.0Z"
+                   :created       "1964-08-25T10:00:00.00Z"
+                   :updated       "1964-08-25T10:00:00.00Z"
                    :resource-type resource-metadata/resource-type
                    :acl           {:owners   ["group/nuvla-admin"]
                                    :view-acl ["group/nuvla-anon"]}

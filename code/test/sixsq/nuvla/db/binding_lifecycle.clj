@@ -97,4 +97,5 @@
             (is (nil? "retrieve of non-existent resource did not throw an exception"))
             (catch Exception e
               (let [response (ex-data e)]
-                (is (= 404 (:status response)))))))))))
+                (is (= 404 (:status response))))))
+          )))))

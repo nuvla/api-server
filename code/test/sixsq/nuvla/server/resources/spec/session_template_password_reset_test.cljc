@@ -11,7 +11,7 @@
 
 
 (deftest check-session-template-password-reset-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         cfg {:id            (str st/resource-type "/password-reset")
              :resource-type st/resource-type
              :created       timestamp

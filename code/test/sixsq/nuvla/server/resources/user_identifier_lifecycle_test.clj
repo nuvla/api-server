@@ -21,7 +21,7 @@
 (def valid-acl {:owners ["group/nuvla-admin"]})
 
 
-(def timestamp "1964-08-25T10:00:00.0Z")
+(def timestamp "1964-08-25T10:00:00.00Z")
 
 
 (def test-identifier "some-user-identifer")

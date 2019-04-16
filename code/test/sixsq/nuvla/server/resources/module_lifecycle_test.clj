@@ -16,7 +16,7 @@
 (def base-uri (str p/service-context module/resource-type))
 
 
-(def timestamp "1964-08-25T10:00:00.0Z")
+(def timestamp "1964-08-25T10:00:00.00Z")
 
 
 (def valid-entry {:id                        (str module/resource-type "/connector-uuid")

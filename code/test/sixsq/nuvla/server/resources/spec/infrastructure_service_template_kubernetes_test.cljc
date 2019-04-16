@@ -12,7 +12,7 @@
 
 
 (deftest check-service-template-create-swarm-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         cfg {:id                 (str tpl/resource-type "/swarm")
              :resource-type      tpl/resource-type
              :created            timestamp

@@ -31,7 +31,7 @@
    :content-type "application/gzip"
    :bytes        42
    :md5sum       "3deb5ba5d971c85dd979b7466debfdee"
-   :timestamp    "1964-08-25T10:00:00.0Z"
+   :timestamp    "1964-08-25T10:00:00.00Z"
    :location     {:lon 0.0
                   :lat 0.0
                   :alt 0.0}})

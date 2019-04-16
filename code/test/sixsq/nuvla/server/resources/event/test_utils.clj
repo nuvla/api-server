@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.event.test-utils
   (:require
     [clj-time.core :as time]
-    [clj-time.format :as time-fmt]
+    [sixsq.nuvla.server.resources.common.utils :as cu]
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
@@ -9,13 +9,6 @@
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
-
-
-(defn to-time
-  "Tries to parse the given string as a DateTime value.  Returns the DateTime
-   instance on success and nil on failure."
-  [s]
-  (time-fmt/parse (:date-time time-fmt/formatters) s))
 
 
 (defn- urlencode-param
@@ -76,7 +69,7 @@
 
 (defn ordered-desc?
   [timestamps]
-  (every? (fn [[a b]] (not-before? (to-time a) (to-time b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-before? (cu/as-datetime a) (cu/as-datetime  b))) (partition 2 1 timestamps)))
 
 
 (def not-after? (complement time/after?))
@@ -84,6 +77,6 @@
 
 (defn ordered-asc?
   [timestamps]
-  (every? (fn [[a b]] (not-after? (to-time a) (to-time b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-after? (cu/as-datetime  a) (cu/as-datetime  b))) (partition 2 1 timestamps)))
 
 

@@ -11,7 +11,7 @@
 
 
 (deftest check-voucher-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         voucher {:id               (str t/resource-type "/abcdef")
                  :name             "my voucher"
                  :description      "description of my voucher"

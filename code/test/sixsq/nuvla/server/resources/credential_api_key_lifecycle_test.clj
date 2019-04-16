@@ -26,7 +26,8 @@
   (let [session (-> (ltu/ring-app)
                     session
                     (content-type "application/json"))
-        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
 
@@ -241,9 +242,11 @@
         (-> session-user
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str (assoc current :name "UPDATED!"
-                                                          :claims {:identity "super",
-                                                                   :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
+                     :body (json/write-str
+                             (assoc current
+                               :name "UPDATED!"
+                               :claims {:identity "super",
+                                        :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -264,9 +267,11 @@
         (-> session-admin
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str (assoc current :name "UPDATED by super!"
-                                                          :claims {:identity "super",
-                                                                   :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
+                     :body (json/write-str
+                             (assoc current
+                               :name "UPDATED by super!"
+                               :claims {:identity "super",
+                                        :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})))
             (ltu/body->edn)
             (ltu/is-status 200))
 

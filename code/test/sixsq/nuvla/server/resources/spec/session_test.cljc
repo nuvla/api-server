@@ -9,7 +9,7 @@
                 :edit-acl ["group/nuvla-admin"]})
 
 (deftest check-session-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         cfg {:id            (str resource-type "/internal")
              :resource-type resource-type
              :created       timestamp
