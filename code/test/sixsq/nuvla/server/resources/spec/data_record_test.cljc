@@ -27,7 +27,13 @@
                      :bytes                  10234
                      :md5sum                 "abcde"
                      :timestamp              timestamp
-                     :location               location}]
+                     :location               location
+
+                     :mount                  {:type    "volume"
+                                              :target  "/mnt/bucket"
+                                              :options {:o      "addr=127.0.0.1"
+                                                        :type   "nfs"
+                                                        :device ":/data/bucket"}}}]
 
     (stu/is-valid ::data-record/schema data-record)
 
@@ -36,5 +42,5 @@
       (stu/is-invalid ::data-record/schema (dissoc data-record k)))
 
     ;; optional keywords
-    (doseq [k #{:other :content-type :bytes :md5sum :timestamp :location}]
+    (doseq [k #{:other :content-type :bytes :md5sum :timestamp :location :mount}]
       (stu/is-valid ::data-record/schema (dissoc data-record k)))))
