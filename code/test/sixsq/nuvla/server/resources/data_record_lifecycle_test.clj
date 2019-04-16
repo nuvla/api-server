@@ -29,7 +29,12 @@
                  :bytes        10234
                  :md5sum       "abcde"
                  :timestamp    "2019-04-15T12:23:53.0Z"
-                 :location     [6.143158 46.204391 373.0]})
+                 :location     [6.143158 46.204391 373.0]
+                 :mount        {:type    "volume"
+                                :target  "/mnt/bucket"
+                                :options {:o      "addr=127.0.0.1"
+                                          :type   "nfs"
+                                          :device ":/data/bucket"}}})
 
 
 (def ns1 {:prefix ns1-prefix
