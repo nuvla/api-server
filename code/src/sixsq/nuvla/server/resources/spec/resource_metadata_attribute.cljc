@@ -2,6 +2,7 @@
   "schema definitions for the 'attributes' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
+    [spec-tools.core :as st]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]))
@@ -61,9 +62,12 @@
 ;; vectors
 ;;
 
-(s/def ::attribute nil)
+(s/def ::attribute string?)
 
-(s/def ::child-types (s/coll-of ::attribute :min-count 1 :type vector?))
+(s/def ::child-types (-> (st/spec (s/coll-of ::attribute :min-count 1 :type vector?))
+                         (assoc
+                           :json-schema/type "map"
+                           :json-schema/indexed false)))
 
 (s/def ::attribute (su/only-keys :req-un [::name
                                           ::type]
