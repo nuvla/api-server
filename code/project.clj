@@ -1,6 +1,6 @@
-(def +version+ "0.0.1-SNAPSHOT")
-
 (def nuvla-ring-version "0.0.1-SNAPSHOT")
+
+(def parent-version "6.4.0")
 
 (defproject sixsq.nuvla.server/api-jar "0.0.1-SNAPSHOT"
 
@@ -15,7 +15,7 @@
   :plugins [[lein-parent "0.3.5"]
             [lein-environ "1.1.0"]]
 
-  :parent-project {:coords  [sixsq.nuvla/parent "6.2.0"]
+  :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
                              :min-lein-version
                              :managed-dependencies
