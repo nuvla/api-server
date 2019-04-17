@@ -8,7 +8,7 @@
 
 
 (deftest check-root-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         root {:id            resource-type
               :resource-type p/service-context
               :created       timestamp

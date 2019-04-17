@@ -20,9 +20,9 @@
 
 
 (def valid-event {:acl       {:owners ["user/joe"]}
-                  :created   "2015-01-16T08:05:00.0Z"
-                  :updated   "2015-01-16T08:05:00.0Z"
-                  :timestamp "2015-01-16T08:05:00.0Z"
+                  :created   "2015-01-16T08:05:00.00Z"
+                  :updated   "2015-01-16T08:05:00.00Z"
+                  :timestamp "2015-01-16T08:05:00.00Z"
                   :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                               :state    "Started"}
                   :type      "state"
@@ -33,7 +33,7 @@
   (for [i (range nb-events)]
     (-> valid-event
         (assoc-in [:content :resource :href] (str "run/" i))
-        (assoc :timestamp (if (even? i) "2016-01-16T08:05:00.0Z" "2015-01-16T08:05:00.0Z")))))
+        (assoc :timestamp (if (even? i) "2016-01-16T08:05:00.00Z" "2015-01-16T08:05:00.00Z")))))
 
 
 (defn insert-some-events-fixture!
@@ -134,7 +134,7 @@
 
 
 (deftest filter-and
-  (are-counts nb-events "filter=type='state' and timestamp='2015-01-16T08:05:00.0Z'")
+  (are-counts nb-events "filter=type='state' and timestamp='2015-01-16T08:05:00Z'")
   (are-counts 0 "?filter=type='state' and type='XXX'")
   (are-counts 0 "?filter=type='YYY' and type='state'")
   (are-counts 0 "?filter=(type='state') and (type='XXX')")

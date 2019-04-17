@@ -330,7 +330,6 @@
                       (put "path.home" tempDir)
                       (put "transport.netty.worker_count" 3)
                       (put "node.data" true)
-                      (put "http.enabled" true)
                       (put "logger.level" "ERROR")
                       (put "http.type" "netty4")
                       (put "http.port" "9200")

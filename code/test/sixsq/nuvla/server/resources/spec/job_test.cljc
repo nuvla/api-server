@@ -11,7 +11,7 @@
 
 
 (deftest check-job
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         job {:id                 (str sj/resource-type "/test-job")
              :resource-type      sj/resource-type
              :created            timestamp

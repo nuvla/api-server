@@ -11,7 +11,7 @@
 
 
 (deftest check-data-record
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
 
         location [6.143158 46.204391 373.0]
 

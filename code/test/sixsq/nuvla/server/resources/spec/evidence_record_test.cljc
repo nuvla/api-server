@@ -10,7 +10,7 @@
                 :view-acl ["group/nuvla-user"]})
 
 
-(def timestamp "1964-08-25T10:00:00.0Z")
+(def timestamp "1964-08-25T10:00:00.00Z")
 
 
 (deftest evidence-record-schema-check

@@ -11,7 +11,7 @@
 
 
 (deftest check-attribute
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         attr {:id            (str data-record-key-resource/resource-type "/test-attribute")
               :name          "Test Attribute"
               :description   "A attribute containing a test value."

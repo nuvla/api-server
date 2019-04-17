@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def event-timestamp "2015-01-16T08:05:00.0Z")
+(def event-timestamp "2015-01-16T08:05:00.00Z")
 
 
 (def valid-event

@@ -11,7 +11,7 @@
 
 
 (deftest check-session-template-password-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         cfg {:id            (str st/resource-type "/password")
              :resource-type st/resource-type
              :created       timestamp

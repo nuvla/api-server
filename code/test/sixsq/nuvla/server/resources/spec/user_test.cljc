@@ -11,7 +11,7 @@
 
 
 (deftest check-user-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
         cfg {:id                  (str resource-type "/uuid")
 
              :resource-type       resource-type
