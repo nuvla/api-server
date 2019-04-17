@@ -2,10 +2,10 @@
   "schema definitions for the 'attributes' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
-    [spec-tools.core :as st]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 (s/def ::name ::core/token)
 

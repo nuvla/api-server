@@ -60,13 +60,8 @@
       (stu/is-valid ::container/port (dissoc port attr)))))
 
 (deftest check-volume-option
-  (let [volume-option {:option-key   "key1"
-                       :option-value "value 1"}]
+  (let [volume-option {:key1   "value 1"}]
 
-    (stu/is-valid ::container/volume-option volume-option)
+    (stu/is-valid ::container/volume-options volume-option)
 
-    (stu/is-invalid ::container/volume-option (assoc volume-option :bad "value"))
-
-    ; required
-    (doseq [attr #{:option-key :option-value}]
-      (stu/is-invalid ::container/volume-option (dissoc volume-option attr)))))
+    (stu/is-invalid ::container/volume-options (assoc volume-option :bad ["value"]))))

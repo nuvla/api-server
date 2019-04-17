@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.module-component-test
   (:require
     [clojure.test :refer [are deftest is]]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.module-component :as t]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
@@ -32,16 +33,10 @@
                                   {:mount-type     "volume"
                                    :source         "/nfs-server/nfs-path"
                                    :target         "/mnt"
-                                   :volume-options [{:option-key   "o"
-                                                     :option-value "addr=1.2.3.4"}
-                                                    {:option-key   "device"
-                                                     :option-value "nfs-server/nfs-path"}
-                                                    {:option-key   "type"
-                                                     :option-value "nfs"}
-                                                    {:option-key   "vers"
-                                                     :option-value "4"}
-                                                    {:option-key   "dst"
-                                                     :option-value "/mnt"}]}]
+                                   :volume-options {:o "addr=1.2.3.4"
+                                                    :device "nfs-server/nfs-path"
+                                                    :type "nfs"
+                                                    :vers "4"}}]
               :ports             [{:protocol       "tcp"
                                    :target-port    22
                                    :published-port 8022}
