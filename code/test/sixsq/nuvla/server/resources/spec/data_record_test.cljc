@@ -29,11 +29,11 @@
                      :timestamp              timestamp
                      :location               location
 
-                     :mount                  {:type    "volume"
-                                              :target  "/mnt/bucket"
-                                              :options {:o      "addr=127.0.0.1"
-                                                        :type   "nfs"
-                                                        :device ":/data/bucket"}}}]
+                     :mount                  {:mount-type     "volume"
+                                              :target         "/mnt/bucket"
+                                              :volume-options {:o      "addr=127.0.0.1"
+                                                               :type   "nfs"
+                                                               :device ":/data/bucket"}}}]
 
     (stu/is-valid ::data-record/schema data-record)
 

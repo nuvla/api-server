@@ -96,23 +96,22 @@
 (s/def ::source
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "source"
-             :json-schema/description "source")))
+             :json-schema/description "source directory to be mounted into container")))
 
 
 (s/def ::target
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "target"
-             :json-schema/description "target")))
+             :json-schema/description "target directory in container for mount")))
 
 
 (s/def ::mount-type
-  (-> (st/spec #{"bind" "volume"})
-      (assoc :name "image"
+  (-> (st/spec #{"volume" "bind" "tmpfs"})
+      (assoc :name "mount-type"
              :json-schema/type "string"
-             :json-schema/display-name "mount type"
              :json-schema/description "mount type"
 
-             :json-schema/value-scope {:values ["bind" "volume"]})))
+             :json-schema/value-scope {:values ["volume" "bind" "tmpfs"]})))
 
 
 (s/def ::read-only
@@ -123,38 +122,19 @@
              :json-schema/description "read only")))
 
 
-(s/def ::option-key
-  (-> (st/spec ::core/token)
-      (assoc :name "option-key"
-             :json-schema/display-name "option key"
-             :json-schema/description "option key")))
-
-
-(s/def ::option-value
+(s/def ::target
   (-> (st/spec ::core/nonblank-string)
-      (assoc :name "option-value"
-             :json-schema/display-name "option value"
-             :json-schema/description "option value")))
-
-
-(s/def ::volume-option
-  (-> (st/spec (su/only-keys-maps {:req-un [::option-key
-                                            ::option-value]}))
-      (assoc :name "volume-option"
-             :json-schema/type "map"
-             :json-schema/display-name "volume option"
-             :json-schema/description "volume option")))
+      (assoc :name "target"
+             :json-schema/description "target directory in container for mount")))
 
 
 (s/def ::volume-options
-  (-> (st/spec (s/coll-of ::volume-option :kind vector?))
+  (-> (st/spec (s/map-of keyword? string?))
       (assoc :name "volume-options"
-             :json-schema/type "array"
-             :json-schema/display-name "volume options"
-             :json-schema/description "list of volume option"
+             :json-schema/type "map"
+             :json-schema/description "volume options to mount data on container"
 
              :json-schema/indexed false)))
-
 
 
 (s/def ::mount
@@ -165,7 +145,7 @@
                                             ::volume-options]}))
       (assoc :name "mount"
              :json-schema/type "map"
-             :json-schema/description "mount")))
+             :json-schema/description "options to mount data on container")))
 
 
 (s/def ::mounts
