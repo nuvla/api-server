@@ -6,18 +6,21 @@ This repository contains the code and configuration for the Nuvla API
 server, packaged as a Docker container.  The API is inspired by the
 CIMI specification from DMTF.
 
-## Public Artifacts
+## Artifacts
 
- - "api-server" Docker container.  This container can be obtained from
-   the "nuvla/api-server" repository in Docker Hub. The tags indicate
-   the release number.
+ - `nuvla/api:<version>`. A Docker container that can be obtained from
+   the [nuvla/api-server
+   repository](https://cloud.docker.com/u/nuvla/repository/docker/nuvla/api)
+   in Docker Hub. The tags indicate the release number.
 
- - "sixsq.nuvla.server/api-jar" JAR file.  This archive can be
+ - `sixsq.nuvla.server/api-jar` JAR file.  This archive can be
    obtained from the production S3 Maven archive that is maintained in
    AWS S3. The URL can be obtained from the `project.clj` file in the
    `nuvla/parent` repository.
 
-## Development Guidelines
+## Release Process
+
+## Contributing
 
 ### Source Code Changes
 
