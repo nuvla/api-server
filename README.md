@@ -9,8 +9,7 @@ CIMI specification from DMTF.
 ## Artifacts
 
  - `nuvla/api:<version>`. A Docker container that can be obtained from
-   the [nuvla/api-server
-   repository](https://cloud.docker.com/u/nuvla/repository/docker/nuvla/api)
+   the [nuvla/api repository](https://hub.docker.com/r/nuvla/api)
    in Docker Hub. The tags indicate the release number.
 
  - `sixsq.nuvla.server/api-jar` JAR file.  This archive can be
