@@ -1,4 +1,4 @@
-(def parent-version "6.4.0")
+(def parent-version "6.5.0")
 (def nuvla-ring-version "0.9.0")
 
 (defproject sixsq.nuvla.server/api-jar "0.9.1-SNAPSHOT"
@@ -36,7 +36,7 @@
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
-   [clj-time]
+   [clojure.java-time]
    [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
