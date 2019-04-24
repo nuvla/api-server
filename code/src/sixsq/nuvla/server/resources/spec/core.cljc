@@ -3,7 +3,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
-    [sixsq.nuvla.server.resources.common.utils :as cu]
+    [sixsq.nuvla.server.util.time :as time]
     [spec-tools.core :as st]))
 
 
@@ -53,7 +53,7 @@
 
 ;; FIXME: Provide an implementation that works with ClojureScript.
 (s/def ::timestamp
-  (-> (st/spec cu/as-datetime)
+  (-> (st/spec time/date-from-str)
       (assoc :name "timestamp"
              :json-schema/description "UTC timestamp"
              :json-schema/type "date-time")))
