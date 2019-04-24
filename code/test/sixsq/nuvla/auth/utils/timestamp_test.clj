@@ -6,17 +6,10 @@
     [sixsq.nuvla.auth.utils.timestamp :as t]))
 
 
-(def rfc822-like-pattern #"\w\w\w, \d\d \w\w\w \d\d\d\d \d\d:\d\d:\d\d \+0000")
+(def rfc822-like-pattern #"\w\w\w, \d\d \w\w\w \d\d\d\d \d\d:\d\d:\d\d GMT")
 
 
 (def iso8601-like-pattern #"\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([\+-]\d\d:\d\d)|Z)")
-
-
-(deftest check-expiry-timestamp
-  (is (pos? (t/expiry-later)))
-  (is (pos? (t/expiry-later 10)))
-  (is (< (t/expiry-later 10) (t/expiry-later 20)))
-  (is (< (t/expiry-now) (t/expiry-later))))
 
 
 (deftest check-timestamp-formatting

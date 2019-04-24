@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.common.utils-test
   (:require
-    [clj-time.core :as time]
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.server.resources.common.utils :as t]))
+    [sixsq.nuvla.server.resources.common.utils :as t]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (deftest check-expired?-and-not-expired?
-  (let [past-time (-> 10 time/minutes time/ago t/unparse-timestamp-datetime)
-        future-time (-> 10 time/minutes time/from-now t/unparse-timestamp-datetime)]
+  (let [past-time (time/to-str (time/ago 10 :minutes))
+        future-time (time/to-str (time/from-now 10 :minutes))]
     (is (false? (t/expired? nil)))
     (is (true? (t/expired? past-time)))
     (is (false? (t/expired? future-time)))

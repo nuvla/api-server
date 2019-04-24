@@ -1,14 +1,13 @@
 (ns sixsq.nuvla.server.resources.event.test-utils
   (:require
-    [clj-time.core :as time]
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
     [peridot.core :refer :all]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as cu]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn- urlencode-param
@@ -69,7 +68,7 @@
 
 (defn ordered-desc?
   [timestamps]
-  (every? (fn [[a b]] (not-before? (cu/as-datetime a) (cu/as-datetime  b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-before? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
 
 
 (def not-after? (complement time/after?))
@@ -77,6 +76,6 @@
 
 (defn ordered-asc?
   [timestamps]
-  (every? (fn [[a b]] (not-after? (cu/as-datetime  a) (cu/as-datetime  b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-after? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
 
 

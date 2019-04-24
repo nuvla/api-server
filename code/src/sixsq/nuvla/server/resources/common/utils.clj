@@ -1,16 +1,14 @@
 (ns sixsq.nuvla.server.resources.common.utils
   "General utilities for dealing with resources."
   (:require
-    [clj-time.core :as time]
-    [clj-time.format :as time-fmt]
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [expound.alpha :as expound]
-    [sixsq.nuvla.server.util.log :as logu])
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest)
-    (java.util UUID)
-    (org.joda.time DateTime)))
+    (java.util UUID)))
 
 
 ;;
@@ -112,32 +110,12 @@
   (disj s :id :created :updated :resource-type :acl))
 
 
-(defn unparse-timestamp-datetime
-  "Returns the string representation of the given timestamp."
-  [^DateTime timestamp]
-  (try
-    (time-fmt/unparse (:date-time time-fmt/formatters) timestamp)
-    (catch Exception _
-      nil)))
-
-
-(defn as-datetime
-  "Tries to parse the given string as a DateTime value.  Returns the DateTime
-   instance on success and nil on failure."
-  [data]
-  (when (string? data)
-    (try
-      (time-fmt/parse (:date-time time-fmt/formatters) data)
-      (catch Exception _
-        nil))))
-
-
 (defn update-timestamps
   "Sets the updated attribute and optionally the created attribute
    in the request.  The created attribute is only set if the existing value
    is missing or evaluates to false."
   [data]
-  (let [updated (unparse-timestamp-datetime (time/now))
+  (let [updated (time/now-str)
         created (or (:created data) updated)]
     (assoc data :created created :updated updated)))
 
@@ -146,14 +124,14 @@
   "Converts a Time to Live (TTL) value in seconds to timestamp string. The
    argument must be an integer value."
   [ttl]
-  (unparse-timestamp-datetime (time/from-now (time/seconds ttl))))
+  (time/to-str (time/from-now ttl :seconds)))
 
 
 (defn expired?
   "This will return true if the given date (as a string) represents a moment
-   of time in the past.  Returns false otherwise."
+   of time in the past. Returns false otherwise."
   [expiry]
-  (boolean (and expiry (time/before? (as-datetime expiry) (time/now)))))
+  (boolean (and expiry (time/before? (time/date-from-str expiry) (time/now)))))
 
 
 (def not-expired? (complement expired?))

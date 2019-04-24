@@ -5,7 +5,6 @@ the registered users. This is a templated resource, so creating a new user
 requires a template. All the SCRUD actions follow the standard CIMI patterns.
 "
   (:require
-    [clj-time.core :as t]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
@@ -125,9 +124,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 ;; CRUD operations
 ;;
-
-;; Some defaults for the optional attributes.
-(def ^:const epoch (u/unparse-timestamp-datetime (t/date-time 1970)))
 
 (def ^:const initial-state "NEW")
 
