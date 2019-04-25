@@ -36,8 +36,8 @@
       <type>jar</type>
       <exclusions>
         <exclusion>
-          <groupId>clj-time</groupId>
-          <artifactId>clj-time</artifactId>
+          <groupId>clojure.java-time</groupId>
+          <artifactId>java-time</artifactId>
         </exclusion>
         <exclusion>
           <groupId>clj-tuple</groupId>

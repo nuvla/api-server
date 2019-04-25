@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.job.utils
   (:require
-    [clj-time.core :as time]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 (def state-running "RUNNING")
@@ -57,7 +57,7 @@
 
 (defn update-time-of-status-change
   [job]
-  (assoc job :time-of-status-change (u/unparse-timestamp-datetime (time/now))))
+  (assoc job :time-of-status-change (time/now-str)))
 
 
 (defn job-cond->addition
@@ -72,11 +72,9 @@
   [{:keys [status-message state started] :as job}]
   (cond-> job
           (and (not started)
-               (= state state-running)) (assoc :started (u/unparse-timestamp-datetime (time/now)))
+               (= state state-running)) (assoc :started (time/now-str))
           true (dissoc :priority)
           status-message (update-time-of-status-change)
           (is-final-state? job) (assoc :progress 100
                                        :duration (some-> started
-                                                         (u/as-datetime)
-                                                         (time/interval (time/now))
-                                                         (time/in-seconds)))))
+                                                         (time/time-between-date-now :seconds)))))

@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [clojure.walk :as w]
     [sixsq.nuvla.db.es.query :as query]
-    [sixsq.nuvla.db.utils.time-utils :as time]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn- strip-quotes
@@ -35,7 +35,7 @@
 
 
 (defmethod convert :DateValue [[_ ^String s]]
-  [:Value (time/to-time-or-date s)])
+  [:Value (time/date-from-str s)])
 
 
 (defmethod convert :NullValue [[_ ^String s]]

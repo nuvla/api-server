@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.session-api-key-lifecycle-test
   (:require
-    [clj-time.core :as time]
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer :all]
@@ -16,7 +15,8 @@
     [sixsq.nuvla.server.resources.session-api-key :as t]
     [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]))
+    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
@@ -41,8 +41,8 @@
 
 (deftest check-valid-api-key
   (let [type api-key-tpl/credential-type
-        expired (-> 10 time/seconds time/ago u/unparse-timestamp-datetime)
-        current (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
+        expired (time/to-str (time/ago 10 :seconds))
+        current (time/to-str (time/from-now 1 :hours))
         [secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
         valid-api-key {:type   type
@@ -85,7 +85,7 @@
         valid-api-key {:id     (str "credential/" uuid)
                        :type   api-key-tpl/credential-type
                        :method api-key-tpl/method
-                       :expiry (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
+                       :expiry (time/to-str (time/from-now 1 :hours))
                        :digest digest
                        :claims {:identity "user/abcdef01-abcd-abcd-abcd-abcdef012345"
                                 :roles    ["group/nuvla-user" "group/nuvla-anon"]}}

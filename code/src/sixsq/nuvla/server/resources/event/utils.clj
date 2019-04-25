@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.event.utils
   (:require
-    [clj-time.core :as time]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event :as event]
-    [sixsq.nuvla.server.resources.spec.event :as event-spec]))
+    [sixsq.nuvla.server.resources.spec.event :as event-spec]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn create-event
@@ -18,7 +18,7 @@
                                    :state    message}
                    :severity      severity
                    :type          type
-                   :timestamp     (u/unparse-timestamp-datetime (time/now))
+                   :timestamp     (time/now-str)
                    :acl           acl}
         create-request {:params      {:resource-name event/resource-type}
                         :body        event-map

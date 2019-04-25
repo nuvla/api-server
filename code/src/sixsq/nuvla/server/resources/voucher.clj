@@ -17,7 +17,6 @@ Finally, at any time, both the owner and user of the voucher
 can terminate the voucher via the 'expire' operation.
 "
   (:require
-    [clj-time.core :as time]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -28,7 +27,8 @@ can terminate the voucher via the 'expire' operation.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.voucher :as voucher]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -124,7 +124,7 @@ can terminate the voucher via the 'expire' operation.
   [voucher]
   (if (= (:state voucher) "NEW")
     (do
-      (let [activated-timestamp (u/unparse-timestamp-datetime (time/now))
+      (let [activated-timestamp (time/now-str)
             activated-voucher (assoc voucher :state "ACTIVATED"
                                              :activated activated-timestamp)]
         activated-voucher))
@@ -159,7 +159,7 @@ can terminate the voucher via the 'expire' operation.
   [voucher]
   (if (= (:state voucher) "ACTIVATED")
     (do
-      (let [redeemed-timestamp (u/unparse-timestamp-datetime (time/now))
+      (let [redeemed-timestamp (time/now-str)
             redeemed-voucher (assoc voucher :state "REDEEMED"
                                             :redeemed redeemed-timestamp)]
         redeemed-voucher))

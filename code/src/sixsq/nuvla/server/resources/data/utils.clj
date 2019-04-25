@@ -1,12 +1,11 @@
 (ns sixsq.nuvla.server.resources.data.utils
   (:require
-    [clj-time.coerce :as tc]
-    [clj-time.core :as t]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as exoscale]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
-    [sixsq.nuvla.server.util.log :as logu])
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (com.amazonaws AmazonServiceException HttpMethod SdkClientException)
     (com.amazonaws.auth AWSStaticCredentialsProvider BasicAWSCredentials)
@@ -56,7 +55,9 @@
 
 (defn generate-url
   [obj-store-conf bucket obj-name verb & [{:keys [ttl content-type]}]]
-  (let [expiration (tc/to-date (-> (or ttl default-ttl) t/minutes t/from-now))
+  (let [expiration (-> (or ttl default-ttl)
+                       (time/from-now :minutes)
+                       (time/java-date))
         method (if (= verb :put)
                  HttpMethod/PUT
                  HttpMethod/GET)
