@@ -317,7 +317,7 @@
 (defn upload
   [resource request]
   (try
-    (a/can-edit-acl? resource request)
+    (a/can-edit? resource request)
     (let [upload-uri (upload-fn resource request)]
       (db/edit (assoc resource :state state-uploading) request)
       (r/json-response {:uri upload-uri}))
@@ -341,7 +341,7 @@
 (defmethod ready-subtype :default
   [resource request]
   (-> resource
-      (a/can-edit-acl? request)
+      (a/can-edit? request)
       (verify-state #{state-uploading} "ready")
       (assoc :state state-ready)
       (s3/add-s3-bytes)
@@ -429,7 +429,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-edit-acl? request)
+          (a/can-edit? request)
           (delete request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

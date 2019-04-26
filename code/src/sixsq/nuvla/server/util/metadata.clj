@@ -3,7 +3,8 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.resource-metadata :as resource-metadata]
-    [spec-tools.json-schema :as jsc])
+    [spec-tools.json-schema :as jsc]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils])
   (:import
     (clojure.lang Namespace)))
 
@@ -172,8 +173,8 @@
                    :created       "1964-08-25T10:00:00.00Z"
                    :updated       "1964-08-25T10:00:00.00Z"
                    :resource-type resource-metadata/resource-type
-                   :acl           {:owners   ["group/nuvla-admin"]
-                                   :view-acl ["group/nuvla-anon"]}
+                   :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                            :view-acl ["group/nuvla-anon"]})
                    :type-uri      type-uri
                    :name          resource-name
                    :description   doc}

@@ -43,7 +43,8 @@ a username and password pair stored in SlipStream's internal database.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session-template :as session-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -52,8 +53,8 @@ a username and password pair stored in SlipStream's internal database.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-anon"]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-anon"]}))
 
 
 (def collection-acl {:query ["group/nuvla-anon"]

@@ -13,7 +13,8 @@ creating a group and does not provide any useful defaults.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -22,7 +23,7 @@ creating a group and does not provide any useful defaults.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owners ["group/nuvla-admin"]})
+(def resource-acl (acl-utils/normalize-acl {:owners ["group/nuvla-admin"]}))
 
 
 (def collection-acl {:query ["group/nuvla-admin"]

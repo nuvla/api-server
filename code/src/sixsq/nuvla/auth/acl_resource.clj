@@ -24,22 +24,43 @@
                           (derive ::view-data ::view-meta)))
 
 
+(def collection-rights
+  [::query ::add])
+
+
+(def all-defined-rights (set
+                          (concat [::edit-acl]
+                                 (ancestors rights-hierarchy ::edit-acl)
+                                  collection-rights)))
+
+
+(defn unqualify
+  [kw]
+  (-> kw name keyword))
+
+
 (defn- add-rights-entry
   [m kw]
   (-> m
       (assoc kw kw)
-      (assoc (-> kw name keyword) kw)))
-
-
-(def collection-rights
-  [::query ::add])
+      (assoc (unqualify kw) kw)))
 
 
 ;; provides mappings between the namespaced keywords and themselves,
 ;; as well as the un-namespaced keywords and the namespaced ones.
 (def rights-keywords
-  (reduce add-rights-entry {} (concat collection-rights [::edit-acl] (ancestors rights-hierarchy ::edit-acl))))
+  (reduce add-rights-entry {} all-defined-rights))
 
+
+(defn is-owner?
+  [{:keys [claims] :as authn-info}
+   {:keys [owners] :as acl}]
+  (some (set claims) owners))
+
+
+(defn is-admin?
+  [{:keys [claims] :as authn-info}]
+  (contains? (set claims) "group/nuvla-admin"))
 
 (defn extract-right
   "Given the identity map, this extracts the associated right.
@@ -54,63 +75,25 @@
 (defn extract-rights
   "Returns a set containing all of the applicable rights from an ACL
    for the given identity map."
-  [authn-info {:keys [owners] :as acl}]
-  (let [acl-updated (-> acl
-                        (update :edit-acl concat owners ["group/nuvla-admin"])
-                        (dissoc :owners))]
-
-    (->> acl-updated
+  [authn-info acl]
+  (if (or (is-owner? authn-info acl)
+          (is-admin? authn-info))
+    all-defined-rights
+    (->> (dissoc acl :owners)
          (map (partial extract-right authn-info))
          (remove nil?)
          (set))))
-
-
-(defn extract-all-rights
-  "Returns a set containing all of the applicable rights from an ACL for the
-   given identity map and all rights implied by the explicit ones."
-  [authn-info acl]
-  (let [explicit-rights (extract-rights authn-info acl)
-        implicit-rights (mapcat (partial ancestors rights-hierarchy) explicit-rights)]
-    (set (concat explicit-rights implicit-rights))))
-
-
-(defn authorized-do?
-  "Returns true if the ACL associated with the given resource permits the
-   current user (in the request) the given action."
-  [resource request action]
-  (let [rights (extract-rights
-                 (auth/current-authentication request)
-                 (:acl resource))
-        action (get rights-keywords action)]
-    (some #(isa? rights-hierarchy % action) rights)))
-
-
-(defn can-do?
-  "Determines if the ACL associated with the given resource permits the
-   current user (in the request) the given action.  If the action is
-   allowed, then the resource itself is returned.  If the action is not
-   allowed then an 'unauthorized' response map is thrown."
-  [resource request action]
-  (if (authorized-do? resource request action)
-    resource
-    (throw (ru/ex-unauthorized (:resource-id resource)))))
-
-
-;; FIXME: Remove this.
-(defn can-edit-acl?
-  "Determines if the resource can be modified by the user in the request.
-   Returns the request on success; throws an error ring response on
-   failure."
-  [resource request]
-  (can-do? resource request ::edit-acl))
 
 
 (defn has-rights?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `right` is allowed."
   [required-rights {:keys [acl] :as resource} request]
-  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (boolean (seq (set/intersection required-rights rights)))))
+  (let [authn-info (auth/current-authentication request)]
+    (boolean
+      (seq (set/intersection
+             required-rights
+             (extract-rights authn-info acl))))))
 
 
 (def can-delete? (partial has-rights? #{::delete}))
@@ -158,7 +141,7 @@
    acl, this function returns a reduced resource containing only keys that are
    'viewable'. Returns nil if the resource is not viewable at all."
   [{:keys [acl] :as resource} request]
-  (let [rights-set (extract-all-rights (auth/current-authentication request) acl)]
+  (let [rights-set (extract-rights (auth/current-authentication request) acl)]
     (cond
       (rights-set ::view-acl) resource                      ;; no-op, all keys are viewable
       (rights-set ::view-data) (dissoc resource :acl)
@@ -169,11 +152,10 @@
 (defn throw-without-rights
   "Will throw an error ring response if the user identified in the request
    does not have any of the required rights; it returns the resource otherwise."
-  [required-rights {:keys [acl] :as resource} request]
-  (let [rights (extract-all-rights (auth/current-authentication request) acl)]
-    (if (seq (set/intersection required-rights rights))
-      resource
-      (throw (ru/ex-unauthorized (:id resource))))))
+  [required-rights resource request]
+  (if (has-rights? required-rights resource request)
+    resource
+    (throw (ru/ex-unauthorized (:id resource)))))
 
 
 (def throw-cannot-delete (partial throw-without-rights #{::delete}))
@@ -195,7 +177,7 @@
   "Will throw an error ring response if the user identified in the request
    cannot query the given collection; it returns the resource otherwise."
   [collection-acl request]
-  (can-do? {:acl collection-acl} request ::query))
+  (throw-without-rights #{::query} {:acl collection-acl} request))
 
 
 (defn throw-cannot-add
@@ -203,7 +185,7 @@
    cannot add a resource to the given collection; it returns the resource
    otherwise."
   [collection-acl request]
-  (can-do? {:acl collection-acl} request ::add))
+  (throw-without-rights #{::add} {:acl collection-acl} request))
 
 
 (defn default-acl

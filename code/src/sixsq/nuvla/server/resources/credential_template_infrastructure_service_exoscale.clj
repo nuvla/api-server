@@ -6,7 +6,8 @@
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-exoscale :as service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const credential-type "infrastructure-service-exoscale")
@@ -18,8 +19,8 @@
 (def ^:const method "store-infrastructure-service-exoscale")
 
 
-(def resource-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-user"]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 ;;
 ;; resource

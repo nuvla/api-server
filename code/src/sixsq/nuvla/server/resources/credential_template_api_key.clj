@@ -8,7 +8,8 @@ secret to access the server. The credential can optionally be limited in time.
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-api-key :as ct-api-key]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const credential-type "api-key")
@@ -23,8 +24,8 @@ secret to access the server. The credential can optionally be limited in time.
 (def ^:const method "generate-api-key")
 
 
-(def resource-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-user"]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 ;;
 ;; resource

@@ -100,7 +100,7 @@
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
         deployment-utils/verify-can-delete
-        (a/can-edit-acl? request)
+        (a/can-edit? request)
         (db/delete request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -151,7 +151,7 @@
         (throw (r/ex-response "unable to create async job to start deployment" 500 id)))
       (-> id
           (db/retrieve request)
-          (a/can-edit-acl? request)
+          (a/can-edit? request)
           (assoc :state "STARTING")
           (db/edit request))
       (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
@@ -175,7 +175,7 @@
         (throw (r/ex-response "unable to create async job to stop deployment" 500 id)))
       (-> id
           (db/retrieve request)
-          (a/can-edit-acl? request)
+          (a/can-edit? request)
           (assoc :state "STOPPING")
           (db/edit request))
       (r/map-response job-msg 202 id job-id))

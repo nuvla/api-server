@@ -53,7 +53,8 @@ secret, so you must capture and save the plain text secret from this response!
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-api-key :as tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
-    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]))
+    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 (defn strip-session-role
   [roles]
@@ -102,7 +103,7 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 (defmethod p/special-edit tpl/credential-type
   [resource {:keys [nuvla/authn] :as request}]
-  (if ((set (:claims authn)) "group/nuvla-admin")
+  (if (acl-resource/is-admin? authn)
     resource
     (dissoc resource :claims)))
 

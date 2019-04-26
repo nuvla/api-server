@@ -12,7 +12,8 @@ configuration information for the micro-services of the Nuvla platform.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.configuration-template :as ct]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -21,7 +22,7 @@ configuration information for the micro-services of the Nuvla platform.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owners ["group/nuvla-admin"]})
+(def resource-acl (acl-utils/normalize-acl {:owners ["group/nuvla-admin"]}))
 
 
 (def collection-acl {:query ["group/nuvla-admin"]

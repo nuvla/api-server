@@ -57,7 +57,7 @@
         (throw (r/ex-response "unable to create async job to start infrastructure service swarm" 500 id)))
       (-> id
           (db/retrieve request)
-          (a/can-edit-acl? request)
+          (a/can-edit? request)
           (assoc :state "STARTING")
           (db/edit request))
       (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))

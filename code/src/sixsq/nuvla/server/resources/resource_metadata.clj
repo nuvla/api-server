@@ -10,7 +10,8 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.resource-metadata :as resource-metadata]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -19,8 +20,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def default-resource-acl {:owners    ["group/nuvla-admin"]
-                           :view-data ["group/nuvla-anon"]})
+(def default-resource-acl (acl-utils/normalize-acl {:owners    ["group/nuvla-admin"]
+                                                    :view-data ["group/nuvla-anon"]}))
 
 
 (def collection-acl {:owners ["group/nuvla-admin"]
