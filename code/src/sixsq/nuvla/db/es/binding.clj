@@ -13,7 +13,7 @@
     [sixsq.nuvla.db.es.order :as order]
     [sixsq.nuvla.db.es.pagination :as paging]
     [sixsq.nuvla.db.es.select :as select]
-    [sixsq.nuvla.db.utils.acl :as acl-utils]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
     [sixsq.nuvla.server.util.response :as r])
   (:import
@@ -70,10 +70,13 @@
   (try
     (let [[collection-id uuid] (cu/split-id id)
           index (escu/collection-id->index collection-id)
+          updated-doc (-> data
+                          (acl-utils/force-admin-role-right-all)
+                          (acl-utils/normalize-acl-for-resource))
           response (spandex/request client {:url          [index :_doc uuid :_create]
                                             :query-string {:refresh true}
                                             :method       :put
-                                            :body         (acl-utils/force-admin-role-right-all data)})
+                                            :body         updated-doc})
           success? (pos? (get-in response [:body :_shards :successful]))]
       (if success?
         (r/response-created id)
@@ -91,7 +94,9 @@
   (try
     (let [[collection-id uuid] (cu/split-id id)
           index (escu/collection-id->index collection-id)
-          updated-doc (acl-utils/force-admin-role-right-all data)
+          updated-doc (-> data
+                          (acl-utils/force-admin-role-right-all)
+                          (acl-utils/normalize-acl-for-resource))
           response (spandex/request client {:url          [index :_doc uuid]
                                             :query-string {:refresh true}
                                             :method       :put

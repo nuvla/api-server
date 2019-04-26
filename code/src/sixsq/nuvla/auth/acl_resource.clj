@@ -17,6 +17,9 @@
 
                           (derive ::edit-meta ::view-meta)
 
+                          (derive ::manage ::view-meta)
+                          (derive ::delete ::view-meta)
+
                           (derive ::view-acl ::view-data)
                           (derive ::view-data ::view-meta)))
 
