@@ -341,7 +341,7 @@
 (defmethod ready-subtype :default
   [resource request]
   (-> resource
-      (a/can-edit? request)
+      (a/throw-cannot-edit request)
       (verify-state #{state-uploading} "ready")
       (assoc :state state-ready)
       (s3/add-s3-bytes)
@@ -429,7 +429,7 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
-          (a/can-edit? request)
+          (a/throw-cannot-edit request)
           (delete request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -247,7 +247,7 @@ component, or application.
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/can-edit? module-meta request)
+          _ (a/throw-cannot-edit module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
           request (assoc-in request [:params :uuid] uuid)]

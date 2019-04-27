@@ -44,7 +44,7 @@ Resource represents an object in S3 that can be accessed by anyone.
 (defmethod do/ready-subtype dot/data-object-type
   [resource request]
   (-> resource
-      (a/can-edit? request)
+      (a/throw-cannot-edit request)
       (do/verify-state #{do/state-uploading} "ready")
       (s3/set-public-read-object)
       (assoc :state do/state-ready)
