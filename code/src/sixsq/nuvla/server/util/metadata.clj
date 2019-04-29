@@ -2,9 +2,9 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as resource-metadata]
-    [spec-tools.json-schema :as jsc]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils])
+    [spec-tools.json-schema :as jsc])
   (:import
     (clojure.lang Namespace)))
 

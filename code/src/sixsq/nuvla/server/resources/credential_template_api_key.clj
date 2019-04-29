@@ -4,12 +4,12 @@ Allows an API key-secret pair to be created that allows the holder of the
 secret to access the server. The credential can optionally be limited in time.
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-api-key :as ct-api-key]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const credential-type "api-key")

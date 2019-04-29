@@ -5,12 +5,12 @@ These credentials include a certificate authority's public certificate ('ca'),
 the user's public certificate ('cert'), and the user's private key ('key').
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm :as ct-infra-service-swarm]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const credential-type "infrastructure-service-swarm")

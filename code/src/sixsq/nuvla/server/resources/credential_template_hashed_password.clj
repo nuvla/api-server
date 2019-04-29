@@ -3,12 +3,12 @@
 Stores the hashed value of a password.
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as hashed-password]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const credential-type "hashed-password")

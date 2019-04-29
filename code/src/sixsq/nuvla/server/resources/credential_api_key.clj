@@ -47,14 +47,14 @@ the plain text secret in the response. The server stores only a digest of the
 secret, so you must capture and save the plain text secret from this response!
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-api-key :as tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
-    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
+    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]))
 
 (defn strip-session-role
   [roles]

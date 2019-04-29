@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.auth.acl-resource-test
   (:require
     [clojure.test :refer [are deftest is]]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (deftest check-extract-right

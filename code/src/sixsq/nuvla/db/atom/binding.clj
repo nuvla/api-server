@@ -18,8 +18,8 @@
      The collection IDs are keywords, the document identifiers (uuids) are
      strings, and the document is standard EDN data."
   (:require
-    [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
+    [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.db.utils.common :as cu]
     [sixsq.nuvla.server.util.response :as r])
   (:import

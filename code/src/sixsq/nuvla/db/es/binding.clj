@@ -4,6 +4,7 @@
   (:require
     [clojure.tools.logging :as log]
     [qbits.spandex :as spandex]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.binding :refer [Binding]]
     [sixsq.nuvla.db.es.acl :as acl]
     [sixsq.nuvla.db.es.aggregation :as aggregation]
@@ -13,7 +14,6 @@
     [sixsq.nuvla.db.es.order :as order]
     [sixsq.nuvla.db.es.pagination :as paging]
     [sixsq.nuvla.db.es.select :as select]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
     [sixsq.nuvla.server.util.response :as r])
   (:import
