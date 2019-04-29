@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.auth.acl-resource-test
   (:require
     [clojure.test :refer [are deftest is]]
-    [sixsq.nuvla.auth.acl-resource :as a]))
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (deftest check-extract-right
@@ -27,20 +28,75 @@
                       nil nil
                       nil []))
 
-  (let [acl {:owners   ["user/user1"]
-             :view-acl ["group/role1"]
-             :edit-acl ["user/user2"]
-             :manage   ["group/role2"]}]
+  (let [acl (acl-utils/normalize-acl {:owners   ["user/user1"]
+                                      :view-acl ["group/role1"]
+                                      :edit-acl ["user/user2"]
+                                      :manage   ["group/role2"]})]
+
 
     (are [expect authn-info] (= expect (a/extract-rights authn-info acl))
                              #{} nil
+
                              #{} {}
-                             #{::a/edit-acl} {:claims #{"user/user1"}}
-                             #{::a/view-acl} {:claims #{"group/role1"}}
+
+                             #{::a/edit-acl
+                               ::a/edit-data
+                               ::a/delete
+                               ::a/view-acl
+                               ::a/view-meta
+                               ::a/manage
+                               ::a/edit-meta
+                               ::a/view-data
+                               ::a/query
+                               ::a/add} {:claims #{"user/user1"}}
+
+                             #{::a/edit-acl
+                               ::a/edit-data
+                               ::a/delete
+                               ::a/view-acl
+                               ::a/view-meta
+                               ::a/manage
+                               ::a/edit-meta
+                               ::a/view-data
+                               ::a/query
+                               ::a/add} {:claims #{"group/nuvla-admin"}}
+
+                             #{::a/view-acl
+                               ::a/view-data
+                               ::a/view-meta} {:claims #{"group/role1"}}
                              #{} {:claims #{"user/unknown", "group/unknown"}}
-                             #{::a/view-acl} {:claims #{"user/unknown", "group/role1"}}
-                             #{::a/edit-acl ::a/manage} {:claims #{"user/user1", "group/role2"}}
-                             #{::a/view-acl ::a/edit-acl} {:claims #{"user/user2", "group/role1"}})))
+
+                             #{::a/view-acl
+                               ::a/view-data
+                               ::a/view-meta} {:claims #{"user/unknown", "group/role1"}}
+
+                             #{::a/edit-acl
+                               ::a/edit-data
+                               ::a/delete
+                               ::a/view-acl
+                               ::a/view-meta
+                               ::a/manage
+                               ::a/edit-meta
+                               ::a/view-data
+                               ::a/query
+                               ::a/add} {:claims #{"user/user1", "group/role2"}}
+
+                             #{::a/delete
+                               ::a/edit-acl
+                               ::a/edit-data
+                               ::a/edit-meta
+                               ::a/manage
+                               ::a/view-acl
+                               ::a/view-data
+                               ::a/view-meta} {:claims #{"user/user2", "group/role1"}}
+
+                             ))
+
+  (is (= #{::a/query} (a/extract-rights {:claims #{"group/nuvla-anon"}} {:owners ["group/nuvla-admin"]
+                                                                         :query  ["group/nuvla-anon"]})))
+
+
+  )
 
 
 (deftest check-hierarchy
@@ -65,7 +121,9 @@
                       ::a/edit-data ::a/view-data
                       ::a/edit-data ::a/view-meta
 
-                      ::a/edit-meta ::a/view-meta)
+                      ::a/edit-meta ::a/view-meta
+
+                      ::a/delete ::a/view-meta)
 
   (let [independent-rights #{::a/manage ::a/delete ::a/view-acl ::a/query ::a/add}]
     (doseq [right1 independent-rights
@@ -97,35 +155,3 @@
     (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
 
-(deftest check-can-do?
-  (let [acl {:owners   ["user/user1"]
-             :view-acl ["group/role1"]
-             :edit-acl ["user/user2"]}
-        resource {:acl         acl
-                  :resource-id "Resource/uuid"}]
-
-    (let [request {:nuvla/authn {:claims #{"user/user1"}}}]
-      (is (= resource (a/can-do? resource request ::a/view-acl)))
-      (is (= resource (a/can-do? resource request ::a/edit-acl)))
-      (is (= resource (a/can-do? resource request ::a/edit-data)))
-      (is (= resource (a/can-do? resource request ::a/view-data)))
-      (is (= resource (a/can-do? resource request ::a/edit-meta)))
-      (is (= resource (a/can-do? resource request ::a/view-meta)))
-      (is (= resource (a/can-do? resource request ::a/delete)))
-      (is (= resource (a/can-do? resource request ::a/manage)))
-
-      (let [request {:nuvla/authn {:claims #{"user/unknown" "group/role1"}}}]
-        (is (thrown? Exception (a/can-do? resource request ::a/edit-acl)))
-        (is (= resource (a/can-do? resource request ::a/view-acl))))
-
-      (let [request {:nuvla/authn {:claims #{"user/unknown" "group/unknown"}}}]
-        (is (thrown? Exception (a/can-do? resource request ::a/edit-acl)))
-        (is (thrown? Exception (a/can-do? resource request ::a/view-acl)))
-        (is (thrown? Exception (a/can-do? resource request ::a/manage))))
-
-      (let [request {:nuvla/authn {:claims #{"user/user2"}}}]
-        (is (= resource (a/can-do? resource request ::a/edit-acl))))
-
-      (let [request {:nuvla/authn {:claims #{"user/user2" "group/role1"}}}]
-        (is (= resource (a/can-do? resource request ::a/edit-acl)))
-        (is (= resource (a/can-do? resource request ::a/view-acl)))))))

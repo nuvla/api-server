@@ -19,13 +19,19 @@
 (s/def ::resource (s/keys :req-un [::id ::sequence ::attr1 ::attr2 ::acl]
                           :opt-un [::admin ::user]))
 
-(def admin-acl {:owners   ["group/nuvla-admin"]
-                :edit-acl ["group/nuvla-admin"]})
+(def admin-acl {:owners   ["group/nuvla-admin"]})
 
 (def user "user/jane")
 
-(def user-acl {:owners   ["group/nuvla-admin"]
-               :edit-acl ["group/nuvla-admin" user]})
+(def user-acl {:owners    ["group/nuvla-admin"]
+               :delete    ["user/jane"]
+               :edit-acl  ["user/jane"]
+               :edit-data ["user/jane"]
+               :edit-meta ["user/jane"]
+               :manage    ["user/jane"]
+               :view-acl  ["user/jane"]
+               :view-data ["user/jane"]
+               :view-meta ["user/jane"]})
 
 (def user-authn-info {:nuvla/authn {:user-id user
                                     :claims  #{user "group/nuvla-user" "group/nuvla-anon"}}})

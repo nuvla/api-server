@@ -168,7 +168,7 @@ component, or application.
           (-> body u/strip-service-attrs module-utils/split-resource)
           {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
 
-      (a/can-edit-acl? {:acl acl} request)
+      (a/can-edit? {:acl acl} request)
 
       (if (= "PROJECT" type)
         (let [module-meta (-> (assoc module-meta :type type)
@@ -247,7 +247,7 @@ component, or application.
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/can-edit-acl? module-meta request)
+          _ (a/throw-cannot-edit module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
           request (assoc-in request [:params :uuid] uuid)]

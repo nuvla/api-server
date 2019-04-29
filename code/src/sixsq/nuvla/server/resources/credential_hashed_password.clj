@@ -129,7 +129,7 @@ Hashed value of a password.
   [{{uuid :uuid} :params :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-edit-acl? resource request)
+      (a/can-edit? resource request)
       (let [current-password (get-in request [:body :password])]
         (if (hashers/check current-password hash)
           (r/map-response "valid password" 200)
@@ -140,7 +140,7 @@ Hashed value of a password.
   [{{uuid :uuid} :params body :body :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-edit-acl? resource request)
+      (a/can-edit? resource request)
       (let [{:keys [current-password new-password]} body]
         (if (hashers/check current-password hash)
           (if (acceptable-password? new-password)
