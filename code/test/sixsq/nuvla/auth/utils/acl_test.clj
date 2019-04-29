@@ -41,6 +41,6 @@
                        :manage    ["c" "d"]
                        :view-acl  ["c"]
                        :view-data ["c" "e"]
-                       :view-meta ["c" "d" "e"]}
+                       :view-meta ["c" "e"]}
 
                       ))

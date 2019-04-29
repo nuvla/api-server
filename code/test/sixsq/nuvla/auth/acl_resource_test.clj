@@ -124,7 +124,6 @@
 
                       ::a/edit-meta ::a/view-meta
 
-                      ::a/manage ::a/view-meta
                       ::a/delete ::a/view-meta)
 
   (let [independent-rights #{::a/manage ::a/delete ::a/view-acl ::a/query ::a/add}]

@@ -317,7 +317,7 @@
 (defn upload
   [resource request]
   (try
-    (a/can-edit? resource request)
+    (a/throw-cannot-edit resource request)
     (let [upload-uri (upload-fn resource request)]
       (db/edit (assoc resource :state state-uploading) request)
       (r/json-response {:uri upload-uri}))

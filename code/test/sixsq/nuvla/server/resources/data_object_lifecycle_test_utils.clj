@@ -425,6 +425,7 @@
 
                 ;; triggering the upload url with anonymous, authorized or unauthorized viewer should fail
                 (doseq [session [session-anon session-user-no-view session-user-view]]
+
                   (-> session
                       (request abs-upload-uri
                                :request-method :post)
