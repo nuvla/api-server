@@ -2,6 +2,7 @@
   "This credential-template resource allows credentials for Minio S3 services
    to be stored."
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -18,8 +19,8 @@
 (def ^:const method "infrastructure-service-minio")
 
 
-(def resource-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-user"]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 ;;
 ;; resource

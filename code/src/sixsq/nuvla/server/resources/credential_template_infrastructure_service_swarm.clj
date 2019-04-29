@@ -5,6 +5,7 @@ These credentials include a certificate authority's public certificate ('ca'),
 the user's public certificate ('cert'), and the user's private key ('key').
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -18,15 +19,15 @@ the user's public certificate ('cert'), and the user's private key ('key').
 (def ^:const method "infrastructure-service-swarm")
 
 
-(def ^:const template-acl {:owners   ["group/nuvla-admin"]
-                           :view-acl ["group/nuvla-user"]})
+(def ^:const resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                    :view-acl ["group/nuvla-user"]}))
 
 
 ;; No reasonable defaults for :infrastructure-services, :ca, :cert, :key.
 ;; Do not provide values for those in the template
 (def ^:const template {:id                      (str p/resource-type "/" method)
                        :resource-type           p/resource-type
-                       :acl                     template-acl
+                       :acl                     resource-acl
 
                        :type                    credential-type
                        :method                  method
