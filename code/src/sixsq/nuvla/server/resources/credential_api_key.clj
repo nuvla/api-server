@@ -47,6 +47,7 @@ the plain text secret in the response. The server stores only a digest of the
 secret, so you must capture and save the plain text secret from this response!
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -102,7 +103,7 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 (defmethod p/special-edit tpl/credential-type
   [resource {:keys [nuvla/authn] :as request}]
-  (if ((set (:claims authn)) "group/nuvla-admin")
+  (if (acl-resource/is-admin? authn)
     resource
     (dissoc resource :claims)))
 

@@ -7,6 +7,7 @@ creating a group and does not provide any useful defaults.
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -22,7 +23,7 @@ creating a group and does not provide any useful defaults.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owners ["group/nuvla-admin"]})
+(def resource-acl (acl-utils/normalize-acl {:owners ["group/nuvla-admin"]}))
 
 
 (def collection-acl {:query ["group/nuvla-admin"]

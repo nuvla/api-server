@@ -92,7 +92,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (defmethod crud/set-operations resource-type
   [{:keys [validated] :as resource} request]
   (try
-    (a/can-edit-acl? resource request)
+    (a/can-edit? resource request)
     (let [href (:id resource)
           ^String resource-type (:resource-type resource)
           ops (if (u/is-collection? resource-type)

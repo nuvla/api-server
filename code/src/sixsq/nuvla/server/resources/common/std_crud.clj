@@ -55,7 +55,7 @@
       (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
                                           (db/retrieve (assoc-in request [:cimi-params :select] nil))
                                           (a/throw-cannot-edit request))
-            rights (a/extract-all-rights (auth/current-authentication request) acl)
+            rights (a/extract-rights (auth/current-authentication request) acl)
             dissoc-keys (-> (map keyword select)
                             set
                             u/strip-select-from-mandatory-attrs

@@ -219,7 +219,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (try
     (let [current (-> (:id body)
                       (db/retrieve request)
-                      (a/can-edit-acl? request))
+                      (a/throw-cannot-edit request))
           merged (merge current body)]
       (-> merged
           (dissoc :href)
