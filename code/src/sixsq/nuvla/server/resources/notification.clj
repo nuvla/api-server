@@ -1,5 +1,7 @@
 (ns sixsq.nuvla.server.resources.notification
   "
+TODO: provide namespace documentation.
+
 Notification resource.
 "
   (:require

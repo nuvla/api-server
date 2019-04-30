@@ -10,7 +10,6 @@
 (s/def ::message
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "message"
-             :json-schema/type "string"
              :json-schema/description "notification text"
 
              :json-schema/order 30)))
@@ -27,7 +26,7 @@
 (s/def ::content-unique-id
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "content-unique-id"
-             :json-schema/type "string"
+             :json-schema/display-name "notification content unique id"
              :json-schema/description "notification content unique id"
 
              :json-schema/order 32)))
@@ -44,6 +43,7 @@
 (s/def ::hide-until
   (-> (st/spec ::core/timestamp)
       (assoc :name "hide-until"
+             :json-schema/display-name "hide notification till defined time"
              :json-schema/description "hide notification till defined time"
 
              :json-schema/order 34)))
@@ -74,6 +74,7 @@
   (-> (st/spec string?)
       (assoc :name "callback-msg"
              :json-schema/type "string"
+             :json-schema/display-name "callback message"
              :json-schema/description "callback message text"
 
              :json-schema/order 37)))
