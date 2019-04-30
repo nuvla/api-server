@@ -23,7 +23,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -83,8 +84,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (assoc resource :acl {:owners ["group/nuvla-admin"]}))
+  [{:keys [id] :as resource} request]
+  (assoc resource :acl {:owners ["group/nuvla-admin"]
+                        :view-meta ["group/nuvla-user"]
+                        :edit-acl [id]}))
 
 ;;
 ;; template processing

@@ -95,9 +95,7 @@
                           (create-email user-id))]
 
     (update-user user-id (cond-> {:id                  user-id
-                                  :credential-password credential-id
-                                  :acl                 {:owners   ["group/nuvla-admin"]
-                                                        :edit-acl [user-id]}}
+                                  :credential-password credential-id}
                                  email-id (assoc :email email-id)))
 
     (when email
