@@ -133,7 +133,7 @@
             (is (some #{user-id} (right user-acl)))))
 
         ;; verify name attribute (should default to username)
-        (is ("user/jane" (:name user)))
+        (is (= "user/jane" (:name user)))
 
         ; credential password is created and visible by the created user
         (-> session-created-user
