@@ -26,7 +26,7 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-admin"]
+(def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-admin"]})
 
 
@@ -54,9 +54,11 @@ that start with 'nuvla-' are reserved for the server.
 ;; multimethod for ACLs
 ;;
 
+;; forces update of acl to have admin as owner and all users can view metadata
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (assoc resource :acl {:owners ["group/nuvla-admin"]
+                        :view-meta ["group/nuvla-user"]}))
 
 
 ;;
