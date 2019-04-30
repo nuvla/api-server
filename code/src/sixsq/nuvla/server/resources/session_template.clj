@@ -37,6 +37,7 @@ a username and password pair stored in SlipStream's internal database.
 "
   (:require
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -52,8 +53,8 @@ a username and password pair stored in SlipStream's internal database.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-anon"]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-anon"]}))
 
 
 (def collection-acl {:query ["group/nuvla-anon"]

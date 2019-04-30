@@ -27,6 +27,8 @@
   (let [app (ltu/ring-app)
         session-json (content-type (session app) "application/json")
         session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-json authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session-json authn-info-header "group/nuvla-anon")
 
         href (str group-tpl/resource-type "/generic")
 
@@ -54,7 +56,26 @@
                       (ltu/is-status 200)
                       (ltu/is-count 3)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries)))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
+      (is (= (every? #(not (nil? %)) (set (map :name entries)))))
+      (is (= (every? #(not (nil? %)) (set (map :description entries))))))
+
+
+    ;; user query should also have three entries, but only common attributes (i.e. no :users field)
+    (let [entries (-> session-user
+                      (request base-uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-count 3)
+                      (ltu/entries))]
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
+      (is (= [nil nil nil] (map :users entries))))
+
+    ;; anon query should see nothing
+    (-> session-anon
+        (request base-uri)
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ;; test lifecycle of new group
     (doseq [tpl [valid-create valid-create-no-href]]

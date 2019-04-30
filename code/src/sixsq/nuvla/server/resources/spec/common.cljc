@@ -33,6 +33,7 @@
              :json-schema/description "unique resource identifier"
              :json-schema/section "meta"
 
+             :json-schema/fulltext true
              :json-schema/server-managed true
              :json-schema/editable false
              :json-schema/order 0)))
