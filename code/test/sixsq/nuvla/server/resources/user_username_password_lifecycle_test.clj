@@ -53,8 +53,7 @@
           no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
                                                                 :password plaintext-password
                                                                 :username "alice"))}
-          href-create {:name        name-attr
-                       :description description-attr
+          href-create {:description description-attr
                        :tags        tags-attr
                        :template    {:href     template-href
                                      :password plaintext-password
@@ -121,6 +120,20 @@
                                                        (ltu/body->edn)
                                                        (ltu/is-status 200)
                                                        (get-in [:response :body]))]
+
+        ;; verify the ACL of the user
+        (let [user-acl (:acl user)]
+          (is (some #{"group/nuvla-admin"} (:owners user-acl)))
+          (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
+
+          ;; user should have all rights
+          (doseq [right [:view-meta :view-data :view-acl
+                         :edit-meta :edit-data :edit-acl
+                         :manage :delete]]
+            (is (some #{user-id} (right user-acl)))))
+
+        ;; verify name attribute (should default to username)
+        (is (= "user/jane" (:name user)))
 
         ; credential password is created and visible by the created user
         (-> session-created-user
