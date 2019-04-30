@@ -6,7 +6,7 @@
     [sixsq.nuvla.auth.utils.timestamp :as t]))
 
 
-(def rfc822-like-pattern #"\w\w\w, \d\d \w\w\w \d\d\d\d \d\d:\d\d:\d\d GMT")
+(def rfc822-like-pattern #"\w\w\w, \d{1,2} \w\w\w \d\d\d\d \d\d:\d\d:\d\d GMT")
 
 
 (def iso8601-like-pattern #"\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([\+-]\d\d:\d\d)|Z)")

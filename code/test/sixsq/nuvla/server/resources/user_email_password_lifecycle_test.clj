@@ -71,12 +71,12 @@
                                                                   :password plaintext-password
                                                                   :username "alice"
                                                                   :email "alice@example.org"))}
-            href-create {:name        name-attr
+            href-create {;:name        name-attr
                          :description description-attr
                          :tags        tags-attr
                          :template    {:href     href
                                        :password plaintext-password
-                                       :username "user/jane"
+                                       ;:username "user/jane"
                                        :email    "jane@example.org"}}
 
             href-create-alt (assoc-in href-create [:template :username] uname-alt)
@@ -140,6 +140,10 @@
                                                     (request (str p/service-context user-id))
                                                     (ltu/body->edn)
                                                     (get-in [:response :body]))]
+
+            ;; verify name attribute (should default to username if no :name)
+            (is (= "jane@example.org" (:name user)))
+
             ; credential password is created and visible by the created user
             (-> session-created-user
                 (request (str p/service-context credential-id))
@@ -151,12 +155,12 @@
                 (ltu/body->edn)
                 (ltu/is-status 403))
 
-            ; 2 identifier are visible for the created user one for email and another one for the username
+            ; 1 identifier is visible for the created user one for email (username was not provided)
             (-> session-created-user
                 (request (str p/service-context user-identifier/resource-type))
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-count 2))
+                (ltu/is-count 1))
 
             ; one email is visible for the user
             (-> session-created-user
