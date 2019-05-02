@@ -1,0 +1,213 @@
+(ns sixsq.nuvla.server.resources.nuvlabox-record
+  (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.schema :as c]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
+    [sixsq.nuvla.server.resources.user :as user]
+    [sixsq.nuvla.server.util.log :as logu])
+  (:import
+    (clojure.lang ExceptionInfo)))
+
+
+(def ^:const resource-type (u/ns->type *ns*))
+
+
+(def ^:const collection-type (u/ns->collection-type *ns*))
+
+
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
+
+
+(def ^:const state-new "new")
+(def ^:const state-activated "activated")
+(def ^:const state-quarantined "quarantined")
+(def ^:const default-refresh-interval 90)
+
+
+;;
+;; multimethods for validation and operations
+;;
+
+(def validate-fn (u/create-spec-validation-fn ::nuvlabox-record/nuvlabox-record))
+(defmethod crud/validate resource-type
+  [resource]
+  (validate-fn resource))
+
+;;
+;; set the resource identifier to "nuvlabox-record/macaddress"
+;;
+
+(defmethod crud/new-identifier resource-type
+  [{:keys [macAddress] :as resource} _]
+  (assoc resource :id (str resource-type "/" (-> macAddress str/lower-case (str/replace ":" "")))))
+
+
+(defmethod crud/add-acl resource-type
+  [resource request]
+  (a/add-acl resource request))
+
+
+;;
+;; CRUD operations
+;;
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+
+(defmethod crud/add resource-type
+  [{{:keys [refreshInterval]
+     :or   {refreshInterval default-refresh-interval}
+     :as   body} :body :as request}]
+
+  (let [new-nuvlabox (-> (assoc body :state state-new
+                                     :refreshInterval refreshInterval)
+                         (utils/add-identifier))
+        {{:keys [resource-id]} :body :as resp} (if (utils/quota-ok? new-nuvlabox request)
+                                                 (add-impl (assoc request :body new-nuvlabox))
+                                                 (logu/log-and-throw 412 "Insufficient quota"))
+        vpn-exists? (and (:sslCA new-nuvlabox) (:sslCert new-nuvlabox) (:sslKey new-nuvlabox))]
+
+    ;; VPN call OK, try to create NuvlaBox resource
+    (when (and resource-id (not vpn-exists?))
+      (let [[status message] (utils/add-vpn-configuration! new-nuvlabox)]
+
+        (log/info (format "VPN API returns status %s" status))
+
+        ;; NuvlaBox resource creation OK. Add VPN information.
+        (if (= 201 status)
+          (do
+            (log/debug (format "Adding VPN infos to the record %" message))
+            (utils/merge-vpn-infos resource-id request message))
+
+          ;; Creation of NuvlaBox failed.
+          ;; This cleans NuvlaBox.
+          (do
+            (db/delete {:id resource-id} request)
+            (logu/log-and-throw (or status 503) (or message "VPN-API error"))))))
+
+    ;; Always return the response from the add request.
+    resp))
+
+(def retrieve-impl (std-crud/retrieve-fn resource-type))
+(defmethod crud/retrieve resource-type
+  [request]
+  (retrieve-impl request))
+
+(def edit-impl (std-crud/edit-fn resource-type))
+(defmethod crud/edit resource-type
+  [request]
+  (edit-impl request))
+
+(defmethod crud/delete resource-type
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (-> (db/retrieve id request)
+          (a/throw-cannot-delete request)
+          (utils/delete-nuvlabox request))
+      (catch ExceptionInfo ei
+        (ex-data ei)))))
+
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
+(defmethod crud/query resource-type
+  [request]
+  (query-impl request))
+
+;;
+;; Activate operation
+;;
+
+(defn activate
+  [{:keys [id identifier state acl] :as nuvlabox}]
+  (if (= state state-new)
+    (do
+      (log/warn "Activating nuvlabox:" id)
+      (let [name (-> identifier str/lower-case (str/replace #"\W+" ""))
+            password (u/random-uuid)
+            username "user/89059aa6-b04e-4620-b1a3-32e96250363f"
+            #_(user-utils/create-user! {:authn-login       (u/random-uuid)
+                                        :password          (internal/hash-password password)
+                                        :email             (str name "@nuvlabox.com")
+                                        :firstName         "nuvlabox"
+                                        :lastName          identifier
+                                        :fail-on-existing? false})
+            user-info {:username username :password password}
+            new-acl (update acl :edit-acl (comp vec conj) username)
+            nuvlabox-state-id (-> (nbs/create-nuvlabox-state id new-acl) :body :resource-id)
+            activated-nuvlabox (-> nuvlabox
+                                   (assoc :state state-activated)
+                                   (assoc :user {:href username})
+                                   (assoc :acl new-acl)
+                                   (assoc :info {:href nuvlabox-state-id})
+                                   (utils/add-connector-href))]
+        [activated-nuvlabox user-info]))
+    (logu/log-and-throw-400 "Activation is not allowed")))
+
+(defmethod crud/do-action [resource-type "activate"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)
+          nuvlabox (db/retrieve id request)
+          [nuvlabox-activated nuvlabox-user-info] (activate nuvlabox)]
+      (-> nuvlabox-activated
+          (db/edit request)
+          (assoc :body nuvlabox-user-info)))
+    (catch ExceptionInfo ei
+      (ex-data ei))))
+
+;;
+;; Quarantine operation
+;;
+
+(defn quarantine [{:keys [id state] :as resource}]
+  (if (= state state-activated)
+    (do
+      (log/warn "Changing nuvlabox status to quarantined : " id)
+      (assoc resource :state state-quarantined))
+    (logu/log-and-throw-400 (str "Bad nuvlabox state " state))))
+
+(defmethod crud/do-action [resource-type "quarantine"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (try
+        (-> (db/retrieve id request)
+            (a/throw-cannot-manage request)
+            quarantine
+            (db/edit request))
+        (catch ExceptionInfo ei
+          (ex-data ei))))))
+
+;;
+;; Set operation
+;;
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id state] :as resource} request]
+  (let [href-activate (str id "/activate")
+        href-sc (str id "/quarantine")
+        activate-op {:rel (:activate c/action-uri) :href href-activate}
+        quarantine-op {:rel (:quarantine c/action-uri) :href href-sc}]
+    (cond-> (crud/set-standard-operations resource request)
+            (= state state-new) (update-in [:operations] conj activate-op)
+            (= state state-activated) (update-in [:operations] conj quarantine-op))))
+
+;;
+;; initialization
+;;
+
+(defn initialize
+  []
+  (std-crud/initialize resource-type ::nuvlabox-record/nuvlabox-record))
+
+
