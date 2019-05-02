@@ -124,7 +124,7 @@ may depend on the type of the notification.
           (assoc :hide-until hide-until)
           (crud/validate)
           (db/edit request))
-      (r/map-response (str id " hidden util " hide-until) 200 id))
+      (r/map-response (str id " hidden until " hide-until) 200 id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
