@@ -11,6 +11,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -23,8 +24,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
