@@ -3,6 +3,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -19,13 +20,22 @@
 
 (s/def ::output-message ::core/mimetype)
 
+(s/def ::parameter (su/only-keys :req-un [::name]
+                                 :opt-un [::value-scope/value-scope]))
+
+(s/def ::input-parameters
+  (s/coll-of ::parameter :min-count 1 :type vector?))
+
 (s/def ::action (su/only-keys :req-un [::name
                                        ::uri
                                        ::method
                                        ::input-message
                                        ::output-message]
-                              :opt-un [::description]))
+                              :opt-un [::description
+                                       ::input-parameters]))
 
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::actions
-  (st/spec {:spec                (s/coll-of ::action :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/spec (s/coll-of ::action :min-count 1 :type vector?)))
