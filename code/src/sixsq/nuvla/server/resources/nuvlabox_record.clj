@@ -68,9 +68,9 @@
      :or   {refreshInterval default-refresh-interval}
      :as   body} :body :as request}]
 
-  (let [new-nuvlabox (-> (assoc body :state state-new
-                                     :refreshInterval refreshInterval)
-                         (utils/add-identifier))
+  (let [new-nuvlabox (assoc body :state state-new
+                                 :refreshInterval refreshInterval)
+
         {{:keys [resource-id]} :body :as resp} (if (utils/quota-ok? new-nuvlabox request)
                                                  (add-impl (assoc request :body new-nuvlabox))
                                                  (logu/log-and-throw 412 "Insufficient quota"))
@@ -128,19 +128,12 @@
 ;;
 
 (defn activate
-  [{:keys [id identifier state acl] :as nuvlabox}]
+  [{:keys [id state acl] :as nuvlabox}]
   (if (= state state-new)
     (do
       (log/warn "Activating nuvlabox:" id)
-      (let [name (-> identifier str/lower-case (str/replace #"\W+" ""))
-            password (u/random-uuid)
+      (let [password (u/random-uuid)
             username "user/89059aa6-b04e-4620-b1a3-32e96250363f"
-            #_(user-utils/create-user! {:authn-login       (u/random-uuid)
-                                        :password          (internal/hash-password password)
-                                        :email             (str name "@nuvlabox.com")
-                                        :firstName         "nuvlabox"
-                                        :lastName          identifier
-                                        :fail-on-existing? false})
             user-info {:username username :password password}
             new-acl (update acl :edit-acl (comp vec conj) username)
             nuvlabox-state-id (-> (nbs/create-nuvlabox-state id new-acl) :body :resource-id)
@@ -152,6 +145,7 @@
                                    (utils/add-connector-href))]
         [activated-nuvlabox user-info]))
     (logu/log-and-throw-400 "Activation is not allowed")))
+
 
 (defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]

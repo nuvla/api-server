@@ -18,7 +18,6 @@
                :updated         timestamp
                :acl             valid-acl
 
-               :identifier      "Albert Einstein"
                :connector       {:href "connector/nuvlabox-albert-einstein"}
                :formFactor      "Nuvlabox"
                :state           "new"
@@ -38,7 +37,6 @@
            :updated         timestamp
            :acl             valid-acl
            :formFactor      "nano"
-           :identifier      "Andromeda-42"
            :state           "new"
            :macAddress      "aa:bb:cc:dd:ee:ff"
            :owner           {:href "user/test"}
@@ -62,7 +60,6 @@
 
     ;; required
     (doseq [attr #{:id :resource-type :created :updated :acl
-                   :identifier
                    :state
                    :macAddress
                    :owner

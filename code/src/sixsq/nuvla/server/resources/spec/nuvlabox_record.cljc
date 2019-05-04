@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::identifier ::cimi-core/nonblank-string)
 (s/def ::connector ::cimi-common/resource-link)
 (s/def ::state #{"new" "activated" "quarantined"})
 (s/def ::macAddress ::cimi-core/nonblank-string)
@@ -46,8 +45,7 @@
 
 (s/def ::nuvlabox-record
   (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::identifier
-                               ::state
+                     {:req-un [::state
                                ::macAddress
                                ::owner
                                ::refreshInterval]

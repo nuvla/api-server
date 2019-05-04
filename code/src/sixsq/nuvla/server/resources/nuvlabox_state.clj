@@ -6,8 +6,6 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.nuvlabox-state-snapshot :as snap]
     [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
     [sixsq.nuvla.auth.utils :as auth-utils]
     [clojure.tools.logging :as log]))
@@ -74,13 +72,10 @@
                          (not (:usb body)) (assoc :usb (:usb current))
                          (not (:disks body)) (assoc :disks (:disks current))
                          (not (:ram body)) (assoc :ram (:ram current))
-                         (not (:cpu body)) (assoc :cpu (:cpu current)))
-          response (-> merged
-                       (crud/validate)
-                       (db/edit request))]
-      (snap/create-nuvlabox-state-snapshot merged)
-      (utils/handle-nuvlabox-state-state-change current body)
-      response)
+                         (not (:cpu body)) (assoc :cpu (:cpu current)))]
+      (-> merged
+          (crud/validate)
+          (db/edit request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

@@ -8,17 +8,13 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-state :refer :all]
-    [sixsq.nuvla.server.resources.nuvlabox-state-snapshot :as nbss]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [peridot.core :refer :all]
-    [clojure.tools.logging :as log]))
+    [peridot.core :refer :all]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 (def nuvlabox-base-uri (str p/service-context nb/resource-type))
-
-(def state-snapshot-base-uri (str p/service-context nbss/resource-type))
 
 (def base-uri (str p/service-context resource-type))
 
@@ -28,7 +24,6 @@
                      :updated      timestamp
                      :acl          {:owners   ["group/nuvla-admin"]
                                     :view-acl ["user/jane"]}
-                     :identifier   "Albert Einstein"
                      :connector    {:href "connector/nuvlabox-albert-einstein"}
                      :macAddress   "aa:bb:cc:dd:ee:ff"
                      :owner        {:href "test"}
@@ -150,12 +145,6 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; each update create a nuvlabox-state-snapshot
-        (-> session-nuvlabox-user
-            (request state-snapshot-base-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count 1))
 
         (-> session-nuvlabox-user
             (request nuvlabox-state-href
@@ -164,12 +153,6 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :ram ram-updated))
-
-        (-> session-nuvlabox-user
-            (request state-snapshot-base-uri)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count 2))
 
         ;; ram, cpu, usb and disk test update
 
