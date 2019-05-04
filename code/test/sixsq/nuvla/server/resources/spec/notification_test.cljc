@@ -22,7 +22,7 @@
    :content-unique-id "content-unique-id"
 
    :target-resource   "foo/bar"
-   :hide-until        timestamp
+   :not-before        timestamp
    :expiry            timestamp
    :callback          "foo/bar"
    :callback-msg      ""})
@@ -66,5 +66,5 @@
     (stu/is-invalid ::notification/schema (dissoc valid-notification k)))
 
   ;; optional keywords
-  (doseq [k #{:terget-resource :hide-until :expiry :callback :callback-msg}]
+  (doseq [k #{:terget-resource :not-before :expiry :callback :callback-msg}]
     (stu/is-valid ::notification/schema (dissoc valid-notification k))))
