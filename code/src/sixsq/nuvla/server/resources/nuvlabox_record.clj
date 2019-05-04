@@ -132,18 +132,15 @@
   (if (= state state-new)
     (do
       (log/warn "Activating nuvlabox:" id)
-      (let [password (u/random-uuid)
-            username "user/89059aa6-b04e-4620-b1a3-32e96250363f"
-            user-info {:username username :password password}
-            new-acl (update acl :edit-acl (comp vec conj) username)
+      ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
+      (let [new-acl (update acl :edit-acl (comp vec conj) id)
             nuvlabox-state-id (-> (nbs/create-nuvlabox-state id new-acl) :body :resource-id)
             activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
-                                   (assoc :user {:href username})
                                    (assoc :acl new-acl)
                                    (assoc :info {:href nuvlabox-state-id})
                                    (utils/add-connector-href))]
-        [activated-nuvlabox user-info]))
+        activated-nuvlabox))
     (logu/log-and-throw-400 "Activation is not allowed")))
 
 
@@ -152,10 +149,8 @@
   (try
     (let [id (str resource-type "/" uuid)
           nuvlabox (db/retrieve id request)
-          [nuvlabox-activated nuvlabox-user-info] (activate nuvlabox)]
-      (-> nuvlabox-activated
-          (db/edit request)
-          (assoc :body nuvlabox-user-info)))
+          nuvlabox-activated (activate nuvlabox)]
+      (db/edit nuvlabox-activated request))
     (catch ExceptionInfo ei
       (ex-data ei))))
 

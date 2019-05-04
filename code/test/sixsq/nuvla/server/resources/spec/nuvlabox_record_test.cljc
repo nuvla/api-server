@@ -18,7 +18,6 @@
                :updated         timestamp
                :acl             valid-acl
 
-               :connector       {:href "connector/nuvlabox-albert-einstein"}
                :formFactor      "Nuvlabox"
                :state           "new"
                :macAddress      "aa:bb:cc:dd:ee:ff"
@@ -67,9 +66,7 @@
       (stu/is-invalid ::nuvlabox-record/nuvlabox-record (dissoc record attr)))
 
     ;; optional
-    (doseq [attr #{:connector
-                   :info
-                   :user
+    (doseq [attr #{:info
                    :location
                    :supplier
                    :organization

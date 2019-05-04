@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::connector ::cimi-common/resource-link)
 (s/def ::state #{"new" "activated" "quarantined"})
 (s/def ::macAddress ::cimi-core/nonblank-string)
 (s/def ::owner ::cimi-common/resource-link)
@@ -18,7 +17,6 @@
 (s/def ::vpnIP ::cimi-core/nonblank-string)
 (s/def ::vpnServerIP ::cimi-core/nonblank-string)
 (s/def ::vpnServerPort pos-int?)
-(s/def ::user ::cimi-common/resource-link)
 (s/def ::wifiSSID ::cimi-core/nonblank-string)
 (s/def ::wifiPassword ::cimi-core/nonblank-string)
 (s/def ::rootPassword ::cimi-core/nonblank-string)
@@ -49,9 +47,7 @@
                                ::macAddress
                                ::owner
                                ::refreshInterval]
-                      :opt-un [::connector
-                               ::info
-                               ::user
+                      :opt-un [::info
                                ::location
                                ::supplier
                                ::organization

@@ -24,7 +24,6 @@
                      :updated      timestamp
                      :acl          {:owners   ["group/nuvla-admin"]
                                     :view-acl ["user/jane"]}
-                     :connector    {:href "connector/nuvlabox-albert-einstein"}
                      :macAddress   "aa:bb:cc:dd:ee:ff"
                      :owner        {:href "test"}
                      :organization "org"
@@ -103,6 +102,7 @@
                              (request uri-nuvlabox)
                              (ltu/body->edn)
                              (ltu/is-status 200))
+            new-nuvlabox-id (-> new-nuvlabox :response :body :id)
 
             activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
 
@@ -117,13 +117,13 @@
                   (ltu/body->edn)
                   (ltu/is-status 201))
 
-            username (-> session-anon
-                         (request activate-url-action :request-method :post)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         (get-in [:response :body :username]))
+            _ (-> session-anon
+                  (request activate-url-action :request-method :post)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (get-in [:response :body :username]))
 
-            session-nuvlabox-user (header session authn-info-header (str username " group/nuvla-user group/nuvla-anon"))
+            session-nuvlabox-user (header session authn-info-header (str new-nuvlabox-id " group/nuvla-user group/nuvla-anon"))
 
             ;; activate nuvlabox must create a nuvlabox-state entry
             nuvlabox-state-id (-> session-nuvlabox-user
@@ -137,7 +137,7 @@
             nuvlabox-state-href (str p/service-context nuvlabox-state-id)]
 
         ;; nuvlabox user is able to update nuvlabox-state
-        (-> session-admin #_session-nuvlabox-user
+        (-> session-nuvlabox-user
             (request nuvlabox-state-href
                      :request-method :put
                      :body (json/write-str {:usb [usb1]

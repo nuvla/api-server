@@ -7,8 +7,7 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
-    [sixsq.nuvla.auth.utils :as auth-utils]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.auth.utils :as auth-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

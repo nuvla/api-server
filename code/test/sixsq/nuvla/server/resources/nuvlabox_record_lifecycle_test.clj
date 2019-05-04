@@ -32,7 +32,6 @@
                      :acl          {:owners   ["group/nuvla-admin"]
                                     :view-acl ["group/nuvla-user"]}
                      :organization "ACME"
-                     :connector    {:href (str "connector/" connector-name1)}
                      :formFactor   "Nuvlabox"
                      :macAddress   "aa:bb:cc:dd:ee:ff"
                      :owner        {:href "test"}
@@ -295,6 +294,7 @@
                              (ltu/is-operation-present "edit")
                              (ltu/is-operation-absent "quarantine")
                              (ltu/is-operation-present "activate"))
+            new-nuvlabox-id (-> new-nuvlabox :response :body :id)
             _ (-> session-admin
                   (request uri-nano)
                   (ltu/body->edn)
@@ -315,11 +315,11 @@
                          (ltu/is-key-value :state nb/state-new)
                          (ltu/is-key-value :refreshInterval nb/default-refresh-interval)
                          (ltu/is-key-value :id "nuvlabox-record/02bbccddeeff")
-                         (ltu/is-key-value :connector nil)
                          (ltu/is-operation-present "delete")
                          (ltu/is-operation-present "edit")
                          (ltu/is-operation-absent "quarantine")
                          (ltu/is-operation-present "activate"))
+            new-nano-id (-> new-nano :response :body :id)
             activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
             activate-nano-action (str p/service-context (ltu/get-op new-nano "activate"))]
 
@@ -384,32 +384,34 @@
 
 
           ;; create namespace (required by service offer creation which is a side effect of activation)
-          (def valid-namespace {:prefix "schema-org"
-                                :uri    "https://schema-org/a/b/c.md"})
-          (-> session-admin
-              (request (str p/service-context sn/resource-type)
-                       :request-method :post
-                       :body (json/write-str valid-namespace))
-              (ltu/body->edn)
-              (ltu/is-status 201))
+          (let [valid-namespace {:prefix "schema-org"
+                                 :uri    "https://schema-org/a/b/c.md"}]
+            (-> session-admin
+                (request (str p/service-context sn/resource-type)
+                         :request-method :post
+                         :body (json/write-str valid-namespace))
+                (ltu/body->edn)
+                (ltu/is-status 201)))
 
 
           ;; anonymous should only be able to call activate op
-          (let [username (-> session-anon
-                             (request activate-url-action :request-method :post)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/has-key :password)
-                             (get-in [:response :body :username]))
+          (-> session-anon
+              (request activate-url-action
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (get-in [:response :body :id]))
 
-                username-nano (-> session-anon
-                                  (request activate-nano-action :request-method :post)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/has-key :password)
-                                  (get-in [:response :body :username]))
-                ;; user of nuvlabox should be able to view the nuvlabox resource
-                session-nuvlabox-user (header session authn-info-header (str username " USER ANON"))
+          (-> session-anon
+              (request activate-nano-action
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (get-in [:response :body :username]))
+
+          (let [;; FIXME: nuvlabox-record id is used as the claim to access nuvlabox-* resources
+                session-nuvlabox-user (header session authn-info-header (str new-nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+                session-nano-user (header session authn-info-header (str new-nano-id " group/nuvla-user group/nuvla-anon"))
                 activated-nuvlabox (-> session-nuvlabox-user
                                        (request uri-nuvlabox)
                                        (ltu/body->edn)
@@ -419,13 +421,9 @@
                                        (ltu/is-operation-present "edit")
                                        (ltu/is-operation-present "quarantine")
                                        (ltu/is-operation-absent "activate")
-                                       (ltu/has-key :connector)
-                                       (ltu/is-key-value :href :user username)
                                        (ltu/is-key-value :href :info "nuvlabox-state/01bbccddeeff"))
 
-
-
-                activated-nano (-> session-admin
+                activated-nano (-> session-nano-user
                                    (request uri-nano)
                                    (ltu/body->edn)
                                    (ltu/is-status 200)
@@ -434,7 +432,6 @@
                                    (ltu/is-operation-present "edit")
                                    (ltu/is-operation-present "quarantine")
                                    (ltu/is-operation-absent "activate")
-                                   (ltu/is-key-value :href :user username-nano)
                                    (ltu/is-key-value :href :info "nuvlabox-state/02bbccddeeff")
                                    (get-in [:response :body]))
 
@@ -473,16 +470,12 @@
                 (ltu/body->edn)
                 (ltu/is-status 403))
 
-
-
             (-> session-admin
                 (request uri-nuvlabox
                          :request-method :put
                          :body (json/write-str valid-nuvlabox))
                 (ltu/body->edn)
                 (ltu/is-status 200))
-
-
 
             (-> session-jane
                 (request uri-nuvlabox
