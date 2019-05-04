@@ -9,8 +9,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.notification :refer :all]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.time :as t]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (def base-uri (str p/service-context resource-type))
@@ -138,12 +137,21 @@
                       (request abs-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200))
-            hide-until (t/to-str (t/from-now 1 :hours))
             defer-url (str p/service-context (ltu/get-op notif "defer"))]
+
+        ;; bad delay value
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {:hide-until hide-until}))
+                     :body (json/write-str {defer-param-kw 5.0}))
+            (ltu/body->edn)
+            (ltu/is-status 400))
+
+        ;; correct delay value
+        (-> session-user
+            (request defer-url
+                     :request-method :post
+                     :body (json/write-str {defer-param-kw 10}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -151,17 +159,45 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value :hide-until hide-until)))
+            (ltu/has-key :not-before))
 
-      ;; user can delete
-      (-> session-user
-          (request abs-uri
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
+        ;; delay it longer
+        (-> session-user
+            (request defer-url
+                     :request-method :post
+                     :body (json/write-str {defer-param-kw 60}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
 
-      (-> session-user
-          (request abs-uri)
-          (ltu/body->edn)
-          (ltu/is-status 404)))))
+        ;; user can delete
+        (-> session-user
+            (request abs-uri
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
 
+        (-> session-user
+            (request abs-uri)
+            (ltu/body->edn)
+            (ltu/is-status 404))))))
+
+
+(deftest metadata
+  (let [session-user (-> (session (ltu/ring-app))
+                         (content-type "application/json")
+                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
+        uri (str p/service-context "resource-metadata/" resource-type)]
+    (let [actions (-> session-user
+                      (request uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/has-key :actions)
+                      (get-in [:response :body :actions]))
+          delay-param (->> actions
+                           (filter (fn [x] (= "defer" (:name x))))
+                           first
+                           :input-parameters
+                           (filter (fn [x] (= defer-param-name (:name x))))
+                           first)]
+      (is (seq delay-param))
+      (is (= delay-default (get-in delay-param [:value-scope :default]))))))

@@ -40,11 +40,11 @@
              :json-schema/order 33)))
 
 
-(s/def ::hide-until
+(s/def ::not-before
   (-> (st/spec ::core/timestamp)
-      (assoc :name "hide-until"
-             :json-schema/display-name "hide notification till defined time"
-             :json-schema/description "hide notification till defined time"
+      (assoc :name "not-before"
+             :json-schema/display-name "don't show this notification before this time"
+             :json-schema/description "don't show this notification before this time"
 
              :json-schema/order 34)))
 
@@ -69,7 +69,6 @@
              :json-schema/order 36)))
 
 
-; TODO: check if needed.
 (s/def ::callback-msg
   (-> (st/spec string?)
       (assoc :name "callback-msg"
@@ -86,7 +85,7 @@
                                ::type
                                ::content-unique-id]
                       :opt-un [::target-resource
-                               ::hide-until
+                               ::not-before
                                ::expiry
                                ::callback
                                ::callback-msg]}))

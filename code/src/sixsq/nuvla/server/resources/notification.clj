@@ -1,14 +1,32 @@
 (ns sixsq.nuvla.server.resources.notification
   "
-TODO: provide namespace documentation.
+Notification resource allows creation and deletion of notification messages.
 
-Notification resource.
+Each notification should be assigned a type. There are no predefined types.
+
+Notification must have :content-unique-id set. This field should be used
+by the publisher to uniquely label the notification based on some of its
+fields (e.g.: be a hash of :message, :type and :target-resource fields).
+This field should allow to uniquely identify messages and simplify search.
+
+Notification can have :target-resource field set to identify the resource
+for which the notification was published.
+
+Notification can have :not-before field set via `defer` action to signal a
+notification delivery mechanism to hide this notification until the defined
+time. Deferring notification can be done any number of times.
+
+On notification creation, an optional :callback field can be set for binding
+it to an existing callback. An external notification handler is responsible
+for calling the callback, if and when required.
+
+Notifications can not be edited.
 
 ACL
 
-Notifications can only be created by admins. Creator of notification
-should provide resource level ACL accordingly, which for example
-may depend on the type of the notification.
+Notifications can only be created by admins. Creator of notification should
+provide resource level ACL accordingly, which for example may depend on the
+type of the notification.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -20,7 +38,8 @@ may depend on the type of the notification.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.notification :as notification]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as t]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -33,6 +52,22 @@ may depend on the type of the notification.
                      :add   ["group/nuvla-admin"]})
 
 (def resource-acl {:owners ["group/nuvla-admin"]})
+
+
+(def ^:const defer-param-name "minutes")
+(def ^:const defer-param-kw (keyword defer-param-name))
+(def ^:const delay-default 30)
+(def actions [{:name             "defer"
+               :uri              (:validate c/action-uri)
+               :description      "defer the notification for the number of minutes"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        defer-param-name
+                                   :value-scope {:minimum 1
+                                                 :units   "minutes"
+                                                 :default delay-default}}]}])
+
 
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
@@ -113,18 +148,34 @@ may depend on the type of the notification.
     (set-resource-ops resource request)))
 
 
+(defn- throw-not-pos-int?
+  [n]
+  (if-not (pos-int? n)
+    (throw (r/ex-bad-request "delay should be a positive integer.")))
+  n)
+
+
+(defn delay->from-now
+  [minutes]
+  (-> minutes
+      throw-not-pos-int?
+      (t/from-now :minutes)
+      t/to-str))
+
+
 (defmethod crud/do-action [resource-type "defer"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)
-          hide-until (-> request :body :hide-until)]
+          not-before (delay->from-now
+                       (or (-> request :body defer-param-kw) delay-default))]
       (-> id
           (db/retrieve request)
           (a/throw-cannot-manage request)
-          (assoc :hide-until hide-until)
+          (assoc :not-before not-before)
           (crud/validate)
           (db/edit request))
-      (r/map-response (str id " hidden until " hide-until) 200 id))
+      (r/map-response (str id " deferred until " not-before) 200 id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
