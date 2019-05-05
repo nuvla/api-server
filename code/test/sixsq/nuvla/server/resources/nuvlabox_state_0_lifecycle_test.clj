@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-state-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-state-0-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -34,6 +34,7 @@
 
                   :acl            valid-acl
 
+                  :version        0
                   :parent         "nuvlabox-resource/uuid"
                   :state          "ONLINE"
 
@@ -167,7 +168,7 @@
 
 
     ;; verify that the internal create function also works
-    (let [response (nb-state/create-nuvlabox-state nuvlabox-record-id valid-acl)
+    (let [response (nb-state/create-nuvlabox-state 0 nuvlabox-record-id valid-acl)
           location (get-in response [:headers "Location"])
           state-id (-> response :body :resource-id)
           state-url (str p/service-context state-id)]

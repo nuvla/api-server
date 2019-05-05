@@ -111,7 +111,7 @@
       (log/warn "Activating nuvlabox:" id)
       ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
       (let [new-acl (update acl :edit-acl (comp vec conj) id)
-            nuvlabox-state-id (-> (nbs/create-nuvlabox-state id new-acl) :body :resource-id)
+            nuvlabox-state-id (-> (nbs/create-nuvlabox-state 0 id new-acl) :body :resource-id)
             activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
                                    (assoc :acl new-acl)

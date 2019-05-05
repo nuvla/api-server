@@ -6,14 +6,12 @@ resources are usually created as a side-effect of a NuvlaBox activation,
 although they can be created manually by an administrator.
 "
   (:require
-    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth-utils]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nb-state]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -28,15 +26,23 @@ although they can be created manually by an administrator.
 
 
 ;;
-;; multimethods for validation and operations
+;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::nuvlabox-state/schema))
+(defmulti validate-subtype
+          "Validates the given nuvlabox-state resource against a specific
+           version of the schema."
+          :version)
+
+
+(defmethod validate-subtype :default
+  [resource]
+  (throw (ex-info (str "unsupported nuvlabox-state version: " (:version resource)) resource)))
 
 
 (defmethod crud/validate resource-type
   [resource]
-  (validate-fn resource))
+  (validate-subtype resource))
 
 
 ;;
@@ -56,9 +62,10 @@ although they can be created manually by an administrator.
    nuvlabox-record resource. This will create (as an administrator) a new state
    based on the given id and acl. The returned value is the standard 'add'
    response for the request."
-  [nuvlabox-id nuvlabox-acl]
+  [schema-version nuvlabox-id nuvlabox-acl]
   (let [body {:resource-type resource-type
               :parent        nuvlabox-id
+              :version       schema-version
               :state         "NEW"
               :acl           nuvlabox-acl}
         nuvlabox-state-request {:params      {:resource-name resource-type}
@@ -105,5 +112,5 @@ although they can be created manually by an administrator.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox-state/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nuvlabox-state/schema)))
+  (std-crud/initialize resource-type ::nb-state/schema)
+  (md/register (gen-md/generate-metadata ::ns ::nb-state/schema)))

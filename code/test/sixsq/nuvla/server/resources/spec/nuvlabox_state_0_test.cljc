@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-state-test
+(ns sixsq.nuvla.server.resources.spec.nuvlabox-state-0-test
   (:require
     [clojure.test :refer [are deftest]]
     [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-state-0 :as nb-state-0]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -19,6 +19,7 @@
 
             :acl            valid-acl
 
+            :version        0
             :parent         "nuvlabox-resource/uuid"
             :state          "ONLINE"
 
@@ -47,14 +48,14 @@
 
 (deftest check-nuvlabox-state
 
-  (stu/is-valid ::nuvlabox-state/schema state)
-  (stu/is-invalid ::nuvlabox-state/schema (assoc state :bad-attr "BAD_ATTR"))
+  (stu/is-valid ::nb-state-0/schema state)
+  (stu/is-invalid ::nb-state-0/schema (assoc state :bad-attr "BAD_ATTR"))
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
-                 :parent :state}]
-    (stu/is-invalid ::nuvlabox-state/schema (dissoc state attr)))
+                 :version :parent :state}]
+    (stu/is-invalid ::nb-state-0/schema (dissoc state attr)))
 
   ;; optional
   (doseq [attr #{:next-heartbeat :resources :peripherals :wifi-password}]
-    (stu/is-valid ::nuvlabox-state/schema (dissoc state attr))))
+    (stu/is-valid ::nb-state-0/schema (dissoc state attr))))
