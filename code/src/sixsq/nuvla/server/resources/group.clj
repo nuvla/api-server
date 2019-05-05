@@ -57,7 +57,7 @@ that start with 'nuvla-' are reserved for the server.
 ;; forces update of acl to have admin as owner and all users can view metadata
 (defmethod crud/add-acl resource-type
   [resource request]
-  (assoc resource :acl {:owners ["group/nuvla-admin"]
+  (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-meta ["group/nuvla-user"]}))
 
 

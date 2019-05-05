@@ -4,13 +4,13 @@ The nuvlabox-state (version 0) contains attributes to describe available
 resources and peripherals.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state-0 :as nb-state-0]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-state-0 :as nb-state-0]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def schema-version 0)

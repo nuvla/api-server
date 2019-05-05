@@ -29,7 +29,7 @@
 
 (def all-defined-rights (set
                           (concat [::edit-acl]
-                                 (ancestors rights-hierarchy ::edit-acl)
+                                  (ancestors rights-hierarchy ::edit-acl)
                                   collection-rights)))
 
 

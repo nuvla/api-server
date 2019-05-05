@@ -11,7 +11,6 @@
     [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
-    [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.util.log :as logu])
   (:import
     (clojure.lang ExceptionInfo)))

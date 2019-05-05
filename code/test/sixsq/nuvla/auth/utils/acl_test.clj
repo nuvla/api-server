@@ -11,12 +11,12 @@
                       {:owners ["b" "a"]}
                       {:owners ["a" "b"]}
 
-                      {:owners ["a" "b"]
+                      {:owners   ["a" "b"]
                        :edit-acl ["a"]
                        :view-acl ["b"]}
                       {:owners ["a" "b"]}
 
-                      {:owners ["a" "b"]
+                      {:owners   ["a" "b"]
                        :edit-acl ["a" "c"]}
                       {:owners    ["a" "b"]
                        :delete    ["c"]

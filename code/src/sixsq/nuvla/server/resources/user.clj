@@ -85,9 +85,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} request]
-  (assoc resource :acl {:owners ["group/nuvla-admin"]
+  (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-meta ["group/nuvla-user"]
-                        :edit-acl [id]}))
+                        :edit-acl  [id]}))
 
 ;;
 ;; template processing
