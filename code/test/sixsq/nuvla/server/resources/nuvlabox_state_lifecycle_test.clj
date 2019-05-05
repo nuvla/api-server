@@ -27,12 +27,8 @@
                      :macAddress   "aa:bb:cc:dd:ee:ff"
                      :owner        {:href "test"}
                      :organization "org"
-                     :sslCA        "ssl ca"
-                     :sslCert      "ssl cert"
-                     :sslKey       "ssl key"
                      :vmCidr       "10.0.0.0/24"
-                     :lanCidr      "10.0.1.0/24"
-                     :vpnIP        "10.0.0.2"})
+                     :lanCidr      "10.0.1.0/24"})
 
 (def usb1 {:busy        false
            :vendor-id   "vendor-id"

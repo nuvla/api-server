@@ -166,15 +166,10 @@
           (ltu/body->edn)
           (ltu/is-status 201)))
 
-    ;;when the box has already VPN infos
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox
-                                         :sslKey "kkk"
-                                         :sslCA "ca"
-                                         :sslCert "cert"
-                                         :macAddress "00:00:00:00:00:00")))
+                 :body (json/write-str (assoc valid-nuvlabox :macAddress "00:00:00:00:00:00")))
         (ltu/body->edn)
         (ltu/is-status 201))
 

@@ -22,12 +22,8 @@
                :state           "new"
                :macAddress      "aa:bb:cc:dd:ee:ff"
                :owner           {:href "user/test"}
-               :sslCA           "ssl ca"
-               :sslCert         "ssl cert"
-               :sslKey          "ssl key"
                :vmCidr          "10.0.0.0/24"
                :lanCidr         "10.0.1.0/24"
-               :vpnIP           "10.0.0.2"
                :refreshInterval 60})
 
 (def nano {:id              (str nb/resource-type "/uuid")
@@ -81,14 +77,8 @@
                    :loginPassword
                    :cloudPassword
                    :comment
-                   :sslCA
-                   :sslCert
-                   :sslKey
                    :vmCidr
                    :lanCidr
-                   :vpnIP
-                   :vpnServerIP
-                   :vpnServerPort
                    :OSVersion
                    :hwRevisionCode
                    :CPU
