@@ -81,122 +81,114 @@
         (ltu/body->edn)
         (ltu/is-status 201))
 
+    (let [resp-admin (-> session-admin
+                         (request nuvlabox-base-uri
+                                  :request-method :post
+                                  :body (json/write-str (assoc valid-nuvlabox :macAddress "01:01:01:01:01")))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
 
-    (with-redefs [utils/call-vpn-api (fn [mock-vpn-ip _ _ _]
-                                       [201 {:sslCA   "sslCA"
-                                             :sslCert "sslCert"
-                                             :sslKey  "sslKey"
-                                             :vmCidr  "vm CIDR"
-                                             :vpnIP   mock-vpn-ip}])]
-
-      (let [resp-admin (-> session-admin
-                           (request nuvlabox-base-uri
-                                    :request-method :post
-                                    :body (json/write-str (assoc valid-nuvlabox :macAddress "01:01:01:01:01")))
+          id-nuvlabox (get-in resp-admin [:response :body :resource-id])
+          uri-nuvlabox (str p/service-context id-nuvlabox)
+          new-nuvlabox (-> session-admin
+                           (request uri-nuvlabox)
                            (ltu/body->edn)
-                           (ltu/is-status 201))
+                           (ltu/is-status 200))
+          new-nuvlabox-id (-> new-nuvlabox :response :body :id)
 
-            id-nuvlabox (get-in resp-admin [:response :body :resource-id])
-            uri-nuvlabox (str p/service-context id-nuvlabox)
-            new-nuvlabox (-> session-admin
-                             (request uri-nuvlabox)
-                             (ltu/body->edn)
-                             (ltu/is-status 200))
-            new-nuvlabox-id (-> new-nuvlabox :response :body :id)
+          activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
 
-            activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
+          ;; create namespace (required by service offer creation)
+          valid-namespace {:prefix "schema-org"
+                           :uri    "https://schema-org/a/b/c.md"}
 
-            ;; create namespace (required by service offer creation)
-            valid-namespace {:prefix "schema-org"
-                             :uri    "https://schema-org/a/b/c.md"}
+          _ (-> session-admin
+                (request (str p/service-context sn/resource-type)
+                         :request-method :post
+                         :body (json/write-str valid-namespace))
+                (ltu/body->edn)
+                (ltu/is-status 201))
 
-            _ (-> session-admin
-                  (request (str p/service-context sn/resource-type)
-                           :request-method :post
-                           :body (json/write-str valid-namespace))
-                  (ltu/body->edn)
-                  (ltu/is-status 201))
+          _ (-> session-anon
+                (request activate-url-action :request-method :post)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (get-in [:response :body :username]))
 
-            _ (-> session-anon
-                  (request activate-url-action :request-method :post)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (get-in [:response :body :username]))
+          session-nuvlabox-user (header session authn-info-header (str new-nuvlabox-id " group/nuvla-user group/nuvla-anon"))
 
-            session-nuvlabox-user (header session authn-info-header (str new-nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+          ;; activate nuvlabox must create a nuvlabox-state entry
+          nuvlabox-state-id (-> session-nuvlabox-user
+                                (request base-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-count 1)
+                                (get-in [:response :body :resources])
+                                first
+                                :id)
+          nuvlabox-state-href (str p/service-context nuvlabox-state-id)]
 
-            ;; activate nuvlabox must create a nuvlabox-state entry
-            nuvlabox-state-id (-> session-nuvlabox-user
-                                  (request base-uri)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-count 1)
-                                  (get-in [:response :body :resources])
-                                  first
-                                  :id)
-            nuvlabox-state-href (str p/service-context nuvlabox-state-id)]
-
-        ;; nuvlabox user is able to update nuvlabox-state
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {:usb [usb1]
-                                            :ram ram}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
+      ;; nuvlabox user is able to update nuvlabox-state
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {:usb [usb1]
+                                          :ram ram}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
 
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {:ram ram-updated}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :ram ram-updated))
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {:ram ram-updated}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :ram ram-updated))
 
-        ;; ram, cpu, usb and disk test update
+      ;; ram, cpu, usb and disk test update
 
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {:usb [usb1]}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :usb [usb1]))
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {:usb [usb1]}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :usb [usb1]))
 
-        ;; usb if not present in update request will stay the same
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :usb [usb1]))
+      ;; usb if not present in update request will stay the same
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :usb [usb1]))
 
-        ;; update the usb value
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {:usb [usb1 usb2]}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :usb [usb1 usb2]))
+      ;; update the usb value
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {:usb [usb1 usb2]}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :usb [usb1 usb2]))
 
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {:usb [usb2]}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :usb [usb2]))
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {:usb [usb2]}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :usb [usb2]))
 
-        (-> session-nuvlabox-user
-            (request nuvlabox-state-href
-                     :request-method :put
-                     :body (json/write-str {}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :usb [usb2]))))))
+      (-> session-nuvlabox-user
+          (request nuvlabox-state-href
+                   :request-method :put
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :usb [usb2])))))
 
 
 (deftest bad-methods

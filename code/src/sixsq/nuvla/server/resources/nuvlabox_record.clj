@@ -116,7 +116,7 @@
                                    (assoc :state state-activated)
                                    (assoc :acl new-acl)
                                    (assoc :info {:href nuvlabox-state-id})
-                                   (utils/add-connector-href))]
+                                   (utils/create-services))]
         activated-nuvlabox))
     (logu/log-and-throw-400 "Activation is not allowed")))
 
