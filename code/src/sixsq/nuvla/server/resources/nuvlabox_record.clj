@@ -69,31 +69,10 @@
      :as   body} :body :as request}]
 
   (let [new-nuvlabox (assoc body :state state-new
-                                 :refreshInterval refreshInterval)
+                                 :refreshInterval refreshInterval)]
 
-        {{:keys [resource-id]} :body :as resp} (add-impl (assoc request :body new-nuvlabox))
-        vpn-exists? (and (:sslCA new-nuvlabox) (:sslCert new-nuvlabox) (:sslKey new-nuvlabox))]
+    (add-impl (assoc request :body new-nuvlabox))))
 
-    ;; VPN call OK, try to create NuvlaBox resource
-    (when (and resource-id (not vpn-exists?))
-      (let [[status message] (utils/add-vpn-configuration! new-nuvlabox)]
-
-        (log/info (format "VPN API returns status %s" status))
-
-        ;; NuvlaBox resource creation OK. Add VPN information.
-        (if (= 201 status)
-          (do
-            (log/debug (format "Adding VPN infos to the record %" message))
-            (utils/merge-vpn-infos resource-id request message))
-
-          ;; Creation of NuvlaBox failed.
-          ;; This cleans NuvlaBox.
-          (do
-            (db/delete {:id resource-id} request)
-            (logu/log-and-throw (or status 503) (or message "VPN-API error"))))))
-
-    ;; Always return the response from the add request.
-    resp))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
@@ -111,7 +90,7 @@
     (try
       (-> (db/retrieve id request)
           (a/throw-cannot-delete request)
-          (utils/delete-nuvlabox request))
+          (db/delete request))
       (catch ExceptionInfo ei
         (ex-data ei)))))
 

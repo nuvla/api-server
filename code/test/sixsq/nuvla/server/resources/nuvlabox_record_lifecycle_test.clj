@@ -502,22 +502,11 @@
                 (ltu/is-status 200)
                 (ltu/is-count 13))
 
-            ;;without VPN deletion should fail
-
-            (with-redefs [utils/remove-vpn-configuration! (fn [nuvlabox] {:status 503})]
-              (-> session-admin
-                  (request uri-nano
-                           :request-method :delete)
-                  (ltu/body->edn)
-                  (ltu/is-status 503)))
-
-
-            (with-redefs [utils/remove-vpn-configuration! (fn [nuvlabox] {:status 204 :message "OK"})]
-              (-> session-admin
-                  (request uri-nano
-                           :request-method :delete)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)))
+            (-> session-admin
+                (request uri-nano
+                         :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
             ;; Need some time for complete removal of the nuvlabox-record
             (Thread/sleep 2000)
@@ -529,20 +518,19 @@
                 (ltu/is-status 200)
                 (ltu/is-count 12))
 
-            (with-redefs [utils/remove-vpn-configuration! (fn [nuvlabox] {:status 204 :message "OK"})]
-              ;; admin can delete the resource
-              (-> session-admin
-                  (request uri-nuvlabox
-                           :request-method :delete)
-                  (ltu/body->edn)
-                  (ltu/is-status 200))
+            ;; admin can delete the resource
+            (-> session-admin
+                (request uri-nuvlabox
+                         :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
-              ;; check that the resource is gone
-              (-> session-admin
-                  (request uri-nano
-                           :request-method :delete)
-                  (ltu/body->edn)
-                  (ltu/is-status 404)))))))))
+            ;; check that the resource is gone
+            (-> session-admin
+                (request uri-nano
+                         :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 404))))))))
 
 
 (deftest bad-methods
