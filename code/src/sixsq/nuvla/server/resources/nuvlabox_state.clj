@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-state
   (:require
-    [clojure.string :as s]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -24,71 +23,68 @@
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::nuvlabox-state/nuvlabox-state))
+(def validate-fn (u/create-spec-validation-fn ::nuvlabox-state/schema))
+
+
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
 
-;;
-;; set the resource identifier to "nuvlabox-state/macaddress"
-;;
-
-(defmethod crud/new-identifier resource-type
-  [{{nuvlabox-href :href} :nuvlabox :as resource} _]
-  (let [nuvlabox-uuid (-> nuvlabox-href (s/split #"/") second)
-        id (str resource-type "/" nuvlabox-uuid)]
-    (assoc resource :id id)))
 
 ;;
 ;; CRUD operations
 ;;
 
-(def create-state (std-crud/add-fn resource-type collection-acl resource-type))
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-(defn create-nuvlabox-state [nuvlabox-id nuvlabox-acl]
-  (let [nuvlabox-empty-state {:resource-type resource-type
-                              :state         "unknown"
-                              :nuvlabox      {:href nuvlabox-id}
-                              :nextCheck     "1964-08-25T10:00:00Z"
-                              :cpu           0
-                              :ram           {:capacity 0
-                                              :used     0}
-                              :disks         {}
-                              :usb           []
-                              :acl           nuvlabox-acl}
+
+(defmethod crud/add resource-type
+  [request]
+  (add-impl request))
+
+
+(defn create-nuvlabox-state
+  "Utility to facilitate creating a new nuvlabox-state resource from the
+   nuvlabox-record resource. This will create (as an administrator) a new state
+   based on the given id and acl. The returned value is the standard 'add'
+   response for the request."
+  [nuvlabox-id nuvlabox-acl]
+  (let [body {:resource-type resource-type
+              :parent        nuvlabox-id
+              :state         "NEW"
+              :acl           nuvlabox-acl}
         nuvlabox-state-request {:params      {:resource-name resource-type}
                                 :nuvla/authn auth-utils/internal-identity
-                                :body        nuvlabox-empty-state}]
-    (create-state nuvlabox-state-request)))
+                                :body        body}]
+    (add-impl nuvlabox-state-request)))
+
+
+(def edit-impl (std-crud/edit-fn resource-type))
+
 
 (defmethod crud/edit resource-type
-  [{{uuid :uuid} :params body :body :as request}]
-  (try
-    (let [current (-> (str resource-type "/" uuid)
-                      (db/retrieve request)
-                      (a/throw-cannot-edit request))
-          merged (cond-> (u/update-timestamps (merge current body))
-                         (not (:usb body)) (assoc :usb (:usb current))
-                         (not (:disks body)) (assoc :disks (:disks current))
-                         (not (:ram body)) (assoc :ram (:ram current))
-                         (not (:cpu body)) (assoc :cpu (:cpu current)))]
-      (-> merged
-          (crud/validate)
-          (db/edit request)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  [request]
+  (edit-impl request))
+
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def delete-impl (std-crud/delete-fn resource-type))
+
+
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
+
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 
 (defmethod crud/query resource-type
   [request]
@@ -101,4 +97,4 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox-state/nuvlabox-state))
+  (std-crud/initialize resource-type ::nuvlabox-state/schema))

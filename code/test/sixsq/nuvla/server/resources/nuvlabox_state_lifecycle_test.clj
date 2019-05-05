@@ -1,55 +1,81 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-state-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-state :refer :all]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
+    [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
     [peridot.core :refer :all]))
+
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
-(def nuvlabox-base-uri (str p/service-context nb/resource-type))
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context nb-state/resource-type))
+
 
 (def timestamp "1964-08-25T10:00:00Z")
 
-(def valid-nuvlabox {:created      timestamp
-                     :updated      timestamp
-                     :acl          {:owners   ["group/nuvla-admin"]
-                                    :view-acl ["user/jane"]}
-                     :macAddress   "aa:bb:cc:dd:ee:ff"
-                     :owner        {:href "test"}
-                     :organization "org"
-                     :vmCidr       "10.0.0.0/24"
-                     :lanCidr      "10.0.1.0/24"})
 
-(def usb1 {:busy        false
-           :vendor-id   "vendor-id"
-           :device-id   "device-id-1"
-           :bus-id      "bus-id"
-           :product-id  "product-id"
-           :description "descr"})
+(def nuvlabox-record-id "nuvlabox-record/some-random-uuid")
 
-(def usb2 {:busy        false
-           :vendor-id   "vendor-id"
-           :device-id   "device-id-1"
-           :bus-id      "bus-id"
-           :product-id  "product-id"
-           :description "descr"})
 
-(def ram {:capacity 4000
-          :used     2000})
+(def valid-acl {:owners    ["group/nuvla-admin"]
+                :edit-data [nuvlabox-record-id]})
 
-(def ram-updated {:capacity 4000
-                  :used     3000})
 
+(def valid-state {:id             (str nb-state/resource-type "/uuid")
+                  :resource-type  nb-state/resource-type
+                  :created        timestamp
+                  :updated        timestamp
+
+                  :acl            valid-acl
+
+                  :parent         "nuvlabox-resource/uuid"
+                  :state          "ONLINE"
+
+                  :next-heartbeat timestamp
+
+                  :resources      {:cpu   {:capacity 8
+                                           :load     4.5}
+                                   :ram   {:capacity 4096
+                                           :used     1000}
+                                   :disks [{:device   "root"
+                                            :capacity 20000
+                                            :used     10000}
+                                           {:device   "datastore"
+                                            :capacity 20000
+                                            :used     10000}]}
+
+                  :peripherals    {:usb [{:busy        false
+                                          :vendor-id   "vendor-id"
+                                          :device-id   "device-id"
+                                          :bus-id      "bus-id"
+                                          :product-id  "product-id"
+                                          :description "description"}]}
+
+                  :wifi-password  "some-secure-password"})
+
+
+(def resources-updated {:cpu   {:capacity 10
+                                :load     5.5}
+                        :ram   {:capacity 4096
+                                :used     2000}
+                        :disks [{:device   "root"
+                                 :capacity 20000
+                                 :used     20000}
+                                {:device   "datastore"
+                                 :capacity 20000
+                                 :used     15000}]})
+
+(def peripherals-updated {:usb [{:busy        true
+                                 :vendor-id   "vendor-id-2"
+                                 :device-id   "device-id-2"
+                                 :bus-id      "bus-id-2"
+                                 :product-id  "product-id-2"
+                                 :description "description-2"}]})
 
 (deftest lifecycle
 
@@ -57,146 +83,110 @@
                     session
                     (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
+        session-nb (header session authn-info-header (str nuvlabox-record-id " group/nuvla-user group/nuvla-anon"))]
 
-    ;; non admin Users cannot create nuvlabox
-    ;; FIXME: Seems to be an inconsistency between nuvlabox-record tests and this test; for the other users can create nuvlaboxes
-    #_(-> session-jane
-          (request nuvlabox-base-uri
+    ;; non-admin users cannot create a nuvlabox-state resource
+    (doseq [session [session-anon session-user]]
+      (-> session
+          (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-nuvlabox))
+                   :body (json/write-str valid-state))
           (ltu/body->edn)
-          (ltu/is-status 403))
+          (ltu/is-status 403)))
 
-    ;; Admin can create nuvlabox-record.
-    (-> session-admin
-        (request nuvlabox-base-uri
-                 :request-method :post
-                 :body (json/write-str valid-nuvlabox))
-        (ltu/body->edn)
-        (ltu/is-status 201))
+    ;; admin users can create a nuvlabox-state resource
+    (when-let [state-id (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-state))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (get-in [:response :body :resource-id]))]
 
-    (let [resp-admin (-> session-admin
-                         (request nuvlabox-base-uri
-                                  :request-method :post
-                                  :body (json/write-str (assoc valid-nuvlabox :macAddress "01:01:01:01:01")))
-                         (ltu/body->edn)
-                         (ltu/is-status 201))
+      (let [state-url (str p/service-context state-id)]
 
-          id-nuvlabox (get-in resp-admin [:response :body :resource-id])
-          uri-nuvlabox (str p/service-context id-nuvlabox)
-          new-nuvlabox (-> session-admin
-                           (request uri-nuvlabox)
-                           (ltu/body->edn)
-                           (ltu/is-status 200))
-          new-nuvlabox-id (-> new-nuvlabox :response :body :id)
+        ;; other users cannot see the state
+        (-> session-user
+            (request state-url)
+            (ltu/body->edn)
+            (ltu/is-status 403))
 
-          activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
+        ;; nuvlabox user is able to update nuvlabox-state
+        (-> session-nb
+            (request state-url
+                     :request-method :put
+                     :body (json/write-str {:resources resources-updated}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :resources resources-updated))
 
-          ;; create namespace (required by service offer creation)
-          valid-namespace {:prefix "schema-org"
-                           :uri    "https://schema-org/a/b/c.md"}
+        ;; verify that the update was written to disk
+        (-> session-nb
+            (request state-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :resources resources-updated))
 
-          _ (-> session-admin
-                (request (str p/service-context sn/resource-type)
-                         :request-method :post
-                         :body (json/write-str valid-namespace))
-                (ltu/body->edn)
-                (ltu/is-status 201))
+        (-> session-nb
+            (request state-url
+                     :request-method :put
+                     :body (json/write-str {:peripherals peripherals-updated}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :peripherals peripherals-updated))
 
-          _ (-> session-anon
-                (request activate-url-action :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (get-in [:response :body :username]))
+        ;; verify that the update was written to disk
+        (-> session-nb
+            (request state-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :resources resources-updated)
+            (ltu/is-key-value :peripherals peripherals-updated))
 
-          session-nuvlabox-user (header session authn-info-header (str new-nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+        ;; nuvlabox-record identity cannot delete the state
+        (-> session-nb
+            (request state-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 403))
 
-          ;; activate nuvlabox must create a nuvlabox-state entry
-          nuvlabox-state-id (-> session-nuvlabox-user
-                                (request base-uri)
-                                (ltu/body->edn)
-                                (ltu/is-status 200)
-                                (ltu/is-count 1)
-                                (get-in [:response :body :resources])
-                                first
-                                :id)
-          nuvlabox-state-href (str p/service-context nuvlabox-state-id)]
+        ;; administrator can delete the state
+        (-> session-admin
+            (request state-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))))
 
-      ;; nuvlabox user is able to update nuvlabox-state
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {:usb [usb1]
-                                          :ram ram}))
+
+    ;; verify that the internal create function also works
+    (let [response (nb-state/create-nuvlabox-state nuvlabox-record-id valid-acl)
+          location (get-in response [:headers "Location"])
+          state-id (-> response :body :resource-id)
+          state-url (str p/service-context state-id)]
+
+      (is location)
+      (is state-id)
+      (is (= state-id location))
+
+      ;; verify that the resource exists
+      (-> session-nb
+          (request state-url)
           (ltu/body->edn)
           (ltu/is-status 200))
 
-
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {:ram ram-updated}))
+      ;; administrator can delete the state
+      (-> session-admin
+          (request state-url
+                   :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :ram ram-updated))
-
-      ;; ram, cpu, usb and disk test update
-
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {:usb [usb1]}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :usb [usb1]))
-
-      ;; usb if not present in update request will stay the same
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :usb [usb1]))
-
-      ;; update the usb value
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {:usb [usb1 usb2]}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :usb [usb1 usb2]))
-
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {:usb [usb2]}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :usb [usb2]))
-
-      (-> session-nuvlabox-user
-          (request nuvlabox-state-href
-                   :request-method :put
-                   :body (json/write-str {}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value :usb [usb2])))))
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
-    (doall
-      (for [[uri method] [[nuvlabox-base-uri :options]
-                          [nuvlabox-base-uri :delete]
-                          [resource-uri :options]
-                          [resource-uri :post]]]
-        (do
-          (-> (session (ltu/ring-app))
-              (request uri
-                       :request-method method
-                       :body (json/write-str {:dummy "value"}))
-              (ltu/is-status 405)))))))
+  (let [resource-uri (str p/service-context (u/new-resource-id nb-state/resource-type))]
+    (ltu/verify-405-status [[base-uri :options]
+                            [base-uri :delete]
+                            [resource-uri :options]
+                            [resource-uri :post]])))

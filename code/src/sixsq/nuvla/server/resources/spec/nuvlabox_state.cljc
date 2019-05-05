@@ -1,22 +1,58 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-state
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
+;;
+;; general information
+;;
 
-(s/def ::nextCheck ::cimi-core/timestamp)
+(s/def ::next-heartbeat ::core/timestamp)
 
-(s/def ::nuvlabox ::cimi-common/resource-link)
+(s/def ::state #{"NEW" "ONLINE" "OFFLINE" "UNKNOWN"})
+
+
+;;
+;; resource information
+;;
+
+(s/def ::capacity pos-int?)
+
+(s/def ::load (s/and double? #(not (neg? %))))
+
+(s/def ::cpu (su/only-keys :req-un [::capacity ::load]))
+
+
+(s/def ::used nat-int?)
+
+(s/def ::ram (su/only-keys :req-un [::capacity ::used]))
+
+
+(s/def ::device ::core/nonblank-string)
+
+(s/def ::disk-info (su/only-keys :req-un [::device ::capacity ::used]))
+
+(s/def ::disks (s/coll-of ::disk-info :min-count 1 :kind vector?))
+
+(s/def ::resources (su/only-keys :req-un [::cpu ::ram ::disks]))
+
+;;
+;; peripherals
+;;
 
 (s/def ::busy boolean?)
-(s/def ::vendor-id ::cimi-core/nonblank-string)
-(s/def ::device-id ::cimi-core/nonblank-string)
-(s/def ::bus-id ::cimi-core/nonblank-string)
-(s/def ::product-id ::cimi-core/nonblank-string)
-(s/def ::description string?)
 
+(s/def ::vendor-id ::core/nonblank-string)
+
+(s/def ::device-id ::core/nonblank-string)
+
+(s/def ::bus-id ::core/nonblank-string)
+
+(s/def ::product-id ::core/nonblank-string)
+
+(s/def ::description string?)
 
 (s/def ::usb-info (su/only-keys :req-un [::busy
                                          ::vendor-id
@@ -25,45 +61,23 @@
                                          ::product-id
                                          ::description]))
 
-(s/def ::capacity int?)
-(s/def ::used int?)
-(s/def ::disk-name ::cimi-core/nonblank-string)
+(s/def ::usb (s/coll-of ::usb-info :kind vector?))
 
-(s/def ::memory-info (su/only-keys :req-un [::capacity ::used]))
+(s/def ::peripherals (su/only-keys :opt-un [::usb]))
 
-(s/def ::state #{"unknown" "online" "offline"})
 
-(s/def ::usb (s/coll-of ::usb-info))
-(s/def ::cpu nat-int?)
-(s/def ::ram ::memory-info)
-(s/def ::disks (su/constrained-map keyword? ::memory-info))
-(s/def ::mutableWifiPassword ::cimi-core/nonblank-string)
-(s/def ::swarmNodeId ::cimi-core/nonblank-string)
-(s/def ::swarmManagerId (s/nilable (s/coll-of ::cimi-core/nonblank-string)) )
-(s/def ::swarmManagerToken ::cimi-core/nonblank-string)
-(s/def ::swarmNode ::cimi-core/nonblank-string)
-(s/def ::leader? boolean?)
-(s/def ::swarmWorkerToken ::cimi-core/nonblank-string)
-(s/def ::tlsCA ::cimi-core/nonblank-string)
-(s/def ::tlsCert ::cimi-core/nonblank-string)
-(s/def ::tlsKey ::cimi-core/nonblank-string)
+;;
+;; miscellaneous
+;;
 
-(s/def ::nuvlabox-state
-  (su/only-keys-maps cimi-common/common-attrs
-                     {:req-un [::nuvlabox
-                               ::nextCheck
-                               ::cpu
-                               ::ram
-                               ::disks
-                               ::usb]
-                      :opt-un [::state
-                               ::mutableWifiPassword
-                               ::swarmNodeId
-                               ::swarmManagerToken
-                               ::swarmNode
-                               ::swarmManagerId
-                               ::leader?
-                               ::swarmWorkerToken
-                               ::tlsCA
-                               ::tlsCert
-                               ::tlsKey]}))
+(s/def ::wifi-password ::core/nonblank-string)
+
+
+(s/def ::schema
+  (su/only-keys-maps common/common-attrs
+                     {:req-un [::common/parent              ;; reference to nuvlabox-record
+                               ::state]
+                      :opt-un [::next-heartbeat
+                               ::resources
+                               ::peripherals
+                               ::wifi-password]}))
