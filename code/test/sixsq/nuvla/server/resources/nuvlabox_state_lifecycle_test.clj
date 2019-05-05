@@ -73,7 +73,7 @@
           (ltu/body->edn)
           (ltu/is-status 403))
 
-    ;; Admin can create nuvlabox-record, and does not need quota
+    ;; Admin can create nuvlabox-record.
     (-> session-admin
         (request nuvlabox-base-uri
                  :request-method :post

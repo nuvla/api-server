@@ -65,10 +65,6 @@
   (boolean (and formFactor (= (str/lower-case formFactor) nano-formFactor))))
 
 
-(defn quota-ok? [{:keys [organization] :as nuvlabox} request]
-  true)
-
-
 (defn add-connector-href
   "Create a docker connector and attach it to the nuvlabox
   only if it is a nano without pre-existing connector

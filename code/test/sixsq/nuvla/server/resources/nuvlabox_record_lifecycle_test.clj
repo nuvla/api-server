@@ -141,7 +141,7 @@
             (ltu/is-status 400))))
 
 
-    ;; Admin does not require quota for creation
+    ;; Admin creation.
     (with-redefs [utils/call-vpn-api (fn [_ _ _ _] [201 sample-response-map])]
       (doseq [entry #{valid-nuvlabox valid-nano}]
         (-> session-admin
@@ -205,7 +205,7 @@
               (ltu/is-status 409)))
 
 
-        ;;same owners, different macAdresses : quota should not be reached yet
+        ;; same owners, different macAddresses
         (doseq [nb #{(assoc nb1 :macAddress (random-mac-address)) (assoc nb2 :macAddress (random-mac-address))}]
           (-> session-jane
               (request base-uri

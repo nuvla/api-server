@@ -71,9 +71,7 @@
   (let [new-nuvlabox (assoc body :state state-new
                                  :refreshInterval refreshInterval)
 
-        {{:keys [resource-id]} :body :as resp} (if (utils/quota-ok? new-nuvlabox request)
-                                                 (add-impl (assoc request :body new-nuvlabox))
-                                                 (logu/log-and-throw 412 "Insufficient quota"))
+        {{:keys [resource-id]} :body :as resp} (add-impl (assoc request :body new-nuvlabox))
         vpn-exists? (and (:sslCA new-nuvlabox) (:sslCert new-nuvlabox) (:sslKey new-nuvlabox))]
 
     ;; VPN call OK, try to create NuvlaBox resource
