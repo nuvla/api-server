@@ -7,14 +7,14 @@ although they can be created manually by an administrator.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth-utils]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
-    [sixsq.nuvla.auth.utils :as auth-utils]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

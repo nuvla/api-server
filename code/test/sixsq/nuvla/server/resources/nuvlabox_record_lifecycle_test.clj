@@ -2,14 +2,14 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
+    [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
