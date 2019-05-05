@@ -1,4 +1,10 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-state
+  "
+The nuvlabox-state resource represents the instantaneous state of the
+associated NuvlaBox, including available resources and peripherals. These
+resources are usually created as a side-effect of a NuvlaBox activation,
+although they can be created manually by an administrator.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
@@ -6,7 +12,9 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nuvlabox-state]
-    [sixsq.nuvla.auth.utils :as auth-utils]))
+    [sixsq.nuvla.auth.utils :as auth-utils]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -97,4 +105,5 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox-state/schema))
+  (std-crud/initialize resource-type ::nuvlabox-state/schema)
+  (md/register (gen-md/generate-metadata ::ns ::nuvlabox-state/schema)))
