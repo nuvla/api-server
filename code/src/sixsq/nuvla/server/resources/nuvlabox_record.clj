@@ -57,7 +57,7 @@
 
 
 ;;
-;; set the resource identifier to "nuvlabox-record/macaddress"
+;; use default method for generating an ACL
 ;;
 
 (defmethod crud/new-identifier resource-type

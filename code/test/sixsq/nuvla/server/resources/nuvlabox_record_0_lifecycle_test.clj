@@ -32,42 +32,24 @@
          (apply str))))
 
 
-(def valid-nuvlabox {:created      timestamp
-                     :updated      timestamp
-                     :acl          {:owners   ["group/nuvla-admin"]
-                                    :view-acl ["group/nuvla-user"]}
+(def valid-nuvlabox {:created          timestamp
+                     :updated          timestamp
+                     :acl              {:owners   ["group/nuvla-admin"]
+                                        :view-acl ["group/nuvla-user"]}
 
-                     :version      0
+                     :version          0
 
-                     :organization "ACME"
-                     :form-factor  "Nuvlabox"
-                     :mac-address  "aa:bb:cc:dd:ee:ff"
-                     :owner        {:href "test"}
-                     :vm-cidr      "10.0.0.0/24"
-                     :lan-cidr     "10.0.1.0/24"})
+                     :mac-address      "aa:bb:cc:dd:ee:ff"
+                     :owner            {:href "test"}
+                     :organization     "ACME"
+                     :os-version       "OS version"
+                     :hw-revision-code "a020d3"
+                     :login-username   "aLoginName"
+                     :login-password   "aLoginPassword"
 
-
-(def valid-nano {:created          timestamp
-                 :updated          timestamp
-
-                 :version          0
-
-                 :mac-address      "gg:hh:ii:jj:kk:ll"
-                 :owner            {:href "user/test"}
-                 :os-version       "OS version"
-                 :hw-revision-code "a020d3"
-                 :login-username   "aLoginName"
-                 :login-password   "aLoginPassword"
-                 :form-factor      "Nano"
-                 :organization     "nanoland"})
-
-
-(defn random-nano
-  ([] (random-nano "a-nb-owner"))
-  ([owner-name]
-   (assoc valid-nano :mac-address (random-mac-address)
-                     :organization "randomorg"
-                     :owner {:href (str "user/" owner-name)})))
+                     :form-factor      "Nuvlabox"
+                     :vm-cidr          "10.0.0.0/24"
+                     :lan-cidr         "10.0.1.0/24"})
 
 
 (deftest lifecycle
@@ -102,19 +84,18 @@
         (ltu/is-status 403))
 
     ;; Admin creation.
-    (doseq [entry #{valid-nuvlabox valid-nano}]
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc entry :mac-address (random-mac-address))))
-          (ltu/body->edn)
-          (ltu/is-status 201)))
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-nuvlabox :mac-address (random-mac-address))))
+        (ltu/body->edn)
+        (ltu/is-status 201))
 
     (-> session-admin
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-count 2))
+        (ltu/is-count 1))
 
     ;; creating a nuvlabox as a normal user should succeed; both nano and regular
     (-> session-admin
@@ -124,47 +105,8 @@
         (ltu/body->edn)
         (ltu/is-status 201))
 
-    (-> session-jane
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-nano))
-        (ltu/body->edn)
-        (ltu/is-status 201))
-
-    (let [nb1 (random-nano "owner1")
-          nb2 (random-nano "owner2")]
-
-      ;;admin creates nuvlaboxes
-
-      (doseq [nb #{nb1 nb2}]
-        (-> session-admin
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str nb))
-            (ltu/body->edn)
-            (ltu/is-status 201)))
-
-      ;;user can not re-create with same macAddress
-      (doseq [nb #{nb1 nb2}]
-        (-> session-jane
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str nb))
-            (ltu/body->edn)
-            (ltu/is-status 409)))
-
-      ;; same owners, different macAddresses
-      (doseq [nb #{(assoc nb1 :mac-address (random-mac-address)) (assoc nb2 :mac-address (random-mac-address))}]
-        (-> session-jane
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str nb))
-            (ltu/body->edn)
-            (ltu/is-status 201))))
-
     ;; creating a nuvlabox as a normal user should succeed
-    (doseq [entry [(assoc valid-nuvlabox :mac-address "02:02:02:02:02:02")
-                   (assoc valid-nano :mac-address "12:12:12:12:12:12")]]
+    (let [entry (assoc valid-nuvlabox :mac-address "02:02:02:02:02:02")]
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -183,7 +125,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-count 11))
+        (ltu/is-count 4))
 
     ;; create & actions
     (let [resp-admin (-> session-admin
@@ -194,58 +136,9 @@
                          (ltu/is-status 201))
 
 
-          resp-nano (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str (assoc valid-nano :mac-address "02:bb:cc:dd:ee:ff")))
-                        (ltu/body->edn)
-                        (ltu/is-status 201))
-
           id-nuvlabox (get-in resp-admin [:response :body :resource-id])
-          id-nano (get-in resp-nano [:response :body :resource-id])
           location-admin (str p/service-context (-> resp-admin ltu/location))
-          location-nano (str p/service-context (-> resp-nano ltu/location))
-          uri-nuvlabox (str p/service-context id-nuvlabox)
-          uri-nano (str p/service-context id-nano)
-          new-nuvlabox (-> session-admin
-                           (request uri-nuvlabox)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/is-key-value :state nb/state-new)
-                           (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
-                           (ltu/is-key-value :id "nuvlabox-record/01bbccddeeff")
-                           (ltu/is-operation-present "delete")
-                           (ltu/is-operation-present "edit")
-                           (ltu/is-operation-absent "quarantine")
-                           (ltu/is-operation-present "activate"))
-          new-nuvlabox-id (-> new-nuvlabox :response :body :id)
-          _ (-> session-admin
-                (request uri-nano)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-
-                (ltu/is-key-value :state nb/state-new)
-                (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
-                (ltu/is-key-value :id "nuvlabox-record/02bbccddeeff")
-                (ltu/is-operation-present "delete")
-                (ltu/is-operation-present "edit")
-                (ltu/is-operation-absent "quarantine")
-                (ltu/is-operation-present "activate"))
-
-          new-nano (-> session-admin
-                       (request uri-nano)
-                       (ltu/body->edn)
-                       (ltu/is-status 200)
-                       (ltu/is-key-value :state nb/state-new)
-                       (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
-                       (ltu/is-key-value :id "nuvlabox-record/02bbccddeeff")
-                       (ltu/is-operation-present "delete")
-                       (ltu/is-operation-present "edit")
-                       (ltu/is-operation-absent "quarantine")
-                       (ltu/is-operation-present "activate"))
-          new-nano-id (-> new-nano :response :body :id)
-          activate-url-action (str p/service-context (ltu/get-op new-nuvlabox "activate"))
-          activate-nano-action (str p/service-context (ltu/get-op new-nano "activate"))]
+          uri-nuvlabox (str p/service-context id-nuvlabox)]
 
       (is (= (str nb/resource-type "/01bbccddeeff") id-nuvlabox))
 
