@@ -4,6 +4,7 @@
 
 ### Added
 
+  - Added resource-metadata information for job resource
   - Add notification resource that allows administrators to notify users of important events
 
 ### Changed 
