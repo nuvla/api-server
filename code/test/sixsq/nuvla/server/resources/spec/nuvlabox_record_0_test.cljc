@@ -54,7 +54,7 @@
                       :hw-revision-code             "a020d3"})
 
 
-(deftest check-nuvlabox-state
+(deftest check-nuvlabox-record
 
   (stu/is-valid ::nb-record-0/schema valid-nb-record)
   (stu/is-invalid ::nb-record-0/schema (assoc valid-nb-record :bad-attr "BAD_ATTR"))
