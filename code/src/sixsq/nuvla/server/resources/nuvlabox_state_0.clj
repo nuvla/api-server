@@ -4,7 +4,6 @@ The nuvlabox-state (version 0) contains attributes to describe available
 resources and peripherals.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]

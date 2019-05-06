@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-record-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-record-0-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
@@ -6,17 +6,21 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]))
+    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]))
+
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context nb/resource-type))
+
+
 (def timestamp "1964-08-25T10:00:00Z")
-(def connector-name1 "nuvlabox-test")
+
+
 (def user "jane")
+
 
 (defn random-mac-address []
   (let [random-str (apply str (remove #((set "-") %) (u/random-uuid)))]
@@ -27,35 +31,41 @@
          (interpose ":")
          (apply str))))
 
+
 (def valid-nuvlabox {:created      timestamp
                      :updated      timestamp
                      :acl          {:owners   ["group/nuvla-admin"]
                                     :view-acl ["group/nuvla-user"]}
+
+                     :version      0
+
                      :organization "ACME"
-                     :formFactor   "Nuvlabox"
-                     :macAddress   "aa:bb:cc:dd:ee:ff"
+                     :form-factor  "Nuvlabox"
+                     :mac-address  "aa:bb:cc:dd:ee:ff"
                      :owner        {:href "test"}
-                     :vmCidr       "10.0.0.0/24"
-                     :lanCidr      "10.0.1.0/24"})
+                     :vm-cidr      "10.0.0.0/24"
+                     :lan-cidr     "10.0.1.0/24"})
 
 
-(def valid-nano {:created        timestamp
-                 :updated        timestamp
-                 :macAddress     "gg:hh:ii:jj:kk:ll"
-                 :owner          {:href "user/test"}
-                 :OSVersion      "OS version"
-                 :hwRevisionCode "a020d3"
-                 :loginUsername  "aLoginName"
-                 :loginPassword  "aLoginPassword"
-                 :formFactor     "Nano"
-                 :organization   "nanoland"
-                 :CPU            4
-                 :RAM            976})
+(def valid-nano {:created          timestamp
+                 :updated          timestamp
+
+                 :version          0
+
+                 :mac-address      "gg:hh:ii:jj:kk:ll"
+                 :owner            {:href "user/test"}
+                 :os-version       "OS version"
+                 :hw-revision-code "a020d3"
+                 :login-username   "aLoginName"
+                 :login-password   "aLoginPassword"
+                 :form-factor      "Nano"
+                 :organization     "nanoland"})
+
 
 (defn random-nano
   ([] (random-nano "a-nb-owner"))
   ([owner-name]
-   (assoc valid-nano :macAddress (random-mac-address)
+   (assoc valid-nano :mac-address (random-mac-address)
                      :organization "randomorg"
                      :owner {:href (str "user/" owner-name)})))
 
@@ -96,14 +106,10 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc entry :macAddress (random-mac-address))))
+                   :body (json/write-str (assoc entry :mac-address (random-mac-address))))
           (ltu/body->edn)
           (ltu/is-status 201)))
 
-    ;; Need some time for complete removal of the nuvlabox-records
-    (Thread/sleep 2000)
-
-    ;;incomplete record should have been deleted when vpn API did not succeed
     (-> session-admin
         (request base-uri)
         (ltu/body->edn)
@@ -148,7 +154,7 @@
             (ltu/is-status 409)))
 
       ;; same owners, different macAddresses
-      (doseq [nb #{(assoc nb1 :macAddress (random-mac-address)) (assoc nb2 :macAddress (random-mac-address))}]
+      (doseq [nb #{(assoc nb1 :mac-address (random-mac-address)) (assoc nb2 :mac-address (random-mac-address))}]
         (-> session-jane
             (request base-uri
                      :request-method :post
@@ -157,8 +163,8 @@
             (ltu/is-status 201))))
 
     ;; creating a nuvlabox as a normal user should succeed
-    (doseq [entry [(assoc valid-nuvlabox :macAddress "02:02:02:02:02:02")
-                   (assoc valid-nano :macAddress "12:12:12:12:12:12")]]
+    (doseq [entry [(assoc valid-nuvlabox :mac-address "02:02:02:02:02:02")
+                   (assoc valid-nano :mac-address "12:12:12:12:12:12")]]
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -169,12 +175,9 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox :macAddress "00:00:00:00:00:00")))
+                 :body (json/write-str (assoc valid-nuvlabox :mac-address "00:00:00:00:00:00")))
         (ltu/body->edn)
         (ltu/is-status 201))
-
-    ;; Need some time for complete removal of the nuvlabox-records
-    (Thread/sleep 2000)
 
     (-> session-admin
         (request base-uri)
@@ -186,7 +189,7 @@
     (let [resp-admin (-> session-admin
                          (request base-uri
                                   :request-method :post
-                                  :body (json/write-str (assoc valid-nuvlabox :macAddress "01:bb:cc:dd:ee:ff")))
+                                  :body (json/write-str (assoc valid-nuvlabox :mac-address "01:bb:cc:dd:ee:ff")))
                          (ltu/body->edn)
                          (ltu/is-status 201))
 
@@ -194,7 +197,7 @@
           resp-nano (-> session-admin
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (assoc valid-nano :macAddress "02:bb:cc:dd:ee:ff")))
+                                 :body (json/write-str (assoc valid-nano :mac-address "02:bb:cc:dd:ee:ff")))
                         (ltu/body->edn)
                         (ltu/is-status 201))
 
@@ -209,7 +212,7 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/is-key-value :state nb/state-new)
-                           (ltu/is-key-value :refreshInterval nb/default-refresh-interval)
+                           (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
                            (ltu/is-key-value :id "nuvlabox-record/01bbccddeeff")
                            (ltu/is-operation-present "delete")
                            (ltu/is-operation-present "edit")
@@ -222,7 +225,7 @@
                 (ltu/is-status 200)
 
                 (ltu/is-key-value :state nb/state-new)
-                (ltu/is-key-value :refreshInterval nb/default-refresh-interval)
+                (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
                 (ltu/is-key-value :id "nuvlabox-record/02bbccddeeff")
                 (ltu/is-operation-present "delete")
                 (ltu/is-operation-present "edit")
@@ -234,7 +237,7 @@
                        (ltu/body->edn)
                        (ltu/is-status 200)
                        (ltu/is-key-value :state nb/state-new)
-                       (ltu/is-key-value :refreshInterval nb/default-refresh-interval)
+                       (ltu/is-key-value :refresh-interval nb/default-refresh-interval)
                        (ltu/is-key-value :id "nuvlabox-record/02bbccddeeff")
                        (ltu/is-operation-present "delete")
                        (ltu/is-operation-present "edit")
@@ -252,14 +255,14 @@
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox :macAddress "01:02:03:04:05:06")))
+                   :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
           (ltu/body->edn)
           (ltu/is-status 201))
 
       (-> session-admin
           (request base-uri
                    :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox :macAddress "01:02:03:04:05:06")))
+                   :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
           (ltu/body->edn)
           (ltu/is-status 409))
 
@@ -286,13 +289,7 @@
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
-    (doall
-      (for [[uri method] [[base-uri :options]
-                          [base-uri :delete]
-                          [resource-uri :options]
-                          [resource-uri :post]]]
-        (-> (session (ltu/ring-app))
-            (request uri
-                     :request-method method
-                     :body (json/write-str {:dummy "value"}))
-            (ltu/is-status 405))))))
+    (ltu/verify-405-status [[base-uri :options]
+                            [base-uri :delete]
+                            [resource-uri :options]
+                            [resource-uri :post]])))

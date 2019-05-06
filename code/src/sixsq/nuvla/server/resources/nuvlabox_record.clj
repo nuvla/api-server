@@ -11,9 +11,7 @@
     [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
-    [sixsq.nuvla.server.util.log :as logu])
-  (:import
-    (clojure.lang ExceptionInfo)))
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -26,28 +24,45 @@
                      :add   ["group/nuvla-user"]})
 
 
-(def ^:const state-new "new")
-(def ^:const state-activated "activated")
-(def ^:const state-quarantined "quarantined")
+(def ^:const state-new "NEW")
+
+
+(def ^:const state-activated "ACTIVATED")
+
+
+(def ^:const state-quarantined "QUARANTINED")
+
+
 (def ^:const default-refresh-interval 90)
 
 
 ;;
-;; multimethods for validation and operations
+;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::nuvlabox-record/nuvlabox-record))
+(defmulti validate-subtype
+          "Validates the given nuvlabox-record resource against a specific
+           version of the schema."
+          :version)
+
+
+(defmethod validate-subtype :default
+  [resource]
+  (throw (ex-info (str "unsupported nuvlabox-record version: " (:version resource)) resource)))
+
+
 (defmethod crud/validate resource-type
   [resource]
-  (validate-fn resource))
+  (validate-subtype resource))
+
 
 ;;
 ;; set the resource identifier to "nuvlabox-record/macaddress"
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [macAddress] :as resource} _]
-  (assoc resource :id (str resource-type "/" (-> macAddress str/lower-case (str/replace ":" "")))))
+  [{:keys [mac-address] :as resource} _]
+  (assoc resource :id (str resource-type "/" (-> mac-address str/lower-case (str/replace ":" "")))))
 
 
 (defmethod crud/add-acl resource-type
@@ -63,25 +78,31 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [refreshInterval]
-     :or   {refreshInterval default-refresh-interval}
+  [{{:keys [refresh-interval]
+     :or   {refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
 
   (let [new-nuvlabox (assoc body :state state-new
-                                 :refreshInterval refreshInterval)]
+                                 :refresh-interval refresh-interval)]
 
     (add-impl (assoc request :body new-nuvlabox))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
+
 (defmethod crud/retrieve resource-type
   [request]
   (retrieve-impl request))
 
+
 (def edit-impl (std-crud/edit-fn resource-type))
+
+
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
+
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
@@ -90,14 +111,17 @@
       (-> (db/retrieve id request)
           (a/throw-cannot-delete request)
           (db/delete request))
-      (catch ExceptionInfo ei
-        (ex-data ei)))))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
 
 ;;
 ;; Activate operation
@@ -127,8 +151,9 @@
           nuvlabox (db/retrieve id request)
           nuvlabox-activated (activate nuvlabox)]
       (db/edit nuvlabox-activated request))
-    (catch ExceptionInfo ei
-      (ex-data ei))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
 
 ;;
 ;; Quarantine operation
@@ -141,6 +166,7 @@
       (assoc resource :state state-quarantined))
     (logu/log-and-throw-400 (str "Bad nuvlabox state " state))))
 
+
 (defmethod crud/do-action [resource-type "quarantine"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -150,8 +176,8 @@
             (a/throw-cannot-manage request)
             quarantine
             (db/edit request))
-        (catch ExceptionInfo ei
-          (ex-data ei))))))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))))
 
 ;;
 ;; Set operation
@@ -173,6 +199,6 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox-record/nuvlabox-record))
+  (std-crud/initialize resource-type ::nuvlabox-record/schema))
 
 
