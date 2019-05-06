@@ -60,11 +60,6 @@
 ;; use default method for generating an ACL
 ;;
 
-(defmethod crud/new-identifier resource-type
-  [{:keys [mac-address] :as resource} _]
-  (assoc resource :id (str resource-type "/" (-> mac-address str/lower-case (str/replace ":" "")))))
-
-
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))

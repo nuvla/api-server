@@ -140,11 +140,12 @@
           location-admin (str p/service-context (-> resp-admin ltu/location))
           uri-nuvlabox (str p/service-context id-nuvlabox)]
 
-      (is (= (str nb/resource-type "/01bbccddeeff") id-nuvlabox))
+      ;; id is a UUID now, not the MAC address
+      (is (not= (str nb/resource-type "/01bbccddeeff") id-nuvlabox))
 
       (is (= location-admin uri-nuvlabox))
 
-      ;; adding the same resource twice should give a conflict
+      ;; because the identifier is a UUID now, there are no constraints on duplicating the MAC address
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -157,7 +158,7 @@
                    :request-method :post
                    :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
           (ltu/body->edn)
-          (ltu/is-status 409))
+          (ltu/is-status 201))
 
       ;; user should be able to see the resource
       (-> session-jane
