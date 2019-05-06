@@ -2,12 +2,21 @@
 
 ## [Unreleased]
 
-  - Update the default user resource ACL to allow all user to see metadata
-  - Related to the above, do not rewrite the ACL in the post-add for user resources
+### Added
+
+  - Add notification resource that allows administrators to notify users of important events
+
+### Changed 
+
+  - Update the default user resource ACL to allow all authenticated users to see user 
+    resource metadata
+  - Do not overwrite the ACL in the post-add actions for user resources
   - Fix a regex problem with dates that have only one digit
-  - Add the id field to full text searches
-  - Add a default value for :name for user resources if not provided explicitly (defaults to username then email)
-  - Allow users to search the group collection and provide the view-meta rights for all users
+  - Include the id field in full text searches
+  - Provide a default value for :name for user resources if not given explicitly (defaults 
+    to username then email)
+  - Allow users to search the group collection and provide the view-meta rights for all 
+    authenticated users
 
 ## [2.0.0] - 2019-04-29
 
