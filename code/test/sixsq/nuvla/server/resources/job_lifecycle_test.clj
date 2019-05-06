@@ -3,27 +3,36 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.job :refer :all]
+    [sixsq.nuvla.server.resources.job :as t]
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.zookeeper :as uzk]))
+    [sixsq.nuvla.server.util.zookeeper :as uzk]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
-(def base-uri (str p/service-context resource-type))
+
+(def base-uri (str p/service-context t/resource-type))
+
 
 (def valid-job
-  {:resource-type resource-type
+  {:resource-type t/resource-type
    :action        "collect"
    :acl           {:owners   ["group/nuvla-admin"]
                    :view-acl ["user/jane"]
                    :manage   ["user/jane"]}})
 
+
 (def zk-job-path-start-subs "/job/entries/entry-")
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists t/resource-type))
+
 
 (deftest lifecycle
   (let [session-anon (-> (ltu/ring-app)
@@ -32,7 +41,7 @@
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
-    (initialize)
+    (t/initialize)
 
     (is (uzk/exists ju/locking-queue-path))
 
