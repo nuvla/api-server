@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-record
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
@@ -8,7 +7,6 @@
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
     [sixsq.nuvla.server.util.log :as logu]))
@@ -129,13 +127,11 @@
       (log/warn "Activating nuvlabox:" id)
       ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
       (let [new-acl (update acl :edit-acl (comp vec conj) id)
-            nuvlabox-state-id (-> (nbs/create-nuvlabox-state 0 id new-acl) :body :resource-id)
             activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
                                    (assoc :acl new-acl)
-                                   (assoc :info {:href nuvlabox-state-id})
                                    utils/create-nuvlabox-state
-                                   (utils/create-infrastructure-service-group))]
+                                   utils/create-infrastructure-service-group)]
         activated-nuvlabox))
     (logu/log-and-throw-400 "Activation is not allowed")))
 

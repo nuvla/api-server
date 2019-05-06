@@ -15,7 +15,7 @@
              :json-schema/order 30)))
 
 
-(def nb-state-href-regex #"^nuvlabox-state/[a-z]+(-[a-z]+)*$")
+(def nb-state-href-regex #"^nuvlabox-state/[0-9a-f-]+$")
 
 
 (s/def ::state-href (s/and string? #(re-matches nb-state-href-regex %)))
@@ -31,7 +31,7 @@
              :json-schema/order 31)))
 
 
-(def service-group-href-regex #"^infrastructure-service-group/[a-z]+(-[a-z]+)*$")
+(def service-group-href-regex #"^infrastructure-service-group/[0-9a-f-]+$")
 
 
 (s/def ::isg-href (s/and string? #(re-matches service-group-href-regex %)))

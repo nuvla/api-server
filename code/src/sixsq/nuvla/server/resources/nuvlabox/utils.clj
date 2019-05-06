@@ -13,10 +13,10 @@
                   :description (str "services available on the NuvlaBox " id)
                   :parent      id
                   :acl         acl}
-        {:keys [status resource-id message] :as resp} (service-group/create-infrastructure-service-group skeleton)]
+        {:keys [status body] :as resp} (service-group/create-infrastructure-service-group skeleton)]
     (if (= 201 status)
-      (assoc nuvlabox-record :infrastructure-service-group resource-id)
-      (let [msg (str "creating infrastructure-service-group resource failed:" status message)]
+      (assoc nuvlabox-record :infrastructure-service-group (:resource-id body))
+      (let [msg (str "creating infrastructure-service-group resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
@@ -24,8 +24,8 @@
   "Create an infrastructure service group for the NuvlaBox and populate with
    the NuvlaBox services. Returns the possibly modified nuvlabox-record."
   [{:keys [id version acl] :as nuvlabox-record}]
-  (let [{:keys [status resource-id message] :as resp} (nb-state/create-nuvlabox-state version id acl)]
+  (let [{:keys [status body] :as resp} (nb-state/create-nuvlabox-state version id acl)]
     (if (= 201 status)
-      (assoc nuvlabox-record :nuvlabox-state resource-id)
-      (let [msg (str "creating nuvlabox-state resource failed:" status message)]
+      (assoc nuvlabox-record :nuvlabox-state (:resource-id body))
+      (let [msg (str "creating nuvlabox-state resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))

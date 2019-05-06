@@ -20,8 +20,8 @@
 
                       :version                      0
 
-                      :nuvlabox-state               "nuvlabox-state/state-uuid"
-                      :infrastructure-service-group "infrastructure-service-group/group-uuid"
+                      :nuvlabox-state               "nuvlabox-state/abcdef"
+                      :infrastructure-service-group "infrastructure-service-group/abcdef"
 
                       :state                        "NEW"
                       :mac-address                  "aa:bb:cc:dd:ee:ff"

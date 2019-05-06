@@ -127,6 +127,21 @@
         (ltu/is-status 200)
         (ltu/is-count 4))
 
+    ;; because the identifier is a UUID now, there are no constraints on duplicating the MAC address
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
     ;; create & actions
     (let [resp-admin (-> session-admin
                          (request base-uri
@@ -145,20 +160,24 @@
 
       (is (= location-admin uri-nuvlabox))
 
-      ;; because the identifier is a UUID now, there are no constraints on duplicating the MAC address
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
-          (ltu/body->edn)
-          (ltu/is-status 201))
+      ;; user should be able to see the resource and recover activation URL
+      (let [activate-op (-> session-jane
+                            (request uri-nuvlabox)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-operation-absent "delete")
+                            (ltu/is-operation-absent "edit")
+                            (ltu/is-operation-present "activate")
+                            (ltu/get-op "activate"))
 
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
-          (ltu/body->edn)
-          (ltu/is-status 201))
+            activate-url (str p/service-context activate-op)]
+
+        ;; anonymous should be able to activate the NuvlaBox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200)))
 
       ;; user should be able to see the resource
       (-> session-jane
