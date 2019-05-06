@@ -12,45 +12,46 @@
 (def timestamp "1964-08-25T10:00:00Z")
 
 
-(def valid-nb-record {:id                         (str nb/resource-type "/uuid")
-                      :resource-type              nb/resource-type
-                      :created                    timestamp
-                      :updated                    timestamp
-                      :acl                        valid-acl
+(def valid-nb-record {:id                           (str nb/resource-type "/uuid")
+                      :resource-type                nb/resource-type
+                      :created                      timestamp
+                      :updated                      timestamp
+                      :acl                          valid-acl
 
-                      :version                    0
+                      :version                      0
 
-                      :state                      "NEW"
-                      :mac-address                "aa:bb:cc:dd:ee:ff"
-                      :owner                      {:href "user/test"}
-                      :refresh-interval           90
+                      :nuvlabox-state               "nuvlabox-state/state-uuid"
+                      :infrastructure-service-group "infrastructure-service-group/group-uuid"
 
-                      :info                       {:href "nuvlabox-state/state-uuid"}
+                      :state                        "NEW"
+                      :mac-address                  "aa:bb:cc:dd:ee:ff"
+                      :owner                        {:href "user/test"}
+                      :refresh-interval             90
 
-                      :location                   [46.2044 6.1432 373.]
+                      :location                     [46.2044 6.1432 373.]
 
-                      :supplier                   "super-hardware-company"
-                      :organization               "MyNanoCompany"
+                      :supplier                     "super-hardware-company"
+                      :organization                 "MyNanoCompany"
 
-                      :manufacturer-serial-number "1234"
-                      :firmware-version           "10"
-                      :hardware-type              "arm"
-                      :form-factor                "nano"
+                      :manufacturer-serial-number   "1234"
+                      :firmware-version             "10"
+                      :hardware-type                "arm"
+                      :form-factor                  "nano"
 
-                      :wifi-ssid                  "ssid"
-                      :wifi-password              "secure-string"
-                      :root-password              "more-secure-string"
+                      :wifi-ssid                    "ssid"
+                      :wifi-password                "secure-string"
+                      :root-password                "more-secure-string"
 
-                      :login-username             "l-user"
-                      :login-password             "l-password"
-                      :cloud-password             "c-password"
+                      :login-username               "l-user"
+                      :login-password               "l-password"
+                      :cloud-password               "c-password"
 
-                      :comment                    "nuvlabox shutdown because it was tired"
+                      :comment                      "nuvlabox shutdown because it was tired"
 
-                      :vm-cidr                    "0.0.0.0/32"
-                      :lan-cidr                   "0.0.0.0/32"
-                      :os-version                 "OS version"
-                      :hw-revision-code           "a020d3"})
+                      :vm-cidr                      "0.0.0.0/32"
+                      :lan-cidr                     "0.0.0.0/32"
+                      :os-version                   "OS version"
+                      :hw-revision-code             "a020d3"})
 
 
 (deftest check-nuvlabox-state
@@ -64,7 +65,8 @@
     (stu/is-invalid ::nb-record-0/schema (dissoc valid-nb-record attr)))
 
   ;; optional
-  (doseq [attr #{:info
+  (doseq [attr #{:nuvlabox-state
+                 :infrastructure-service-group
                  :location
                  :supplier
                  :organization

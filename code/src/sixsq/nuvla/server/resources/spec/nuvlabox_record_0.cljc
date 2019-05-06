@@ -115,14 +115,6 @@
              :json-schema/order 10)))
 
 
-(s/def ::info
-  (-> (st/spec ::common/resource-link)
-      (assoc :name "info"
-             :json-schema/description "reference to nuvlabox-state resource"
-
-             :json-schema/order 10)))
-
-
 (s/def ::location
   (-> (st/spec (s/coll-of double? :min-count 2 :max-count 3))
       (assoc :name "location"
@@ -218,8 +210,7 @@
                                ::mac-address
                                ::owner
                                ::refresh-interval]
-                      :opt-un [::info
-                               ::location
+                      :opt-un [::location
                                ::supplier
                                ::organization
                                ::manufacturer-serial-number

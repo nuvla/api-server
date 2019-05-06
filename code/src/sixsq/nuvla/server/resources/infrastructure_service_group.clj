@@ -20,7 +20,8 @@ infrastructure-service-group resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-group :as infra-service-group]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils :as auth-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -111,6 +112,17 @@ infrastructure-service-group resource.
 (defmethod crud/add resource-type
   [request]
   (-> request dissoc-services add-impl))
+
+
+(defn create-infrastructure-service-group
+  "Utility to facilitate creating a new infrastructure-service-group resource.
+   This will create (as an administrator) a new infrastructure-service-group
+   using the skeleton passed as an argument. The returned value is the standard
+   'add' response for the request."
+  [skeleton]
+  (add-impl {:params      {:resource-name resource-type}
+             :nuvla/authn auth-utils/internal-identity
+             :body        skeleton}))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
