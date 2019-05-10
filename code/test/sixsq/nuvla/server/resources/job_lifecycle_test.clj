@@ -9,8 +9,8 @@
     [sixsq.nuvla.server.resources.job :as t]
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
