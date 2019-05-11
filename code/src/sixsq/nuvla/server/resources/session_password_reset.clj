@@ -63,14 +63,15 @@
     ;; ensure credential exist or create one if user doesn't have one yet
     (if credential-id
       (crud/retrieve-by-id-as-admin credential-id)
-      (let [new-credential-id (user-utils/create-hashed-password user-id new-password)]
+      (let [random-pass       (str (u/random-uuid) "?A")
+            new-credential-id (user-utils/create-hashed-password user-id random-pass)]
         (user-utils/update-user user-id {:credential-password new-credential-id})))
 
     (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
-          callback-data {:redirect-url  redirect-url
-                         :cookies       (:cookies cookie-header)
-                         :hash-password (hashers/derive new-password)}
+          callback-data  {:redirect-url  redirect-url
+                          :cookies       (:cookies cookie-header)
+                          :hash-password (hashers/derive new-password)}
 
           callback-reset (create-user-password-reset-callback base-uri user-id callback-data)]
 
