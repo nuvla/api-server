@@ -3,6 +3,7 @@
 ## [Unreleased]
 
   - Add a new user template to allow user to invite another person to use nuvla
+  - Fix spec of job status message field
 
 ## [2.1.0] - 2019-05-06
 

@@ -66,7 +66,7 @@
 
 
 (s/def ::status-message
-  (-> (st/spec ::core/timestamp)
+  (-> (st/spec ::core/nonblank-string)
       (assoc :name "status-message"
              :json-schema/display-name "status message"
              :json-schema/description "additional information about the job's current status"
