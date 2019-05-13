@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+
+## [2.1.1] - 2019-05-13
+
+### Changed
+
   - Fix spec of job status message field
 
 ## [2.1.0] - 2019-05-06
