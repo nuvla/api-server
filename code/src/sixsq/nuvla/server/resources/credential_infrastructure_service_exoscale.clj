@@ -15,13 +15,13 @@ for Exoscale
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method exoscale-api-key exoscale-api-secret-key infrastructure-services acl]} request]
+  [{:keys [type method exoscale-api-key exoscale-api-secret-key parent acl]} request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :type                    type
                           :method                  method
                           :exoscale-api-key        exoscale-api-key
                           :exoscale-api-secret-key exoscale-api-secret-key
-                          :infrastructure-services infrastructure-services}
+                          :parent                  parent}
                          acl (assoc :acl acl))]
     [nil resource]))
 
