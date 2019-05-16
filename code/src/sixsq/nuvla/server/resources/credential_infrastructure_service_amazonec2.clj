@@ -15,13 +15,13 @@ for AWS
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method amazonec2-access-key amazonec2-secret-key infrastructure-services acl]} request]
-  (let [resource (cond-> {:resource-type           p/resource-type
-                          :type                    type
-                          :method                  method
-                          :amazonec2-access-key    amazonec2-access-key
-                          :amazonec2-secret-key    amazonec2-secret-key
-                          :infrastructure-services infrastructure-services}
+  [{:keys [type method amazonec2-access-key amazonec2-secret-key parent acl]} request]
+  (let [resource (cond-> {:resource-type        p/resource-type
+                          :type                 type
+                          :method               method
+                          :amazonec2-access-key amazonec2-access-key
+                          :amazonec2-secret-key amazonec2-secret-key
+                          :parent               parent}
                          acl (assoc :acl acl))]
     [nil resource]))
 

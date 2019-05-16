@@ -96,7 +96,7 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::common/parent              ;; required for services
+                     {:req-un [::common/parent              ;; an id pointing to an infrastructure service group
                                ::method
                                ::type
                                ::state]
