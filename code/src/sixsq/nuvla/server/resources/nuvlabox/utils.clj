@@ -1,5 +1,8 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
+    [clojure.string :as str]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
     [sixsq.nuvla.server.util.response :as r]))
@@ -28,4 +31,27 @@
     (if (= 201 status)
       (assoc nuvlabox-record :nuvlabox-state (:resource-id body))
       (let [msg (str "creating nuvlabox-state resource failed:" status (:message body))]
+        (r/ex-bad-request msg)))))
+
+
+(defn create-nuvlabox-api-key
+  "Create api key that allow NuvlaBox to update it's own state."
+  [{:keys [id name owner] :as nuvlabox-record}]
+  (let [identity  {:user-id (:href owner)
+                   :claims  #{"group/nuvla-user" "group/nuvla-anon" id}}
+
+        cred-tmpl {:name        (str "Generated API Key for " (or name id))
+                   :description (str/join " " ["Generated API Key for" name (str "(" id ")")])
+                   :template    {:href   (str "credential-template/" cred-tmpl-api/method)
+                                 :type   cred-tmpl-api/credential-type
+                                 :method cred-tmpl-api/method
+                                 :parent id
+                                 :ttl    0}}
+
+        {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
+        {:keys [resource-id secret-key]} body]
+    (if (= 201 status)
+      {:api-key    resource-id
+       :secret-key secret-key}
+      (let [msg (str "creating credential api-secret resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))

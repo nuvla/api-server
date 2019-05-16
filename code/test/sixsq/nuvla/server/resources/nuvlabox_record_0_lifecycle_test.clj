@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-record-0-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
@@ -40,7 +41,7 @@
                      :version          0
 
                      :mac-address      "aa:bb:cc:dd:ee:ff"
-                     :owner            {:href "test"}
+                     :owner            {:href "user/test"}
                      :organization     "ACME"
                      :os-version       "OS version"
                      :hw-revision-code "a020d3"
@@ -170,14 +171,31 @@
                             (ltu/is-operation-present "activate")
                             (ltu/get-op "activate"))
 
-            activate-url (str p/service-context activate-op)]
+            activate-url (str p/service-context activate-op)
 
-        ;; anonymous should be able to activate the NuvlaBox
-        (-> session-anon
-            (request activate-url
-                     :request-method :post)
-            (ltu/body->edn)
-            (ltu/is-status 200)))
+            ;; anonymous should be able to activate the NuvlaBox
+            credential-id (-> session-anon
+                              (request activate-url
+                                       :request-method :post)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                              (get-in [:response :body :api-key]))
+
+            credential-url (str p/service-context credential-id)
+
+            nuvlabox-claims (-> session-admin
+                                (request credential-url)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                :response
+                                :body
+                                :claims)]
+
+        (is (:identity nuvlabox-claims) "user/test")
+        (is (= (-> nuvlabox-claims :roles set) #{"group/nuvla-anon"
+                                                 id-nuvlabox
+                                                 "group/nuvla-user"}) ))
 
       ;; user should be able to see the resource
       (-> session-jane

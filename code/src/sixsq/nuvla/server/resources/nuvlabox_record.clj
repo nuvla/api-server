@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -139,10 +140,14 @@
 (defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
-          nuvlabox (db/retrieve id request)
-          nuvlabox-activated (activate nuvlabox)]
-      (db/edit nuvlabox-activated request))
+    (let [id                 (str resource-type "/" uuid)
+          nuvlabox           (db/retrieve id request)
+          nuvlabox-activated (activate nuvlabox)
+          api-secret-info    (utils/create-nuvlabox-api-key nuvlabox-activated)]
+
+      (db/edit nuvlabox-activated request)
+
+      (r/json-response api-secret-info))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
