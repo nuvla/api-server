@@ -76,10 +76,8 @@
              :json-schema/description "Nuvla endpoint"
              :json-schema/order 22)))
 
+
 (s/def ::credential-id ::core/nonblank-string)
-
-
-(s/def ::infrastructure-service-id ::core/nonblank-string)
 
 
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -130,7 +128,6 @@
                                   ::api-credentials
                                   ::api-endpoint]
                          :opt-un [::credential-id
-                                  ::infrastructure-service-id
                                   ::data-objects
                                   ::data-records]}]))
 
