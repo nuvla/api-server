@@ -28,8 +28,6 @@
 (deftest lifecycle
   (let [validation-link (atom nil)
 
-        invited-by (atom nil)
-
         template-url    (str p/service-context user-tpl/resource-type "/" email-invitation/registration-method)
 
         session         (-> (ltu/ring-app)
@@ -48,10 +46,8 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
-                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))
-                                              user (second (re-matches #"(?s).*invited by \"(.*?)\".*" body))]
-                                          (reset! validation-link url)
-                                          (reset! invited-by user))
+                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
+                                          (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [template          (-> session-admin
@@ -141,9 +137,6 @@
             ;; verify name attribute (should default to username if no :name)
             (is (= "jane@example.org" (:name user)))
 
-            ;; verify if name of the user who is inviting
-            (is (= "user/jane" @invited-by))
-
 
             ; 1 identifier is visible for the created user one for email
             (-> session-created-user
@@ -206,6 +199,5 @@
                 (ltu/body->edn)
                 (ltu/is-status 404)))
           )
-
 
         ))))
