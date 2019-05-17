@@ -61,7 +61,7 @@ secret, so you must capture and save the plain text secret from this response!
   (vec (remove #(re-matches #"^session/.*" %) roles)))
 
 (defn extract-claims [request]
-  (let [{:keys [:user-id :claims]} (auth/current-authentication request)
+  (let [{:keys [user-id claims]} (auth/current-authentication request)
         roles (strip-session-role claims)]
     (cond-> {:identity user-id}
             (seq roles) (assoc :roles (vec roles)))))
@@ -73,15 +73,16 @@ secret, so you must capture and save the plain text secret from this response!
 ;; provides attributes about the key.
 ;;
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method ttl]} request]
+  [{:keys [type method ttl acl]} request]
   (let [[secret-key digest] (key-utils/generate)
         resource (cond-> {:resource-type p/resource-type
                           :type          type
                           :method        method
                           :digest        digest
-                          :claims        (extract-claims request)}
+                          :claims        (extract-claims request)
+                          :acl           acl}
                          (valid-ttl? ttl) (assoc :expiry (u/ttl->timestamp ttl)))]
-    [{:secretKey secret-key} resource]))
+    [{:secret-key secret-key} resource]))
 
 ;;
 ;; multimethods for validation
