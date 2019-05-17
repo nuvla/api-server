@@ -15,14 +15,14 @@ for Azure
 ;;
 
 (defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method azure-subscription-id azure-client-secret azure-client-id infrastructure-services acl]} request]
-  (let [resource (cond-> {:resource-type           p/resource-type
-                          :type                    type
-                          :method                  method
-                          :azure-subscription-id   azure-subscription-id
-                          :azure-client-secret     azure-client-secret
-                          :azure-client-id         azure-client-id
-                          :infrastructure-services infrastructure-services}
+  [{:keys [type method azure-subscription-id azure-client-secret azure-client-id parent acl]} request]
+  (let [resource (cond-> {:resource-type         p/resource-type
+                          :type                  type
+                          :method                method
+                          :azure-subscription-id azure-subscription-id
+                          :azure-client-secret   azure-client-secret
+                          :azure-client-id       azure-client-id
+                          :parent                parent}
                          acl (assoc :acl acl))]
     [nil resource]))
 

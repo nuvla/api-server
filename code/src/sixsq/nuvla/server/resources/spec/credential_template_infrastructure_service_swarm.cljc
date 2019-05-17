@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service :as ct-infra-service]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -16,14 +15,12 @@
 ;; Defines the contents of the swarm credential template resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
-                     ct-infra-service/credential-template-service-keys-spec
                      keys-spec))
 
 
 ;; Defines the contents of the swarm credential template used in a create resource.
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ct/template-keys-spec
-                                  ct-infra-service/credential-template-service-create-keys-spec
                                   keys-spec))
       (assoc :name "template"
              :json-schema/type "map")))
