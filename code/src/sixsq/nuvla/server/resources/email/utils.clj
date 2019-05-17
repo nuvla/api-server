@@ -96,11 +96,11 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-invitation-email [callback-url address from-user]
+(defn send-invitation-email [callback-url address {:keys [name id] :as user}]
   (let [{:keys [smtp-username, conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
-        body (cond-> (invitation-email-body from-user callback-url)
+        body (cond-> (invitation-email-body (or name id) callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
         msg  {:from    (or smtp-username "administrator")
