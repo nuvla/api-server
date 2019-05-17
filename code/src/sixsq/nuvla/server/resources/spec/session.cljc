@@ -30,7 +30,7 @@
 ;; user (a user resource identifier) is optional to allow for external
 ;; authentication methods to create a stub without having to know the
 ;; target user at the start of the process
-(s/def ::user ::user/id)
+(s/def ::user ::core/nonblank-string)
 
 
 ;;TODO ACL rename roles in session spec

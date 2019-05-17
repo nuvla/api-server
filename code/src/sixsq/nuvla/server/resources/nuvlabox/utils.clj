@@ -38,11 +38,7 @@
   "Create api key that allow NuvlaBox to update it's own state."
   [{:keys [id name acl] :as nuvlabox-record}]
   (let [identity  {:user-id id
-                   :claims  #{"group/nuvla-user" "group/nuvla-anon"}}
-
-        cred-acl  (-> acl
-                      (update :edit-acl (comp vec set concat) (:owners acl))
-                      (assoc :owners ["group/nuvla-admin"]))
+                   :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
 
         cred-tmpl {:name        (str "Generated API Key for " (or name id))
                    :description (str/join " " ["Generated API Key for" name (str "(" id ")")])
@@ -50,8 +46,8 @@
                                  :type   cred-tmpl-api/credential-type
                                  :method cred-tmpl-api/method
                                  :parent id
-                                 :ttl    100
-                                 :acl    cred-acl}}
+                                 :ttl    0
+                                 :acl    acl}}
 
         {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
         {:keys [resource-id secret-key]} body]

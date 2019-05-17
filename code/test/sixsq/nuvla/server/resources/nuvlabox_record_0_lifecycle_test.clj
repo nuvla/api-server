@@ -162,49 +162,47 @@
       (is (= location-admin uri-nuvlabox))
 
       ;; user should be able to see the resource and recover activation URL
-      (let [activate-op         (-> session-jane
-                                    (request uri-nuvlabox)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-absent "delete")
-                                    (ltu/is-operation-absent "edit")
-                                    (ltu/is-operation-present "activate")
-                                    (ltu/get-op "activate"))
+      (let [activate-op   (-> session-jane
+                              (request uri-nuvlabox)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-operation-absent "delete")
+                              (ltu/is-operation-absent "edit")
+                              (ltu/is-operation-present "activate")
+                              (ltu/get-op "activate"))
 
-            activate-url        (str p/service-context activate-op)
+            activate-url  (str p/service-context activate-op)
 
             ;; anonymous should be able to activate the NuvlaBox and get back an api key and secret to access Nuvla
-            credential-id       (-> session-anon
-                                    (request activate-url
-                                             :request-method :post)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/is-key-value (comp not str/blank?) :secret-key true)
-                                    (get-in [:response :body :api-key]))
+            credential-id (-> session-anon
+                              (request activate-url
+                                       :request-method :post)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                              (get-in [:response :body :api-key]))]
 
-            credential-url      (str p/service-context credential-id)
+        (let [credential-url      (str p/service-context credential-id)
+              credential-nuvlabox (-> session-admin
+                                      (request credential-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      :response
+                                      :body)
+              nuvlabox-record     (-> session-admin
+                                      (request uri-nuvlabox)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      :response
+                                      :body)]
+          ;; check generated credentials acl and claims.
+          (is (= (-> credential-nuvlabox :claims :identity) id-nuvlabox))
+          (is (= (-> credential-nuvlabox :claims :roles set) #{id-nuvlabox
+                                                               "group/nuvla-user"
+                                                               "group/nuvla-anon"}))
 
-            credential-nuvlabox (-> session-admin
-                                    (request credential-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    :response
-                                    :body)]
-
-        ;; check generated credentials acl and claims. Owners of the box should get edit-acl on it
-        ;; check that the nuvlabox-id is the identity in the claims
-        (is (= (-> credential-nuvlabox :claims :identity) id-nuvlabox))
-        (is (= (-> credential-nuvlabox :claims :roles set) #{"group/nuvla-user"
-                                                             "group/nuvla-anon"}))
-        (is (= (-> credential-nuvlabox :acl :owners set) #{"group/nuvla-admin"}))
-
-        (is (= (-> credential-nuvlabox :acl :edit-acl set) #{id-nuvlabox
-                                                             "user/alpha"}))
-
-        (is (= (-> credential-nuvlabox :acl :view-acl set) #{id-nuvlabox
-                                                             "user/alpha"
-                                                             "user/jane"}))
-        )
+          ;; acl of created credential is same as nuvlabox-record acl
+          (is (= (:acl credential-nuvlabox) (:acl nuvlabox-record)))))
 
       ;; user should be able to see the resource
       (-> session-jane
