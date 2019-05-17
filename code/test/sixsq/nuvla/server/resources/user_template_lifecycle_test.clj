@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-template :as t]
+    [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -31,7 +32,7 @@
 (deftest check-retrieve-by-id
   (doseq [registration-method [email-password/registration-method
                                username-password/registration-method]]
-    (let [id (str t/resource-type "/" registration-method)
+    (let [id  (str t/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
 
@@ -52,20 +53,22 @@
                     (ltu/is-operation-absent "delete")
                     (ltu/is-operation-absent "edit")
                     (ltu/entries))
-        ids (set (map :id entries))
-        types (set (map :method entries))]
+        ids     (set (map :id entries))
+        types   (set (map :method entries))]
 
     (is (= #{(str t/resource-type "/" email-password/registration-method)
-             (str t/resource-type "/" username-password/registration-method)}
+             (str t/resource-type "/" username-password/registration-method)
+             (str t/resource-type "/" email-invitation/registration-method)}
            ids))
 
     (is (= #{email-password/registration-method
-             username-password/registration-method}
+             username-password/registration-method
+             email-invitation/registration-method}
            types))
 
     (doseq [entry entries]
-      (let [ops (ltu/operations->map entry)
-            entry-url (str p/service-context (:id entry))
+      (let [ops        (ltu/operations->map entry)
+            entry-url  (str p/service-context (:id entry))
 
             entry-resp (-> session
                            (request entry-url)
