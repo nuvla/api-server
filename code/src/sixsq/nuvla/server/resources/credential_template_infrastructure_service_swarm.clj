@@ -23,21 +23,18 @@ the user's public certificate ('cert'), and the user's private key ('key').
                                                     :view-acl ["group/nuvla-user"]}))
 
 
-;; No reasonable defaults for :infrastructure-services, :ca, :cert, :key.
+;; No reasonable defaults for :parent, :ca, :cert, :key.
 ;; Do not provide values for those in the template
-(def ^:const template {:id                      (str p/resource-type "/" method)
-                       :resource-type           p/resource-type
-                       :acl                     resource-acl
+(def ^:const template {:id            (str p/resource-type "/" method)
+                       :resource-type p/resource-type
+                       :acl           resource-acl
 
-                       :type                    credential-type
-                       :method                  method
+                       :type          credential-type
+                       :method        method
 
-                       :infrastructure-services ["infrastructure-service/service-example-1"
-                                                 "infrastructure-service/service-example-2"]
-
-                       :ca                      "ca-public-certificate"
-                       :cert                    "client-public-certificate"
-                       :key                     "client-private-certificate"})
+                       :ca            "ca-public-certificate"
+                       :cert          "client-public-certificate"
+                       :key           "client-private-certificate"})
 
 
 ;;

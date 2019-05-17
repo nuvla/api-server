@@ -25,7 +25,6 @@
                        :api-endpoint              "http://blah.example.com"
 
                        :credential-id             "credential/my-cloud-credential"
-                       :infrastructure-service-id "infrastructure-service/my-service"
 
                        :module                    {:href "module-component/my-module-component-uuid"}
 
@@ -48,5 +47,5 @@
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:data-objects :data-records :credential-id :infrastructure-service-id}]
+  (doseq [k #{:data-objects :data-records :credential-id}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

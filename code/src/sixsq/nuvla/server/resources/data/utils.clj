@@ -139,20 +139,11 @@
     :else nil))
 
 
-(defn is-s3-service?
-  [{:keys [type] :as infrastructure-service}]
-  (= "s3" type))
-
-
 (defn extract-s3-endpoint
   "Returns the endpoint of the S3 service referenced by the credential."
-  [{:keys [infrastructure-services] :as credential}]
-  ;; FIXME: Handle cases where the service doesn't exist.
-  ;; FIXME: Short-circuit the processing to deal with only the first S3 service.
-  (->> infrastructure-services
-       (map crud/retrieve-by-id-as-admin)
-       (filter is-s3-service?)
-       first
+  [{:keys [parent] :as credential}]
+  (->> parent
+       crud/retrieve-by-id-as-admin
        :endpoint))
 
 
