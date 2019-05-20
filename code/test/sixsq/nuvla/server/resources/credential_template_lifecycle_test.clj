@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as service-gce]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as service-minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
+    [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -34,7 +35,8 @@
                                service-exo/method
                                service-gce/method
                                service-minio/method
-                               service-swarm/method]]
+                               service-swarm/method
+                               swarm-token/method]]
     (let [id (str ct/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
@@ -50,7 +52,8 @@
                         service-exo/credential-type
                         service-gce/credential-type
                         service-minio/credential-type
-                        service-swarm/credential-type]]
+                        service-swarm/credential-type
+                        swarm-token/credential-type]]
     (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
                                 (str ct/resource-type "-" resource-url "-create"))))
 
@@ -80,7 +83,8 @@
              (str ct/resource-type "/" service-aws/method)
              (str ct/resource-type "/" service-azure/method)
              (str ct/resource-type "/" service-exo/method)
-             (str ct/resource-type "/" service-gce/method)}
+             (str ct/resource-type "/" service-gce/method)
+             (str ct/resource-type "/" swarm-token/method)}
            ids))
     (is (= #{akey/method
              hashed-password/method
@@ -89,7 +93,8 @@
              service-aws/method
              service-azure/method
              service-exo/method
-             service-gce/method} methods))
+             service-gce/method
+             swarm-token/method} methods))
     (is (= #{akey/credential-type
              hashed-password/credential-type
              service-minio/credential-type
@@ -97,7 +102,8 @@
              service-aws/credential-type
              service-azure/credential-type
              service-exo/credential-type
-             service-gce/credential-type} types))
+             service-gce/credential-type
+             swarm-token/credential-type} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)
