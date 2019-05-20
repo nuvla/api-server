@@ -9,7 +9,8 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.nuvlabox-record :as nb-record]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record-0 :as nb-record-0]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def schema-version 0)
@@ -25,6 +26,16 @@ a NuvlaBox.
 (defmethod nb-record/validate-subtype schema-version
   [resource]
   (validate-fn resource))
+
+
+;;
+;; multimethod for recommission
+;;
+
+;; FIXME: Currently a no-op. Must create services, etc.
+(defmethod nb-record/recommission schema-version
+  [resource request]
+  (r/map-response 200 "recommission executed successfully"))
 
 
 ;;

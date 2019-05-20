@@ -170,6 +170,8 @@
                             (ltu/is-status 200)
                             (ltu/is-operation-absent "delete")
                             (ltu/is-operation-absent "edit")
+                            (ltu/is-operation-absent "recommission")
+                            (ltu/is-operation-absent "quarantine")
                             (ltu/is-operation-present "activate")
                             (ltu/get-op "activate"))
 
@@ -197,6 +199,7 @@
                                   (ltu/is-status 200)
                                   :response
                                   :body)]
+
           ;; check generated credentials acl and claims.
           (is (= (-> credential-nuvlabox :claims :identity) id-nuvlabox))
           (is (= (-> credential-nuvlabox :claims :roles set) #{id-nuvlabox
@@ -205,6 +208,27 @@
 
           ;; acl of created credential is same as nuvlabox-record acl
           (is (= (:acl credential-nuvlabox) (:acl nuvlabox-record)))))
+
+      ;; check that the recommission action is available after activation
+      (let [recommission-op (-> session-alpha
+                                (request uri-nuvlabox)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-absent "activate")
+                                (ltu/is-operation-present "delete")
+                                (ltu/is-operation-present "edit")
+                                (ltu/is-operation-present "quarantine")
+                                (ltu/is-operation-present "recommission")
+                                (ltu/get-op "recommission"))
+
+            recommission-url (str p/service-context recommission-op)]
+
+        ;; FIXME: Add checks on resources when action is not a no-op.
+        (-> session-alpha
+            (request recommission-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200)))
 
       ;; user should be able to see the resource
       (-> session-jane

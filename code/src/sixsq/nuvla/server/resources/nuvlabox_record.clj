@@ -241,6 +241,34 @@
           (or (ex-data e) (throw e)))))))
 
 ;;
+;; Recommission operation
+;;
+
+(defmulti recommission
+          "Recreates the infrastructure-service(s), credentials, etc. that are
+           associated with this nuvlabox-record. The resources that are created
+           depend on the version of nuvlabox-* resources being used."
+          (fn [resource request] (:version resource)))
+
+
+(defmethod recommission :default
+  [resource request]
+  (throw (ex-info (str "unsupported nuvlabox-record version for recommission: " (:version resource)) resource)))
+
+
+(defmethod crud/do-action [resource-type "recommission"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (try
+        (-> (db/retrieve id request)
+            (a/throw-cannot-manage request)
+            recommission request)
+        (catch Exception e
+          (or (ex-data e) (throw e)))))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -249,10 +277,12 @@
   (let [href-activate (str id "/activate")
         href-sc (str id "/quarantine")
         activate-op {:rel (:activate c/action-uri) :href href-activate}
-        quarantine-op {:rel (:quarantine c/action-uri) :href href-sc}]
+        quarantine-op {:rel (:quarantine c/action-uri) :href href-sc}
+        recommission-op {:rel (:recommission c/action-uri) :href href-sc}]
     (cond-> (crud/set-standard-operations resource request)
             (= state state-new) (update-in [:operations] conj activate-op)
-            (= state state-activated) (update-in [:operations] conj quarantine-op))))
+            (= state state-activated) (update-in [:operations] conj quarantine-op)
+            (= state state-activated) (update-in [:operations] conj recommission-op))))
 
 ;;
 ;; initialization
