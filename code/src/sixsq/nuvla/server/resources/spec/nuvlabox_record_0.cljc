@@ -9,7 +9,7 @@
 
 
 (s/def ::state
-  (-> (st/spec #{"NEW" "ACTIVATED" "QUARANTINED"})
+  (-> (st/spec #{"NEW" "ACTIVATED" "QUARANTINED" "DECOMMISSIONING" "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "state of NuvlaBox"

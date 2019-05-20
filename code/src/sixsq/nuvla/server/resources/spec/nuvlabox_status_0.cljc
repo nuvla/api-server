@@ -22,7 +22,7 @@
 
 
 (s/def ::status
-  (-> (st/spec #{"ONLINE" "OFFLINE" "UNKNOWN"})
+  (-> (st/spec #{"OPERATIONAL" "DEGRADED" "UNKNOWN"})
       (assoc :name "status"
              :json-schema/type "string"
              :json-schema/description "current status of the NuvlaBox"
