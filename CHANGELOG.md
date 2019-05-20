@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+  - Add a new user template to allow user to invite another person to use nuvla
+
+### Changed
+
   - Change spec of credential of type infrastructure service. 
     Infrastructure services field have been deleted and replaced by 
     parent field.
