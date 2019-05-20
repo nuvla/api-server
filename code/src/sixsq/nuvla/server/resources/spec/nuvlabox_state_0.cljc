@@ -21,13 +21,21 @@
              :json-schema/order 31)))
 
 
-(s/def ::state
-  (-> (st/spec #{"NEW" "ONLINE" "OFFLINE" "UNKNOWN"})
-      (assoc :name "state"
+(s/def ::status
+  (-> (st/spec #{"ONLINE" "OFFLINE" "UNKNOWN"})
+      (assoc :name "status"
              :json-schema/type "string"
-             :json-schema/description "state of the NuvlaBox"
+             :json-schema/description "current status of the NuvlaBox"
 
              :json-schema/order 32)))
+
+
+(s/def ::comment
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "comment"
+             :json-schema/description "comment about the current NuvlaBox status"
+
+             :json-schema/order 10)))
 
 
 ;;
@@ -214,8 +222,9 @@
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-state/attributes
-                     {:req-un [::state]
+                     {:req-un [::status]
                       :opt-un [::next-heartbeat
+                               ::comment
                                ::resources
                                ::peripherals
                                ::wifi-password]}))

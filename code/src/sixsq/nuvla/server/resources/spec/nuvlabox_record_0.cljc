@@ -207,13 +207,13 @@
   (su/only-keys-maps common/common-attrs
                      nb-record/attributes
                      {:req-un [::state
-                               ::mac-address
                                ::owner
                                ::refresh-interval]
                       :opt-un [::location
                                ::supplier
                                ::organization
                                ::manufacturer-serial-number
+                               ::mac-address
                                ::firmware-version
                                ::hardware-type
                                ::form-factor

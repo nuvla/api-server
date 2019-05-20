@@ -36,7 +36,8 @@
 
                   :version        0
                   :parent         "nuvlabox-resource/uuid"
-                  :state          "ONLINE"
+                  :status         "ONLINE"
+                  :comment        "some witty comment"
 
                   :next-heartbeat timestamp
 

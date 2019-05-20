@@ -61,12 +61,13 @@
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
-                 :version :state :mac-address :owner :refresh-interval}]
+                 :version :state :owner :refresh-interval}]
     (stu/is-invalid ::nb-record-0/schema (dissoc valid-nb-record attr)))
 
   ;; optional
   (doseq [attr #{:nuvlabox-state
                  :infrastructure-service-group
+                 :mac-address
                  :location
                  :supplier
                  :organization

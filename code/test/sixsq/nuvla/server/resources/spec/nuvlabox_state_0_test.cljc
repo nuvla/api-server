@@ -21,7 +21,8 @@
 
             :version        0
             :parent         "nuvlabox-resource/uuid"
-            :state          "ONLINE"
+            :status         "ONLINE"
+            :comment        "some witty comment"
 
             :next-heartbeat timestamp
 
@@ -53,9 +54,9 @@
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
-                 :version :parent :state}]
+                 :version :parent :status}]
     (stu/is-invalid ::nb-state-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :resources :peripherals :wifi-password}]
+  (doseq [attr #{:next-heartbeat :resources :peripherals :wifi-password :comment}]
     (stu/is-valid ::nb-state-0/schema (dissoc state attr))))

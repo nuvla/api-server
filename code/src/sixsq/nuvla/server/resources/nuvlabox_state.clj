@@ -59,14 +59,14 @@ although they can be created manually by an administrator.
 
 (defn create-nuvlabox-state
   "Utility to facilitate creating a new nuvlabox-state resource from the
-   nuvlabox-record resource. This will create (as an administrator) a new state
-   based on the given id and acl. The returned value is the standard 'add'
-   response for the request."
+   nuvlabox-record resource. This will create (as an administrator) an unknown
+   state based on the given id and acl. The returned value is the standard
+   'add' response for the request."
   [schema-version nuvlabox-id nuvlabox-acl]
   (let [body {:resource-type resource-type
               :parent        nuvlabox-id
               :version       schema-version
-              :state         "NEW"
+              :status        "UNKNOWN"
               :acl           nuvlabox-acl}
         nuvlabox-state-request {:params      {:resource-name resource-type}
                                 :nuvla/authn auth-utils/internal-identity
