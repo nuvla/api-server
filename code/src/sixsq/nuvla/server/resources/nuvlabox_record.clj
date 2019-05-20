@@ -7,6 +7,8 @@
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
     [sixsq.nuvla.server.util.log :as logu]
@@ -98,23 +100,85 @@
   (edit-impl request))
 
 
-(defmethod crud/delete resource-type
-  [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (try
-      (-> (db/retrieve id request)
-          (a/throw-cannot-delete request)
-          (db/delete request))
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
-
-
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+;; The delete will be handled asynchronously so that all resources associated
+;; with the NuvlaBox will be removed as well.
+
+
+(defn restrict-acl
+  "Updates the given acl by giving the view-acl right to all owners, removing
+   all edit-* rights, and setting the owners to only [\"group/nuvla-admin\"]."
+  [{:keys [owners] :as acl}]
+  (-> acl
+      (dissoc :edit-meta :edit-data :edit-acl)
+      (assoc :owners ["group/nuvla-admin"])
+      (update-in [:view-acl] concat owners)))
+
+
+(defmulti delete-sync
+          "Executes the synchronous tasks associated with deleting a
+           nuvlabox-record resource. This must always return the value of the
+           resource that was passed in."
+          (fn [resource request] (:version resource)))
+
+
+(defmethod delete-sync :default
+  [{:keys [id nuvlabox-status acl] :as resource} request]
+  (let [updated-acl (restrict-acl acl)]
+    (-> resource
+        (assoc :state "DECOMMISSIONING"
+               :acl updated-acl)
+        (db/edit request))
+
+    (-> nuvlabox-status
+        crud/retrieve-by-id-as-admin
+        (assoc :acl updated-acl)
+        (db/edit request))
+
+    ;; read back the updated resource to ensure that ACL is fully normalized
+    (crud/retrieve-by-id-as-admin id)))
+
+
+(defmulti delete-async
+          "Creates a job to handle all the asynchronous clean up that is
+           needed when deleting a nuvlabox-resource."
+          (fn [resource request] (:version resource)))
+
+
+(defmethod delete-async :default
+  [{:keys [id acl] :as resource} request]
+  (try
+    (let [updated-acl (assoc acl :owners ["group/nuvla-user"])
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "delete_nuvlabox"
+                                                       updated-acl
+                                                       :priority 50)
+          job-msg (str "deleting " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to delete nuvlabox resources" 500 id)))
+      (event-utils/create-event id job-msg updated-acl)
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/delete resource-type
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (-> (db/retrieve id request)
+          (a/throw-cannot-delete request)
+          (delete-sync request)
+          (delete-async request))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 ;;

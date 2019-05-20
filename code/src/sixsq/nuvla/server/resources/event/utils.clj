@@ -2,7 +2,6 @@
   (:require
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event :as event]
     [sixsq.nuvla.server.resources.spec.event :as event-spec]
     [sixsq.nuvla.server.util.time :as time]))

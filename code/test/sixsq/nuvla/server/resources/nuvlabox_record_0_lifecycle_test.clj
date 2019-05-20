@@ -2,8 +2,9 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -60,6 +61,7 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-alpha (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
         session-anon (header session authn-info-header "unknown group/nuvla-anon")]
 
     ;; admin and deployer collection query should succeed but be empty (no  records created yet)
@@ -222,7 +224,71 @@
                    :request-method :put
                    :body (json/write-str (assoc valid-nuvlabox :comment "just a comment")))
           (ltu/body->edn)
-          (ltu/is-status 200)))))
+          (ltu/is-status 200))
+
+
+      ;; verify that the delete behaves correctly
+
+      ;; anonymous users cannot see or delete the nuvlabox-record
+      (-> session-anon
+          (request uri-nuvlabox
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 403))
+
+      ;; check that a job to delete nuvlabox resources has been created
+      (let [job-id (-> session-alpha
+                       (request uri-nuvlabox
+                                :request-method :delete)
+                       (ltu/body->edn)
+                       (ltu/is-status 202)
+                       (ltu/location))
+
+            job-url (str p/service-context job-id)
+
+            job (-> session-alpha
+                    (request job-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    :response
+                    :body)]
+
+        (is (= "delete_nuvlabox" (:action job)))
+        (is (= id-nuvlabox (-> job :target-resource :href))))
+
+      ;; check that the state and ACL have been updated on nuvlabox-record
+      (let [record (-> session-alpha
+                       (request uri-nuvlabox)
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       :response
+                       :body)
+
+            acl (:acl record)]
+
+        (is (= "DECOMMISSIONING" (:state record)))
+        (is (= ["group/nuvla-admin"] (-> record :acl :owners)))
+        (is ((-> acl :view-acl set) "user/alpha"))
+        (is ((-> acl :view-data set) "user/alpha"))
+        (is ((-> acl :view-meta set) "user/alpha"))
+
+        (let [id-status (:nuvlabox-status record)
+
+              uri-status (str p/service-context id-status)
+
+              status (-> session-alpha
+                         (request uri-status)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         :response
+                         :body)
+
+              acl (:acl status)]
+
+          (is (= ["group/nuvla-admin"] (-> record :acl :owners)))
+          (is ((-> acl :view-acl set) "user/alpha"))
+          (is ((-> acl :view-data set) "user/alpha"))
+          (is ((-> acl :view-meta set) "user/alpha")))))))
 
 
 (deftest bad-methods
