@@ -13,8 +13,8 @@
     [sixsq.nuvla.server.resources.session-password :as session-password]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-password-reset :as st-password-reset]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const authn-method "password-reset")
@@ -63,16 +63,16 @@
     ;; ensure credential exist or create one if user doesn't have one yet
     (if credential-id
       (crud/retrieve-by-id-as-admin credential-id)
-      (let [random-pass       (str (u/random-uuid) "?A")
+      (let [random-pass (str (u/random-uuid) "?A")
             new-credential-id (user-utils/create-hashed-password user-id random-pass)]
         (user-utils/update-user user-id {:id                  user-id
                                          :credential-password new-credential-id})))
 
     (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
-          callback-data  {:redirect-url  redirect-url
-                          :cookies       (:cookies cookie-header)
-                          :hash-password (hashers/derive new-password)}
+          callback-data {:redirect-url  redirect-url
+                         :cookies       (:cookies cookie-header)
+                         :hash-password (hashers/derive new-password)}
 
           callback-reset (create-user-password-reset-callback base-uri user-id callback-data)]
 

@@ -15,18 +15,18 @@
              :json-schema/order 30)))
 
 
-(def nb-state-href-regex #"^nuvlabox-state/[0-9a-f-]+$")
+(def nb-status-href-regex #"^nuvlabox-status/[0-9a-f-]+$")
 
 
-(s/def ::state-href (s/and string? #(re-matches nb-state-href-regex %)))
+(s/def ::state-href (s/and string? #(re-matches nb-status-href-regex %)))
 
 
-(s/def ::nuvlabox-state
+(s/def ::nuvlabox-status
   (-> (st/spec ::state-href)
-      (assoc :name "nuvlabox-state"
+      (assoc :name "nuvlabox-status"
              :json-schema/type "string"
              :json-schema/display-name "NuvlaBox state"
-             :json-schema/description "identifier of the associated nuvlabox-state resource"
+             :json-schema/description "identifier of the associated nuvlabox-status resource"
 
              :json-schema/order 31)))
 
@@ -48,7 +48,7 @@
 
 
 (def attributes {:req-un [::version]
-                 :opt-un [::nuvlabox-state
+                 :opt-un [::nuvlabox-status
                           ::infrastructure-service-group]})
 
 

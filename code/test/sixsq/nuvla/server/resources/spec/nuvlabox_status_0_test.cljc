@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-state-0-test
+(ns sixsq.nuvla.server.resources.spec.nuvlabox-status-0-test
   (:require
     [clojure.test :refer [are deftest]]
-    [sixsq.nuvla.server.resources.nuvlabox-state :as nbs]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state-0 :as nb-state-0]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nbs]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-status-0 :as nb-status-0]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -47,16 +47,16 @@
             :wifi-password  "some-secure-password"})
 
 
-(deftest check-nuvlabox-state
+(deftest check-nuvlabox-status
 
-  (stu/is-valid ::nb-state-0/schema state)
-  (stu/is-invalid ::nb-state-0/schema (assoc state :bad-attr "BAD_ATTR"))
+  (stu/is-valid ::nb-status-0/schema state)
+  (stu/is-invalid ::nb-status-0/schema (assoc state :bad-attr "BAD_ATTR"))
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
                  :version :parent :status}]
-    (stu/is-invalid ::nb-state-0/schema (dissoc state attr)))
+    (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
   (doseq [attr #{:next-heartbeat :resources :peripherals :wifi-password :comment}]
-    (stu/is-valid ::nb-state-0/schema (dissoc state attr))))
+    (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

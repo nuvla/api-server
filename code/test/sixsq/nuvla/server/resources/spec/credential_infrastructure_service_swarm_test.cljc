@@ -12,20 +12,20 @@
 
 (deftest check-credential-service-docker
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl       {:id            (str cred/resource-type "/uuid")
-                   :resource-type cred/resource-type
-                   :created       timestamp
-                   :updated       timestamp
-                   :acl           valid-acl
+        tpl {:id            (str cred/resource-type "/uuid")
+             :resource-type cred/resource-type
+             :created       timestamp
+             :updated       timestamp
+             :acl           valid-acl
 
-                   :type          "swarm"
-                   :method        "swarm"
+             :type          "swarm"
+             :method        "swarm"
 
-                   :parent        "infrastructure-service/service-1"
+             :parent        "infrastructure-service/service-1"
 
-                   :ca            "ca-public-certificate"
-                   :cert          "client-public-certificate"
-                   :key           "client-private-certificate"}]
+             :ca            "ca-public-certificate"
+             :cert          "client-public-certificate"
+             :key           "client-private-certificate"}]
 
     (stu/is-valid ::cred-infra-service-swarm/schema tpl)
 

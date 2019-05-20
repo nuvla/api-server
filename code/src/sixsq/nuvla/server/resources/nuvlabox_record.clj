@@ -131,7 +131,7 @@
             activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
                                    (assoc :acl new-acl)
-                                   utils/create-nuvlabox-state
+                                   utils/create-nuvlabox-status
                                    utils/create-infrastructure-service-group)]
         activated-nuvlabox))
     (logu/log-and-throw-400 "Activation is not allowed")))
@@ -140,10 +140,10 @@
 (defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id                 (str resource-type "/" uuid)
-          nuvlabox           (db/retrieve id request)
+    (let [id (str resource-type "/" uuid)
+          nuvlabox (db/retrieve id request)
           nuvlabox-activated (activate nuvlabox)
-          api-secret-info    (utils/create-nuvlabox-api-key nuvlabox-activated)]
+          api-secret-info (utils/create-nuvlabox-api-key nuvlabox-activated)]
 
       (db/edit nuvlabox-activated request)
 

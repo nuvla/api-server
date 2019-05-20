@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-state-0
+(ns sixsq.nuvla.server.resources.spec.nuvlabox-status-0
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nb-state]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -221,7 +221,7 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     nb-state/attributes
+                     nb-status/attributes
                      {:req-un [::status]
                       :opt-un [::next-heartbeat
                                ::comment

@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-state
+(ns sixsq.nuvla.server.resources.nuvlabox-status
   "
-The nuvlabox-state resource represents the instantaneous state of the
+The nuvlabox-status resource represents the instantaneous state of the
 associated NuvlaBox, including available resources and peripherals. These
 resources are usually created as a side-effect of a NuvlaBox activation,
 although they can be created manually by an administrator.
@@ -11,7 +11,7 @@ although they can be created manually by an administrator.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-state :as nb-state]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -30,14 +30,14 @@ although they can be created manually by an administrator.
 ;;
 
 (defmulti validate-subtype
-          "Validates the given nuvlabox-state resource against a specific
+          "Validates the given nuvlabox-status resource against a specific
            version of the schema."
           :version)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unsupported nuvlabox-state version: " (:version resource)) resource)))
+  (throw (ex-info (str "unsupported nuvlabox-status version: " (:version resource)) resource)))
 
 
 (defmethod crud/validate resource-type
@@ -57,8 +57,8 @@ although they can be created manually by an administrator.
   (add-impl request))
 
 
-(defn create-nuvlabox-state
-  "Utility to facilitate creating a new nuvlabox-state resource from the
+(defn create-nuvlabox-status
+  "Utility to facilitate creating a new nuvlabox-status resource from the
    nuvlabox-record resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
@@ -68,10 +68,10 @@ although they can be created manually by an administrator.
               :version       schema-version
               :status        "UNKNOWN"
               :acl           nuvlabox-acl}
-        nuvlabox-state-request {:params      {:resource-name resource-type}
-                                :nuvla/authn auth-utils/internal-identity
-                                :body        body}]
-    (add-impl nuvlabox-state-request)))
+        nuvlabox-status-request {:params      {:resource-name resource-type}
+                                 :nuvla/authn auth-utils/internal-identity
+                                 :body        body}]
+    (add-impl nuvlabox-status-request)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -112,5 +112,5 @@ although they can be created manually by an administrator.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nb-state/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-state/schema)))
+  (std-crud/initialize resource-type ::nb-status/schema)
+  (md/register (gen-md/generate-metadata ::ns ::nb-status/schema)))

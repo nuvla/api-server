@@ -20,7 +20,7 @@
 
                       :version                      0
 
-                      :nuvlabox-state               "nuvlabox-state/abcdef"
+                      :nuvlabox-status              "nuvlabox-status/abcdef"
                       :infrastructure-service-group "infrastructure-service-group/abcdef"
 
                       :state                        "NEW"
@@ -65,7 +65,7 @@
     (stu/is-invalid ::nb-record-0/schema (dissoc valid-nb-record attr)))
 
   ;; optional
-  (doseq [attr #{:nuvlabox-state
+  (doseq [attr #{:nuvlabox-status
                  :infrastructure-service-group
                  :mac-address
                  :location

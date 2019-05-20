@@ -4,7 +4,7 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
-    [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -23,22 +23,22 @@
         (r/ex-bad-request msg)))))
 
 
-(defn create-nuvlabox-state
+(defn create-nuvlabox-status
   "Create an infrastructure service group for the NuvlaBox and populate with
    the NuvlaBox services. Returns the possibly modified nuvlabox-record."
   [{:keys [id version acl] :as nuvlabox-record}]
-  (let [{:keys [status body] :as resp} (nb-state/create-nuvlabox-state version id acl)]
+  (let [{:keys [status body] :as resp} (nb-status/create-nuvlabox-status version id acl)]
     (if (= 201 status)
-      (assoc nuvlabox-record :nuvlabox-state (:resource-id body))
-      (let [msg (str "creating nuvlabox-state resource failed:" status (:message body))]
+      (assoc nuvlabox-record :nuvlabox-status (:resource-id body))
+      (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
   [{:keys [id name acl] :as nuvlabox-record}]
-  (let [identity  {:user-id id
-                   :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
+  (let [identity {:user-id id
+                  :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
 
         cred-tmpl {:name        (str "Generated API Key for " (or name id))
                    :description (str/join " " ["Generated API Key for" name (str "(" id ")")])

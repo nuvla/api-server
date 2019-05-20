@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-state-0-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-status-0-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -7,14 +7,14 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.nuvlabox-state :as nb-state]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context nb-state/resource-type))
+(def base-uri (str p/service-context nb-status/resource-type))
 
 
 (def timestamp "1964-08-25T10:00:00Z")
@@ -27,8 +27,8 @@
                 :edit-data [nuvlabox-record-id]})
 
 
-(def valid-state {:id             (str nb-state/resource-type "/uuid")
-                  :resource-type  nb-state/resource-type
+(def valid-state {:id             (str nb-status/resource-type "/uuid")
+                  :resource-type  nb-status/resource-type
                   :created        timestamp
                   :updated        timestamp
 
@@ -82,7 +82,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists nb-state/resource-type))
+  (mdtu/check-metadata-exists nb-status/resource-type))
 
 
 (deftest lifecycle
@@ -95,7 +95,7 @@
         session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
         session-nb (header session authn-info-header (str nuvlabox-record-id " group/nuvla-user group/nuvla-anon"))]
 
-    ;; non-admin users cannot create a nuvlabox-state resource
+    ;; non-admin users cannot create a nuvlabox-status resource
     (doseq [session [session-anon session-user]]
       (-> session
           (request base-uri
@@ -104,7 +104,7 @@
           (ltu/body->edn)
           (ltu/is-status 403)))
 
-    ;; admin users can create a nuvlabox-state resource
+    ;; admin users can create a nuvlabox-status resource
     (when-let [state-id (-> session-admin
                             (request base-uri
                                      :request-method :post
@@ -121,7 +121,7 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        ;; nuvlabox user is able to update nuvlabox-state
+        ;; nuvlabox user is able to update nuvlabox-status
         (-> session-nb
             (request state-url
                      :request-method :put
@@ -169,7 +169,7 @@
 
 
     ;; verify that the internal create function also works
-    (let [response (nb-state/create-nuvlabox-state 0 nuvlabox-record-id valid-acl)
+    (let [response (nb-status/create-nuvlabox-status 0 nuvlabox-record-id valid-acl)
           location (get-in response [:headers "Location"])
           state-id (-> response :body :resource-id)
           state-url (str p/service-context state-id)]
@@ -193,7 +193,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id nb-state/resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id nb-status/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]
