@@ -5,7 +5,14 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]))
 
 
 (defn create-infrastructure-service-group
@@ -56,3 +63,39 @@
        :secret-key secret-key}
       (let [msg (str "creating credential api-secret resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
+
+
+(defn get-isg-id
+  "Finds the infrastructure-service-group that is associated with the given
+   nuvlabox-id."
+  [nuvlabox-id]
+  (let [filter (format "parent='%s'" nuvlabox-id)
+        body {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                            :select ["id"]}
+              :nuvla/authn auth/internal-identity}]
+    (-> (db/query isg/resource-type body)
+        second
+        first
+        :id)))
+
+
+(defn create-minio-service
+  "Creates an infrastructure-service that describes a Minio endpoint
+   associated with a nuvlabox-record."
+  [nuvlabox-id isg-id endpoint]
+  (let [isg-id (get-isg-id nuvlabox-id)
+        request {:params      {:resource-name infra-service/resource-type}
+                 :body        {:name        "Minio (S3)"
+                               :description (str "Minio (S3) for " nuvlabox-id)
+                               :template    {:href     "infrastructure-service-template/generic"
+                                             :parent   isg-id
+                                             :endpoint endpoint
+                                             :acl      {:owners   ["group/nuvla-admin"]
+                                                        :edit-acl [nuvlabox-id]}}}
+                 :nuvla/authn auth/internal-identity}
+        {{:keys [resource-id]} :body status :status} (crud/add request)]
+
+    (if (= 201 status)
+      (log/info "minio service" resource-id "created")
+      (let [msg (str "cannot create minio service for " nuvlabox-id)]
+        (throw (ex-info msg (r/map-response msg 400 "")))))))

@@ -256,7 +256,14 @@
             (request recommission-url
                      :request-method :post
                      :body (json/write-str {:swarm-token-worker "abc"
-                                            :swarm-token-master "def"}))
+                                            :swarm-token-master "def"
+                                            :swarm-client-key "key"
+                                            :swarm-client-cert "cert"
+                                            :swarm-client-ca "ca"
+                                            :swarm-endpoint "https://swarm.example.com"
+                                            :minio-access-key "access"
+                                            :minio-secret-key "secret"
+                                            :minio-endpoint "https://minio.example.com"}))
             (ltu/body->edn)
             (ltu/is-status 200)))
 

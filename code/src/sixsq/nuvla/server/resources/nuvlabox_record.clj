@@ -34,6 +34,12 @@
 (def ^:const state-quarantined "QUARANTINED")
 
 
+(def ^:const state-decommissioning "DECOMMISSIONING")
+
+
+(def ^:const state-error "ERROR")
+
+
 (def ^:const default-refresh-interval 90)
 
 
@@ -133,7 +139,7 @@
   [{:keys [id nuvlabox-status acl] :as resource} request]
   (let [updated-acl (restrict-acl acl)]
     (-> resource
-        (assoc :state "DECOMMISSIONING"
+        (assoc :state state-decommissioning
                :acl updated-acl)
         (db/edit request))
 
@@ -263,7 +269,7 @@
       (try
         (-> (db/retrieve id request)
             (a/throw-cannot-manage request)
-            recommission request)
+            (recommission request))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
 
@@ -275,10 +281,11 @@
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [href-activate (str id "/activate")
-        href-sc (str id "/quarantine")
+        href-quarantine (str id "/quarantine")
+        href-recommission (str id "/recommission")
         activate-op {:rel (:activate c/action-uri) :href href-activate}
-        quarantine-op {:rel (:quarantine c/action-uri) :href href-sc}
-        recommission-op {:rel (:recommission c/action-uri) :href href-sc}]
+        quarantine-op {:rel (:quarantine c/action-uri) :href href-quarantine}
+        recommission-op {:rel (:recommission c/action-uri) :href href-recommission}]
     (cond-> (crud/set-standard-operations resource request)
             (= state state-new) (update-in [:operations] conj activate-op)
             (= state state-activated) (update-in [:operations] conj quarantine-op)

@@ -35,9 +35,13 @@ a NuvlaBox.
 
 ;; FIXME: Currently a no-op. Must create services, etc.
 (defmethod nb-record/recommission schema-version
-  [resource request]
-  (log/error (with-out-str (clojure.pprint/pprint request)))
-  (r/map-response 200 "recommission executed successfully"))
+  [{:keys [id] :as resource} request]
+  (let [params (:body request)]
+    (log/error (with-out-str (clojure.pprint/pprint id)))
+    (log/error (with-out-str (clojure.pprint/pprint resource)))
+    (log/error (with-out-str (clojure.pprint/pprint request)))
+    (log/error (with-out-str (clojure.pprint/pprint params)))
+    (r/map-response "recommission executed successfully" 200)))
 
 
 ;;
