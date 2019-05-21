@@ -36,7 +36,7 @@ a NuvlaBox.
 (defmethod nb/recommission schema-version
   [{:keys [id] :as resource} request]
   (let [{:keys [swarm-endpoint
-                swarm-token-master swarm-token-worker
+                swarm-token-manager swarm-token-worker
                 swarm-client-key swarm-client-cert swarm-client-ca
                 minio-endpoint
                 minio-access-key minio-secret-key]} (:body request)
@@ -47,7 +47,7 @@ a NuvlaBox.
         minio-id (nb-utils/create-minio-service id isg-id minio-endpoint)]
 
     (nb-utils/create-swarm-cred id swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
-    (nb-utils/create-swarm-token id swarm-id "MASTER" swarm-token-master)
+    (nb-utils/create-swarm-token id swarm-id "MASTER" swarm-token-manager)
     (nb-utils/create-swarm-token id swarm-id "WORKER" swarm-token-worker)
 
     (nb-utils/create-minio-cred id minio-id minio-access-key minio-secret-key)

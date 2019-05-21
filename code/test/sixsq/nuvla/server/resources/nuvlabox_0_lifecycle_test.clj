@@ -264,7 +264,7 @@
             (request recommission-url
                      :request-method :post
                      :body (json/write-str {:swarm-token-worker "abc"
-                                            :swarm-token-master "def"
+                                            :swarm-token-manager "def"
                                             :swarm-client-key   "key"
                                             :swarm-client-cert  "cert"
                                             :swarm-client-ca    "ca"
