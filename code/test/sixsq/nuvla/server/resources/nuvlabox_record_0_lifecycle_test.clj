@@ -8,14 +8,22 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]))
+    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context nb/resource-type))
+
+
+(def isg-collection-uri (str p/service-context isg/resource-type))
+
+
+(def nb-status-collection-uri (str p/service-context nb-status/resource-type))
 
 
 (def timestamp "1964-08-25T10:00:00Z")
@@ -163,6 +171,21 @@
 
       (is (= location-admin uri-nuvlabox))
 
+      ;; verify that the nuvlabox-status and infrastructure-service-group have NOT
+      ;; YET been created
+
+      (-> session-admin
+          (request isg-collection-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?))
+
+      (-> session-admin
+          (request nb-status-collection-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?))
+
       ;; user should be able to see the resource and recover activation URL
       (let [activate-op (-> session-jane
                             (request uri-nuvlabox)
@@ -207,7 +230,23 @@
                                                                "group/nuvla-anon"}))
 
           ;; acl of created credential is same as nuvlabox-record acl
-          (is (= (:acl credential-nuvlabox) (:acl nuvlabox-record)))))
+          (is (= (:acl credential-nuvlabox) (:acl nuvlabox-record))))
+
+        ;; verify that the nuvlabox-status and infrastructure-service-group
+        ;; have been created with this nuvlabox-record as the parent
+
+        (-> session-admin
+            (request isg-collection-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 1))
+
+        (-> session-admin
+            (request nb-status-collection-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 1))
+        )
 
       ;; check that the recommission action is available after activation
       (let [recommission-op (-> session-alpha
