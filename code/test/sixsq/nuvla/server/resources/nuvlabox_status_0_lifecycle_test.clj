@@ -20,11 +20,11 @@
 (def timestamp "1964-08-25T10:00:00Z")
 
 
-(def nuvlabox-record-id "nuvlabox-record/some-random-uuid")
+(def nuvlabox-id "nuvlabox/some-random-uuid")
 
 
 (def valid-acl {:owners    ["group/nuvla-admin"]
-                :edit-data [nuvlabox-record-id]})
+                :edit-data [nuvlabox-id]})
 
 
 (def valid-state {:id             (str nb-status/resource-type "/uuid")
@@ -35,7 +35,7 @@
                   :acl            valid-acl
 
                   :version        0
-                  :parent         "nuvlabox-resource/uuid"
+                  :parent         "nuvlabox/uuid"
                   :status         "OPERATIONAL"
                   :comment        "some witty comment"
 
@@ -93,7 +93,7 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
-        session-nb (header session authn-info-header (str nuvlabox-record-id " group/nuvla-user group/nuvla-anon"))]
+        session-nb (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
     ;; non-admin users cannot create a nuvlabox-status resource
     (doseq [session [session-anon session-user]]
@@ -153,7 +153,7 @@
             (ltu/is-key-value :resources resources-updated)
             (ltu/is-key-value :peripherals peripherals-updated))
 
-        ;; nuvlabox-record identity cannot delete the state
+        ;; nuvlabox identity cannot delete the state
         (-> session-nb
             (request state-url
                      :request-method :delete)
@@ -169,7 +169,7 @@
 
 
     ;; verify that the internal create function also works
-    (let [response (nb-status/create-nuvlabox-status 0 nuvlabox-record-id valid-acl)
+    (let [response (nb-status/create-nuvlabox-status 0 nuvlabox-id valid-acl)
           location (get-in response [:headers "Location"])
           state-id (-> response :body :resource-id)
           state-url (str p/service-context state-id)]

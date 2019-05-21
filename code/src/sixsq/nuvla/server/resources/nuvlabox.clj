@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-record
+(ns sixsq.nuvla.server.resources.nuvlabox
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nuvlabox-record]
+    [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -48,14 +48,14 @@
 ;;
 
 (defmulti validate-subtype
-          "Validates the given nuvlabox-record resource against a specific
+          "Validates the given nuvlabox resource against a specific
            version of the schema."
           :version)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unsupported nuvlabox-record version: " (:version resource)) resource)))
+  (throw (ex-info (str "unsupported nuvlabox version: " (:version resource)) resource)))
 
 
 (defmethod crud/validate resource-type
@@ -130,7 +130,7 @@
 
 (defmulti delete-sync
           "Executes the synchronous tasks associated with deleting a
-           nuvlabox-record resource. This must always return the value of the
+           nuvlabox resource. This must always return the value of the
            resource that was passed in."
           (fn [resource request] (:version resource)))
 
@@ -154,7 +154,7 @@
 
 (defmulti delete-async
           "Creates a job to handle all the asynchronous clean up that is
-           needed when deleting a nuvlabox-resource."
+           needed when deleting a nuvlabox."
           (fn [resource request] (:version resource)))
 
 
@@ -252,14 +252,14 @@
 
 (defmulti recommission
           "Recreates the infrastructure-service(s), credentials, etc. that are
-           associated with this nuvlabox-record. The resources that are created
+           associated with this nuvlabox. The resources that are created
            depend on the version of nuvlabox-* resources being used."
           (fn [resource request] (:version resource)))
 
 
 (defmethod recommission :default
   [resource request]
-  (throw (ex-info (str "unsupported nuvlabox-record version for recommission: " (:version resource)) resource)))
+  (throw (ex-info (str "unsupported nuvlabox version for recommission: " (:version resource)) resource)))
 
 
 (defmethod crud/do-action [resource-type "recommission"]
@@ -297,6 +297,6 @@
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox-record/schema))
+  (std-crud/initialize resource-type ::nuvlabox/schema))
 
 

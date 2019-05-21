@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-record-0
+(ns sixsq.nuvla.server.resources.spec.nuvlabox-0
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-record :as nb-record]
+    [sixsq.nuvla.server.resources.spec.nuvlabox :as nb]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -197,7 +197,7 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     nb-record/attributes
+                     nb/attributes
                      {:req-un [::state
                                ::owner
                                ::refresh-interval]

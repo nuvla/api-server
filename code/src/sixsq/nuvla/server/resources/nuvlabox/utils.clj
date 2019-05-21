@@ -1,49 +1,49 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
-    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]))
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn create-infrastructure-service-group
   "Create an infrastructure service group for the NuvlaBox and populate with
-   the NuvlaBox services. Returns the possibly modified nuvlabox-record."
-  [{:keys [id acl] :as nuvlabox-record}]
+   the NuvlaBox services. Returns the possibly modified nuvlabox."
+  [{:keys [id acl] :as nuvlabox}]
   (let [skeleton {:name        (str "service group for " id)
                   :description (str "services available on the NuvlaBox " id)
                   :parent      id
                   :acl         acl}
         {:keys [status body] :as resp} (service-group/create-infrastructure-service-group skeleton)]
     (if (= 201 status)
-      (assoc nuvlabox-record :infrastructure-service-group (:resource-id body))
+      (assoc nuvlabox :infrastructure-service-group (:resource-id body))
       (let [msg (str "creating infrastructure-service-group resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
 (defn create-nuvlabox-status
   "Create an infrastructure service group for the NuvlaBox and populate with
-   the NuvlaBox services. Returns the possibly modified nuvlabox-record."
-  [{:keys [id version acl] :as nuvlabox-record}]
+   the NuvlaBox services. Returns the possibly modified nuvlabox."
+  [{:keys [id version acl] :as nuvlabox}]
   (let [{:keys [status body] :as resp} (nb-status/create-nuvlabox-status version id acl)]
     (if (= 201 status)
-      (assoc nuvlabox-record :nuvlabox-status (:resource-id body))
+      (assoc nuvlabox :nuvlabox-status (:resource-id body))
       (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
-  [{:keys [id name acl] :as nuvlabox-record}]
+  [{:keys [id name acl] :as nuvlabox}]
   (let [identity {:user-id id
                   :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
 
@@ -81,7 +81,7 @@
 
 (defn create-minio-service
   "Creates an infrastructure-service that describes a Minio endpoint
-   associated with a nuvlabox-record."
+   associated with a nuvlabox."
   [nuvlabox-id isg-id endpoint]
   (let [isg-id (get-isg-id nuvlabox-id)
         request {:params      {:resource-name infra-service/resource-type}

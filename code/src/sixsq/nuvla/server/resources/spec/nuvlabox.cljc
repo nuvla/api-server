@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-record
+(ns sixsq.nuvla.server.resources.spec.nuvlabox
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]

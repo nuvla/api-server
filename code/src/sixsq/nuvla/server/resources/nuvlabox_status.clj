@@ -59,7 +59,7 @@ although they can be created manually by an administrator.
 
 (defn create-nuvlabox-status
   "Utility to facilitate creating a new nuvlabox-status resource from the
-   nuvlabox-record resource. This will create (as an administrator) an unknown
+   nuvlabox resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
   [schema-version nuvlabox-id nuvlabox-acl]

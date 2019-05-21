@@ -20,7 +20,7 @@
             :acl            valid-acl
 
             :version        0
-            :parent         "nuvlabox-resource/uuid"
+            :parent         "nuvlabox/uuid"
             :status         "OPERATIONAL"
             :comment        "some witty comment"
 

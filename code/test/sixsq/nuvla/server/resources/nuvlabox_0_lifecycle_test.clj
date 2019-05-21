@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-record-0-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-0-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.nuvlabox-record :as nb]
+    [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
 
 
@@ -205,12 +205,12 @@
                                       (ltu/is-status 200)
                                       :response
                                       :body)
-              nuvlabox-record (-> session-admin
-                                  (request uri-nuvlabox)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  :response
-                                  :body)]
+              nuvlabox (-> session-admin
+                           (request uri-nuvlabox)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           :response
+                           :body)]
 
           ;; check generated credentials acl and claims.
           (is (= (-> credential-nuvlabox :claims :identity) id-nuvlabox))
@@ -218,11 +218,11 @@
                                                                "group/nuvla-user"
                                                                "group/nuvla-anon"}))
 
-          ;; acl of created credential is same as nuvlabox-record acl
-          (is (= (:acl credential-nuvlabox) (:acl nuvlabox-record))))
+          ;; acl of created credential is same as nuvlabox acl
+          (is (= (:acl credential-nuvlabox) (:acl nuvlabox))))
 
         ;; verify that the nuvlabox-status and infrastructure-service-group
-        ;; have been created with this nuvlabox-record as the parent
+        ;; have been created with this nuvlabox as the parent
 
         (-> session-admin
             (request isg-collection-uri)
@@ -290,7 +290,7 @@
 
       ;; verify that the delete behaves correctly
 
-      ;; anonymous users cannot see or delete the nuvlabox-record
+      ;; anonymous users cannot see or delete the nuvlabox
       (-> session-anon
           (request uri-nuvlabox
                    :request-method :delete)
@@ -317,7 +317,7 @@
         (is (= "delete_nuvlabox" (:action job)))
         (is (= id-nuvlabox (-> job :target-resource :href))))
 
-      ;; check that the state and ACL have been updated on nuvlabox-record
+      ;; check that the state and ACL have been updated on nuvlabox
       (let [record (-> session-alpha
                        (request uri-nuvlabox)
                        (ltu/body->edn)
