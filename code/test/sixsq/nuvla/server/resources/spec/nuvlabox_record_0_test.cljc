@@ -24,7 +24,6 @@
                       :infrastructure-service-group "infrastructure-service-group/abcdef"
 
                       :state                        "NEW"
-                      :mac-address                  "aa:bb:cc:dd:ee:ff"
                       :owner                        {:href "user/test"}
                       :refresh-interval             90
 
@@ -67,7 +66,6 @@
   ;; optional
   (doseq [attr #{:nuvlabox-status
                  :infrastructure-service-group
-                 :mac-address
                  :location
                  :supplier
                  :organization

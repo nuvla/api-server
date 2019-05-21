@@ -17,15 +17,6 @@
              :json-schema/order 10)))
 
 
-(s/def ::mac-address
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "mac-address"
-             :json-schema/display-name "MAC address"
-             :json-schema/description "MAC address of NuvlaBox"
-
-             :json-schema/order 10)))
-
-
 (s/def ::owner
   (-> (st/spec ::common/resource-link)
       (assoc :name "owner"
@@ -213,7 +204,6 @@
                                ::supplier
                                ::organization
                                ::manufacturer-serial-number
-                               ::mac-address
                                ::firmware-version
                                ::hardware-type
                                ::form-factor

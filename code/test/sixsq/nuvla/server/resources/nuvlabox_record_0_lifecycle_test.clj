@@ -32,16 +32,6 @@
 (def user "jane")
 
 
-(defn random-mac-address []
-  (let [random-str (apply str (remove #((set "-") %) (u/random-uuid)))]
-    (->> random-str
-         (partition 2)
-         (take 6)
-         (map #(apply str %))
-         (interpose ":")
-         (apply str))))
-
-
 (def valid-nuvlabox {:created          timestamp
                      :updated          timestamp
                      :acl              {:owners   ["group/nuvla-admin" "user/alpha"]
@@ -49,7 +39,6 @@
 
                      :version          0
 
-                     :mac-address      "aa:bb:cc:dd:ee:ff"
                      :owner            {:href "user/test"}
                      :organization     "ACME"
                      :os-version       "OS version"
@@ -98,7 +87,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox :mac-address (random-mac-address))))
+                 :body (json/write-str valid-nuvlabox))
         (ltu/body->edn)
         (ltu/is-status 201))
 
@@ -117,7 +106,7 @@
         (ltu/is-status 201))
 
     ;; creating a nuvlabox as a normal user should succeed
-    (let [entry (assoc valid-nuvlabox :mac-address "02:02:02:02:02:02")]
+    (let [entry valid-nuvlabox]
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -128,7 +117,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox :mac-address "00:00:00:00:00:00")))
+                 :body (json/write-str valid-nuvlabox))
         (ltu/body->edn)
         (ltu/is-status 201))
 
@@ -142,14 +131,14 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
+                 :body (json/write-str valid-nuvlabox))
         (ltu/body->edn)
         (ltu/is-status 201))
 
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-nuvlabox :mac-address "01:02:03:04:05:06")))
+                 :body (json/write-str valid-nuvlabox))
         (ltu/body->edn)
         (ltu/is-status 201))
 
@@ -157,7 +146,7 @@
     (let [resp-admin (-> session-admin
                          (request base-uri
                                   :request-method :post
-                                  :body (json/write-str (assoc valid-nuvlabox :mac-address "01:bb:cc:dd:ee:ff")))
+                                  :body (json/write-str valid-nuvlabox))
                          (ltu/body->edn)
                          (ltu/is-status 201))
 
