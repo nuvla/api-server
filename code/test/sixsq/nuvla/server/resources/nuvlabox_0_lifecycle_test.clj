@@ -8,10 +8,13 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [ring.util.codec :as rc]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -21,6 +24,12 @@
 
 
 (def isg-collection-uri (str p/service-context isg/resource-type))
+
+
+(def infra-service-collection-uri (str p/service-context infra-service/resource-type))
+
+
+(def credential-collection-uri (str p/service-context credential/resource-type))
 
 
 (def nb-status-collection-uri (str p/service-context nb-status/resource-type))
@@ -234,8 +243,7 @@
             (request nb-status-collection-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-count 1))
-        )
+            (ltu/is-count 1)))
 
       ;; check that the recommission action is available after activation
       (let [recommission-op (-> session-alpha
@@ -265,7 +273,48 @@
                                             :minio-secret-key   "secret"
                                             :minio-endpoint     "https://minio.example.com"}))
             (ltu/body->edn)
-            (ltu/is-status 200)))
+            (ltu/is-status 200))
+
+        ;; check that services exist
+        (let [entries (-> session-admin
+                          (request infra-service-collection-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-count 2)
+                          (ltu/entries))
+
+              types (set (map :type entries))]
+
+          (is (= #{"swarm" "s3"} types)))
+
+        ;; FIXME: Also verify the content of the created credentials.
+        ;; check that credentials exist
+        (-> session-admin
+            (content-type "application/x-www-form-urlencoded")
+            (request credential-collection-uri
+                     :request-method :put
+                     :body (rc/form-encode {:filter "type='infrastructure-service-minio'"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 1))
+
+        (-> session-admin
+            (content-type "application/x-www-form-urlencoded")
+            (request credential-collection-uri
+                     :request-method :put
+                     :body (rc/form-encode {:filter "type='infrastructure-service-swarm'"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 1))
+
+        (-> session-admin
+            (content-type "application/x-www-form-urlencoded")
+            (request credential-collection-uri
+                     :request-method :put
+                     :body (rc/form-encode {:filter "type='swarm-token'"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 2)))
 
       ;; user should be able to see the resource
       (-> session-jane

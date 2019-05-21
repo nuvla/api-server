@@ -27,12 +27,13 @@ Token for either a worker or master node of a Swarm cluster.
 ;;
 
 (defmethod p/tpl->credential tpl-swarm-token/credential-type
-  [{:keys [type method scope token parent]} request]
+  [{:keys [type method scope token parent acl]} request]
   [nil (cond-> {:resource-type p/resource-type
                 :type          type
                 :method        method
                 :scope         scope
                 :token         token}
+               acl (assoc :acl acl)
                parent (assoc :parent parent))])
 
 

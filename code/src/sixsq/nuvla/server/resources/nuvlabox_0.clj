@@ -10,7 +10,8 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
 
 
 (def schema-version 0)
@@ -32,10 +33,25 @@ a NuvlaBox.
 ;; multimethod for recommission
 ;;
 
-;; FIXME: Currently a no-op. Must create services, etc.
 (defmethod nb/recommission schema-version
   [{:keys [id] :as resource} request]
-  (let [params (:body request)]
+  (let [{:keys [swarm-endpoint
+                swarm-token-master swarm-token-worker
+                swarm-client-key swarm-client-cert swarm-client-ca
+                minio-endpoint
+                minio-access-key minio-secret-key]} (:body request)
+
+        isg-id (nb-utils/get-isg-id id)
+
+        swarm-id (nb-utils/create-swarm-service id isg-id swarm-endpoint)
+        minio-id (nb-utils/create-minio-service id isg-id minio-endpoint)]
+
+    (nb-utils/create-swarm-cred id swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
+    (nb-utils/create-swarm-token id swarm-id "MASTER" swarm-token-master)
+    (nb-utils/create-swarm-token id swarm-id "WORKER" swarm-token-worker)
+
+    (nb-utils/create-minio-cred id minio-id minio-access-key minio-secret-key)
+
     (r/map-response "recommission executed successfully" 200)))
 
 
