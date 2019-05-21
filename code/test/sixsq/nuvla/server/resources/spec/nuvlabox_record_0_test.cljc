@@ -24,7 +24,7 @@
                       :infrastructure-service-group "infrastructure-service-group/abcdef"
 
                       :state                        "NEW"
-                      :owner                        {:href "user/test"}
+                      :owner                        "user/test"
                       :refresh-interval             90
 
                       :location                     [46.2044 6.1432 373.]

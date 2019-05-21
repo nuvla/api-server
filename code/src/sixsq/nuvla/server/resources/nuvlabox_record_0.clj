@@ -37,10 +37,6 @@ a NuvlaBox.
 (defmethod nb-record/recommission schema-version
   [{:keys [id] :as resource} request]
   (let [params (:body request)]
-    (log/error (with-out-str (clojure.pprint/pprint id)))
-    (log/error (with-out-str (clojure.pprint/pprint resource)))
-    (log/error (with-out-str (clojure.pprint/pprint request)))
-    (log/error (with-out-str (clojure.pprint/pprint params)))
     (r/map-response "recommission executed successfully" 200)))
 
 

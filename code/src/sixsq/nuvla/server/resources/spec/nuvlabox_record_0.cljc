@@ -18,11 +18,12 @@
 
 
 (s/def ::owner
-  (-> (st/spec ::common/resource-link)
+  (-> (st/spec ::common/id)
       (assoc :name "owner"
-             :json-schema/description "user resource that owns the NuvlaBox"
+             :json-schema/type "resource-id"
+             :json-schema/description "id of principal (user or group) that owns the NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 11)))
 
 
 (s/def ::vm-cidr
@@ -31,7 +32,7 @@
              :json-schema/display-name "VM CIDR"
              :json-schema/description "network range for virtual machines"
 
-             :json-schema/order 10)))
+             :json-schema/order 12)))
 
 
 (s/def ::lan-cidr
@@ -40,7 +41,7 @@
              :json-schema/display-name "LAN CIDR"
              :json-schema/description "network range for local area network"
 
-             :json-schema/order 10)))
+             :json-schema/order 13)))
 
 
 (s/def ::wifi-ssid
@@ -49,7 +50,7 @@
              :json-schema/display-name "WIFI SSID"
              :json-schema/description "WIFI network identifier"
 
-             :json-schema/order 10)))
+             :json-schema/order 14)))
 
 
 (s/def ::wifi-password
@@ -58,7 +59,7 @@
              :json-schema/display-name "WIFI password"
              :json-schema/description "WIFI network password"
 
-             :json-schema/order 10)))
+             :json-schema/order 15)))
 
 
 (s/def ::root-password
@@ -67,7 +68,7 @@
              :json-schema/display-name "root password"
              :json-schema/description "root password for NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 16)))
 
 
 (s/def ::login-username
@@ -76,7 +77,7 @@
              :json-schema/display-name "login username"
              :json-schema/description "username to log into NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 17)))
 
 
 (s/def ::login-password
@@ -85,7 +86,7 @@
              :json-schema/display-name "login password"
              :json-schema/description "password to log into NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 18)))
 
 
 (s/def ::cloud-password
@@ -94,7 +95,7 @@
              :json-schema/display-name "cloud password"
              :json-schema/description "password for cloud infrastructure"
 
-             :json-schema/order 10)))
+             :json-schema/order 19)))
 
 
 (s/def ::refresh-interval
@@ -103,7 +104,7 @@
              :json-schema/display-name "refresh interval"
              :json-schema/description "refresh interval for state updates"
 
-             :json-schema/order 10)))
+             :json-schema/order 20)))
 
 
 (s/def ::location
@@ -113,7 +114,7 @@
              :json-schema/display-name "location"
              :json-schema/description "location [longitude, latitude, altitude] associated with the data"
 
-             :json-schema/order 24)))
+             :json-schema/order 21)))
 
 
 (s/def ::supplier
@@ -121,7 +122,7 @@
       (assoc :name "supplier"
              :json-schema/description "name of hardware supplier"
 
-             :json-schema/order 10)))
+             :json-schema/order 22)))
 
 
 (s/def ::organization
@@ -129,7 +130,7 @@
       (assoc :name "organization"
              :json-schema/description "organization associated with the NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 23)))
 
 
 (s/def ::form-factor
@@ -138,7 +139,7 @@
              :json-schema/display-name "form factor"
              :json-schema/description "hardware form factor"
 
-             :json-schema/order 10)))
+             :json-schema/order 24)))
 
 
 (s/def ::manufacturer-serial-number
@@ -147,7 +148,7 @@
              :json-schema/display-name "manufacturer serial number"
              :json-schema/description "hardware manufacturer serial number"
 
-             :json-schema/order 10)))
+             :json-schema/order 25)))
 
 
 (s/def ::firmware-version
@@ -156,7 +157,7 @@
              :json-schema/display-name "firmware version"
              :json-schema/description "NuvlaBox software firmware version"
 
-             :json-schema/order 10)))
+             :json-schema/order 26)))
 
 
 (s/def ::hardware-type
@@ -165,7 +166,7 @@
              :json-schema/display-name "hardware type"
              :json-schema/description "hardware type of the NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 27)))
 
 
 (s/def ::comment
@@ -173,7 +174,7 @@
       (assoc :name "comment"
              :json-schema/description "comment about the NuvlaBox"
 
-             :json-schema/order 10)))
+             :json-schema/order 28)))
 
 
 (s/def ::os-version
@@ -182,7 +183,7 @@
              :json-schema/display-name "OS version"
              :json-schema/description "operating system version"
 
-             :json-schema/order 10)))
+             :json-schema/order 29)))
 
 
 (s/def ::hw-revision-code
@@ -191,7 +192,7 @@
              :json-schema/display-name "hardware revision code"
              :json-schema/description "hardware revision code"
 
-             :json-schema/order 10)))
+             :json-schema/order 30)))
 
 
 (s/def ::schema

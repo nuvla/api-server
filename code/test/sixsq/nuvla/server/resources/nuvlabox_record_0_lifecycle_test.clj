@@ -39,7 +39,7 @@
 
                      :version          0
 
-                     :owner            {:href "user/test"}
+                     :owner            "user/alpha"
                      :organization     "ACME"
                      :os-version       "OS version"
                      :hw-revision-code "a020d3"
@@ -257,13 +257,13 @@
                      :request-method :post
                      :body (json/write-str {:swarm-token-worker "abc"
                                             :swarm-token-master "def"
-                                            :swarm-client-key "key"
-                                            :swarm-client-cert "cert"
-                                            :swarm-client-ca "ca"
-                                            :swarm-endpoint "https://swarm.example.com"
-                                            :minio-access-key "access"
-                                            :minio-secret-key "secret"
-                                            :minio-endpoint "https://minio.example.com"}))
+                                            :swarm-client-key   "key"
+                                            :swarm-client-cert  "cert"
+                                            :swarm-client-ca    "ca"
+                                            :swarm-endpoint     "https://swarm.example.com"
+                                            :minio-access-key   "access"
+                                            :minio-secret-key   "secret"
+                                            :minio-endpoint     "https://minio.example.com"}))
             (ltu/body->edn)
             (ltu/is-status 200)))
 
