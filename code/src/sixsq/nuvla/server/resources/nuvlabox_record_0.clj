@@ -10,7 +10,8 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-record-0 :as nb-record-0]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def schema-version 0)
@@ -35,6 +36,7 @@ a NuvlaBox.
 ;; FIXME: Currently a no-op. Must create services, etc.
 (defmethod nb-record/recommission schema-version
   [resource request]
+  (log/error (with-out-str (clojure.pprint/pprint request)))
   (r/map-response 200 "recommission executed successfully"))
 
 

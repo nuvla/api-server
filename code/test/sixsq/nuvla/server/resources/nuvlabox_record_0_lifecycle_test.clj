@@ -265,7 +265,9 @@
         ;; FIXME: Add checks on resources when action is not a no-op.
         (-> session-alpha
             (request recommission-url
-                     :request-method :post)
+                     :request-method :post
+                     :body (json/write-str {:swarm-token-worker "abc"
+                                            :swarm-token-master "def"}))
             (ltu/body->edn)
             (ltu/is-status 200)))
 
