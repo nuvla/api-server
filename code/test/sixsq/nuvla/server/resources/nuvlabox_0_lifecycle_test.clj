@@ -259,19 +259,18 @@
 
             recommission-url (str p/service-context recommission-op)]
 
-        ;; FIXME: Add checks on resources when action is not a no-op.
         (-> session-alpha
             (request recommission-url
                      :request-method :post
-                     :body (json/write-str {:swarm-token-worker "abc"
+                     :body (json/write-str {:swarm-token-worker  "abc"
                                             :swarm-token-manager "def"
-                                            :swarm-client-key   "key"
-                                            :swarm-client-cert  "cert"
-                                            :swarm-client-ca    "ca"
-                                            :swarm-endpoint     "https://swarm.example.com"
-                                            :minio-access-key   "access"
-                                            :minio-secret-key   "secret"
-                                            :minio-endpoint     "https://minio.example.com"}))
+                                            :swarm-client-key    "key"
+                                            :swarm-client-cert   "cert"
+                                            :swarm-client-ca     "ca"
+                                            :swarm-endpoint      "https://swarm.example.com"
+                                            :minio-access-key    "access"
+                                            :minio-secret-key    "secret"
+                                            :minio-endpoint      "https://minio.example.com"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
