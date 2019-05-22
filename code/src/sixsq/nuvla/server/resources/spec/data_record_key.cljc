@@ -13,7 +13,7 @@
 (s/def ::key ::core/nonblank-string)
 
 
-(s/def ::type ::core/nonblank-string)
+(s/def ::subtype ::common/subtype)
 
 
 (s/def ::schema
@@ -22,4 +22,4 @@
                                ::common/description         ;; description is required
                                ::prefix
                                ::key
-                               ::type]}))
+                               ::subtype]}))

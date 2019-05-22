@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-azure")
+(def ^:const credential-subtype "infrastructure-service-azure")
 
 
 (def ^:const resource-name "Azure client credentials")
@@ -27,7 +27,7 @@
 ;;
 
 (def ^:const resource
-  {:type                  credential-type
+  {:subtype               credential-subtype
    :method                method
    :name                  resource-name
    :description           "Azure cloud credentials"

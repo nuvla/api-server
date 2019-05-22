@@ -132,9 +132,9 @@
 
   ;; FIXME: Find a better solution for dispatching on credential type.
   (cond
-    (= minio/credential-type type) [(:access-key credential)
+    (= minio/credential-subtype type) [(:access-key credential)
                                     (:secret-key credential)]
-    (= exoscale/credential-type type) [(:exoscale-api-key credential)
+    (= exoscale/credential-subtype type) [(:exoscale-api-key credential)
                                        (:exoscale-api-secret-key credential)]
     :else nil))
 

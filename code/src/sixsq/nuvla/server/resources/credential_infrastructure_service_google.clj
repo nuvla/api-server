@@ -14,11 +14,11 @@ for GCE
 ;; convert template to credential
 ;;
 
-(defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method project-id private-key-id private-key
+(defmethod p/tpl->credential tpl/credential-subtype
+  [{:keys [subtype method project-id private-key-id private-key
            client-email client-id parent acl]} request]
   (let [resource (cond-> {:resource-type  p/resource-type
-                          :type           type
+                          :subtype        subtype
                           :method         method
                           :project-id     project-id
                           :private-key-id private-key-id
@@ -35,12 +35,12 @@ for GCE
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::service/schema))
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::service/schema-create))
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
 

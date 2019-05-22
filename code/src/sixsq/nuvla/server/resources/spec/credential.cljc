@@ -6,12 +6,12 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::type ::ct/type)
+(s/def ::subtype ::ct/subtype)
 
 
 (s/def ::method ::ct/method)
 
 
 (def credential-keys-spec (su/merge-keys-specs [common/common-attrs
-                                                {:req-un [::type
+                                                {:req-un [::subtype
                                                           ::method]}]))

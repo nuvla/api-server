@@ -69,8 +69,8 @@
   [{{:keys [name value deployment acl]} :body :as request}]
   (when (= name "ss:state")
     (event-utils/create-event (:href deployment) value acl
-                              :severity event/severity-medium
-                              :type event/type-state))
+                              :severity "medium"
+                              :category "state"))
   (add-impl request))
 
 

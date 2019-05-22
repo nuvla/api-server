@@ -14,7 +14,7 @@
 ;;
 
 (def ^:const resource
-  {:type         data-object-type
+  {:subtype      data-object-type
    :content-type "application/octet-stream"})
 
 

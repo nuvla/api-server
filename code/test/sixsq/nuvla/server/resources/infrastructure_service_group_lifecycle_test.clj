@@ -33,16 +33,17 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon         (-> (ltu/ring-app)
+                                 session
+                                 (content-type "application/json"))
+        session-admin        (header session-anon authn-info-header
+                                     "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user         (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-service {:acl      valid-acl
-                       :type     "docker"
-                       :endpoint "https://docker.example.org/api"
-                       :state    "STARTED"}
+        valid-service        {:acl      valid-acl
+                              :subtype  "docker"
+                              :endpoint "https://docker.example.org/api"
+                              :state    "STARTED"}
 
         valid-service-create {:name        "my-service"
                               :description "my-description"
@@ -51,10 +52,10 @@
                                                               infra-service-tpl-generic/method)}
                                                   valid-service)}
 
-        service-group-name "my-service-group"
-        valid-service-group {:name          service-group-name
-                             :description   "my-description"
-                             :documentation "http://my-documentation.org"}]
+        service-group-name   "my-service-group"
+        valid-service-group  {:name          service-group-name
+                              :description   "my-description"
+                              :documentation "http://my-documentation.org"}]
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -92,13 +93,13 @@
 
     ;; check creation
     (doseq [session [session-admin session-user]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str valid-service-group))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
+      (let [uri     (-> session
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-service-group))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
             abs-uri (str p/service-context uri)]
 
         ;; verify contents
@@ -118,16 +119,18 @@
 
           ;; creating infrastructure-services that have a parent attribute referencing the service-group
           ;; should show up automatically in the service-group
-          (let [service-ids (set (for [_ (range 3)]
-                                   (-> session
-                                       (request service-base-uri
-                                                :request-method :post
-                                                :body (json/write-str (assoc-in valid-service-create [:template :parent] uri)))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201)
-                                       :response
-                                       :body
-                                       :resource-id)))
+          (let [service-ids           (set (for [_ (range 3)]
+                                             (-> session
+                                                 (request service-base-uri
+                                                          :request-method :post
+                                                          :body (json/write-str (assoc-in
+                                                                                  valid-service-create
+                                                                                  [:template :parent] uri)))
+                                                 (ltu/body->edn)
+                                                 (ltu/is-status 201)
+                                                 :response
+                                                 :body
+                                                 :resource-id)))
 
                 updated-service-group (-> session
                                           (request abs-uri)
@@ -138,10 +141,10 @@
                                           :response
                                           :body)
 
-                service-hrefs (->> updated-service-group
-                                   :infrastructure-services
-                                   (map :href)
-                                   set)]
+                service-hrefs         (->> updated-service-group
+                                           :infrastructure-services
+                                           (map :href)
+                                           set)]
 
             (is (vector? (:infrastructure-services updated-service-group)))
             (is (= service-ids service-hrefs))

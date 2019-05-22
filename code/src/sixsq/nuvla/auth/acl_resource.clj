@@ -117,6 +117,7 @@
                              :name
                              :description
                              :tags
+                             :subtype
                              :parent
                              :resource-metadata
                              :operations})

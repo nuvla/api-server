@@ -11,10 +11,10 @@ Stores the hashed value of a password.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "hashed-password")
+(def ^:const credential-subtype "hashed-password")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "generate-hashed-password")
@@ -28,7 +28,7 @@ Stores the hashed value of a password.
 ;;
 
 (def ^:const template
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              "Hashed Password"
    :description       "stores hashed value of a password"

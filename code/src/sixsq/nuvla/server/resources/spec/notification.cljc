@@ -15,10 +15,10 @@
              :json-schema/order 30)))
 
 
-(s/def ::type
+(s/def ::category
   (-> (st/spec ::core/kebab-identifier)
-      (assoc :name "type"
-             :json-schema/description "notification type"
+      (assoc :name "category"
+             :json-schema/description "notification category"
 
              :json-schema/order 31)))
 
@@ -82,7 +82,7 @@
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::message
-                               ::type
+                               ::category
                                ::content-unique-id]
                       :opt-un [::target-resource
                                ::not-before

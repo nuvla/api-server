@@ -52,27 +52,27 @@ component, or application.
 ;; CRUD operations
 ;;
 
-(defn type->resource-name
-  [type]
-  (case type
-    "COMPONENT" module-component/resource-type
-    (throw (r/ex-bad-request (str "unknown module type: " type)))))
+(defn subtype->resource-name
+  [subtype]
+  (case subtype
+    "component" module-component/resource-type
+    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
-(defn type->resource-uri
-  [type]
-  (case type
-    "COMPONENT" module-component/resource-type
-    (throw (r/ex-bad-request (str "unknown module type: " type)))))
+(defn subtype->resource-uri
+  [subtype]
+  (case subtype
+    "component" module-component/resource-type
+    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [[{:keys [type] :as module-meta}
+  (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
-    (if (= "PROJECT" type)
+    (if (= "project" subtype)
       (let [module-meta (module-utils/set-parent-path module-meta)]
 
         (db/add                                             ; FIXME duplicated code
@@ -85,22 +85,22 @@ component, or application.
               (crud/add-acl request)
               crud/validate)
           {}))
-      (let [content-url (type->resource-name type)
-            content-uri (type->resource-uri type)
+      (let [content-url     (subtype->resource-name subtype)
+            content-uri     (subtype->resource-uri subtype)
 
-            content-body (merge module-content {:resource-type content-uri})
+            content-body    (merge module-content {:resource-type content-uri})
 
             content-request {:params      {:resource-name content-url}
                              :body        content-body
                              :nuvla/authn auth/internal-identity}
 
-            response (crud/add content-request)
+            response        (crud/add content-request)
 
-            content-id (-> response :body :resource-id)
-            module-meta (-> (assoc module-meta :versions [(cond-> {:href   content-id
-                                                                   :author author}
-                                                                  commit (assoc :commit commit))])
-                            module-utils/set-parent-path)]
+            content-id      (-> response :body :resource-id)
+            module-meta     (-> (assoc module-meta :versions [(cond-> {:href   content-id
+                                                                       :author author}
+                                                                      commit (assoc :commit commit))])
+                                module-utils/set-parent-path)]
 
         (db/add
           resource-type
@@ -139,8 +139,8 @@ component, or application.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [{:keys [versions] :as module-meta} (retrieve-edn request)
-          version-index (second (split-uuid uuid))
-          version-id (retrieve-content-id versions version-index)
+          version-index  (second (split-uuid uuid))
+          version-id     (retrieve-content-id versions version-index)
           module-content (if version-id
                            (-> version-id
                                (crud/retrieve-by-id-as-admin)
@@ -166,34 +166,34 @@ component, or application.
     (let [id (str resource-type "/" (-> request :params :uuid))
           [module-meta {:keys [author commit] :as module-content}]
           (-> body u/strip-service-attrs module-utils/split-resource)
-          {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
+          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)]
 
       (a/can-edit? {:acl acl} request)
 
-      (if (= "PROJECT" type)
-        (let [module-meta (-> (assoc module-meta :type type)
+      (if (= "project" subtype)
+        (let [module-meta (-> (assoc module-meta :subtype subtype)
                               module-utils/set-parent-path)]
 
           (edit-impl (assoc request :body module-meta)))
-        (let [content-url (type->resource-name type)
-              content-uri (type->resource-uri type)
+        (let [content-url     (subtype->resource-name subtype)
+              content-uri     (subtype->resource-uri subtype)
 
-              content-body (merge module-content {:resource-type content-uri})
+              content-body    (merge module-content {:resource-type content-uri})
 
               content-request {:params      {:resource-name content-url}
                                :body        content-body
                                :nuvla/authn auth/internal-identity}
 
-              response (crud/add content-request)
+              response        (crud/add content-request)
 
-              content-id (-> response :body :resource-id)
+              content-id      (-> response :body :resource-id)
 
-              versions (conj versions (cond-> {:href   content-id
-                                               :author author}
-                                              commit (assoc :commit commit)))
-              module-meta (-> (assoc module-meta :versions versions
-                                                 :type type)
-                              module-utils/set-parent-path)]
+              versions        (conj versions (cond-> {:href   content-id
+                                                      :author author}
+                                                     commit (assoc :commit commit)))
+              module-meta     (-> (assoc module-meta :versions versions
+                                                     :subtype subtype)
+                                  module-utils/set-parent-path)]
 
           (edit-impl (assoc request :body module-meta)))))
     (catch Exception e
@@ -211,28 +211,28 @@ component, or application.
 
 
 (defn delete-content
-  [content-id type]
+  [content-id subtype]
   (let [delete-request {:params      {:uuid          (-> content-id u/split-resource-id second)
-                                      :resource-name (type->resource-name type)}
+                                      :resource-name (subtype->resource-name subtype)}
                         :body        {:id content-id}
                         :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
 
 
 (defn delete-all
-  [request {:keys [type versions] :as module-meta}]
+  [request {:keys [subtype versions] :as module-meta}]
   (doseq [version versions]
     (when version
-      (delete-content (:href version) type)))
+      (delete-content (:href version) subtype)))
   (delete-impl request))
 
 
 (defn delete-item
-  [request {:keys [type versions] :as module-meta} version-index]
-  (let [content-id (retrieve-content-id versions version-index)
-        delete-response (delete-content content-id type)
+  [request {:keys [subtype versions] :as module-meta} version-index]
+  (let [content-id       (retrieve-content-id versions version-index)
+        delete-response  (delete-content content-id subtype)
         updated-versions (remove-version versions version-index)
-        module-meta (assoc module-meta :versions updated-versions)
+        module-meta      (assoc module-meta :versions updated-versions)
         {:keys [status]} (edit-impl (assoc request :request-method :put
                                                    :body module-meta))]
     (when (not= status 200)
@@ -247,10 +247,10 @@ component, or application.
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/throw-cannot-edit module-meta request)
+          _           (a/throw-cannot-edit module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
-          request (assoc-in request [:params :uuid] uuid)]
+          request     (assoc-in request [:params :uuid] uuid)]
 
       (if version-index
         (delete-item request module-meta version-index)

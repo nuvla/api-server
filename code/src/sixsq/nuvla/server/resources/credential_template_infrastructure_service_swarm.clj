@@ -13,7 +13,7 @@ the user's public certificate ('cert'), and the user's private key ('key').
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-swarm")
+(def ^:const credential-subtype "infrastructure-service-swarm")
 
 
 (def ^:const method "infrastructure-service-swarm")
@@ -29,7 +29,7 @@ the user's public certificate ('cert'), and the user's private key ('key').
                        :resource-type p/resource-type
                        :acl           resource-acl
 
-                       :type          credential-type
+                       :subtype       credential-subtype
                        :method        method
 
                        :ca            "ca-public-certificate"

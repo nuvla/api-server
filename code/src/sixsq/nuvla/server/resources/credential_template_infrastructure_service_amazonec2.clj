@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-amazonec2")
+(def ^:const credential-subtype "infrastructure-service-amazonec2")
 
 
 (def ^:const resource-name "AWS API keys")
@@ -27,7 +27,7 @@
 ;;
 
 (def ^:const resource
-  {:type                 credential-type
+  {:subtype              credential-subtype
    :method               method
    :name                 resource-name
    :description          "AWS credentials"
