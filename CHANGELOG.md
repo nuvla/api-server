@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+  - Release script fix
+
 ## [2.2.0] - 2019-05-22
 
 ### Added
