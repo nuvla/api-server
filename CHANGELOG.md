@@ -2,14 +2,17 @@
 
 ## [Unreleased]
 
+## [2.2.0] - 2019-05-22
+
 ### Added
 
-  - Add a new user template to allow user to invite another person to use nuvla
+  - Add a new user template to allow a user to invite another person 
+    to use nuvla
 
 ### Changed
 
-  - Change spec of credential of type infrastructure service. 
-    Infrastructure services field have been deleted and replaced by 
+  - Change schema of infrastructure service credential. The 
+    infrastructure-services field has been deleted and replaced by 
     parent field.
 
 ## [2.1.1] - 2019-05-13
