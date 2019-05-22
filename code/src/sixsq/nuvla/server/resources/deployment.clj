@@ -97,11 +97,15 @@
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-type "/" uuid)
-        (db/retrieve request)
-        deployment-utils/verify-can-delete
-        (a/throw-cannot-edit request)
-        (db/delete request))
+    (let [authn-info (auth/current-authentication request)
+          deployment-id (str resource-type "/" uuid)
+          delete-response (-> deployment-id
+                              (db/retrieve request)
+                              deployment-utils/verify-can-delete
+                              (a/throw-cannot-edit request)
+                              (db/delete request))]
+      (deployment-utils/delete-deployment-credentials authn-info deployment-id)
+      delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

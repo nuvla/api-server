@@ -7,7 +7,10 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.module :as module]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.common.utils :as u]))
 
 
 (defn generate-api-key-secret
@@ -20,6 +23,30 @@
       {:api-key    resource-id
        :api-secret secretKey}
       (throw (ex-info "" body)))))
+
+
+(defn delete-deployment-credentials
+  "Attempts to delete all credentials associated with the deployment via the
+   parent attribute. Exceptions are logged but otherwise ignored."
+  [authn-info deployment-id]
+  (try
+    (let [credentials-query {:params      {:resource-name credential/resource-type}
+                             :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
+                                           :select ["id"]}
+                             :nuvla/authn authn-info}
+          credential-ids (->> credentials-query crud/query :body :resources (map :id))]
+
+      (doseq [credential-id credential-ids]
+        (try
+          (let [[resource-name uuid] (u/split-resource-id credential-id)
+                request {:params      {:resource-name credential/resource-type
+                                       :uuid          uuid}
+                         :nuvla/authn authn-info}]
+            (crud/delete request))
+          (catch Exception e
+            (log/error (str "error deleting " (:id credential-id) " for " deployment-id ": " e))))))
+    (catch Exception e
+      (log/error "cannot query credentials related to " deployment-id))))
 
 
 (defn resolve-module [{:keys [href]} authn-info]
