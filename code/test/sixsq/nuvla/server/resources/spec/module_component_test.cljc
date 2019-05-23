@@ -48,8 +48,9 @@
               :urls                    [["primary" "https://${host}:${port-443}/my/path"]
                                         ["other" "http://${host}:${port-80}/path"]]
 
-              :environmental-variables [{:name "alpha-env"}
-                                        {:name        "beta-env"
+              :environmental-variables [{:name  "ALPHA_ENV"
+                                         :value "OK"}
+                                        {:name        "BETA_ENV"
                                          :description "beta-env variable"
                                          :required    true}]
 
