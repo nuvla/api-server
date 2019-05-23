@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.module :as module]))
 
 
@@ -69,8 +68,7 @@
                       (ltu/is-status 201)
                       (ltu/location))
 
-        valid-deployment {:module {:href module-id}}
-        ]
+        valid-deployment {:module {:href module-id}}]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -117,15 +115,20 @@
             (ltu/is-resource-uri t/collection-type)
             (ltu/is-count 1)))
 
-      (let [deployment (-> session-user
-                           (request deployment-url)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/is-operation-present "edit")
-                           (ltu/is-operation-present "delete")
-                           (ltu/is-operation-present "start")
-                           :response
-                           :body)]
+      (let [deployment-response (-> session-user
+                                    (request deployment-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present "edit")
+                                    (ltu/is-operation-present "delete")
+                                    (ltu/is-operation-present "start")
+                                    (ltu/is-key-value :state "CREATED"))
+
+            start-op (ltu/get-op deployment-response "start")
+
+            start-url (str p/service-context start-op)
+
+            deployment (-> deployment-response :response :body)]
 
         ;; verify that api key/secret pair was created
         (is (:api-credentials deployment))
@@ -136,57 +139,80 @@
                                (request credential-url)
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/dump)
                                :response
                                :body)]
 
-            (is (= deployment-id (:parent credential))))))
+            ;; verify that the credential has the correct metadata
+            (is (:name credential))
+            (is (:description credential))
+            (is (= deployment-id (:parent credential)))
 
-      ;; verify contents of admin data-set
-      #_(let [data-set (-> session-admin
-                           (request admin-abs-uri)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/is-operation-present "edit")
-                           (ltu/is-operation-present "delete")
-                           :response
-                           :body)]
 
-          (is (= "my-data-set" (:name data-set)))
-          (is (= "(filter='module')" (:module-filter data-set)))
-
-          ;; verify that an edit works
-          (let [updated (assoc data-set :module-filter "(filter='updated')")]
-
-            (-> session-admin
-                (request admin-abs-uri
-                         :request-method :put
-                         :body (json/write-str updated))
+            ;; attempt to start the deployment
+            (-> session-user
+                (request start-url
+                         :request-method :post)
                 (ltu/body->edn)
-                (ltu/is-status 200)
-                :response
-                :body)
+                (ltu/is-status 202))
 
-            (let [updated-body (-> session-admin
-                                   (request admin-abs-uri)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   :response
-                                   :body)]
+            ;; verify that the state has changed
+            (let [deployment-response (-> session-user
+                                          (request deployment-url)
+                                          (ltu/body->edn)
+                                          (ltu/is-status 200)
+                                          (ltu/is-operation-present "edit")
+                                          (ltu/is-operation-present "stop")
+                                          (ltu/is-operation-absent "delete")
+                                          (ltu/is-operation-absent "start")
+                                          (ltu/is-key-value :state "STARTING"))
 
-              (is (= "(filter='updated')" (:module-filter updated-body))))))
+                  stop-op (ltu/get-op deployment-response "stop")
 
-      ;; admin can delete the data-set
-      #_(-> session-admin
-            (request admin-abs-uri :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))
+                  stop-url (str p/service-context stop-op)
 
-      ;; user can delete the data-set
-      #_(-> session-user
-            (request deployment-url :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200)))))
+                  deployment (-> deployment-response :response :body)]
+
+              ;; try to stop the deployment
+              (-> session-user
+                  (request stop-url
+                           :request-method :post)
+                  (ltu/body->edn)
+                  (ltu/is-status 202))
+
+              ;; verify that the state has been updated
+              (-> session-user
+                  (request deployment-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :state "STOPPING"))
+
+              ;; the deployment would be set to "STOPPED" via the job
+              ;; for the tests, set this manually to continue with the workflow
+              (-> session-user
+                  (request deployment-url
+                           :request-method :put
+                           :body (json/write-str {:state "STOPPED"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)))
+
+            ;; verify that the user can delete the deployment
+            (-> session-user
+                (request deployment-url
+                         :request-method :delete)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            ;; verify that the deployment has disappeared
+            (-> session-user
+                (request deployment-url)
+                (ltu/body->edn)
+                (ltu/is-status 404))
+
+            ;; verify that the associated credential has also been removed
+            (-> session-user
+                (request credential-url)
+                (ltu/body->edn)
+                (ltu/is-status 404))))))))
 
 
 (deftest bad-methods

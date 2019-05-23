@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [clojure.tools.logging :as log]
@@ -16,8 +15,10 @@
 (defn generate-api-key-secret
   [deployment-id authn-info]
   (let [request-api-key {:params      {:resource-name credential/resource-type}
-                         :body        {:template {:href   (str "credential-template/" cred-api-key/method)
-                                                  :parent deployment-id}}
+                         :body        {:name        (str "API credential for " deployment-id)
+                                       :description (str "generated API credential for " deployment-id)
+                                       :parent      deployment-id
+                                       :template    {:href (str "credential-template/" cred-api-key/method)}}
                          :nuvla/authn authn-info}
         {{:keys [status resource-id secretKey]} :body :as response} (crud/add request-api-key)]
     (when (= status 201)
