@@ -21,3 +21,29 @@
     (is (= resource (t/select-desc-keys resource)))
     (is (= resource (t/select-desc-keys (assoc resource :other "ignored"))))
     (is (= (dissoc resource :name) (t/select-desc-keys (dissoc resource :name))))))
+
+
+(deftest check-id-utils
+  (are [expected id] (= expected (t/split-resource-id id))
+                     nil nil
+                     nil 47
+                     ["" nil] ""
+                     ["cloud-entry-point" nil] "cloud-entry-point"
+                     ["resource" "uuid"] "resource/uuid"
+                     ["resource" "uuid"] "resource/uuid/ignored")
+
+  (are [expected id] (= expected (t/resource-name id))
+                     nil nil
+                     nil 47
+                     "" ""
+                     "cloud-entry-point" "cloud-entry-point"
+                     "resource" "resource/uuid"
+                     "resource" "resource/uuid/ignored")
+
+  (are [expected id] (= expected (t/document-id id))
+                     nil nil
+                     nil 47
+                     nil ""
+                     nil "cloud-entry-point"
+                     "uuid" "resource/uuid"
+                     "uuid" "resource/uuid/ignored"))

@@ -65,8 +65,9 @@
   "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
    an identifier part (e.g. the cloud-entry-point), the document ID will be nil."
   [id]
-  (let [[type docid] (str/split id #"/")]
-    [type docid]))
+  (when (string? id)
+    (let [[type docid] (str/split id #"/")]
+      [type docid])))
 
 
 (defn resource-name
