@@ -49,10 +49,10 @@
 
         cred-tmpl {:name        (str "Generated API Key for " (or name id))
                    :description (str/join " " ["Generated API Key for" name (str "(" id ")")])
+                   :parent      id
                    :template    {:href   (str "credential-template/" cred-tmpl-api/method)
                                  :type   cred-tmpl-api/credential-type
                                  :method cred-tmpl-api/method
-                                 :parent id
                                  :ttl    0
                                  :acl    acl}}
 

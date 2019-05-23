@@ -208,12 +208,14 @@
                               (get-in [:response :body :api-key]))]
 
         (let [credential-url (str p/service-context credential-id)
+
               credential-nuvlabox (-> session-admin
                                       (request credential-url)
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
                                       :response
                                       :body)
+
               nuvlabox (-> session-admin
                            (request uri-nuvlabox)
                            (ltu/body->edn)
@@ -222,6 +224,7 @@
                            :body)]
 
           ;; check generated credentials acl and claims.
+          (is (= (:parent credential-nuvlabox) id-nuvlabox))
           (is (= (-> credential-nuvlabox :claims :identity) id-nuvlabox))
           (is (= (-> credential-nuvlabox :claims :roles set) #{id-nuvlabox
                                                                "group/nuvla-user"
