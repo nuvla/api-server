@@ -49,7 +49,19 @@
                                             :tag        "16.04"}
                              :ports        [{:protocol       "tcp"
                                              :target-port    22
-                                             :published-port 8022}]})
+                                             :published-port 8022}]
+
+                             :environmental-variables [{:name "alpha-env"}
+                                                       {:name        "beta-env"
+                                                        :description "beta-env variable"
+                                                        :required    true}]
+
+                             :output-parameters       [{:name        "alpha"
+                                                        :description "my-alpha"}
+                                                       {:name        "beta"
+                                                        :description "my-beta"}
+                                                       {:name        "gamma"
+                                                        :description "my-gamma"}]})
 
 
 (deftest lifecycle
