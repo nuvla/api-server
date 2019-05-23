@@ -4,7 +4,7 @@
 
 ### Changed
 
-  - Make split id utility more robust against invalid arguments
+  - Make id parsing utility more robust against invalid arguments
   - Release script fix
 
 ## [2.2.0] - 2019-05-22
