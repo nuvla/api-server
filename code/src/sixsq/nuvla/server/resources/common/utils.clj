@@ -61,22 +61,39 @@
   (str resource-name "/" (random-uuid)))
 
 
-(defn split-resource-id
-  "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
-   an identifier part (e.g. the cloud-entry-point), the document ID will be nil."
+(defn parse-id
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [id]
-  (let [[type docid] (str/split id #"/")]
-    [type docid]))
+  (when (string? id)
+    (let [[resource uuid] (str/split id #"/")]
+      [resource uuid])))
 
 
-(defn resource-name
+(defn id->request-params
+  "Creates the request path params map {:resource-name \"name\", :uuid
+   \"uuid\"} for the given id. If the id isn't valid, then nil is returned."
+  [id]
+  (when-let [[resource-type uuid] (parse-id id)]
+    (cond-> {:resource-name resource-type}                  ;; resource-name is historical
+            uuid (assoc :uuid uuid))))
+
+
+(defn id->resource-type
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [resource-id]
-  (first (split-resource-id resource-id)))
+  (first (parse-id resource-id)))
 
 
-(defn document-id
+(defn id->uuid
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [resource-id]
-  (second (split-resource-id resource-id)))
+  (second (parse-id resource-id)))
 
 
 (defn md5 [^String s]
