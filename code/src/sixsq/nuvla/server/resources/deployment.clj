@@ -64,16 +64,17 @@
                        (assoc :resource-type resource-type)
                        (assoc :state "CREATED")
                        (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
-                       (assoc :api-credentials (deployment-utils/generate-api-key-secret authn-info))
                        (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
-        href (get-in create-response [:body :resource-id])
+        deployment-id (get-in create-response [:body :resource-id])
 
         msg (get-in create-response [:body :message])]
 
-    (event-utils/create-event href msg (a/default-acl authn-info))
+    (event-utils/create-event deployment-id msg (a/default-acl authn-info))
+
+    (deployment-utils/assoc-api-credentials deployment-id authn-info)
 
     create-response))
 

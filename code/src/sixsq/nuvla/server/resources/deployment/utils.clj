@@ -14,15 +14,30 @@
 
 
 (defn generate-api-key-secret
-  [authn-info]
+  [deployment-id authn-info]
   (let [request-api-key {:params      {:resource-name credential/resource-type}
-                         :body        {:template {:href (str "credential-template/" cred-api-key/method)}}
+                         :body        {:template {:href   (str "credential-template/" cred-api-key/method)
+                                                  :parent deployment-id}}
                          :nuvla/authn authn-info}
         {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
-    (if (= status 201)
+    (when (= status 201)
       {:api-key    resource-id
-       :api-secret secretKey}
-      (throw (ex-info "" body)))))
+       :api-secret secretKey})))
+
+
+(defn assoc-api-credentials
+  [deployment-id authn-info]
+  (try
+    (when-let [api-credentials (generate-api-key-secret deployment-id authn-info)]
+      (let [edit-request {:params      {:resource-name credential/resource-type
+                                        :uuid          deployment-id}
+                          :body        {:api-credentials api-credentials}
+                          :nuvla/authn authn-info}
+            {{:keys [status] :as body} :body :as response} (crud/edit edit-request)]
+        (when (not= status 200)
+          (log/error "could not create api key/secret for" deployment-id))))
+    (catch Exception e
+      (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))
 
 
 (defn delete-deployment-credentials
@@ -50,7 +65,8 @@
 
 
 (defn resolve-module [{:keys [href]} authn-info]
-  (let [request-module {:params      {:uuid          (some-> href (str/split #"/") second)
+  (let [(u/split-resource-id href)
+        request-module {:params      {:uuid          (some-> href (str/split #"/") second)
                                       :resource-name module/resource-type}
                         :nuvla/authn authn-info}
         {:keys [body status] :as module-response} (crud/retrieve request-module)]
@@ -59,7 +75,7 @@
                                 (dissoc :versions :operations)
                                 (std-crud/resolve-hrefs authn-info true))]
         (assoc module-resolved :href href))
-      (throw (ex-info nil body)))))
+      (throw (ex-info (str "cannot resolve module " href) body)))))
 
 
 (defn can-delete?
