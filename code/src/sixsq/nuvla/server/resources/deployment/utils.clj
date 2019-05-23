@@ -20,10 +20,10 @@
                                        :parent      deployment-id
                                        :template    {:href (str "credential-template/" cred-api-key/method)}}
                          :nuvla/authn authn-info}
-        {{:keys [status resource-id secretKey]} :body :as response} (crud/add request-api-key)]
+        {{:keys [status resource-id secret-key]} :body :as response} (crud/add request-api-key)]
     (when (= status 201)
       {:api-key    resource-id
-       :api-secret secretKey})))
+       :api-secret secret-key})))
 
 
 (defn assoc-api-credentials
