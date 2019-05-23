@@ -140,10 +140,17 @@
                   (t/location))
           abs-uri (str p/service-context uri)]
 
-      (-> session-user
-          (request abs-uri)
-          (t/body->edn)
-          (t/is-status 200))
+      (let [data-record-acl (-> session-user
+                                (request abs-uri)
+                                (t/body->edn)
+                                (t/is-status 200)
+                                :response
+                                :body
+                                :acl)]
+
+        ;; check the default ACL
+        (is ((set (:owners data-record-acl)) "group/nuvla-admin"))
+        (is ((set (:edit-acl data-record-acl)) "user/jane")))
 
       (-> (session (ltu/ring-app))
           (header authn-info-header "user/jane role1 group/nuvla-admin")

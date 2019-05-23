@@ -85,6 +85,7 @@
                                                                 ::container/ports
                                                                 ::container/mounts
                                                                 ::urls
+                                                                ::container/environmental-variables
                                                                 ::output-parameters]}]))
 
 
