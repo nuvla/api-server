@@ -48,7 +48,7 @@
                     (ltu/entries))
 
         type-uris (set (map :type-uri md-docs))
-        ids (set (map u/document-id (map :id md-docs)))]
+        ids (set (map u/id->uuid (map :id md-docs)))]
 
     (is (set? type-uris))
     (is (set? ids))
