@@ -35,7 +35,7 @@
                           :nuvla/authn authn-info}
             {:keys [status] :as response} (crud/edit edit-request)]
         (when (not= status 200)
-          (log/error "could not add api key/secret to" deployment-id)))
+          (log/error "could not add api key/secret to" deployment-id "\n" (with-out-str (clojure.pprint/pprint response)))))
       (log/error "could not create api key/secret for" deployment-id))
     (catch Exception e
       (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))

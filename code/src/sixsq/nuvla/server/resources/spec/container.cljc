@@ -90,6 +90,45 @@
              :json-schema/indexed false)))
 
 
+;;
+;; environmental variables
+;;
+
+(s/def ::name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "name"
+             :json-schema/description "parameter name")))
+
+
+(s/def ::description
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "description"
+             :json-schema/description "parameter description")))
+
+
+(s/def ::required
+  (-> (st/spec boolean?)
+      (assoc :name "required"
+             :json-schema "boolean"
+             :json-schema/description "value required? (default false)")))
+
+
+(s/def ::environmental-variable
+  (-> (st/spec (su/only-keys :req-un [::name]
+                             :opt-un [::description ::required]))
+      (assoc :name "environmental-variable"
+             :json-schema/type "map"
+             :json-schema/description "environmental variable name, description, and required flag")))
+
+
+(s/def ::environmental-variables
+  (-> (st/spec (s/coll-of ::environmental-variable :kind vector? :min-count 1))
+      (assoc :name "environmental-variables"
+             :json-schema/type "array"
+             :json-schema/display-name "environmental variables"
+             :json-schema/description "list of environmental variable")))
+
+
 ;; mounts spec
 
 
