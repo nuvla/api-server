@@ -41,15 +41,28 @@
                    :data-access-protocols     ["http+s3" "posix+nfs"]})
 
 
-(def valid-module-component {:author       "someone"
-                             :commit       "wip"
+(def valid-module-component {:author                  "someone"
+                             :commit                  "wip"
 
-                             :architecture "x86"
-                             :image        {:image-name "ubuntu"
-                                            :tag        "16.04"}
-                             :ports        [{:protocol       "tcp"
-                                             :target-port    22
-                                             :published-port 8022}]})
+                             :architecture            "x86"
+                             :image                   {:image-name "ubuntu"
+                                                       :tag        "16.04"}
+                             :ports                   [{:protocol       "tcp"
+                                                        :target-port    22
+                                                        :published-port 8022}]
+
+                             :environmental-variables [{:name  "ALPHA_ENV"
+                                                        :value "OK"}
+                                                       {:name        "BETA_ENV"
+                                                        :description "beta-env variable"
+                                                        :required    true}]
+
+                             :output-parameters       [{:name        "alpha"
+                                                        :description "my-alpha"}
+                                                       {:name        "beta"
+                                                        :description "my-beta"}
+                                                       {:name        "gamma"
+                                                        :description "my-gamma"}]})
 
 
 (deftest lifecycle
