@@ -19,7 +19,8 @@ and the key itself **may** be described in a data-record-key resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record :as data-record]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as sr]))
+    [sixsq.nuvla.server.util.response :as sr]
+    [sixsq.nuvla.auth.utils :as auth]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -89,9 +90,26 @@ and the key itself **may** be described in a data-record-key resource.
       validate-attributes))
 
 
+;;
+;; multimethod for ACLs
+;;
+
+(defn create-acl [id]
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
+
+
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
+
+
+(defmethod crud/add-acl resource-type
+  [{:keys [acl] :as resource} request]
+  (if acl
+    resource
+    (let [user-id (:user-id (auth/current-authentication request))]
+      (assoc resource :acl (create-acl user-id)))))
 
 
 ;;
