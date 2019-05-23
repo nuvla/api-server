@@ -94,9 +94,13 @@
 ;; environmental variables
 ;;
 
+(def env-var-regex #"^[A-Z_]+$")
+
+
 (s/def ::name
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec (s/and string? #(re-matches env-var-regex %)))
       (assoc :name "name"
+             :json-schema/type "string"
              :json-schema/description "parameter name")))
 
 
@@ -104,6 +108,12 @@
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "description"
              :json-schema/description "parameter description")))
+
+
+(s/def ::value
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "value"
+             :json-schema/description "parameter value")))
 
 
 (s/def ::required
@@ -115,10 +125,10 @@
 
 (s/def ::environmental-variable
   (-> (st/spec (su/only-keys :req-un [::name]
-                             :opt-un [::description ::required]))
+                             :opt-un [::description ::required ::value]))
       (assoc :name "environmental-variable"
              :json-schema/type "map"
-             :json-schema/description "environmental variable name, description, and required flag")))
+             :json-schema/description "environmental variable name, description, required flag, and value")))
 
 
 (s/def ::environmental-variables
