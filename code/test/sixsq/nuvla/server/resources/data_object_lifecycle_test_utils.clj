@@ -15,8 +15,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [clojure.tools.logging :as log])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
   (:import
     (com.amazonaws AmazonServiceException)))
 
@@ -246,7 +245,6 @@
 
               (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-authorized]
-                (log/error "full-eo-lifecycle abs-uri" abs-uri)
                 (-> session
                     (request abs-uri
                              :request-method :delete)
