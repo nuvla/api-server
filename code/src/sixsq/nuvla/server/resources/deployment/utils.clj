@@ -19,7 +19,7 @@
                          :body        {:template {:href   (str "credential-template/" cred-api-key/method)
                                                   :parent deployment-id}}
                          :nuvla/authn authn-info}
-        {{:keys [status resource-id secretKey] :as body} :body :as response} (crud/add request-api-key)]
+        {{:keys [status resource-id secretKey]} :body :as response} (crud/add request-api-key)]
     (when (= status 201)
       {:api-key    resource-id
        :api-secret secretKey})))
@@ -28,14 +28,14 @@
 (defn assoc-api-credentials
   [deployment-id authn-info]
   (try
-    (when-let [api-credentials (generate-api-key-secret deployment-id authn-info)]
-      (let [edit-request {:params      {:resource-name credential/resource-type
-                                        :uuid          deployment-id}
+    (if-let [api-credentials (generate-api-key-secret deployment-id authn-info)]
+      (let [edit-request {:params      (u/id->request-params deployment-id)
                           :body        {:api-credentials api-credentials}
                           :nuvla/authn authn-info}
-            {{:keys [status] :as body} :body :as response} (crud/edit edit-request)]
+            {:keys [status] :as response} (crud/edit edit-request)]
         (when (not= status 200)
-          (log/error "could not create api key/secret for" deployment-id))))
+          (log/error "could not add api key/secret to" deployment-id)))
+      (log/error "could not create api key/secret for" deployment-id))
     (catch Exception e
       (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))
 
@@ -53,7 +53,7 @@
 
       (doseq [credential-id credential-ids]
         (try
-          (let [[resource-name uuid] (u/split-resource-id credential-id)
+          (let [[resource-name uuid] (u/parse-id credential-id)
                 request {:params      {:resource-name credential/resource-type
                                        :uuid          uuid}
                          :nuvla/authn authn-info}]
@@ -65,17 +65,16 @@
 
 
 (defn resolve-module [{:keys [href]} authn-info]
-  (let [(u/split-resource-id href)
-        request-module {:params      {:uuid          (some-> href (str/split #"/") second)
-                                      :resource-name module/resource-type}
-                        :nuvla/authn authn-info}
-        {:keys [body status] :as module-response} (crud/retrieve request-module)]
-    (if (= status 200)
-      (let [module-resolved (-> body
-                                (dissoc :versions :operations)
-                                (std-crud/resolve-hrefs authn-info true))]
-        (assoc module-resolved :href href))
-      (throw (ex-info (str "cannot resolve module " href) body)))))
+  (if-let [params (u/id->request-params href)]
+    (let [request-module {:params params, :nuvla/authn authn-info}
+          {:keys [body status] :as module-response} (crud/retrieve request-module)]
+      (if (= status 200)
+        (let [module-resolved (-> body
+                                  (dissoc :versions :operations)
+                                  (std-crud/resolve-hrefs authn-info true))]
+          (assoc module-resolved :href href))
+        (throw (ex-info (str "cannot resolve module " href) body))))
+    (throw (r/ex-bad-request "deployment module is not defined"))))
 
 
 (defn can-delete?

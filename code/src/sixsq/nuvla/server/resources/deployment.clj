@@ -92,7 +92,7 @@
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl (update request :body dissoc :api-credentials)))
+  (edit-impl request))
 
 
 (defn delete-impl
