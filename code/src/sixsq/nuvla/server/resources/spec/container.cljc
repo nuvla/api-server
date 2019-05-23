@@ -97,8 +97,11 @@
 (def env-var-regex #"^[A-Z_]+$")
 
 
+(def reserved-env-var-regex #"NUVLA_.*")
+
+
 (s/def ::name
-  (-> (st/spec (s/and string? #(re-matches env-var-regex %)))
+  (-> (st/spec (s/and string? #(re-matches env-var-regex %) #(not (re-matches reserved-env-var-regex %))))
       (assoc :name "name"
              :json-schema/type "string"
              :json-schema/description "parameter name")))
