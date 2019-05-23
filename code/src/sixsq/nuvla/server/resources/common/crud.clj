@@ -18,7 +18,7 @@
 
 (defn resource-id-dispatch
   [resource-id & _]
-  (first (u/split-resource-id resource-id)))
+  (first (u/parse-id resource-id)))
 
 
 (defn resource-name-and-action-dispatch

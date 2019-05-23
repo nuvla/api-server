@@ -33,10 +33,10 @@
                                   {:mount-type     "volume"
                                    :source         "/nfs-server/nfs-path"
                                    :target         "/mnt"
-                                   :volume-options {:o "addr=1.2.3.4"
+                                   :volume-options {:o      "addr=1.2.3.4"
                                                     :device "nfs-server/nfs-path"
-                                                    :type "nfs"
-                                                    :vers "4"}}]
+                                                    :type   "nfs"
+                                                    :vers   "4"}}]
               :ports             [{:protocol       "tcp"
                                    :target-port    22
                                    :published-port 8022}

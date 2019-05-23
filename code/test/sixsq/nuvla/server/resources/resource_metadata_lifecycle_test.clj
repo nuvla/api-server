@@ -66,7 +66,7 @@
                                             :response
                                             :body)]
 
-          (is (= (cu/document-id id) identifier)))))))
+          (is (= (cu/uuid-from-id id) identifier)))))))
 
 
 (deftest bad-methods

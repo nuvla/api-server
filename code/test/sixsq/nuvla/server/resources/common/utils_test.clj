@@ -24,7 +24,7 @@
 
 
 (deftest check-id-utils
-  (are [expected id] (= expected (t/split-resource-id id))
+  (are [expected id] (= expected (t/parse-id id))
                      nil nil
                      nil 47
                      ["" nil] ""
@@ -32,7 +32,7 @@
                      ["resource" "uuid"] "resource/uuid"
                      ["resource" "uuid"] "resource/uuid/ignored")
 
-  (are [expected id] (= expected (t/resource-name id))
+  (are [expected id] (= expected (t/resource-from-id id))
                      nil nil
                      nil 47
                      "" ""
@@ -40,7 +40,7 @@
                      "resource" "resource/uuid"
                      "resource" "resource/uuid/ignored")
 
-  (are [expected id] (= expected (t/document-id id))
+  (are [expected id] (= expected (t/uuid-from-id id))
                      nil nil
                      nil 47
                      nil ""

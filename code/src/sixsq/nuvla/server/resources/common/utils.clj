@@ -61,23 +61,24 @@
   (str resource-name "/" (random-uuid)))
 
 
-(defn split-resource-id
-  "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
-   an identifier part (e.g. the cloud-entry-point), the document ID will be nil."
+(defn parse-id
+  "Parses a resource id to provide a tuple of [resource uuid] for an id. For
+   ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [id]
   (when (string? id)
-    (let [[type docid] (str/split id #"/")]
-      [type docid])))
+    (let [[resource uuid] (str/split id #"/")]
+      [resource uuid])))
 
 
-(defn resource-name
+(defn resource-from-id
   [resource-id]
-  (first (split-resource-id resource-id)))
+  (first (parse-id resource-id)))
 
 
-(defn document-id
+(defn uuid-from-id
   [resource-id]
-  (second (split-resource-id resource-id)))
+  (second (parse-id resource-id)))
 
 
 (defn md5 [^String s]

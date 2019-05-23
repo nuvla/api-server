@@ -12,26 +12,26 @@
 (def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-deployment {:id                        (str d/resource-type "/connector-uuid")
-                       :resource-type             d/resource-type
-                       :created                   timestamp
-                       :updated                   timestamp
-                       :acl                       valid-acl
+(def valid-deployment {:id              (str d/resource-type "/connector-uuid")
+                       :resource-type   d/resource-type
+                       :created         timestamp
+                       :updated         timestamp
+                       :acl             valid-acl
 
-                       :state                     "STARTED"
+                       :state           "STARTED"
 
-                       :api-credentials           {:api-key    "credential/uuid"
-                                                   :api-secret "api secret"}
-                       :api-endpoint              "http://blah.example.com"
+                       :api-credentials {:api-key    "credential/uuid"
+                                         :api-secret "api secret"}
+                       :api-endpoint    "http://blah.example.com"
 
-                       :credential-id             "credential/my-cloud-credential"
+                       :credential-id   "credential/my-cloud-credential"
 
-                       :module                    {:href "module-component/my-module-component-uuid"}
+                       :module          {:href "module-component/my-module-component-uuid"}
 
-                       :data-objects              ["data-object/uuid1" "data-object/uuid2"]
-                       :data-records              {:data-record/uuid1 ["data-set/dataset1" "data-set/dataset2"]
-                                                   :data-record/uuid2 nil
-                                                   :data-record/uuid3 ["data-set/dataset3"]}})
+                       :data-objects    ["data-object/uuid1" "data-object/uuid2"]
+                       :data-records    {:data-record/uuid1 ["data-set/dataset1" "data-set/dataset2"]
+                                         :data-record/uuid2 nil
+                                         :data-record/uuid3 ["data-set/dataset3"]}})
 
 
 (deftest test-schema-check

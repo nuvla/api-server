@@ -212,7 +212,7 @@ component, or application.
 
 (defn delete-content
   [content-id type]
-  (let [delete-request {:params      {:uuid          (-> content-id u/split-resource-id second)
+  (let [delete-request {:params      {:uuid          (u/uuid-from-id content-id)
                                       :resource-name (type->resource-name type)}
                         :body        {:id content-id}
                         :nuvla/authn auth/internal-identity}]

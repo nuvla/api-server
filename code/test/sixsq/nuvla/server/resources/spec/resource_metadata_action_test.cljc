@@ -14,7 +14,7 @@
             :input-parameters [{:name        "delay"
                                 :value-scope {:minimum 1
                                               :maximum 200
-                                              :units "minutes"
+                                              :units   "minutes"
                                               :default 30}}]})
 
 

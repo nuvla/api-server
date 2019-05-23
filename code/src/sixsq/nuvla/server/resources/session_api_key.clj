@@ -83,7 +83,7 @@
             claims (:claims cookie-info)
             session (cond-> (assoc session :expiry expires)
                             claims (assoc :roles claims))]
-        (log/debug "api-key cookie token claims for " (u/document-id href) ":" cookie-info)
+        (log/debug "api-key cookie token claims for " (u/uuid-from-id href) ":" cookie-info)
         (let [cookies {authn-info/authn-cookie cookie}]
           [{:cookies cookies} session]))
       (throw (r/ex-unauthorized key)))))
