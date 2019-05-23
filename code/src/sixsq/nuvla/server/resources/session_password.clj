@@ -59,7 +59,7 @@
           session (cond-> (assoc session :expiry expires)
                           claims (assoc :roles claims))
           cookies {authn-info/authn-cookie cookie}]
-      (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
+      (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
       [{:cookies cookies} session])
     (throw (r/ex-unauthorized username))))
 
