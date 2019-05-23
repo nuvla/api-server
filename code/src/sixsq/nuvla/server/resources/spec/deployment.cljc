@@ -125,9 +125,9 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
-                                  ::api-credentials
                                   ::api-endpoint]
-                         :opt-un [::credential-id
+                         :opt-un [::api-credentials
+                                  ::credential-id
                                   ::data-objects
                                   ::data-records]}]))
 
