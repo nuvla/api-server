@@ -156,9 +156,9 @@
 
 (defn select-desc-keys
   "Selects the common attributes that are related to the description of the
-   resource, namely 'name', 'description', and tags."
+   resource, namely 'name', 'description', 'tags', and 'parent'."
   [m]
-  (select-keys m #{:name :description :tags}))
+  (select-keys m #{:name :description :tags :parent}))
 
 
 (defn create-spec-validation-fn
