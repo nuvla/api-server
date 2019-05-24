@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Mention user email in invitation to use Nuvla
   - Add expiry field to job resource
   - Allow resource constraints (CPUs, memory) to be specified for module
     components

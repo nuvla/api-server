@@ -32,7 +32,7 @@
   (partial format
            (str/join "\n"
                      ["You have been invited by \"%s\" to use Nuvla."
-                      "To accept this invitation, visit:"
+                      "Signup with this email \"%s\" to accept this invite by following this link:"
                       "\n    %s\n"])))
 
 
@@ -100,7 +100,7 @@
   (let [{:keys [smtp-username, conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
-        body (cond-> (invitation-email-body (or name id) callback-url)
+        body (cond-> (invitation-email-body (or name id) address callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
         msg  {:from    (or smtp-username "administrator")
