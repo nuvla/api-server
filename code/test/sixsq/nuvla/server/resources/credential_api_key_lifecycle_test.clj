@@ -107,7 +107,7 @@
                    (ltu/body->edn)
                    (ltu/is-status 201))
           id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
+          secret-key (get-in resp [:response :body :secret-key])
           uri (-> resp
                   (ltu/location))
           abs-uri (str p/service-context uri)]
@@ -158,7 +158,7 @@
                    (ltu/body->edn)
                    (ltu/is-status 201))
           id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
+          secret-key (get-in resp [:response :body :secret-key])
           uri (-> resp
                   (ltu/location))
           abs-uri (str p/service-context uri)]
@@ -205,7 +205,7 @@
                    (ltu/body->edn)
                    (ltu/is-status 201))
           id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
+          secret-key (get-in resp [:response :body :secret-key])
           uri (-> resp
                   (ltu/location))
           abs-uri (str p/service-context uri)]

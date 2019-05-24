@@ -64,16 +64,17 @@
                        (assoc :resource-type resource-type)
                        (assoc :state "CREATED")
                        (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
-                       (assoc :api-credentials (deployment-utils/generate-api-key-secret authn-info))
                        (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
-        href (get-in create-response [:body :resource-id])
+        deployment-id (get-in create-response [:body :resource-id])
 
         msg (get-in create-response [:body :message])]
 
-    (event-utils/create-event href msg (a/default-acl authn-info))
+    (event-utils/create-event deployment-id msg (a/default-acl authn-info))
+
+    (deployment-utils/assoc-api-credentials deployment-id authn-info)
 
     create-response))
 
@@ -91,17 +92,21 @@
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl (update request :body dissoc :api-credentials)))
+  (edit-impl request))
 
 
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-type "/" uuid)
-        (db/retrieve request)
-        deployment-utils/verify-can-delete
-        (a/throw-cannot-edit request)
-        (db/delete request))
+    (let [authn-info (auth/current-authentication request)
+          deployment-id (str resource-type "/" uuid)
+          delete-response (-> deployment-id
+                              (db/retrieve request)
+                              deployment-utils/verify-can-delete
+                              (a/throw-cannot-edit request)
+                              (db/delete request))]
+      (deployment-utils/delete-deployment-credentials authn-info deployment-id)
+      delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
