@@ -12,18 +12,19 @@
 
 (deftest check-job
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        job {:id                 (str sj/resource-type "/test-job")
-             :resource-type      sj/resource-type
-             :created            timestamp
-             :updated            timestamp
-             :acl                valid-acl
-             :state              "QUEUED"
-             :progress           0
-             :action             "add"
-             :started            timestamp
-             :duration           30
-             :target-resource    {:href "abc/def"}
-             :affected-resources [{:href "abc/def"}]}]
+        job       {:id                 (str sj/resource-type "/test-job")
+                   :resource-type      sj/resource-type
+                   :created            timestamp
+                   :updated            timestamp
+                   :acl                valid-acl
+                   :state              "QUEUED"
+                   :progress           0
+                   :action             "add"
+                   :started            timestamp
+                   :duration           30
+                   :expiry             timestamp
+                   :target-resource    {:href "abc/def"}
+                   :affected-resources [{:href "abc/def"}]}]
 
     (stu/is-valid ::job/schema job)
 
@@ -43,5 +44,5 @@
       (stu/is-invalid ::job/schema (dissoc job k)))
 
     ;; optional keywords
-    (doseq [k #{:target-resource :affected-resources :started :duration}]
+    (doseq [k #{:target-resource :affected-resources :started :duration :expiry}]
       (stu/is-valid ::job/schema (dissoc job k)))))

@@ -135,6 +135,16 @@
              :json-schema/order 32)))
 
 
+(s/def ::expiry
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "expiry"
+             :json-schema/type "date-time"
+
+             :json-schema/description "expiry timestamp after which the job can be cleaned up"
+             :json-schema/group "body"
+             :json-schema/order 33)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::state
@@ -149,4 +159,5 @@
                                ::nested-jobs
                                ::priority
                                ::started
-                               ::duration]}))
+                               ::duration
+                               ::expiry]}))
