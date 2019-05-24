@@ -39,15 +39,15 @@ CredentialTemplate resource.
 
 ;;
 ;; validate the created credential resource
-;; must dispatch on the type because each credential has a different schema
+;; must dispatch on the subtype because each credential has a different schema
 ;;
 
-(defmulti validate-subtype :type)
+(defmulti validate-subtype :subtype)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (logu/log-and-throw-400 (str "unknown Credential type: '" resource (:type resource) "'")))
+  (logu/log-and-throw-400 (str "unknown Credential subtype: '" resource (:subtype resource) "'")))
 
 
 (defmethod crud/validate resource-type
@@ -61,7 +61,7 @@ CredentialTemplate resource.
 ;;
 
 (defn dispatch-on-registration-method [resource]
-  (get-in resource [:template :type]))
+  (get-in resource [:template :subtype]))
 
 
 (defmulti create-validate-subtype dispatch-on-registration-method)
@@ -69,7 +69,7 @@ CredentialTemplate resource.
 
 (defmethod create-validate-subtype :default
   [resource]
-  (logu/log-and-throw-400 (str "cannot validate CredentialTemplate create document with type: '"
+  (logu/log-and-throw-400 (str "cannot validate CredentialTemplate create document with subtype: '"
                                (dispatch-on-registration-method resource) "'")))
 
 
@@ -101,17 +101,17 @@ CredentialTemplate resource.
 
 (defn dispatch-conversion
   [resource _]
-  (:type resource))
+  (:subtype resource))
 
 
 (defmulti tpl->credential dispatch-conversion)
 
 
-;; default implementation throws if the credential type is unknown
+;; default implementation throws if the credential subtype is unknown
 (defmethod tpl->credential :default
   [resource request]
   (logu/log-and-throw-400
-    (str "cannot transform credential-template document to template for type: '" (:type resource) "'")))
+    (str "cannot transform credential-template document to template for subtype: '" (:subtype resource) "'")))
 
 
 ;;
@@ -173,7 +173,7 @@ CredentialTemplate resource.
         [create-resp {:keys [id] :as body}]
         (-> body
             (assoc :resource-type create-type)
-            (update-in [:template] dissoc :type)            ;; forces use of template reference
+            (update-in [:template] dissoc :subtype)         ;; forces use of template reference
             (resolve-hrefs authn-info)
             (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
             crud/validate
@@ -208,11 +208,11 @@ CredentialTemplate resource.
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [type (-> (str resource-type "/" uuid)
-                 (db/retrieve request)
-                 :type)
+  (let [subtype  (-> (str resource-type "/" uuid)
+                     (db/retrieve request)
+                     :subtype)
         new-body (-> body
-                     (assoc :type type)
+                     (assoc :subtype subtype)
                      (special-edit request))]
     (edit-impl (assoc request :body new-body))))
 

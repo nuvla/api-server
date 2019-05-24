@@ -37,9 +37,9 @@
              :json-schema/order 33)))
 
 
-(s/def ::type
-  (-> (st/spec #{"PROJECT" "COMPONENT"})
-      (assoc :name "type"
+(s/def ::subtype
+  (-> (st/spec #{"project" "component"})
+      (assoc :name "subtype"
              :json-schema/type "string"
              :json-schema/description "module type"
 
@@ -121,7 +121,7 @@
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
-                                                      ::type]
+                                                      ::subtype]
                                              :opt-un [::logo-url
                                                       ::data-accept-content-types
                                                       ::data-access-protocols

@@ -7,11 +7,11 @@
     [spec-tools.core :as st]))
 
 
-;; All credential templates must indicate the type of credential to create.
-(s/def ::type
-  (-> (st/spec ::core/identifier)
-      (assoc :name "type"
-             :json-schema/description "type of credential"
+;; All credential templates must indicate the subtype of credential to create.
+(s/def ::subtype
+  (-> (st/spec ::common/subtype)
+      (assoc :name "subtype"
+             :json-schema/description "subtype of credential"
 
              :json-schema/order 0
              :json-schema/hidden true)))
@@ -39,9 +39,9 @@
 ;; is no sense in defining map resources for the resource itself.
 ;;
 
-(def credential-template-keys-spec {:req-un [::type ::method]})
+(def credential-template-keys-spec {:req-un [::subtype ::method]})
 
-(def credential-template-keys-spec-opt {:opt-un [::type ::method]})
+(def credential-template-keys-spec-opt {:opt-un [::subtype ::method]})
 
 (def resource-keys-spec
   (su/merge-keys-specs [common/common-attrs

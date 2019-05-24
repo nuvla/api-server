@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.spec.data-object-template-public :as dot-public]))
 
 
-(def ^:const data-object-type "public")
+(def ^:const data-object-subtype "public")
 
 
 ;;
@@ -14,7 +14,7 @@
 ;;
 
 (def ^:const resource
-  {:type         data-object-type
+  {:subtype      data-object-subtype
    :content-type "application/octet-stream"})
 
 
@@ -34,7 +34,7 @@
 (def create-validate-fn (u/create-spec-validation-fn ::dot-public/schema-create))
 
 
-(defmethod do/create-validate-subtype data-object-type
+(defmethod do/create-validate-subtype data-object-subtype
   [resource]
   (create-validate-fn resource))
 
@@ -42,6 +42,6 @@
 (def validate-fn (u/create-spec-validation-fn ::dot-public/template))
 
 
-(defmethod dot/validate-subtype-template data-object-type
+(defmethod dot/validate-subtype-template data-object-subtype
   [resource]
   (validate-fn resource))

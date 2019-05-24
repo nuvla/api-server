@@ -13,16 +13,16 @@
 
 (deftest check-credential-service-docker
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl {:id            (str cred/resource-type "/uuid")
-             :resource-type cred/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        tpl       {:id            (str cred/resource-type "/uuid")
+                   :resource-type cred/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :type          "swarm"
-             :method        "swarm"
+                   :subtype       "swarm"
+                   :method        "swarm"
 
-             :hash          "some-hash-of-a-password"}]
+                   :hash          "some-hash-of-a-password"}]
 
     (stu/is-valid ::hashed-pwd/schema tpl)
 

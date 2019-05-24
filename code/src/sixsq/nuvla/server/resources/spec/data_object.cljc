@@ -2,15 +2,16 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.data :as data]
     [spec-tools.core :as st]))
 
 
-(s/def ::type
-  (-> (st/spec ::core/identifier)
-      (assoc :name "state"
+(s/def ::subtype
+  (-> (st/spec ::common/subtype)
+      (assoc :name "subtype"
              :json-schema/type "string"
-             :json-schema/description "timestamp (UTC) associated with the data"
+             :json-schema/description "subtype of data-object"
 
              :json-schema/server-managed true
              :json-schema/editable false
@@ -21,7 +22,7 @@
   (-> (st/spec #{"NEW" "UPLOADING" "READY"})
       (assoc :name "state"
              :json-schema/type "string"
-             :json-schema/description "timestamp (UTC) associated with the data"
+             :json-schema/description "data-object state"
 
              :json-schema/server-managed true
              :json-schema/editable false
@@ -82,7 +83,7 @@
              :json-schema/order 35)))
 
 
-(def common-data-object-attrs {:req-un [::type
+(def common-data-object-attrs {:req-un [::subtype
                                         ::state
                                         ::object
                                         ::bucket
@@ -96,7 +97,7 @@
 
 
 ;; :state is server managed and shouldn't appear in a template expansion
-(def common-data-object-tpl-attrs {:req-un [::type
+(def common-data-object-tpl-attrs {:req-un [::subtype
                                             ::object
                                             ::bucket
                                             ::credential]

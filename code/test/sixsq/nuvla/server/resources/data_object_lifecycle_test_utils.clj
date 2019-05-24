@@ -63,53 +63,53 @@
                              :description   "my-description"
                              :documentation "http://my-documentation.org"}
 
-        service-group-id (-> user-session
-                             (request service-group-base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-service-group))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+        service-group-id    (-> user-session
+                                (request service-group-base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-service-group))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-        valid-acl {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-user"]}
+        valid-acl           {:owners   ["group/nuvla-admin"]
+                             :view-acl ["group/nuvla-user"]}
 
-        valid-service {:acl      valid-acl
-                       :parent   service-group-id
-                       :type     "s3"
-                       :endpoint "https://minio.example.org:9000"
-                       :state    "STARTED"}
+        valid-service       {:acl      valid-acl
+                             :parent   service-group-id
+                             :subtype  "s3"
+                             :endpoint "https://minio.example.org:9000"
+                             :state    "STARTED"}
 
-        valid-create {:name        "minio"
-                      :description "minio"
-                      :template    (merge {:href (str infra-service-tpl/resource-type "/"
-                                                      infra-service-tpl-generic/method)}
-                                          valid-service)}
+        valid-create        {:name        "minio"
+                             :description "minio"
+                             :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                             infra-service-tpl-generic/method)}
+                                                 valid-service)}
 
-        service-id (-> user-session
-                       (request service-base-uri
-                                :request-method :post
-                                :body (json/write-str valid-create))
-                       (ltu/body->edn)
-                       (ltu/is-status 201)
-                       (ltu/location))
+        service-id          (-> user-session
+                                (request service-base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-create))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-        href (str cred-tpl/resource-type "/" cred-tpl-minio/method)
+        href                (str cred-tpl/resource-type "/" cred-tpl-minio/method)
 
-        create-import-href {:name        "minio credential"
-                            :description "minio credential"
-                            :template    {:href       href
-                                          :parent     service-id
-                                          :access-key "my-access-key"
-                                          :secret-key "my-secret-key"}}
+        create-import-href  {:name        "minio credential"
+                             :description "minio credential"
+                             :template    {:href       href
+                                           :parent     service-id
+                                           :access-key "my-access-key"
+                                           :secret-key "my-secret-key"}}
 
-        cred-id (-> user-session
-                    (request credential-base-uri
-                             :request-method :post
-                             :body (json/write-str create-import-href))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))]
+        cred-id             (-> user-session
+                                (request credential-base-uri
+                                         :request-method :post
+                                         :body (json/write-str create-import-href))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))]
 
     (alter-var-root #'*s3-credential-id* (constantly cred-id))))
 
@@ -190,10 +190,10 @@
 
 (defn full-eo-lifecycle
   [template-url template-obj]
-  (let [template (get-template template-url)
-        create-href {:template (-> template-obj
-                                   (assoc :href (:id template))
-                                   (dissoc :type))}
+  (let [template       (get-template template-url)
+        create-href    {:template (-> template-obj
+                                      (assoc :href (:id template))
+                                      (dissoc :subtype))}
         create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute

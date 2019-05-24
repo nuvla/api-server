@@ -66,7 +66,7 @@
                                                    infra-service-tpl-generic/method)
                                     :acl      valid-acl
                                     :parent   service-group-id
-                                    :type     "cloud"
+                                    :subtype     "cloud"
                                     :endpoint "https://cloud.example.org/api"
                                     :nodes    []
                                     :state    "STARTED"}}
@@ -133,7 +133,7 @@
           (is (= service-name (:name service)))
           (is (= service-desc (:description service)))
           (is (= service-tags (:tags service)))
-          (is (:type service))
+          (is (:subtype service))
           (is (nil? (:endpoint service)))
           (is (= "STARTING" (:state service)))
           (is (= credential-id (:management-credential-id service))))

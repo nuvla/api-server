@@ -72,11 +72,11 @@ secret, so you must capture and save the plain text secret from this response!
 ;; convert template to credential: loads and validates the given SSH public key
 ;; provides attributes about the key.
 ;;
-(defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method ttl acl]} request]
+(defmethod p/tpl->credential tpl/credential-subtype
+  [{:keys [subtype method ttl acl]} request]
   (let [[secret-key digest] (key-utils/generate)
         resource (cond-> {:resource-type p/resource-type
-                          :type          type
+                          :subtype       subtype
                           :method        method
                           :digest        digest
                           :claims        (extract-claims request)
@@ -89,12 +89,12 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::api-key/schema))
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::api-key/schema-create))
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
 
@@ -102,7 +102,7 @@ secret, so you must capture and save the plain text secret from this response!
 ;;
 ;; multimethod for edition
 ;;
-(defmethod p/special-edit tpl/credential-type
+(defmethod p/special-edit tpl/credential-subtype
   [resource {:keys [nuvla/authn] :as request}]
   (if (acl-resource/is-admin? authn)
     resource

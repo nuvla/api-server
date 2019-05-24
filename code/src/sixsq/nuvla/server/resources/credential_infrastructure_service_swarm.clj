@@ -25,10 +25,10 @@ certificate authority's public certificate, 'ca', must also be provided.
 ;; convert template to credential: just copies the necessary keys from the provided template.
 ;;
 
-(defmethod cred/tpl->credential tpl/credential-type
-  [{:keys [type method parent ca cert key acl]} request]
+(defmethod cred/tpl->credential tpl/credential-subtype
+  [{:keys [subtype method parent ca cert key acl]} request]
   [nil (cond-> {:resource-type cred/resource-type
-                :type          type
+                :subtype       subtype
                 :method        method
                 :ca            ca
                 :cert          cert
@@ -44,7 +44,7 @@ certificate authority's public certificate, 'ca', must also be provided.
 (def validate-fn (u/create-spec-validation-fn ::service-swarm/schema))
 
 
-(defmethod cred/validate-subtype tpl/credential-type
+(defmethod cred/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -52,6 +52,6 @@ certificate authority's public certificate, 'ca', must also be provided.
 (def create-validate-fn (u/create-spec-validation-fn ::service-swarm/schema-create))
 
 
-(defmethod cred/create-validate-subtype tpl/credential-type
+(defmethod cred/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))

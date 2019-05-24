@@ -45,12 +45,12 @@
 ;;
 
 (defmulti validate-subtype
-          :type)
+          :subtype)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown External object type: '" (:type resource) "'") resource)))
+  (throw (ex-info (str "unknown External object type: '" (:subtype resource) "'") resource)))
 
 
 (defmethod crud/validate resource-type
@@ -61,16 +61,16 @@
 ;; validate create requests for subclasses of data objects
 ;;
 
-(defn dispatch-on-type [resource]
-  (get-in resource [:template :type]))
+(defn dispatch-on-subtype [resource]
+  (get-in resource [:template :subtype]))
 
 
-(defmulti create-validate-subtype dispatch-on-type)
+(defmulti create-validate-subtype dispatch-on-subtype)
 
 
 (defmethod create-validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown External Object create type: " (dispatch-on-type resource) resource) resource)))
+  (throw (ex-info (str "unknown External Object create subtype: " (dispatch-on-subtype resource) resource) resource)))
 
 
 (defmethod crud/validate create-type
@@ -84,12 +84,12 @@
 (defmulti validate-subtype
           "Validates the given resource against the specific
            DataObjectTemplate subtype schema."
-          :type)
+          :subtype)
 
 
 (defmethod validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown DataObjectTemplate type: " (:type resource)) resource)))
+  (throw (ex-info (str "unknown DataObjectTemplate subtype: " (:subtype resource)) resource)))
 
 
 (defmethod crud/validate
@@ -128,19 +128,19 @@
 
 (defn standard-data-object-resource-operations
   [{:keys [id state] :as resource} request]
-  (let [can-view? (a/can-view? resource request)
-        can-edit? (a/can-edit? resource request)
-        can-manage? (a/can-manage? resource request)
-        can-delete? (a/can-delete? resource request)
-        show-upload-op? (and can-manage? (#{state-new state-uploading} state))
-        show-ready-op? (and can-manage? (#{state-uploading} state))
+  (let [can-view?         (a/can-view? resource request)
+        can-edit?         (a/can-edit? resource request)
+        can-manage?       (a/can-manage? resource request)
+        can-delete?       (a/can-delete? resource request)
+        show-upload-op?   (and can-manage? (#{state-new state-uploading} state))
+        show-ready-op?    (and can-manage? (#{state-uploading} state))
         show-download-op? (and can-view? (#{state-ready} state)) ;; Exception: use view rather than manage, maybe view-data?
-        ops (cond-> []
-                    can-delete? (conj {:rel (:delete c/action-uri) :href id})
-                    can-edit? (conj {:rel (:edit c/action-uri) :href id})
-                    show-upload-op? (conj {:rel (:upload c/action-uri) :href (str id "/upload")})
-                    show-ready-op? (conj {:rel (:ready c/action-uri) :href (str id "/ready")})
-                    show-download-op? (conj {:rel (:download c/action-uri) :href (str id "/download")}))]
+        ops               (cond-> []
+                                  can-delete? (conj {:rel (:delete c/action-uri) :href id})
+                                  can-edit? (conj {:rel (:edit c/action-uri) :href id})
+                                  show-upload-op? (conj {:rel (:upload c/action-uri) :href (str id "/upload")})
+                                  show-ready-op? (conj {:rel (:ready c/action-uri) :href (str id "/ready")})
+                                  show-download-op? (conj {:rel (:download c/action-uri) :href (str id "/download")}))]
     (when (seq ops)
       (vec ops))))
 
@@ -177,7 +177,7 @@
 
 (defmulti tpl->data-object
           "Transforms the data-object-template into a data-object resource."
-          :type)
+          :subtype)
 
 
 ;; default implementation just updates the resource-type
@@ -216,10 +216,10 @@
 (defn merge-into-tmpl
   [body]
   (if-let [href (get-in body [:template :href])]
-    (let [tmpl (-> (get @dot/templates href)
-                   u/strip-service-attrs
-                   u/strip-common-attrs
-                   (dissoc :acl))
+    (let [tmpl          (-> (get @dot/templates href)
+                            u/strip-service-attrs
+                            u/strip-common-attrs
+                            (dissoc :acl))
           user-resource (-> body
                             :template
                             (dissoc :href))]
@@ -235,14 +235,14 @@
   [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
-        body (-> body
-                 (assoc :resource-type create-type)
-                 (merge-into-tmpl)
-                 (resolve-hrefs authn-info)
-                 (crud/validate)
-                 :template
-                 (tpl->data-object)
-                 (assoc :state state-new))]
+        body       (-> body
+                       (assoc :resource-type create-type)
+                       (merge-into-tmpl)
+                       (resolve-hrefs authn-info)
+                       (crud/validate)
+                       :template
+                       (tpl->data-object)
+                       (assoc :state state-new))]
     (s3/ensure-bucket-exists body request)
     (add-impl (assoc request :body body))))
 
@@ -303,11 +303,11 @@
 (defn upload-fn
   "Provided 'resource' and 'request', returns object storage upload URL.
   It is assumed that the bucket already exists and the user has access to it."
-  [{:keys [type content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
   (verify-state resource #{state-new state-uploading} "upload")
-  (let [object (if (not-empty object)
-                 object
-                 (format "%s/%s" runUUID filename))
+  (let [object         (if (not-empty object)
+                         object
+                         (format "%s/%s" runUUID filename))
         obj-store-conf (s3/credential->s3-client-cfg credential)]
     (log/info "Requesting upload url:" object)
     (s3/generate-url obj-store-conf bucket object :put
@@ -336,7 +336,7 @@
 
 
 (defmulti ready-subtype
-          (fn [resource _] (:type resource)))
+          (fn [resource _] (:subtype resource)))
 
 (defmethod ready-subtype :default
   [resource request]
@@ -360,7 +360,7 @@
 
 (defmulti download-subtype
           "Provided 'resource' and 'request', returns object storage download URL."
-          (fn [resource _] (:type resource)))
+          (fn [resource _] (:subtype resource)))
 
 
 

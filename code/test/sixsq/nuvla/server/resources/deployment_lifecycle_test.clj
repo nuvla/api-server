@@ -33,7 +33,7 @@
                    :updated                   timestamp
                    :parent-path               "a/b"
                    :path                      "a/b/c"
-                   :type                      "COMPONENT"
+                   :subtype                   "component"
 
                    :logo-url                  "https://example.org/logo"
 
@@ -69,7 +69,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a module that can be referenced from the deployment

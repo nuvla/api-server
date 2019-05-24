@@ -20,7 +20,7 @@ cluster on a given cloud infrastructure.
                :description        "template to create docker swarm"
                :resource-metadata  (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type               "swarm"
+               :subtype            "swarm"
                :service-credential {:href "credential/change-me"}
 
                :acl                infra-service-tpl/resource-acl})

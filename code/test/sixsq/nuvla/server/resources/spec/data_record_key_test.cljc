@@ -22,7 +22,7 @@
 
               :prefix        "example-org"
               :key           "test-key"
-              :type          "string"}]
+              :subtype       "string"}]
 
 
     (stu/is-valid ::data-record-key/schema attr)
@@ -33,8 +33,8 @@
     (stu/is-invalid ::data-record-key/schema (assoc attr :key 0))
     (stu/is-invalid ::data-record-key/schema (assoc attr :key ""))
 
-    (stu/is-valid ::data-record-key/schema (assoc attr :type "string"))
+    (stu/is-valid ::data-record-key/schema (assoc attr :subtype "string"))
 
     ;; mandatory keywords
-    (doseq [k #{:id :name :description :created :updated :acl :prefix :key :type}]
+    (doseq [k #{:id :name :description :created :updated :acl :prefix :key :subtype}]
       (stu/is-invalid ::data-record-key/schema (dissoc attr k)))))

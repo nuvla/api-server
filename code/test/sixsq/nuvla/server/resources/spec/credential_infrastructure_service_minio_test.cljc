@@ -19,7 +19,7 @@
              :updated       timestamp
              :acl           valid-acl
 
-             :type          "minio"
+             :subtype       "minio"
              :method        "minio"
 
              :parent        "infrastructure-service/service-1"

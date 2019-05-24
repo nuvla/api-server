@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-minio")
+(def ^:const credential-subtype "infrastructure-service-minio")
 
 
 (def ^:const resource-name "Minio S3 Credentials")
@@ -27,7 +27,7 @@
 ;;
 
 (def ^:const resource
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              resource-name
    :description       "Minio S3 credentials"

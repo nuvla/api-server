@@ -18,7 +18,7 @@
              :updated       timestamp
              :acl           valid-acl
 
-             :type          "swarm"
+             :subtype       "swarm"
              :method        "swarm"
 
              :parent        "infrastructure-service/service-1"

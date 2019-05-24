@@ -118,6 +118,16 @@
              :json-schema/order 7)))
 
 
+(s/def ::subtype
+  (-> (st/spec ::core/kebab-identifier)
+      (assoc :name "subtype"
+             :json-schema/description "subtype of resource"
+             :json-schema/section "meta"
+
+             :json-schema/fulltext true
+             :json-schema/order 8)))
+
+
 (s/def ::tags
   (-> (st/spec (s/coll-of string? :min-count 1 :type vector? :distinct true))
       (assoc :name "tags"
@@ -126,11 +136,11 @@
              :json-schema/section "meta"
 
              :json-schema/fulltext true
-             :json-schema/order 8)))
+             :json-schema/order 9)))
 
 
 (s/def ::operations (-> (st/spec ::common-operation/operations)
-                        (assoc :json-schema/order 9)))
+                        (assoc :json-schema/order 10)))
 
 
 (s/def ::acl (-> (st/spec ::acl-resource/acl)

@@ -6,38 +6,24 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-;;
-;; severity and type values that are reused elsewhere
-;;
 
-(def ^:const severity-critical "critical")
-(def ^:const severity-high "high")
-(def ^:const severity-medium "medium")
-(def ^:const severity-low "low")
-
-(def ^:const type-state "state")
-(def ^:const type-alarm "alarm")
-(def ^:const type-action "action")
-(def ^:const type-system "system")
-
-
-(s/def ::type
-  (-> (st/spec #{type-state
-                 type-alarm
-                 type-action
-                 type-system})
-      (assoc :name "type"
+(s/def ::category
+  (-> (st/spec #{"state"
+                 "alarm"
+                 "action"
+                 "system"})
+      (assoc :name "category"
              :json-schema/type "string"
-             :json-schema/description "type of event"
+             :json-schema/description "category of event"
 
              :json-schema/order 30)))
 
 
 (s/def ::severity
-  (-> (st/spec #{severity-critical
-                 severity-high
-                 severity-medium
-                 severity-low})
+  (-> (st/spec #{"critical"
+                 "high"
+                 "medium"
+                 "low"})
       (assoc :name "severity"
              :json-schema/type "string"
              :json-schema/description "severity level of event"
@@ -89,5 +75,5 @@
   (su/only-keys-maps common/common-attrs
                      {:req-un [::timestamp
                                ::content
-                               ::type
+                               ::category
                                ::severity]}))

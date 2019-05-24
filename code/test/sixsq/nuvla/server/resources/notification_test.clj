@@ -18,17 +18,18 @@
 (def content-unique-id "content-hash")
 
 (def valid-notification {:message           message
-                         :type              "some-type"
+                         :category          "some-category"
                          :content-unique-id content-unique-id})
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 (deftest lifecycle
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
-        user "user/jane"
-        session-user (header session-anon authn-info-header (format "%s group/nuvla-user group/nuvla-anon" user))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
+        user          "user/jane"
+        session-user  (header session-anon authn-info-header (format "%s group/nuvla-user group/nuvla-anon" user))
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; admin can query; adding resources is allowed
     (-> session-admin
@@ -66,7 +67,7 @@
           (ltu/is-status 403)))
 
     ;; create: NOK with bad schema
-    (doseq [[k v] {:message "" :type "A-Type" :content-unique-id ""}]
+    (doseq [[k v] {:message "" :category "A-Category" :content-unique-id ""}]
       (-> session-admin
           (request base-uri
                    :request-method :post
@@ -78,14 +79,14 @@
     ;; Lifecycle: create, find by unique id, get, defer, delete.
     ;; Admin creates the notification for a user.
     ;; User should be able to defer and delete the notification.
-    (let [acl {:delete [user] :manage [user] :view-data [user] :view-meta [user]}
-          uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str (assoc valid-notification :acl acl)))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [acl     {:delete [user] :manage [user] :view-data [user] :view-meta [user]}
+          uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str (assoc valid-notification :acl acl)))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; find by :content-unique-id
@@ -133,10 +134,10 @@
           (ltu/message-matches #"(?s).*invalid method.*"))
 
       ;; defer by user via action
-      (let [notif (-> session-user
-                      (request abs-uri)
-                      (ltu/body->edn)
-                      (ltu/is-status 200))
+      (let [notif     (-> session-user
+                          (request abs-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200))
             defer-url (str p/service-context (ltu/get-op notif "defer"))]
 
         ;; bad delay value
@@ -186,13 +187,13 @@
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
-        uri (str p/service-context "resource-metadata/" resource-type)]
-    (let [actions (-> session-user
-                      (request uri)
-                      (ltu/body->edn)
-                      (ltu/is-status 200)
-                      (ltu/has-key :actions)
-                      (get-in [:response :body :actions]))
+        uri          (str p/service-context "resource-metadata/" resource-type)]
+    (let [actions     (-> session-user
+                          (request uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/has-key :actions)
+                          (get-in [:response :body :actions]))
           delay-param (->> actions
                            (filter (fn [x] (= "defer" (:name x))))
                            first

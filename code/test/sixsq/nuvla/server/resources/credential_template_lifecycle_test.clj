@@ -47,13 +47,13 @@
 
   (doseq [resource-url [akey/resource-url
                         hashed-password/resource-url
-                        service-aws/credential-type
-                        service-azure/credential-type
-                        service-exo/credential-type
-                        service-gce/credential-type
-                        service-minio/credential-type
-                        service-swarm/credential-type
-                        swarm-token/credential-type]]
+                        service-aws/credential-subtype
+                        service-azure/credential-subtype
+                        service-exo/credential-subtype
+                        service-gce/credential-subtype
+                        service-minio/credential-subtype
+                        service-swarm/credential-subtype
+                        swarm-token/credential-subtype]]
     (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
                                 (str ct/resource-type "-" resource-url "-create"))))
 
@@ -75,7 +75,7 @@
                     (ltu/entries))
         ids (set (map :id entries))
         methods (set (map :method entries))
-        types (set (map :type entries))]
+        types (set (map :subtype entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" service-minio/method)
@@ -95,15 +95,15 @@
              service-exo/method
              service-gce/method
              swarm-token/method} methods))
-    (is (= #{akey/credential-type
-             hashed-password/credential-type
-             service-minio/credential-type
-             service-swarm/credential-type
-             service-aws/credential-type
-             service-azure/credential-type
-             service-exo/credential-type
-             service-gce/credential-type
-             swarm-token/credential-type} types))
+    (is (= #{akey/credential-subtype
+             hashed-password/credential-subtype
+             service-minio/credential-subtype
+             service-swarm/credential-subtype
+             service-aws/credential-subtype
+             service-azure/credential-subtype
+             service-exo/credential-subtype
+             service-gce/credential-subtype
+             swarm-token/credential-subtype} types))
 
     (doseq [entry entries]
       (let [ops (ltu/operations->map entry)

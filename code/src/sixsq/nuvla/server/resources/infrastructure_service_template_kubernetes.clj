@@ -20,7 +20,7 @@ cluster on a given cloud infrastructure.
                :description        "template to create kubernetes"
                :resource-metadata  (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type               "kubernetes"
+               :subtype            "kubernetes"
                :service-credential {:href "credential/change-me"}
 
                :acl                infra-service-tpl/resource-acl})
