@@ -213,7 +213,7 @@ component, or application.
 (defn delete-content
   [content-id subtype]
   (let [delete-request {:params      {:uuid          (-> content-id u/parse-id second)
-                                      :resource-name (u/id->resource-type subtype)}
+                                      :resource-name (subtype->resource-name subtype)}
                         :body        {:id content-id}
                         :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
