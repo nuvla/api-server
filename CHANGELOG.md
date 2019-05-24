@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Add expiry field to job resource
   - Allow resource constraints (CPUs, memory) to be specified for module
     components
   - Add nuvlabox and nuvlabox-status resource to allow the registration,
