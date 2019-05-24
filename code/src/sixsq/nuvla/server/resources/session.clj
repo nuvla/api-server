@@ -282,7 +282,7 @@ session.
 (defmethod crud/delete resource-type
   [request]
   (let [response (delete-impl request)
-        cookies (delete-cookie response)]
+        cookies  (delete-cookie response)]
     (merge response cookies)))
 
 

@@ -57,10 +57,10 @@
 (s/def ::common-attrs (su/only-keys-maps common/common-attrs))
 
 (deftest check-common-attrs
-  (let [date "2012-01-01T01:23:45.678Z"
-        acl {:owners   ["group/nuvla-admin"]
-             :view-acl ["group/nuvla-group1"]
-             :edit-acl ["group/nuvla-group2"]}
+  (let [date    "2012-01-01T01:23:45.678Z"
+        acl     {:owners   ["group/nuvla-admin"]
+                 :view-acl ["group/nuvla-group1"]
+                 :edit-acl ["group/nuvla-group2"]}
         minimal {:id            "a"
                  :resource-type "http://example.org/data"
                  :created       date

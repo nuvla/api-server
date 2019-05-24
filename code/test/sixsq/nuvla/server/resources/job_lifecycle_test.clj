@@ -35,11 +35,11 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     (t/initialize)
 
@@ -61,20 +61,20 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-job))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
-          abs-uri (str p/service-context uri)
-          job (-> session-user
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-operation-present "stop")
-                  (get-in [:response :body]))
+    (let [uri            (-> session-admin
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-job))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+          abs-uri        (str p/service-context uri)
+          job            (-> session-user
+                             (request abs-uri)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-operation-present "stop")
+                             (get-in [:response :body]))
           zookeeper-path (some-> job :tags first)]
 
       (is (= "QUEUED" (:state job)))
@@ -110,14 +110,14 @@
           (ltu/body->edn)
           (ltu/is-status 200)))
 
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str (assoc valid-job :priority 50)))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
-          abs-uri (str p/service-context uri)
+    (let [uri            (-> session-admin
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str (assoc valid-job :priority 50)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+          abs-uri        (str p/service-context uri)
           zookeeper-path (some-> session-user
                                  (request abs-uri)
                                  (ltu/body->edn)

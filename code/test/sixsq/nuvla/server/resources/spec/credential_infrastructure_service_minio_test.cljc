@@ -13,19 +13,19 @@
 
 (deftest check-credential-service-minio
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl {:id            (str cred/resource-type "/uuid")
-             :resource-type cred/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        tpl       {:id            (str cred/resource-type "/uuid")
+                   :resource-type cred/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :subtype       "minio"
-             :method        "minio"
+                   :subtype       "minio"
+                   :method        "minio"
 
-             :parent        "infrastructure-service/service-1"
+                   :parent        "infrastructure-service/service-1"
 
-             :access-key    "access-key"
-             :secret-key    "secret-key"}]
+                   :access-key    "access-key"
+                   :secret-key    "secret-key"}]
 
     (stu/is-valid ::cred-infra-service-minio/schema tpl)
 

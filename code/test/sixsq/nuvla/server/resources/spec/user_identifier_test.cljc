@@ -12,14 +12,14 @@
 
 (deftest check-session-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id            (str ui/resource-type "/hash-of-identifier")
-             :resource-type ui/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        cfg       {:id            (str ui/resource-type "/hash-of-identifier")
+                   :resource-type ui/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :parent        "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-             :identifier    "some-long-identifier"}]
+                   :parent        "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                   :identifier    "some-long-identifier"}]
 
     (stu/is-valid ::user-identifier/schema cfg)
     (stu/is-invalid ::user-identifier/schema (assoc cfg :bad-attr "BAD_ATTR"))

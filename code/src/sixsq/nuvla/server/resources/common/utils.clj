@@ -98,7 +98,7 @@
 
 (defn md5 [^String s]
   (let [algorithm (MessageDigest/getInstance "MD5")
-        raw (.digest algorithm (.getBytes s))]
+        raw       (.digest algorithm (.getBytes s))]
     (format "%032x" (BigInteger. 1 raw))))
 
 
@@ -167,7 +167,7 @@
    violations of the schema and a 400 ring response. If everything's
    OK, then the resource itself is returned."
   [spec]
-  (let [ok? (partial s/valid? spec)
+  (let [ok?     (partial s/valid? spec)
         explain (partial expound/expound-str spec)]
     (fn [resource]
       (if-not (ok? resource)

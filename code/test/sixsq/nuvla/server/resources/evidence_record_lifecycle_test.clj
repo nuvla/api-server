@@ -109,11 +109,11 @@
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
                           (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-        session-user (-> (session (ltu/ring-app))
-                         (content-type "application/json")
-                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
-        session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))]
+        session-user  (-> (session (ltu/ring-app))
+                          (content-type "application/json")
+                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
+        session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))]
 
     ;; anonymous create should fail
     (-> session-anon
@@ -138,13 +138,13 @@
 
     ;; both admin and user should be able to add, query, and delete entries
     (doseq [session [session-user session-admin]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str valid-entry))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
+      (let [uri     (-> session
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-entry))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
             abs-uri (str p/service-context uri)]
 
         (-> session
@@ -174,13 +174,13 @@
             (ltu/is-status 400))))
 
     ;; add a new entry
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-entry))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-entry))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       (is uri)
@@ -222,9 +222,9 @@
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
                           (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-        session-user (-> (session (ltu/ring-app))
-                         (content-type "application/json")
-                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
+        session-user  (-> (session (ltu/ring-app))
+                          (content-type "application/json")
+                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
 
     (let [with-namespaced-key (format "
     {\"plan-id\":\"abcd\",
@@ -235,21 +235,21 @@
      \"%s:attr-name\":\"123.456\"}
      " ns1-prefix)
 
-          uri-of-posted (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body with-namespaced-key)
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
+          uri-of-posted       (-> session-user
+                                  (request base-uri
+                                           :request-method :post
+                                           :body with-namespaced-key)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location))
 
-          abs-uri (str p/service-context uri-of-posted)
+          abs-uri             (str p/service-context uri-of-posted)
 
-          doc (-> session-admin
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (get-in [:response :body]))]
+          doc                 (-> session-admin
+                                  (request abs-uri)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (get-in [:response :body]))]
 
       (is ((keyword (str ns1-prefix ":attr-name")) doc))
       (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
@@ -260,24 +260,24 @@
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
                           (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-        session-user (-> (session (ltu/ring-app))
-                         (content-type "application/json")
-                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
+        session-user  (-> (session (ltu/ring-app))
+                          (content-type "application/json")
+                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
 
-    (let [uri (-> session-user
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-nested-entry))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-nested-entry))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)
 
-          doc (-> session-admin
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (get-in [:response :body]))]
+          doc     (-> session-admin
+                      (request abs-uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (get-in [:response :body]))]
 
       (is (= "enough of nested" (get-in doc [(keyword (str ns1-prefix ":attnested"))
                                              (keyword (str ns2-prefix ":subnested"))
@@ -294,13 +294,13 @@
 
 (deftest cimi-filter-namespaced-attributes
 
-  (let [attr (ltu/random-string)
-        valid-entry {:passed                             true
-                     :plan-id                            "abcd"
-                     :start-time                         "1964-08-25T10:00:00.00Z"
-                     :end-time                           "1964-08-25T10:00:00.00Z"
-                     :class                              "className"
-                     (keyword (str ns1-prefix ":" attr)) "123.456"}
+  (let [attr          (ltu/random-string)
+        valid-entry   {:passed                             true
+                       :plan-id                            "abcd"
+                       :start-time                         "1964-08-25T10:00:00.00Z"
+                       :end-time                           "1964-08-25T10:00:00.00Z"
+                       :class                              "className"
+                       (keyword (str ns1-prefix ":" attr)) "123.456"}
         session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
                           (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))]
@@ -315,31 +315,31 @@
         (ltu/is-status 201)
         (ltu/location))
 
-    (let [cimi-url-ok (str p/service-context
-                           t/resource-type
-                           (format "?filter=%s:%s='123.456'" ns1-prefix attr))
+    (let [cimi-url-ok        (str p/service-context
+                                  t/resource-type
+                                  (format "?filter=%s:%s='123.456'" ns1-prefix attr))
 
           cimi-url-no-result (str p/service-context
                                   t/resource-type
                                   (format "?filter=%s:%s='xxx'" ns1-prefix attr))
 
-          res-all (-> session-admin
-                      (request (str p/service-context t/resource-type))
-                      (ltu/body->edn)
-                      (ltu/is-status 200)
-                      (get-in [:response :body]))
+          res-all            (-> session-admin
+                                 (request (str p/service-context t/resource-type))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body]))
 
-          res-ok (-> session-admin
-                     (request cimi-url-ok)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (get-in [:response :body]))
+          res-ok             (-> session-admin
+                                 (request cimi-url-ok)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body]))
 
-          res-empty (-> session-admin
-                        (request cimi-url-no-result)
-                        (ltu/body->edn)
-                        (ltu/is-status 200)
-                        (get-in [:response :body]))]
+          res-empty          (-> session-admin
+                                 (request cimi-url-no-result)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body]))]
 
       (is (pos? (:count res-all)))
       (is (= 1 (:count res-ok)))
@@ -348,18 +348,18 @@
 
 (deftest cimi-filter-nested-values
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin-form (-> (ltu/ring-app)
-                               session
-                               (content-type "application/x-www-form-urlencoded")
-                               (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-        session-admin-json (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon          (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+        session-admin-form    (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
+        session-admin-json    (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user          (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-        attr1 (ltu/random-string)
-        attr2 (ltu/random-string)
+        attr1                 (ltu/random-string)
+        attr2                 (ltu/random-string)
         valid-nested-2-levels {:passed                              true
                                :plan-id                             "abcd"
                                :start-time                          "1964-08-25T10:00:00.00Z"
@@ -377,22 +377,22 @@
         (ltu/location))
 
     ;; check queries that will select the resource
-    (let [cimi-url-ok (str p/service-context
-                           t/resource-type
-                           (format "?filter=%s:%s/%s:%s='456'" ns1-prefix attr1 ns1-prefix attr2))
+    (let [cimi-url-ok     (str p/service-context
+                               t/resource-type
+                               (format "?filter=%s:%s/%s:%s='456'" ns1-prefix attr1 ns1-prefix attr2))
 
-          res-ok (-> session-admin-json
-                     (request cimi-url-ok)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (get-in [:response :body :count]))
+          res-ok          (-> session-admin-json
+                              (request cimi-url-ok)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (get-in [:response :body :count]))
 
-          res-ok-put (-> session-admin-json
-                         (request cimi-url-ok
-                                  :request-method :put)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         (get-in [:response :body :count]))
+          res-ok-put      (-> session-admin-json
+                              (request cimi-url-ok
+                                       :request-method :put)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (get-in [:response :body :count]))
 
           res-ok-put-body (-> session-admin-form
                               (request cimi-url-ok
@@ -411,18 +411,18 @@
                                   t/resource-type
                                   (format "?filter=%s:%s/%s:%s='xxx'" ns1-prefix attr1 ns1-prefix attr2))
 
-          no-result (-> session-admin-json
-                        (request cimi-url-no-result)
-                        (ltu/body->edn)
-                        (ltu/is-status 200)
-                        (get-in [:response :body :count]))
+          no-result          (-> session-admin-json
+                                 (request cimi-url-no-result)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body :count]))
 
-          no-result-put (-> session-admin-json
-                            (request cimi-url-no-result
-                                     :request-method :put)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (get-in [:response :body :count]))
+          no-result-put      (-> session-admin-json
+                                 (request cimi-url-no-result
+                                          :request-method :put)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body :count]))
 
           no-result-put-body (-> session-admin-form
                                  (request cimi-url-no-result

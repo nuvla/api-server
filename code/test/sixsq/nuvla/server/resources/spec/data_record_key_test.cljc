@@ -12,17 +12,17 @@
 
 (deftest check-attribute
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        attr {:id            (str data-record-key-resource/resource-type "/test-attribute")
-              :name          "Test Attribute"
-              :description   "A attribute containing a test value."
-              :resource-type data-record-key-resource/resource-type
-              :created       timestamp
-              :updated       timestamp
-              :acl           valid-acl
+        attr      {:id            (str data-record-key-resource/resource-type "/test-attribute")
+                   :name          "Test Attribute"
+                   :description   "A attribute containing a test value."
+                   :resource-type data-record-key-resource/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-              :prefix        "example-org"
-              :key           "test-key"
-              :subtype       "string"}]
+                   :prefix        "example-org"
+                   :key           "test-key"
+                   :subtype       "string"}]
 
 
     (stu/is-valid ::data-record-key/schema attr)

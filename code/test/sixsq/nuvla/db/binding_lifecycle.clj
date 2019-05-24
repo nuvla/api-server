@@ -26,10 +26,10 @@
       (db/initialize db collection-id {:spec ::resource})
 
       ;; create an entry in the database
-      (let [my-id (str collection-id "/my-uuid")
-            my-data {:id my-id, :long 1, :boolean true, :string "ok"}
+      (let [my-id            (str collection-id "/my-uuid")
+            my-data          {:id my-id, :long 1, :boolean true, :string "ok"}
             my-data-with-acl (assoc my-data :acl admin-acl)
-            response (db/add db my-data-with-acl nil)]
+            response         (db/add db my-data-with-acl nil)]
         (is (s/valid? ::resource my-data-with-acl))
         (is (= 201 (:status response)))
         (is (= my-id (get-in response [:headers "Location"])))
@@ -44,10 +44,10 @@
           (is (= my-data-with-acl (first query-hits))))
 
         ;; add a second entry
-        (let [my-id-2 (str collection-id "/my-uuid-2")
-              my-data-2 {:id my-id-2, :long 2, :boolean false, :string "nok"}
+        (let [my-id-2            (str collection-id "/my-uuid-2")
+              my-data-2          {:id my-id-2, :long 2, :boolean false, :string "nok"}
               my-data-2-with-acl (assoc my-data-2 :acl admin-acl)
-              response (db/add db my-data-2-with-acl nil)]
+              response           (db/add db my-data-2-with-acl nil)]
           (is (s/valid? ::resource my-data-2-with-acl))
           (is (= 201 (:status response)))
           (is (= my-id-2 (get-in response [:headers "Location"])))
@@ -67,7 +67,7 @@
 
           ;; update the entry
           (let [updated-data (assoc my-data-with-acl :two "3")
-                response (db/edit db updated-data nil)]
+                response     (db/edit db updated-data nil)]
             (is (= 200 (:status response)))
 
             ;; make sure that the update was applied

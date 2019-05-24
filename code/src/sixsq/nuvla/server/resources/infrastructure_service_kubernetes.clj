@@ -45,7 +45,7 @@
 (defmethod infra-service/post-add-hook method
   [service request]
   (try
-    (let [id (:id service)
+    (let [id      (:id service)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"

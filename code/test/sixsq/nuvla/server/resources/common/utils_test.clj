@@ -6,7 +6,7 @@
 
 
 (deftest check-expired?-and-not-expired?
-  (let [past-time (time/to-str (time/ago 10 :minutes))
+  (let [past-time   (time/to-str (time/ago 10 :minutes))
         future-time (time/to-str (time/from-now 10 :minutes))]
     (is (false? (t/expired? nil)))
     (is (true? (t/expired? past-time)))

@@ -19,39 +19,39 @@
 
 (deftest lifecycle
 
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-other (header session authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
+  (let [session          (-> (ltu/ring-app)
+                             session
+                             (content-type "application/json"))
+        session-admin    (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-other    (header session authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")
+        session-anon     (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        name-attr "name"
+        name-attr        "name"
         description-attr "description"
-        tags-attr ["one", "two"]
+        tags-attr        ["one", "two"]
 
-        href (str ct/resource-type "/" ct-swarm-token/method)
-        template-url (str p/service-context ct/resource-type "/" ct-swarm-token/method)
+        href             (str ct/resource-type "/" ct-swarm-token/method)
+        template-url     (str p/service-context ct/resource-type "/" ct-swarm-token/method)
 
-        template (-> session-admin
-                     (request template-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     :response
-                     :body)
+        template         (-> session-admin
+                             (request template-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             :response
+                             :body)
 
-        create-no-href {:template (-> template
-                                      ltu/strip-unwanted-attrs
-                                      (assoc :scope "MASTER"
-                                             :token "some-swarm-token"))}
+        create-no-href   {:template (-> template
+                                        ltu/strip-unwanted-attrs
+                                        (assoc :scope "MASTER"
+                                               :token "some-swarm-token"))}
 
-        create-href {:name        name-attr
-                     :description description-attr
-                     :tags        tags-attr
-                     :template    {:href  href
-                                   :scope "MASTER"
-                                   :token "some-swarm-token"}}]
+        create-href      {:name        name-attr
+                          :description description-attr
+                          :tags        tags-attr
+                          :template    {:href  href
+                                        :scope "MASTER"
+                                        :token "some-swarm-token"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -88,15 +88,15 @@
         (ltu/is-status 400))
 
     ;; create a credential as a normal user
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-href))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          uri (-> resp
-                  (ltu/location))
+    (let [resp    (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str create-href))
+                      (ltu/body->edn)
+                      (ltu/is-status 201))
+          id      (get-in resp [:response :body :resource-id])
+          uri     (-> resp
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same

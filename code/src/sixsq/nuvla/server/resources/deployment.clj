@@ -59,18 +59,18 @@
 
   (a/throw-cannot-add collection-acl request)
 
-  (let [authn-info (auth/current-authentication request)
-        deployment (-> body
-                       (assoc :resource-type resource-type)
-                       (assoc :state "CREATED")
-                       (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
-                       (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
+  (let [authn-info      (auth/current-authentication request)
+        deployment      (-> body
+                            (assoc :resource-type resource-type)
+                            (assoc :state "CREATED")
+                            (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
+                            (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
-        deployment-id (get-in create-response [:body :resource-id])
+        deployment-id   (get-in create-response [:body :resource-id])
 
-        msg (get-in create-response [:body :message])]
+        msg             (get-in create-response [:body :message])]
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
@@ -98,8 +98,8 @@
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [authn-info (auth/current-authentication request)
-          deployment-id (str resource-type "/" uuid)
+    (let [authn-info      (auth/current-authentication request)
+          deployment-id   (str resource-type "/" uuid)
           delete-response (-> deployment-id
                               (db/retrieve request)
                               deployment-utils/verify-can-delete
@@ -132,8 +132,8 @@
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [start-op {:rel (:start c/action-uri) :href (str id "/start")}
-        stop-op {:rel (:stop c/action-uri) :href (str id "/stop")}
+  (let [start-op    {:rel (:start c/action-uri) :href (str id "/start")}
+        stop-op     {:rel (:stop c/action-uri) :href (str id "/stop")}
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
@@ -144,7 +144,7 @@
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
+    (let [id      (str resource-type "/" uuid)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_deployment"
@@ -168,7 +168,7 @@
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
+    (let [id      (str resource-type "/" uuid)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_deployment"

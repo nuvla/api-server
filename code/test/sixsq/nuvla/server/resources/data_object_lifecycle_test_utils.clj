@@ -160,11 +160,11 @@
 
 (defn s3-redefs!
   [f]
-  (with-redefs [s3/bucket-exists? (fn [_ _] true)           ;; by default assume the S3 bucket exists
-                s3/create-bucket! (fn [_ _] true)           ;; by default, a bucket creation succeeds
-                s3/head-bucket (fn [_ _] nil)               ;; by default, it is Ok to create objects in bucket
-                s3/delete-s3-object (fn [_ _] nil)
-                s3/delete-s3-bucket (fn [_ _] nil)
+  (with-redefs [s3/bucket-exists?      (fn [_ _] true)      ;; by default assume the S3 bucket exists
+                s3/create-bucket!      (fn [_ _] true)      ;; by default, a bucket creation succeeds
+                s3/head-bucket         (fn [_ _] nil)       ;; by default, it is Ok to create objects in bucket
+                s3/delete-s3-object    (fn [_ _] nil)
+                s3/delete-s3-bucket    (fn [_ _] nil)
                 s3/set-acl-public-read (fn [_ _ _] nil)]
     (f)))
 
@@ -233,17 +233,17 @@
           ;; Assume that bucket does not exist and can be successfully  created
           (with-redefs [s3/bucket-exists? (fn [_ _] false)
                         s3/create-bucket! (fn [_ _] true)]
-            (let [uri (-> session
-                          (request base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-create))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
+            (let [uri     (-> session
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-create))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location))
                   abs-uri (str p/service-context uri)]
 
 
-              (with-redefs [s3/bucket-exists? (fn [_ _] true)
+              (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-authorized]
                 (-> session
                     (request abs-uri
@@ -252,7 +252,7 @@
                     (ltu/is-status 403)))
 
               ;; another user should not be able to delete data object
-              (with-redefs [s3/bucket-exists? (fn [_ _] true)
+              (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found]
                 (-> session-other
                     (request abs-uri
@@ -261,7 +261,7 @@
                     (ltu/is-status 403)))
 
               ;; Deleting a missing S3 object should succeed
-              (with-redefs [s3/bucket-exists? (fn [_ _] true)
+              (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found
                             s3/delete-s3-bucket delete-s3-bucket-not-empty]
                 (-> session
@@ -299,13 +299,13 @@
 
 
           ;; creating the same object twice is not allowed
-          (let [uri (-> session
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+          (let [uri     (-> session
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-create))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
                 abs-uri (str p/service-context uri)]
 
             (-> session
@@ -322,13 +322,13 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)))
 
-          (let [uri (-> session
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+          (let [uri     (-> session
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-create))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
                 abs-uri (str p/service-context uri)]
 
             ;; retrieve works
@@ -364,10 +364,10 @@
 
                   updated-acl (update acl :view-acl conj username-view)
 
-                  updated-eo (-> current-eo
-                                 (assoc :acl updated-acl)
-                                 (assoc :name "NEW_VALUE_OK"
-                                        :state "BAD_VALUE_IGNORED"))]
+                  updated-eo  (-> current-eo
+                                  (assoc :acl updated-acl)
+                                  (assoc :name "NEW_VALUE_OK"
+                                         :state "BAD_VALUE_IGNORED"))]
 
               (-> session
                   (request abs-uri
@@ -395,29 +395,29 @@
                 (ltu/is-status 403))
 
             ;; owner query succeeds
-            (let [entry (-> session
-                            (request base-uri)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/is-resource-uri eo/collection-type)
-                            (ltu/is-count 1)
-                            (ltu/entries)
-                            first)
-                  id (:id entry)
+            (let [entry   (-> session
+                              (request base-uri)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-resource-uri eo/collection-type)
+                              (ltu/is-count 1)
+                              (ltu/entries)
+                              first)
+                  id      (:id entry)
                   abs-uri (str p/service-context id)]
 
               (is (= id uri))
 
-              (let [upload-op (-> session
-                                  (request abs-uri)
-                                  (ltu/body->edn)
-                                  (ltu/is-operation-present "upload")
-                                  (ltu/is-operation-present "delete")
-                                  (ltu/is-operation-present "edit")
-                                  (ltu/is-operation-absent "ready")
-                                  (ltu/is-operation-absent "download")
-                                  (ltu/is-status 200)
-                                  (ltu/get-op "upload"))
+              (let [upload-op      (-> session
+                                       (request abs-uri)
+                                       (ltu/body->edn)
+                                       (ltu/is-operation-present "upload")
+                                       (ltu/is-operation-present "delete")
+                                       (ltu/is-operation-present "edit")
+                                       (ltu/is-operation-absent "ready")
+                                       (ltu/is-operation-absent "download")
+                                       (ltu/is-status 200)
+                                       (ltu/get-op "upload"))
 
                     abs-upload-uri (str p/service-context upload-op)]
 
@@ -472,11 +472,11 @@
                     (ltu/is-status 200))
 
                 (with-redefs [s3/s3-object-metadata (fn [_ _ _] {:contentLength 42, :contentMD5 "md5sum"})]
-                  (let [uploading-eo (-> session
-                                         (request abs-uri)
-                                         (ltu/body->edn)
-                                         (ltu/is-operation-present "ready")
-                                         (ltu/is-status 200))
+                  (let [uploading-eo     (-> session
+                                             (request abs-uri)
+                                             (ltu/body->edn)
+                                             (ltu/is-operation-present "ready")
+                                             (ltu/is-status 200))
 
                         ready-url-action (str p/service-context (ltu/get-op uploading-eo "ready"))]
 
@@ -496,18 +496,18 @@
                         (ltu/body->edn)
                         (ltu/is-status 200))
 
-                    (let [ready-eo (-> session
-                                       (request abs-uri)
-                                       (ltu/body->edn)
-                                       (ltu/is-key-value :state eo/state-ready)
-                                       (ltu/is-key-value :bytes 42)
-                                       (ltu/is-key-value :md5sum "md5sum")
-                                       (ltu/is-operation-present "download")
-                                       (ltu/is-operation-present "delete")
-                                       (ltu/is-operation-present "edit")
-                                       (ltu/is-operation-absent "upload")
-                                       (ltu/is-operation-absent "ready")
-                                       (ltu/is-status 200))
+                    (let [ready-eo            (-> session
+                                                  (request abs-uri)
+                                                  (ltu/body->edn)
+                                                  (ltu/is-key-value :state eo/state-ready)
+                                                  (ltu/is-key-value :bytes 42)
+                                                  (ltu/is-key-value :md5sum "md5sum")
+                                                  (ltu/is-operation-present "download")
+                                                  (ltu/is-operation-present "delete")
+                                                  (ltu/is-operation-present "edit")
+                                                  (ltu/is-operation-absent "upload")
+                                                  (ltu/is-operation-absent "ready")
+                                                  (ltu/is-status 200))
                           download-url-action (str p/service-context (ltu/get-op ready-eo "download"))]
 
                       ;; check states for user with view access

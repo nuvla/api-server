@@ -43,7 +43,7 @@
 
   ;; supports headers that have either string or keyword keys
   ;; ring spec defines headers as lower-cased strings
-  (let [server (or (get headers "nuvla-ssl-server-name") (:nuvla-ssl-server-name headers))
+  (let [server    (or (get headers "nuvla-ssl-server-name") (:nuvla-ssl-server-name headers))
         client-ip (or (get headers "x-real-ip") (:x-real-ip headers))]
     (crud/new-identifier
       (cond-> {:method   authn-method

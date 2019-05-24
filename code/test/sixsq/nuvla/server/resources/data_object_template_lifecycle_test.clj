@@ -25,10 +25,10 @@
       (is (= eo-tmpl-id (:id doc))))))
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user")
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user")
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
 
@@ -58,8 +58,8 @@
                       (ltu/entries))]
 
       (doseq [entry entries]
-        (let [ops (ltu/operations->map entry)
-              entry-url (str p/service-context (:id entry))
+        (let [ops        (ltu/operations->map entry)
+              entry-url  (str p/service-context (:id entry))
 
               entry-resp (-> session-admin
                              (request entry-url)

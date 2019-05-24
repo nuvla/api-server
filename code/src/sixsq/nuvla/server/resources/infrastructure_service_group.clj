@@ -78,8 +78,8 @@ infrastructure-service-group resource.
   ([resource-id]
    (service-query {:nuvla/authn auth/internal-identity} resource-id))
   ([initial-request resource-id]
-   (let [filter (-> {:filter (str "parent='" resource-id "'")}
-                    (cimi-params-impl/cimi-filter))
+   (let [filter  (-> {:filter (str "parent='" resource-id "'")}
+                     (cimi-params-impl/cimi-filter))
          request (-> initial-request
                      (assoc :params {:resource-name infra-service/resource-type}
                             :route-params {:resource-name infra-service/resource-type}
@@ -146,7 +146,7 @@ infrastructure-service-group resource.
 
 (defmethod crud/delete resource-type
   [{{:keys [resource-name uuid]} :route-params :as request}]
-  (let [id (str resource-name "/" uuid)
+  (let [id            (str resource-name "/" uuid)
         service-count (count (service-query id))]
     (if (zero? service-count)
       (delete-impl request)

@@ -7,11 +7,11 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def schema-version 0)
@@ -41,7 +41,7 @@ a NuvlaBox.
                 minio-endpoint
                 minio-access-key minio-secret-key]} (:body request)
 
-        isg-id (nb-utils/get-isg-id id)
+        isg-id   (nb-utils/get-isg-id id)
 
         swarm-id (nb-utils/create-swarm-service id isg-id swarm-endpoint)
         minio-id (nb-utils/create-minio-service id isg-id minio-endpoint)]

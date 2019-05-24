@@ -8,12 +8,12 @@
    maximum, then an exception is thrown."
   [first last]
   (let [first (max 1 (or first 1))
-        from (dec first)
-        size (cond
-               (nil? last) (- max-size from)
-               (zero? last) 0
-               (>= last first) (inc (- last first))
-               :else 0)]
+        from  (dec first)
+        size  (cond
+                (nil? last) (- max-size from)
+                (zero? last) 0
+                (>= last first) (inc (- last first))
+                :else 0)]
     (if (<= (+ from size) max-size)
       [from size]
       (throw (IllegalArgumentException.

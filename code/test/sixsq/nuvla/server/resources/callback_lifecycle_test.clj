@@ -16,13 +16,13 @@
 (def base-uri (str p/service-context callback/resource-type))
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "group/nuvla-anon")]
+        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "group/nuvla-anon")]
 
 
     ;; admin collection query should succeed but be empty
@@ -54,18 +54,18 @@
                                 :target-resource {:href "email/1234579abcdef"}
                                 :state           "SUCCEEDED"} ;; state should be ignored
 
-          resp-test (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str create-test-callback))
-                        (ltu/body->edn)
-                        (ltu/is-status 201))
+          resp-test            (-> session-admin
+                                   (request base-uri
+                                            :request-method :post
+                                            :body (json/write-str create-test-callback))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201))
 
-          id-test (get-in resp-test [:response :body :resource-id])
+          id-test              (get-in resp-test [:response :body :resource-id])
 
-          location-test (str p/service-context (-> resp-test ltu/location))
+          location-test        (str p/service-context (-> resp-test ltu/location))
 
-          test-uri (str p/service-context id-test)]
+          test-uri             (str p/service-context id-test)]
 
       (is (= location-test test-uri))
 
@@ -85,12 +85,12 @@
           (ltu/is-status 403))
 
       ;; check contents and editing
-      (let [reread-test-callback (-> session-admin
-                                     (request test-uri)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     :response
-                                     :body)
+      (let [reread-test-callback       (-> session-admin
+                                           (request test-uri)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           :response
+                                           :body)
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)

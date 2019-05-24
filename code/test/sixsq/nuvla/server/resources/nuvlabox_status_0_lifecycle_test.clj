@@ -87,13 +87,13 @@
 
 (deftest lifecycle
 
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
-        session-nb (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
+        session-nb    (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
     ;; non-admin users cannot create a nuvlabox-status resource
     (doseq [session [session-anon session-user]]
@@ -169,9 +169,9 @@
 
 
     ;; verify that the internal create function also works
-    (let [response (nb-status/create-nuvlabox-status 0 nuvlabox-id valid-acl)
-          location (get-in response [:headers "Location"])
-          state-id (-> response :body :resource-id)
+    (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id valid-acl)
+          location  (get-in response [:headers "Location"])
+          state-id  (-> response :body :resource-id)
           state-url (str p/service-context state-id)]
 
       (is location)

@@ -61,9 +61,9 @@
   "
   [handler]
   (fn [request]
-    (let [start (System/currentTimeMillis)
+    (let [start             (System/currentTimeMillis)
           formatted-request (format-request request)
-          _ (log/debug formatted-request)
+          _                 (log/debug formatted-request)
           {:keys [status] :as response} (handler request)
-          _ (log-response status (format-response formatted-request response start (System/currentTimeMillis)))]
+          _                 (log-response status (format-response formatted-request response start (System/currentTimeMillis)))]
       response)))

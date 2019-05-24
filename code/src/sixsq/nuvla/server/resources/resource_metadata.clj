@@ -118,9 +118,9 @@
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+  (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
-        wrapped-entries (wrapper-fn request entries)
+        wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 

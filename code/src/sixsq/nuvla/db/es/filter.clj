@@ -47,7 +47,7 @@
     (if (= 1 (count args))
       (first args)                                          ;; (a=1 and b=2) case
       (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp Value] :as m} (into {} args)
-            Op (or EqOp RelOp PrefixOp FullTextOp)
+            Op    (or EqOp RelOp PrefixOp FullTextOp)
             order (ffirst args)]
         (case [Op order]
           ["=" :Attribute] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))

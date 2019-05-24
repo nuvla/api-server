@@ -32,7 +32,7 @@
   ([token]
    (unsign-cookie-info token :nuvla-session-crt))
   ([token env-var-kw-or-cert-string]
-   (let [options (algorithm-option token)
+   (let [options    (algorithm-option token)
          public-key (if (keyword? env-var-kw-or-cert-string)
                       (certs/public-key env-var-kw-or-cert-string)
                       (certs/str->public-key env-var-kw-or-cert-string))]

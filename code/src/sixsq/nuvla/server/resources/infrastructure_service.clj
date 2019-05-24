@@ -134,19 +134,19 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [authn-info (auth/current-authentication request)
-        body (:body request)
-        desc-attrs (u/select-desc-keys body)
+  (let [authn-info         (auth/current-authentication request)
+        body               (:body request)
+        desc-attrs         (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
                                (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)
-        service (tpl->service validated-template)]
+        service            (tpl->service validated-template)]
     (let [response (add-impl (assoc request :body service))
-          id (-> response :body :resource-id)
-          service (assoc service :id id)]
+          id       (-> response :body :resource-id)
+          service  (assoc service :id id)]
       (post-add-hook service request)
       response)))
 

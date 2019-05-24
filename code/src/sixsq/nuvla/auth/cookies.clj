@@ -23,9 +23,9 @@
    is returned with a single entry with the key being the name and the value
    being the cookie."
   ([info]
-   (let [timestamp (ts/expiry-later)
+   (let [timestamp   (ts/expiry-later)
          cookie-info (assoc info :exp timestamp)
-         token (sg/sign-cookie-info cookie-info)]
+         token       (sg/sign-cookie-info cookie-info)]
      {:value   token
       :secure  true
       :path    "/"

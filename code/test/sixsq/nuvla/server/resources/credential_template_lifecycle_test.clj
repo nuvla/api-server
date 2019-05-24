@@ -37,7 +37,7 @@
                                service-minio/method
                                service-swarm/method
                                swarm-token/method]]
-    (let [id (str ct/resource-type "/" registration-method)
+    (let [id  (str ct/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
 
@@ -63,19 +63,19 @@
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
-        entries (-> session-user
-                    (request base-uri)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-resource-uri ct/collection-type)
-                    (ltu/is-count pos?)
-                    (ltu/is-operation-absent "add")
-                    (ltu/is-operation-absent "delete")
-                    (ltu/is-operation-absent "edit")
-                    (ltu/entries))
-        ids (set (map :id entries))
-        methods (set (map :method entries))
-        types (set (map :subtype entries))]
+        entries      (-> session-user
+                         (request base-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/is-resource-uri ct/collection-type)
+                         (ltu/is-count pos?)
+                         (ltu/is-operation-absent "add")
+                         (ltu/is-operation-absent "delete")
+                         (ltu/is-operation-absent "edit")
+                         (ltu/entries))
+        ids          (set (map :id entries))
+        methods      (set (map :method entries))
+        types        (set (map :subtype entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" service-minio/method)
@@ -106,8 +106,8 @@
              swarm-token/credential-subtype} types))
 
     (doseq [entry entries]
-      (let [ops (ltu/operations->map entry)
-            entry-url (str p/service-context (:id entry))
+      (let [ops        (ltu/operations->map entry)
+            entry-url  (str p/service-context (:id entry))
 
             entry-resp (-> session-user
                            (request entry-url)

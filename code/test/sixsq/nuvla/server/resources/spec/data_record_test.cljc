@@ -11,9 +11,9 @@
 
 
 (deftest check-data-record
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp   "1964-08-25T10:00:00.00Z"
 
-        location [6.143158 46.204391 373.0]
+        location    [6.143158 46.204391 373.0]
 
         data-record {:id                     (str data-record-resource/resource-type "/uuid")
                      :resource-type          data-record-resource/resource-type

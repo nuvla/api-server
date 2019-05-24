@@ -86,13 +86,13 @@
   [{:keys [body] :as request}]
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
-        body (-> body
-                 (assoc :resource-type create-type)
-                 (std-crud/resolve-hrefs authn-info true)
-                 (update-in [:template] merge desc-attrs)   ;; validate desc attrs
-                 (crud/validate)
-                 (:template)
-                 (tpl->configuration))]
+        body       (-> body
+                       (assoc :resource-type create-type)
+                       (std-crud/resolve-hrefs authn-info true)
+                       (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                       (crud/validate)
+                       (:template)
+                       (tpl->configuration))]
     (add-impl (assoc request :body (merge body desc-attrs)))))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

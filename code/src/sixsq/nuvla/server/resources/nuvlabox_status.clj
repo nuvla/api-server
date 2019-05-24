@@ -63,11 +63,11 @@ although they can be created manually by an administrator.
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
   [schema-version nuvlabox-id nuvlabox-acl]
-  (let [body {:resource-type resource-type
-              :parent        nuvlabox-id
-              :version       schema-version
-              :status        "UNKNOWN"
-              :acl           nuvlabox-acl}
+  (let [body                    {:resource-type resource-type
+                                 :parent        nuvlabox-id
+                                 :version       schema-version
+                                 :status        "UNKNOWN"
+                                 :acl           nuvlabox-acl}
         nuvlabox-status-request {:params      {:resource-name resource-type}
                                  :nuvla/authn auth-utils/internal-identity
                                  :body        body}]

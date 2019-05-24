@@ -25,12 +25,12 @@
 
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-jane  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; admin user collection query should succeed but be empty (no records created yet)
     (-> session-admin
@@ -61,18 +61,18 @@
 
 
     ;; create a deployment parameter as a admin user
-    (let [resp-test (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-entry))
-                        (ltu/body->edn)
-                        (ltu/is-status 201))
+    (let [resp-test     (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-entry))
+                            (ltu/body->edn)
+                            (ltu/is-status 201))
 
-          id-test (get-in resp-test [:response :body :resource-id])
+          id-test       (get-in resp-test [:response :body :resource-id])
 
           location-test (str p/service-context (-> resp-test ltu/location))
 
-          test-uri (str p/service-context id-test)]
+          test-uri      (str p/service-context id-test)]
 
       (-> session-jane
           (request base-uri

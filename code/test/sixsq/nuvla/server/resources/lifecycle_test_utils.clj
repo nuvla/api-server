@@ -101,7 +101,7 @@
 
 (defn select-op
   [m op]
-  (let [op-list (get-in m [:response :body :operations])
+  (let [op-list     (get-in m [:response :body :operations])
         defined-ops (map :rel op-list)]
     [(some #(.endsWith % op) defined-ops) defined-ops]))
 
@@ -152,11 +152,11 @@
   [m]
   `((fn [m#]
       (let [cookies# (get-in m# [:response :cookies])
-            n# (count cookies#)
-            token# (-> (vals cookies#)
-                       first
-                       serialize-cookie-value
-                       :value)]
+            n#       (count cookies#)
+            token#   (-> (vals cookies#)
+                         first
+                         serialize-cookie-value
+                         :value)]
         (is (= 1 n#) "incorrect number of cookies")
         (is (not= "INVALID" token#) "expecting valid token but got INVALID")
         (is (not (str/blank? token#)) "got blank token")
@@ -167,11 +167,11 @@
   [m]
   `((fn [m#]
       (let [cookies# (get-in m# [:response :cookies])
-            n# (count cookies#)
-            token# (-> (vals cookies#)
-                       first
-                       serialize-cookie-value
-                       :value)]
+            n#       (count cookies#)
+            token#   (-> (vals cookies#)
+                         first
+                         serialize-cookie-value
+                         :value)]
         (is (= 1 n#) "incorrect number of cookies")
         (is (= "INVALID" token#) "expecting INVALID but got different value")
         (is (not (str/blank? token#)) "got blank token")
@@ -182,7 +182,7 @@
   [m]
   `((fn [m#]
       (let [uri-header# (get-in m# [:response :headers "Location"])
-            uri-body# (get-in m# [:response :body :resource-id])]
+            uri-body#   (get-in m# [:response :body :resource-id])]
         (is uri-header# "Location header was not set")
         (is uri-body# "Location (resource-id) in body was not set")
         (is (= uri-header# uri-body#) (str "!!!! Mismatch in locations, header=" uri-header# ", body=" uri-body#))
@@ -323,7 +323,7 @@
   ([]
    (create-test-node (str (UUID/randomUUID))))
   ([^String cluster-name]
-   (let [tempDir (str (fs/temp-dir "es-data-"))
+   (let [tempDir  (str (fs/temp-dir "es-data-"))
          settings (.. (Settings/builder)
                       (put "cluster.name" cluster-name)
                       (put "action.auto_create_index" true)
@@ -336,7 +336,7 @@
                       (put "transport.type" "netty4")
                       (put "network.host" "127.0.0.1")
                       (build))
-         plugins [Netty4Plugin]]
+         plugins  [Netty4Plugin]]
 
      (LogConfigurator/configureWithoutConfig settings)
      (.. (MockNode. ^Settings settings plugins)
@@ -346,7 +346,7 @@
 (defn create-es-node-client
   []
   (log/info "creating elasticsearch node and client")
-  (let [node (create-test-node)
+  (let [node   (create-test-node)
         client (-> (esu/create-es-client)
                    esu/wait-for-cluster)]
     [node client]))

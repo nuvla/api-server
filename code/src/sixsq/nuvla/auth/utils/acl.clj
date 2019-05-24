@@ -27,7 +27,7 @@
 (defn extend-rights
   [[right principals]]
   (let [qualified-right (get acl-resource/rights-keywords right)
-        sub-rights (ancestors acl-resource/rights-hierarchy qualified-right)]
+        sub-rights      (ancestors acl-resource/rights-hierarchy qualified-right)]
     (conj
       (map (fn [sub-right] {(-> sub-right (name) (keyword)) principals}) sub-rights)
       {right principals})))
@@ -38,7 +38,7 @@
    rights are listed explicitly and owners do not appear in the lists for
    individual rights."
   [{:keys [owners] :as acl}]
-  (let [owners-set (set owners)
+  (let [owners-set        (set owners)
         normalized-rights (->> (dissoc acl :owners)
                                (map val-as-set)
                                (map (partial remove-owners-from-rights owners-set))

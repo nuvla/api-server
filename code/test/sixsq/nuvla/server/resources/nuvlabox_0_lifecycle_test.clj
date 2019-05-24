@@ -5,6 +5,7 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [ring.util.codec :as rc]))
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

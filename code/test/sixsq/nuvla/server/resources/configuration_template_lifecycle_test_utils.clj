@@ -17,17 +17,17 @@
 
 (defn check-retrieve-by-id
   [service]
-  (let [id (str resource-type "/" service)
+  (let [id  (str resource-type "/" service)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
 (defn check-lifecycle
   [service]
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user")
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user")
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous query is not authorized
@@ -53,14 +53,14 @@
                       (ltu/is-operation-absent "delete")
                       (ltu/is-operation-absent "edit")
                       (ltu/entries))
-          ids (set (map :id entries))
-          types (set (map :service entries))]
+          ids     (set (map :id entries))
+          types   (set (map :service entries))]
       (is (contains? ids (str resource-type "/" service)))
       (is (contains? types service))
 
       (doseq [entry entries]
-        (let [ops (ltu/operations->map entry)
-              entry-url (str p/service-context (:id entry))
+        (let [ops        (ltu/operations->map entry)
+              entry-url  (str p/service-context (:id entry))
 
               entry-resp (-> session-admin
                              (request entry-url)

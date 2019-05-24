@@ -166,7 +166,7 @@
             job-status :status} :body} (job/create-job id "delete_nuvlabox"
                                                        updated-acl
                                                        :priority 50)
-          job-msg (str "deleting " id " with async " job-id)]
+          job-msg     (str "deleting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response "unable to create async job to delete nuvlabox resources" 500 id)))
       (event-utils/create-event id job-msg updated-acl)
@@ -197,7 +197,7 @@
     (do
       (log/warn "Activating nuvlabox:" id)
       ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
-      (let [new-acl (update acl :edit-acl (comp vec conj) id)
+      (let [new-acl            (update acl :edit-acl (comp vec conj) id)
             activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
                                    (assoc :acl new-acl)
@@ -210,10 +210,10 @@
 (defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
-          nuvlabox (db/retrieve id request)
+    (let [id                 (str resource-type "/" uuid)
+          nuvlabox           (db/retrieve id request)
           nuvlabox-activated (activate nuvlabox)
-          api-secret-info (utils/create-nuvlabox-api-key nuvlabox-activated)]
+          api-secret-info    (utils/create-nuvlabox-api-key nuvlabox-activated)]
 
       (db/edit nuvlabox-activated request)
 
@@ -280,12 +280,12 @@
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [href-activate (str id "/activate")
-        href-quarantine (str id "/quarantine")
+  (let [href-activate     (str id "/activate")
+        href-quarantine   (str id "/quarantine")
         href-recommission (str id "/recommission")
-        activate-op {:rel (:activate c/action-uri) :href href-activate}
-        quarantine-op {:rel (:quarantine c/action-uri) :href href-quarantine}
-        recommission-op {:rel (:recommission c/action-uri) :href href-recommission}]
+        activate-op       {:rel (:activate c/action-uri) :href href-activate}
+        quarantine-op     {:rel (:quarantine c/action-uri) :href href-quarantine}
+        recommission-op   {:rel (:recommission c/action-uri) :href href-recommission}]
     (cond-> (crud/set-standard-operations resource request)
             (= state state-new) (update-in [:operations] conj activate-op)
             (= state state-activated) (update-in [:operations] conj quarantine-op)

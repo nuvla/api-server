@@ -13,12 +13,12 @@
 
 (defn check-existing-session-template [base-uri valid-template]
 
-  (let [method (:method valid-template)
-        session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [method        (:method valid-template)
+        session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; should be an existing template already
     (-> session-admin
@@ -39,7 +39,7 @@
       (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
     ;; do full lifecycle for a session template
-    (let [uri (str st/resource-type "/" method)
+    (let [uri     (str st/resource-type "/" method)
           abs-uri (str p/service-context uri)]
 
       ;; delete the template
@@ -66,13 +66,13 @@
 
 (defn session-template-lifecycle [base-uri valid-template]
 
-  (let [method (:method valid-template)
-        session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [method        (:method valid-template)
+        session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; all view actions should be available to anonymous users
     ;; count may not be zero because of session template initialization
@@ -104,13 +104,13 @@
         (ltu/is-status 400))
 
     ;; do full lifecycle for a session template
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-template))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-template))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; ensure that the created template can be retrieved by anyone
@@ -139,11 +139,11 @@
         (is (= id (str resource-type "/" instance))))
 
       ;; verify that editing/updating the template works
-      (let [orig-template (-> session-anon
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              :response
-                              :body)
+      (let [orig-template    (-> session-anon
+                                 (request abs-uri)
+                                 (ltu/body->edn)
+                                 :response
+                                 :body)
             updated-template (assoc orig-template :name "UPDATED_NAME")]
 
         (-> session-admin

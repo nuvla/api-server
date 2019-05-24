@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.spec.data-object
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.data :as data]
     [spec-tools.core :as st]))
 

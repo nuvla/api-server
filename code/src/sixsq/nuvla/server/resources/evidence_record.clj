@@ -29,12 +29,12 @@
 
 (defn- validate-attributes
   [resource]
-  (let [valid-prefixes (sn/all-prefixes)
+  (let [valid-prefixes   (sn/all-prefixes)
         resource-payload (dissoc resource
                                  :acl :id :resource-type :name :description
                                  :created :updated :properties :operations
                                  :class :plan-id :start-time :end-time :passed)
-        validator (partial key-utils/valid-attribute-name? valid-prefixes)]
+        validator        (partial key-utils/valid-attribute-name? valid-prefixes)]
     (if (key-utils/valid-attributes? validator resource-payload)
       resource
       (key-utils/throw-wrong-namespace))))

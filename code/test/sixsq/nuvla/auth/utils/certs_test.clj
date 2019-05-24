@@ -30,7 +30,7 @@
     (is (t/public-key :nuvla-session-crt))))
 
 (deftest check-throws-unknown-key
-  (with-redefs [t/key-path (fn [_ _] "/unknown/key-path.pem")
+  (with-redefs [t/key-path       (fn [_ _] "/unknown/key-path.pem")
                 environ.core/env {}]
     (is (thrown? Exception (t/read-key ks/private-key t/default-session-crt-path :nuvla-session-key)))
     (is (thrown? Exception (t/read-key ks/public-key t/default-session-key-path :nuvla-session-crt)))))

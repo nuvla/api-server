@@ -14,22 +14,22 @@
 
 (deftest check-configuration-template-nuvla
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id            (str ct/resource-type "/" nuvla/service)
-             :resource-type nuvla/service
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        cfg       {:id            (str ct/resource-type "/" nuvla/service)
+                   :resource-type nuvla/service
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :service       nuvla/service
+                   :service       nuvla/service
 
-             :smtp-username "username"
-             :smtp-password "password"
-             :smtp-host     "host"
-             :smtp-port     465
-             :smtp-ssl      true
-             :smtp-debug    true
+                   :smtp-username "username"
+                   :smtp-password "password"
+                   :smtp-host     "host"
+                   :smtp-port     465
+                   :smtp-ssl      true
+                   :smtp-debug    true
 
-             :support-email "admin@example.org"}]
+                   :support-email "admin@example.org"}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 

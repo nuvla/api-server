@@ -62,7 +62,7 @@
   ([es-host es-port]
    (let [es-host (or es-host "localhost")
          es-port (or es-port "9200")
-         hosts {:hosts [(str es-host ":" es-port)]}]
+         hosts   {:hosts [(str es-host ":" es-port)]}]
 
      (log/info "creating elasticsearch client:" es-host es-port)
      (esrb/create-client hosts))))

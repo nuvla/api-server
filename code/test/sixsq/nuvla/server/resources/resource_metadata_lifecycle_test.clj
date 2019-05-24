@@ -21,12 +21,12 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anyone can query the metadata
     ;; because of automatic registration, the list may not be empty
@@ -40,9 +40,9 @@
           (ltu/is-operation-absent "edit")))
 
     ;; use the internal register method to create a new entry
-    (let [identifier "unit-test-resource"
+    (let [identifier      "unit-test-resource"
           full-identifier (str t/resource-type "/" identifier)
-          abs-uri (str p/service-context full-identifier)]
+          abs-uri         (str p/service-context full-identifier)]
 
       (t/register (-> resource-metadata/valid
                       (dissoc :acl)

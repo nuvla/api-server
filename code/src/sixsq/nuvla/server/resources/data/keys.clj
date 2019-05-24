@@ -21,8 +21,8 @@
 
 (defn throw-wrong-namespace
   []
-  (let [code 406
-        msg "resource attributes do not satisfy defined namespaces"
+  (let [code     406
+        msg      "resource attributes do not satisfy defined namespaces"
         response (-> {:status code, :message msg}
                      sr/json-response
                      (r/status code))]

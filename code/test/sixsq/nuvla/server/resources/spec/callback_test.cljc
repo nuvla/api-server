@@ -13,17 +13,17 @@
 
 (deftest check-callback-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        callback {:id              (str t/resource-type "/test-callback")
-                  :resource-type   t/resource-type
-                  :created         timestamp
-                  :updated         timestamp
-                  :acl             valid-acl
-                  :action          "validate-something"
-                  :state           "WAITING"
-                  :target-resource {:href "email/1230958abdef"}
-                  :expires         timestamp
-                  :data            {:some    "value"
-                                    :another "value"}}]
+        callback  {:id              (str t/resource-type "/test-callback")
+                   :resource-type   t/resource-type
+                   :created         timestamp
+                   :updated         timestamp
+                   :acl             valid-acl
+                   :action          "validate-something"
+                   :state           "WAITING"
+                   :target-resource {:href "email/1230958abdef"}
+                   :expires         timestamp
+                   :data            {:some    "value"
+                                     :another "value"}}]
 
     (stu/is-valid ::callback/schema callback)
     (stu/is-valid ::callback/schema (assoc callback :state "SUCCEEDED"))

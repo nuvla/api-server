@@ -46,9 +46,9 @@ type | true | type of the attribute's value
   [resource]
   (if ((san/all-prefixes) (:prefix resource))
     resource
-    (let [code 406
-          msg (str "resource attributes do not satisfy defined namespaces, prefix='"
-                   (:prefix resource) "'")
+    (let [code     406
+          msg      (str "resource attributes do not satisfy defined namespaces, prefix='"
+                        (:prefix resource) "'")
           response (-> {:status code :message msg}
                        sr/json-response
                        (r/status code))]

@@ -18,41 +18,41 @@
 
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
+  (let [session               (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+        session-admin         (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user          (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon          (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        name-attr "name"
-        description-attr "description"
-        tags-attr ["one", "two"]
+        name-attr             "name"
+        description-attr      "description"
+        tags-attr             ["one", "two"]
 
-        access-key-value "my-access-key"
-        secret-key-value "my-secret-key"
+        access-key-value      "my-access-key"
+        secret-key-value      "my-secret-key"
 
-        parent-value "infrastructure-service/alpha"
+        parent-value          "infrastructure-service/alpha"
 
-        href (str cred-tpl/resource-type "/" cred-tpl-minio/method)
-        template-url (str p/service-context cred-tpl/resource-type "/" cred-tpl-minio/method)
+        href                  (str cred-tpl/resource-type "/" cred-tpl-minio/method)
+        template-url          (str p/service-context cred-tpl/resource-type "/" cred-tpl-minio/method)
 
-        template (-> session-admin
-                     (request template-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     :response
-                     :body)
+        template              (-> session-admin
+                                  (request template-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :response
+                                  :body)
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href {:name        name-attr
-                            :description description-attr
-                            :tags        tags-attr
-                            :template    {:href       href
-                                          :parent     parent-value
-                                          :access-key access-key-value
-                                          :secret-key secret-key-value}}]
+        create-import-href    {:name        name-attr
+                               :description description-attr
+                               :tags        tags-attr
+                               :template    {:href       href
+                                             :parent     parent-value
+                                             :access-key access-key-value
+                                             :secret-key secret-key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -89,15 +89,15 @@
         (ltu/is-status 400))
 
     ;; create a credential as a normal user
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-import-href))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          uri (-> resp
-                  (ltu/location))
+    (let [resp    (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str create-import-href))
+                      (ltu/body->edn)
+                      (ltu/is-status 201))
+          id      (get-in resp [:response :body :resource-id])
+          uri     (-> resp
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same

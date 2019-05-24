@@ -72,7 +72,7 @@
 (defn send-email [nuvla-config email-data]
   (try
     (let [smtp-config (extract-smtp-cfg nuvla-config)
-          resp (postal/send-message smtp-config email-data)]
+          resp        (postal/send-message smtp-config email-data)]
       (if-not (= :SUCCESS (:error resp))
         (let [msg (str "cannot send verification email: " (:message resp))]
           (throw (r/ex-bad-request msg)))))
@@ -88,10 +88,10 @@
         body (cond-> (validation-email-body callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
-        msg {:from    (or smtp-username "administrator")
-             :to      [address]
-             :subject "email validation"
-             :body    body}]
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "email validation"
+              :body    body}]
 
     (send-email nuvla-config msg)))
 
@@ -103,10 +103,10 @@
         body (cond-> (invitation-email-body (or name id) callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
-        msg {:from    (or smtp-username "administrator")
-             :to      [address]
-             :subject "email invitation"
-             :body    body}]
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "email invitation"
+              :body    body}]
 
     (send-email nuvla-config msg)))
 
@@ -125,9 +125,9 @@
 
         body (password-reset-email-body callback-url)
 
-        msg {:from    (or smtp-username "administrator")
-             :to      [address]
-             :subject "reset password"
-             :body    body}]
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "reset password"
+              :body    body}]
 
     (send-email nuvla-config msg)))

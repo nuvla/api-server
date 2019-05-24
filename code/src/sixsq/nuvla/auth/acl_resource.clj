@@ -127,7 +127,7 @@
   "Based on the rights, this function returns a reduced set of keys that are
    'editable'. The arguments can either be sequences or sets."
   [ks rights]
-  (let [key-set (set ks)
+  (let [key-set    (set ks)
         rights-set (set rights)]
     (cond
       (rights-set ::edit-acl) key-set                       ;; no-op, all keys are editable

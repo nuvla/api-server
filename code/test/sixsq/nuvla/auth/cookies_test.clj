@@ -23,7 +23,7 @@
   (let [revoked (t/revoked-cookie)]
     (is (map? revoked))
     (is (= "INVALID" (get-in revoked [:value]))))
-  (let [k "cookie.name"
+  (let [k       "cookie.name"
         revoked (t/revoked-cookie k)]
     (is (map? revoked))
     (is (= "INVALID" (get-in revoked [k :value])))))
@@ -31,9 +31,9 @@
 
 (deftest claims-cookie-ok
   (with-redefs [environ/env env-fixture/env-map]
-    (let [claims {:alpha "a", :beta "b", :gamma 3}
-          cookie (t/create-cookie claims)
-          k "cookie.name"
+    (let [claims       {:alpha "a", :beta "b", :gamma 3}
+          cookie       (t/create-cookie claims)
+          k            "cookie.name"
           named-cookie (t/create-cookie claims k)]
       (is (map? cookie))
       (is (not= "INVALID" (:value cookie)))

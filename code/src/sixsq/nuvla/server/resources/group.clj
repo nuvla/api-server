@@ -95,13 +95,13 @@ that start with 'nuvla-' are reserved for the server.
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
-        body (-> body
-                 (assoc :resource-type create-type)
-                 (std-crud/resolve-hrefs authn-info)
-                 (update-in [:template] merge desc-attrs)   ;; validate desc attrs
-                 (crud/validate)
-                 :template
-                 tpl->group)]
+        body       (-> body
+                       (assoc :resource-type create-type)
+                       (std-crud/resolve-hrefs authn-info)
+                       (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                       (crud/validate)
+                       :template
+                       tpl->group)]
     (add-impl (assoc request :body body))))
 
 

@@ -101,13 +101,13 @@ appropriate users.
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
   (let [execute-href (str id "/execute")
-        collection? (u/is-collection? resource-type)
-        can-delete? (a/can-delete? resource request)
-        can-add? (a/can-add? resource request)
-        ops (cond-> []
-                    (and collection? can-add?) (conj {:rel (:add c/action-uri) :href id})
-                    (and (not collection?) can-delete?) (conj {:rel (:delete c/action-uri) :href id})
-                    (and (not collection?) (utils/executable? resource)) (conj {:rel (:execute c/action-uri) :href execute-href}))]
+        collection?  (u/is-collection? resource-type)
+        can-delete?  (a/can-delete? resource request)
+        can-add?     (a/can-add? resource request)
+        ops          (cond-> []
+                             (and collection? can-add?) (conj {:rel (:add c/action-uri) :href id})
+                             (and (not collection?) can-delete?) (conj {:rel (:delete c/action-uri) :href id})
+                             (and (not collection?) (utils/executable? resource)) (conj {:rel (:execute c/action-uri) :href execute-href}))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))

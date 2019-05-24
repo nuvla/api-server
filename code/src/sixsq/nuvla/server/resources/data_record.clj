@@ -12,6 +12,7 @@ and the key itself **may** be described in a data-record-key resource.
     [clojure.string :as str]
     [ring.util.response :as r]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -19,8 +20,7 @@ and the key itself **may** be described in a data-record-key resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record :as data-record]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as sr]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.util.response :as sr]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -65,8 +65,8 @@ and the key itself **may** be described in a data-record-key resource.
 
 (defn- throw-wrong-namespace
   []
-  (let [code 406
-        msg "resource uses keys with undefined prefixes"
+  (let [code     406
+        msg      "resource uses keys with undefined prefixes"
         response (-> {:status code :message msg}
                      sr/json-response
                      (r/status code))]
@@ -76,7 +76,7 @@ and the key itself **may** be described in a data-record-key resource.
 (defn- validate-attributes
   [resource]
   (let [valid-prefixes (sn/all-prefixes)
-        validator (partial valid-key-prefix? valid-prefixes)]
+        validator      (partial valid-key-prefix? valid-prefixes)]
     (if (valid-attributes? validator resource)
       resource
       (throw-wrong-namespace))))

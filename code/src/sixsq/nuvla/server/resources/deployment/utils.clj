@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret
@@ -50,7 +50,7 @@
                              :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
                                            :select ["id"]}
                              :nuvla/authn authn-info}
-          credential-ids (->> credentials-query crud/query :body :resources (map :id))]
+          credential-ids    (->> credentials-query crud/query :body :resources (map :id))]
 
       (doseq [credential-id credential-ids]
         (try

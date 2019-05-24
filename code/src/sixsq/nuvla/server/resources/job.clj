@@ -70,18 +70,18 @@ request.
 
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [id (u/new-resource-id resource-type)
+  (let [id             (u/new-resource-id resource-type)
         zookeeper-path (ju/add-job-to-queue id priority)
-        new-job (-> body
-                    u/strip-service-attrs
-                    (assoc :resource-type resource-type)
-                    (assoc :id id)
-                    (assoc :state ju/state-queued)
-                    u/update-timestamps
-                    ju/job-cond->addition
-                    (crud/add-acl request)
-                    (assoc :tags [zookeeper-path])
-                    (crud/validate))]
+        new-job        (-> body
+                           u/strip-service-attrs
+                           (assoc :resource-type resource-type)
+                           (assoc :id id)
+                           (assoc :state ju/state-queued)
+                           u/update-timestamps
+                           ju/job-cond->addition
+                           (crud/add-acl request)
+                           (assoc :tags [zookeeper-path])
+                           (crud/validate))]
     (db/add resource-type new-job {})))
 
 
@@ -101,14 +101,14 @@ request.
 (defn edit-impl
   [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [current (-> (str resource-type "/" uuid)
-                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/throw-cannot-edit request))
-          dissoc-keys (-> (map keyword select)
-                          (set)
-                          (u/strip-select-from-mandatory-attrs))
+    (let [current                  (-> (str resource-type "/" uuid)
+                                       (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                       (a/throw-cannot-edit request))
+          dissoc-keys              (-> (map keyword select)
+                                       (set)
+                                       (u/strip-select-from-mandatory-attrs))
           current-without-selected (apply dissoc current dissoc-keys)
-          merged (merge current-without-selected body)]
+          merged                   (merge current-without-selected body)]
       (-> merged
           (u/update-timestamps)
           (ju/job-cond->edition)
@@ -145,7 +145,7 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [href (str id "/stop")
+  (let [href       (str id "/stop")
         collect-op {:rel (:stop c/action-uri) :href href}]
     (cond-> (crud/set-standard-operations resource request)
             (a/can-manage? resource request) (update-in [:operations] conj collect-op))))
@@ -169,10 +169,10 @@ request.
 
 (defn create-job
   [target-resource action acl & {:keys [priority]}]
-  (let [job-map (cond-> {:action          action
-                         :target-resource {:href target-resource}
-                         :acl             acl}
-                        priority (assoc :priority priority))
+  (let [job-map        (cond-> {:action          action
+                                :target-resource {:href target-resource}
+                                :acl             acl}
+                               priority (assoc :priority priority))
         create-request {:params      {:resource-name resource-type}
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]

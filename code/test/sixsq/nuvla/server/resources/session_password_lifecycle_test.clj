@@ -29,18 +29,18 @@
 (defn create-user
   [session-admin & {:keys [username password email activated?]}]
   (let [validation-link (atom nil)
-        href (str user-tpl/resource-type "/" email-password/registration-method)
-        href-create {:template {:href     href
-                                :password password
-                                :username username
-                                :email    email}}]
+        href            (str user-tpl/resource-type "/" email-password/registration-method)
+        href-create     {:template {:href     href
+                                    :password password
+                                    :username username
+                                    :email    email}}]
 
     (with-redefs [email-utils/extract-smtp-cfg
-                  (fn [_] {:host "smtp@example.com"
-                           :port 465
-                           :ssl  true
-                           :user "admin"
-                           :pass "password"})
+                                      (fn [_] {:host "smtp@example.com"
+                                               :port 465
+                                               :ssl  true
+                                               :user "admin"
+                                               :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
@@ -69,19 +69,19 @@
 
 (deftest lifecycle
 
-  (let [app (ltu/ring-app)
-        session-json (content-type (session app) "application/json")
-        session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
-        session-user (header session-json authn-info-header "user group/nuvla-user")
-        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+  (let [app              (ltu/ring-app)
+        session-json     (content-type (session app) "application/json")
+        session-anon     (header session-json authn-info-header "user/unknown group/nuvla-anon")
+        session-user     (header session-json authn-info-header "user group/nuvla-user")
+        session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        href (str st/resource-type "/password")
+        href             (str st/resource-type "/password")
 
-        template-url (str p/service-context href)
+        template-url     (str p/service-context href)
 
-        name-attr "name"
+        name-attr        "name"
         description-attr "description"
-        tags-attr ["one", "two"]]
+        tags-attr        ["one", "two"]]
 
     ;; password session template should exist
     (-> session-anon
@@ -91,15 +91,15 @@
 
 
     ;; anon without valid user can not create session
-    (let [username "anon"
-          plaintext-password "anon"
+    (let [username            "anon"
+          plaintext-password  "anon"
 
-          valid-create {:name        name-attr
-                        :description description-attr
-                        :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}
+          valid-create        {:name        name-attr
+                               :description description-attr
+                               :tags        tags-attr
+                               :template    {:href     href
+                                             :username username
+                                             :password plaintext-password}}
           unauthorized-create (update-in valid-create [:template :password] (constantly "BAD"))]
 
       ; anonymous query should succeed but have no entries
@@ -120,39 +120,39 @@
 
 
     ;; anon with valid activated user can create session
-    (let [username "user/jane"
+    (let [username           "user/jane"
           plaintext-password "JaneJane-0"
 
-          valid-create {:name        name-attr
-                        :description description-attr
-                        :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}
+          valid-create       {:name        name-attr
+                              :description description-attr
+                              :tags        tags-attr
+                              :template    {:href     href
+                                            :username username
+                                            :password plaintext-password}}
 
-          invalid-create (assoc-in valid-create [:template :invalid] "BAD")
-          jane-user-id (create-user session-admin
-                                    :username username
-                                    :password plaintext-password
-                                    :activated? true
-                                    :email "jane@example.org")
+          invalid-create     (assoc-in valid-create [:template :invalid] "BAD")
+          jane-user-id       (create-user session-admin
+                                          :username username
+                                          :password plaintext-password
+                                          :activated? true
+                                          :email "jane@example.org")
           ]
 
       ; anonymous create must succeed
-      (let [resp (-> session-anon
-                     (request base-uri
-                              :request-method :post
-                              :body (json/write-str valid-create))
-                     (ltu/body->edn)
-                     (ltu/is-set-cookie)
-                     (ltu/is-status 201))
-            id (get-in resp [:response :body :resource-id])
+      (let [resp       (-> session-anon
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-create))
+                           (ltu/body->edn)
+                           (ltu/is-set-cookie)
+                           (ltu/is-status 201))
+            id         (get-in resp [:response :body :resource-id])
 
-            token (get-in resp [:response :cookies authn-cookie :value])
+            token      (get-in resp [:response :cookies authn-cookie :value])
             authn-info (if token (sign/unsign-cookie-info token) {})
 
-            uri (ltu/location resp)
-            abs-uri (str p/service-context uri)]
+            uri        (ltu/location resp)
+            abs-uri    (str p/service-context uri)]
 
         ; check claims in cookie
         (is (= jane-user-id (:user-id authn-info)))
@@ -249,15 +249,15 @@
       )
 
     ;; anon with valid non activated user cannot create session
-    (let [username "alex"
+    (let [username           "alex"
           plaintext-password "AlexAlex-0"
 
-          valid-create {:name        name-attr
-                        :description description-attr
-                        :tags        tags-attr
-                        :template    {:href     href
-                                      :username username
-                                      :password plaintext-password}}]
+          valid-create       {:name        name-attr
+                              :description description-attr
+                              :tags        tags-attr
+                              :template    {:href     href
+                                            :username username
+                                            :password plaintext-password}}]
 
       (create-user session-admin
                    :username username

@@ -153,14 +153,14 @@ curl https://nuv.la/api/credential-template
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
-        updated-entries (remove nil? (map #(a/select-viewable-keys % request) entries))
+  (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
+        entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
+        updated-entries         (remove nil? (map #(a/select-viewable-keys % request) entries))
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:user-id :claims :query-params :cimi-params])
+        options                 (select-keys request [:user-id :claims :query-params :cimi-params])
         count-before-pagination (count updated-entries)
-        wrapped-entries (wrapper-fn request updated-entries)
-        entries-and-count (assoc wrapped-entries :count count-before-pagination)]
+        wrapped-entries         (wrapper-fn request updated-entries)
+        entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
 

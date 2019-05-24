@@ -13,16 +13,16 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root {:id            (str t/resource-type "/connector-uuid")
-              :resource-type t/resource-type
-              :created       timestamp
-              :updated       timestamp
-              :acl           valid-acl
+        root      {:id            (str t/resource-type "/connector-uuid")
+                   :resource-type t/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-              :deployment    {:href "deployment-uuid"}
-              :node-id       "node-uuid"
-              :name          "my-parameter"
-              :value         "my-parameter-value"}]
+                   :deployment    {:href "deployment-uuid"}
+                   :node-id       "node-uuid"
+                   :name          "my-parameter"
+                   :value         "my-parameter-value"}]
 
     (stu/is-valid ::dp/deployment-parameter root)
     (stu/is-invalid ::dp/deployment-parameter (assoc root :badKey "badValue"))

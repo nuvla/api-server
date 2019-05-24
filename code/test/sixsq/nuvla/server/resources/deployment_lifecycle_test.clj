@@ -66,21 +66,21 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon     (-> (ltu/ring-app)
+                             session
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header
+                                 "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a module that can be referenced from the deployment
-        module-id (-> session-user
-                      (request module-base-uri
-                               :request-method :post
-                               :body (json/write-str (assoc valid-module :content valid-module-component)))
-                      (ltu/body->edn)
-                      (ltu/is-status 201)
-                      (ltu/location))
+        module-id        (-> session-user
+                             (request module-base-uri
+                                      :request-method :post
+                                      :body (json/write-str (assoc valid-module :content valid-module-component)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
         valid-deployment {:module {:href module-id}}]
 
@@ -110,13 +110,13 @@
         (ltu/is-status 403))
 
     ;; check deployment creation
-    (let [deployment-id (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-deployment))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
+    (let [deployment-id  (-> session-user
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-deployment))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
           deployment-url (str p/service-context deployment-id)]
 
@@ -138,23 +138,23 @@
                                     (ltu/is-operation-present "start")
                                     (ltu/is-key-value :state "CREATED"))
 
-            start-op (ltu/get-op deployment-response "start")
+            start-op            (ltu/get-op deployment-response "start")
 
-            start-url (str p/service-context start-op)
+            start-url           (str p/service-context start-op)
 
-            deployment (-> deployment-response :response :body)]
+            deployment          (-> deployment-response :response :body)]
 
         ;; verify that api key/secret pair was created
         (is (:api-credentials deployment))
 
         (when-let [credential-id (-> deployment :api-credentials :api-key)]
           (let [credential-url (str p/service-context credential-id)
-                credential (-> session-user
-                               (request credential-url)
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               :response
-                               :body)]
+                credential     (-> session-user
+                                   (request credential-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   :response
+                                   :body)]
 
             ;; verify that the credential has the correct metadata
             (is (:name credential))
@@ -180,11 +180,11 @@
                                           (ltu/is-operation-absent "start")
                                           (ltu/is-key-value :state "STARTING"))
 
-                  stop-op (ltu/get-op deployment-response "stop")
+                  stop-op             (ltu/get-op deployment-response "stop")
 
-                  stop-url (str p/service-context stop-op)
+                  stop-url            (str p/service-context stop-op)
 
-                  deployment (-> deployment-response :response :body)]
+                  deployment          (-> deployment-response :response :body)]
 
               ;; try to stop the deployment
               (-> session-user
