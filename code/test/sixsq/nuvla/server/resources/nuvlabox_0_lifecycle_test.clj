@@ -61,14 +61,14 @@
 
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-jane  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-alpha (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "unknown group/nuvla-anon")]
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
 
     ;; admin and deployer collection query should succeed but be empty (no  records created yet)
     (-> session-admin
@@ -152,17 +152,17 @@
         (ltu/is-status 201))
 
     ;; create & actions
-    (let [resp-admin (-> session-admin
-                         (request base-uri
-                                  :request-method :post
-                                  :body (json/write-str valid-nuvlabox))
-                         (ltu/body->edn)
-                         (ltu/is-status 201))
+    (let [resp-admin     (-> session-admin
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201))
 
 
-          id-nuvlabox (get-in resp-admin [:response :body :resource-id])
+          id-nuvlabox    (get-in resp-admin [:response :body :resource-id])
           location-admin (str p/service-context (-> resp-admin ltu/location))
-          uri-nuvlabox (str p/service-context id-nuvlabox)]
+          uri-nuvlabox   (str p/service-context id-nuvlabox)]
 
       ;; id is a UUID now, not the MAC address
       (is (not= (str nb/resource-type "/01bbccddeeff") id-nuvlabox))
@@ -185,18 +185,18 @@
           (ltu/is-count zero?))
 
       ;; user should be able to see the resource and recover activation URL
-      (let [activate-op (-> session-jane
-                            (request uri-nuvlabox)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/is-operation-absent "delete")
-                            (ltu/is-operation-absent "edit")
-                            (ltu/is-operation-absent "recommission")
-                            (ltu/is-operation-absent "quarantine")
-                            (ltu/is-operation-present "activate")
-                            (ltu/get-op "activate"))
+      (let [activate-op   (-> session-jane
+                              (request uri-nuvlabox)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-operation-absent "delete")
+                              (ltu/is-operation-absent "edit")
+                              (ltu/is-operation-absent "recommission")
+                              (ltu/is-operation-absent "quarantine")
+                              (ltu/is-operation-present "activate")
+                              (ltu/get-op "activate"))
 
-            activate-url (str p/service-context activate-op)
+            activate-url  (str p/service-context activate-op)
 
             ;; anonymous should be able to activate the NuvlaBox and get back an api key and secret to access Nuvla
             credential-id (-> session-anon
@@ -207,7 +207,7 @@
                               (ltu/is-key-value (comp not str/blank?) :secret-key true)
                               (get-in [:response :body :api-key]))]
 
-        (let [credential-url (str p/service-context credential-id)
+        (let [credential-url      (str p/service-context credential-id)
 
               credential-nuvlabox (-> session-admin
                                       (request credential-url)
@@ -216,12 +216,12 @@
                                       :response
                                       :body)
 
-              nuvlabox (-> session-admin
-                           (request uri-nuvlabox)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           :response
-                           :body)]
+              nuvlabox            (-> session-admin
+                                      (request uri-nuvlabox)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      :response
+                                      :body)]
 
           ;; check generated credentials acl and claims.
           (is (= (:parent credential-nuvlabox) id-nuvlabox))
@@ -249,16 +249,16 @@
             (ltu/is-count 1)))
 
       ;; check that the recommission action is available after activation
-      (let [recommission-op (-> session-alpha
-                                (request uri-nuvlabox)
-                                (ltu/body->edn)
-                                (ltu/is-status 200)
-                                (ltu/is-operation-absent "activate")
-                                (ltu/is-operation-present "delete")
-                                (ltu/is-operation-present "edit")
-                                (ltu/is-operation-present "quarantine")
-                                (ltu/is-operation-present "recommission")
-                                (ltu/get-op "recommission"))
+      (let [recommission-op  (-> session-alpha
+                                 (request uri-nuvlabox)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-operation-absent "activate")
+                                 (ltu/is-operation-present "delete")
+                                 (ltu/is-operation-present "edit")
+                                 (ltu/is-operation-present "quarantine")
+                                 (ltu/is-operation-present "recommission")
+                                 (ltu/get-op "recommission"))
 
             recommission-url (str p/service-context recommission-op)]
 
@@ -278,16 +278,16 @@
             (ltu/is-status 200))
 
         ;; check that services exist
-        (let [entries (-> session-admin
-                          (request infra-service-collection-uri)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/is-count 2)
-                          (ltu/entries))
+        (let [entries  (-> session-admin
+                           (request infra-service-collection-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-count 2)
+                           (ltu/entries))
 
-              types (set (map :type entries))]
+              subtypes (set (map :subtype entries))]
 
-          (is (= #{"swarm" "s3"} types)))
+          (is (= #{"swarm" "s3"} subtypes)))
 
         ;; FIXME: Also verify the content of the created credentials.
         ;; check that credentials exist
@@ -295,7 +295,7 @@
             (content-type "application/x-www-form-urlencoded")
             (request credential-collection-uri
                      :request-method :put
-                     :body (rc/form-encode {:filter "type='infrastructure-service-minio'"}))
+                     :body (rc/form-encode {:filter "subtype='infrastructure-service-minio'"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-count 1))
@@ -304,7 +304,7 @@
             (content-type "application/x-www-form-urlencoded")
             (request credential-collection-uri
                      :request-method :put
-                     :body (rc/form-encode {:filter "type='infrastructure-service-swarm'"}))
+                     :body (rc/form-encode {:filter "subtype='infrastructure-service-swarm'"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-count 1))
@@ -313,7 +313,7 @@
             (content-type "application/x-www-form-urlencoded")
             (request credential-collection-uri
                      :request-method :put
-                     :body (rc/form-encode {:filter "type='swarm-token'"}))
+                     :body (rc/form-encode {:filter "subtype='swarm-token'"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-count 2)))
@@ -349,21 +349,21 @@
           (ltu/is-status 403))
 
       ;; check that a job to delete nuvlabox resources has been created
-      (let [job-id (-> session-alpha
-                       (request uri-nuvlabox
-                                :request-method :delete)
-                       (ltu/body->edn)
-                       (ltu/is-status 202)
-                       (ltu/location))
+      (let [job-id  (-> session-alpha
+                        (request uri-nuvlabox
+                                 :request-method :delete)
+                        (ltu/body->edn)
+                        (ltu/is-status 202)
+                        (ltu/location))
 
             job-url (str p/service-context job-id)
 
-            job (-> session-alpha
-                    (request job-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    :response
-                    :body)]
+            job     (-> session-alpha
+                        (request job-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        :response
+                        :body)]
 
         (is (= "delete_nuvlabox" (:action job)))
         (is (= id-nuvlabox (-> job :target-resource :href))))
@@ -376,7 +376,7 @@
                        :response
                        :body)
 
-            acl (:acl record)]
+            acl    (:acl record)]
 
         (is (= "DECOMMISSIONING" (:state record)))
         (is (= ["group/nuvla-admin"] (-> record :acl :owners)))
@@ -384,18 +384,18 @@
         (is ((-> acl :view-data set) "user/alpha"))
         (is ((-> acl :view-meta set) "user/alpha"))
 
-        (let [id-status (:nuvlabox-status record)
+        (let [id-status  (:nuvlabox-status record)
 
               uri-status (str p/service-context id-status)
 
-              status (-> session-alpha
-                         (request uri-status)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         :response
-                         :body)
+              status     (-> session-alpha
+                             (request uri-status)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             :response
+                             :body)
 
-              acl (:acl status)]
+              acl        (:acl status)]
 
           (is (= ["group/nuvla-admin"] (-> record :acl :owners)))
           (is ((-> acl :view-acl set) "user/alpha"))

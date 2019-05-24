@@ -13,17 +13,17 @@
 
 (deftest check-credential-service-docker
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl {:id            (str cred/resource-type "/uuid")
-             :resource-type cred/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        tpl       {:id            (str cred/resource-type "/uuid")
+                   :resource-type cred/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :type          "swarm-token"
-             :method        "swarm-token"
-             :scope         "MASTER"
+                   :subtype       "swarm-token"
+                   :method        "swarm-token"
+                   :scope         "MASTER"
 
-             :token         "some-swarm-token"}]
+                   :token         "some-swarm-token"}]
 
     (stu/is-valid ::swarm-token/schema tpl)
 

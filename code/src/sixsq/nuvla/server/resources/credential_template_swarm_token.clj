@@ -11,10 +11,10 @@ Stores a Swarm token for a master or worker node.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "swarm-token")
+(def ^:const credential-subtype "swarm-token")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "swarm-token")
@@ -28,7 +28,7 @@ Stores a Swarm token for a master or worker node.
 ;;
 
 (def ^:const template
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              "Swarm Token"
    :description       "stores a Swarm token for master or worker"

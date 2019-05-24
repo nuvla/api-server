@@ -44,17 +44,17 @@
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
   [{:keys [id name acl] :as nuvlabox}]
-  (let [identity {:user-id id
-                  :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
+  (let [identity  {:user-id id
+                   :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
 
         cred-tmpl {:name        (str "Generated API Key for " (or name id))
                    :description (str/join " " ["Generated API Key for" name (str "(" id ")")])
                    :parent      id
-                   :template    {:href   (str "credential-template/" cred-tmpl-api/method)
-                                 :type   cred-tmpl-api/credential-type
-                                 :method cred-tmpl-api/method
-                                 :ttl    0
-                                 :acl    acl}}
+                   :template    {:href    (str "credential-template/" cred-tmpl-api/method)
+                                 :subtype cred-tmpl-api/credential-subtype
+                                 :method  cred-tmpl-api/method
+                                 :ttl     0
+                                 :acl     acl}}
 
         {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
         {:keys [resource-id secret-key]} body]
@@ -70,9 +70,9 @@
    nuvlabox-id."
   [nuvlabox-id]
   (let [filter (format "parent='%s'" nuvlabox-id)
-        body {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                            :select ["id"]}
-              :nuvla/authn auth/internal-identity}]
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
     (-> (db/query isg/resource-type body)
         second
         first
@@ -83,9 +83,9 @@
   "Finds the credential linked to the given infrastructure-service id."
   [service-id]
   (let [filter (format "parent='%s'" service-id)
-        body {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                            :select ["id"]}
-              :nuvla/authn auth/internal-identity}]
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
     (-> (db/query infra-service/resource-type body)
         second
         first
@@ -98,10 +98,10 @@
     (let [request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        "Minio (S3)"
                                  :description (str "Minio (S3) for " nuvlabox-id)
+                                 :parent      isg-id
                                  :template    {:href     "infrastructure-service-template/generic"
-                                               :parent   isg-id
                                                :endpoint endpoint
-                                               :type     "s3"
+                                               :subtype  "s3"
                                                :acl      {:owners   ["group/nuvla-admin"]
                                                           :edit-acl [nuvlabox-id]}}}
                    :nuvla/authn auth/internal-identity}
@@ -121,10 +121,10 @@
     (let [request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        "Docker Swarm Cluster"
                                  :description (str "Docker Swarm cluster for " nuvlabox-id)
+                                 :parent      isg-id
                                  :template    {:href     "infrastructure-service-template/generic"
-                                               :parent   isg-id
                                                :endpoint endpoint
-                                               :type     "swarm"
+                                               :subtype  "swarm"
                                                :acl      {:owners   ["group/nuvla-admin"]
                                                           :edit-acl [nuvlabox-id]}}}
                    :nuvla/authn auth/internal-identity}
@@ -143,12 +143,12 @@
   (let [request {:params      {:resource-name credential/resource-type}
                  :body        {:name        "Docker Swarm Cluster Credential"
                                :description (str "Docker Swarm cluster credential for " swarm-id " linked to " nuvlabox-id)
-                               :template    (cond-> {:href   "credential-template/infrastructure-service-swarm"
-                                                     :parent swarm-id
-                                                     :cert   cert
-                                                     :key    key
-                                                     :acl    {:owners   ["group/nuvla-admin"]
-                                                              :edit-acl [nuvlabox-id]}}
+                               :parent      swarm-id
+                               :template    (cond-> {:href "credential-template/infrastructure-service-swarm"
+                                                     :cert cert
+                                                     :key  key
+                                                     :acl  {:owners   ["group/nuvla-admin"]
+                                                            :edit-acl [nuvlabox-id]}}
                                                     ca (assoc :ca ca))}
                  :nuvla/authn auth/internal-identity}
         {{:keys [resource-id]} :body status :status} (crud/add request)]
@@ -166,12 +166,12 @@
   (let [request {:params      {:resource-name credential/resource-type}
                  :body        {:name        "Docker Swarm Token"
                                :description (str "Docker Swarm token for " swarm-id " linked to " nuvlabox-id)
-                               :template    {:href   "credential-template/swarm-token"
-                                             :parent swarm-id
-                                             :scope  scope
-                                             :token  token
-                                             :acl    {:owners   ["group/nuvla-admin"]
-                                                      :edit-acl [nuvlabox-id]}}}
+                               :parent      swarm-id
+                               :template    {:href  "credential-template/swarm-token"
+                                             :scope scope
+                                             :token token
+                                             :acl   {:owners   ["group/nuvla-admin"]
+                                                     :edit-acl [nuvlabox-id]}}}
                  :nuvla/authn auth/internal-identity}
         {{:keys [resource-id]} :body status :status} (crud/add request)]
 
@@ -188,8 +188,8 @@
   (let [request {:params      {:resource-name credential/resource-type}
                  :body        {:name        "Minio (S3) Credential"
                                :description (str "Minio (S3) credential for " minio-id " linked to " nuvlabox-id)
+                               :parent      minio-id
                                :template    {:href       "credential-template/infrastructure-service-minio"
-                                             :parent     minio-id
                                              :access-key access-key
                                              :secret-key secret-key
                                              :acl        {:owners   ["group/nuvla-admin"]

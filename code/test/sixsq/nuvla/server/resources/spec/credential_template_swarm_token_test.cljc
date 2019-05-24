@@ -16,17 +16,17 @@
 
 (deftest test-credential-template-service-schema-check
   (let [timestamp "1972-10-08T10:00:00.00Z"
-        tpl {:id            (str ct/resource-type "/uuid")
-             :resource-type p/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        tpl       {:id            (str ct/resource-type "/uuid")
+                   :resource-type p/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :type          swarm-token/credential-type
-             :method        swarm-token/method
+                   :subtype       swarm-token/credential-subtype
+                   :method        swarm-token/method
 
-             :scope         "MASTER"
-             :token         "some-swarm-token"}]
+                   :scope         "MASTER"
+                   :token         "some-swarm-token"}]
 
     (stu/is-valid ::swarm-token-spec/schema tpl)
 
