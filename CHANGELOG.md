@@ -3,7 +3,9 @@
 ## [Unreleased]
 
 ### Changed
-  
+
+  - Add nuvlabox and nuvlabox-status resource to allow the registration,
+    management, and use of NuvlaBox machines  
   - Rename type field to subtype and put it in as a resource metadata 
     (not backward compatible)
   - Release script fix
