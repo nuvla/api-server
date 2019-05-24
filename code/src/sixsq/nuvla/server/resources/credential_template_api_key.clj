@@ -12,13 +12,13 @@ secret to access the server. The credential can optionally be limited in time.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "api-key")
+(def ^:const credential-subtype "api-key")
 
 
 (def ^:const resource-name "API Key")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "generate-api-key")
@@ -32,7 +32,7 @@ secret to access the server. The credential can optionally be limited in time.
 ;;
 
 (def ^:const resource
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              "Generate API Key"
    :description       "generates an API key and stores hash"

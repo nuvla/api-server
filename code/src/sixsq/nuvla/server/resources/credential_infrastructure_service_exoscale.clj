@@ -14,10 +14,10 @@ for Exoscale
 ;; convert template to credential
 ;;
 
-(defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method exoscale-api-key exoscale-api-secret-key parent acl]} request]
+(defmethod p/tpl->credential tpl/credential-subtype
+  [{:keys [subtype method exoscale-api-key exoscale-api-secret-key parent acl]} request]
   (let [resource (cond-> {:resource-type           p/resource-type
-                          :type                    type
+                          :subtype                 subtype
                           :method                  method
                           :exoscale-api-key        exoscale-api-key
                           :exoscale-api-secret-key exoscale-api-secret-key
@@ -31,12 +31,12 @@ for Exoscale
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::service/schema))
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::service/schema-create))
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
 

@@ -2,11 +2,12 @@
   "
 Notification resource allows creation and deletion of notification messages.
 
-Each notification should be assigned a type. There are no predefined types.
+Each notification should be assigned a category. There are no predefined
+categories.
 
 Notification must have :content-unique-id set. This field should be used
 by the publisher to uniquely label the notification based on some of its
-fields (e.g.: be a hash of :message, :type and :target-resource fields).
+fields (e.g.: be a hash of :message, :category and :target-resource fields).
 This field should allow to uniquely identify messages and simplify search.
 
 Notification can have :target-resource field set to identify the resource
@@ -26,7 +27,7 @@ ACL
 
 Notifications can only be created by admins. Creator of notification should
 provide resource level ACL accordingly, which for example may depend on the
-type of the notification.
+category of the notification.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -133,9 +134,9 @@ type of the notification.
 (defn set-resource-ops
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
-        ops (cond-> []
-                    can-manage? (conj {:rel (:delete c/action-uri) :href id})
-                    can-manage? (conj {:rel (:defer c/action-uri) :href (str id "/defer")}))]
+        ops         (cond-> []
+                            can-manage? (conj {:rel (:delete c/action-uri) :href id})
+                            can-manage? (conj {:rel (:defer c/action-uri) :href (str id "/defer")}))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))
@@ -166,7 +167,7 @@ type of the notification.
 (defmethod crud/do-action [resource-type "defer"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
+    (let [id         (str resource-type "/" uuid)
           not-before (delay->from-now
                        (or (-> request :body defer-param-kw) delay-default))]
       (-> id

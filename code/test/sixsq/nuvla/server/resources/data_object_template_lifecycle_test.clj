@@ -17,7 +17,7 @@
 (def collection-uri (str p/service-context dot/resource-type))
 
 (def do-tmpl-ids (map #(format "%s/%s" dot/resource-type %) [dotg/data-object-type
-                                                             dotae/data-object-type]))
+                                                             dotae/data-object-subtype]))
 
 (deftest check-retrieve-by-id
   (doseq [eo-tmpl-id do-tmpl-ids]

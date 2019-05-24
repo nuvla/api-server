@@ -34,12 +34,12 @@
 ;; Template validation
 ;;
 
-(defmulti validate-subtype-template :type)
+(defmulti validate-subtype-template :subtype)
 
 
 (defmethod validate-subtype-template :default
-  [{:keys [type] :as resource}]
-  (throw (ex-info (str "unknown data-object-template type: '" type "'") resource)))
+  [{:keys [subtype] :as resource}]
+  (throw (ex-info (str "unknown data-object-template subtype: '" subtype "'") resource)))
 
 
 (defmethod crud/validate resource-type
@@ -60,9 +60,9 @@
 (defn complete-resource
   "Completes the given document with server-managed information:
    resource-type, timestamps, operations, and ACL."
-  [{:keys [type] :as resource}]
-  (when type
-    (let [id (str resource-type "/" type)]
+  [{:keys [subtype] :as resource}]
+  (when subtype
+    (let [id (str resource-type "/" subtype)]
       (-> resource
           (merge {:id            id
                   :resource-type resource-type
@@ -93,10 +93,10 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [type]} :body :as request}]
-  (if (get @templates type)
+  [{{:keys [subtype]} :body :as request}]
+  (if (get @templates subtype)
     (add-impl request)
-    (throw (r/ex-bad-request (str "invalid data object type '" type "'")))))
+    (throw (r/ex-bad-request (str "invalid data object subtype '" subtype "'")))))
 
 
 (defmethod crud/retrieve resource-type

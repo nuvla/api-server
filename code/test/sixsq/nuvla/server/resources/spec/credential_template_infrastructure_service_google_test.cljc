@@ -19,7 +19,7 @@
                    :created        timestamp
                    :updated        timestamp
                    :acl            valid-acl
-                   :type           service/credential-type
+                   :subtype        service/credential-subtype
                    :method         service/method
                    :project-id     "my-project-id"
                    :private-key-id "abcde1234"

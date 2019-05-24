@@ -26,7 +26,7 @@ Resource represents an object in S3 that can be accessed by anyone.
 (def validate-fn (u/create-spec-validation-fn ::do-public/schema))
 
 
-(defmethod do/validate-subtype dot/data-object-type
+(defmethod do/validate-subtype dot/data-object-subtype
   [resource]
   (validate-fn resource))
 
@@ -41,7 +41,7 @@ Resource represents an object in S3 that can be accessed by anyone.
   (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
 
 
-(defmethod do/ready-subtype dot/data-object-type
+(defmethod do/ready-subtype dot/data-object-subtype
   [resource request]
   (-> resource
       (a/throw-cannot-edit request)
@@ -54,7 +54,7 @@ Resource represents an object in S3 that can be accessed by anyone.
       (db/edit request)))
 
 
-(defmethod do/download-subtype dot/data-object-type
+(defmethod do/download-subtype dot/data-object-subtype
   [{:keys [url] :as resource} request]
   (do/verify-state resource #{do/state-ready} "download")
   (log/info "Public download url: " url)

@@ -13,10 +13,10 @@
 ;; convert template to credential
 ;;
 
-(defmethod cred/tpl->credential cred-tpl-mino/credential-type
-  [{:keys [type method access-key secret-key parent acl]} request]
+(defmethod cred/tpl->credential cred-tpl-mino/credential-subtype
+  [{:keys [subtype method access-key secret-key parent acl]} request]
   (let [resource (cond-> {:resource-type cred/resource-type
-                          :type          type
+                          :subtype       subtype
                           :method        method
                           :access-key    access-key
                           :secret-key    secret-key
@@ -32,7 +32,7 @@
 (def validate-fn (u/create-spec-validation-fn ::cred-minio/schema))
 
 
-(defmethod cred/validate-subtype cred-tpl-mino/credential-type
+(defmethod cred/validate-subtype cred-tpl-mino/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -40,7 +40,7 @@
 (def create-validate-fn (u/create-spec-validation-fn ::cred-tpl-mino-spec/schema-create))
 
 
-(defmethod cred/create-validate-subtype cred-tpl-mino/credential-type
+(defmethod cred/create-validate-subtype cred-tpl-mino/credential-subtype
   [resource]
   (create-validate-fn resource))
 

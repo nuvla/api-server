@@ -3,7 +3,9 @@
 ## [Unreleased]
 
 ### Changed
-
+  
+  - Rename type field to subtype and put it in as a resource metadata 
+    (not backward compatible)
   - Release script fix
 
 ## [2.2.0] - 2019-05-22

@@ -9,7 +9,7 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(def ^:const data-object-type "alpha")
+(def ^:const data-object-subtype "alpha")
 
 
 ;;
@@ -54,7 +54,7 @@
 ;;
 
 (def ^:const resource-template
-  {:type     data-object-type
+  {:subtype  data-object-subtype
    :alphaKey 1001})
 
 
@@ -74,7 +74,7 @@
 (def validate-fn (u/create-spec-validation-fn :cimi/data-object.alpha))
 
 
-(defmethod do-resource/validate-subtype data-object-type
+(defmethod do-resource/validate-subtype data-object-subtype
   [resource]
   (validate-fn resource))
 
@@ -82,7 +82,7 @@
 (def validate-fn (u/create-spec-validation-fn :cimi/data-object-template.alpha-create))
 
 
-(defmethod do-resource/create-validate-subtype data-object-type
+(defmethod do-resource/create-validate-subtype data-object-subtype
   [resource]
   (validate-fn resource))
 
@@ -90,6 +90,6 @@
 (def validate-fn (u/create-spec-validation-fn :cimi.data-object-template.alpha/template))
 
 
-(defmethod dot/validate-subtype-template data-object-type
+(defmethod dot/validate-subtype-template data-object-subtype
   [resource]
   (validate-fn resource))

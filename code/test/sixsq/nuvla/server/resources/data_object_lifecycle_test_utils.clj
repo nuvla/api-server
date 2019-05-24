@@ -76,7 +76,7 @@
 
         valid-service       {:acl      valid-acl
                              :parent   service-group-id
-                             :type     "s3"
+                             :subtype  "s3"
                              :endpoint "https://minio.example.org:9000"
                              :state    "STARTED"}
 
@@ -193,7 +193,7 @@
   (let [template       (get-template template-url)
         create-href    {:template (-> template-obj
                                       (assoc :href (:id template))
-                                      (dissoc :type))}
+                                      (dissoc :subtype))}
         create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute

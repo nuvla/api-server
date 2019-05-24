@@ -14,10 +14,10 @@ for Azure
 ;; convert template to credential
 ;;
 
-(defmethod p/tpl->credential tpl/credential-type
-  [{:keys [type method azure-subscription-id azure-client-secret azure-client-id parent acl]} request]
+(defmethod p/tpl->credential tpl/credential-subtype
+  [{:keys [subtype method azure-subscription-id azure-client-secret azure-client-id parent acl]} request]
   (let [resource (cond-> {:resource-type         p/resource-type
-                          :type                  type
+                          :subtype               subtype
                           :method                method
                           :azure-subscription-id azure-subscription-id
                           :azure-client-secret   azure-client-secret
@@ -32,12 +32,12 @@ for Azure
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::service/schema))
-(defmethod p/validate-subtype tpl/credential-type
+(defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
 (def create-validate-fn (u/create-spec-validation-fn ::service/schema-create))
-(defmethod p/create-validate-subtype tpl/credential-type
+(defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
 

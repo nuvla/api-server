@@ -44,7 +44,7 @@
 
 
 (deftest lifecycle
-  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type)
+  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-subtype)
                             (data-object)))
 
 
@@ -76,12 +76,12 @@
         session-user (header session-anon authn-info-header do-ltu/user-info-header)
         base-uri (str p/service-context data-obj/resource-type)
         template (do-ltu/get-template
-                   (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type))
+                   (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-subtype))
 
         create-href {:template (-> (data-object)
                                    (assoc :bucket "my-public-bucket") ;; to avoid conflict with existing data-object
                                    (assoc :href (:id template))
-                                   (dissoc :type))}]
+                                   (dissoc :subtype))}]
 
     ;; Create the test object.
     (-> session-user

@@ -12,24 +12,24 @@
 
 (deftest check-service
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        service {:id            (str service-resource/resource-type "/uuid")
-                 :resource-type service-resource/resource-type
-                 :created       timestamp
-                 :updated       timestamp
-                 :acl           valid-acl
+        service   {:id            (str service-resource/resource-type "/uuid")
+                   :resource-type service-resource/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-                 :parent        "infrastructure-service-group/abcdef"
+                   :parent        "infrastructure-service-group/abcdef"
 
-                 :method        "generic"
-                 :type          "docker"
-                 :endpoint      "https://docker.example.org/api"
-                 :nodes         [{:machine-name "testmachine" :machine-config-base64 "base64=="}]
-                 :state         "STARTED"}]
+                   :method        "generic"
+                   :subtype       "docker"
+                   :endpoint      "https://docker.example.org/api"
+                   :nodes         [{:machine-name "testmachine" :machine-config-base64 "base64=="}]
+                   :state         "STARTED"}]
 
     (stu/is-valid ::infrastructure-service/schema service)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :type :state}]
+    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :subtype :state}]
       (stu/is-invalid ::infrastructure-service/schema (dissoc service k)))
 
     ;;optional keywords

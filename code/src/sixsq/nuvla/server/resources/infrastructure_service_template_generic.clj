@@ -20,7 +20,7 @@ resource.
                :description       "template requiring basic service resource attributes"
                :resource-metadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type              "my-service"
+               :subtype           "my-service"
                :endpoint          "https://service.example.org:1234"
                :state             "STARTED"
 

@@ -21,7 +21,7 @@
 
 
 (deftest ensure-templates-exist
-  (doseq [type [tpl-generic/method]]
+  (doseq [subtype [tpl-generic/method]]
 
     (let [session (-> (ltu/ring-app)
                       session
@@ -30,7 +30,7 @@
           session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
           session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
 
-          tpl (str tpl/resource-type "/" type)
+          tpl (str tpl/resource-type "/" subtype)
           resource-uri (str p/service-context tpl)]
 
       ;; anonymous access to template must fail

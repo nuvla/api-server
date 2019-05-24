@@ -10,13 +10,13 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-google")
+(def ^:const credential-subtype "infrastructure-service-google")
 
 
 (def ^:const resource-name "GCE service account private key")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "store-infrastructure-service-google")
@@ -30,7 +30,7 @@
 ;;
 
 (def ^:const resource
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              resource-name
    :description       "GCE service account credentials"

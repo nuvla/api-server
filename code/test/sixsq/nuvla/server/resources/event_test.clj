@@ -25,7 +25,7 @@
                   :timestamp "2015-01-16T08:05:00.00Z"
                   :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                               :state    "Started"}
-                  :type      "state"
+                  :category  "state"
                   :severity  "critical"})
 
 
@@ -123,59 +123,59 @@
     (are-counts 1 (str "?filter=content/resource/href='run/" i "'")))
   (are-counts 0 "?filter=content/resource/href='run/100'")
 
-  (are-counts 1 "?filter=content/resource/href='run/3' and type='state'")
-  (are-counts 1 "?filter=type='state' and content/resource/href='run/3'")
-  (are-counts 1 "?filter=type='state'       and     content/resource/href='run/3'")
+  (are-counts 1 "?filter=content/resource/href='run/3' and category='state'")
+  (are-counts 1 "?filter=category='state' and content/resource/href='run/3'")
+  (are-counts 1 "?filter=category='state'       and     content/resource/href='run/3'")
 
   (are-counts 1 "?filter=content/resource/href='run/3'")
-  (are-counts 0 "?filter=type='WRONG' and content/resource/href='run/3'")
-  (are-counts 0 "?filter=content/resource/href='run/3' and type='WRONG'")
-  (are-counts nb-events "?filter=type='state'"))
+  (are-counts 0 "?filter=category='WRONG' and content/resource/href='run/3'")
+  (are-counts 0 "?filter=content/resource/href='run/3' and category='WRONG'")
+  (are-counts nb-events "?filter=category='state'"))
 
 
 (deftest filter-and
-  (are-counts nb-events "filter=type='state' and timestamp='2015-01-16T08:05:00Z'")
-  (are-counts 0 "?filter=type='state' and type='XXX'")
-  (are-counts 0 "?filter=type='YYY' and type='state'")
-  (are-counts 0 "?filter=(type='state') and (type='XXX')")
-  (are-counts 0 "?filter=(type='YYY') and (type='state')"))
+  (are-counts nb-events "filter=category='state' and timestamp='2015-01-16T08:05:00Z'")
+  (are-counts 0 "?filter=category='state' and category='XXX'")
+  (are-counts 0 "?filter=category='YYY' and category='state'")
+  (are-counts 0 "?filter=(category='state') and (category='XXX')")
+  (are-counts 0 "?filter=(category='YYY') and (category='state')"))
 
 
 (deftest filter-or
-  (are-counts 0 "?filter=type='XXX'")
-  (are-counts nb-events "?filter=type='state'")
-  (are-counts nb-events "?filter=type='state' or type='XXXX'")
-  (are-counts nb-events "?filter=type='XXXX' or type='state'")
-  (are-counts nb-events "?filter=(type='state') or (type='XXX')")
-  (are-counts nb-events "?filter=(type='XXXXX') or (type='state')")
-  (are-counts 0 "?filter=type='XXXXX' or type='YYYY'")
-  (are-counts 0 "?filter=(type='XXXXX') or (type='YYYY')"))
+  (are-counts 0 "?filter=category='XXX'")
+  (are-counts nb-events "?filter=category='state'")
+  (are-counts nb-events "?filter=category='state' or category='XXXX'")
+  (are-counts nb-events "?filter=category='XXXX' or category='state'")
+  (are-counts nb-events "?filter=(category='state') or (category='XXX')")
+  (are-counts nb-events "?filter=(category='XXXXX') or (category='state')")
+  (are-counts 0 "?filter=category='XXXXX' or category='YYYY'")
+  (are-counts 0 "?filter=(category='XXXXX') or (category='YYYY')"))
 
 
 (deftest filter-multiple
-  (are-counts 0 "?filter=type='state'&filter=type='XXX'")
-  (are-counts 1 "?filter=type='state'&filter=content/resource/href='run/3'"))
+  (are-counts 0 "?filter=category='state'&filter=category='XXX'")
+  (are-counts 1 "?filter=category='state'&filter=content/resource/href='run/3'"))
 
 
 (deftest filter-nulls
-  (are-counts nb-events "?filter=type!=null")
-  (are-counts nb-events "?filter=null!=type")
-  (are-counts 0 "?filter=type=null")
-  (are-counts 0 "?filter=null=type")
-  (are-counts nb-events "?filter=(unknown=null)and(type='state')")
-  (are-counts nb-events "?filter=(content/resource/href!=null)and(type='state')"))
+  (are-counts nb-events "?filter=category!=null")
+  (are-counts nb-events "?filter=null!=category")
+  (are-counts 0 "?filter=category=null")
+  (are-counts 0 "?filter=null=category")
+  (are-counts nb-events "?filter=(unknown=null)and(category='state')")
+  (are-counts nb-events "?filter=(content/resource/href!=null)and(category='state')"))
 
 
 (deftest filter-prefix
-  (are-counts nb-events "?filter=type^='st'")
+  (are-counts nb-events "?filter=category^='st'")
   (are-counts nb-events "?filter=content/resource/href^='run/'")
-  (are-counts 0 "?filter=type^='stXXX'")
+  (are-counts 0 "?filter=category^='stXXX'")
   (are-counts 0 "?filter=content/resource/href^='XXX/'"))
 
 
 (deftest filter-wrong-param
-  (-> (exec-request base-uri "?filter=type='missing end quote" "user/joe")
+  (-> (exec-request base-uri "?filter=category='missing end quote" "user/joe")
       (ltu/is-status 400)
       (get-in [:response :body :message])
-      (.startsWith "Invalid CIMI filter. Parse error at line 1, column 7")
+      (.startsWith "Invalid CIMI filter. Parse error at line 1, column 11")
       is))

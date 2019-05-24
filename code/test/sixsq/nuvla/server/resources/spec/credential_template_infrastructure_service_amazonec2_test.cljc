@@ -19,7 +19,7 @@
                    :created              timestamp
                    :updated              timestamp
                    :acl                  valid-acl
-                   :type                 service/credential-type
+                   :subtype              service/credential-subtype
                    :method               service/method
                    :parent               "infrastructure-service/service-1"
                    :amazonec2-access-key "foo"
