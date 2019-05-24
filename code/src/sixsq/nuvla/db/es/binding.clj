@@ -165,11 +165,11 @@
           hits                    (->> response :body :hits :hits (map :_source))]
       (if success?
         [meta hits]
-        (r/response-error (str "error when querying: " (:body response)))))
+        (throw (r/response-error (str "error when querying: " (:body response))))))
     (catch Exception e
       (let [{:keys [body] :as response} (ex-data e)
             error (:error body)]
-        (r/response-error (str "unexpected exception querying: " (or error e)))))))
+        (throw (r/response-error (str "unexpected exception querying: " (or error e))))))))
 
 
 (deftype ElasticsearchRestBinding [client]
