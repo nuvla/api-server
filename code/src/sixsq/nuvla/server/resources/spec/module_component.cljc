@@ -82,6 +82,8 @@
                                                                 ::architecture
                                                                 ::container/image]
                                                        :opt-un [::commit
+                                                                ::container/memory
+                                                                ::container/cpus
                                                                 ::container/ports
                                                                 ::container/mounts
                                                                 ::urls

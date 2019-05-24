@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Allow resource constraints (CPUs, memory) to be specified for module
+    components
   - Add nuvlabox and nuvlabox-status resource to allow the registration,
     management, and use of NuvlaBox machines  
   - Rename type field to subtype and put it in as a resource metadata 

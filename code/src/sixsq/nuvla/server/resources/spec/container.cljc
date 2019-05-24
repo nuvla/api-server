@@ -142,6 +142,25 @@
              :json-schema/description "list of environmental variable")))
 
 
+;;
+;; resource constraints
+;;
+
+(s/def ::memory
+  (-> (st/spec pos-int?)
+      (assoc :name "memory"
+             :json-schema/type "integer"
+             :json-schema/description "maximum memory in MiB")))
+
+
+(s/def ::cpus
+  (-> (st/spec (s/and double? pos?))
+      (assoc :name "cpus"
+             :json-schema/type "double"
+             :json-schema/display-name "CPUs"
+             :json-schema/description "allocated virtual CPUs")))
+
+
 ;; mounts spec
 
 
