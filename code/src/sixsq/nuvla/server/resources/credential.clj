@@ -185,6 +185,16 @@ CredentialTemplate resource.
         (update-in [:body] merge create-resp))))
 
 
+(defn create-credential
+  "Utility to facilitate creating a new credential resource. The returned value
+   is the standard 'add' response for the request."
+  [credential-template identity]
+  (let [credential-request {:params      {:resource-name resource-type}
+                            :nuvla/authn identity
+                            :body        credential-template}]
+    (crud/add credential-request)))
+
+
 (defmulti special-edit dispatch-conversion)
 
 

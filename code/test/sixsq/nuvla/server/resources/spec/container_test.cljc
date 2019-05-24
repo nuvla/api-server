@@ -60,7 +60,7 @@
       (stu/is-valid ::container/port (dissoc port attr)))))
 
 (deftest check-volume-option
-  (let [volume-option {:key1   "value 1"}]
+  (let [volume-option {:key1 "value 1"}]
 
     (stu/is-valid ::container/volume-options volume-option)
 

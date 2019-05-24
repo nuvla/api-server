@@ -91,7 +91,7 @@
 (defn create-user-subresources
   [user-id email password username]
   (let [credential-id (when password (create-hashed-password user-id password))
-        email-id      (when email (create-email user-id email))]
+        email-id (when email (create-email user-id email))]
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)

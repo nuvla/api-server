@@ -19,7 +19,7 @@
 (s/def ::resource (s/keys :req-un [::id ::sequence ::attr1 ::attr2 ::acl]
                           :opt-un [::admin ::user]))
 
-(def admin-acl {:owners   ["group/nuvla-admin"]})
+(def admin-acl {:owners ["group/nuvla-admin"]})
 
 (def user "user/jane")
 

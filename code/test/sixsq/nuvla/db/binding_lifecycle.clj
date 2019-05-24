@@ -15,7 +15,7 @@
 
 (s/def ::acl ::acl-resource/acl)
 
-(def admin-acl {:owners   ["group/nuvla-admin"]})
+(def admin-acl {:owners ["group/nuvla-admin"]})
 
 (defn check-binding-lifecycle [db-impl]
   (with-open [db db-impl]

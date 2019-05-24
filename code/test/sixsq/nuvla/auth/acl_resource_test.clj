@@ -95,7 +95,6 @@
   (is (= #{::a/query} (a/extract-rights {:claims #{"group/nuvla-anon"}} {:owners ["group/nuvla-admin"]
                                                                          :query  ["group/nuvla-anon"]})))
 
-
   )
 
 

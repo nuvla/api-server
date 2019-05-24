@@ -28,21 +28,21 @@
 (deftest lifecycle
   (let [validation-link (atom nil)
 
-        template-url    (str p/service-context user-tpl/resource-type "/" email-invitation/registration-method)
+        template-url (str p/service-context user-tpl/resource-type "/" email-invitation/registration-method)
 
-        session         (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-        session-admin   (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user    (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon    (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session (-> (ltu/ring-app)
+                    session
+                    (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     (with-redefs [email-utils/extract-smtp-cfg
-                                      (fn [_] {:host "smtp@example.com"
-                                               :port 465
-                                               :ssl  true
-                                               :user "admin"
-                                               :pass "password"})
+                  (fn [_] {:host "smtp@example.com"
+                           :port 465
+                           :ssl  true
+                           :user "admin"
+                           :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
@@ -50,24 +50,24 @@
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
-      (let [template          (-> session-admin
-                                  (request template-url)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (get-in [:response :body]))
+      (let [template (-> session-admin
+                         (request template-url)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (get-in [:response :body]))
 
-            href              (str user-tpl/resource-type "/" email-invitation/registration-method)
+            href (str user-tpl/resource-type "/" email-invitation/registration-method)
 
-            description-attr  "description"
-            tags-attr         ["one", "two"]
+            description-attr "description"
+            tags-attr ["one", "two"]
 
-            no-href-create    {:template (ltu/strip-unwanted-attrs (assoc template :email "alice@example.org"))}
-            href-create       {:description description-attr
-                               :tags        tags-attr
-                               :template    {:href  href
-                                             :email "jane@example.org"}}
+            no-href-create {:template (ltu/strip-unwanted-attrs (assoc template :email "alice@example.org"))}
+            href-create {:description description-attr
+                         :tags        tags-attr
+                         :template    {:href  href
+                                       :email "jane@example.org"}}
 
-            invalid-create    (assoc-in href-create [:template :href] "user-template/unknown-template")
+            invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
 
             bad-params-create (assoc-in href-create [:template :invalid] "BAD")]
 
@@ -120,13 +120,13 @@
             (ltu/is-status 400))
 
         ;; create user
-        (let [resp                 (-> session-user
-                                       (request base-uri
-                                                :request-method :post
-                                                :body (json/write-str href-create))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201))
-              user-id              (get-in resp [:response :body :resource-id])
+        (let [resp (-> session-user
+                       (request base-uri
+                                :request-method :post
+                                :body (json/write-str href-create))
+                       (ltu/body->edn)
+                       (ltu/is-status 201))
+              user-id (get-in resp [:response :body :resource-id])
               session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
           (let [{email-id :email :as user} (-> session-created-user
