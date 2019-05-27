@@ -21,7 +21,7 @@
 
                    :subtype       "swarm-token"
                    :method        "swarm-token"
-                   :scope         "MASTER"
+                   :scope         "MANAGER"
 
                    :token         "some-swarm-token"}]
 

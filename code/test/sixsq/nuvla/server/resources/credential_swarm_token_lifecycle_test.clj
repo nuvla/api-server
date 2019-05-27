@@ -43,14 +43,14 @@
 
         create-no-href   {:template (-> template
                                         ltu/strip-unwanted-attrs
-                                        (assoc :scope "MASTER"
+                                        (assoc :scope "MANAGER"
                                                :token "some-swarm-token"))}
 
         create-href      {:name        name-attr
                           :description description-attr
                           :tags        tags-attr
                           :template    {:href  href
-                                        :scope "MASTER"
+                                        :scope "MANAGER"
                                         :token "some-swarm-token"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
@@ -127,7 +127,7 @@
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is (= "MASTER" scope))
+        (is (= "MANAGER" scope))
         (is (= "some-swarm-token" token)))
 
       ;; delete the credential

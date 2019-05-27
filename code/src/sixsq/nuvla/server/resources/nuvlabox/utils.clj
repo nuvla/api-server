@@ -94,7 +94,7 @@
 
 (defn create-minio-service
   [nuvlabox-id isg-id endpoint]
-  (when [isg-id (get-isg-id nuvlabox-id)]
+  (if endpoint
     (let [request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        "Minio (S3)"
                                  :description (str "Minio (S3) for " nuvlabox-id)
@@ -112,12 +112,13 @@
           (log/info "minio service" resource-id "created")
           resource-id)
         (let [msg (str "cannot create minio service for " nuvlabox-id)]
-          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+          (throw (ex-info msg (r/map-response msg 400 ""))))))
+    (log/info "minio endpoint not specified; skipping creation of infrastructure-service")))
 
 
 (defn create-swarm-service
   [nuvlabox-id isg-id endpoint]
-  (when [isg-id (get-isg-id nuvlabox-id)]
+  (if endpoint
     (let [request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        "Docker Swarm Cluster"
                                  :description (str "Docker Swarm cluster for " nuvlabox-id)
@@ -135,73 +136,86 @@
           (log/info "swarm service" resource-id "created")
           resource-id)
         (let [msg (str "cannot create swarm service for " nuvlabox-id)]
-          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+          (throw (ex-info msg (r/map-response msg 400 ""))))))
+    (do
+      (log/info "swarm endpoint not specified; skipping creation of infrastructure-service")
+      nil)))
 
 
 (defn create-swarm-cred
   [nuvlabox-id swarm-id key cert ca]
-  (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:name        "Docker Swarm Cluster Credential"
-                               :description (str "Docker Swarm cluster credential for " swarm-id " linked to " nuvlabox-id)
-                               :parent      swarm-id
-                               :template    (cond-> {:href "credential-template/infrastructure-service-swarm"
-                                                     :cert cert
-                                                     :key  key
-                                                     :acl  {:owners   ["group/nuvla-admin"]
-                                                            :edit-acl [nuvlabox-id]}}
-                                                    ca (assoc :ca ca))}
-                 :nuvla/authn auth/internal-identity}
-        {{:keys [resource-id]} :body status :status} (crud/add request)]
+  (when swarm-id
+    (if (and key cert ca)
+      (let [request {:params      {:resource-name credential/resource-type}
+                     :body        {:name        "Docker Swarm Cluster Credential"
+                                   :description (str "Docker Swarm cluster credential for " swarm-id " linked to " nuvlabox-id)
+                                   :parent      swarm-id
+                                   :template    (cond-> {:href "credential-template/infrastructure-service-swarm"
+                                                         :cert cert
+                                                         :key  key
+                                                         :acl  {:owners   ["group/nuvla-admin"]
+                                                                :edit-acl [nuvlabox-id]}}
+                                                        ca (assoc :ca ca))}
+                     :nuvla/authn auth/internal-identity}
+            {{:keys [resource-id]} :body status :status} (crud/add request)]
 
-    (if (= 201 status)
+        (if (= 201 status)
+          (do
+            (log/info "swarm service credential" resource-id "created")
+            resource-id)
+          (let [msg (str "cannot create swarm service credential for " swarm-id " linked to " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 ""))))))
       (do
-        (log/info "swarm service credential" resource-id "created")
-        resource-id)
-      (let [msg (str "cannot create swarm service credential for " swarm-id " linked to " nuvlabox-id)]
-        (throw (ex-info msg (r/map-response msg 400 "")))))))
+        (log/info "skipping creation of swarm credential; key, cert, or ca is missing")
+        nil))))
 
 
 (defn create-swarm-token
   [nuvlabox-id swarm-id scope token]
-  (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:name        "Docker Swarm Token"
-                               :description (str "Docker Swarm token for " swarm-id " linked to " nuvlabox-id)
-                               :parent      swarm-id
-                               :template    {:href  "credential-template/swarm-token"
-                                             :scope scope
-                                             :token token
-                                             :acl   {:owners   ["group/nuvla-admin"]
-                                                     :edit-acl [nuvlabox-id]}}}
-                 :nuvla/authn auth/internal-identity}
-        {{:keys [resource-id]} :body status :status} (crud/add request)]
+  (when swarm-id
+    (if (and scope token)
+      (let [request {:params      {:resource-name credential/resource-type}
+                     :body        {:name        "Docker Swarm Token"
+                                   :description (str "Docker Swarm token for " swarm-id " linked to " nuvlabox-id)
+                                   :parent      swarm-id
+                                   :template    {:href  "credential-template/swarm-token"
+                                                 :scope scope
+                                                 :token token
+                                                 :acl   {:owners   ["group/nuvla-admin"]
+                                                         :edit-acl [nuvlabox-id]}}}
+                     :nuvla/authn auth/internal-identity}
+            {{:keys [resource-id]} :body status :status} (crud/add request)]
 
-    (if (= 201 status)
-      (do
-        (log/info "swarm token credential" resource-id "created")
-        resource-id)
-      (let [msg (str "cannot create swarm token credential for " swarm-id " linked to " nuvlabox-id)]
-        (throw (ex-info msg (r/map-response msg 400 "")))))))
+        (if (= 201 status)
+          (do
+            (log/info "swarm token credential" resource-id "created")
+            resource-id)
+          (let [msg (str "cannot create swarm token credential for " swarm-id " linked to " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 ""))))))
+      (log/info "skipping creation of swarm token; either scope or token is missing"))))
 
 
 (defn create-minio-cred
   [nuvlabox-id minio-id access-key secret-key]
-  (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:name        "Minio (S3) Credential"
-                               :description (str "Minio (S3) credential for " minio-id " linked to " nuvlabox-id)
-                               :parent      minio-id
-                               :template    {:href       "credential-template/infrastructure-service-minio"
-                                             :access-key access-key
-                                             :secret-key secret-key
-                                             :acl        {:owners   ["group/nuvla-admin"]
-                                                          :edit-acl [nuvlabox-id]}}}
-                 :nuvla/authn auth/internal-identity}
-        {{:keys [resource-id]} :body status :status} (crud/add request)]
+  (when minio-id
+    (if (and access-key secret-key)
+      (let [request {:params      {:resource-name credential/resource-type}
+                     :body        {:name        "Minio (S3) Credential"
+                                   :description (str "Minio (S3) credential for " minio-id " linked to " nuvlabox-id)
+                                   :parent      minio-id
+                                   :template    {:href       "credential-template/infrastructure-service-minio"
+                                                 :access-key access-key
+                                                 :secret-key secret-key
+                                                 :acl        {:owners   ["group/nuvla-admin"]
+                                                              :edit-acl [nuvlabox-id]}}}
+                     :nuvla/authn auth/internal-identity}
+            {{:keys [resource-id]} :body status :status} (crud/add request)]
 
-    (if (= 201 status)
-      (do
-        (log/info "minio service credential" resource-id "created")
-        resource-id)
-      (let [msg (str "cannot create minio service credential for " minio-id " linked to " nuvlabox-id)]
-        (throw (ex-info msg (r/map-response msg 400 "")))))))
+        (if (= 201 status)
+          (do
+            (log/info "minio service credential" resource-id "created")
+            resource-id)
+          (let [msg (str "cannot create minio service credential for " minio-id " linked to " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))))))
 
 

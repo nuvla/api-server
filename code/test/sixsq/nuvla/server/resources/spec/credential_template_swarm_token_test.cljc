@@ -25,7 +25,7 @@
                    :subtype       swarm-token/credential-subtype
                    :method        swarm-token/method
 
-                   :scope         "MASTER"
+                   :scope         "MANAGER"
                    :token         "some-swarm-token"}]
 
     (stu/is-valid ::swarm-token-spec/schema tpl)
