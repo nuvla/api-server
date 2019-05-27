@@ -160,6 +160,47 @@
              :json-schema/display-name "CPUs"
              :json-schema/description "allocated virtual CPUs")))
 
+;;
+;; restart policy
+;;
+
+(s/def ::condition
+  (-> (st/spec #{"none", "on-failure", "any"})
+      (assoc :name "condition"
+             :json-schema/type "string"
+             :json-schema/description "restart condition (none, on-failure, any)")))
+
+
+(s/def ::delay
+  (-> (st/spec nat-int?)
+      (assoc :name "delay"
+             :json-schema/type "integer"
+             :json-schema/description "delay between restarts (seconds)")))
+
+
+(s/def ::max-attempts
+  (-> (st/spec nat-int?)
+      (assoc :name "max-attempts"
+             :json-schema/type "integer"
+             :json-schema/display-name "max. attempts"
+             :json-schema/description "maximum number of restart attempts")))
+
+
+(s/def ::window
+  (-> (st/spec nat-int?)
+      (assoc :name "window"
+             :json-schema/type "integer"
+             :json-schema/description "time window used to evaluate restart policy (seconds)")))
+
+
+(s/def ::restart-policy
+  (-> (st/spec (su/only-keys :req-un [::condition]
+                             :opt-un [::delay ::max-attempts ::window]))
+      (assoc :name "restart-policy"
+             :json-schema/type "map"
+             :json-schema/display-name "restart policy"
+             :json-schema/description "Docker restart policy for the container")))
+
 
 ;; mounts spec
 

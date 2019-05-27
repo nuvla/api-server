@@ -84,6 +84,7 @@
                                                        :opt-un [::commit
                                                                 ::container/memory
                                                                 ::container/cpus
+                                                                ::container/restart-policy
                                                                 ::container/ports
                                                                 ::container/mounts
                                                                 ::urls
