@@ -8,10 +8,10 @@
 
 
 (s/def ::scope
-  (-> (st/spec #{"MASTER" "WORKER"})
+  (-> (st/spec #{"MANAGER" "WORKER"})
       (assoc :name "scope"
              :json-schema/type "string"
-             :json-schema/description "scope of the given Swarm token (MASTER or WORKER)"
+             :json-schema/description "scope of the given Swarm token (MANAGER or WORKER)"
 
              :json-schema/order 30)))
 
