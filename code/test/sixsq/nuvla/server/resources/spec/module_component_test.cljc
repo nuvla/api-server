@@ -30,6 +30,11 @@
                    :cpus                    1.3
                    :memory                  256
 
+                   :restart-policy          {:condition    "any"
+                                             :delay        10
+                                             :max-attempts 5
+                                             :window       600}
+
                    :mounts                  [{:mount-type "bind"
                                               :source     "/abc/file"
                                               :target     "/file"

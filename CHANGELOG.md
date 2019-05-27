@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Add restart policy parameters to module schema
   - Fix elasticsearch binding when issue occur during the query call
   - Mention user email in invitation to use Nuvla
   - Add expiry field to job resource
