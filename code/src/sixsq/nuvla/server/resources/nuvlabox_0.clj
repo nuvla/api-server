@@ -30,10 +30,10 @@ a NuvlaBox.
 
 
 ;;
-;; multimethod for recommission
+;; multimethod for commission
 ;;
 
-(defmethod nb/recommission schema-version
+(defmethod nb/commission schema-version
   [{:keys [id] :as resource}
    {{:keys [swarm-endpoint
             swarm-token-manager swarm-token-worker
@@ -53,7 +53,7 @@ a NuvlaBox.
       (when minio-id
         (nb-utils/create-minio-cred id minio-id minio-access-key minio-secret-key))
 
-      (r/map-response "recommission executed successfully" 200))))
+      (r/map-response "commission executed successfully" 200))))
 
 
 ;;

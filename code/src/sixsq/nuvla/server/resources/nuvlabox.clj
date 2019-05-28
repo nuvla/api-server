@@ -34,7 +34,16 @@
 (def ^:const state-quarantined "QUARANTINED")
 
 
+(def ^:const state-commissioning "COMMISSIONING")
+
+
+(def ^:const state-commissioned "COMMISSIONED")
+
+
 (def ^:const state-decommissioning "DECOMMISSIONING")
+
+
+(def ^:const state-decommissioned "DECOMMISSIONED")
 
 
 (def ^:const state-error "ERROR")
@@ -116,68 +125,15 @@
   (query-impl request))
 
 
-;; The delete will be handled asynchronously so that all resources associated
-;; with the NuvlaBox will be removed as well.
+(defn verify-deletable-state
+  [{:keys [id state] :as resource}]
+  (if (or (= state state-decommissioned)
+          (= state state-error))
+    resource
+    (throw (r/ex-response (str "cannot delete nuvlabox in state " state) 409 id))))
 
 
-(defn restrict-acl
-  "Updates the given acl by giving the view-acl right to all owners, removing
-   all edit-* rights, and setting the owners to only [\"group/nuvla-admin\"]."
-  [{:keys [owners] :as acl}]
-  (-> acl
-      (dissoc :edit-meta :edit-data :edit-acl)
-      (assoc :owners ["group/nuvla-admin"])
-      (update-in [:view-acl] concat owners)))
-
-
-(defmulti delete-sync
-          "Executes the synchronous tasks associated with deleting a
-           nuvlabox resource. This must always return the value of the
-           resource that was passed in."
-          (fn [resource request] (:version resource)))
-
-
-(defmethod delete-sync :default
-  [{:keys [id nuvlabox-status acl] :as resource} request]
-  (let [updated-acl (restrict-acl acl)]
-    (-> resource
-        (assoc :state state-decommissioning
-               :acl updated-acl)
-        (db/edit request))
-
-    (try
-      (-> nuvlabox-status
-          crud/retrieve-by-id-as-admin
-          (assoc :acl updated-acl)
-          (db/edit request))
-      (catch Exception _
-        (log/info "exception when updating nuvlabox-status; perhaps already deleted")))
-
-    ;; read back the updated resource to ensure that ACL is fully normalized
-    (crud/retrieve-by-id-as-admin id)))
-
-
-(defmulti delete-async
-          "Creates a job to handle all the asynchronous clean up that is
-           needed when deleting a nuvlabox."
-          (fn [resource request] (:version resource)))
-
-
-(defmethod delete-async :default
-  [{:keys [id acl] :as resource} request]
-  (try
-    (let [updated-acl (assoc acl :owners ["group/nuvla-user"])
-          {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "delete_nuvlabox"
-                                                       updated-acl
-                                                       :priority 50)
-          job-msg     (str "deleting " id " with async " job-id)]
-      (when (not= job-status 201)
-        (throw (r/ex-response "unable to create async job to delete nuvlabox resources" 500 id)))
-      (event-utils/create-event id job-msg updated-acl)
-      (r/map-response job-msg 202 id job-id))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+(def delete-impl (std-crud/delete-fn resource-type))
 
 
 (defmethod crud/delete resource-type
@@ -186,8 +142,8 @@
     (try
       (-> (db/retrieve id request)
           (a/throw-cannot-delete request)
-          (delete-sync request)
-          (delete-async request))
+          verify-deletable-state)
+      (delete-impl request)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -252,31 +208,102 @@
           (or (ex-data e) (throw e)))))))
 
 ;;
-;; Recommission operation
+;; Commission operation
 ;;
 
-(defmulti recommission
+(defmulti commission
           "Recreates the infrastructure-service(s), credentials, etc. that are
            associated with this nuvlabox. The resources that are created
            depend on the version of nuvlabox-* resources being used."
           (fn [resource request] (:version resource)))
 
 
-(defmethod recommission :default
+(defmethod commission :default
   [{:keys [version] :as resource} request]
   (if version
-    (throw (r/ex-bad-request (str "unsupported nuvlabox version for recommission action: " version)))
-    (throw (r/ex-bad-request "missing nuvlabox version for recommission action"))))
+    (throw (r/ex-bad-request (str "unsupported nuvlabox version for commission action: " version)))
+    (throw (r/ex-bad-request "missing nuvlabox version for commission action"))))
 
 
-(defmethod crud/do-action [resource-type "recommission"]
+(defmethod crud/do-action [resource-type "commission"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (try
         (-> (db/retrieve id request)
             (a/throw-cannot-manage request)
-            (recommission request))
+            (commission request))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))))
+
+
+;;
+;; Decommission operation
+;;
+
+(defn restrict-acl
+  "Updates the given acl by giving the view-acl and manage rights to all
+   owners, removing all edit-* rights, and setting the owners to only
+   [\"group/nuvla-admin\"]."
+  [{:keys [owners] :as acl}]
+  (-> acl
+      (dissoc :edit-meta :edit-data :edit-acl)
+      (assoc :owners ["group/nuvla-admin"])
+      (update-in [:view-acl] concat owners)
+      (update-in [:manage] concat owners)))
+
+
+(defmulti decommission-sync
+          "Executes the synchronous tasks associated with decommissioning a
+           nuvlabox resource. This must always return the value of the resource
+           that was passed in."
+          (fn [resource request] (:version resource)))
+
+
+(defmethod decommission-sync :default
+  [{:keys [id nuvlabox-status acl] :as resource} request]
+  (let [updated-acl (restrict-acl acl)]
+    (-> resource
+        (assoc :state state-decommissioning
+               :acl updated-acl)
+        (db/edit request))
+
+    ;; read back the updated resource to ensure that ACL is fully normalized
+    (crud/retrieve-by-id-as-admin id)))
+
+
+(defmulti decommission-async
+          "Creates a job to handle all the asynchronous clean up that is
+           needed when decommissioning a nuvlabox."
+          (fn [resource request] (:version resource)))
+
+
+(defmethod decommission-async :default
+  [{:keys [id acl] :as resource} request]
+  (try
+    (let [updated-acl (assoc acl :owners ["group/nuvla-user"])
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "decommission_nuvlabox"
+                                                       updated-acl
+                                                       :priority 50)
+          job-msg     (str "decommissioning " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to decommission nuvlabox resources" 500 id)))
+      (event-utils/create-event id job-msg updated-acl)
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "decommission"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (try
+        (-> (db/retrieve id request)
+            (a/throw-cannot-manage request)
+            (decommission-sync request)
+            (decommission-async request))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
 
@@ -285,18 +312,47 @@
 ;; Set operation
 ;;
 
+;;
+;; operations for states for owner are:
+;;
+;;                edit delete activate commission decommission quarantine
+;; NEW             Y     Y       Y
+;; ACTIVATED       Y                       Y           Y           Y
+;; DECOMMISSIONING Y                                   Y
+;; DECOMMISSIONED  Y     Y
+;; QUARANTINED     Y                                   Y
+;; ERROR           Y     Y                             Y           Y
+;;
+
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [href-activate     (str id "/activate")
         href-quarantine   (str id "/quarantine")
-        href-recommission (str id "/recommission")
+        href-commission   (str id "/commission")
+        href-decommission (str id "/decommission")
+        edit-op           {:rel (:edit c/action-uri) :href id}
+        delete-op         {:rel (:delete c/action-uri) :href id}
         activate-op       {:rel (:activate c/action-uri) :href href-activate}
         quarantine-op     {:rel (:quarantine c/action-uri) :href href-quarantine}
-        recommission-op   {:rel (:recommission c/action-uri) :href href-recommission}]
-    (cond-> (crud/set-standard-operations resource request)
-            (= state state-new) (update-in [:operations] conj activate-op)
-            (= state state-activated) (update-in [:operations] conj quarantine-op)
-            (= state state-activated) (update-in [:operations] conj recommission-op))))
+        commission-op     {:rel (:commission c/action-uri) :href href-commission}
+        decommission-op   {:rel (:decommission c/action-uri) :href href-decommission}
+        ops               (cond-> []
+                                  (a/can-edit? resource request) (conj edit-op)
+                                  (and (a/can-delete? resource request)
+                                       (or (= state state-new)
+                                           (= state state-decommissioned)
+                                           (= state state-error))) (conj delete-op)
+                                  (and (a/can-manage? resource request)
+                                       (= state state-new)) (conj activate-op)
+                                  (and (a/can-manage? resource request)
+                                       (or (= state state-activated)
+                                           (= state state-error))) (conj quarantine-op)
+                                  (and (a/can-manage? resource request)
+                                       (= state state-activated)) (conj commission-op)
+                                  (and (a/can-manage? resource request)
+                                       (not= state state-new)
+                                       (not= state state-decommissioned)) (conj decommission-op))]
+    (assoc resource :operations ops)))
 
 ;;
 ;; initialization
