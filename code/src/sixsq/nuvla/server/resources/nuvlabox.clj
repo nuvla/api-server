@@ -54,8 +54,10 @@
 
 
 (defmethod validate-subtype :default
-  [resource]
-  (throw (ex-info (str "unsupported nuvlabox version: " (:version resource)) resource)))
+  [{:keys [version] :as resource}]
+  (if version
+    (throw (r/ex-bad-request (str "unsupported nuvlabox version: " version)))
+    (throw (r/ex-bad-request "missing nuvlabox version"))))
 
 
 (defmethod crud/validate resource-type
@@ -143,10 +145,13 @@
                :acl updated-acl)
         (db/edit request))
 
-    (-> nuvlabox-status
-        crud/retrieve-by-id-as-admin
-        (assoc :acl updated-acl)
-        (db/edit request))
+    (try
+      (-> nuvlabox-status
+          crud/retrieve-by-id-as-admin
+          (assoc :acl updated-acl)
+          (db/edit request))
+      (catch Exception _
+        (log/info "exception when updating nuvlabox-status; perhaps already deleted")))
 
     ;; read back the updated resource to ensure that ACL is fully normalized
     (crud/retrieve-by-id-as-admin id)))
@@ -258,8 +263,10 @@
 
 
 (defmethod recommission :default
-  [resource request]
-  (throw (ex-info (str "unsupported nuvlabox version for recommission: " (:version resource)) resource)))
+  [{:keys [version] :as resource} request]
+  (if version
+    (throw (r/ex-bad-request (str "unsupported nuvlabox version for recommission action: " version)))
+    (throw (r/ex-bad-request "missing nuvlabox version for recommission action"))))
 
 
 (defmethod crud/do-action [resource-type "recommission"]

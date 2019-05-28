@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Continue nuvlabox delete if nuvlabox-status has already been deleted
+  - NuvlaBox resources without a version should return a 400 code, not 500
   - Add restart policy parameters to module schema
   - Fix elasticsearch binding when issue occur during the query call
   - Mention user email in invitation to use Nuvla

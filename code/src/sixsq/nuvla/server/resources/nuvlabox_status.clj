@@ -12,7 +12,8 @@ although they can be created manually by an administrator.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -36,8 +37,10 @@ although they can be created manually by an administrator.
 
 
 (defmethod validate-subtype :default
-  [resource]
-  (throw (ex-info (str "unsupported nuvlabox-status version: " (:version resource)) resource)))
+  [{:keys [version] :as resource}]
+  (if version
+    (throw (r/ex-bad-request (str "unsupported nuvlabox-status version: " version)))
+    (throw (r/ex-bad-request "missing nuvlabox-status version"))))
 
 
 (defmethod crud/validate resource-type
