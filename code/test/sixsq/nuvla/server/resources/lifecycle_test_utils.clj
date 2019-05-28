@@ -103,7 +103,7 @@
   [m op]
   (let [op-list     (get-in m [:response :body :operations])
         defined-ops (map :rel op-list)]
-    [(some #(.endsWith % op) defined-ops) defined-ops]))
+    [(some #(= % op) defined-ops) defined-ops]))
 
 
 (defmacro is-operation-present
