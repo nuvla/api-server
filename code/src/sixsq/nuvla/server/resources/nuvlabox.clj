@@ -31,9 +31,6 @@
 (def ^:const state-activated "ACTIVATED")
 
 
-(def ^:const state-quarantined "QUARANTINED")
-
-
 (def ^:const state-commissioning "COMMISSIONING")
 
 
@@ -183,30 +180,6 @@
 
 
 ;;
-;; Quarantine operation
-;;
-
-(defn quarantine [{:keys [id state] :as resource}]
-  (if (= state state-activated)
-    (do
-      (log/warn "Changing nuvlabox status to quarantined : " id)
-      (assoc resource :state state-quarantined))
-    (logu/log-and-throw-400 (str "Bad nuvlabox state " state))))
-
-
-(defmethod crud/do-action [resource-type "quarantine"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (try
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            quarantine
-            (db/edit request))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
-
-;;
 ;; Commission operation
 ;;
 
@@ -314,25 +287,22 @@
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission quarantine
+;;                edit delete activate commission decommission
 ;; NEW             Y     Y       Y
-;; ACTIVATED       Y                       Y           Y           Y
+;; ACTIVATED       Y                       Y           Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
-;; QUARANTINED     Y                                   Y
-;; ERROR           Y     Y                             Y           Y
+;; ERROR           Y     Y                             Y
 ;;
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
   (let [href-activate     (str id "/activate")
-        href-quarantine   (str id "/quarantine")
         href-commission   (str id "/commission")
         href-decommission (str id "/decommission")
         edit-op           {:rel (:edit c/action-uri) :href id}
         delete-op         {:rel (:delete c/action-uri) :href id}
         activate-op       {:rel (:activate c/action-uri) :href href-activate}
-        quarantine-op     {:rel (:quarantine c/action-uri) :href href-quarantine}
         commission-op     {:rel (:commission c/action-uri) :href href-commission}
         decommission-op   {:rel (:decommission c/action-uri) :href href-decommission}
         ops               (cond-> []
@@ -343,9 +313,6 @@
                                            (= state state-error))) (conj delete-op)
                                   (and (a/can-manage? resource request)
                                        (= state state-new)) (conj activate-op)
-                                  (and (a/can-manage? resource request)
-                                       (or (= state state-activated)
-                                           (= state state-error))) (conj quarantine-op)
                                   (and (a/can-manage? resource request)
                                        (= state state-activated)) (conj commission-op)
                                   (and (a/can-manage? resource request)

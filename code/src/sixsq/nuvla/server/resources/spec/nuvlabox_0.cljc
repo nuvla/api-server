@@ -13,7 +13,7 @@
                  "ACTIVATED"
                  "COMMISSIONING" "COMMISSIONED"
                  "DECOMMISSIONING" "DECOMMISSIONED"
-                 "QUARANTINED" "ERROR"})
+                 "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "state of NuvlaBox"

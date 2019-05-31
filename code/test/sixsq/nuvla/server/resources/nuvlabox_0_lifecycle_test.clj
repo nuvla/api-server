@@ -194,8 +194,7 @@
           (ltu/is-operation-present "delete")
           (ltu/is-operation-present "activate")
           (ltu/is-operation-absent "commission")
-          (ltu/is-operation-absent "decommission")
-          (ltu/is-operation-absent "quarantine"))
+          (ltu/is-operation-absent "decommission"))
 
       ;; user should be able to see the resource and recover activation URL
       (let [activate-op   (-> session-jane
@@ -207,7 +206,6 @@
                               (ltu/is-operation-present "activate")
                               (ltu/is-operation-absent "commission")
                               (ltu/is-operation-absent "decommission")
-                              (ltu/is-operation-absent "quarantine")
                               (ltu/get-op "activate"))
 
             activate-url  (str p/service-context activate-op)
@@ -272,7 +270,6 @@
                                (ltu/is-operation-absent "activate")
                                (ltu/is-operation-present "commission")
                                (ltu/is-operation-present "decommission")
-                               (ltu/is-operation-present "quarantine")
                                (ltu/get-op "commission"))
 
             commission-url (str p/service-context commission-op)]
@@ -363,7 +360,6 @@
                                  (ltu/is-operation-absent "activate")
                                  (ltu/is-operation-present "commission")
                                  (ltu/is-operation-present "decommission")
-                                 (ltu/is-operation-present "quarantine")
                                  (ltu/get-op "decommission"))
 
             decommission-url (str p/service-context decommission-op)]
@@ -399,7 +395,6 @@
           (ltu/is-operation-absent "activate")
           (ltu/is-operation-absent "commission")
           (ltu/is-operation-present "decommission")
-          (ltu/is-operation-absent "quarantine")
           (ltu/is-key-value :state "DECOMMISSIONING"))
 
       ;; check that the state and ACL have been updated on nuvlabox
@@ -437,7 +432,6 @@
           (ltu/is-operation-absent "activate")
           (ltu/is-operation-absent "commission")
           (ltu/is-operation-absent "decommission")
-          (ltu/is-operation-absent "quarantine")
           (ltu/is-key-value :state "DECOMMISSIONED")
           (ltu/is-status 200))
 
@@ -455,7 +449,7 @@
           (ltu/is-status 404)))))
 
 
-(deftest delete-from-new-lifecycle
+(deftest create-delete-lifecycle
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
@@ -482,15 +476,51 @@
             (ltu/is-operation-present "activate")
             (ltu/is-operation-absent "commission")
             (ltu/is-operation-absent "decommission")
-            (ltu/is-operation-absent "quarantine")
             (ltu/is-key-value :state "NEW"))
 
         (-> session
             (request nuvlabox-url
                      :request-method :delete)
-            (ltu/is-status 200))))
+            (ltu/is-status 200))))))
 
-    ))
+
+(deftest create-activate-decommission-delete-lifecycle
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
+
+    (doseq [session [session-admin session-owner]]
+      (let [nuvlabox-id   (-> session
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-nuvlabox))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location))
+            nuvlabox-url  (str p/service-context nuvlabox-id)
+
+            activate-href (-> session
+                              (request nuvlabox-url)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-operation-present "edit")
+                              (ltu/is-operation-present "delete")
+                              (ltu/is-operation-present "activate")
+                              (ltu/is-operation-absent "commission")
+                              (ltu/is-operation-absent "decommission")
+                              (ltu/is-key-value :state "NEW")
+                              (ltu/get-op :activate))]
+
+
+
+        (-> session
+            (request nuvlabox-url
+                     :request-method :delete)
+            (ltu/is-status 200))))))
+
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
