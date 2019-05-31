@@ -31,9 +31,6 @@
 (def ^:const state-activated "ACTIVATED")
 
 
-(def ^:const state-commissioning "COMMISSIONING")
-
-
 (def ^:const state-commissioned "COMMISSIONED")
 
 
@@ -202,9 +199,14 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            (commission request))
+        (let [nuvlabox (db/retrieve id request)]
+          (-> nuvlabox
+              (a/throw-cannot-manage request)
+              (commission request))
+
+          (db/edit (assoc nuvlabox :state state-commissioned) request)
+
+          (r/map-response "commission executed successfully" 200))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
 
@@ -308,13 +310,14 @@
         ops               (cond-> []
                                   (a/can-edit? resource request) (conj edit-op)
                                   (and (a/can-delete? resource request)
-                                       (or (= state state-new)
-                                           (= state state-decommissioned)
-                                           (= state state-error))) (conj delete-op)
+                                       (#{state-new
+                                          state-decommissioned
+                                          state-error} state)) (conj delete-op)
                                   (and (a/can-manage? resource request)
-                                       (= state state-new)) (conj activate-op)
+                                       (#{state-new} state)) (conj activate-op)
                                   (and (a/can-manage? resource request)
-                                       (= state state-activated)) (conj commission-op)
+                                       (#{state-activated
+                                          state-commissioned} state)) (conj commission-op)
                                   (and (a/can-manage? resource request)
                                        (not= state state-new)
                                        (not= state state-decommissioned)) (conj decommission-op))]

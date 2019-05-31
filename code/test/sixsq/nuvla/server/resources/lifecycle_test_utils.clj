@@ -27,7 +27,8 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [zookeeper :as zk])
+    [zookeeper :as zk]
+    [sixsq.nuvla.server.app.params :as p])
   (:import
     (java.util UUID)
     (org.apache.curator.test TestingServer)
@@ -90,6 +91,12 @@
   `(is-key-value ~m :resource-type ~type-uri))
 
 
+(defn href->url
+  [href]
+  (when href
+    (str p/service-context href)))
+
+
 (defn get-op
   [m op]
   (->> (get-in m [:response :body :operations])
@@ -97,6 +104,11 @@
        (filter (fn [[rel href]] (= rel (name op))))
        first
        second))
+
+
+(defn get-op-url
+  [m op]
+  (href->url (get-op m op)))
 
 
 (defn select-op
@@ -196,6 +208,11 @@
     uri))
 
 
+(defn location-url
+  [m]
+  (href->url (location m)))
+
+
 (defmacro is-location-value
   [m v]
   `((fn [m# v#]
@@ -209,12 +226,17 @@
   (into {} (map (juxt :rel :href) (:operations m))))
 
 
+(defn body
+  [m]
+  (get-in m [:response :body]))
+
+
 (defn body->edn
   [m]
-  (if-let [body (get-in m [:response :body])]
-    (let [updated-body (if (string? body)
-                         (json/read-str body :key-fn keyword :eof-error? false :eof-value {})
-                         (json/read (io/reader body) :key-fn keyword :eof-error? false :eof-value {}))]
+  (if-let [body-content (body m)]
+    (let [updated-body (if (string? body-content)
+                         (json/read-str body-content :key-fn keyword :eof-error? false :eof-value {})
+                         (json/read (io/reader body-content) :key-fn keyword :eof-error? false :eof-value {}))]
       (update-in m [:response :body] (constantly updated-body)))
     m))
 

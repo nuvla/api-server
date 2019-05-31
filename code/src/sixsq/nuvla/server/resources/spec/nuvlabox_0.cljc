@@ -11,7 +11,7 @@
 (s/def ::state
   (-> (st/spec #{"NEW"
                  "ACTIVATED"
-                 "COMMISSIONING" "COMMISSIONED"
+                 "COMMISSIONED"
                  "DECOMMISSIONING" "DECOMMISSIONED"
                  "ERROR"})
       (assoc :name "state"
