@@ -3,7 +3,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -126,7 +125,7 @@
 (defn set-standard-collection-operations
   [{:keys [id] :as resource} request]
   (if (a/can-add? resource request)
-    (let [ops [{:rel (:add c/action-uri) :href id}]]
+    (let [ops [(u/operation-map id :add)]]
       (assoc resource :operations ops))
     (dissoc resource :operations)))
 
@@ -134,8 +133,8 @@
 (defn set-standard-resource-operations
   [{:keys [id] :as resource} request]
   (let [ops (cond-> []
-                    (a/can-edit? resource request) (conj {:rel (:edit c/action-uri) :href id})
-                    (a/can-delete? resource request) (conj {:rel (:delete c/action-uri) :href id}))]
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))

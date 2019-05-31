@@ -4,7 +4,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
@@ -29,12 +28,6 @@
 
 
 (def ^:const state-activated "ACTIVATED")
-
-
-(def ^:const state-quarantined "QUARANTINED")
-
-
-(def ^:const state-commissioning "COMMISSIONING")
 
 
 (def ^:const state-commissioned "COMMISSIONED")
@@ -75,12 +68,21 @@
 
 
 ;;
-;; use default method for generating an ACL
+;; ACL for the nuvlabox resource will always have the
+;; value provided in the nuvlabox "owner" field in the
+;; ACL "owners" field.  This value probably will, in most
+;; cases, be different than the identifier in the request.
+;;
+;; The nuvlabox id (also used as a claim in the credential
+;; given to the NuvlaBox) will have the "manage" right
+;; initially.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (a/add-acl resource request))
+  [{:keys [id owner] :as resource} request]
+  (let [acl {:owners [owner]
+             :manage [id]}]
+    (assoc resource :acl acl)))
 
 
 ;;
@@ -127,8 +129,7 @@
 
 (defn verify-deletable-state
   [{:keys [id state] :as resource}]
-  (if (or (= state state-decommissioned)
-          (= state state-error))
+  (if (#{state-new state-decommissioned state-error} state)
     resource
     (throw (r/ex-response (str "cannot delete nuvlabox in state " state) 409 id))))
 
@@ -153,19 +154,16 @@
 ;;
 
 (defn activate
-  [{:keys [id state acl] :as nuvlabox}]
+  [{:keys [id state] :as nuvlabox}]
   (if (= state state-new)
     (do
-      (log/warn "Activating nuvlabox:" id)
-      ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
-      (let [new-acl            (update acl :edit-acl (comp vec conj) id)
-            activated-nuvlabox (-> nuvlabox
+      (log/warn "activating nuvlabox:" id)
+      (let [activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
-                                   (assoc :acl new-acl)
                                    utils/create-nuvlabox-status
                                    utils/create-infrastructure-service-group)]
         activated-nuvlabox))
-    (logu/log-and-throw-400 "Activation is not allowed")))
+    (logu/log-and-throw-400 (str "invalid state for activation: " state))))
 
 
 (defmethod crud/do-action [resource-type "activate"]
@@ -182,30 +180,6 @@
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
-;;
-;; Quarantine operation
-;;
-
-(defn quarantine [{:keys [id state] :as resource}]
-  (if (= state state-activated)
-    (do
-      (log/warn "Changing nuvlabox status to quarantined : " id)
-      (assoc resource :state state-quarantined))
-    (logu/log-and-throw-400 (str "Bad nuvlabox state " state))))
-
-
-(defmethod crud/do-action [resource-type "quarantine"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (try
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            quarantine
-            (db/edit request))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
 
 ;;
 ;; Commission operation
@@ -230,9 +204,14 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            (commission request))
+        (let [nuvlabox (db/retrieve id request)]
+          (-> nuvlabox
+              (a/throw-cannot-manage request)
+              (commission request))
+
+          (db/edit (assoc nuvlabox :state state-commissioned) request)
+
+          (r/map-response "commission executed successfully" 200))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
 
@@ -261,7 +240,7 @@
 
 
 (defmethod decommission-sync :default
-  [{:keys [id nuvlabox-status acl] :as resource} request]
+  [{:keys [id acl] :as resource} request]
   (let [updated-acl (restrict-acl acl)]
     (-> resource
         (assoc :state state-decommissioning
@@ -315,43 +294,35 @@
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission quarantine
+;;                edit delete activate commission decommission
 ;; NEW             Y     Y       Y
-;; ACTIVATED       Y                       Y           Y           Y
+;; ACTIVATED       Y                       Y           Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
-;; QUARANTINED     Y                                   Y
-;; ERROR           Y     Y                             Y           Y
+;; ERROR           Y     Y                             Y
 ;;
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [href-activate     (str id "/activate")
-        href-quarantine   (str id "/quarantine")
-        href-commission   (str id "/commission")
-        href-decommission (str id "/decommission")
-        edit-op           {:rel (:edit c/action-uri) :href id}
-        delete-op         {:rel (:delete c/action-uri) :href id}
-        activate-op       {:rel (:activate c/action-uri) :href href-activate}
-        quarantine-op     {:rel (:quarantine c/action-uri) :href href-quarantine}
-        commission-op     {:rel (:commission c/action-uri) :href href-commission}
-        decommission-op   {:rel (:decommission c/action-uri) :href href-decommission}
-        ops               (cond-> []
-                                  (a/can-edit? resource request) (conj edit-op)
-                                  (and (a/can-delete? resource request)
-                                       (or (= state state-new)
-                                           (= state state-decommissioned)
-                                           (= state state-error))) (conj delete-op)
-                                  (and (a/can-manage? resource request)
-                                       (= state state-new)) (conj activate-op)
-                                  (and (a/can-manage? resource request)
-                                       (or (= state state-activated)
-                                           (= state state-error))) (conj quarantine-op)
-                                  (and (a/can-manage? resource request)
-                                       (= state state-activated)) (conj commission-op)
-                                  (and (a/can-manage? resource request)
-                                       (not= state state-new)
-                                       (not= state state-decommissioned)) (conj decommission-op))]
+  (let [edit-op         (u/operation-map id :edit)
+        delete-op       (u/operation-map id :delete)
+        activate-op     (u/action-map id :activate)
+        commission-op   (u/action-map id :commission)
+        decommission-op (u/action-map id :decommission)
+        ops             (cond-> []
+                                (a/can-edit? resource request) (conj edit-op)
+                                (and (a/can-delete? resource request)
+                                     (#{state-new
+                                        state-decommissioned
+                                        state-error} state)) (conj delete-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-new} state)) (conj activate-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-activated
+                                        state-commissioned} state)) (conj commission-op)
+                                (and (a/can-manage? resource request)
+                                     (not= state state-new)
+                                     (not= state state-decommissioned)) (conj decommission-op))]
     (assoc resource :operations ops)))
 
 ;;

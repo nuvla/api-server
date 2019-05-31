@@ -125,8 +125,8 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-operation-present "edit")
-                          (ltu/is-operation-present "delete")
+                          (ltu/is-operation-present :edit)
+                          (ltu/is-operation-present :delete)
                           :response
                           :body)]
 

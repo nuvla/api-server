@@ -14,7 +14,6 @@ request.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job.utils :as ju]
@@ -145,10 +144,9 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [href       (str id "/stop")
-        collect-op {:rel (:stop c/action-uri) :href href}]
+  (let [stop-op (u/action-map id :stop)]
     (cond-> (crud/set-standard-operations resource request)
-            (a/can-manage? resource request) (update-in [:operations] conj collect-op))))
+            (a/can-manage? resource request) (update-in [:operations] conj stop-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]

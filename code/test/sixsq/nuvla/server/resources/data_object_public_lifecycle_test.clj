@@ -105,13 +105,13 @@
           upload-op      (-> session-user
                              (request abs-uri)
                              (ltu/body->edn)
-                             (ltu/is-operation-present "upload")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-present "edit")
-                             (ltu/is-operation-absent "ready")
-                             (ltu/is-operation-absent "download")
+                             (ltu/is-operation-present :upload)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :edit)
+                             (ltu/is-operation-absent :ready)
+                             (ltu/is-operation-absent :download)
                              (ltu/is-status 200)
-                             (ltu/get-op "upload"))
+                             (ltu/get-op :upload))
 
           abs-upload-uri (str p/service-context upload-op)]
 
@@ -125,10 +125,10 @@
       (let [uploading-eo     (-> session-user
                                  (request abs-uri)
                                  (ltu/body->edn)
-                                 (ltu/is-operation-present "ready")
+                                 (ltu/is-operation-present :ready)
                                  (ltu/is-status 200))
 
-            ready-url-action (str p/service-context (ltu/get-op uploading-eo "ready"))]
+            ready-url-action (str p/service-context (ltu/get-op uploading-eo :ready))]
 
 
         ;; Missing ACL should fail the action

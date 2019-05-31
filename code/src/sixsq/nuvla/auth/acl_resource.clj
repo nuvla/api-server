@@ -205,7 +205,4 @@
   "Adds the default ACL to the given resource if an ACL doesn't already
    exist."
   [{:keys [acl] :as resource} request]
-  (assoc
-    resource
-    :acl
-    (or acl (default-acl (auth/current-authentication request)))))
+  (assoc resource :acl (or acl (default-acl (auth/current-authentication request)))))

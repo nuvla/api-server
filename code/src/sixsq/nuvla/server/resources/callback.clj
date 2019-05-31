@@ -22,7 +22,6 @@ appropriate users.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -100,14 +99,13 @@ appropriate users.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
-  (let [execute-href (str id "/execute")
-        collection?  (u/is-collection? resource-type)
+  (let [collection?  (u/is-collection? resource-type)
         can-delete?  (a/can-delete? resource request)
         can-add?     (a/can-add? resource request)
         ops          (cond-> []
-                             (and collection? can-add?) (conj {:rel (:add c/action-uri) :href id})
-                             (and (not collection?) can-delete?) (conj {:rel (:delete c/action-uri) :href id})
-                             (and (not collection?) (utils/executable? resource)) (conj {:rel (:execute c/action-uri) :href execute-href}))]
+                             (and collection? can-add?) (conj (u/operation-map id :add))
+                             (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
+                             (and (not collection?) (utils/executable? resource)) (conj (u/action-map id :execute)))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))

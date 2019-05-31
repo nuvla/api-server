@@ -65,12 +65,15 @@ although they can be created manually by an administrator.
    nuvlabox resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
-  [schema-version nuvlabox-id nuvlabox-acl]
-  (let [body                    {:resource-type resource-type
+  [schema-version nuvlabox-id nuvlabox-owner]
+  (let [status-acl              {:owners    ["group/nuvla-admin"]
+                                 :view-acl  [nuvlabox-owner]
+                                 :edit-data [nuvlabox-id]}
+        body                    {:resource-type resource-type
                                  :parent        nuvlabox-id
                                  :version       schema-version
                                  :status        "UNKNOWN"
-                                 :acl           nuvlabox-acl}
+                                 :acl           status-acl}
         nuvlabox-status-request {:params      {:resource-name resource-type}
                                  :nuvla/authn auth-utils/internal-identity
                                  :body        body}]

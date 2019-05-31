@@ -21,7 +21,6 @@ can terminate the voucher via the 'expire' operation.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as sc]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -218,12 +217,9 @@ can terminate the voucher via the 'expire' operation.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [href-activate (str id "/activate")
-        href-redeem   (str id "/redeem")
-        href-expire   (str id "/expire")
-        activate-op   {:rel (:activate sc/action-uri) :href href-activate}
-        expire-op     {:rel (:expire sc/action-uri) :href href-expire}
-        redeem-op     {:rel (:redeem sc/action-uri) :href href-redeem}
+  (let [activate-op   (u/action-map id :activate)
+        expire-op     (u/action-map id :expire)
+        redeem-op     (u/action-map id :redeem)
         can-manage?   (a/can-manage? resource request)
         can-view?     (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)

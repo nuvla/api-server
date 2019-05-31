@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
@@ -69,9 +68,9 @@
                          (ltu/is-status 200)
                          (ltu/is-resource-uri ct/collection-type)
                          (ltu/is-count pos?)
-                         (ltu/is-operation-absent "add")
-                         (ltu/is-operation-absent "delete")
-                         (ltu/is-operation-absent "edit")
+                         (ltu/is-operation-absent :add)
+                         (ltu/is-operation-absent :delete)
+                         (ltu/is-operation-absent :edit)
                          (ltu/entries))
         ids          (set (map :id entries))
         methods      (set (map :method entries))
@@ -115,9 +114,9 @@
                            (ltu/body->edn))
 
             entry-body (get-in entry-resp [:response :body])]
-        (is (nil? (get ops (c/action-uri :add))))
-        (is (nil? (get ops (c/action-uri :edit))))
-        (is (nil? (get ops (c/action-uri :delete))))
+        (is (nil? (get ops (name :add))))
+        (is (nil? (get ops (name :edit))))
+        (is (nil? (get ops (name :delete))))
 
         (is (crud/validate entry-body))))))
 

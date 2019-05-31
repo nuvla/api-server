@@ -57,9 +57,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anon query fails
     (-> session-anon
@@ -117,10 +117,10 @@
                              (request admin-abs-uri)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-operation-present "edit")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-present "activate")
-                             (ltu/is-operation-present "expire"))
+                             (ltu/is-operation-present :edit)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :activate)
+                             (ltu/is-operation-present :expire))
             voucher      (:body (:response voucher-full))
             activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
             expire-url   (str p/service-context (ltu/get-op voucher-full "expire"))]
@@ -154,7 +154,7 @@
                                   (request admin-abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  (ltu/is-operation-present "redeem"))
+                                  (ltu/is-operation-present :redeem))
               redeem-url      (str p/service-context (ltu/get-op voucher-updated "redeem"))]
 
           ;; state is activated but anon cannot redeem, anon doesn't have can-edit

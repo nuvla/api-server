@@ -81,9 +81,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri collection-type)
-        (ltu/is-operation-absent "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-absent :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; for admin, should be able to add as well
     (-> session-admin
@@ -91,9 +91,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri collection-type)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; creating with an unknown authentication method should fail
     (-> session-admin
@@ -118,17 +118,17 @@
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "add")
-          (ltu/is-operation-present "delete")
-          (ltu/is-operation-present "edit"))
+          (ltu/is-operation-absent :add)
+          (ltu/is-operation-present :delete)
+          (ltu/is-operation-present :edit))
 
       (-> session-user
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit"))
+          (ltu/is-operation-absent :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit))
 
       ;; verify that the id corresponds to the value in the instance parameter
       (let [{:keys [id instance]} (-> session-anon

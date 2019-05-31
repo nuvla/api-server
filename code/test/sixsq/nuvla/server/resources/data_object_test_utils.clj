@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
@@ -170,10 +169,9 @@
                           (ltu/is-status 200)
                           (ltu/is-resource-uri data-obj-tpl/collection-type)
                           (ltu/is-count pos?)
-                          (ltu/is-operation-absent "add")
-                          (ltu/is-operation-absent "delete")
-                          (ltu/is-operation-absent "edit")
-                          (ltu/is-operation-absent "describe")
+                          (ltu/is-operation-absent :add)
+                          (ltu/is-operation-absent :delete)
+                          (ltu/is-operation-absent :edit)
                           (ltu/entries))
         ids           (set (map :id entries))
         types         (set (map :objectType entries))]
@@ -183,7 +181,7 @@
     ;; Get data object template and work with it.
     (let [entry        (first (filter #(= objectType (:objectType %)) entries))
           ops          (ltu/operations->map entry)
-          href         (get ops (c/action-uri :describe))
+          href         (get ops (name :describe))
           entry-url    (str p/service-context (:id entry))
           describe-url (str p/service-context href)
 
@@ -199,9 +197,9 @@
                            (ltu/body->edn)
                            (ltu/is-status 200))
           desc-body    (get-in desc [:response :body])]
-      (is (nil? (get ops (c/action-uri :add))))
-      (is (nil? (get ops (c/action-uri :edit))))
-      (is (nil? (get ops (c/action-uri :delete))))
+      (is (nil? (get ops (name :add))))
+      (is (nil? (get ops (name :edit))))
+      (is (nil? (get ops (name :delete))))
       (is (:objectType desc-body))
       (is (:acl desc-body))
 

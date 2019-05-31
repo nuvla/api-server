@@ -33,7 +33,6 @@ category of the notification.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -59,7 +58,7 @@ category of the notification.
 (def ^:const defer-param-kw (keyword defer-param-name))
 (def ^:const delay-default 30)
 (def actions [{:name             "defer"
-               :uri              (:validate c/action-uri)
+               :uri              "defer"
                :description      "defer the notification for the number of minutes"
                :method           "POST"
                :input-message    "application/json"
@@ -126,7 +125,7 @@ category of the notification.
 (defn set-collection-ops
   [{:keys [id] :as resource} request]
   (if (a/can-add? resource request)
-    (let [ops [{:rel (:add c/action-uri) :href id}]]
+    (let [ops [(u/operation-map id :add)]]
       (assoc resource :operations ops))
     (dissoc resource :operations)))
 
@@ -135,8 +134,8 @@ category of the notification.
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
         ops         (cond-> []
-                            can-manage? (conj {:rel (:delete c/action-uri) :href id})
-                            can-manage? (conj {:rel (:defer c/action-uri) :href (str id "/defer")}))]
+                            can-manage? (conj (u/operation-map id :delete))
+                            can-manage? (conj (u/action-map id :defer)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))

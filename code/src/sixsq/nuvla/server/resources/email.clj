@@ -11,7 +11,6 @@ address. When the callback is triggered, the `validated` flag is set to true.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -32,7 +31,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 
 
 (def actions [{:name           "validate"
-               :uri            (:validate c/action-uri)
+               :uri            "validate"
                :description    "starts the workflow to validate the email address"
                :method         "POST"
                :input-message  "application/json"
@@ -90,15 +89,13 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;;
 
 (defmethod crud/set-operations resource-type
-  [{:keys [validated] :as resource} request]
+  [{:keys [id resource-type validated] :as resource} request]
   (try
     (a/can-edit? resource request)
-    (let [href                  (:id resource)
-          ^String resource-type (:resource-type resource)
-          ops                   (if (u/is-collection? resource-type)
-                                  [{:rel (:add c/action-uri) :href href}]
-                                  (cond-> [{:rel (:delete c/action-uri) :href href}]
-                                          (not validated) (conj {:rel (:validate c/action-uri) :href (str href "/validate")})))]
+    (let [ops (if (u/is-collection? resource-type)
+                [(u/operation-map id :add)]
+                (cond-> [(u/operation-map id :delete)]
+                        (not validated) (conj (u/action-map id :validate))))]
       (assoc resource :operations ops))
     (catch Exception _
       (dissoc resource :operations))))

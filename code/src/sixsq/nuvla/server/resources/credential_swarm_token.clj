@@ -4,7 +4,6 @@ Token for either a worker or master node of a Swarm cluster.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
@@ -64,17 +63,15 @@ Token for either a worker or master node of a Swarm cluster.
 (defn set-collection-ops
   [{:keys [id] :as resource} request]
   (if (a/can-add? resource request)
-    (let [ops [{:rel (:add c/action-uri) :href id}]]
-      (assoc resource :operations ops))
+    (assoc resource :operations [(u/operation-map id :add)])
     (dissoc resource :operations)))
 
 
 (defn set-resource-ops
   [{:keys [id] :as resource} request]
-  (let [can-manage? (a/can-manage? resource request)
-        ops         (cond-> []
-                            (a/can-edit? resource request) (conj {:rel (:edit c/action-uri) :href id})
-                            (a/can-delete? resource request) (conj {:rel (:delete c/action-uri) :href id}))]
+  (let [ops (cond-> []
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))

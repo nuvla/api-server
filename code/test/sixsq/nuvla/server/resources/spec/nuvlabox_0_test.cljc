@@ -50,7 +50,8 @@
                :vm-cidr                      "0.0.0.0/32"
                :lan-cidr                     "0.0.0.0/32"
                :os-version                   "OS version"
-               :hw-revision-code             "a020d3"})
+               :hw-revision-code             "a020d3"
+               :monitored                    true})
 
 
 (deftest check-nuvlabox
@@ -83,5 +84,6 @@
                  :vm-cidr
                  :lan-cidr
                  :os-version
-                 :hw-revision-code}]
+                 :hw-revision-code
+                 :monitored}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))

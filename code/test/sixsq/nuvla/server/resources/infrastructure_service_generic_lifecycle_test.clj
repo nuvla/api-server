@@ -54,8 +54,7 @@
         service-desc        "my-description"
         service-tags        ["alpha" "beta" "gamma"]
 
-        valid-service       {:acl      valid-acl
-                             :parent   service-group-id
+        valid-service       {:parent   service-group-id
                              :subtype  "docker"
                              :endpoint "https://docker.example.org/api"
                              :state    "STARTED"}
@@ -63,6 +62,7 @@
         valid-create        {:name        service-name
                              :description service-desc
                              :tags        service-tags
+                             :acl         valid-acl
                              :template    (merge {:href (str infra-service-tpl/resource-type "/"
                                                              infra-service-tpl-generic/method)}
                                                  valid-service)}]
@@ -73,9 +73,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; user query succeeds but is empty
     (-> session-user
@@ -83,9 +83,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; anon query fails
     (-> session-anon
@@ -106,7 +106,8 @@
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str valid-create))
+                                 :body (json/write-str (assoc valid-create
+                                                         :acl {:owners ["user/jane"]})))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -117,10 +118,9 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-operation-present "edit")
-                          (ltu/is-operation-present "delete")
-                          :response
-                          :body)]
+                          (ltu/is-operation-present :edit)
+                          (ltu/is-operation-present :delete)
+                          (ltu/body))]
 
           (is (= service-name (:name service)))
           (is (= service-desc (:description service)))

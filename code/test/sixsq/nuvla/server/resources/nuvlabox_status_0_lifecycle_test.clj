@@ -169,7 +169,7 @@
 
 
     ;; verify that the internal create function also works
-    (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id valid-acl)
+    (let [response  (nb-status/create-nuvlabox-status 0 nuvlabox-id "user/alpha")
           location  (get-in response [:headers "Location"])
           state-id  (-> response :body :resource-id)
           state-url (str p/service-context state-id)]

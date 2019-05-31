@@ -5,7 +5,6 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.common.utils :as cu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -35,9 +34,9 @@
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-absent :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; use the internal register method to create a new entry
     (let [identifier      "unit-test-resource"
@@ -60,9 +59,9 @@
                                             (request abs-uri)
                                             (ltu/body->edn)
                                             (ltu/is-status 200)
-                                            (ltu/is-operation-absent "add")
-                                            (ltu/is-operation-absent "edit")
-                                            (ltu/is-operation-absent "delete")
+                                            (ltu/is-operation-absent :add)
+                                            (ltu/is-operation-absent :edit)
+                                            (ltu/is-operation-absent :delete)
                                             :response
                                             :body)]
 

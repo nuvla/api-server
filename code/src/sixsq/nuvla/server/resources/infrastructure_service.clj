@@ -81,7 +81,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (a/add-acl resource request))
 
 
 ;;

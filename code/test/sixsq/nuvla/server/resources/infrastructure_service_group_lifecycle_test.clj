@@ -63,9 +63,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; user query succeeds but is empty
     (-> session-user
@@ -73,9 +73,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; anon query fails
     (-> session-anon
@@ -107,8 +107,8 @@
                                 (request abs-uri)
                                 (ltu/body->edn)
                                 (ltu/is-status 200)
-                                (ltu/is-operation-present "edit")
-                                (ltu/is-operation-present "delete")
+                                (ltu/is-operation-present :edit)
+                                (ltu/is-operation-present :delete)
                                 :response
                                 :body)]
 
@@ -123,9 +123,9 @@
                                              (-> session
                                                  (request service-base-uri
                                                           :request-method :post
-                                                          :body (json/write-str (assoc-in
-                                                                                  valid-service-create
-                                                                                  [:template :parent] uri)))
+                                                          :body (json/write-str (-> valid-service-create
+                                                                                    (assoc-in [:template :parent] uri)
+                                                                                    (assoc :acl {:owners ["user/jane"]}))))
                                                  (ltu/body->edn)
                                                  (ltu/is-status 201)
                                                  :response
@@ -136,8 +136,8 @@
                                           (request abs-uri)
                                           (ltu/body->edn)
                                           (ltu/is-status 200)
-                                          (ltu/is-operation-present "edit")
-                                          (ltu/is-operation-present "delete")
+                                          (ltu/is-operation-present :edit)
+                                          (ltu/is-operation-present :delete)
                                           :response
                                           :body)
 
