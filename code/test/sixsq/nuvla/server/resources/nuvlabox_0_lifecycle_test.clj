@@ -353,7 +353,7 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; verify that th decommission action behaves correctly
+      ;; verify that the decommission action behaves correctly
       (let [decommission-op  (-> session-alpha
                                  (request uri-nuvlabox)
                                  (ltu/body->edn)
@@ -454,6 +454,43 @@
           (ltu/body->edn)
           (ltu/is-status 404)))))
 
+
+(deftest delete-from-new-lifecycle
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
+
+    (doseq [session [session-admin session-owner]]
+      (let [nuvlabox-id  (-> session
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+            nuvlabox-url (str p/service-context nuvlabox-id)]
+
+        (-> session
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present "edit")
+            (ltu/is-operation-present "delete")
+            (ltu/is-operation-present "activate")
+            (ltu/is-operation-absent "commission")
+            (ltu/is-operation-absent "decommission")
+            (ltu/is-operation-absent "quarantine")
+            (ltu/is-key-value :state "NEW"))
+
+        (-> session
+            (request nuvlabox-url
+                     :request-method :delete)
+            (ltu/is-status 200))))
+
+    ))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]

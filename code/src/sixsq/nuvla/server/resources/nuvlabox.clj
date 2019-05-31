@@ -127,8 +127,7 @@
 
 (defn verify-deletable-state
   [{:keys [id state] :as resource}]
-  (if (or (= state state-decommissioned)
-          (= state state-error))
+  (if (#{state-new state-decommissioned state-error} state)
     resource
     (throw (r/ex-response (str "cannot delete nuvlabox in state " state) 409 id))))
 
