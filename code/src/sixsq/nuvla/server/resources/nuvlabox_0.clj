@@ -34,7 +34,7 @@ a NuvlaBox.
 ;;
 
 (defmethod nb/commission schema-version
-  [{:keys [id] :as resource}
+  [{:keys [id owner] :as resource}
    {{:keys [swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -42,18 +42,16 @@ a NuvlaBox.
             minio-access-key minio-secret-key]} :body :as request}]
 
   (when-let [isg-id (nb-utils/get-isg-id id)]
-    (let [swarm-id (nb-utils/create-swarm-service id isg-id swarm-endpoint)
-          minio-id (nb-utils/create-minio-service id isg-id minio-endpoint)]
+    (let [swarm-id (nb-utils/create-swarm-service id owner isg-id swarm-endpoint)
+          minio-id (nb-utils/create-minio-service id owner isg-id minio-endpoint)]
 
       (when swarm-id
-        (nb-utils/create-swarm-cred id swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
-        (nb-utils/create-swarm-token id swarm-id "MANAGER" swarm-token-manager)
-        (nb-utils/create-swarm-token id swarm-id "WORKER" swarm-token-worker))
+        (nb-utils/create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
+        (nb-utils/create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager)
+        (nb-utils/create-swarm-token id owner swarm-id "WORKER" swarm-token-worker))
 
       (when minio-id
-        (nb-utils/create-minio-cred id minio-id minio-access-key minio-secret-key))
-
-      (r/map-response "commission executed successfully" 200))))
+        (nb-utils/create-minio-cred id owner minio-id minio-access-key minio-secret-key)))))
 
 
 ;;

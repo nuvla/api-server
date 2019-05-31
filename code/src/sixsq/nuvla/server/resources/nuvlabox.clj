@@ -68,12 +68,21 @@
 
 
 ;;
-;; use default method for generating an ACL
+;; ACL for the nuvlabox resource will always have the
+;; value provided in the nuvlabox "owner" field in the
+;; ACL "owners" field.  This value probably will, in most
+;; cases, be different than the identifier in the request.
+;;
+;; The nuvlabox id (also used as a claim in the credential
+;; given to the NuvlaBox) will have the "manage" right
+;; initially.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (a/add-acl resource request))
+  [{:keys [id owner] :as resource} request]
+  (let [acl {:owners [owner]
+             :manage [id]}]
+    (assoc resource :acl acl)))
 
 
 ;;
@@ -145,19 +154,16 @@
 ;;
 
 (defn activate
-  [{:keys [id state acl] :as nuvlabox}]
+  [{:keys [id state] :as nuvlabox}]
   (if (= state state-new)
     (do
-      (log/warn "Activating nuvlabox:" id)
-      ;; FIXME: Uses identifier as claim to access nuvlabox-* resources.
-      (let [new-acl            (update acl :edit-acl (comp vec conj) id)
-            activated-nuvlabox (-> nuvlabox
+      (log/warn "activating nuvlabox:" id)
+      (let [activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
-                                   (assoc :acl new-acl)
                                    utils/create-nuvlabox-status
                                    utils/create-infrastructure-service-group)]
         activated-nuvlabox))
-    (logu/log-and-throw-400 "Activation is not allowed")))
+    (logu/log-and-throw-400 (str "invalid state for activation: " state))))
 
 
 (defmethod crud/do-action [resource-type "activate"]
@@ -234,7 +240,7 @@
 
 
 (defmethod decommission-sync :default
-  [{:keys [id nuvlabox-status acl] :as resource} request]
+  [{:keys [id acl] :as resource} request]
   (let [updated-acl (restrict-acl acl)]
     (-> resource
         (assoc :state state-decommissioning
@@ -298,25 +304,25 @@
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [edit-op           (u/operation-map id :edit)
-        delete-op         (u/operation-map id :delete)
-        activate-op       (u/action-map id :activate)
-        commission-op     (u/action-map id :commission)
-        decommission-op   (u/action-map id :decommission)
-        ops               (cond-> []
-                                  (a/can-edit? resource request) (conj edit-op)
-                                  (and (a/can-delete? resource request)
-                                       (#{state-new
-                                          state-decommissioned
-                                          state-error} state)) (conj delete-op)
-                                  (and (a/can-manage? resource request)
-                                       (#{state-new} state)) (conj activate-op)
-                                  (and (a/can-manage? resource request)
-                                       (#{state-activated
-                                          state-commissioned} state)) (conj commission-op)
-                                  (and (a/can-manage? resource request)
-                                       (not= state state-new)
-                                       (not= state state-decommissioned)) (conj decommission-op))]
+  (let [edit-op         (u/operation-map id :edit)
+        delete-op       (u/operation-map id :delete)
+        activate-op     (u/action-map id :activate)
+        commission-op   (u/action-map id :commission)
+        decommission-op (u/action-map id :decommission)
+        ops             (cond-> []
+                                (a/can-edit? resource request) (conj edit-op)
+                                (and (a/can-delete? resource request)
+                                     (#{state-new
+                                        state-decommissioned
+                                        state-error} state)) (conj delete-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-new} state)) (conj activate-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-activated
+                                        state-commissioned} state)) (conj commission-op)
+                                (and (a/can-manage? resource request)
+                                     (not= state state-new)
+                                     (not= state state-decommissioned)) (conj decommission-op))]
     (assoc resource :operations ops)))
 
 ;;
