@@ -190,6 +190,15 @@
              :json-schema/order 29)))
 
 
+(s/def ::monitored
+  (-> (st/spec boolean?)
+      (assoc :name "monitored"
+             :json-schema/type "boolean"
+             :json-schema/description "flag to indicate whether machine should be monitored"
+
+             :json-schema/order 30)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -212,5 +221,6 @@
                                ::vm-cidr
                                ::lan-cidr
                                ::os-version
-                               ::hw-revision-code]}))
+                               ::hw-revision-code
+                               ::monitored]}))
 
