@@ -6,7 +6,6 @@
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email :as t]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -53,9 +52,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; user query succeeds but is empty
     (-> session-user
@@ -63,9 +62,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; anon query fails
     (-> session-anon
@@ -123,12 +122,11 @@
                              (request admin-abs-uri)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-operation-absent "edit")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-present (:validate c/action-uri))
-                             :response
-                             :body)
-            validate-url (->> (u/get-op email "validate")
+                             (ltu/is-operation-absent :edit)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :validate)
+                             (ltu/body))
+            validate-url (->> (u/get-op email :validate)
                               (str p/service-context))]
         (is (= "admin@example.com" (:address email)))
         (is (false? (:validated email)))
@@ -166,9 +164,9 @@
                            (request admin-abs-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/is-operation-absent "edit")
-                           (ltu/is-operation-present "delete")
-                           (ltu/is-operation-absent (:validate c/action-uri))
+                           (ltu/is-operation-absent :edit)
+                           (ltu/is-operation-present :delete)
+                           (ltu/is-operation-absent :validate)
                            :response
                            :body
                            :validated))))))
@@ -178,9 +176,9 @@
                              (request user-abs-uri)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-operation-absent "edit")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-present (:validate c/action-uri))
+                             (ltu/is-operation-absent :edit)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :validate)
                              :response
                              :body)
             validate-url (->> (u/get-op email "validate")

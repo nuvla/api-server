@@ -34,9 +34,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count 1)
-        (ltu/is-operation-absent "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-absent :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; a query for anyone else should fail
     (doseq [session [session-jane session-anon]]
@@ -52,8 +52,8 @@
           (request abs-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))))
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))))
 
 
 (deftest bad-methods

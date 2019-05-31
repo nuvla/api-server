@@ -93,9 +93,9 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count zero?)
-              (ltu/is-operation-present "add")
-              (ltu/is-operation-absent "delete")
-              (ltu/is-operation-absent "edit")))
+              (ltu/is-operation-present :add)
+              (ltu/is-operation-absent :delete)
+              (ltu/is-operation-absent :edit)))
 
         ;; create a new user; fails without reference
         (doseq [session [session-anon session-user session-admin]]

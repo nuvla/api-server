@@ -8,7 +8,6 @@ Hashed value of a password.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
@@ -96,8 +95,7 @@ Hashed value of a password.
 (defn set-collection-ops
   [{:keys [id] :as resource} request]
   (if (a/can-add? resource request)
-    (let [ops [{:rel (:add c/action-uri) :href id}]]
-      (assoc resource :operations ops))
+    (assoc resource :operations [(u/operation-map id :add)])
     (dissoc resource :operations)))
 
 
@@ -105,11 +103,10 @@ Hashed value of a password.
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
         ops         (cond-> []
-                            (a/can-edit? resource request) (conj {:rel (:edit c/action-uri) :href id})
-                            (a/can-delete? resource request) (conj {:rel (:delete c/action-uri) :href id})
-                            can-manage? (conj {:rel (:check-password c/action-uri) :href (str id "/check-password")})
-                            can-manage? (conj {:rel (:change-password c/action-uri) :href (str id "/change-password")}))
-        ]
+                            (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                            (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                            can-manage? (conj (u/action-map id :check-password))
+                            can-manage? (conj (u/action-map id :change-password)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))

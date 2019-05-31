@@ -73,7 +73,7 @@
                              (request abs-uri)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-operation-present "stop")
+                             (ltu/is-operation-present :stop)
                              (get-in [:response :body]))
           zookeeper-path (some-> job :tags first)]
 
@@ -122,7 +122,7 @@
                                  (request abs-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (ltu/is-operation-present "stop")
+                                 (ltu/is-operation-present :stop)
                                  :response
                                  :body
                                  :tags

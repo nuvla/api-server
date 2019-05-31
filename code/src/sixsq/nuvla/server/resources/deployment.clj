@@ -5,7 +5,6 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
@@ -132,8 +131,8 @@
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [start-op    {:rel (:start c/action-uri) :href (str id "/start")}
-        stop-op     {:rel (:stop c/action-uri) :href (str id "/stop")}
+  (let [start-op    (u/action-map id :start)
+        stop-op     (u/action-map id :stop)
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)

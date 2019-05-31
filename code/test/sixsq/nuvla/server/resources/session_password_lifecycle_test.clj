@@ -200,8 +200,8 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-id id)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-absent "edit"))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :edit))
 
         ; check contents of session
         (let [{:keys [name description tags] :as body} (-> session-user

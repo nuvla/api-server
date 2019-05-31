@@ -9,7 +9,6 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
@@ -123,7 +122,7 @@
 (defn standard-data-object-collection-operations
   [{:keys [id] :as resource} request]
   (when (a/can-add? resource request)
-    [{:rel (:add c/action-uri) :href id}]))
+    [(u/operation-map id :add)]))
 
 
 (defn standard-data-object-resource-operations
@@ -136,11 +135,11 @@
         show-ready-op?    (and can-manage? (#{state-uploading} state))
         show-download-op? (and can-view? (#{state-ready} state)) ;; Exception: use view rather than manage, maybe view-data?
         ops               (cond-> []
-                                  can-delete? (conj {:rel (:delete c/action-uri) :href id})
-                                  can-edit? (conj {:rel (:edit c/action-uri) :href id})
-                                  show-upload-op? (conj {:rel (:upload c/action-uri) :href (str id "/upload")})
-                                  show-ready-op? (conj {:rel (:ready c/action-uri) :href (str id "/ready")})
-                                  show-download-op? (conj {:rel (:download c/action-uri) :href (str id "/download")}))]
+                                  can-delete? (conj (u/operation-map id :delete))
+                                  can-edit? (conj (u/operation-map id :edit))
+                                  show-upload-op? (conj (u/action-map id :upload))
+                                  show-ready-op? (conj (u/action-map id :ready))
+                                  show-download-op? (conj (u/action-map id :download)))]
     (when (seq ops)
       (vec ops))))
 

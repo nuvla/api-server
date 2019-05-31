@@ -115,14 +115,14 @@
   [m op]
   (let [op-list     (get-in m [:response :body :operations])
         defined-ops (map :rel op-list)]
-    [(some #(= % op) defined-ops) defined-ops]))
+    [(some #(= % (name op)) defined-ops) defined-ops]))
 
 
 (defmacro is-operation-present
   [m expected-op]
   `((fn [m# expected-op#]
       (let [[op# defined-ops#] (select-op m# expected-op#)]
-        (is op# (str "Missing " expected-op# " in " defined-ops#))
+        (is op# (str "Missing " (name expected-op#) " in " defined-ops#))
         m#))
      ~m ~expected-op))
 

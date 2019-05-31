@@ -37,9 +37,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; user can query; adding resources is not allowed
     (-> session-user
@@ -47,9 +47,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-absent "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-absent :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; query: forbidden for anon
     (-> session-anon
@@ -112,17 +112,17 @@
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-present "defer")
-          (ltu/is-operation-present "delete")
-          (ltu/is-operation-absent "edit"))
+          (ltu/is-operation-present :defer)
+          (ltu/is-operation-present :delete)
+          (ltu/is-operation-absent :edit))
 
       (-> session-user
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-present "defer")
-          (ltu/is-operation-present "delete")
-          (ltu/is-operation-absent "edit"))
+          (ltu/is-operation-present :defer)
+          (ltu/is-operation-present :delete)
+          (ltu/is-operation-absent :edit))
 
       ;; direct edit is not allowed
       (-> session-admin

@@ -60,9 +60,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anonymous credential collection query should not succeed
     (-> session-anon
@@ -108,10 +108,10 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")
-            (ltu/is-operation-present "check-password")
-            (ltu/is-operation-present "change-password")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)
+            (ltu/is-operation-present :check-password)
+            (ltu/is-operation-present :change-password)))
 
       ;; other users should not be able to see the credential
       (-> session-other

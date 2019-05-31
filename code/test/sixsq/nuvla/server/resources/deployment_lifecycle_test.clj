@@ -91,9 +91,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anon query fails
     (-> session-anon
@@ -133,9 +133,9 @@
                                     (request deployment-url)
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/is-operation-present "edit")
-                                    (ltu/is-operation-present "delete")
-                                    (ltu/is-operation-present "start")
+                                    (ltu/is-operation-present :edit)
+                                    (ltu/is-operation-present :delete)
+                                    (ltu/is-operation-present :start)
                                     (ltu/is-key-value :state "CREATED"))
 
             start-op            (ltu/get-op deployment-response "start")
@@ -174,10 +174,10 @@
                                           (request deployment-url)
                                           (ltu/body->edn)
                                           (ltu/is-status 200)
-                                          (ltu/is-operation-present "edit")
-                                          (ltu/is-operation-present "stop")
-                                          (ltu/is-operation-absent "delete")
-                                          (ltu/is-operation-absent "start")
+                                          (ltu/is-operation-present :edit)
+                                          (ltu/is-operation-present :stop)
+                                          (ltu/is-operation-absent :delete)
+                                          (ltu/is-operation-absent :start)
                                           (ltu/is-key-value :state "STARTING"))
 
                   stop-op             (ltu/get-op deployment-response "stop")

@@ -203,8 +203,8 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-id id)
-              (ltu/is-operation-present "delete")
-              (ltu/is-operation-absent "edit"))
+              (ltu/is-operation-present :delete)
+              (ltu/is-operation-absent :edit))
 
           ;; user query with session role should succeed but and have one entry
           (-> (session app)

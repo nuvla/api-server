@@ -321,7 +321,6 @@ include aggregating values over a collection of resources.
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -360,8 +359,7 @@ include aggregating values over a collection of resources.
 (defmethod crud/set-operations resource-type
   [resource request]
   (if (a/can-edit? resource request)
-    (let [ops [{:rel (:edit c/action-uri) :href resource-type}]]
-      (assoc resource :operations ops))
+    (assoc resource :operations [(u/operation-map resource-type :edit)])
     (dissoc resource :operations)))
 
 

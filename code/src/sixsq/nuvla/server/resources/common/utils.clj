@@ -180,7 +180,7 @@
   [{:keys [operations]} op]
   (->> operations
        (map (juxt :rel :href))
-       (filter (fn [[rel _]] (= rel op)))
+       (filter (fn [[rel _]] (= rel (name op))))
        first
        second))
 
@@ -200,7 +200,7 @@
 (defn operation-map
   "Provides the operation map for the given href and operation."
   [href op-kw-or-name]
-  {:rel (keyword op-kw-or-name)
+  {:rel (name op-kw-or-name)
    :href href})
 
 

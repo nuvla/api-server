@@ -92,7 +92,6 @@ session.
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as log-util]))
@@ -177,9 +176,9 @@ session.
   [{:keys [id resource-type] :as resource} request]
   (if (u/is-collection? resource-type)
     (when (a/can-add? resource request)
-      [{:rel (:add c/action-uri) :href id}])
+      [(u/operation-map id :add)])
     (when (a/can-delete? resource request)
-      [{:rel (:delete c/action-uri) :href id}])))
+      [(u/operation-map id :delete)])))
 
 ;; Sets the operations for the given resources.  This is a
 ;; multi-method because different types of session resources
