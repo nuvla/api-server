@@ -15,6 +15,15 @@
              :json-schema/order 30)))
 
 
+(s/def ::owner
+  (-> (st/spec ::common/id)
+      (assoc :name "owner"
+             :json-schema/type "resource-id"
+             :json-schema/description "id of principal (user or group) that owns the NuvlaBox"
+
+             :json-schema/order 31)))
+
+
 (def nb-status-href-regex #"^nuvlabox-status/[0-9a-f-]+$")
 
 
@@ -28,7 +37,7 @@
              :json-schema/display-name "NuvlaBox state"
              :json-schema/description "identifier of the associated nuvlabox-status resource"
 
-             :json-schema/order 31)))
+             :json-schema/order 32)))
 
 
 (def service-group-href-regex #"^infrastructure-service-group/[0-9a-f-]+$")
@@ -44,10 +53,11 @@
              :json-schema/display-name "NuvlaBox infrastructure service group"
              :json-schema/description "identifier of the associated infrastructure-service-group resource"
 
-             :json-schema/order 32)))
+             :json-schema/order 33)))
 
 
-(def attributes {:req-un [::version]
+(def attributes {:req-un [::version
+                          ::owner]
                  :opt-un [::nuvlabox-status
                           ::infrastructure-service-group]})
 
