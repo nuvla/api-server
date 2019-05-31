@@ -123,9 +123,9 @@
                                              (-> session
                                                  (request service-base-uri
                                                           :request-method :post
-                                                          :body (json/write-str (assoc-in
-                                                                                  valid-service-create
-                                                                                  [:template :parent] uri)))
+                                                          :body (json/write-str (-> valid-service-create
+                                                                                    (assoc-in [:template :parent] uri)
+                                                                                    (assoc :acl {:owners ["user/jane"]}))))
                                                  (ltu/body->edn)
                                                  (ltu/is-status 201)
                                                  :response

@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -403,7 +402,7 @@
                               (ltu/entries))]
 
                 (is (pos? (count creds)))
-                
+
                 (doseq [{:keys [acl] :as cred} creds]
                   (is (= [nuvlabox-owner] (:owners acl))))))))
 
