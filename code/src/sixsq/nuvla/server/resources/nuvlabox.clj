@@ -299,14 +299,11 @@
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [href-activate     (str id "/activate")
-        href-commission   (str id "/commission")
-        href-decommission (str id "/decommission")
-        edit-op           {:rel (:edit c/action-uri) :href id}
-        delete-op         {:rel (:delete c/action-uri) :href id}
-        activate-op       {:rel (:activate c/action-uri) :href href-activate}
-        commission-op     {:rel (:commission c/action-uri) :href href-commission}
-        decommission-op   {:rel (:decommission c/action-uri) :href href-decommission}
+  (let [edit-op           (u/operation-map id :edit)
+        delete-op         (u/operation-map id :delete)
+        activate-op       (u/action-map id :activate)
+        commission-op     (u/action-map id :commission)
+        decommission-op   (u/action-map id :decommission)
         ops               (cond-> []
                                   (a/can-edit? resource request) (conj edit-op)
                                   (and (a/can-delete? resource request)

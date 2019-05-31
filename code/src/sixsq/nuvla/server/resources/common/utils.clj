@@ -195,3 +195,18 @@
   "Removes required elements defined in `specs` set from `keys-spec` spec."
   [keys-spec specs]
   (remove-in keys-spec :req-un specs))
+
+
+(defn operation-map
+  "Provides the operation map for the given href and operation."
+  [href op-kw-or-name]
+  {:rel (keyword op-kw-or-name)
+   :href href})
+
+
+(defn action-map
+  "Provides the operation map for an action, which always has a relative path
+   to the resource's id."
+  [id op-kw-or-name]
+  (let [href (str id "/" (name op-kw-or-name))]
+    (operation-map href op-kw-or-name)))
