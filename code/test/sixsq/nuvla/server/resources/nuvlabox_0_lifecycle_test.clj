@@ -135,6 +135,20 @@
                              (ltu/is-key-value :state "NEW")
                              (ltu/get-op-url :activate))]
 
+        (let [{:keys [owner acl]} (-> session
+                                      (request nuvlabox-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/body))]
+
+          ;; checks of acl for created credential
+          (is (= [owner] (:owners acl)))
+          (is (contains? (set (:manage acl)) nuvlabox-id))
+          (is (contains? (set (:view-data acl)) nuvlabox-id))
+          (is (not (contains? (set (:view-acl acl)) nuvlabox-id)))
+          (is (not (contains? (set (:edit-meta acl)) nuvlabox-id)))
+          (is (not (contains? (set (:delete acl)) nuvlabox-id))))
+
         ;; anonymous should be able to activate the NuvlaBox
         ;; and receive an api key/secret pair to access Nuvla
         (let [credential-url (-> session-anon
