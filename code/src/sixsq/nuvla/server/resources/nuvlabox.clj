@@ -80,8 +80,9 @@
 
 (defmethod crud/add-acl resource-type
   [{:keys [id owner] :as resource} request]
-  (let [acl {:owners [owner]
-             :manage [id]}]
+  (let [acl {:owners    [owner]
+             :manage    [id]
+             :view-data [id]}]
     (assoc resource :acl acl)))
 
 
