@@ -1,19 +1,26 @@
 # Changelog
 
-## [Unreleased]
+## [3.0.0] - 2019-06-03
+
+### Added
+
+  - Restart policy parameters to module schema
+  - Expiry field to job resource
+  - Nuvlabox and nuvlabox-status resource to allow the registration,
+    management, and use of NuvlaBox machines
+  - Allow resource constraints (CPUs, memory) to be specified for module
+    components
 
 ### Changed
 
+  - Provide better container state information to help with troubleshooting
+    and for understanding when the container is operational 
+  - Improve subject and message in email validation requests
+  - Improve registration errors when there are email/username conflicts
+    with existing users
   - Continue nuvlabox delete if nuvlabox-status has already been deleted
   - NuvlaBox resources without a version should return a 400 code, not 500
-  - Add restart policy parameters to module schema
   - Fix elasticsearch binding when issue occur during the query call
-  - Mention user email in invitation to use Nuvla
-  - Add expiry field to job resource
-  - Allow resource constraints (CPUs, memory) to be specified for module
-    components
-  - Add nuvlabox and nuvlabox-status resource to allow the registration,
-    management, and use of NuvlaBox machines  
   - Rename type field to subtype and put it in as a resource metadata 
     (not backward compatible)
   - Release script fix
