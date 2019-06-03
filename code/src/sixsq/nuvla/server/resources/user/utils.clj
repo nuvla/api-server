@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-url "user")
@@ -98,8 +99,22 @@
                                  email-id (assoc :email email-id)))
 
     (when email
-      (create-identifier user-id email))
+      (try
+        (create-identifier user-id email)
+        (catch Exception e
+          (if-let [{:keys [status] :as data} (ex-data e)]
+            (if (= 409 status)
+              (throw (r/ex-response (format "email address (%s) is associated with an existing account" email) 409 email))
+              (throw e))
+            (throw e)))))
 
     (when username
-      (create-identifier user-id username))))
+      (try
+        (create-identifier user-id username)
+        (catch Exception e
+          (if-let [{:keys [status] :as data} (ex-data e)]
+            (if (= 409 status)
+              (throw (r/ex-response (format "identifier (%s) is associated with an existing account" username) 409 username))
+              (throw e))
+            (throw e)))))))
 
