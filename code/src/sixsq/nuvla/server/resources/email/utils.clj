@@ -90,7 +90,7 @@
 
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
-              :subject "email validation"
+              :subject "Validation email for Nuvla service"
               :body    body}]
 
     (send-email nuvla-config msg)))

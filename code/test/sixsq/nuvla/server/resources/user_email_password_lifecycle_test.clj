@@ -219,8 +219,7 @@
             (-> session-created-user
                 (request (str p/service-context email-id))
                 (ltu/body->edn)
-                (ltu/is-status 404)))
-          )
+                (ltu/is-status 404))))
 
         ;; create user if fail with creation of child resources are cleaned up
         (let [resp                 (-> session-anon
@@ -235,10 +234,10 @@
               session-created-user (header session authn-info-header
                                            (str user-id " group/nuvla-user group/nuvla-anon"))]
 
-          (let [{:keys [credential-password, email] :as user} (-> session-created-user
-                                                                  (request (str p/service-context user-id))
-                                                                  (ltu/body->edn)
-                                                                  (get-in [:response :body]))]
+          (let [{:keys [email] :as user} (-> session-created-user
+                                             (request (str p/service-context user-id))
+                                             (ltu/body->edn)
+                                             (get-in [:response :body]))]
             ; credential cleanup
             (-> session-admin
                 (request (str p/service-context credential/resource-type))
@@ -263,5 +262,4 @@
             (-> session-created-user
                 (request (str p/service-context email))
                 (ltu/body->edn)
-                (ltu/is-status 404))))
-        ))))
+                (ltu/is-status 404))))))))
