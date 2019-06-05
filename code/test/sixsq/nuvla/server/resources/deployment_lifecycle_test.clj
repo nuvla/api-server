@@ -65,12 +65,6 @@
                                                         :description "my-gamma"}]})
 
 
-(def valid-deployment-parameter
-  {:name       "param1"
-   :node-id    "machine"
-   :deployment {:href "deployment/uuid"}})
-
-
 (deftest lifecycle
   (let [session-anon     (-> (ltu/ring-app)
                              session
