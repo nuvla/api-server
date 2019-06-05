@@ -63,6 +63,31 @@
       (log/error "cannot query credentials related to " deployment-id))))
 
 
+(defn delete-deployment-parameters
+  "Attempts to delete all deployment-parameter resources associated with the
+   deployment via the deployment/href attribute. Exceptions are logged but
+   otherwise ignored."
+  [authn-info deployment-id]
+  (try
+    (let [query  {:params      {:resource-name "deployment-parameter"} ;; hard-coded to avoid cyclic dependency
+                  :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "deployment/href='" deployment-id "'")})
+                                :select ["id"]}
+                  :nuvla/authn authn-info}
+          dp-ids (->> query crud/query :body :resources (map :id))]
+
+      (doseq [dp-id dp-ids]
+        (try
+          (let [[resource-name uuid] (u/parse-id dp-id)
+                request {:params      {:resource-name resource-name
+                                       :uuid          uuid}
+                         :nuvla/authn authn-info}]
+            (crud/delete request))
+          (catch Exception e
+            (log/error (str "error deleting " (:id dp-id) " for " deployment-id ": " e))))))
+    (catch Exception e
+      (log/error "cannot query deployment-parameter resources related to " deployment-id))))
+
+
 (defn resolve-module [{:keys [href]} authn-info]
   (if-let [params (u/id->request-params href)]
     (let [request-module {:params params, :nuvla/authn authn-info}
