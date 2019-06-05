@@ -105,6 +105,7 @@
                               (a/throw-cannot-edit request)
                               (db/delete request))]
       (deployment-utils/delete-deployment-credentials authn-info deployment-id)
+      (deployment-utils/delete-deployment-parameters authn-info deployment-id)
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
