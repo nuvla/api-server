@@ -41,17 +41,30 @@ a NuvlaBox.
             minio-endpoint
             minio-access-key minio-secret-key]} :body :as request}]
 
+  ;; This code will not create duplicate resources when commission is called multiple times.
+  ;; However, it won't update those resources if the content changes.
+  ;; FIXME: allow updates of existing resources
   (when-let [isg-id (nb-utils/get-isg-id id)]
-    (let [swarm-id (nb-utils/create-swarm-service id owner isg-id swarm-endpoint)
-          minio-id (nb-utils/create-minio-service id owner isg-id minio-endpoint)]
+    (let [swarm-id (or
+                     (nb-utils/get-swarm-service isg-id)
+                     (nb-utils/create-swarm-service id owner isg-id swarm-endpoint))
+          minio-id (or
+                     (nb-utils/get-minio-service isg-id)
+                     (nb-utils/create-minio-service id owner isg-id minio-endpoint))]
 
       (when swarm-id
         (nb-utils/create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
-        (nb-utils/create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager)
-        (nb-utils/create-swarm-token id owner swarm-id "WORKER" swarm-token-worker))
+        (or
+          (nb-utils/get-swarm-token swarm-id "MANAGER")
+          (nb-utils/create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager))
+        (or
+          (nb-utils/get-swarm-token swarm-id "WORKER")
+          (nb-utils/create-swarm-token id owner swarm-id "WORKER" swarm-token-worker)))
 
       (when minio-id
-        (nb-utils/create-minio-cred id owner minio-id minio-access-key minio-secret-key)))))
+        (or
+          (nb-utils/get-minio-cred minio-id)
+          (nb-utils/create-minio-cred id owner minio-id minio-access-key minio-secret-key))))))
 
 
 ;;

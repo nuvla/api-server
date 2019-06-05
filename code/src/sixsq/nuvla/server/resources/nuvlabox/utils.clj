@@ -122,6 +122,27 @@
     (log/info "minio endpoint not specified; skipping creation of infrastructure-service")))
 
 
+(defn get-service
+  "Searches for an existing infrastructure-service of the given subtype and
+   linked to the given infrastructure-service-group. If found, the identifier
+   is returned."
+  [subtype isg-id]
+  (let [filter (format "subtype='%s' and parent='%s'" subtype isg-id)
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
+    (-> (db/query infra-service/resource-type body)
+        second
+        first
+        :id)))
+
+
+(def get-swarm-service (partial get-service "swarm"))
+
+
+(def get-minio-service (partial get-service "s3"))
+
+
 (defn create-swarm-service
   [nuvlabox-id owner isg-id endpoint]
   (if endpoint
@@ -176,6 +197,20 @@
         nil))))
 
 
+(defn get-swarm-token
+  "Searches for an existing swarm token credential tied to the given service.
+   If found, the identifier is returned."
+  [swarm-id scope]
+  (let [filter (format "subtype='swarm-token' and scope='%s' and parent='%s'" scope swarm-id)
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
+    (-> (db/query credential/resource-type body)
+        second
+        first
+        :id)))
+
+
 (defn create-swarm-token
   [nuvlabox-id owner swarm-id scope token]
   (when swarm-id
@@ -199,6 +234,20 @@
           (let [msg (str "cannot create swarm token credential for " swarm-id " linked to " nuvlabox-id)]
             (throw (ex-info msg (r/map-response msg 400 ""))))))
       (log/info "skipping creation of swarm token; either scope or token is missing"))))
+
+
+(defn get-minio-cred
+  "Searches for an existing minio credential tied to the given service. If
+   found, the identifier is returned."
+  [minio-id]
+  (let [filter (format "subtype='infrastructure-service-minio' and parent='%s'" minio-id)
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
+    (-> (db/query credential/resource-type body)
+        second
+        first
+        :id)))
 
 
 (defn create-minio-cred

@@ -361,15 +361,15 @@
                              (ltu/is-key-value :state "ACTIVATED")
                              (ltu/get-op-url :commission))]
 
-          ;; trigger the commissioning of the nuvlabox
+          ;; partial commissioning of the nuvlabox (no swarm credentials)
           (-> session
               (request commission
                        :request-method :post
                        :body (json/write-str {:swarm-token-worker  "abc"
                                               :swarm-token-manager "def"
-                                              :swarm-client-key    "key"
-                                              :swarm-client-cert   "cert"
-                                              :swarm-client-ca     "ca"
+                                              ;:swarm-client-key    "key"
+                                              ;:swarm-client-cert   "cert"
+                                              ;:swarm-client-ca     "ca"
                                               :swarm-endpoint      "https://swarm.example.com"
                                               :minio-access-key    "access"
                                               :minio-secret-key    "secret"
@@ -405,7 +405,7 @@
             (doseq [{:keys [acl]} services]
               (is (= [nuvlabox-owner] (:owners acl))))
 
-            (doseq [service services]
+            (doseq [{:keys [subtype] :as service} services]
               (let [creds (-> session-admin
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
@@ -415,10 +415,72 @@
                               (ltu/is-status 200)
                               (ltu/entries))]
 
-                (is (pos? (count creds)))
-
+                ;; all creds must be owned by the NuvlaBox owner
                 (doseq [{:keys [acl] :as cred} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))))))
+                  (is (= [nuvlabox-owner] (:owners acl))))
+
+                (if (= "swarm" subtype)
+                  (is (= 2 (count creds))))                 ;; only swarm token credentials
+
+                (if (= "s3" subtype)
+                  (is (= 1 (count creds))))                 ;; only key/secret pair
+
+                )))
+
+
+          ;; second commissioning of the resource (with swarm credentials)
+          (-> session
+              (request commission
+                       :request-method :post
+                       :body (json/write-str {:swarm-token-worker  "abc"
+                                              :swarm-token-manager "def"
+                                              :swarm-client-key    "key"
+                                              :swarm-client-cert   "cert"
+                                              :swarm-client-ca     "ca"
+                                              :swarm-endpoint      "https://swarm.example.com"
+                                              :minio-access-key    "access"
+                                              :minio-secret-key    "secret"
+                                              :minio-endpoint      "https://minio.example.com"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          ;; check the services again
+          (let [services (-> session
+                             (content-type "application/x-www-form-urlencoded")
+                             (request infra-service-collection-uri
+                                      :request-method :put
+                                      :body (rc/form-encode {:filter (format "parent='%s'" isg-id)}))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-count 2)
+                             (ltu/entries))]
+
+            (is (= #{"swarm" "s3"} (set (map :subtype services))))
+
+            (doseq [{:keys [acl]} services]
+              (is (= [nuvlabox-owner] (:owners acl))))
+
+            (doseq [{:keys [subtype] :as service} services]
+              (let [creds (-> session-admin
+                              (content-type "application/x-www-form-urlencoded")
+                              (request credential-collection-uri
+                                       :request-method :put
+                                       :body (rc/form-encode {:filter (format "parent='%s'" (:id service))}))
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/entries))]
+
+                ;; all creds must be owned by the NuvlaBox owner
+                (doseq [{:keys [acl] :as cred} creds]
+                  (is (= [nuvlabox-owner] (:owners acl))))
+
+                (if (= "swarm" subtype)
+                  (is (= 3 (count creds))))                 ;; now both tokens and credential
+
+                (if (= "s3" subtype)
+                  (is (= 1 (count creds))))                 ;; only key/secret pair
+
+                ))))
 
         (let [decommission-url (-> session
                                    (request nuvlabox-url)
