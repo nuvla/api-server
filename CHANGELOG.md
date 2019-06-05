@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+  - NuvlaBox commission action will not create duplicate services 
+    and credentials if it is called multiple times.
+  - Remove associated deployment-parameters when a deployment
+    is deleted. 
+
 ## [3.0.0] - 2019-06-03
 
 ### Added
