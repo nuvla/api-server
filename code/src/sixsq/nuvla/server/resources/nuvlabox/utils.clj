@@ -20,7 +20,6 @@
   [nuvlabox-id]
   (when-let [short-id (some-> nuvlabox-id
                               u/id->uuid
-                              second
                               (str/split #"-")
                               first)]
     (str "NB " short-id)))
