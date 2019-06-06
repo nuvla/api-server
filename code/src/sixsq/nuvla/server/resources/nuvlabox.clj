@@ -222,15 +222,16 @@
 ;;
 
 (defn restrict-acl
-  "Updates the given acl by giving the view-acl and manage rights to all
-   owners, removing all edit-* rights, and setting the owners to only
+  "Updates the given acl by giving the view-acl, manage, and delete rights to
+   all owners, removing all edit-* rights, and setting the owners to only
    [\"group/nuvla-admin\"]."
   [{:keys [owners] :as acl}]
   (-> acl
       (dissoc :edit-meta :edit-data :edit-acl)
       (assoc :owners ["group/nuvla-admin"])
       (update-in [:view-acl] concat owners)
-      (update-in [:manage] concat owners)))
+      (update-in [:manage] concat owners)
+      (update-in [:delete] concat owners)))
 
 
 (defmulti decommission-sync

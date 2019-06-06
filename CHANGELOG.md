@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Allow the owner of a nuvlabox resource to delete it when 
+    in the DECOMMISSIONED state.
   - NuvlaBox commission action will not create duplicate services 
     and credentials if it is called multiple times.
   - Remove associated deployment-parameters when a deployment

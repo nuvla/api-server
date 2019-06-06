@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [clojure.tools.logging :as log]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -482,17 +483,22 @@
 
                 ))))
 
-        (let [decommission-url (-> session
-                                   (request nuvlabox-url)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (ltu/is-operation-present :edit)
-                                   (ltu/is-operation-absent :delete)
-                                   (ltu/is-operation-absent :activate)
-                                   (ltu/is-operation-present :commission)
-                                   (ltu/is-operation-present :decommission)
-                                   (ltu/is-key-value :state "COMMISSIONED")
-                                   (ltu/get-op-url :decommission))]
+        (let [decommission-resp (-> session
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :edit)
+                                    (ltu/is-operation-absent :delete)
+                                    (ltu/is-operation-absent :activate)
+                                    (ltu/is-operation-present :commission)
+                                    (ltu/is-operation-present :decommission)
+                                    (ltu/is-key-value :state "COMMISSIONED"))
+
+              pre-acl           (-> decommission-resp
+                                    (ltu/body)
+                                    :acl)
+
+              decommission-url  (ltu/get-op-url decommission-resp :decommission)]
 
           ;; only trigger the decommissioning; don't check details again
           (-> session
@@ -502,23 +508,48 @@
               (ltu/is-status 202))
 
           ;; verify state of the resource
-          (-> session
-              (request nuvlabox-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-operation-absent :delete)
-              (ltu/is-operation-absent :activate)
-              (ltu/is-operation-absent :commission)
-              (ltu/is-operation-present :decommission)
-              (ltu/is-key-value :state "DECOMMISSIONING")))
+          (let [post-acl (-> session
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-operation-absent :delete)
+                             (ltu/is-operation-absent :activate)
+                             (ltu/is-operation-absent :commission)
+                             (ltu/is-operation-present :decommission)
+                             (ltu/is-key-value :state "DECOMMISSIONING")
+                             (ltu/body)
+                             :acl)]
 
-        ;; normally the job would set the state to DECOMMISSIONED or ERROR
-        ;; set it here manually to ensure that operations are correct
-        ;; FIXME: Only admin can edit a nuvlabox in DECOMMISSIONING state
+            ;; verify that the ACL has been changed
+            (is (not= pre-acl post-acl))))
+
+        ;; set the state to DECOMMISSIONED manually to ensure that
+        ;; operations are correct
+        ;; Only admin can edit a nuvlabox in DECOMMISSIONING state
         (-> session-admin
             (request nuvlabox-url
                      :request-method :put
-                     :body (json/write-str (assoc valid-nuvlabox :state "ERROR")))
+                     :body (json/write-str {:state "DECOMMISSIONED"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; verify state of the resource and operations
+        (-> session
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :activate)
+            (ltu/is-operation-absent :commission)
+            (ltu/is-operation-absent :decommission)
+            (ltu/is-key-value :state "DECOMMISSIONED"))
+
+        ;; set state to ERROR manually to ensure that operations are correct
+        ;; Only admin can edit a nuvlabox in DECOMMISSIONING state
+        (-> session-admin
+            (request nuvlabox-url
+                     :request-method :put
+                     :body (json/write-str {:state "ERROR"}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
