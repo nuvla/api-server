@@ -12,7 +12,17 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.common.utils :as u]))
+
+
+(defn short-nb-id
+  [nuvlabox-id]
+  (when-let [short-id (some-> nuvlabox-id
+                              u/id->uuid
+                              (str/split #"-")
+                              first)]
+    (str "NB " short-id)))
 
 
 (defn create-infrastructure-service-group
@@ -21,8 +31,8 @@
   [{:keys [id owner] :as nuvlabox}]
   (let [isg-acl  {:owners   ["group/nuvla-admin"]
                   :view-acl [owner]}
-        skeleton {:name        (str "service group for " id)
-                  :description (str "services available on the NuvlaBox " id)
+        skeleton {:name        (str (short-nb-id id) " service group")
+                  :description (str "services available on " id)
                   :parent      id
                   :acl         isg-acl}
         {:keys [status body] :as resp} (service-group/create-infrastructure-service-group skeleton)]
@@ -53,7 +63,7 @@
                    :view-meta [owner]
                    :delete    [owner]}
 
-        cred-tmpl {:name        (str "Generated API Key for " (or name id))
+        cred-tmpl {:name        (str (short-nb-id id) " API Key")
                    :description (str/join " " ["Generated API Key for" name (str "(" id ")")])
                    :parent      id
                    :template    {:href    (str "credential-template/" cred-tmpl-api/method)
@@ -103,8 +113,8 @@
   (if endpoint
     (let [acl     {:owners [owner]}
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        "Minio (S3)"
-                                 :description (str "Minio (S3) for " nuvlabox-id)
+                   :body        {:name        (str "Minio on " (short-nb-id nuvlabox-id))
+                                 :description (str "Minio (S3) on " nuvlabox-id)
                                  :parent      isg-id
                                  :acl         acl
                                  :template    {:href     "infrastructure-service-template/generic"
@@ -148,8 +158,8 @@
   (if endpoint
     (let [acl     {:owners [owner]}
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        "Docker Swarm Cluster"
-                                 :description (str "Docker Swarm cluster for " nuvlabox-id)
+                   :body        {:name        (str "Swarm on " (short-nb-id nuvlabox-id))
+                                 :description (str "Docker Swarm cluster on " nuvlabox-id)
                                  :parent      isg-id
                                  :acl         acl
                                  :template    {:href     "infrastructure-service-template/generic"
@@ -175,7 +185,7 @@
     (if (and key cert ca)
       (let [acl     {:owners [owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        "Docker Swarm Cluster Credential"
+                     :body        {:name        (str "Swarm Cred." (short-nb-id nuvlabox-id))
                                    :description (str "Docker Swarm cluster credential for " swarm-id " linked to " nuvlabox-id)
                                    :parent      swarm-id
                                    :acl         acl
@@ -217,7 +227,7 @@
     (if (and scope token)
       (let [acl     {:owners [owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        "Docker Swarm Token"
+                     :body        {:name        (str "Swarm Token " (short-nb-id nuvlabox-id))
                                    :description (str "Docker Swarm token for " swarm-id " linked to " nuvlabox-id)
                                    :parent      swarm-id
                                    :acl         acl
@@ -256,7 +266,7 @@
     (if (and access-key secret-key)
       (let [acl     {:owners [owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        "Minio (S3) Credential"
+                     :body        {:name        (str "Minio Cred. " (short-nb-id nuvlabox-id))
                                    :description (str "Minio (S3) credential for " minio-id " linked to " nuvlabox-id)
                                    :parent      minio-id
                                    :acl         acl
