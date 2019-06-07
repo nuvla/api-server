@@ -50,7 +50,10 @@
                                         :view-acl ["user/jane"]
                                         :manage   ["user/jane"]}
 
-                     :version          0
+                     ;; This doesn't need to be specified as it will default to the
+                     ;; latest version (which is currently 0). If new versions are added,
+                     ;; the following line must be uncommented.
+                     ;:version          0
 
                      :owner            nuvlabox-owner
                      :organization     "ACME"

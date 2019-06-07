@@ -42,6 +42,14 @@
 (def ^:const state-error "ERROR")
 
 
+;;
+;; If version is not specified use, the latest version.
+;;
+;; WARNING: This must be updated when new nuvlabox schemas are added!
+;;
+(def ^:const latest-version 0)
+
+
 (def ^:const default-refresh-interval 90)
 
 
@@ -94,11 +102,13 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [refresh-interval]
-     :or   {refresh-interval default-refresh-interval}
+  [{{:keys [version refresh-interval]
+     :or   {version          latest-version
+            refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
 
-  (let [new-nuvlabox (assoc body :state state-new
+  (let [new-nuvlabox (assoc body :version version
+                                 :state state-new
                                  :refresh-interval refresh-interval)]
 
     (add-impl (assoc request :body new-nuvlabox))))
