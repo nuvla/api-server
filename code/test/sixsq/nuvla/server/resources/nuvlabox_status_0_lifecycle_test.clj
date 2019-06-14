@@ -7,6 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -17,14 +18,19 @@
 (def base-uri (str p/service-context nb-status/resource-type))
 
 
+(def nuvlabox-base-uri (str p/service-context nb/resource-type))
+
+
 (def timestamp "1964-08-25T10:00:00Z")
 
 
 (def nuvlabox-id "nuvlabox/some-random-uuid")
 
 
-(def valid-acl {:owners    ["group/nuvla-admin"]
-                :edit-data [nuvlabox-id]})
+(def nuvlabox-owner "user/alpha")
+
+
+(def valid-nuvlabox {:owner nuvlabox-owner})
 
 
 (def valid-state {:id             (str nb-status/resource-type "/uuid")
@@ -32,10 +38,7 @@
                   :created        timestamp
                   :updated        timestamp
 
-                  :acl            valid-acl
-
                   :version        0
-                  :parent         "nuvlabox/uuid"
                   :status         "OPERATIONAL"
                   :comment        "some witty comment"
 
@@ -93,6 +96,18 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
+
+        nuvlabox-id   (-> session-user
+                          (request nuvlabox-base-uri
+                                   :request-method :post
+                                   :body (json/write-str valid-nuvlabox))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
+
+        valid-acl     {:owners    ["group/nuvla-admin"]
+                       :edit-data [nuvlabox-id]}
+
         session-nb    (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
     ;; non-admin users cannot create a nuvlabox-status resource
@@ -100,7 +115,8 @@
       (-> session
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-state))
+                   :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                            :acl valid-acl)))
           (ltu/body->edn)
           (ltu/is-status 403)))
 
@@ -108,7 +124,8 @@
     (when-let [state-id (-> session-admin
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-state))
+                                     :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                                              :acl valid-acl)))
                             (ltu/body->edn)
                             (ltu/is-status 201)
                             (get-in [:response :body :resource-id]))]
@@ -146,12 +163,17 @@
             (ltu/is-key-value :peripherals peripherals-updated))
 
         ;; verify that the update was written to disk
-        (-> session-nb
-            (request state-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :resources resources-updated)
-            (ltu/is-key-value :peripherals peripherals-updated))
+        (let [next-heartbeat (-> session-nb
+                                 (request state-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-key-value :resources resources-updated)
+                                 (ltu/is-key-value :peripherals peripherals-updated)
+                                 (ltu/body)
+                                 :next-heartbeat)]
+
+          ;; verify that the next-heartbeat was overwritten with new value
+          (is (not= timestamp next-heartbeat)))
 
         ;; nuvlabox identity cannot delete the state
         (-> session-nb

@@ -97,7 +97,7 @@
   (-> (st/spec pos-int?)
       (assoc :name "refresh-interval"
              :json-schema/display-name "refresh interval"
-             :json-schema/description "refresh interval for state updates"
+             :json-schema/description "refresh interval in seconds for state updates"
 
              :json-schema/order 19)))
 

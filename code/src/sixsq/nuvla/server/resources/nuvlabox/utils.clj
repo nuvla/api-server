@@ -6,14 +6,14 @@
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn short-nb-id

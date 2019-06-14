@@ -6,7 +6,10 @@ resources are usually created as a side-effect of a NuvlaBox activation,
 although they can be created manually by an administrator.
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth-utils]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -80,7 +83,37 @@ although they can be created manually by an administrator.
     (add-impl nuvlabox-status-request)))
 
 
-(def edit-impl (std-crud/edit-fn resource-type))
+(defmulti pre-edit
+          "Allows nuvlabox-status subclasses to perform actions before updating
+           the resource. The default action just returns the unmodified request."
+          :version)
+
+
+(defmethod pre-edit :default
+  [resource]
+  resource)
+
+
+(defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
+  (try
+    (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
+                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                        (a/throw-cannot-edit request))
+          rights                   (a/extract-rights (auth/current-authentication request) acl)
+          dissoc-keys              (-> (map keyword select)
+                                       set
+                                       u/strip-select-from-mandatory-attrs
+                                       (a/editable-keys rights))
+          current-without-selected (apply dissoc current dissoc-keys)
+          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
+          merged                   (merge current-without-selected editable-body)]
+      (-> merged
+          u/update-timestamps
+          pre-edit
+          crud/validate
+          (db/edit request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/edit resource-type

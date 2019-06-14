@@ -13,8 +13,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

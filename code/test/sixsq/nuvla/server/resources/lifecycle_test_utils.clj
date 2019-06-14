@@ -19,6 +19,7 @@
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.app.routes :as routes]
     [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
@@ -27,8 +28,7 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [zookeeper :as zk]
-    [sixsq.nuvla.server.app.params :as p])
+    [zookeeper :as zk])
   (:import
     (java.util UUID)
     (org.apache.curator.test TestingServer)
