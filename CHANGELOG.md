@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+  - The nuvlabox-status (version 0) resource will now overwrite
+    the value of the next-heartbeat field with the current time
+    (from the server) plus the refresh-interval. 
+  - An additional field, current-time, has been added to the
+    nuvlabox-status (version 0) resource to allow clock skew to
+    be detected.
+
 ## [3.1.0] - 2019-06-07
 
 ### Changed
