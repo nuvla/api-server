@@ -25,6 +25,7 @@
             :comment        "some witty comment"
 
             :next-heartbeat timestamp
+            :current-time   timestamp
 
             :resources      {:cpu   {:capacity 8
                                      :load     4.5}
@@ -58,5 +59,5 @@
     (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :resources :peripherals :wifi-password :comment}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

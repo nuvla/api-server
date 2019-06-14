@@ -9,8 +9,7 @@
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-url "user")

@@ -21,13 +21,22 @@
              :json-schema/order 31)))
 
 
+(s/def ::current-time
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "current-time"
+             :json-schema/display-name "current time"
+             :json-schema/description "current time provided by the NuvlaBox clock"
+
+             :json-schema/order 32)))
+
+
 (s/def ::status
   (-> (st/spec #{"OPERATIONAL" "DEGRADED" "UNKNOWN"})
       (assoc :name "status"
              :json-schema/type "string"
              :json-schema/description "current status of the NuvlaBox"
 
-             :json-schema/order 32)))
+             :json-schema/order 33)))
 
 
 (s/def ::comment
@@ -224,6 +233,7 @@
                      nb-status/attributes
                      {:req-un [::status]
                       :opt-un [::next-heartbeat
+                               ::current-time
                                ::comment
                                ::resources
                                ::peripherals
