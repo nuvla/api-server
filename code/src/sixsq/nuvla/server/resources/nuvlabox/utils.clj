@@ -113,7 +113,7 @@
   (if endpoint
     (let [acl     {:owners [owner]}
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str "Minio on " (short-nb-id nuvlabox-id))
+                   :body        {:name        (str "Minio " (short-nb-id nuvlabox-id))
                                  :description (str "Minio (S3) on " nuvlabox-id)
                                  :parent      isg-id
                                  :acl         acl
@@ -158,8 +158,8 @@
   (if endpoint
     (let [acl     {:owners [owner]}
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str "Swarm on " (short-nb-id nuvlabox-id))
-                                 :description (str "Docker Swarm cluster on " nuvlabox-id)
+                   :body        {:name        (str "Swarm " (short-nb-id nuvlabox-id))
+                                 :description (str "Docker Swarm on " nuvlabox-id)
                                  :parent      isg-id
                                  :acl         acl
                                  :template    {:href     "infrastructure-service-template/generic"
@@ -185,8 +185,8 @@
     (if (and key cert ca)
       (let [acl     {:owners [owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        (str "Swarm Cred." (short-nb-id nuvlabox-id))
-                                   :description (str "Docker Swarm cluster credential for " swarm-id " linked to " nuvlabox-id)
+                     :body        {:name        (str "Swarm TLS " (short-nb-id nuvlabox-id))
+                                   :description (str "Docker Swarm client credential for " swarm-id " linked to " nuvlabox-id)
                                    :parent      swarm-id
                                    :acl         acl
                                    :template    (cond-> {:href "credential-template/infrastructure-service-swarm"
@@ -266,7 +266,7 @@
     (if (and access-key secret-key)
       (let [acl     {:owners [owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        (str "Minio Cred. " (short-nb-id nuvlabox-id))
+                     :body        {:name        (str "Minio " (short-nb-id nuvlabox-id))
                                    :description (str "Minio (S3) credential for " minio-id " linked to " nuvlabox-id)
                                    :parent      minio-id
                                    :acl         acl
