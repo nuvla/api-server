@@ -12,7 +12,7 @@
 (def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-deployment {:id                        (str d/resource-type "/connector-uuid")
+(def valid-deployment {:id                        (str d/resource-type "/deployment-uuid")
                        :resource-type             d/resource-type
                        :created                   timestamp
                        :updated                   timestamp

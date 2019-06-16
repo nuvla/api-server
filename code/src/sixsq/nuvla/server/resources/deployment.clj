@@ -183,6 +183,34 @@
       (or (ex-data e) (throw e)))))
 
 
+(defn update-action-mpl
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)
+          user-id (:user-id (auth/current-authentication request))
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "update_deployment"
+                                                       {:owners   ["group/nuvla-admin"]
+                                                        :view-acl [user-id]}
+                                                        :priority 40)
+          job-msg (str "updating " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to stop deployment" 500 id)))
+      (-> id
+          (db/retrieve request)
+          (a/can-edit? request)
+          (assoc :state "UPDATING")
+          (db/edit request))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "update"]
+  [request]
+  (update-action-mpl request))
+
+
 ;;
 ;; initialization
 ;;
