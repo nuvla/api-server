@@ -166,12 +166,12 @@
       (if success?
         [meta hits]
         (let [msg (str "error when querying: " (:body response))]
-          (throw (ex-info msg (r/ex-response msg 500))))))
+          (throw (r/ex-response msg 500)))))
     (catch Exception e
       (let [{:keys [body] :as response} (ex-data e)
             error (:error body)]
         (let [msg (str "unexpected exception querying: " (or error e))]
-          (throw (ex-info msg (r/ex-response msg 500))))))))
+          (throw (r/ex-response msg 500)))))))
 
 
 (deftype ElasticsearchRestBinding [client]
