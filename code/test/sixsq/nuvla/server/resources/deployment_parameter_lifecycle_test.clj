@@ -16,12 +16,24 @@
 (def base-uri (str p/service-context dp/resource-type))
 
 
+(def parent-id "deployment/324c6138-aaaa-bbbb-cccc-af3ad15815db")
+
+
+(def node-id "machine")
+
+
+(def parameter-name "param1")
+
+
 (def valid-entry
-  {:name       "param1"
-   :node-id    "machine"
-   :deployment {:href "deployment/uuid"}
-   :acl        {:owners   ["group/nuvla-admin"]
-                :edit-acl ["user/jane"]}})
+  {:name    parameter-name
+   :parent  parent-id
+   :node-id node-id
+   :acl     {:owners   ["group/nuvla-admin"]
+             :edit-acl ["user/jane"]}})
+
+
+(def expected-dp-id (str "deployment-parameter/" (dp/parameter->uuid parent-id node-id parameter-name)))
 
 
 (deftest lifecycle
@@ -83,22 +95,49 @@
 
       (is (= location-test test-uri))
 
-      ;; admin should be able to see everyone's records. Deployment parameter href is predictable
+      ;; admin should be able to see everyone's records. Deployment parameter id is predictable
       (-> session-admin
           (request test-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-id "deployment-parameter/324c6138-0484-34b5-bf35-af3ad15815db")
+          (ltu/is-id expected-dp-id)
           (ltu/is-operation-present :delete)
           (ltu/is-operation-present :edit))
 
-      ;; user allowed edits
-      (-> session-jane
-          (request test-uri
-                   :request-method :put
-                   :body (json/write-str valid-entry))
-          (ltu/body->edn)
-          (ltu/is-status 200))
+      ;; user can edit, but parent, name, and node-id cannot be changed
+      (let [bad-id   "deployment/324c6138-0484-34b5-bf35-af3ad15815db"
+            original (-> session-jane
+                         (request test-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/body))]
+
+        (-> session-jane
+            (request test-uri
+                     :request-method :put
+                     :body (json/write-str {:parent  bad-id
+                                            :name    "bad-name"
+                                            :node-id "bad-node"
+                                            :value   "OK!"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [{:keys [id name node-id value]} (-> session-jane
+                                                  (request test-uri)
+                                                  (ltu/body->edn)
+                                                  (ltu/is-status 200)
+                                                  (ltu/body))]
+
+          (is (= id (:id original)))
+          (is (not= bad-id id))
+
+          (is (= name (:name original)))
+          (is (not= name "bad-name"))
+
+          (is (= node-id (:node-id original)))
+          (is (not= node-id "bad-node"))
+
+          (is (= value "OK!"))))
 
       (-> session-anon
           (request test-uri
@@ -120,7 +159,7 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; record should be deleted
+      ;; resource should be deleted
       (-> session-admin
           (request test-uri
                    :request-method :delete)

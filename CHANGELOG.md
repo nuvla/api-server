@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - The schema for the deployment-parameter resource has changed
+    the deployment/href to parent. The parent, node-id, and name
+    cannot be changed after creation.
   - The nuvlabox-status (version 0) resource will now overwrite
     the value of the next-heartbeat field with the current time
     (from the server) plus the refresh-interval. 
