@@ -50,10 +50,10 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-;; resource identifier is the MD5 checksum of the email address
+;; resource identifier a UUID generated from the email address
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
-  (if-let [new-id (some-> resource :address u/md5)]
+  (if-let [new-id (some-> resource :address u/from-data-uuid)]
     (assoc resource :id (str resource-name "/" new-id))))
 
 

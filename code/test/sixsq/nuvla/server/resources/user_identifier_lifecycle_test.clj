@@ -111,7 +111,7 @@
             (ltu/is-status 200)))
 
       ;; check content of the resource
-      (let [expected-id (str user-identifier/resource-type "/" (u/md5 (:identifier valid-entry)))
+      (let [expected-id (str user-identifier/resource-type "/" (-> valid-entry :identifier u/from-data-uuid))
             resource    (-> session-admin
                             (request abs-uri)
                             (ltu/body->edn)
