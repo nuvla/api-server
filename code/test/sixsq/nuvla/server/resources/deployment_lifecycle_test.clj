@@ -186,11 +186,11 @@
               (let [dp-url (-> session-admin
                                (request (str p/service-context "deployment-parameter")
                                         :request-method :post
-                                        :body (json/write-str {:name       "test-parameter"
-                                                               :node-id    "machine"
-                                                               :deployment {:href deployment-id}
-                                                               :acl        {:owners   ["group/nuvla-admin"]
-                                                                            :edit-acl ["user/jane"]}}))
+                                        :body (json/write-str {:parent  deployment-id
+                                                               :name    "test-parameter"
+                                                               :node-id "machine"
+                                                               :acl     {:owners   ["group/nuvla-admin"]
+                                                                         :edit-acl ["user/jane"]}}))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location-url))]
