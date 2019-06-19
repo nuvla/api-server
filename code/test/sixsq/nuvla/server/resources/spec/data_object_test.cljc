@@ -19,7 +19,7 @@
                    :state        "NEW"
                    :bucket       "bucket"
                    :object       "object/name"
-                   :credential   "credential/foo"
+                   :credential   "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
                    :content-type "text/html; charset=utf-8"
                    :bytes        10234
                    :md5sum       "abcde"
