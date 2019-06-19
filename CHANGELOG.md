@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Switch to UUIDs for identifiers for email, user-identifier,
+    and data-object resources rather than MD5 checksums.
   - The attribute credential-id has been changed to parent in 
     the deployment resource.
   - The schema for the deployment-parameter resource has changed
