@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.deployment-parameter
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
