@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - The schema for the deployment-parameter resource has changed
+    the deployment/href to parent. The parent, node-id, and name
+    cannot be changed after creation.
   - Duplicate infrastructure-service-swarm credentials for a 
     NuvlaBox are not allowed. Only the credentials created first
     are retained.

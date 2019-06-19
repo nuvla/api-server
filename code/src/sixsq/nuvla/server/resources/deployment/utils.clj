@@ -65,12 +65,12 @@
 
 (defn delete-deployment-parameters
   "Attempts to delete all deployment-parameter resources associated with the
-   deployment via the deployment/href attribute. Exceptions are logged but
-   otherwise ignored."
+   deployment via the parent attribute. Exceptions are logged but otherwise
+   ignored."
   [authn-info deployment-id]
   (try
     (let [query  {:params      {:resource-name "deployment-parameter"} ;; hard-coded to avoid cyclic dependency
-                  :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "deployment/href='" deployment-id "'")})
+                  :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
                                 :select ["id"]}
                   :nuvla/authn authn-info}
           dp-ids (->> query crud/query :body :resources (map :id))]

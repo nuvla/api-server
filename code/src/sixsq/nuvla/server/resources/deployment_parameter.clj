@@ -3,15 +3,11 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.deployment :as d]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
-    [sixsq.nuvla.server.resources.spec.event :as event]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -24,9 +20,9 @@
                      :add   ["group/nuvla-admin"]})
 
 
-(defn parameter->uiid
-  [deployment-href node-id name]
-  (let [id (str/join ":" [deployment-href node-id name])]
+(defn parameter->uuid
+  [parent node-id parameter-name]
+  (let [id (str/join ":" [parent node-id parameter-name])]
     (u/from-data-uuid id)))
 
 
@@ -52,8 +48,8 @@
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [deployment node-id name] :as parameter} resource-name]
-  (->> (parameter->uiid (:href deployment) node-id name)
+  [{:keys [parent node-id name] :as parameter} resource-name]
+  (->> (parameter->uuid parent node-id name)
        (str resource-type "/")
        (assoc parameter :id)))
 
@@ -66,9 +62,9 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [name value deployment acl]} :body :as request}]
+  [{{:keys [parent name value acl]} :body :as request}]
   (when (= name "ss:state")
-    (event-utils/create-event (:href deployment) value acl
+    (event-utils/create-event parent value acl
                               :severity "medium"
                               :category "state"))
   (add-impl request))
@@ -78,8 +74,9 @@
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{:keys [body] :as request}]
+  (let [updated-body (dissoc body :parent :name :node-id)]
+    (edit-impl (assoc request :body updated-body))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
