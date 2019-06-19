@@ -179,6 +179,20 @@
       nil)))
 
 
+(defn get-swarm-cred
+  "Searches for an existing swarm credential tied to the given service.
+   If found, the identifier is returned."
+  [swarm-id]
+  (let [filter (format "subtype='infrastructure-service-swarm' and parent='%s'" swarm-id)
+        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                              :select ["id"]}
+                :nuvla/authn auth/internal-identity}]
+    (-> (db/query credential/resource-type body)
+        second
+        first
+        :id)))
+
+
 (defn create-swarm-cred
   [nuvlabox-id owner swarm-id key cert ca]
   (when swarm-id

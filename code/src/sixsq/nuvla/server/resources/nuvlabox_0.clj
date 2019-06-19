@@ -53,7 +53,9 @@ a NuvlaBox.
                      (nb-utils/create-minio-service id owner isg-id minio-endpoint))]
 
       (when swarm-id
-        (nb-utils/create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca)
+        (or
+          (nb-utils/get-swarm-cred swarm-id)
+          (nb-utils/create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca))
         (or
           (nb-utils/get-swarm-token swarm-id "MANAGER")
           (nb-utils/create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager))
