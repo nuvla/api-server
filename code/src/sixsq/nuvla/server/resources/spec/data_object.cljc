@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.data :as data]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
     [spec-tools.core :as st]))
 
 
@@ -29,11 +30,8 @@
              :json-schema/order 31)))
 
 
-(def credential-id-regex #"^credential/.*$")
-
-
 (s/def ::credential
-  (-> (st/spec (s/and string? #(re-matches credential-id-regex %)))
+  (-> cred-spec/credential-id-spec
       (assoc :name "credential"
              :json-schema/type "string"
              :json-schema/description "credential that provides access to the S3 object"

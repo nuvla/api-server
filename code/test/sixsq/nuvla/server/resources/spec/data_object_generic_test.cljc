@@ -21,7 +21,7 @@
                           :acl           valid-acl
                           :state         do/state-new
 
-                          :credential    "credential/cloud-cred"
+                          :credential    "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
                           :bucket        "bucket"
                           :object        "object/name"
 
