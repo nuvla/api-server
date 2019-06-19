@@ -7,6 +7,19 @@
     [spec-tools.core :as st]))
 
 
+(def ^:const credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
+
+
+(s/def ::parent (-> (st/spec (s/and string? #(re-matches credential-id-regex %)))
+                    (assoc :name "parent"
+                           :json-schema/type "resource-id"
+                           :json-schema/description "reference to parent credential resource"
+
+                           :json-schema/section "meta"
+                           :json-schema/editable false
+                           :json-schema/order 6)))
+
+
 (s/def ::module ::core/resource-link)
 
 
@@ -77,9 +90,6 @@
              :json-schema/order 22)))
 
 
-(s/def ::credential-id ::core/nonblank-string)
-
-
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn data-object-id? [s] (re-matches data-object-id-regex s))
 
@@ -127,7 +137,6 @@
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
-                                  ::credential-id
                                   ::data-objects
                                   ::data-records]}]))
 

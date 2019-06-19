@@ -14,6 +14,7 @@
 
 (def valid-deployment {:id              (str d/resource-type "/connector-uuid")
                        :resource-type   d/resource-type
+                       :parent          "credential/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
                        :created         timestamp
                        :updated         timestamp
                        :acl             valid-acl
@@ -23,8 +24,6 @@
                        :api-credentials {:api-key    "credential/uuid"
                                          :api-secret "api secret"}
                        :api-endpoint    "http://blah.example.com"
-
-                       :credential-id   "credential/my-cloud-credential"
 
                        :module          {:href "module-component/my-module-component-uuid"}
 

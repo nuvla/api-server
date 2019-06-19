@@ -29,7 +29,7 @@
              :json-schema/order 31)))
 
 
-(def credential-id-regex #"^credential/.*$")
+(def credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
 
 
 (s/def ::credential

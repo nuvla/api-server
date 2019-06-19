@@ -54,7 +54,7 @@
              :json-schema/order 32)))
 
 
-(def ^:const credential-id-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(def ^:const credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
 
 (defn credential-id? [s] (re-matches credential-id-regex s))
 
