@@ -37,7 +37,15 @@
   (-> (st/spec (s/and string? valid-architectures))
       (assoc :name "architecture"
              :json-schema/type "string"
-             :json-schema/description "CPU architecture")))
+             :json-schema/description "CPU architecture"
+
+             :json-schema/value-scope {:values  ["386" "amd64" "amd64p32"
+                                                 "arm" "armbe" "arm64" "arm64/v8" "arm64be"
+                                                 "arm/v5" "arm/v6" "arm/v7"
+                                                 "ppc" "ppc64" "ppc64le"
+                                                 "mips" "mipsle" "mips64" "mips64le" "mips64p32" "mips64p32le"
+                                                 "s390" "s390x" "sparc" "sparc64"]
+                                       :default "amd64"})))
 
 
 (s/def ::architectures
