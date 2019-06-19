@@ -19,7 +19,7 @@
                    :created             timestamp
                    :updated             timestamp
 
-                   :credential-password "credential/uuid"
+                   :credential-password "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
 
                    :email               "email/uuid"
 
