@@ -1,7 +1,5 @@
 (ns sixsq.nuvla.server.resources.data-object
   (:require
-    [buddy.core.codecs :as co]
-    [buddy.core.hash :as ha]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [ring.util.response :as ru]
@@ -167,7 +165,7 @@
 
 (defmethod crud/new-identifier resource-type
   [{:keys [object bucket] :as resource} resource-name]
-  (if-let [new-id (co/bytes->hex (ha/md5 (str object bucket)))]
+  (if-let [new-id (u/from-data-uuid (str object bucket))]
     (assoc resource :id (str resource-name "/" new-id))))
 
 ;;

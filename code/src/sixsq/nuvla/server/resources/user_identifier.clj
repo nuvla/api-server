@@ -74,7 +74,7 @@ must delete the old one and create a new one.
 (defmethod crud/new-identifier resource-type
   [{:keys [identifier] :as resource} resource-name]
   (->> identifier
-       u/md5
+       u/from-data-uuid
        (str resource-type "/")
        (assoc resource :id)))
 
