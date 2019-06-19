@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - The attribute credential-id has been changed to parent in 
+    the deployment resource.
   - The schema for the deployment-parameter resource has changed
     the deployment/href to parent. The parent, node-id, and name
     cannot be changed after creation.
