@@ -21,7 +21,7 @@
                    :author                  "someone"
                    :commit                  "wip"
 
-                   :architecture            "x86"
+                   :architectures           ["amd64" "arm/v6"]
 
                    :image                   {:repository "my-repo"
                                              :image-name "ubuntu"
@@ -75,7 +75,7 @@
     (stu/is-invalid ::module-component/schema (assoc root :environmental-variables [{:name "NUVLA_RESERVED"}]))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :author :architecture :image}]
+    (doseq [k #{:id :resource-type :created :updated :acl :author :architectures :image}]
       (stu/is-invalid ::module-component/schema (dissoc root k)))
 
     ;; optional attributes
