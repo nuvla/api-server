@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
     [spec-tools.core :as st]))
 
 ;; provide tighter definition of user id to be used elsewhere
@@ -54,12 +55,8 @@
              :json-schema/order 32)))
 
 
-(def ^:const credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
-
-(defn credential-id? [s] (re-matches credential-id-regex s))
-
 (s/def ::credential-password
-  (-> (st/spec (s/and string? credential-id?))
+  (-> cred-spec/credential-id-spec
       (assoc :name "credential-password"
              :json-schema/type "resource-id"
              :json-schema/description "identifier of password credential"

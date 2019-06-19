@@ -4,13 +4,11 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [spec-tools.core :as st]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]))
 
 
-(def ^:const credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
-
-
-(s/def ::parent (-> (st/spec (s/and string? #(re-matches credential-id-regex %)))
+(s/def ::parent (-> cred-spec/credential-id-spec
                     (assoc :name "parent"
                            :json-schema/type "resource-id"
                            :json-schema/description "reference to parent credential resource"
