@@ -33,15 +33,15 @@
                   :data-access-protocols     ["http+s3" "posix+nfs"]})
 
 
-(def valid-component {:author       "someone"
-                      :commit       "wip"
+(def valid-component {:author        "someone"
+                      :commit        "wip"
 
-                      :architecture "x86"
-                      :image        {:image-name "ubuntu"
-                                     :tag        "16.04"}
-                      :ports        [{:protocol       "tcp"
-                                      :target-port    22
-                                      :published-port 8022}]})
+                      :architectures ["amd64" "arm/v6"]
+                      :image         {:image-name "ubuntu"
+                                      :tag        "16.04"}
+                      :ports         [{:protocol       "tcp"
+                                       :target-port    22
+                                       :published-port 8022}]})
 
 
 (deftest lifecycle
