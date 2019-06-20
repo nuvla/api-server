@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased
+## [4.0.0] - 2019-06-20
 
 ### Changed
 
   - Allow deployment resources to be deleted when they are in
     the ERROR state.
-  - Change architecture (single value) to arhitectures (list) 
+  - Change architecture (single value) to architectures (list) 
     in module-components and limit values to specified list.
   - Switch to UUIDs for identifiers for email, user-identifier,
     and data-object resources rather than MD5 checksums.
