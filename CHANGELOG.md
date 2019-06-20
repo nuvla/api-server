@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Allow deployment resources to be deleted when they are in
+    the ERROR state.
   - Change architecture (single value) to arhitectures (list) 
     in module-components and limit values to specified list.
   - Switch to UUIDs for identifiers for email, user-identifier,

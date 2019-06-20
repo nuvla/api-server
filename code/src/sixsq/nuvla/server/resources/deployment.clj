@@ -102,7 +102,7 @@
           delete-response (-> deployment-id
                               (db/retrieve request)
                               deployment-utils/verify-can-delete
-                              (a/throw-cannot-edit request)
+                              (a/throw-cannot-delete request)
                               (db/delete request))]
       (deployment-utils/delete-deployment-credentials authn-info deployment-id)
       (deployment-utils/delete-deployment-parameters authn-info deployment-id)
@@ -122,12 +122,6 @@
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
-
-;;
-;; actions may be needed by certain authentication methods (notably external
-;; methods like GitHub and OpenID Connect) to validate a given session
-;;
 
 
 (defmethod crud/set-operations resource-type

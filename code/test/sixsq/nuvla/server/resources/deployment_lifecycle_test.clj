@@ -250,6 +250,68 @@
                     (ltu/is-status 404))))))))))
 
 
+(deftest lifecycle-error
+  (let [session-anon     (-> (ltu/ring-app)
+                             session
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header
+                                 "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+        ;; setup a module that can be referenced from the deployment
+        module-id        (-> session-user
+                             (request module-base-uri
+                                      :request-method :post
+                                      :body (json/write-str (assoc valid-module :content valid-module-component)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        valid-deployment {:module {:href module-id}}]
+
+    ;; check deployment creation
+    (let [deployment-id  (-> session-user
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-deployment))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+          deployment-url (str p/service-context deployment-id)]
+
+      ;; admin/user should see one deployment
+      (doseq [session [session-user session-admin]]
+        (-> session
+            (request base-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-resource-uri t/collection-type)
+            (ltu/is-count 1)))
+
+      ;; the deployment would be set to "ERROR" via a job
+      ;; set this manually to continue with the workflow
+      (-> session-user
+          (request deployment-url
+                   :request-method :put
+                   :body (json/write-str {:state "ERROR"}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; verify that the user can delete the deployment
+      (-> session-user
+          (request deployment-url
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; verify that the deployment has disappeared
+      (-> session-user
+          (request deployment-url)
+          (ltu/body->edn)
+          (ltu/is-status 404)))))
+
+
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]

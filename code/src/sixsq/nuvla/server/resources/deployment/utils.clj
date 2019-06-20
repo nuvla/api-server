@@ -103,7 +103,7 @@
 
 (defn can-delete?
   [{:keys [state] :as resource}]
-  (#{"CREATED" "STOPPED"} state))
+  (#{"CREATED" "STOPPED" "ERROR"} state))
 
 
 (defn verify-can-delete
