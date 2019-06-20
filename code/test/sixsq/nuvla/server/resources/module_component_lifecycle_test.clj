@@ -31,7 +31,7 @@
                   :author        "someone"
                   :commit        "wip"
 
-                  :architecture  "x86"
+                  :architectures ["amd64" "arm/v6"]
                   :image         {:image-name "ubuntu"
                                   :tag        "16.04"}
                   :ports         [{:protocol       "tcp"
