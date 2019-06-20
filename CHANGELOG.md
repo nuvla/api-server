@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Change architecture (single value) to arhitectures (list) 
+    in module-components and limit values to specified list.
   - Switch to UUIDs for identifiers for email, user-identifier,
     and data-object resources rather than MD5 checksums.
   - The attribute credential-id has been changed to parent in 
