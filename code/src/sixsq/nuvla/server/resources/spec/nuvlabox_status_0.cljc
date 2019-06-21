@@ -133,15 +133,6 @@
 ;; peripherals
 ;;
 
-(s/def ::busy
-  (-> (st/spec boolean?)
-      (assoc :name "busy"
-             :json-schema/type "boolean"
-             :json-schema/description "flag indicating whether the device is busy"
-
-             :json-schema/order 10)))
-
-
 (s/def ::vendor-id
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "vendor-id"
@@ -188,8 +179,7 @@
 
 
 (s/def ::usb-info
-  (-> (st/spec (su/only-keys :req-un [::busy
-                                      ::vendor-id
+  (-> (st/spec (su/only-keys :req-un [::vendor-id
                                       ::device-id
                                       ::bus-id
                                       ::product-id

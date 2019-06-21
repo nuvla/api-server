@@ -38,8 +38,7 @@
                                       :capacity 20000
                                       :used     10000}]}
 
-            :peripherals    {:usb [{:busy        false
-                                    :vendor-id   "vendor-id"
+            :peripherals    {:usb [{:vendor-id   "vendor-id"
                                     :device-id   "device-id"
                                     :bus-id      "bus-id"
                                     :product-id  "product-id"

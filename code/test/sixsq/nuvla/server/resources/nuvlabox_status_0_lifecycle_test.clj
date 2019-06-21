@@ -55,8 +55,7 @@
                                             :capacity 20000
                                             :used     10000}]}
 
-                  :peripherals    {:usb [{:busy        false
-                                          :vendor-id   "vendor-id"
+                  :peripherals    {:usb [{:vendor-id   "vendor-id"
                                           :device-id   "device-id"
                                           :bus-id      "bus-id"
                                           :product-id  "product-id"
@@ -76,8 +75,7 @@
                                  :capacity 20000
                                  :used     15000}]})
 
-(def peripherals-updated {:usb [{:busy        true
-                                 :vendor-id   "vendor-id-2"
+(def peripherals-updated {:usb [{:vendor-id   "vendor-id-2"
                                  :device-id   "device-id-2"
                                  :bus-id      "bus-id-2"
                                  :product-id  "product-id-2"
