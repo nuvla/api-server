@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+  - Remove 'busy' attribute from USB peripheral description
+
 ## [4.0.0] - 2019-06-20
 
 ### Changed
