@@ -99,13 +99,13 @@ appropriate users.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
-  (let [collection?  (u/is-collection? resource-type)
-        can-delete?  (a/can-delete? resource request)
-        can-add?     (a/can-add? resource request)
-        ops          (cond-> []
-                             (and collection? can-add?) (conj (u/operation-map id :add))
-                             (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
-                             (and (not collection?) (utils/executable? resource)) (conj (u/action-map id :execute)))]
+  (let [collection? (u/is-collection? resource-type)
+        can-delete? (a/can-delete? resource request)
+        can-add?    (a/can-add? resource request)
+        ops         (cond-> []
+                            (and collection? can-add?) (conj (u/operation-map id :add))
+                            (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
+                            (and (not collection?) (utils/executable? resource)) (conj (u/action-map id :execute)))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))

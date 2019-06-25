@@ -217,11 +217,11 @@ can terminate the voucher via the 'expire' operation.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [activate-op   (u/action-map id :activate)
-        expire-op     (u/action-map id :expire)
-        redeem-op     (u/action-map id :redeem)
-        can-manage?   (a/can-manage? resource request)
-        can-view?     (a/can-view? resource request)]
+  (let [activate-op (u/action-map id :activate)
+        expire-op   (u/action-map id :expire)
+        redeem-op   (u/action-map id :redeem)
+        can-manage? (a/can-manage? resource request)
+        can-view?   (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
             (and can-manage? (#{"NEW" "ACTIVATED" "REDEEMED"} state)) (update :operations conj expire-op)
