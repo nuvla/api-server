@@ -45,7 +45,10 @@
                        :identifier    "046d:082d"
                        :available     true
                        :device-path   "/dev/bus/usb/001/001"
-                       :interface     "USB"})
+                       :interface     "USB"
+                       :vendor        "SixSq"
+                       :product       "HD Pro Webcam C920"
+                       :classes       ["AUDIO" "VIDEO"]})
 
 
 (deftest check-metadata

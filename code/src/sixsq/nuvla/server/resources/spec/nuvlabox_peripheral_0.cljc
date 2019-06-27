@@ -42,10 +42,46 @@
              :json-schema/order 34)))
 
 
+(s/def ::vendor
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "vendor"
+             :json-schema/description "name of the vendor"
+
+             :json-schema/order 35)))
+
+
+(s/def ::product
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "product"
+             :json-schema/description "description of the product"
+
+             :json-schema/order 36)))
+
+
+(s/def ::class
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "class"
+             :json-schema/description "class of the peripheral"
+
+             :json-schema/order 37)))
+
+
+(s/def ::classes
+  (-> (st/spec (s/coll-of ::class :kind vector?))
+      (assoc :name "classes"
+             :json-schema/description "all classes of the peripheral"
+
+             :json-schema/order 38)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
                      {:req-un [::identifier
-                               ::available]
+                               ::available
+                               ::classes]
                       :opt-un [::device-path
-                               ::interface]}))
+                               ::interface
+                               ::vendor
+                               ::product
+                               ]}))
