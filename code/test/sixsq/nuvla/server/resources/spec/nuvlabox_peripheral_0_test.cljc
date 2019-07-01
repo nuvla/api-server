@@ -27,7 +27,10 @@
                  :identifier    "046d:082d"
                  :available     true
                  :device-path   "/dev/bus/usb/001/001"
-                 :interface     "USB"})
+                 :interface     "USB"
+                 :vendor        "SixSq"
+                 :product       "HD Pro Webcam C920"
+                 :classes       ["AUDIO" "VIDEO"]})
 
 
 (deftest check-nuvlabox-peripheral
@@ -37,9 +40,9 @@
 
   ;; required
   (doseq [attr #{:id :resource-type :created :updated :acl
-                 :version :parent :identifier :available}]
+                 :version :parent :identifier :available :classes}]
     (stu/is-invalid ::nb-peripheral-0/schema (dissoc peripheral attr)))
 
   ;; optional
-  (doseq [attr #{:device-path :interface}]
+  (doseq [attr #{:device-path :interface :vendor :product}]
     (stu/is-valid ::nb-peripheral-0/schema (dissoc peripheral attr))))
