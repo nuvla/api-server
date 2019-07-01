@@ -88,25 +88,26 @@
         (ltu/is-status 403))
 
     ;; admin/nuvlabox users can create a nuvlabox-peripheral resource
+    ;; use the default ACL
     (when-let [peripheral-url (-> session-nb
                                   (request base-uri
                                            :request-method :post
-                                           :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id
-                                                                                         :acl valid-acl)))
+                                           :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id)))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
                                   (ltu/location-url))]
 
-      ;; other users cannot see the peripheral
+      ;; other users can the peripheral when using the default ACL.
       (-> session-user
           (request peripheral-url)
           (ltu/body->edn)
-          (ltu/is-status 403))
+          (ltu/is-status 200))
 
       ;; owners can see the peripheral
       (-> session-owner
           (request peripheral-url)
           (ltu/body->edn)
+          (ltu/dump)
           (ltu/is-status 200))
 
       ;; nuvlabox user is able to update nuvlabox-peripheral

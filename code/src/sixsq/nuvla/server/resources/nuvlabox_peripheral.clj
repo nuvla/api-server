@@ -10,7 +10,8 @@ nuvlabox.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-peripheral :as nb-peripheral]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.acl-resource :as a]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -43,6 +44,15 @@ nuvlabox.
 (defmethod crud/validate resource-type
   [resource]
   (validate-subtype resource))
+
+;;
+;; acl
+;;
+
+(defmethod crud/add-acl resource-type
+  [resource request]
+  (-> (a/add-acl resource request)
+      (update-in [:acl :view-data] (comp vec conj) "group/nuvla-user")))
 
 
 ;;
