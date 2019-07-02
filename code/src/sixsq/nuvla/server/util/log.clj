@@ -23,3 +23,16 @@
                      (ring-resp/status 400))]
     (log/warn msg)
     (throw (ex-info msg response))))
+
+
+(defn log-error-and-throw-with-redirect
+  "Logs the given message and returns an error response. The error response
+   will contain the status code and message if the redirectURI is not provided.
+   If the redirectURI is provided, then an error response with a redirect to
+   the given URL will be provided. The error message is appended as the 'error'
+   query parameter."
+  [status msg redirectURI]
+  (log/error status "-" msg)
+  (if redirectURI
+    (throw (r/ex-redirect msg nil redirectURI))
+    (throw (r/ex-response msg status))))
