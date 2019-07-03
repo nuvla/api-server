@@ -34,6 +34,12 @@
 (def internal-edit (std-crud/edit-fn p/resource-type))
 
 
+;; FIXME: Provide the implementation for this function!
+(defn update-session
+  [session-id updated-session]
+  nil)
+
+
 (defn create-session
   "Creates a new session resource from the users credentials and the request
    header. The result contains the authentication method, the user's identifier,

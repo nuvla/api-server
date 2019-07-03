@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
 
 
 (def ^:const action-name "session-github-creation")
@@ -21,7 +22,7 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server clientIP redirectURI] {:keys [href]} :sessionTemplate :as current-session} (sutils/retrieve-session-by-id session-id)
+  (let [{:keys [server clientIP redirectURI] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirectURI instance)]
     (if-let [code (uh/param-value request :code)]
@@ -37,7 +38,7 @@
                                               session-id (update :roles #(str session-id " " %))
                                               server (assoc :server server)
                                               clientIP (assoc :clientIP clientIP))
-                      cookie          (cookies/claims-cookie claims)
+                      cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
                       updated-session (cond-> (assoc current-session :username matched-user :expiry expires)
@@ -46,7 +47,7 @@
                   (log/debug "github cookie token claims for" instance ":" claims)
                   (if (not= status 200)
                     resp
-                    (let [cookie-tuple [(sutils/cookie-name session-id) cookie]]
+                    (let [cookie-tuple [authn-info/authn-cookie cookie]]
                       (if redirectURI
                         (r/response-final-redirect redirectURI cookie-tuple)
                         (r/response-created session-id cookie-tuple)))))
@@ -57,7 +58,7 @@
 
 
 (defmethod callback/execute action-name
-  [{callback-id :id {session-id :href} :targetResource :as callback-resource} request]
+  [{callback-id :id {session-id :href} :target-resource :as callback-resource} request]
   (try
     (if-let [resp (validate-session request session-id)]
       resp

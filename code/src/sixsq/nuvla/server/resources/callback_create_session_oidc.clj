@@ -16,7 +16,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
-    [sixsq.nuvla.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
 
 
 (def ^:const action-name "session-oidc-creation")
@@ -25,13 +26,13 @@
 (defn validate-session
   [{{session-id :href} :targetResource callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
 
-  (let [{:keys [server clientIP redirectURI] {:keys [href]} :sessionTemplate :as current-session} (sutils/retrieve-session-by-id session-id)
+  (let [{:keys [server clientIP redirectURI] {:keys [href]} :sessionTemplate :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [clientID clientSecret publicKey tokenURL]} (oidc-utils/config-oidc-params redirectURI instance)]
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token clientID clientSecret tokenURL code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
-          (let [{:keys [sub] :as claims} (sign/unsign-claims access-token publicKey)
+          (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token publicKey)
                 roles (concat (oidc-utils/extract-roles claims)
                               (oidc-utils/extract-groups claims)
                               (oidc-utils/extract-entitlements claims))]
@@ -44,7 +45,7 @@
                                      roles (update :roles #(str % " " (str/join " " roles)))
                                      server (assoc :server server)
                                      clientIP (assoc :clientIP clientIP))
-                      cookie (cookies/claims-cookie claims)
+                      cookie (cookies/create-cookie claims)
                       expires (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles (:roles claims)
                       updated-session (cond-> (assoc current-session :username matched-user :expiry expires)
@@ -53,7 +54,7 @@
                   (log/debug "OIDC cookie token claims for" instance ":" (pr-str claims))
                   (if (not= status 200)
                     resp
-                    (let [cookie-tuple [(sutils/cookie-name session-id) cookie]]
+                    (let [cookie-tuple [authn-info/authn-cookie cookie]]
                       (if redirectURI
                         (r/response-final-redirect redirectURI cookie-tuple)
                         (r/response-created session-id cookie-tuple)))))

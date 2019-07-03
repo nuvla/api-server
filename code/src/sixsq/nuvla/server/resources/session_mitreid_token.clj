@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]))
+    [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
 
 
 (def ^:const authn-method "mitreid-token")
@@ -49,7 +50,7 @@
     (let [{:keys [clientIPs]} (oidc-utils/config-mitreid-token-params redirectURI instance)
           {:keys [publicKey]} (oidc-utils/config-mitreid-params redirectURI instance)]
       (try
-        (let [{:keys [sub] :as claims} (sign/unsign-claims token publicKey)
+        (let [{:keys [sub] :as claims} (sign/unsign-cookie-info token publicKey)
               roles (concat (oidc-utils/extract-roles claims)
                             (oidc-utils/extract-groups claims)
                             (oidc-utils/extract-entitlements claims))]
@@ -57,12 +58,13 @@
           (if sub
             (if-let [matched-user (ex/match-oidc-username :mitreid sub instance)]
               (let [session-info {:href href, :username matched-user, :redirectURI redirectURI}
-                    {:keys [id clientIP] :as session} (sutils/create-session session-info headers authn-method)
+                    ;; FIXME: Use correct values for username and user-id!
+                    {:keys [id clientIP] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
                     claims (cond-> (auth-internal/create-claims matched-user)
                                    id (assoc :session id)
                                    id (update :roles #(str id " " %))
                                    roles (update :roles #(str % " " (str/join " " roles))))
-                    cookie (cookies/claims-cookie claims)
+                    cookie (cookies/create-cookie claims)
                     expires (ts/rfc822->iso8601 (:expires cookie))
                     claims-roles (:roles claims)
                     session (cond-> (assoc session :expiry expires)
@@ -73,8 +75,8 @@
                   (when-not ((set clientIPs) clientIP)
                     (oidc-utils/throw-invalid-address clientIP redirectURI)))
 
-                (log/debug "MITREid cookie token claims for" (u/document-id href) ":" (pr-str claims))
-                (let [cookies {(sutils/cookie-name (:id session)) cookie}]
+                (log/debug "MITREid cookie token claims for" (u/id->uuid href) ":" (pr-str claims))
+                (let [cookies {authn-info/authn-cookie cookie}]
                   (if redirectURI
                     [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
                     [{:cookies cookies} session])))

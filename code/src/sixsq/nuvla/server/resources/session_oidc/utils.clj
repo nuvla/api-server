@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]
-    [com.sixsq.slipstream.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (defn prefix
   [realm attr]
@@ -124,7 +124,7 @@
 
 ;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create-callback [baseURI session-id action]
-  (let [callback-request {:params   {:resource-name callback/resource-url}
+  (let [callback-request {:params   {:resource-name callback/resource-type}
                           :body     {:action         action
                                      :targetResource {:href session-id}}
                           :identity {:current         "INTERNAL"
