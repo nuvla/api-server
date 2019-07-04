@@ -31,7 +31,7 @@
 
 (defmethod p/tpl->user email-invitation/registration-method
   [resource request]
-  (password-utils/create-user-map resource))
+  [nil (password-utils/create-user-map resource)])
 
 
 ;;

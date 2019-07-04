@@ -45,19 +45,19 @@
 ;;
 
 (defmethod p/tpl->session authn-method
-  [{:keys [token instance href redirectURI] :as resource} {:keys [headers] :as request}]
+  [{:keys [token instance href redirect-url] :as resource} {:keys [headers] :as request}]
   (if token
-    (let [{:keys [clientIPs]} (oidc-utils/config-mitreid-token-params redirectURI instance)
-          {:keys [publicKey]} (oidc-utils/config-mitreid-params redirectURI instance)]
+    (let [{:keys [client-ips]} (oidc-utils/config-mitreid-token-params redirect-url instance)
+          {:keys [public-key]} (oidc-utils/config-mitreid-params redirect-url instance)]
       (try
-        (let [{:keys [sub] :as claims} (sign/unsign-cookie-info token publicKey)
+        (let [{:keys [sub] :as claims} (sign/unsign-cookie-info token public-key)
               roles (concat (oidc-utils/extract-roles claims)
                             (oidc-utils/extract-groups claims)
                             (oidc-utils/extract-entitlements claims))]
           (log/debug "MITREid token authentication claims for" instance ":" (pr-str claims))
           (if sub
             (if-let [matched-user (ex/match-oidc-username :mitreid sub instance)]
-              (let [session-info {:href href, :username matched-user, :redirectURI redirectURI}
+              (let [session-info {:href href, :username matched-user, :redirect-url redirect-url}
                     ;; FIXME: Use correct values for username and user-id!
                     {:keys [id clientIP] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
                     claims (cond-> (auth-internal/create-claims matched-user)
@@ -71,14 +71,14 @@
                                     claims-roles (assoc :roles claims-roles))]
 
                 ;; only validate the client IP address, if the parameter is set
-                (when clientIPs
-                  (when-not ((set clientIPs) clientIP)
-                    (oidc-utils/throw-invalid-address clientIP redirectURI)))
+                (when client-ips
+                  (when-not ((set client-ips) clientIP)
+                    (oidc-utils/throw-invalid-address clientIP redirect-url)))
 
                 (log/debug "MITREid cookie token claims for" (u/id->uuid href) ":" (pr-str claims))
                 (let [cookies {authn-info/authn-cookie cookie}]
-                  (if redirectURI
-                    [{:status 303, :headers {"Location" redirectURI}, :cookies cookies} session]
+                  (if redirect-url
+                    [{:status 303, :headers {"Location" redirect-url}, :cookies cookies} session]
                     [{:cookies cookies} session])))
               (oidc-utils/throw-inactive-user sub nil))
             (oidc-utils/throw-no-subject nil)))

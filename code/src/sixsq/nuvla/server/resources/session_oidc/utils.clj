@@ -54,63 +54,63 @@
 
 ;; exceptions
 
-(defn throw-no-username-or-email [username email redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing name/preferred_name (" username ") or email (" email ")") redirectURI))
+(defn throw-no-username-or-email [username email redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing name/preferred_name (" username ") or email (" email ")") redirect-url))
 
-(defn throw-no-matched-user [username email redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "Unable to match account to name/preferred_name (" username ") or email (" email ")") redirectURI))
+(defn throw-no-matched-user [username email redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "Unable to match account to name/preferred_name (" username ") or email (" email ")") redirect-url))
 
 ;; general exceptions
 
-(defn throw-bad-client-config [cfg-id redirectURI]
-  (logu/log-error-and-throw-with-redirect 500 (str "missing or incorrect configuration (" cfg-id ") for OIDC/MITREid authentication") redirectURI))
+(defn throw-bad-client-config [cfg-id redirect-url]
+  (logu/log-error-and-throw-with-redirect 500 (str "missing or incorrect configuration (" cfg-id ") for OIDC/MITREid authentication") redirect-url))
 
-(defn throw-missing-code [redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 "OIDC/MITREid authentication callback request does not contain required code" redirectURI))
+(defn throw-missing-code [redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 "OIDC/MITREid authentication callback request does not contain required code" redirect-url))
 
-(defn throw-no-access-token [redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 "unable to retrieve OIDC/MITREid access token" redirectURI))
+(defn throw-no-access-token [redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 "unable to retrieve OIDC/MITREid access token" redirect-url))
 
-(defn throw-no-email [redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "cannot retrieve OIDC/MITREid primary email") redirectURI))
+(defn throw-no-email [redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "cannot retrieve OIDC/MITREid primary email") redirect-url))
 
-(defn throw-no-subject [redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing subject (sub) attribute") redirectURI))
+(defn throw-no-subject [redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing subject (sub) attribute") redirect-url))
 
-(defn throw-invalid-access-code [msg redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "error when processing OIDC/MITREid access token: " msg) redirectURI))
+(defn throw-invalid-access-code [msg redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "error when processing OIDC/MITREid access token: " msg) redirect-url))
 
-(defn throw-inactive-user [username redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "account is inactive (" username ")") redirectURI))
+(defn throw-inactive-user [username redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "account is inactive (" username ")") redirect-url))
 
-(defn throw-user-exists [username redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "account already exists (" username ")") redirectURI))
+(defn throw-user-exists [username redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "account already exists (" username ")") redirect-url))
 
-(defn throw-invalid-address [ip redirectURI]
-  (logu/log-error-and-throw-with-redirect 400 (str "request from invalid IP address (" ip ")") redirectURI))
+(defn throw-invalid-address [ip redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 (str "request from invalid IP address (" ip ")") redirect-url))
 
 
 ;; retrieval of configuration parameters
 
-(def oidc-keys #{:clientID :clientSecret :publicKey :authorizeURL :tokenURL})
+(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url})
 
 
-(def mitreid-keys #{:clientID :clientSecret :publicKey :authorizeURL :tokenURL :userProfileURL})
+(def mitreid-keys #{:client-id :client-secret :public-key :authorize-url :token-url :user-profile-url})
 
 
-(def mitreid-token-keys #{:clientIPs})
+(def mitreid-token-keys #{:client-ips})
 
 
 (defn config-params
-  [prefix key-set redirectURI instance]
+  [prefix key-set redirect-url instance]
   (let [cfg-id (str prefix instance)]
     (try
       (let [config (some-> cfg-id crud/retrieve-by-id-as-admin (select-keys key-set))]
         (if (->> config vals (every? (complement nil?)))
           config
-          (throw-bad-client-config cfg-id redirectURI)))
+          (throw-bad-client-config cfg-id redirect-url)))
       (catch Exception _
-        (throw-bad-client-config cfg-id redirectURI)))))
+        (throw-bad-client-config cfg-id redirect-url)))))
 
 
 (def config-oidc-params (partial config-params "configuration/session-oidc-" oidc-keys))

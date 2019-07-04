@@ -18,16 +18,16 @@
 
 
 (defn register-user
-  [{{:keys [href]} :targetResource {:keys [redirectURI]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
+  [{{:keys [href]} :targetResource {:keys [redirect-url]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
-        {:keys [clientID clientSecret publicKey tokenURL userProfileURL]} (oidc-utils/config-mitreid-params redirectURI instance)]
+        {:keys [client-id client-secret public-key token-url user-profile-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token clientID clientSecret tokenURL code (str base-uri (or callback-id "unknown-id") "/execute"))]
+      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
-          (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token publicKey)]
+          (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "MITREid access token claims for %s: %s" instance (pr-str claims))
             (if sub
-              (let [{:keys [givenName familyName emails] :as userinfo} (oidc-utils/get-mitreid-userinfo userProfileURL access-token)
+              (let [{:keys [givenName familyName emails] :as userinfo} (oidc-utils/get-mitreid-userinfo user-profile-url access-token)
                     email (->> emails (filter :primary) first :value)]
                 (if email
                   (if-let [matched-user (ex/create-user-when-missing! :mitreid {:external-login    sub
@@ -39,24 +39,24 @@
                     (do
                       (uiu/add-user-identifier! matched-user :mitreid sub instance)
                       matched-user)
-                    (oidc-utils/throw-user-exists sub redirectURI))
-                  (oidc-utils/throw-no-email redirectURI)))
-              (oidc-utils/throw-no-subject redirectURI)))
+                    (oidc-utils/throw-user-exists sub redirect-url))
+                  (oidc-utils/throw-no-email redirect-url)))
+              (oidc-utils/throw-no-subject redirect-url)))
           (catch Exception e
-            (oidc-utils/throw-invalid-access-code (str e) redirectURI)))
-        (oidc-utils/throw-no-access-token redirectURI))
-      (oidc-utils/throw-missing-code redirectURI))))
+            (oidc-utils/throw-invalid-access-code (str e) redirect-url)))
+        (oidc-utils/throw-no-access-token redirect-url))
+      (oidc-utils/throw-missing-code redirect-url))))
 
 
 (defmethod callback/execute action-name
-  [{callback-id :id {:keys [redirectURI]} :data :as callback-resource} request]
+  [{callback-id :id {:keys [redirect-url]} :data :as callback-resource} request]
   (log/debug "Executing callback" callback-id)
   (try
     (if-let [username (register-user callback-resource request)]
       (do
         (utils/callback-succeeded! callback-id)
-        (if redirectURI
-          (r/map-response (format "user '%s' created" username) 303 callback-id redirectURI)
+        (if redirect-url
+          (r/map-response (format "user '%s' created" username) 303 callback-id redirect-url)
           (r/map-response (format "user '%s' created" username) 201)))
       (do
         (utils/callback-failed! callback-id)

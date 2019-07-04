@@ -41,17 +41,18 @@
 
 ;; creates a temporary session and redirects to GitHub to start authentication workflow
 (defmethod p/tpl->session authn-method
-  [{:keys [href instance redirectURI] :as resource} {:keys [headers base-uri] :as request}]
-  (let [[client-id client-secret] (gu/config-github-params redirectURI instance)]
+  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  (let [[client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if (and client-id client-secret)
       (let [session-init (cond-> {:href href}
-                                 redirectURI (assoc :redirectURI redirectURI))
-            session (sutils/create-session session-init headers authn-method)
-            session (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
+                                 redirect-url (assoc :redirect-url redirect-url))
+            ;; FIXME: provide real values for the username and user-role!
+            session      (sutils/create-session "username" "user-role" session-init headers authn-method)
+            session      (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
             callback-url (sutils/create-callback base-uri (:id session) cb/action-name)
             redirect-url (format gu/github-oath-endpoint client-id callback-url)]
         [{:status 303, :headers {"Location" redirect-url}} session])
-      (gu/throw-bad-client-config authn-method redirectURI))))
+      (gu/throw-bad-client-config authn-method redirect-url))))
 
 ;;
 ;; initialization: no schema for this parent resource

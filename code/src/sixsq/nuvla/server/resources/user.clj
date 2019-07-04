@@ -140,6 +140,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+
 ;; requires a user-template to create new User
 (defmethod crud/add resource-type
   [{{:keys [template] :as body} :body :as request}]
@@ -148,21 +149,23 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          user       (-> body
-                         (assoc :resource-type create-type)
-                         (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                         (std-crud/resolve-hrefs authn-info true)
-                         (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                         (crud/validate)
-                         (:template)
-                         (merge-with-defaults)
-                         (tpl->user request)                ;; returns a tuple [response-fragment, resource-body]
-                         (merge desc-attrs))]
+          [frag user] (-> body
+                          (assoc :resource-type create-type)
+                          (update-in [:template] dissoc :method :id) ;; forces use of template reference
+                          (std-crud/resolve-hrefs authn-info true)
+                          (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                          (crud/validate)
+                          (:template)
+                          (merge-with-defaults)
+                          (tpl->user request))]
 
-      (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
-        (when (and resource-id (= 201 status))
-          (post-user-add (assoc user :id resource-id, :redirect-url (:redirect-url template)) request))
-        result))
+      (if frag
+        frag
+        (if user
+          (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
+            (when (and resource-id (= 201 status))
+              (post-user-add (assoc user :id resource-id, :redirect-url (:redirect-url template)) request))
+            result))))
 
     (catch Exception e
       (or (ex-data e)

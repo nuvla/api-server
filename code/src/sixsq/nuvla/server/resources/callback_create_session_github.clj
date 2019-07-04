@@ -22,9 +22,9 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server clientIP redirectURI] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [server clientIP redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
-        [client-id client-secret] (gu/config-github-params redirectURI instance)]
+        [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-github/get-github-access-token client-id client-secret code)]
         (if-let [user-info (auth-github/get-github-user-info access-token)]
@@ -48,13 +48,13 @@
                   (if (not= status 200)
                     resp
                     (let [cookie-tuple [authn-info/authn-cookie cookie]]
-                      (if redirectURI
-                        (r/response-final-redirect redirectURI cookie-tuple)
+                      (if redirect-url
+                        (r/response-final-redirect redirect-url cookie-tuple)
                         (r/response-created session-id cookie-tuple)))))
-                (gu/throw-no-matched-user redirectURI))))
-          (gu/throw-no-user-info redirectURI))
-        (gu/throw-no-access-token redirectURI))
-      (gu/throw-missing-oauth-code redirectURI))))
+                (gu/throw-no-matched-user redirect-url))))
+          (gu/throw-no-user-info redirect-url))
+        (gu/throw-no-access-token redirect-url))
+      (gu/throw-missing-oauth-code redirect-url))))
 
 
 (defmethod callback/execute action-name

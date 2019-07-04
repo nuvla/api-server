@@ -17,9 +17,9 @@
 
 
 (defn register-user
-  [{{:keys [href]} :targetResource {:keys [redirectURI]} :data :as callback-resource} request]
+  [{{:keys [href]} :targetResource {:keys [redirect-url]} :data :as callback-resource} request]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
-        [client-id client-secret] (gu/config-github-params redirectURI instance)]
+        [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-github/get-github-access-token client-id client-secret code)]
         (if-let [user-info (auth-github/get-github-user-info access-token)]
@@ -34,22 +34,22 @@
                   (do
                     (uiu/add-user-identifier! matched-user :github github-login nil)
                     matched-user)
-                  (gu/throw-user-exists github-login redirectURI))
-                (gu/throw-no-matched-user redirectURI))))
-          (gu/throw-no-user-info redirectURI))
-        (gu/throw-no-access-token redirectURI))
-      (gu/throw-missing-oauth-code redirectURI))))
+                  (gu/throw-user-exists github-login redirect-url))
+                (gu/throw-no-matched-user redirect-url))))
+          (gu/throw-no-user-info redirect-url))
+        (gu/throw-no-access-token redirect-url))
+      (gu/throw-missing-oauth-code redirect-url))))
 
 
 (defmethod callback/execute action-name
-  [{callback-id :id {:keys [redirectURI]} :data :as callback-resource} request]
+  [{callback-id :id {:keys [redirect-url]} :data :as callback-resource} request]
   (log/debug "Executing callback" callback-id)
   (try
     (if-let [username (register-user callback-resource request)]
       (do
         (utils/callback-succeeded! callback-id)
-        (if redirectURI
-          (r/map-response (format "user '%s' created" username) 303 callback-id (or redirectURI "/"))
+        (if redirect-url
+          (r/map-response (format "user '%s' created" username) 303 callback-id (or redirect-url "/"))
           (r/map-response (format "user '%s' created" username) 201)))
       (do
         (utils/callback-failed! callback-id)

@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
+    [sixsq.nuvla.server.resources.user-template-github :as github]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -22,6 +23,8 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type
+                              (str t/resource-type "-" github/resource-url)
+                              (str t/resource-type "-" github/resource-url "-create")
                               (str t/resource-type "-" email-password/resource-url)
                               (str t/resource-type "-" email-password/resource-url "-create")
                               (str t/resource-type "-" username-password/resource-url)

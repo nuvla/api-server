@@ -42,14 +42,15 @@
 ;;
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href instance redirectURI] :as resource} {:keys [headers base-uri] :as request}]
-  (let [{:keys [clientID authorizeURL]} (oidc-utils/config-mitreid-params redirectURI instance)
+  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  (let [{:keys [client-id authorize-url]} (oidc-utils/config-mitreid-params redirect-url instance)
         session-init (cond-> {:href href}
-                             redirectURI (assoc :redirectURI redirectURI))
-        session (sutils/create-session session-init headers authn-method)
+                             redirect-url (assoc :redirect-url redirect-url))
+        ;; FIXME: Provide real values for username and user-role!
+        session (sutils/create-session "username" "user-role" session-init headers authn-method)
         session (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
         callback-url (oidc-utils/create-callback base-uri (:id session) cb/action-name)
-        redirect-url (oidc-utils/create-redirect-url authorizeURL clientID callback-url)]
+        redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
     [{:status 303, :headers {"Location" redirect-url}} session]))
 
 ;;

@@ -27,12 +27,12 @@
 
 (defn log-error-and-throw-with-redirect
   "Logs the given message and returns an error response. The error response
-   will contain the status code and message if the redirectURI is not provided.
-   If the redirectURI is provided, then an error response with a redirect to
-   the given URL will be provided. The error message is appended as the 'error'
-   query parameter."
-  [status msg redirectURI]
+   will contain the status code and message if the redirect-url is not
+   provided. If the redirect-url is provided, then an error response with a
+   redirect to the given URL will be provided. The error message is appended as
+   the 'error' query parameter."
+  [status msg redirect-url]
   (log/error status "-" msg)
-  (if redirectURI
-    (throw (r/ex-redirect msg nil redirectURI))
+  (if redirect-url
+    (throw (r/ex-redirect msg nil redirect-url))
     (throw (r/ex-response msg status))))
