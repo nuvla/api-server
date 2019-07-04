@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.deployment
+  "
+These resources represent the deployment of a component or application within
+a container orchestration engine.
+"
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]

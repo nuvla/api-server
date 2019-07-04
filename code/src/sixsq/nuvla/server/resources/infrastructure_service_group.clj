@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-group
   "
 The infrastructure-service-group resource represents a group of
-infrastructure-service resources, which are intended to be used together.
+`infrastructure-service` resources, which are intended to be used together.
 
-The resource contains metadata concerning the infrastructure-service-group and
-an automatically generated list of associated infrastructure-service resources.
-The resources are tied to an infrastructure via the infrastructure-service
-resource's `parent` attribute, which will contain the `id` of the
-infrastructure-service-group resource.
+The resource contains metadata concerning the `infrastructure-service-group`
+and an automatically generated list of associated `infrastructure-service`
+resources. The resources are tied to an infrastructure via the
+`infrastructure-service` resource's `parent` attribute, which will contain the
+`id` of the `infrastructure-service-group` resource.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]

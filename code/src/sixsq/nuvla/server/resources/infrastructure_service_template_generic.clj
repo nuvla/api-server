@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-template-generic
   "
-Template that requires all the core attributes of an infrastructure-service
-resource.
+Template that requires all the core attributes of a generic
+`infrastructure-service` resource.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]

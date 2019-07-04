@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.group-template
   "
-Templates for creating a new group. The collection contains a single template
+Templates for creating a new `group`. The collection contains a single template
 (group-template/generic) that serves as a placeholder. It is not needed for
 creating a group and does not provide any useful defaults.
 "

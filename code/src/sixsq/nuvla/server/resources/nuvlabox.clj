@@ -1,4 +1,9 @@
 (ns sixsq.nuvla.server.resources.nuvlabox
+  "
+The core `nuvlabox` resource that contains only those attributes required in
+all subtypes of this resource. Versioned subclasses define the attributes for a
+particular NuvlaBox release.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]

@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-public
   "
-Resource represents an object in S3 that can be accessed by anyone.
+This resource represents an object in S3 that can be accessed by anyone via a
+fixed URL.
 "
   (:require
     [clojure.tools.logging :as log]

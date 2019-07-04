@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-password-reset
+  "
+Provides the functions necessary to create a session from a password reset
+request, while also resetting the password itself.
+"
   (:require
     [buddy.hashers :as hashers]
     [sixsq.nuvla.auth.password :as auth-password]

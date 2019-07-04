@@ -2,7 +2,7 @@
   "
 Template that allows a user to register with a username (identifier) and
 password. This template is intended to be used only by administrators for
-creating new accounts without email addresses.
+creating new accounts without email addresses or email address validation.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

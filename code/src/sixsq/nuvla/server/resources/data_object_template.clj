@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-object-template
+  "
+This template creates resources that represent an objects in S3. Subclasses of
+this template define how the object can be accessed.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]

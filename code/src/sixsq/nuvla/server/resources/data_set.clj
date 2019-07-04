@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-set
   "
-These resources describe collections of data-object or data-record resources.
-It can also identify applications that are capable of analyzing these data.
+These resources describe collections of `data-object` or `data-record`
+resources. It can also identify applications that are capable of analyzing
+these data.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]

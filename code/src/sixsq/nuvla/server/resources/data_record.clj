@@ -1,12 +1,14 @@
 (ns sixsq.nuvla.server.resources.data-record
   "
-The data-record resource is the primary resource in the data catalog. Each
-record provides metadata for a particular data object.
+The `data-record` resource provides metadata for a particular data object.
+(Although `data-record` resources can also be used independently of a
+`data-object`.)
 
 The schema for the this resource is open, allowing any information to be
 associated with the data object. The only requirement is that keys must be
-prefixed. The prefixes **must** be defined in a data-record-key-prefix resource
-and the key itself **may** be described in a data-record-key resource.
+prefixed. The prefixes **must** be defined in a `data-record-key-prefix`
+resource and the key itself **may** be described in a `data-record-key`
+resource.
 "
   (:require
     [clojure.string :as str]

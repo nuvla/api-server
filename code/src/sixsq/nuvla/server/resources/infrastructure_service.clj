@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service
   "
 This resource represents an infrastructure service with an endpoint. Instances
-of a infrastructure-service resource must reference a
-infrastructure-service-group resource via the `parent` attribute. Associated
+of a `infrastructure-service` resource must reference an
+`infrastructure-service-group` resource via the `parent` attribute. Associated
 credentials should make an explicit reference to the relevant
-infrastructure-service resources.
+`infrastructure-service` resources.
 
 This is a templated resource. All creation requests must be done via an
-existing infrastructure-service-template resource.
+existing `infrastructure-service-template` resource.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]

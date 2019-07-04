@@ -1,7 +1,11 @@
 (ns sixsq.nuvla.server.resources.deployment-parameter
+  "
+These resources represent the parameters of a deployment that describe
+properties of the deployment, for example, the IP address of the container or a
+configuration option.
+"
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

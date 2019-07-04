@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-template-swarm
   "
-Template that requires information necessary to create a new Docker Swarm
-cluster on a given cloud infrastructure.
+Template that requires the information necessary to create and manage a new
+Docker Swarm cluster on a given cloud infrastructure.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]

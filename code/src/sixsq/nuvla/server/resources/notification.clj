@@ -1,33 +1,33 @@
 (ns sixsq.nuvla.server.resources.notification
   "
-Notification resource allows creation and deletion of notification messages.
+The `notification` resource allows creation and deletion of notification
+messages.
 
-Each notification should be assigned a category. There are no predefined
+Each `notification` should be assigned a category. There are no predefined
 categories.
 
-Notification must have :content-unique-id set. This field should be used
-by the publisher to uniquely label the notification based on some of its
-fields (e.g.: be a hash of :message, :category and :target-resource fields).
-This field should allow to uniquely identify messages and simplify search.
+Each `notification` resource must have `content-unique-id` set. This field
+should be used by the publisher to uniquely label the notification based on
+some of its fields (e.g.: be a hash of `message`, `category` and
+`target-resource` fields). This field should allow a `notification` to be
+uniquely identified and thus, simplify searching.
 
-Notification can have :target-resource field set to identify the resource
+Notifications can have `target-resource` field set to identify the resource
 for which the notification was published.
 
-Notification can have :not-before field set via `defer` action to signal a
-notification delivery mechanism to hide this notification until the defined
-time. Deferring notification can be done any number of times.
+A `notification` can have `not-before` field set via the `defer` action to
+signal a notification delivery mechanism to hide this notification until the
+defined time. Deferring notification can be done any number of times.
 
-On notification creation, an optional :callback field can be set for binding
-it to an existing callback. An external notification handler is responsible
-for calling the callback, if and when required.
+On `notification` creation, an optional `callback` field can be set for
+binding it to an existing callback. An external `notification` handler is
+responsible for calling the callback, if and when required.
 
 Notifications can not be edited.
 
-ACL
-
-Notifications can only be created by admins. Creator of notification should
-provide resource level ACL accordingly, which for example may depend on the
-category of the notification.
+**Notifications can only be created by admins and by default, will only be
+visible to admins.** Consequently, the creator of the `notification` should
+provide an explicit ACL that the describes the desired visibility.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]

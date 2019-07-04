@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-template-email-invitation
   "
-Template that allows a user to invite another person with an email address to use nuvla service.
+Template that allows a user to invite another person with an email address to
+use a Nuvla service.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
