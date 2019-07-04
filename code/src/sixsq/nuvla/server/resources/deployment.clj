@@ -15,7 +15,9 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -192,4 +194,5 @@ a container orchestration engine.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::deployment-spec/deployment))
+  (std-crud/initialize resource-type ::deployment-spec/deployment)
+  (md/register (gen-md/generate-metadata ::ns ::deployment-spec/deployment)))

@@ -11,7 +11,9 @@ configuration option.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]))
+    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -113,4 +115,5 @@ configuration option.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter))
+  (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter)
+  (md/register (gen-md/generate-metadata ::ns ::deployment-parameter/deployment-parameter)))

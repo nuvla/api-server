@@ -28,8 +28,6 @@ credentials (either direct infrastructure credentials or via pre-signed URLs).
   (validate-fn resource))
 
 
-
-
 ;;
 ;; initialization
 ;;
