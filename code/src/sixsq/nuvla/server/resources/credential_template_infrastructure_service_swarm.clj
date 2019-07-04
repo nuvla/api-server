@@ -16,6 +16,9 @@ the user's public certificate ('cert'), and the user's private key ('key').
 (def ^:const credential-subtype "infrastructure-service-swarm")
 
 
+(def ^:const resource-url credential-subtype)
+
+
 (def ^:const method "infrastructure-service-swarm")
 
 

@@ -8,7 +8,9 @@ correspond exactly to those required by `docker-machine`.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-azure :as service]))
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-azure :as service]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 ;;
 ;; convert template to credential
@@ -48,4 +50,5 @@ correspond exactly to those required by `docker-machine`.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service/schema))
+  (std-crud/initialize p/resource-type ::service/schema)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema)))

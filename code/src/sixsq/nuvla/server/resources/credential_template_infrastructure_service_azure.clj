@@ -15,6 +15,9 @@ names correspond exactly to those required by `docker-machine`.
 (def ^:const credential-subtype "infrastructure-service-azure")
 
 
+(def ^:const resource-url credential-subtype)
+
+
 (def ^:const resource-name "Azure client credentials")
 
 

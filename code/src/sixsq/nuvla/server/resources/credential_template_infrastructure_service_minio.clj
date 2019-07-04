@@ -14,6 +14,9 @@ Allows credentials for Minio S3 services to be stored.
 (def ^:const credential-subtype "infrastructure-service-minio")
 
 
+(def ^:const resource-url credential-subtype)
+
+
 (def ^:const resource-name "Minio S3 Credentials")
 
 

@@ -5,19 +5,21 @@ Provides the credentials necessary to access a Minio S3 service.
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.credential :as cred]
+    [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as cred-tpl-mino]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-minio :as cred-minio]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as cred-tpl-mino-spec]))
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-minio :as cred-tpl-mino-spec]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
 ;; convert template to credential
 ;;
 
-(defmethod cred/tpl->credential cred-tpl-mino/credential-subtype
+(defmethod p/tpl->credential cred-tpl-mino/credential-subtype
   [{:keys [subtype method access-key secret-key parent acl]} request]
-  (let [resource (cond-> {:resource-type cred/resource-type
+  (let [resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method
                           :access-key    access-key
@@ -34,7 +36,7 @@ Provides the credentials necessary to access a Minio S3 service.
 (def validate-fn (u/create-spec-validation-fn ::cred-minio/schema))
 
 
-(defmethod cred/validate-subtype cred-tpl-mino/credential-subtype
+(defmethod p/validate-subtype cred-tpl-mino/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -42,7 +44,7 @@ Provides the credentials necessary to access a Minio S3 service.
 (def create-validate-fn (u/create-spec-validation-fn ::cred-tpl-mino-spec/schema-create))
 
 
-(defmethod cred/create-validate-subtype cred-tpl-mino/credential-subtype
+(defmethod p/create-validate-subtype cred-tpl-mino/credential-subtype
   [resource]
   (create-validate-fn resource))
 
@@ -53,4 +55,5 @@ Provides the credentials necessary to access a Minio S3 service.
 
 (defn initialize
   []
-  (std-crud/initialize cred/resource-type ::cred-minio/schema))
+  (std-crud/initialize p/resource-type ::cred-minio/schema)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-minio/schema)))

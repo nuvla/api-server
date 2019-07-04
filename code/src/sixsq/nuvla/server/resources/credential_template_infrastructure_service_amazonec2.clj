@@ -15,6 +15,9 @@ names correspond exactly to those required by `docker-machine`.
 (def ^:const credential-subtype "infrastructure-service-amazonec2")
 
 
+(def ^:const resource-url credential-subtype)
+
+
 (def ^:const resource-name "AWS API keys")
 
 
@@ -44,6 +47,8 @@ names correspond exactly to those required by `docker-machine`.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::service/schema))
+
+
 (defmethod p/validate-subtype method
   [resource]
   (validate-fn resource))

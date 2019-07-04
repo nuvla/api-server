@@ -10,7 +10,9 @@ either a manager or worker within the Swarm.
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as tpl-swarm-token]
     [sixsq.nuvla.server.resources.spec.credential-swarm-token :as swarm-token-spec]
-    [sixsq.nuvla.server.resources.spec.credential-template-swarm-token :as ct-swarm-token-spec]))
+    [sixsq.nuvla.server.resources.spec.credential-template-swarm-token :as ct-swarm-token-spec]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
@@ -19,7 +21,8 @@ either a manager or worker within the Swarm.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::swarm-token-spec/schema))
+  (std-crud/initialize p/resource-type ::swarm-token-spec/schema)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::swarm-token-spec/schema)))
 
 
 ;;

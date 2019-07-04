@@ -16,7 +16,9 @@ plain text password against the stored hash and to change the password (hash).
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
@@ -25,7 +27,8 @@ plain text password against the stored hash and to change the password (hash).
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema))
+  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema)))
 
 
 ;;

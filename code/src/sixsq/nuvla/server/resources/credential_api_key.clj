@@ -55,7 +55,9 @@ from the response! The secret cannot be recovered from the server later.**
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-api-key :as tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
-    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]))
+    [sixsq.nuvla.server.resources.spec.credential-api-key :as api-key]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 (defn strip-session-role
   [roles]
@@ -114,4 +116,5 @@ from the response! The secret cannot be recovered from the server later.**
 ;;
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::api-key/schema))
+  (std-crud/initialize p/resource-type ::api-key/schema)
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::api-key/schema)))
