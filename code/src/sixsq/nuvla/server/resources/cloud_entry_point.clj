@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.cloud-entry-point
   "
-The Cloud Entry Point (CEP) provides a list of all CIMI resource (document)
-collections available from this server instance. See the general information
-about the service below. Detailed metadata for each collection (and for some
-resource templates) can be found in the ResourceMetadata collection.
+The `cloud-entry-point` provides a list of all resource (document) collections
+available from the Nuvla server. See the general information about the service
+below. Detailed metadata for each collection (and for some resource templates)
+can be found in the resource-metadata collection.
 
 # CIMI API
 
@@ -12,25 +12,21 @@ Interface](https://www.dmtf.org/sites/default/files/standards/documents/DSP0263_
 (CIMI) specification from DMTF describes a uniform, extensible, RESTful (HTTP)
 API for the management of cloud resources.
 
-As CIMI's underlying resource model closely resembles the existing
-SlipStream resource model and simplifies use of the API through
-standard patterns and autodiscovery, the SlipStream developers have
-decided to adopt this standard.
-
-> NOTE: All of the resources rooted at '/api' follow the CIMI resource
-management patterns. These are marked with 'CIMI' in the table of contents.
-
+The Nuvla API has been inspired by the CIMI specification, with changes and
+additions based on experience from a previous implementation.
 
 ## Autodiscovery
 
-The CIMI API has been designed to allow for automatic discovery of the
+The Nuvla API has been designed to allow for automatic discovery of the
 supported resources and management operations.
 
-### Resource Directory
+### Cloud Entry Point
+
+The `cloud-entry-point` lists all available resources and provides a URL,
+relative to the `base-uri` for accessing each collection.
 
 ```shell
-# Cloud Entry Point (directory of resources)
-curl https://nuv.la/api/cloud-entry-point
+curl https://nuvla.io/api/cloud-entry-point
 ```
 
 ```json
@@ -42,53 +38,47 @@ curl https://nuv.la/api/cloud-entry-point
 
   \"base-uri\" : \"https://nuv.la/api/\",
 
-  \"connectors\" : {
-    \"href\" : \"connector\"
-  },
-  \"accountingRecords\" : {
-    \"href\" : \"accounting-record\"
-  },
-
-  \"other fields\" : \"...\"
+  \"collections\" : {
+    \"email\" : {
+      \"href\" : \"email\"
+    },
+    \"user-identifier\" : {
+      \"href\" : \"user-identifier\"
+    },
+    ...
+  }
 }
 ```
 
-The primary directory of resources is the **Cloud Entry Point** (CEP),
-which contains a list of named resource collections and their URLs (in
-the `href` field) relative to the `base-uri` value.  The CEP also
-contains some other metadata.
-
-> WARNING: Although SlipStream maintains consistent naming throughout the API,
+> WARNING: Although Nuvla maintains consistent naming throughout the API,
 assumptions about the URL naming must not be made by clients. Clients must use
-the CEP to discover the correct URLs for managed resources.
+the cloud-entry-point to discover the correct URLs for managed resources.
 
 ### Operations
 
-If the user is authorized to perform various management operations on
-a resource, the resource will contain an 'operations' key.  The value
-of the key will contain a list of actions (e.g. `add`, `edit`,
-`delete`, `start`) along with the URL to use to execute the action.
+If the user is authorized to perform management operations on a resource, the
+resource will contain an `operations` key. The value of the key will contain a
+list of actions (e.g. `add`, `edit`, `delete`, `start`) along with the URL to
+use to execute the action.
 
-The HTTP methods to use for the CIMI `add`, `edit`, and `delete`
-operations are POST, PUT, and DELETE, respectively.  All other
-operations use the HTTP POST method.
+The HTTP methods to use for the CIMI `add`, `edit`, and `delete` operations
+are POST, PUT, and DELETE, respectively. All other operations use the HTTP POST
+method.
 
 ## Resource Management (CRUD)
 
-The CIMI standard defines patterns for all of the usual database
-actions: Search (or Query), Create, Read, Update, and Delete (SCRUD),
-although the specification uses 'Add' for 'Create' and 'Edit' for
-'Update'.
+Nuvla adopts the CIMI standard patterns for all of the usual database actions:
+Search (or Query), Create, Read, Update, and Delete (SCRUD), although the
+specification uses 'Add' for 'Create' and 'Edit' for 'Update'.
 
-**See Section 4.2.1 of the CIMI specification for detailed
-descriptions of these patterns.**  Only differences from the standard
-patterns are documented here.
+**See Section 4.2.1 of the CIMI specification for detailed descriptions of
+these patterns.** Only differences from the standard patterns are documented
+here.
 
 ### HTTP Methods
 
 The following table shows the mapping between the resource management
-action and the HTTP method to be used. **Those resources *with* a CIMI
-notation follow the CIMI patterns.**
+action and the HTTP method to be used.
 
 Action | HTTP Method | URL
 ------ | ----------- | ---
@@ -101,8 +91,8 @@ Other | `POST` | operation URL
 
 > NOTE: Specialized actions can appear in the operations section of a
 resource. Any non-standard operation will use the POST method for the request.
-The parameters (if any) will depend on the operation.
-
+The parameters (if any) will depend on the operation and should be documented
+in the resource-metadata.
 
 ### Add Pattern Variations
 
@@ -113,70 +103,66 @@ Note that there are two CIMI add (create) patterns:
 
  * **Templated creation** that uses a template to create the resource.
 
-In the Cloud Entry Point, **any resource that has a corresponding
-template resource will use the templated add pattern**. For example,
-the Session resource will use the templated add pattern because there
-is a SessionTemplate resource also listed.
+In the `cloud-entry-point`, **any resource that has a corresponding template
+resource will use the templated add pattern**. For example, the `session`
+resource will use the templated add pattern because there is also a
+`session-template` resource.
 
 ## Resource Selection
 
-The CIMI specification provides advanced features for selecting
-resources when searching collections, including paging (CIMI Section
-4.1.6.2), subsetting (4.1.6.3), sorting (4.1.6.6), and filtering
-(4.1.6.1).
+The CIMI specification provides advanced features for selecting resources when
+searching collections, including paging (CIMI Section 4.1.6.2), subsetting
+(4.1.6.3), sorting (4.1.6.6), and filtering (4.1.6.1).
 
-All of the resource selection parameters are specified as HTTP query
-parameters.  These are specified directly within the URL when using
-the HTTP `GET` method.  They are specified in a body with the media
-type of `application/x-www-form-urlencoded` when using the `PUT`
-method. (Note that use of `PUT` for searches is an SlipStream
-extension to the CIMI standard.)
+All the resource selection parameters are specified as HTTP query parameters.
+These are specified directly within the URL when using the HTTP GET method.
+They are specified in a body with the media type of
+`application/x-www-form-urlencoded` when using the PUT method. (Note that use
+of PUT for searches is a Nuvla extension to the CIMI standard that allows for
+long, complex filters.)
 
-> WARNING: All of the CIMI query parameters are prefixed with a dollar sign
-($). This was an unfortunate choice because it signals variable interpolation
-in most shells. When using these parameters at the command line, be sure to
-escape the dollar signs or to put the parameters within single quotes.
+All the CIMI query parameters are prefixed with a dollar sign ($). This was an
+unfortunate choice because it signals variable interpolation in most shells and
+thus complicates command-line access to the API. To avoid this issue, **the
+Nuvla API drops the dollar sign from query parameters.** For example, use
+`first` instead of the CIMI `$first`.
 
 ### Ordering
 
-The results can be ordered by the values of fields within the
-resources.  The general form of a query with ordering is:
+The results can be ordered by the values of fields within the resources. The
+general form of a query with ordering is:
 
 `orderby=attributeName[:asc|:desc], ...`
 
-The ascending (:asc, default) or descending (:desc) field is
-optional.  The sorting is done using the natural order of the field
-values. Multiple `orderby` parameters are allowed, in which case
-resources are sorted by the first attribute, then equal values are
-sorted by the second attribute, etc.
+The ascending (:asc, default) or descending (:desc) field is optional. The
+sorting is done using the natural order of the field values. Multiple `orderby`
+parameters are allowed, in which case resources are sorted by the first
+attribute, then equal values are sorted by the second attribute, etc.
 
 ### Paging
 
-A range of resources can be obtained by setting the `first` and
-`last` (1-based) query parameters.  The values default to the first
-and last resources, respectively, in the collection if explicit values
-are not provided.
+A range of resources can be obtained by setting the `first` and `last`
+(1-based) query parameters. The values default to the 1 and 20, respectively.
 
-> NOTE: The SlipStream implementation will limit the number of returned
-resources to 10000, independently of the values provided for these parameters.
-This is to protect both the client and server from excessively large responses.
+> NOTE: The Nuvla implementation will limit the number of returned resources
+to 10000, independently of the values provided for these parameters. This is to
+protect both the client and server from excessively large responses.
 
 > NOTE: The selection of resources via these parameters is done after any
 filtering and ordering.
 
 ### Subsetting
 
-Using the `select` parameter allows you to select only certain
-attributes to be returned by the server.  Avoiding sending information
-that will not be useful reduces the load on the network and the
-server.
+Using the `select` parameter allows you to select only certain attributes to
+be returned by the server. Avoiding sending information that will not be useful
+reduces the load on the network and the server.
 
 Multiple attributes may be specified by providing a string with
 comma-separated values or with multiple `select` parameters.
 
-> NOTE: For various reasons, the server may return attributes that you have
-not selected in the responses. The server should always return the selected
-attributes.
+> NOTE: The server may return attributes that you have not selected in the
+responses, such as the resource identifier. The server should always return the
+selected attributes.
 
 Example select values:
 
@@ -186,26 +172,26 @@ name,description
 
 ### Filtering
 
+The CIMI specification defines a simple, but powerful filtering language to
+make sophisticated selections of resources. (See Section 4.1.6.1 of the full
+[CIMI
+specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0263_2.0.0.pdf).)
+The syntax of the `filter` query parameter consists of infix binary comparisons
+combined with `and` or `or` operators. Parentheses can be used to force the
+ordering of operations. Whitespace is ignored.
+
 Example filters:
 
 ```c
-((alpha>2) and (beta>='bad value') or (nested/value!=false)
+((alpha>2) and (beta>='2007-06-24T00:10:20Z') or (nested/value!=false)
 ```
 
 ```c
-((property['alpha']=\"OK\") or (missing=null))
+((tags='alpha') or (missing=null))
 ```
 
-The CIMI specification defines a simple, but powerful, filtering
-language to make sophisticated selections of resources. (See Section
-4.1.6.1 of the full [CIMI
-specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0263_2.0.0.pdf).)
-The syntax of the `filter` query parameter consists of infix binary
-comparisons combined with `and` or `or` operators. Parentheses can be
-used to force the ordering of operations.  Whitespace is ignored.
-
-The following tables list the supported relational operators and
-types. All comparisons use the natural ordering of the data type.
+The following tables list the supported relational operators and types. All
+comparisons use the natural ordering of the data type.
 
 operator | description
 -------- | -----------
@@ -215,7 +201,7 @@ operator | description
 <= | less than or equal
 > | greater than
 >= | greater than or equal
-^= | starts with (SlipStream extension)
+^= | starts with (Nuvla extension)
 
 type | comment
 ---- | -------
@@ -223,45 +209,43 @@ integer | integer values
 string | single or double-quoted strings
 date | date in ISO8601 format
 boolean | either true or false
-null | null values (SlipStream extension)
+null | null values (Nuvla extension)
 
-The SlipStream filtering implementation is a superset of the CIMI
-filtering specification.  These extentions include:
+The Nuvla filtering implementation is a superset of the CIMI filtering
+specification. These extensions include:
 
  - The arguments for binary operators can be specified in either order
    (attribute, value or value, attribute).
+
  - 'null' is supported as a literal value to allow the
    existence/non-existence of a value to be determined.
+
  - A 'prefix' or 'starts with' operator ('^=') is supported. This was
    judged to be generally useful and was easy to implement for
    Elasticsearch.
+
  - Nested attributes are supported with levels separated by slashes
    ('/'). This syntax is used elsewhere in the CIMI standard, but not
    specifically mentioned in the filter specification.
 
-The filter syntax may be extended in the future to also support the
-'not' logical operation.
-
 The [full
-grammar](https://raw.githubusercontent.com/nuvla/server/master/db-binding/resources/sixsq/nuvla/db/filter/cimi-filter-grammar.txt)
+grammar](https://raw.githubusercontent.com/nuvla/api-server/master/code/resources/sixsq/nuvla/db/filter/cimi-filter-grammar.txt)
 of our extended CIMI filtering is documented in GitHub.
-
 
 ### Aggregations
 
-The SlipStream CIMI implementation also allows users to aggregate
-values over a set of filtered documents.  This is useful for providing
-summary information concerning a set of documents, such as the sum of
-an attribute, average, etc.
+The Nuvla API also allows users to aggregate values over a set of filtered
+documents. This is an extension to the CIMI specification. Aggregations are
+useful for providing summary information concerning a set of documents, such as
+the sum of an attribute, average, etc.
 
 The general form of a query with an aggregation is:
 
 `aggregation=algorithm:attributeName, ...`
 
-Multiple aggregation expressions can be provided.  The results of
-these calculations are provided in the 'aggregations' section of the
-response. The supported aggregations are described in the following
-table.
+Multiple aggregation expressions can be provided. The results of these
+calculations are provided in the 'aggregations' section of the response. The
+supported aggregations are described in the following table.
 
 algorithm | description
 --------- | -----------
@@ -279,36 +263,32 @@ terms | histogram of values and counts
 
 ## Deviations
 
-SlipStream does not (yet) provide a complete implementation of the
-CIMI API and out of necessity deviates in several ways from the
-standard.
+Nuvla deviates from a strict CIMI implementation to simplify usage and to
+provide a richer API.
 
 ### Media Types
 
-The CIMI standard mandates the support of both XML and JSON.  **The
-SlipStream implementation only supports JSON** (and in some cases
-URL-encoded forms).
+The CIMI standard mandates the support of both XML and JSON. **The Nuvla
+implementation only supports JSON** (and in a few cases URL-encoded forms).
 
 ### Authorization
 
-The CIMI standard does not mandate any authentication and
-authorization process. The schema of all resources in the SlipStream
-implementation includes an 'acl' key.  **The Access Control List (ACL)
-of each resource describes who is authorized to manage that
-resource.**
+The CIMI standard does not mandate any authentication and authorization
+process. The schema of all resources in the Nuvla implementation includes an
+'acl' key. **The Access Control List (ACL) of each resource describes who is
+authorized to manage that resource.**
 
 ### Searches
 
-The CIMI standard only provides for searches over resource collections
-with the HTTP `GET` method.  Because those filters can be quite long,
-there can be issues with the length of the `GET` URL. Consequently,
-SlipStream clients may also **search resource collections using the
-HTTP `PUT` method** with a body containing the filters (and other
-parameters) as a URL-encoded form.
+The CIMI standard only provides for searches over resource collections with
+the HTTP GET method. Because those filters can be quite long, there can be
+issues with the length of the `GET` URL. Consequently, Nuvla clients may also
+**search resource collections using the HTTP PUT method** with a body
+containing the filters (and other parameters) as a URL-encoded form.
 
 ### Aggregations
 
-As described earlier, SlipStream extends the CIMI standard to also
+As described earlier, Nuvla extends the CIMI standard to also
 include aggregating values over a collection of resources.
 "
   (:require
