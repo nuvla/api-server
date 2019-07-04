@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.resources.nuvlabox-status-0 :as nb-status-0]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -83,7 +84,8 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists nb-status/resource-type))
+  (mdtu/check-metadata-exists nb-status/resource-type
+                              (str nb-status/resource-type "-" nb-status-0/schema-version)))
 
 
 (deftest lifecycle

@@ -16,7 +16,9 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -348,6 +350,7 @@ particular NuvlaBox release.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox/schema))
+  (std-crud/initialize resource-type ::nuvlabox/schema)
+  (md/register (gen-md/generate-metadata ::ns ::nuvlabox/schema)))
 
 
