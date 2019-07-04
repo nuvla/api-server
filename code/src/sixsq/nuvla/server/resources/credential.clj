@@ -1,9 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential
   "
-SlipStream can manage credentials that are needed to access SlipStream or
-other services. Currently, SlipStream manages SSH public keys and API keys and
-secrets. Creating new Credential resources requires referencing a
-CredentialTemplate resource.
+Nuvla can manage credentials that are needed to access Nuvla (e.g. hashed user
+passwords) or other services (e.g. TLS credentials for Docker). Creating new
+`credential` resources requires referencing a `credential-template` resource.
 "
   (:require
     [sixsq.nuvla.auth.utils :as auth]

@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-google
-  "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the GCE's services."
+  "
+Allows `docker-machine` credentials for Google to be created. The attribute
+names correspond exactly to those required by `docker-machine`.
+"
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]

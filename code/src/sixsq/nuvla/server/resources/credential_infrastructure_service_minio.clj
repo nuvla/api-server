@@ -1,5 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-minio
-  "Provides the credentials necessary to access a Minio S3 service."
+  "
+Provides the credentials necessary to access a Minio S3 service.
+"
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

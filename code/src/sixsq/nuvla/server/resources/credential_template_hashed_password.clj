@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-hashed-password
   "
-Stores the hashed value of a password.
+Takes a plain-text password and then creates a credential containing a hash of
+that password. The credential provides actions for validating the password or
+changing it.
 "
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]

@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-hashed-password
   "
-Hashed value of a password.
+This credential stores the hashed value of a password. Used typically to store
+the passwords for Nuvla user accounts. The resource provides actions to check a
+plain text password against the stored hash and to change the password (hash).
 "
   (:require
     [buddy.hashers :as hashers]

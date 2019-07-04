@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale
-  "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the Exoscale's services."
+  "
+Allows `docker-machine` credentials for Exoscale to be created. The attribute
+names correspond exactly to those required by `docker-machine`.
+"
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]

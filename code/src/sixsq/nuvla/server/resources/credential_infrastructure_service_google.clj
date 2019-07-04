@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-google
   "
-Sets the service compliant attribute names and values
-for GCE
+Provides `docker-machine` credentials for Google. The attribute names
+correspond exactly to those required by `docker-machine`.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

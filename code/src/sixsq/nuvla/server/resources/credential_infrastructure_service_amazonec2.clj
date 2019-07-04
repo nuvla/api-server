@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-amazonec2
   "
-Sets the service compliant attribute names and values
-for AWS
+Provides `docker-machine` credentials for AWS EC2. The attribute names
+correspond exactly to those required by `docker-machine`.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

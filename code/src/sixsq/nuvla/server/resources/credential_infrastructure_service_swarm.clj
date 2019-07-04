@@ -2,7 +2,7 @@
   "
 This resource contains the values necessary to access a Docker Swarm service.
 These consist of a public 'cert' and the associated private 'key'. The
-certificate authority's public certificate, 'ca', must also be provided.
+certificate authority's public certificate, 'ca', should also be provided.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]

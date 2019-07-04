@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio
-  "This credential-template resource allows credentials for Minio S3 services
-   to be stored."
+  "
+Allows credentials for Minio S3 services to be stored.
+"
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]

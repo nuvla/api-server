@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-azure
   "
-Sets the service compliant attribute names and values
-for Azure
+Provides `docker-machine` credentials for Azure. The attribute names
+correspond exactly to those required by `docker-machine`.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
