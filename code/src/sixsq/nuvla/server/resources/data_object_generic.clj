@@ -32,8 +32,11 @@ credentials (either direct infrastructure credentials or via pre-signed URLs).
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::do-generic/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-generic/schema)
-  (md/register (gen-md/generate-metadata ::ns ::do-generic/schema)))
+  (md/register resource-metadata))
 

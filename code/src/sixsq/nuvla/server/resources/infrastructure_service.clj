@@ -36,10 +36,13 @@ existing `infrastructure-service-template` resource.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service/schema)))
+  (md/register resource-metadata))
 
 
 ;;

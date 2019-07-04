@@ -52,7 +52,10 @@ correspond exactly to those required by `docker-machine`.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema)))
+  (md/register resource-metadata))

@@ -36,10 +36,13 @@ fixed URL.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::do-public/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-public/schema)
-  (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
+  (md/register resource-metadata))
 
 
 (defmethod do/ready-subtype dot/data-object-subtype

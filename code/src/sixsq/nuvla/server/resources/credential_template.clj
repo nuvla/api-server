@@ -158,7 +158,10 @@ curl https://nuvla.io/api/credential-template
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::ct/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::ct/schema)))
+  (md/register resource-metadata))
 

@@ -56,8 +56,14 @@ names correspond exactly to those required by `docker-machine`.
 ;; initialization: register this Credential template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::service/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

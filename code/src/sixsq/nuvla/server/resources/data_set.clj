@@ -28,10 +28,13 @@ these data.
 ;; initialization: common schema for all user creation methods
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::data-set/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::data-set/schema)
-  (md/register (gen-md/generate-metadata ::ns ::data-set/schema)))
+  (md/register resource-metadata))
 
 
 ;;

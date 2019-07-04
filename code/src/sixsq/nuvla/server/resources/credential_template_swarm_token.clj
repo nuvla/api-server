@@ -42,11 +42,17 @@ worker within the Swarm.
 ;; initialization: register this credential-template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::swarm-token/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::swarm-token/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::swarm-token/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::swarm-token/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

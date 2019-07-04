@@ -145,7 +145,10 @@ a username and password pair stored in Nuvla's internal database.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::session-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::session-tpl/schema)))
+  (md/register resource-metadata))
 

@@ -148,7 +148,10 @@ paging, etc. parameters are not supported.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/schema)))
+  (md/register resource-metadata))
 

@@ -37,10 +37,13 @@ resources. The resources are tied to an infrastructure via the
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-group/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service-group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-group/schema)))
+  (md/register resource-metadata))
 
 
 ;;

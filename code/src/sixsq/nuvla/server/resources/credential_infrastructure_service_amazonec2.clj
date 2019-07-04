@@ -33,11 +33,16 @@ correspond exactly to those required by `docker-machine`.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::service/schema))
+
+
 (defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
+
 (def create-validate-fn (u/create-spec-validation-fn ::service/schema-create))
+
+
 (defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
@@ -47,7 +52,10 @@ correspond exactly to those required by `docker-machine`.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema)))
+  (md/register resource-metadata))

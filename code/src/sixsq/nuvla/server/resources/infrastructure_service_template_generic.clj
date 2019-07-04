@@ -31,11 +31,17 @@ Template that requires all the core attributes of a generic
 ;; initialization: register this template and provide metadata description
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create"))
+
+
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

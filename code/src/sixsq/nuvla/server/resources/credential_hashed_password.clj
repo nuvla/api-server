@@ -25,10 +25,13 @@ plain text password against the stored hash and to change the password (hash).
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema)))
+  (md/register resource-metadata))
 
 
 ;;

@@ -53,7 +53,10 @@ Provides the credentials necessary to access a Minio S3 service.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::cred-minio/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::cred-minio/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-minio/schema)))
+  (md/register resource-metadata))

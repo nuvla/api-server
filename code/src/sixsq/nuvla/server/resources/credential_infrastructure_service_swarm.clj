@@ -18,10 +18,13 @@ certificate authority's public certificate, 'ca', should also be provided.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service-swarm/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::service-swarm/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service-swarm/schema)))
+  (md/register resource-metadata))
 
 
 ;;

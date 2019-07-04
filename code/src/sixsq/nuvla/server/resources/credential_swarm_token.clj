@@ -19,10 +19,13 @@ either a manager or worker within the Swarm.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::swarm-token-spec/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::swarm-token-spec/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::swarm-token-spec/schema)))
+  (md/register resource-metadata))
 
 
 ;;

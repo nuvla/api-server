@@ -398,10 +398,12 @@ include aggregating values over a collection of resources.
 ;; initialization: create cloud entry point if necessary
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::cep/resource))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::cep/resource)
-  (md/register (gen-md/generate-metadata ::ns ::cep/resource))
+  (md/register resource-metadata)
 
   (try
     (add)

@@ -42,10 +42,13 @@ voucher via the 'expire' operation.
 ;; initialization: common schema for all user creation methods
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::voucher/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::voucher/schema)
-  (md/register (gen-md/generate-metadata ::ns ::voucher/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -215,11 +218,11 @@ voucher via the 'expire' operation.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [activate-op   (u/action-map id :activate)
-        expire-op     (u/action-map id :expire)
-        redeem-op     (u/action-map id :redeem)
-        can-manage?   (a/can-manage? resource request)
-        can-view?     (a/can-view? resource request)]
+  (let [activate-op (u/action-map id :activate)
+        expire-op   (u/action-map id :expire)
+        redeem-op   (u/action-map id :redeem)
+        can-manage? (a/can-manage? resource request)
+        can-view?   (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
             (and can-manage? (#{"NEW" "ACTIVATED" "REDEEMED"} state)) (update :operations conj expire-op)

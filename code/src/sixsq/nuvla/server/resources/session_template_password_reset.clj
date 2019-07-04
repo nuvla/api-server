@@ -40,14 +40,20 @@ server instances.
 ;; initialization: register this Session template and create password reset authentication template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-password-reset/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

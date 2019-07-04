@@ -162,8 +162,11 @@ resource.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::data-record/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::data-record/schema)
-  (md/register (gen-md/generate-metadata ::ns ::data-record/schema)))
+  (md/register resource-metadata))
 

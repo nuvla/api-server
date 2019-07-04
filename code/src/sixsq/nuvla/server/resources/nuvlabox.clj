@@ -348,9 +348,12 @@ particular NuvlaBox release.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nuvlabox/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::nuvlabox/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nuvlabox/schema)))
+  (md/register resource-metadata))
 
 

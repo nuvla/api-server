@@ -169,6 +169,8 @@
            type-uri      (cond-> (ns->type-uri (or child-ns parent-ns))
                                  suffix (str "-" suffix))
 
+           _             (println "GOT HERE: " type-uri)
+
            common        {:id            "resource-metadata/dummy-id"
                           :created       "1964-08-25T10:00:00.00Z"
                           :updated       "1964-08-25T10:00:00.00Z"

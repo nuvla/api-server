@@ -56,8 +56,14 @@ Allows credentials for Minio S3 services to be stored.
 ;; initialization: register this credential-template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::cred-tpl-minio/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

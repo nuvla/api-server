@@ -140,7 +140,10 @@ verification.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::user-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::user-tpl/schema)))
+  (md/register resource-metadata))
 

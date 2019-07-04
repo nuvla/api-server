@@ -149,7 +149,9 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-status/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::nb-status/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-status/schema)))
+  (md/register resource-metadata))

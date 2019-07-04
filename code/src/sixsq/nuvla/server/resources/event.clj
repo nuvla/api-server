@@ -94,7 +94,10 @@ an application.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::event/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::event/schema)
-  (md/register (gen-md/generate-metadata ::ns ::event/schema)))
+  (md/register resource-metadata))

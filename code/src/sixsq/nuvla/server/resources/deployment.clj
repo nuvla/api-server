@@ -192,7 +192,10 @@ a container orchestration engine.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::deployment-spec/deployment)
-  (md/register (gen-md/generate-metadata ::ns ::deployment-spec/deployment)))
+  (md/register resource-metadata))

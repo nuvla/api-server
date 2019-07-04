@@ -125,8 +125,14 @@ creating a group and does not provide any useful defaults.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::group-tpl/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata nil ::ns ::group-tpl/schema-create "create"))
+
+
 (defn initialize
   []
   (register resource)
-  (md/register (gen-md/generate-metadata ::ns ::group-tpl/schema))
-  (md/register (gen-md/generate-metadata nil ::ns ::group-tpl/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

@@ -196,7 +196,9 @@ provide an explicit ACL that the describes the desired visibility.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::notification/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::notification/schema)
-  (md/register (gen-md/generate-metadata ::ns ::notification/schema)))
+  (md/register resource-metadata))

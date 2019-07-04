@@ -35,10 +35,13 @@ request.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::job/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::job/schema)
-  (md/register (gen-md/generate-metadata ::ns ::job/schema))
+  (md/register resource-metadata)
   (ju/create-job-queue))
 
 

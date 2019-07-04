@@ -57,10 +57,16 @@ time. The rights associated with the key-secret pair are taken from the
 ;; initialization: register this Credential template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 

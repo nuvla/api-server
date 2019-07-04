@@ -120,7 +120,11 @@ must delete the old one and create a new one.
 ;;
 ;; initialization
 ;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::user-identifier/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::user-identifier/schema)
-  (md/register (gen-md/generate-metadata ::ns ::user-identifier/schema)))
+  (md/register resource-metadata))

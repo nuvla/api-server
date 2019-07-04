@@ -35,11 +35,18 @@ notifications will not work.
 ;; initialization: register this configuration-template
 ;;
 
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

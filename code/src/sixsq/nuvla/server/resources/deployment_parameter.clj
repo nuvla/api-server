@@ -113,7 +113,10 @@ configuration option.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::deployment-parameter/deployment-parameter))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter)
-  (md/register (gen-md/generate-metadata ::ns ::deployment-parameter/deployment-parameter)))
+  (md/register resource-metadata))

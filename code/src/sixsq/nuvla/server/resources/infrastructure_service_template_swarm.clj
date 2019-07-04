@@ -30,11 +30,17 @@ Docker Swarm cluster on a given cloud infrastructure.
 ;; initialization: register this template and provide metadata description
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema-create "create"))
+
+
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema))
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

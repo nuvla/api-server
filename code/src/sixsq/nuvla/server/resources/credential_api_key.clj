@@ -114,7 +114,11 @@ from the response! The secret cannot be recovered from the server later.**
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::api-key/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::api-key/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::api-key/schema)))
+  (md/register resource-metadata))
