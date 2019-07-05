@@ -30,7 +30,10 @@ The nuvlabox-peripheral (version 0) describes an attached peripheral.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-peripheral/ns ::nb-peripheral-0/schema schema-version))
+
+
 (defn initialize
   []
   (std-crud/initialize nb-peripheral/resource-type ::nb-peripheral-0/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-peripheral/ns ::nb-peripheral-0/schema schema-version)))
+  (md/register resource-metadata))

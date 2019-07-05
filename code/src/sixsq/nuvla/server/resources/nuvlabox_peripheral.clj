@@ -103,7 +103,10 @@ nuvlabox.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-peripheral/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::nb-peripheral/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-peripheral/schema)))
+  (md/register resource-metadata))
