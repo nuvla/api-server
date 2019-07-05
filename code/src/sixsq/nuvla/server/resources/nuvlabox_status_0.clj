@@ -57,7 +57,10 @@ resources and peripherals.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-status/ns ::nb-status-0/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize nb-status/resource-type ::nb-status-0/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-status/ns ::nb-status-0/schema schema-version)))
+  (md/register resource-metadata))

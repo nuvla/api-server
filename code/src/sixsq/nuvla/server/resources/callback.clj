@@ -1,12 +1,13 @@
 (ns sixsq.nuvla.server.resources.callback
   "
 Deferred actions that must be triggered by a user or other external agent.
-For example, used for email validation.
+For example, callbacks can used for email validation.
 
 Each callback represents a single, atomic action that must be triggered by an
 external agent. The action is identified by the `action` attribute. Some
 actions may require state information, which may be provided in the `data`
-attribute.
+attribute. Each action is implemented as a sub-resource of the generic
+callback.
 
 All callback resources support the CIMI `execute` action, which triggers the
 action of the callback. The state of the callback will indicate the success or
@@ -14,7 +15,7 @@ failure of the action.
 
 Generally, these resources are created by CIMI server resources rather than
 end-users. Anyone with the URL of the callback can trigger the `execute`
-action. Consequently, the callback id should only be communicated to
+action. Consequently, the callback id should securely communicated to
 appropriate users.
 "
   (:require
@@ -174,7 +175,9 @@ appropriate users.
 ;; initialization: common schema for all subtypes
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::callback/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::callback/schema)
-  (md/register (gen-md/generate-metadata ::ns ::callback/schema)))
+  (md/register resource-metadata))

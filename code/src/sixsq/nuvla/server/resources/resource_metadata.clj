@@ -1,8 +1,10 @@
 (ns sixsq.nuvla.server.resources.resource-metadata
-  "This resource provides metadata associated with other CIMI resourced. It
-   can be used to understand the attributes, allow values, actions, and
-   capabilities. This information is linked to a resource through the type-uri
-   attribute."
+  "
+This resource provides metadata associated with other resources. It can be
+used to understand the attributes and allowed values, actions, and
+capabilities. This information is linked to a resource through the type-uri
+attribute.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]

@@ -1,4 +1,9 @@
 (ns sixsq.nuvla.server.resources.nuvlabox
+  "
+The core `nuvlabox` resource that contains only those attributes required in
+all subtypes of this resource. Versioned subclasses define the attributes for a
+particular NuvlaBox release.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -11,7 +16,9 @@
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -341,8 +348,12 @@
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nuvlabox/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nuvlabox/schema))
+  (std-crud/initialize resource-type ::nuvlabox/schema)
+  (md/register resource-metadata))
 
 

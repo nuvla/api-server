@@ -1,6 +1,9 @@
 (ns sixsq.nuvla.server.resources.user-email-invitation
+  "
+Contains the functions necessary to create a user resource from an invitation
+using an email address.
+"
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]

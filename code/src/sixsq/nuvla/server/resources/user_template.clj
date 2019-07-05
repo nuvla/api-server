@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.user-template
   "
-The user-template resources define the 'user registration' methods that are
-permitted by the server. The user-template collection follows all of the CIMI
-SCRUD patterns.
+The `user-template` resources define the 'user registration' methods that are
+permitted by the server. The user-template collection follows all of the
+standard SCRUD patterns.
 
-The server will always contain the 'direct' user template. This template is
-only visible to administrators and allows the direct creation of a new user
-without any email verification, etc.
+The server will always contain the 'username-password' user template. This
+template is only visible to administrators and allows the direct creation of a
+new user without any email verification, etc.
 
 The system administrator may create additional templates to allow other user
 registration methods. If the ACL of the template allows for 'anonymous' access,
@@ -140,7 +140,10 @@ verification.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::user-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::user-tpl/schema)))
+  (md/register resource-metadata))
 

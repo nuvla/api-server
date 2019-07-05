@@ -145,10 +145,13 @@ that start with 'nuvla-' are reserved for the server.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::group/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::group/schema))
+  (md/register resource-metadata)
 
   (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
                           {:name        "Nuvla Administrator Group"

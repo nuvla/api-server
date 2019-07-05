@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Upgrade to ring-container 2.0.1 and parent 6.5.1.
   - Remove 'busy' attribute from USB peripheral description
 
 ## [4.0.0] - 2019-06-20

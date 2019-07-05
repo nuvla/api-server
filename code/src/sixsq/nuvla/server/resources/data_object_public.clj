@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-public
   "
-Resource represents an object in S3 that can be accessed by anyone.
+This resource represents an object in S3 that can be accessed by anyone via a
+fixed URL.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -35,10 +36,13 @@ Resource represents an object in S3 that can be accessed by anyone.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::do-public/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-public/schema)
-  (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
+  (md/register resource-metadata))
 
 
 (defmethod do/ready-subtype dot/data-object-subtype

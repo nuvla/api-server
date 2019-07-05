@@ -1,4 +1,9 @@
 (ns sixsq.nuvla.server.resources.data-object-template-generic
+  "
+This template creates a resource representing an object in S3 that can only be
+accessed via credentials (either direct infrastructure credentials or via
+pre-signed URLs).
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as do]

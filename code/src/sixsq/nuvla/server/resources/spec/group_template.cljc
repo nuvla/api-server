@@ -9,7 +9,16 @@
 
 ;; Restrict the href used to create groups.
 (def group-template-regex #"^group-template/[a-z][a-z0-9]*(-[a-z0-9]+)*$")
-(s/def ::href (s/and string? #(re-matches group-template-regex %)))
+
+
+(s/def ::href
+  (-> (st/spec (s/and string? #(re-matches group-template-regex %)))
+      (assoc :name "href"
+             :json-schema/type "resource-id"
+             :json-schema/description "reference to group template identifier"
+
+             :json-schema/order 20)))
+
 
 
 (s/def ::group-identifier
@@ -18,7 +27,7 @@
              :json-schema/display-name "group identifier"
              :json-schema/description "unique kebab-case identifier for group"
 
-             :json-schema/order 20)))
+             :json-schema/order 21)))
 
 
 (def group-template-keys-spec-req

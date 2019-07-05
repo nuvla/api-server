@@ -6,14 +6,15 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.deployment-parameter :as dp]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.deployment-parameter :as t]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context dp/resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def parent-id "deployment/324c6138-aaaa-bbbb-cccc-af3ad15815db")
@@ -33,7 +34,11 @@
              :edit-acl ["user/jane"]}})
 
 
-(def expected-dp-id (str "deployment-parameter/" (dp/parameter->uuid parent-id node-id parameter-name)))
+(def expected-dp-id (str "deployment-parameter/" (t/parameter->uuid parent-id node-id parameter-name)))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -168,7 +173,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id dp/resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

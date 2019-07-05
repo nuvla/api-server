@@ -38,14 +38,20 @@ credentials. This template is guaranteed to be present on all server instances.
 ;; initialization: register this Session template and create password authentication template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-password/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

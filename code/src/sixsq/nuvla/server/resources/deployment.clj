@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.deployment
+  "
+These resources represent the deployment of a component or application within
+a container orchestration engine.
+"
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -11,7 +15,9 @@
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -186,6 +192,10 @@
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
+
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::deployment-spec/deployment))
+  (std-crud/initialize resource-type ::deployment-spec/deployment)
+  (md/register resource-metadata))

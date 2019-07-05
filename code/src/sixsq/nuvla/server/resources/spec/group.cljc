@@ -10,7 +10,12 @@
 (def user-id-regex #"^user/[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
 
 
-(s/def ::user-id (s/and string? #(re-matches user-id-regex %)))
+(s/def ::user-id
+  (-> (st/spec (s/and string? #(re-matches user-id-regex %)))
+      (assoc :name "user-id"
+             :json-schema/type "string"
+             :json-schema/display-name "user ID"
+             :json-schema/description "user identifier")))
 
 
 (s/def ::users

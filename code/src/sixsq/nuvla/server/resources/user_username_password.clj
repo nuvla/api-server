@@ -1,4 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-username-password
+  "
+Provides the functions necessary to create a `user` resource from a username,
+password, and other given information."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]

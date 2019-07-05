@@ -7,14 +7,19 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-hashed-password :as ct-swarm-token]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.credential-template-hashed-password :as ct-hashed-password]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context credential/resource-type))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str credential/resource-type "-" ct-hashed-password/resource-url)))
 
 
 (deftest lifecycle
@@ -33,8 +38,8 @@
 
         plaintext-password "HELLO-nuvla-69"
 
-        href               (str ct/resource-type "/" ct-swarm-token/method)
-        template-url       (str p/service-context ct/resource-type "/" ct-swarm-token/method)
+        href               (str ct/resource-type "/" ct-hashed-password/method)
+        template-url       (str p/service-context ct/resource-type "/" ct-hashed-password/method)
 
         template           (-> session-admin
                                (request template-url)

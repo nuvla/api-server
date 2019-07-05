@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-status
   "
-The nuvlabox-status resource represents the instantaneous state of the
-associated NuvlaBox, including available resources and peripherals. These
-resources are usually created as a side-effect of a NuvlaBox activation,
-although they can be created manually by an administrator.
+The `nuvlabox-status` resource represents the instantaneous state of the
+associated NuvlaBox. These resources are usually created as a side-effect of a
+NuvlaBox activation, although they can be created manually by an administrator.
+Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -149,7 +149,9 @@ although they can be created manually by an administrator.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-status/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::nb-status/schema)
-  (md/register (gen-md/generate-metadata ::ns ::nb-status/schema)))
+  (md/register resource-metadata))

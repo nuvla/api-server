@@ -4,7 +4,7 @@ A collection of templates that allow users to create infrastructure-service
 resources that identify other services that will be used by Nuvla, for example
 Docker Swarm clusters or S3 object stores.
 
-An ephemeral, in-memory 'database' of infrastructure-service-template
+An ephemeral, in-memory 'database' of `infrastructure-service-template`
 resources is used to store the collection. As a consequence, the filtering,
 paging, etc. parameters are not supported.
 "
@@ -148,7 +148,10 @@ paging, etc. parameters are not supported.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/schema)))
+  (md/register resource-metadata))
 

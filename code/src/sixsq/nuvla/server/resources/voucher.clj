@@ -1,20 +1,18 @@
 (ns sixsq.nuvla.server.resources.voucher
   "
-This resource contains the structure for a voucher, which
-is to be issued by a third party and used by any Nuvla user.
+This resource contains the structure for a voucher, which is to be issued by a
+third party and consumed by a Nuvla user.
 
-New vouchers will by default be inserted into the system with
-state set to NEW. Then based on the ACLs of that voucher,
-whoever can view it, can request it through the activation
-operation, which will edit the voucher's state to ACTIVATED,
-and assign it to the requesting user.
+New vouchers will by default be inserted into the system with state set to
+NEW. Then based on the ACLs of that voucher, whoever can view it, can request
+it through the activation operation, which will edit the voucher's state to
+ACTIVATED, and assign it to the requesting user.
 
-Afterwards, this voucher can also be redeemed through the
-operation 'reddem', which adds a new timestamp to the voucher
-resource for accounting purposed.
+Afterwards, this voucher can also be redeemed through the operation 'redeem',
+which adds a new timestamp to the voucher resource for accounting purposes.
 
-Finally, at any time, both the owner and user of the voucher
-can terminate the voucher via the 'expire' operation.
+Finally, at any time, the owner or user of the voucher can terminate the
+voucher via the 'expire' operation.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -44,10 +42,13 @@ can terminate the voucher via the 'expire' operation.
 ;; initialization: common schema for all user creation methods
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::voucher/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::voucher/schema)
-  (md/register (gen-md/generate-metadata ::ns ::voucher/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -153,7 +154,7 @@ can terminate the voucher via the 'expire' operation.
 ;;
 ;; Redeem operation
 ;;
-;
+
 (defn redeem
   [voucher]
   (if (= (:state voucher) "ACTIVATED")

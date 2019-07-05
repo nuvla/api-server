@@ -44,13 +44,19 @@ optional name can also be provided.
 ;; initialization: register this user template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-email-password/schema)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema-create "create"))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create)
 
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
