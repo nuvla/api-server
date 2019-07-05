@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-template-generic
   "
-Template that requires all the core attributes of an infrastructure-service
-resource.
+Template that requires all the core attributes of a generic
+`infrastructure-service` resource.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -31,11 +31,17 @@ resource.
 ;; initialization: register this template and provide metadata description
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create"))
+
+
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

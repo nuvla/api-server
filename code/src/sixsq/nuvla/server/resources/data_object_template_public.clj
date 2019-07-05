@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-object-template-public
+  "
+This template creates a resource representing an object in S3 that can be
+accessed by anyone via a fixed URL.
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as do]

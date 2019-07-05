@@ -6,7 +6,6 @@
     [spec-tools.core :as st]))
 
 
-
 (s/def ::amazonec2-access-key
   (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
       (assoc :name "amazonec2-access-key"
@@ -28,14 +27,17 @@
   {:req-un [::amazonec2-access-key
             ::amazonec2-secret-key]})
 
+
 (def credential-template-create-keys-spec
   {:req-un [::amazonec2-access-key
             ::amazonec2-secret-key]})
+
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
                      credential-template-keys-spec))
+
 
 ;; Defines the contents of the api-key template used in a create resource.
 (s/def ::template
@@ -43,6 +45,7 @@
                                   credential-template-create-keys-spec))
       (assoc :name "template"
              :json-schema/type "map")))
+
 
 (s/def ::schema-create
   (su/only-keys-maps ct/create-keys-spec

@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-object
+  "
+This resource represents an object in S3. Subclasses of this resource define
+how the object can be accessed.
+"
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]

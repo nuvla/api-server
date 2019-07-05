@@ -133,7 +133,10 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::email/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::email/schema)
-  (md/register (gen-md/generate-metadata ::ns ::email/schema)))
+  (md/register resource-metadata))

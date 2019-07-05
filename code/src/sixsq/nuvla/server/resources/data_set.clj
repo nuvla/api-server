@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-set
   "
-These resources describe collections of data-object or data-record resources.
-It can also identify applications that are capable of analyzing these data.
+These resources describe collections of `data-object` or `data-record`
+resources. It can also identify applications that are capable of analyzing
+these data.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -27,10 +28,13 @@ It can also identify applications that are capable of analyzing these data.
 ;; initialization: common schema for all user creation methods
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::data-set/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::data-set/schema)
-  (md/register (gen-md/generate-metadata ::ns ::data-set/schema)))
+  (md/register resource-metadata))
 
 
 ;;

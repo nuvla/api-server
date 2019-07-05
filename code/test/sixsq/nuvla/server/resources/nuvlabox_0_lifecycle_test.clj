@@ -13,7 +13,9 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]))
+    [sixsq.nuvla.server.resources.nuvlabox-0 :as nb-0]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -64,6 +66,11 @@
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists nb/resource-type
+                              (str nb/resource-type "-" nb-0/schema-version)))
 
 
 (deftest create-delete-lifecycle

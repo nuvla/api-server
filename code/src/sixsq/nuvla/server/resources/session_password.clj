@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-password
+  "
+Provides the functions necessary to create a session from a username and
+password.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]

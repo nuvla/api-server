@@ -1,13 +1,19 @@
 (ns sixsq.nuvla.server.resources.deployment-parameter
+  "
+These resources represent the parameters of a deployment that describe
+properties of the deployment, for example, the IP address of the container or a
+configuration option.
+"
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]))
+    [sixsq.nuvla.server.resources.spec.deployment-parameter :as deployment-parameter]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -107,6 +113,10 @@
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::deployment-parameter/deployment-parameter))
+
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter))
+  (std-crud/initialize resource-type ::deployment-parameter/deployment-parameter)
+  (md/register resource-metadata))

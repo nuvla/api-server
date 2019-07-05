@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.user-email-password
+  "
+Contains the functions necessary to create a user resource from an email
+address and password.
+"
   (:require
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-callback]

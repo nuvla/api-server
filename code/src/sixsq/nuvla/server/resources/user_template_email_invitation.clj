@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-template-email-invitation
   "
-Template that allows a user to invite another person with an email address to use nuvla service.
+Template that allows a user to invite another person with an email address to
+use a Nuvla service.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -43,13 +44,19 @@ Template that allows a user to invite another person with an email address to us
 ;; initialization: register this user template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::spec-email-invitation/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-email-invitation/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-email-invitation/schema)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-invitation/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-invitation/schema-create "create"))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create)
 
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
@@ -59,6 +66,8 @@ Template that allows a user to invite another person with an email address to us
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::spec-email-invitation/schema))
+
+
 (defmethod p/validate-subtype registration-method
   [resource]
   (validate-fn resource))

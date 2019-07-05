@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.callback-user-password-reset
-  "Verifies that the user is able to validate the reset password from his email address.
-On validation, the password is changed and the user is logged in."
+  "
+Resets a user's password when the execute URL is visited. On validation, the
+password is changed and the user is logged in.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]

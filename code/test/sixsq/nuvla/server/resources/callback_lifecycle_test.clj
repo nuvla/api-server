@@ -8,11 +8,19 @@
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context callback/resource-type))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists callback/resource-type))
+
 
 (deftest lifecycle
   (let [session       (-> (ltu/ring-app)

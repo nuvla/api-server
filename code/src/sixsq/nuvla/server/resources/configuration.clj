@@ -1,4 +1,11 @@
 (ns sixsq.nuvla.server.resources.configuration
+  "
+The configuration resource collection provides documents that describe the
+configuration of the server. These configurations are generally managed by the
+Nuvla administrator. Generic server configuration can be found in the 'nuvla'
+configuration resource; this resource is required and will always exist. Others
+may be added, for example, to configure external authentication.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]

@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-kubernetes
+  "
+Information concerning a Kubernetes resource and the parameters necessary to
+manage it.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]

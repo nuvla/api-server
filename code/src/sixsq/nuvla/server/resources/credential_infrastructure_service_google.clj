@@ -1,14 +1,16 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-google
   "
-Sets the service compliant attribute names and values
-for GCE
+Provides `docker-machine` credentials for Google. The attribute names
+correspond exactly to those required by `docker-machine`.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-google :as service]))
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-google :as service]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 ;;
 ;; convert template to credential
@@ -49,6 +51,10 @@ for GCE
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service/schema))
+  (std-crud/initialize p/resource-type ::service/schema)
+  (md/register resource-metadata))

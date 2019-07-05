@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-hashed-password
   "
-Hashed value of a password.
+This credential stores the hashed value of a password. Used typically to store
+the passwords for Nuvla user accounts. The resource provides actions to check a
+plain text password against the stored hash and to change the password (hash).
 "
   (:require
     [buddy.hashers :as hashers]
@@ -14,16 +16,22 @@ Hashed value of a password.
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema))
+  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema)
+  (md/register resource-metadata))
 
 
 ;;
