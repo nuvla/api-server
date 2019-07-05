@@ -8,13 +8,18 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as ct-swarm-token]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context credential/resource-type))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str credential/resource-type "-" ct-swarm-token/resource-url)))
 
 
 (deftest lifecycle

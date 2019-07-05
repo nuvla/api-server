@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-api-key
+  "
+Provides the functions necessary to create a session from a login request with
+an API key-secret pair.
+"
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]

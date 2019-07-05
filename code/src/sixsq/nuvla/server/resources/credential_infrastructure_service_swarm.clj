@@ -2,32 +2,38 @@
   "
 This resource contains the values necessary to access a Docker Swarm service.
 These consist of a public 'cert' and the associated private 'key'. The
-certificate authority's public certificate, 'ca', must also be provided.
+certificate authority's public certificate, 'ca', should also be provided.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.credential :as cred]
+    [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm :as service-swarm]))
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm :as service-swarm]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service-swarm/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize cred/resource-type ::service-swarm/schema))
+  (std-crud/initialize p/resource-type ::service-swarm/schema)
+  (md/register resource-metadata))
 
 
 ;;
 ;; convert template to credential: just copies the necessary keys from the provided template.
 ;;
 
-(defmethod cred/tpl->credential tpl/credential-subtype
+(defmethod p/tpl->credential tpl/credential-subtype
   [{:keys [subtype method parent ca cert key acl]} request]
-  [nil (cond-> {:resource-type cred/resource-type
+  [nil (cond-> {:resource-type p/resource-type
                 :subtype       subtype
                 :method        method
                 :ca            ca
@@ -44,7 +50,7 @@ certificate authority's public certificate, 'ca', must also be provided.
 (def validate-fn (u/create-spec-validation-fn ::service-swarm/schema))
 
 
-(defmethod cred/validate-subtype tpl/credential-subtype
+(defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -52,6 +58,6 @@ certificate authority's public certificate, 'ca', must also be provided.
 (def create-validate-fn (u/create-spec-validation-fn ::service-swarm/schema-create))
 
 
-(defmethod cred/create-validate-subtype tpl/credential-subtype
+(defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))

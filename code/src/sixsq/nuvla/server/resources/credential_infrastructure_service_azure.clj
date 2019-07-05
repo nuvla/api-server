@@ -1,14 +1,16 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-azure
   "
-Sets the service compliant attribute names and values
-for Azure
+Provides `docker-machine` credentials for Azure. The attribute names
+correspond exactly to those required by `docker-machine`.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as tpl]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-azure :as service]))
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-azure :as service]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 ;;
 ;; convert template to credential
@@ -46,6 +48,10 @@ for Azure
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service/schema))
+  (std-crud/initialize p/resource-type ::service/schema)
+  (md/register resource-metadata))

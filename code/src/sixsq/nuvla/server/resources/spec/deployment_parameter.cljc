@@ -20,11 +20,32 @@
                            :json-schema/order 6)))
 
 
-(s/def ::node-id ::core/token)
+(s/def ::name (-> (st/spec ::core/token)
+                    (assoc :name "name"
+                           :json-schema/description "name of the deployment parameter"
 
-(s/def ::name ::core/token)
+                           :json-schema/section "meta"
+                           :json-schema/editable false
+                           :json-schema/order 7)))
 
-(s/def ::value ::core/nonblank-string)
+
+(s/def ::node-id
+  (-> (st/spec ::core/token)
+      (assoc :name "node-id"
+             :json-schema/display-name "node ID"
+             :json-schema/description "node identifier"
+
+             :json-schema/editable false
+             :json-schema/order 20)))
+
+
+(s/def ::value
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "value"
+             :json-schema/description "value of the deployment parameter"
+
+             :json-schema/order 21)))
+
 
 (def deployment-parameter-keys-spec
   (su/merge-keys-specs [common/common-attrs

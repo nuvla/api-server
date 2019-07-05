@@ -16,6 +16,9 @@ the user's public certificate ('cert'), and the user's private key ('key').
 (def ^:const credential-subtype "infrastructure-service-swarm")
 
 
+(def ^:const resource-url credential-subtype)
+
+
 (def ^:const method "infrastructure-service-swarm")
 
 
@@ -51,8 +54,14 @@ the user's public certificate ('cert'), and the user's private key ('key').
 ;; initialization: register this credential-template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

@@ -1,7 +1,9 @@
 (ns sixsq.nuvla.server.resources.credential-template-api-key
   "
-Allows an API key-secret pair to be created that allows the holder of the
-secret to access the server. The credential can optionally be limited in time.
+Used to create an API key-secret pair that allows the holder of the secret to
+access the server via the API. The credential can optionally be limited in
+time. The rights associated with the key-secret pair are taken from the
+`session` that created the key-secret pair.
 "
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -55,10 +57,16 @@ secret to access the server. The credential can optionally be limited in time.
 ;; initialization: register this Credential template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 

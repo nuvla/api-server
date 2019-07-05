@@ -1,39 +1,39 @@
 (ns sixsq.nuvla.server.resources.session-template
   "
 A collection of templates that allow users to authenticate with the server by
-creating a Session resource. The concrete templates support a variety of
+creating a `session` resource. The concrete templates support a variety of
 credentials and protocols.
 
-Most SlipStream resources are only visible to authenticated users. The login
-process consists of creating a Session resource via the standard CIMI templated
-add pattern and then using the returned token with subsequent interactions with
-the SlipStream server.
+Most Nuvla resources are only visible to authenticated users;
+`session-template` resources are visible to anyone. The login process consists
+of creating a `session` resource via the standard templated add pattern and
+then using the returned token with subsequent interactions with the Nuvla
+server.
 
 The supported Python and Clojure(Script) libraries directly use the REST API
-defined here for Session management, but also provide higher-level functions
+defined here for `session` management, but also provide higher-level functions
 that simplify the authentication process.
 
-
-SlipStream supports a wide variety of methods for authenticating with the
-server. The SessionTemplate resources represent the supported authentication
-methods for a given SlipStream server. To list all the configured
-authentication mechanism for the server:
+Nuvla supports a wide variety of methods for authenticating with the server.
+The `session-template` resources represent the supported authentication methods
+for a given Nvula server. To list all the configured authentication
+mechanisms for the server:
 
 ```shell
 curl https://nuv.la/api/session-template
 ```
 
-The SlipStream **administrator** defines the available methods by creating
-SessionTemplate resources on the server via the standard CIMI 'add' pattern
-(and in most cases an associated Configuration resource). These can also be
-'edited' and 'deleted' by the SlipStream administrator.
+The Nuvla **administrator** defines the available methods by creating
+`session-template` resources on the server via the standard 'add' pattern (and
+in most cases an associated `configuration` resource). These can also be
+'edited' and 'deleted' by the administrator.
 
-**All users (including anonymous users)** can list the SessionTemplates to
-discover supported authentication methods.
+**All users (including anonymous users)** can list the `session-template`
+resources to discover supported authentication methods.
 
-One SessionTemplate that will always exist on the server is the
-'session-template/internal' resource. This allows logging into the server with
-a username and password pair stored in SlipStream's internal database.
+One `session-template` resource that will always exist on the server is the
+'session-template/password' resource. This allows logging into the server with
+a username and password pair stored in Nuvla's internal database.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -145,7 +145,10 @@ a username and password pair stored in SlipStream's internal database.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::session-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::session-tpl/schema)))
+  (md/register resource-metadata))
 

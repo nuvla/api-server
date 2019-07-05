@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.evidence-record
+  "
+The `evidence-record` resources provide information for auditing a process,
+justifying whether a particular check within the process has passed or failed.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]

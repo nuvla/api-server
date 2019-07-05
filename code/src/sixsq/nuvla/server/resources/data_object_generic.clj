@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-generic
   "
-Resource represents an object in S3 that can only be accessed via credentials
-(either direct infrastructure credentials or via pre-signed URLs).
+This resource represents an object in S3 that can only be accessed via
+credentials (either direct infrastructure credentials or via pre-signed URLs).
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -28,14 +28,15 @@ Resource represents an object in S3 that can only be accessed via credentials
   (validate-fn resource))
 
 
-
-
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::do-generic/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-generic/schema)
-  (md/register (gen-md/generate-metadata ::ns ::do-generic/schema)))
+  (md/register resource-metadata))
 
