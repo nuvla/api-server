@@ -133,6 +133,7 @@
                                         :body (json/write-str href-create))
                                (ltu/body->edn)
                                (ltu/location))
+
               uri          (-> resp ltu/location)
 
               resp         (-> session-anon
@@ -201,7 +202,6 @@
                          :request-method :post
                          :body (json/write-str configuration-user-github))
                 (ltu/body->edn)
-                ltu/dump
                 (ltu/is-status 201))
 
             ;; try hitting the callback without the OAuth code parameter
@@ -250,18 +250,17 @@
                       (ltu/message-matches #".*unable to retrieve GitHub user information.*")
                       (ltu/is-status status))
 
-                  (is (nil? (uiu/find-username-by-identifier :github nil github-login)))
+                  (is (nil? (uiu/user-identifier->user-id :github nil github-login)))
 
                   (reset-callback! callback)
                   (-> session-anon
-                      (request (str url "?code=GOOD")
-                               :request-method :get)
+                      (request (str url "?code=GOOD"))
                       (ltu/body->edn)
                       (ltu/is-status create-status))
 
-                  (let [ss-username (uiu/find-username-by-identifier :github nil github-login)
+                  (let [ss-username (uiu/user-identifier->user-id :github nil github-login)
                         user-record (->> github-login
-                                         (uiu/find-username-by-identifier :github nil)
+                                         (uiu/user-identifier->user-id :github nil)
                                          (db/get-user))]
                     (is (not (nil? ss-username)))
 

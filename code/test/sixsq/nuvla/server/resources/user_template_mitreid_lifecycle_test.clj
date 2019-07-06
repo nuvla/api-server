@@ -356,7 +356,7 @@
 
 
                   (let [instance    mitreid/registration-method
-                        ss-username (uiu/find-username-by-identifier :mitreid instance user-number)
+                        ss-username (uiu/user-identifier->user-id :mitreid instance user-number)
                         user-record (db/get-user ss-username)]
                     (is (not (nil? ss-username)))
                     (is (= email (:name user-record)))

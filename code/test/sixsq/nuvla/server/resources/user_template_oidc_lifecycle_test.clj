@@ -349,9 +349,9 @@
 
 
                   (let [instance    oidc/registration-method
-                        ss-username (uiu/find-username-by-identifier :oidc nil username)
+                        ss-username (uiu/user-identifier->user-id :oidc nil username)
                         user-record (->> username
-                                         (uiu/find-username-by-identifier :oidc instance)
+                                         (uiu/user-identifier->user-id :oidc instance)
                                          (db/get-user))]
                     (is (not (nil? ss-username)))
                     (is (= email (:name user-record)))

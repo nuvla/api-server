@@ -42,14 +42,14 @@
   [authn-method external-login instance]
   (log/debugf "Matching external user with method '%s', external-login '%s', and instance '%s'"
               authn-method external-login instance)
-  (when-let [username-mapped (uiu/find-username-by-identifier authn-method instance external-login)]
+  (when-let [username-mapped (uiu/user-identifier->user-id authn-method instance external-login)]
     (mapped-user authn-method username-mapped)))
 
 
 (defn match-oidc-username
   [authn-method external-login instance]
   (log/debug "Matching via OIDC/MITREid username" external-login)
-  (let [username-by-authn (uiu/find-username-by-identifier authn-method instance external-login)
+  (let [username-by-authn (uiu/user-identifier->user-id authn-method instance external-login)
         username-by-name (db/get-active-user-by-name external-login)
         username-fallback (when username-by-name (:username (mapped-user instance username-by-name)))]
     (or username-by-authn username-fallback)))
@@ -58,7 +58,7 @@
 (defn create-user-when-missing!
   [authn-method {:keys [external-login external-email instance fail-on-existing?] :as external-record}]
 
-  (let [username-by-authn (uiu/find-username-by-identifier authn-method instance external-login)
+  (let [username-by-authn (uiu/user-identifier->user-id authn-method instance external-login)
         username (u/random-uuid)]
     (if (and username-by-authn (not fail-on-existing?))
       username-by-authn

@@ -17,7 +17,7 @@
 
 
 (defn register-user
-  [{{:keys [href]} :targetResource {:keys [redirect-url]} :data :as callback-resource} request]
+  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data :as callback-resource} request]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -46,11 +46,11 @@
   (log/debug "Executing callback" callback-id)
   (try
     (if-let [username (register-user callback-resource request)]
-      (do
+      (let [msg (format "user '%s' created" username)]
         (utils/callback-succeeded! callback-id)
         (if redirect-url
-          (r/map-response (format "user '%s' created" username) 303 callback-id (or redirect-url "/"))
-          (r/map-response (format "user '%s' created" username) 201)))
+          (r/map-response msg 303 callback-id redirect-url)
+          (r/map-response msg 201)))
       (do
         (utils/callback-failed! callback-id)
         (r/map-response "could not create github user" 400)))

@@ -11,7 +11,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -184,9 +183,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (doseq [children-resource-type children-resource-types]
     (try
       (let [filter  (format "%s='%s/%s'" "parent" resource-type (:uuid params))
-            entries (second (db/query children-resource-type
-                                      {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-                                       :nuvla/authn auth/internal-identity}))]
+            entries (second (crud/query-as-admin children-resource-type
+                                                 {:cimi-params {:filter (parser/parse-cimi-filter filter)}}))]
         (doseq [{:keys [id]} entries]
           (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
                                       :resource-name children-resource-type}

@@ -22,14 +22,15 @@
 (defn get-all-users
   []
   (try
-    (second (db/query resource-name {:user-roles ["ADMIN"]}))
+    (second (crud/query-as-admin resource-name nil))
     (catch Exception _ [])))
 
 
+;; FIXME: user-param resource doesn't exist; remove this function!
 (defn get-all-user-params
   []
   (try
-    (second (db/query "user-param" {:user-roles ["ADMIN"]}))
+    (second (crud/query-as-admin :user-param nil))
     (catch Exception _ [])))
 
 
@@ -37,8 +38,7 @@
   []
   (let [filter {:filter (parser/parse-cimi-filter active-user-filter)}]
     (try
-      (second (db/query resource-name {:cimi-params filter
-                                       :user-roles  ["ADMIN"]}))
+      (second (crud/query-as-admin resource-name {:cimi-params filter}))
       (catch Exception _ []))))
 
 
@@ -52,10 +52,9 @@
 (defn find-usernames-by-email
   [email]
   (when email
-    (let [filter-str (format "emailAddress='%s' and %s" email active-user-filter)
-          filter {:filter (parser/parse-cimi-filter filter-str)}
-          matched-users (try (second (db/query resource-name {:cimi-params filter
-                                                              :user-roles  ["ADMIN"]}))
+    (let [filter-str    (format "emailAddress='%s' and %s" email active-user-filter)
+          filter        {:filter (parser/parse-cimi-filter filter-str)}
+          matched-users (try (second (crud/query-as-admin resource-name {:cimi-params filter}))
                              (catch Exception _ []))]
       (set (map :username matched-users)))))
 
@@ -70,9 +69,8 @@
   [username]
   (when username
     (let [filter-str (format "username='%s' and %s" username active-user-filter)
-          filter {:filter (parser/parse-cimi-filter filter-str)}]
-      (try (-> (db/query "user" {:cimi-params filter
-                                 :user-roles  ["ADMIN"]})
+          filter     {:filter (parser/parse-cimi-filter filter-str)}]
+      (try (-> (crud/query-as-admin :user {:cimi-params filter})
                second
                first)
            (catch Exception _ {})))))
@@ -92,9 +90,9 @@
 
 (defn update-user-authn-info
   [authn-method slipstream-username authn-id]
-  (let [body {:id                     (to-resource-id slipstream-username)
-              :username               slipstream-username
-              (to-am-kw authn-method) authn-id}
+  (let [body    {:id                     (to-resource-id slipstream-username)
+                 :username               slipstream-username
+                 (to-am-kw authn-method) authn-id}
         request {:identity       {:current slipstream-username
                                   :authentications
                                            {slipstream-username {:roles #{"USER"} :identity slipstream-username}}}
@@ -112,7 +110,7 @@
 
 (defn existing-user-names
   []
-  (let [users (second (db/query "user" {:user-roles ["ADMIN"]}))]
+  (let [users (second (crud/query-as-admin :user nil))]
     (set (map :username users))))
 
 
