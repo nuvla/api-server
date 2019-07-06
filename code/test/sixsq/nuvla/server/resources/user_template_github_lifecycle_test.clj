@@ -18,15 +18,21 @@
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [peridot.core :refer :all]))
 
+
 (use-fixtures :each ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context user/resource-type))
 
+
 (def configuration-base-uri (str p/service-context configuration/resource-type))
+
 
 (def user-template-base-uri (str p/service-context ut/resource-type))
 
+
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
+
 
 ;; callback state reset between tests
 (defn reset-callback! [callback-id]
@@ -284,14 +290,3 @@
                        :body (json/write-str invalid-create))
               (ltu/body->edn)
               (ltu/is-status 400)))))))
-
-
-(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id user/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
-                            [resource-uri :put]
-                            [resource-uri :post]])))
-
-

@@ -2,7 +2,8 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (def user-template-github-registration-keys-href
@@ -16,9 +17,10 @@
 
 ;; Defines the contents of the github registration template used in a create resource.
 (s/def ::template
-  (su/only-keys-maps ps/template-keys-spec
-                     user-template-github-registration-keys-href))
-
+  (-> (st/spec (su/only-keys-maps ps/template-keys-spec
+                                  user-template-github-registration-keys-href))
+      (assoc :name "template"
+             :json-schema/type "map")))
 
 (s/def ::schema-create
   (su/only-keys-maps ps/create-keys-spec

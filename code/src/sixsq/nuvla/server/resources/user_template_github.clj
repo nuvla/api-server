@@ -43,7 +43,8 @@ workflow.
 (defn initialize
   []
   (p/register registration-method)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-github/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-github/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-github/schema-create "create")))
 
 
 ;;
