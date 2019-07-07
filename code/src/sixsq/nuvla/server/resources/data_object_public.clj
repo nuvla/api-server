@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-public
   "
-Resource represents an object in S3 that can be accessed by anyone.
+This resource represents an object in S3 that can be accessed by anyone via a
+fixed URL.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -26,7 +27,7 @@ Resource represents an object in S3 that can be accessed by anyone.
 (def validate-fn (u/create-spec-validation-fn ::do-public/schema))
 
 
-(defmethod do/validate-subtype dot/data-object-type
+(defmethod do/validate-subtype dot/data-object-subtype
   [resource]
   (validate-fn resource))
 
@@ -35,13 +36,16 @@ Resource represents an object in S3 that can be accessed by anyone.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::do-public/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize do/resource-type ::do-public/schema)
-  (md/register (gen-md/generate-metadata ::ns ::do-public/schema)))
+  (md/register resource-metadata))
 
 
-(defmethod do/ready-subtype dot/data-object-type
+(defmethod do/ready-subtype dot/data-object-subtype
   [resource request]
   (-> resource
       (a/throw-cannot-edit request)
@@ -54,7 +58,7 @@ Resource represents an object in S3 that can be accessed by anyone.
       (db/edit request)))
 
 
-(defmethod do/download-subtype dot/data-object-type
+(defmethod do/download-subtype dot/data-object-subtype
   [{:keys [url] :as resource} request]
   (do/verify-state resource #{do/state-ready} "download")
   (log/info "Public download url: " url)

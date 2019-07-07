@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-api-key
+  "
+Provides the functions necessary to create a session from a login request with
+an API key-secret pair.
+"
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -56,10 +60,10 @@
       nil)))
 
 (defn valid-api-key?
-  "Checks that the API key document is of the correct type, hasn't expired,
+  "Checks that the API key document is of the correct subtype, hasn't expired,
    and that the digest matches the given secret."
-  [{:keys [digest expiry type] :as api-key} secret]
-  (and (= api-key-tpl/credential-type type)
+  [{:keys [digest expiry subtype] :as api-key} secret]
+  (and (= api-key-tpl/credential-subtype subtype)
        (u/not-expired? expiry)
        (key-utils/valid? secret digest)))
 
@@ -76,14 +80,14 @@
   [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
-      (let [session (sutils/create-session identity identity href headers authn-method)
+      (let [session     (sutils/create-session identity identity href headers authn-method)
             cookie-info (create-cookie-info identity roles headers (:id session) (:client-ip session))
-            cookie (cookies/create-cookie cookie-info)
-            expires (ts/rfc822->iso8601 (:expires cookie))
-            claims (:claims cookie-info)
-            session (cond-> (assoc session :expiry expires)
-                            claims (assoc :roles claims))]
-        (log/debug "api-key cookie token claims for " (u/document-id href) ":" cookie-info)
+            cookie      (cookies/create-cookie cookie-info)
+            expires     (ts/rfc822->iso8601 (:expires cookie))
+            claims      (:claims cookie-info)
+            session     (cond-> (assoc session :expiry expires)
+                                claims (assoc :roles claims))]
+        (log/debug "api-key cookie token claims for " (u/id->uuid href) ":" cookie-info)
         (let [cookies {authn-info/authn-cookie cookie}]
           [{:cookies cookies} session]))
       (throw (r/ex-unauthorized key)))))

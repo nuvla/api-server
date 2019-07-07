@@ -21,7 +21,7 @@
 
 (defn log-aws-exception
   [amazon-exception]
-  (let [status (.getStatusCode amazon-exception)
+  (let [status  (.getStatusCode amazon-exception)
         message (.getMessage amazon-exception)]
     (logu/log-and-throw status message)))
 
@@ -44,7 +44,7 @@
 
 (defn get-s3-client
   [{:keys [key secret endpoint]}]
-  (let [endpoint (AwsClientBuilder$EndpointConfiguration. endpoint "us-east-1")
+  (let [endpoint    (AwsClientBuilder$EndpointConfiguration. endpoint "us-east-1")
         credentials (AWSStaticCredentialsProvider. (BasicAWSCredentials. key secret))]
     (-> (AmazonS3ClientBuilder/standard)
         (.withEndpointConfiguration endpoint)
@@ -58,12 +58,12 @@
   (let [expiration (-> (or ttl default-ttl)
                        (time/from-now :minutes)
                        (time/java-date))
-        method (if (= verb :put)
-                 HttpMethod/PUT
-                 HttpMethod/GET)
-        req (doto (GeneratePresignedUrlRequest. bucket obj-name)
-              (.setMethod method)
-              (.setExpiration expiration))]
+        method     (if (= verb :put)
+                     HttpMethod/PUT
+                     HttpMethod/GET)
+        req        (doto (GeneratePresignedUrlRequest. bucket obj-name)
+                     (.setMethod method)
+                     (.setExpiration expiration))]
     (cond
       content-type (.setContentType req content-type))
     (str (.generatePresignedUrl (get-s3-client obj-store-conf) req))))
@@ -127,15 +127,15 @@
 
 (defn extract-s3-key-secret
   "Returns a tuple with the key and secret for accessing the S3 service. There
-   are many types of credentials, so the fields are different in each case."
-  [{:keys [type] :as credential}]
+   are many subtypes of credentials, so the fields are different in each case."
+  [{:keys [subtype] :as credential}]
 
-  ;; FIXME: Find a better solution for dispatching on credential type.
+  ;; FIXME: Find a better solution for dispatching on credential subtype.
   (cond
-    (= minio/credential-type type) [(:access-key credential)
-                                    (:secret-key credential)]
-    (= exoscale/credential-type type) [(:exoscale-api-key credential)
-                                       (:exoscale-api-secret-key credential)]
+    (= minio/credential-subtype subtype) [(:access-key credential)
+                                          (:secret-key credential)]
+    (= exoscale/credential-subtype subtype) [(:exoscale-api-key credential)
+                                             (:exoscale-api-secret-key credential)]
     :else nil))
 
 
@@ -156,12 +156,12 @@
 
 
 (defn credential->s3-client-cfg
-  "Need type to dispatch on when loading credentials."
+  "Need subtype to dispatch on when loading credentials."
   [s3-cred-id]
   (when s3-cred-id
     (let [credential (crud/retrieve-by-id-as-admin s3-cred-id)
           [key secret] (extract-s3-key-secret credential)
-          endpoint (extract-s3-endpoint credential)]
+          endpoint   (extract-s3-endpoint credential)]
       (when (and key secret endpoint)
         {:key      key
          :secret   secret
@@ -222,10 +222,10 @@
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
-        bytes (try
-                (:contentLength (s3-object-metadata s3-client bucket object))
-                (catch Exception _
-                  (log/warn (str "Could not access the metadata for S3 object " object))))]
+        bytes     (try
+                    (:contentLength (s3-object-metadata s3-client bucket object))
+                    (catch Exception _
+                      (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
             bytes (assoc :bytes bytes))))
 
@@ -237,10 +237,10 @@
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
-        md5 (try
-              (:contentMD5 (s3-object-metadata s3-client bucket object))
-              (catch Exception _
-                (log/warn (str "Could not access the metadata for S3 object " object))))]
+        md5       (try
+                    (:contentMD5 (s3-object-metadata s3-client bucket object))
+                    (catch Exception _
+                      (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
             md5 (assoc :md5sum md5))))
 

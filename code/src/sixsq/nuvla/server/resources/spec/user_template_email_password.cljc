@@ -35,34 +35,34 @@
 
 
 ;; no good defaults for these keys, make them optional in template
-(def user-template-password-keys-opt
+(def user-template-email-password-keys-opt
   {:opt-un [::username
             ::email
             ::password]})
 
 
 ;; expanded template must have these keys defined
-(def user-template-password-keys-req
+(def user-template-email-password-keys-req
   {:req-un [::email
             ::password]
    :opt-un [::username]})
 
 
-(def user-template-password-keys-href
+(def user-template-email-password-keys-href
   {:opt-un [::ps/href]})
 
 
 ;; Defines the contents of the password user-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
-                     user-template-password-keys-opt))
+                     user-template-email-password-keys-opt))
 
 
 ;; Defines the contents of the password template used in a create resource.
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ps/template-keys-spec
-                                  user-template-password-keys-req
-                                  user-template-password-keys-href))
+                                  user-template-email-password-keys-req
+                                  user-template-email-password-keys-href))
       (assoc :name "template"
              :json-schema/type "map")))
 

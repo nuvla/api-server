@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-template-swarm
   "
-Template that requires information necessary to create a new Docker Swarm
-cluster on a given cloud infrastructure.
+Template that requires the information necessary to create and manage a new
+Docker Swarm cluster on a given cloud infrastructure.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -20,7 +20,7 @@ cluster on a given cloud infrastructure.
                :description        "template to create docker swarm"
                :resource-metadata  (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type               "swarm"
+               :subtype            "swarm"
                :service-credential {:href "credential/change-me"}
 
                :acl                infra-service-tpl/resource-acl})
@@ -30,11 +30,17 @@ cluster on a given cloud infrastructure.
 ;; initialization: register this template and provide metadata description
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema-create "create"))
+
+
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema))
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::tpl-swarm/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

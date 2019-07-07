@@ -37,11 +37,11 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous create should fail
     (-> session-anon
@@ -59,19 +59,19 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-namespace))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-namespace))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)
-          doc (-> session-user
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (get-in [:response :body]))]
+          doc     (-> session-user
+                      (request abs-uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (get-in [:response :body]))]
 
       (is (= "schema-org" (:prefix doc)))
       (is (= "https://schema-org/a/b/c.md" (:uri doc)))

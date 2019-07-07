@@ -34,21 +34,21 @@
 (defn check-metadata-exists
   [& test-type-uris]
 
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (header authn-info-header "group/nuvla-anon")
-                    (content-type "application/json"))
+  (let [session   (-> (ltu/ring-app)
+                      session
+                      (header authn-info-header "group/nuvla-anon")
+                      (content-type "application/json"))
 
         ;; done as an unfiltered search because filtering doesn't work with in-memory resources
-        md-docs (-> session
-                    (request base-uri)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-count pos?)
-                    (ltu/entries))
+        md-docs   (-> session
+                      (request base-uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-count pos?)
+                      (ltu/entries))
 
         type-uris (set (map :type-uri md-docs))
-        ids (set (map u/document-id (map :id md-docs)))]
+        ids       (set (map u/id->uuid (map :id md-docs)))]
 
     (is (set? type-uris))
     (is (set? ids))

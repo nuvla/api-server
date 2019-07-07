@@ -28,6 +28,14 @@
                       "\n    %s\n"])))
 
 
+(def invitation-email-body
+  (partial format
+           (str/join "\n"
+                     ["You have been invited by \"%s\" to use Nuvla."
+                      "Signup with this email \"%s\" to accept this invite by following this link:"
+                      "\n    %s\n"])))
+
+
 (defn create-callback [email-id base-uri]
   (let [callback-request {:params      {:resource-name callback/resource-type}
                           :body        {:action          email-callback/action-name
@@ -64,7 +72,7 @@
 (defn send-email [nuvla-config email-data]
   (try
     (let [smtp-config (extract-smtp-cfg nuvla-config)
-          resp (postal/send-message smtp-config email-data)]
+          resp        (postal/send-message smtp-config email-data)]
       (if-not (= :SUCCESS (:error resp))
         (let [msg (str "cannot send verification email: " (:message resp))]
           (throw (r/ex-bad-request msg)))))
@@ -80,10 +88,25 @@
         body (cond-> (validation-email-body callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
-        msg {:from    (or smtp-username "administrator")
-             :to      [address]
-             :subject "email validation"
-             :body    body}]
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "Validation email for Nuvla service"
+              :body    body}]
+
+    (send-email nuvla-config msg)))
+
+
+(defn send-invitation-email [callback-url address {:keys [name id] :as user}]
+  (let [{:keys [smtp-username, conditions-url]
+         :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
+
+        body (cond-> (invitation-email-body (or name id) address callback-url)
+                     conditions-url (str (conditions-acceptance conditions-url)))
+
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "email invitation"
+              :body    body}]
 
     (send-email nuvla-config msg)))
 
@@ -102,9 +125,9 @@
 
         body (password-reset-email-body callback-url)
 
-        msg {:from    (or smtp-username "administrator")
-             :to      [address]
-             :subject "reset password"
-             :body    body}]
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "reset password"
+              :body    body}]
 
     (send-email nuvla-config msg)))

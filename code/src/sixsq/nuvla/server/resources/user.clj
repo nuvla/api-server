@@ -85,9 +85,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} request]
-  (assoc resource :acl {:owners ["group/nuvla-admin"]
+  (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-meta ["group/nuvla-user"]
-                        :edit-acl [id]}))
+                        :edit-acl  [id]}))
 
 ;;
 ;; template processing
@@ -148,16 +148,16 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          user (-> body
-                   (assoc :resource-type create-type)
-                   (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                   (std-crud/resolve-hrefs authn-info true)
-                   (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                   (crud/validate)
-                   (:template)
-                   (merge-with-defaults)
-                   (tpl->user request)                      ;; returns a tuple [response-fragment, resource-body]
-                   (merge desc-attrs))]
+          user       (-> body
+                         (assoc :resource-type create-type)
+                         (update-in [:template] dissoc :method :id) ;; forces use of template reference
+                         (std-crud/resolve-hrefs authn-info true)
+                         (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                         (crud/validate)
+                         (:template)
+                         (merge-with-defaults)
+                         (tpl->user request)                ;; returns a tuple [response-fragment, resource-body]
+                         (merge desc-attrs))]
 
       (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
         (when (and resource-id (= 201 status))
@@ -180,7 +180,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [children-resource-types {:keys [params] :as request}]
   (doseq [children-resource-type children-resource-types]
     (try
-      (let [filter (format "%s='%s/%s'" "parent" resource-type (:uuid params))
+      (let [filter  (format "%s='%s/%s'" "parent" resource-type (:uuid params))
             entries (second (db/query children-resource-type
                                       {:cimi-params {:filter (parser/parse-cimi-filter filter)}
                                        :nuvla/authn auth/internal-identity}))]
@@ -223,7 +223,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (let [current (-> (:id body)
                       (db/retrieve request)
                       (a/throw-cannot-edit request))
-          merged (merge current body)]
+          merged  (merge current body)]
       (-> merged
           (dissoc :href)
           (u/update-timestamps)

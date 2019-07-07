@@ -5,10 +5,10 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-template :as t]
+    [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -31,7 +31,7 @@
 (deftest check-retrieve-by-id
   (doseq [registration-method [email-password/registration-method
                                username-password/registration-method]]
-    (let [id (str t/resource-type "/" registration-method)
+    (let [id  (str t/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
       (is (= id (:id doc))))))
 
@@ -48,24 +48,26 @@
                     (ltu/is-status 200)
                     (ltu/is-resource-uri t/collection-type)
                     (ltu/is-count pos?)
-                    (ltu/is-operation-present "add")
-                    (ltu/is-operation-absent "delete")
-                    (ltu/is-operation-absent "edit")
+                    (ltu/is-operation-present :add)
+                    (ltu/is-operation-absent :delete)
+                    (ltu/is-operation-absent :edit)
                     (ltu/entries))
-        ids (set (map :id entries))
-        types (set (map :method entries))]
+        ids     (set (map :id entries))
+        types   (set (map :method entries))]
 
     (is (= #{(str t/resource-type "/" email-password/registration-method)
-             (str t/resource-type "/" username-password/registration-method)}
+             (str t/resource-type "/" username-password/registration-method)
+             (str t/resource-type "/" email-invitation/registration-method)}
            ids))
 
     (is (= #{email-password/registration-method
-             username-password/registration-method}
+             username-password/registration-method
+             email-invitation/registration-method}
            types))
 
     (doseq [entry entries]
-      (let [ops (ltu/operations->map entry)
-            entry-url (str p/service-context (:id entry))
+      (let [ops        (ltu/operations->map entry)
+            entry-url  (str p/service-context (:id entry))
 
             entry-resp (-> session
                            (request entry-url)
@@ -74,9 +76,9 @@
 
             entry-body (get-in entry-resp [:response :body])]
 
-        (is (nil? (get ops (c/action-uri :add))))
-        (is (get ops (c/action-uri :edit)))
-        (is (get ops (c/action-uri :delete)))
+        (is (nil? (get ops (name :add))))
+        (is (get ops (name :edit)))
+        (is (get ops (name :delete)))
 
         (is (crud/validate entry-body))))))
 

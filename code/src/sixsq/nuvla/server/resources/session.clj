@@ -1,57 +1,51 @@
 (ns sixsq.nuvla.server.resources.session
   "
-Users (clients) authenticate with the SlipStream server by referencing a
-SessionTemplate resource (to identify the authentication method), providing
-values for the associated parameters, and then creating a Session resource via
-the CIMI 'add' pattern.
+Users (clients) authenticate with the Nuvla server by referencing a
+`session-template` resource (to identify the authentication method), providing
+values for the associated parameters, and then creating a `session` resource
+via the templated 'add' pattern.
 
-A successful authentication attempt will return a token
-(as an HTTP cookie) that must be used in subsequent interactions with the
-SlipStream server.
+A successful authentication attempt will return a token (as an HTTP cookie)
+that must be used in subsequent interactions with the Nuvla server.
 
 The detailed process consists of the following steps:
 
-1. Browse the SessionTemplate resources to find the authentication method that
-   you want to use. Unless you have a browser-based client, you will probably
-   want to use either 'internal' (username and password) or 'api-key' (API key
-   and secret). **Use of API keys and secrets is preferred over the username
-   and password.**
+1. Browse the `session-template` resources to find the authentication method
+   that you want to use. Unless you have a browser-based client, you will
+   probably want to use either 'password' (username and password) or 'api-key'
+   (API key and secret). **Use of API keys and secrets is preferred over the
+   username and password for programmatic access.**
 
-2. Prepare a 'create' JSON document that references the SessionTemplate you
+2. Prepare a 'create' JSON document that references the `session-template` you
    have chosen and provides the corresponding parameters (e.g. username and
-   password for 'internal').
+   password for 'password').
 
-3. Post the 'create' document to the Session collection URL. The correct URL
-   can be determined from the CEP information.
+3. Post the 'create' document to the `session` collection URL. The correct URL
+   can be determined from the `cloud-entry-point` information.
 
 4. On a successful authentication request, a token will be returned allowing
-   access to the SlipStream resources as the authenticated user. **For
-   convenience, this token is returned as an HTTP cookie.**
+   access to the Nuvla resources as the authenticated user. **For convenience,
+   this token is returned as an HTTP cookie.**
 
 The authentication token (cookie) must be used in all subsequent requests to
-the SlipStream server. The token (cookie) has a **limited lifetime** and you
+the Nuvla server. The token (cookie) has a **limited lifetime** and you
 must re-authenticate with the server when the token expires.
 
-> NOTE: To facilitate use of the API from browsers (i.e. javascript), the
-session resources also support request bodies with a media type of
-'application/x-www-form-urlencoded'. When using this media type, encode only
-the value of the 'template key in the example JSON forms.
+> NOTE: The search feature of `session` resources will only return the
+`session` resource associated with your current session (or none at all if your
+are not authenticated). This can be used to determine if you have an active
+session and your associated identity and rights (e.g. groups).
 
-> NOTE: The search feature of Session resources will only return the Session
-resource associated with your current session (or none at all if your are not
-authenticated). This can be used to determine whether or not you have an active
-session.
-
-An example document (named `create-internal.json` below) for authenticating
-via the 'interna' (username and password) method.
+An example document (named `create-password.json` below) for authenticating
+via the 'password' (username and password) method.
 
 ```json
 {
   \"template\" : {
-                        \"href\" : \"session-template/internal\",
-                        \"username\" : \"your-username\",
-                        \"password\" : \"your-password\"
-                      }
+                   \"href\" : \"session-template/password\",
+                   \"username\" : \"your-username\",
+                   \"password\" : \"your-password\"
+                 }
 }
 ```
 
@@ -62,17 +56,17 @@ administrator may have chosen a different name.
 ```json
 {
   \"template\" : {
-                        \"href\" : \"session-template/api-key\",
-                        \"key\" : \"your-api-key\",
-                        \"secret\" : \"your-api-secret\"
-                      }
+                   \"href\" : \"session-template/api-key\",
+                   \"key\" : \"your-api-key\",
+                   \"secret\" : \"your-api-secret\"
+                 }
 }
 ```
 
 ```shell
 # Be sure to get the URL from the cloud entry point!
 # The cookie options allow for automatic management of the
-# SlipStream authentication token (cookie).
+# Nuvla authentication token (cookie).
 curl https://nuv.la/api/session \\
      -X POST \\
      -H 'content-type: application/json' \\
@@ -82,7 +76,7 @@ curl https://nuv.la/api/session \\
 
 On a successful authentication, the above command will return a 201 (created)
 status, a 'set-cookie' header, and a 'location' header with the created
-session.
+`session` resource.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -92,7 +86,6 @@ session.
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as log-util]))
@@ -177,9 +170,9 @@ session.
   [{:keys [id resource-type] :as resource} request]
   (if (u/is-collection? resource-type)
     (when (a/can-add? resource request)
-      [{:rel (:add c/action-uri) :href id}])
+      [(u/operation-map id :add)])
     (when (a/can-delete? resource request)
-      [{:rel (:delete c/action-uri) :href id}])))
+      [(u/operation-map id :delete)])))
 
 ;; Sets the operations for the given resources.  This is a
 ;; multi-method because different types of session resources
@@ -282,7 +275,7 @@ session.
 (defmethod crud/delete resource-type
   [request]
   (let [response (delete-impl request)
-        cookies (delete-cookie response)]
+        cookies  (delete-cookie response)]
     (merge response cookies)))
 
 

@@ -55,17 +55,17 @@
 
 (deftest check-collect-groups-for-user-with-real-groups
 
-  (let [app (ltu/ring-app)
-        session-json (content-type (session app) "application/json")
-        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+  (let [app             (ltu/ring-app)
+        session-json    (content-type (session app) "application/json")
+        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         admin-group-uri (str p/service-context group/resource-type "/nuvla-admin")
 
-        user-id "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
+        user-id         "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
 
-        test-group-tpl {:template {:group-identifier "test-group"}}
+        test-group-tpl  {:template {:group-identifier "test-group"}}
 
-        test-group-uri (str p/service-context group/resource-type "/test-group")]
+        test-group-uri  (str p/service-context group/resource-type "/test-group")]
 
     ;; create a group and add the user
     (-> session-admin

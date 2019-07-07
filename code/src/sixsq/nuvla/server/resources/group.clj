@@ -57,7 +57,7 @@ that start with 'nuvla-' are reserved for the server.
 ;; forces update of acl to have admin as owner and all users can view metadata
 (defmethod crud/add-acl resource-type
   [resource request]
-  (assoc resource :acl {:owners ["group/nuvla-admin"]
+  (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-meta ["group/nuvla-user"]}))
 
 
@@ -95,13 +95,13 @@ that start with 'nuvla-' are reserved for the server.
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
-        body (-> body
-                 (assoc :resource-type create-type)
-                 (std-crud/resolve-hrefs authn-info)
-                 (update-in [:template] merge desc-attrs)   ;; validate desc attrs
-                 (crud/validate)
-                 :template
-                 tpl->group)]
+        body       (-> body
+                       (assoc :resource-type create-type)
+                       (std-crud/resolve-hrefs authn-info)
+                       (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                       (crud/validate)
+                       :template
+                       tpl->group)]
     (add-impl (assoc request :body body))))
 
 
@@ -145,10 +145,13 @@ that start with 'nuvla-' are reserved for the server.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::group/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::group/schema))
+  (md/register resource-metadata)
 
   (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
                           {:name        "Nuvla Administrator Group"

@@ -12,19 +12,19 @@
 
 (deftest check-session-template-password-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id            (str st/resource-type "/password")
-             :resource-type st/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+        cfg       {:id            (str st/resource-type "/password")
+                   :resource-type st/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :method        "password"
-             :instance      "password"
-             :group         "Federated Identity"
-             :redirect-url  "https://nuv.la/webui/profile"
+                   :method        "password"
+                   :instance      "password"
+                   :group         "Federated Identity"
+                   :redirect-url  "https://nuv.la/webui/profile"
 
-             :username      "user"
-             :password      "pass"}]
+                   :username      "user"
+                   :password      "pass"}]
 
     (stu/is-valid ::session-tpl/schema cfg)
 

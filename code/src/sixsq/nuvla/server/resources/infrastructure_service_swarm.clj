@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-swarm
+  "
+Information concerning a Docker Swarm cluster and the parameters necessary to
+manage it.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -45,7 +49,7 @@
 (defmethod infra-service/post-add-hook method
   [service request]
   (try
-    (let [id (:id service)
+    (let [id      (:id service)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"

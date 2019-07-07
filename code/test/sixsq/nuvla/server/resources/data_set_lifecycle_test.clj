@@ -26,11 +26,11 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon   (-> (ltu/ring-app)
+                           session
+                           (content-type "application/json"))
+        session-admin  (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user   (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         valid-data-set {:name               "my-data-set"
                         :description        "my-data-set description"
@@ -49,9 +49,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anon query fails
     (-> session-anon
@@ -68,25 +68,25 @@
         (ltu/is-status 403))
 
     ;; check data-set creation
-    (let [admin-uri (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-data-set))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+    (let [admin-uri     (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-data-set))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
           admin-abs-uri (str p/service-context admin-uri)
 
-          user-uri (-> session-user
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str valid-data-set))
-                       (ltu/body->edn)
-                       (ltu/is-status 201)
-                       (ltu/location))
+          user-uri      (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-data-set))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
-          user-abs-uri (str p/service-context user-uri)]
+          user-abs-uri  (str p/service-context user-uri)]
 
       ;; admin should see 2 data-set resources
       (-> session-admin
@@ -109,8 +109,8 @@
                          (request admin-abs-uri)
                          (ltu/body->edn)
                          (ltu/is-status 200)
-                         (ltu/is-operation-present "edit")
-                         (ltu/is-operation-present "delete")
+                         (ltu/is-operation-present :edit)
+                         (ltu/is-operation-present :delete)
                          :response
                          :body)]
 

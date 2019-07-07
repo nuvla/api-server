@@ -24,26 +24,26 @@
 
 (deftest lifecycle
 
-  (let [reset-link (atom nil)
-        app (ltu/ring-app)
-        session-json (content-type (session app) "application/json")
-        session-anon (header session-json authn-info-header "user/unknown group/nuvla-anon")
-        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+  (let [reset-link       (atom nil)
+        app              (ltu/ring-app)
+        session-json     (content-type (session app) "application/json")
+        session-anon     (header session-json authn-info-header "user/unknown group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        href (str st/resource-type "/password-reset")
+        href             (str st/resource-type "/password-reset")
 
-        template-url (str p/service-context href)
+        template-url     (str p/service-context href)
 
-        name-attr "name"
+        name-attr        "name"
         description-attr "description"
-        tags-attr ["one", "two"]]
+        tags-attr        ["one", "two"]]
 
     (with-redefs [email-utils/extract-smtp-cfg
-                  (fn [_] {:host "smtp@example.com"
-                           :port 465
-                           :ssl  true
-                           :user "admin"
-                           :pass "password"})
+                                      (fn [_] {:host "smtp@example.com"
+                                               :port 465
+                                               :ssl  true
+                                               :user "admin"
+                                               :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
@@ -59,15 +59,15 @@
 
 
       ; anon without valid user can not create session
-      (let [username "anon"
-            plaintext-password "anon"
+      (let [username            "anon"
+            plaintext-password  "anon"
 
-            valid-create {:name        name-attr
-                          :description description-attr
-                          :tags        tags-attr
-                          :template    {:href         href
-                                        :username     username
-                                        :new-password plaintext-password}}
+            valid-create        {:name        name-attr
+                                 :description description-attr
+                                 :tags        tags-attr
+                                 :template    {:href         href
+                                               :username     username
+                                               :new-password plaintext-password}}
             unauthorized-create (update-in valid-create [:template :new-password] (constantly "BAD"))]
 
         ; anonymous query should succeed but have no entries
@@ -90,33 +90,33 @@
 
       ;; anon with valid activated user can create session via password reset
 
-      (let [username "user/jane"
-            plaintext-password "JaneJane-0"
-            jane-user-id (password-test/create-user session-admin
-                                                    :username username
-                                                    :password plaintext-password
-                                                    :activated? true
-                                                    :email "jane@example.org")
+      (let [username              "user/jane"
+            plaintext-password    "JaneJane-0"
+            jane-user-id          (password-test/create-user session-admin
+                                                             :username username
+                                                             :password plaintext-password
+                                                             :activated? true
+                                                             :email "jane@example.org")
             {:keys [credential-password] :as jane-user} (-> session-admin
                                                             (request (str p/service-context jane-user-id))
                                                             (ltu/body->edn)
                                                             :response
                                                             :body)
-            jane-credential (-> session-admin
-                                (request (str p/service-context credential-password))
-                                (ltu/body->edn)
-                                :response
-                                :body)
+            jane-credential       (-> session-admin
+                                      (request (str p/service-context credential-password))
+                                      (ltu/body->edn)
+                                      :response
+                                      :body)
 
-            new-password "JaneJane-0-changed"
-            valid-create {:name        name-attr
-                          :description description-attr
-                          :tags        tags-attr
-                          :template    {:href         href
-                                        :username     username
-                                        :new-password new-password}}
+            new-password          "JaneJane-0-changed"
+            valid-create          {:name        name-attr
+                                   :description description-attr
+                                   :tags        tags-attr
+                                   :template    {:href         href
+                                                 :username     username
+                                                 :new-password new-password}}
 
-            redirect-uri "http://redirect.example.org"
+            redirect-uri          "http://redirect.example.org"
 
             valid-create-redirect (assoc-in valid-create [:template :redirect-url] redirect-uri)]
 

@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.data-record-key
   "
-A data-record-key resource provides semantic information concerning an key
-that appears in data-record resources. This resource is intended to provide
+A `data-record-key` resource provides semantic information concerning an key
+that appears in `data-record` resources. This resource is intended to provide
 information that helps humans understand the information provided in a
-data-record resource.
+`data-record` resource.
 
 Parameter | Required  | Description
 --------- | --------  | -----------
@@ -46,9 +46,9 @@ type | true | type of the attribute's value
   [resource]
   (if ((san/all-prefixes) (:prefix resource))
     resource
-    (let [code 406
-          msg (str "resource attributes do not satisfy defined namespaces, prefix='"
-                   (:prefix resource) "'")
+    (let [code     406
+          msg      (str "resource attributes do not satisfy defined namespaces, prefix='"
+                        (:prefix resource) "'")
           response (-> {:status code :message msg}
                        sr/json-response
                        (r/status code))]

@@ -44,7 +44,7 @@
 
 
 (deftest lifecycle
-  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type)
+  (do-ltu/full-eo-lifecycle (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-subtype)
                             (data-object)))
 
 
@@ -74,14 +74,14 @@
                          session
                          (content-type "application/json"))
         session-user (header session-anon authn-info-header do-ltu/user-info-header)
-        base-uri (str p/service-context data-obj/resource-type)
-        template (do-ltu/get-template
-                   (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-type))
+        base-uri     (str p/service-context data-obj/resource-type)
+        template     (do-ltu/get-template
+                       (str p/service-context data-obj-tpl/resource-type "/" data-obj-tpl-public/data-object-subtype))
 
-        create-href {:template (-> (data-object)
-                                   (assoc :bucket "my-public-bucket") ;; to avoid conflict with existing data-object
-                                   (assoc :href (:id template))
-                                   (dissoc :type))}]
+        create-href  {:template (-> (data-object)
+                                    (assoc :bucket "my-public-bucket") ;; to avoid conflict with existing data-object
+                                    (assoc :href (:id template))
+                                    (dissoc :subtype))}]
 
     ;; Create the test object.
     (-> session-user
@@ -92,26 +92,26 @@
         (ltu/is-status 201)
         (ltu/location))
 
-    (let [entry (-> session-user
-                    (request base-uri)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-resource-uri data-obj/collection-type)
-                    (ltu/is-count 1)
-                    (ltu/entries)
-                    first)
-          id (:id entry)
-          abs-uri (str p/service-context id)
-          upload-op (-> session-user
-                        (request abs-uri)
-                        (ltu/body->edn)
-                        (ltu/is-operation-present "upload")
-                        (ltu/is-operation-present "delete")
-                        (ltu/is-operation-present "edit")
-                        (ltu/is-operation-absent "ready")
-                        (ltu/is-operation-absent "download")
-                        (ltu/is-status 200)
-                        (ltu/get-op "upload"))
+    (let [entry          (-> session-user
+                             (request base-uri)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-resource-uri data-obj/collection-type)
+                             (ltu/is-count 1)
+                             (ltu/entries)
+                             first)
+          id             (:id entry)
+          abs-uri        (str p/service-context id)
+          upload-op      (-> session-user
+                             (request abs-uri)
+                             (ltu/body->edn)
+                             (ltu/is-operation-present :upload)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :edit)
+                             (ltu/is-operation-absent :ready)
+                             (ltu/is-operation-absent :download)
+                             (ltu/is-status 200)
+                             (ltu/get-op :upload))
 
           abs-upload-uri (str p/service-context upload-op)]
 
@@ -122,13 +122,13 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (let [uploading-eo (-> session-user
-                             (request abs-uri)
-                             (ltu/body->edn)
-                             (ltu/is-operation-present "ready")
-                             (ltu/is-status 200))
+      (let [uploading-eo     (-> session-user
+                                 (request abs-uri)
+                                 (ltu/body->edn)
+                                 (ltu/is-operation-present :ready)
+                                 (ltu/is-status 200))
 
-            ready-url-action (str p/service-context (ltu/get-op uploading-eo "ready"))]
+            ready-url-action (str p/service-context (ltu/get-op uploading-eo :ready))]
 
 
         ;; Missing ACL should fail the action
@@ -142,7 +142,7 @@
 
         ;; With public ACL the public url should be set on ready action
         (with-redefs [s3/set-acl-public-read (fn [_ _ _] nil)
-                      s3/s3-url (fn [_ _ _] "https://my-object.s3.com")]
+                      s3/s3-url              (fn [_ _ _] "https://my-object.s3.com")]
           (-> session-user
               (request ready-url-action
                        :request-method :post)
@@ -151,7 +151,7 @@
               (ltu/is-status 200)))
 
         ;; Must delete the created object to avoid conflict with other tests.
-        (with-redefs [s3/bucket-exists? (fn [_ _] true)
+        (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                       s3/delete-s3-object delete-s3-object-not-found
                       s3/delete-s3-bucket delete-s3-bucket-not-empty]
           (-> session-user

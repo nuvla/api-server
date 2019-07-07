@@ -11,11 +11,16 @@
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context credential/resource-type))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str credential/resource-type "-" akey/resource-url)))
 
 
 (deftest check-strip-session-role
@@ -23,39 +28,39 @@
   (is (= [] (t/strip-session-role ["session/2d273461-2778-4a66-9017-668f6fed43ae"]))))
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")
+  (let [session                     (-> (ltu/ring-app)
+                                        session
+                                        (content-type "application/json"))
+        session-admin               (header session authn-info-header
+                                            "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user                (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon                (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        name-attr "name"
-        description-attr "description"
-        tags-attr ["one", "two"]
+        name-attr                   "name"
+        description-attr            "description"
+        tags-attr                   ["one", "two"]
 
-        href (str ct/resource-type "/" akey/method)
-        template-url (str p/service-context ct/resource-type "/" akey/method)
+        href                        (str ct/resource-type "/" akey/method)
+        template-url                (str p/service-context ct/resource-type "/" akey/method)
 
-        template (-> session-admin
-                     (request template-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (get-in [:response :body]))
+        template                    (-> session-admin
+                                        (request template-url)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (get-in [:response :body]))
 
-        create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
+        create-import-no-href       {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href {:name        name-attr
-                            :description description-attr
-                            :tags        tags-attr
-                            :template    {:href href
-                                          :ttl  1000}}
+        create-import-href          {:name        name-attr
+                                     :description description-attr
+                                     :tags        tags-attr
+                                     :template    {:href href
+                                                   :ttl  1000}}
 
         create-import-href-zero-ttl {:template {:href href
                                                 :ttl  0}}
 
-        create-import-href-no-ttl {:template {:href href}}]
+        create-import-href-no-ttl   {:template {:href href}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (if (env/env :nuvla-super-password)
@@ -64,17 +69,17 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count 1)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit"))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit))
       (-> session-admin
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anonymous credential collection query should not succeed
     (-> session-anon
@@ -100,17 +105,17 @@
         (ltu/is-status 400))
 
     ;; create a credential as a normal user
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-import-href))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
-          uri (-> resp
-                  (ltu/location))
-          abs-uri (str p/service-context uri)]
+    (let [resp       (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str create-import-href))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
+          id         (get-in resp [:response :body :resource-id])
+          secret-key (get-in resp [:response :body :secret-key])
+          uri        (-> resp
+                         (ltu/location))
+          abs-uri    (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
@@ -124,8 +129,8 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
@@ -151,17 +156,17 @@
           (ltu/is-status 200)))
 
     ;; execute the same tests but now create an API key without an expiry date
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-import-href-no-ttl))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
-          uri (-> resp
-                  (ltu/location))
-          abs-uri (str p/service-context uri)]
+    (let [resp       (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str create-import-href-no-ttl))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
+          id         (get-in resp [:response :body :resource-id])
+          secret-key (get-in resp [:response :body :secret-key])
+          uri        (-> resp
+                         (ltu/location))
+          abs-uri    (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
@@ -175,8 +180,8 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
       (let [{:keys [digest expiry claims]} (-> session-user
@@ -198,17 +203,17 @@
           (ltu/is-status 200)))
 
     ;; and again, with a zero TTL (should be same as if TTL was not given)
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-import-href-zero-ttl))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          secret-key (get-in resp [:response :body :secretKey])
-          uri (-> resp
-                  (ltu/location))
-          abs-uri (str p/service-context uri)]
+    (let [resp       (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str create-import-href-zero-ttl))
+                         (ltu/body->edn)
+                         (ltu/is-status 201))
+          id         (get-in resp [:response :body :resource-id])
+          secret-key (get-in resp [:response :body :secret-key])
+          uri        (-> resp
+                         (ltu/location))
+          abs-uri    (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
       (is (= id uri))
@@ -222,8 +227,8 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
       (let [{:keys [digest expiry claims] :as current} (-> session-user
@@ -252,12 +257,12 @@
 
         ;; verify that the attribute has been changed
         (let [expected (assoc current :name "UPDATED!")
-              reread (-> session-user
-                         (request abs-uri)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         :response
-                         :body)]
+              reread   (-> session-user
+                           (request abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           :response
+                           :body)]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread))))
@@ -279,12 +284,12 @@
         (let [expected (assoc current :name "UPDATED by super!"
                                       :claims {:identity "super",
                                                :roles    ["group/nuvla-user" "group/nuvla-anon" "group/nuvla-admin"]})
-              reread (-> session-admin
-                         (request abs-uri)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         :response
-                         :body)]
+              reread   (-> session-admin
+                           (request abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           :response
+                           :body)]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread)))))

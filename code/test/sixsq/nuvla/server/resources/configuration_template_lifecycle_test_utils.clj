@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-template :refer :all]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
@@ -17,17 +16,17 @@
 
 (defn check-retrieve-by-id
   [service]
-  (let [id (str resource-type "/" service)
+  (let [id  (str resource-type "/" service)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
 (defn check-lifecycle
   [service]
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user")
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user")
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous query is not authorized
@@ -49,18 +48,18 @@
                       (ltu/is-status 200)
                       (ltu/is-resource-uri collection-type)
                       (ltu/is-count pos?)
-                      (ltu/is-operation-absent "add")
-                      (ltu/is-operation-absent "delete")
-                      (ltu/is-operation-absent "edit")
+                      (ltu/is-operation-absent :add)
+                      (ltu/is-operation-absent :delete)
+                      (ltu/is-operation-absent :edit)
                       (ltu/entries))
-          ids (set (map :id entries))
-          types (set (map :service entries))]
+          ids     (set (map :id entries))
+          types   (set (map :service entries))]
       (is (contains? ids (str resource-type "/" service)))
       (is (contains? types service))
 
       (doseq [entry entries]
-        (let [ops (ltu/operations->map entry)
-              entry-url (str p/service-context (:id entry))
+        (let [ops        (ltu/operations->map entry)
+              entry-url  (str p/service-context (:id entry))
 
               entry-resp (-> session-admin
                              (request entry-url)
@@ -68,9 +67,9 @@
                              (ltu/body->edn))
 
               entry-body (get-in entry-resp [:response :body])]
-          (is (nil? (get ops (c/action-uri :add))))
-          (is (nil? (get ops (c/action-uri :edit))))
-          (is (nil? (get ops (c/action-uri :delete))))
+          (is (nil? (get ops (name :add))))
+          (is (nil? (get ops (name :edit))))
+          (is (nil? (get ops (name :delete))))
 
           (is (crud/validate entry-body))
 

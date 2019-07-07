@@ -136,10 +136,10 @@
 
 (defmethod jsc/accept-spec 'sixsq.nuvla.server.util.spec/only-keys-maps [_ spec children _]
   (let [{:keys [req req-un opt opt-un]} (impl/parse-keys (transform-form (impl/extract-form spec)))
-        names-un (map name (concat req-un opt-un))
-        names (map impl/qualified-name (concat req opt))
-        required (map impl/qualified-name req)
-        required-un (map name req-un)
+        names-un     (map name (concat req-un opt-un))
+        names        (map impl/qualified-name (concat req opt))
+        required     (map impl/qualified-name req)
+        required-un  (map name req-un)
         all-required (not-empty (concat required required-un))]
     (#'jsc/maybe-with-title
       (merge

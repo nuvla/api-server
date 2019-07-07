@@ -59,7 +59,7 @@
 
 
 (deftest check-handler
-  (let [handler (wrap-authn-info identity)
+  (let [handler  (wrap-authn-info identity)
         anon-map {:claims #{"group/nuvla-anon"}}]
     (are [expected request] (= expected (auth/current-authentication (handler request)))
                             anon-map {}

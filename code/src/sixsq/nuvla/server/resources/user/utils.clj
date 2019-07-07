@@ -90,17 +90,30 @@
 
 (defn create-user-subresources
   [user-id email password username]
-  (let [credential-id (create-hashed-password user-id password)
-        email-id (some->> email
-                          (create-email user-id))]
+  (let [credential-id (when password (create-hashed-password user-id password))
+        email-id      (when email (create-email user-id email))]
 
-    (update-user user-id (cond-> {:id                  user-id
-                                  :credential-password credential-id}
+    (update-user user-id (cond-> {:id user-id}
+                                 credential-id (assoc :credential-password credential-id)
                                  email-id (assoc :email email-id)))
 
     (when email
-      (create-identifier user-id email))
+      (try
+        (create-identifier user-id email)
+        (catch Exception e
+          (if-let [{:keys [status] :as data} (ex-data e)]
+            (if (= 409 status)
+              (throw (r/ex-response (format "email address (%s) is associated with an existing account" email) 409 email))
+              (throw e))
+            (throw e)))))
 
     (when username
-      (create-identifier user-id username))))
+      (try
+        (create-identifier user-id username)
+        (catch Exception e
+          (if-let [{:keys [status] :as data} (ex-data e)]
+            (if (= 409 status)
+              (throw (r/ex-response (format "identifier (%s) is associated with an existing account" username) 409 username))
+              (throw e))
+            (throw e)))))))
 

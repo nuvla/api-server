@@ -8,7 +8,7 @@
 
 (deftest check-executable?
   (let [future (time/to-str (time/from-now 2 :weeks))
-        past (time/to-str (time/ago 2 :weeks))]
+        past   (time/to-str (time/ago 2 :weeks))]
     (are [expected arg] (= expected (t/executable? arg))
                         true {:state "WAITING", :expires future}
                         false {:state "WAITING", :expires past}

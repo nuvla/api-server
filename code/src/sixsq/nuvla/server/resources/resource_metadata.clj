@@ -1,8 +1,10 @@
 (ns sixsq.nuvla.server.resources.resource-metadata
-  "This resource provides metadata associated with other CIMI resourced. It
-   can be used to understand the attributes, allow values, actions, and
-   capabilities. This information is linked to a resource through the type-uri
-   attribute."
+  "
+This resource provides metadata associated with other resources. It can be
+used to understand the attributes and allowed values, actions, and
+capabilities. This information is linked to a resource through the type-uri
+attribute.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -118,9 +120,9 @@
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+  (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
-        wrapped-entries (wrapper-fn request entries)
+        wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 

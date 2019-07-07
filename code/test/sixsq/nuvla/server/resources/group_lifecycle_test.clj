@@ -24,30 +24,30 @@
 
 (deftest lifecycle
 
-  (let [app (ltu/ring-app)
-        session-json (content-type (session app) "application/json")
-        session-admin (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-json authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session-json authn-info-header "group/nuvla-anon")
+  (let [app                     (ltu/ring-app)
+        session-json            (content-type (session app) "application/json")
+        session-admin           (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user            (header session-json authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon            (header session-json authn-info-header "group/nuvla-anon")
 
-        href (str group-tpl/resource-type "/generic")
+        href                    (str group-tpl/resource-type "/generic")
 
-        name-attr "name"
-        description-attr "description"
-        tags-attr ["one", "two"]
+        name-attr               "name"
+        description-attr        "description"
+        tags-attr               ["one", "two"]
 
-        valid-create-id "alpha-one"
-        valid-create {:name        name-attr
-                      :description description-attr
-                      :tags        tags-attr
-                      :template    {:href             href
-                                    :group-identifier valid-create-id}}
+        valid-create-id         "alpha-one"
+        valid-create            {:name        name-attr
+                                 :description description-attr
+                                 :tags        tags-attr
+                                 :template    {:href             href
+                                               :group-identifier valid-create-id}}
 
         valid-create-no-href-id "beta-two"
-        valid-create-no-href {:name        name-attr
-                              :description description-attr
-                              :tags        tags-attr
-                              :template    {:group-identifier valid-create-no-href-id}}]
+        valid-create-no-href    {:name        name-attr
+                                 :description description-attr
+                                 :tags        tags-attr
+                                 :template    {:group-identifier valid-create-no-href-id}}]
 
     ;; admin query should succeed and have three entries
     (let [entries (-> session-admin
@@ -79,16 +79,16 @@
 
     ;; test lifecycle of new group
     (doseq [tpl [valid-create valid-create-no-href]]
-      (let [resp (-> session-admin
-                     (request base-uri
-                              :request-method :post
-                              :body (json/write-str tpl))
-                     (ltu/body->edn)
-                     (ltu/is-status 201))
+      (let [resp        (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str tpl))
+                            (ltu/body->edn)
+                            (ltu/is-status 201))
 
-            abs-uri (->> resp
-                         ltu/location
-                         (str p/service-context))
+            abs-uri     (->> resp
+                             ltu/location
+                             (str p/service-context))
 
             expected-id (str "group/" (get-in tpl [:template :group-identifier]))]
 

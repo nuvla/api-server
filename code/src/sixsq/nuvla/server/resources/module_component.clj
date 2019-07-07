@@ -92,7 +92,9 @@ image stored in a registry.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::module-component/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::module-component/schema)
-  (md/register (gen-md/generate-metadata ::ns ::module-component/schema)))
+  (md/register resource-metadata))

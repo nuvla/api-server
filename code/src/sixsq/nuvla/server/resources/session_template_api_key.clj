@@ -38,14 +38,20 @@ pair.
 ;; initialization: register this Session template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-api-key/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

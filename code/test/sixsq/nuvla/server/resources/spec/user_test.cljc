@@ -12,22 +12,22 @@
 
 (deftest check-user-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id                  (str resource-type "/uuid")
+        cfg       {:id                  (str resource-type "/uuid")
 
-             :resource-type       resource-type
+                   :resource-type       resource-type
 
-             :created             timestamp
-             :updated             timestamp
+                   :created             timestamp
+                   :updated             timestamp
 
-             :credential-password "credential/uuid"
+                   :credential-password "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
 
-             :email               "email/uuid"
+                   :email               "email/uuid"
 
-             :method              "direct"
+                   :method              "direct"
 
-             :state               "ACTIVE"
+                   :state               "ACTIVE"
 
-             :acl                 valid-acl}]
+                   :acl                 valid-acl}]
 
     (stu/is-valid ::user/schema cfg)
     (stu/is-invalid ::user/schema (assoc cfg :unknown "value"))

@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-password
+  "
+Provides the functions necessary to create a session from a username and
+password.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
@@ -50,16 +54,16 @@
 (defn create-session-password
   [username user headers href]
   (if user
-    (let [user-id (:id user)
-          session (sutils/create-session username user-id href headers authn-method)
+    (let [user-id     (:id user)
+          session     (sutils/create-session username user-id href headers authn-method)
           cookie-info (create-cookie-info user headers (:id session) (:client-ip session))
-          cookie (cookies/create-cookie cookie-info)
-          expires (ts/rfc822->iso8601 (:expires cookie))
-          claims (:claims cookie-info)
-          session (cond-> (assoc session :expiry expires)
-                          claims (assoc :roles claims))
-          cookies {authn-info/authn-cookie cookie}]
-      (log/debug "password cookie token claims for" (u/document-id href) ":" cookie-info)
+          cookie      (cookies/create-cookie cookie-info)
+          expires     (ts/rfc822->iso8601 (:expires cookie))
+          claims      (:claims cookie-info)
+          session     (cond-> (assoc session :expiry expires)
+                              claims (assoc :roles claims))
+          cookies     {authn-info/authn-cookie cookie}]
+      (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
       [{:cookies cookies} session])
     (throw (r/ex-unauthorized username))))
 

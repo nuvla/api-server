@@ -25,7 +25,7 @@
                   :updated                   timestamp
                   :parent-path               "a/b"
                   :path                      "a/b/c"
-                  :type                      "COMPONENT"
+                  :subtype                   "component"
 
                   :logo-url                  "https://example.org/logo"
 
@@ -33,23 +33,23 @@
                   :data-access-protocols     ["http+s3" "posix+nfs"]})
 
 
-(def valid-component {:author       "someone"
-                      :commit       "wip"
+(def valid-component {:author        "someone"
+                      :commit        "wip"
 
-                      :architecture "x86"
-                      :image        {:image-name "ubuntu"
-                                     :tag        "16.04"}
-                      :ports        [{:protocol       "tcp"
-                                      :target-port    22
-                                      :published-port 8022}]})
+                      :architectures ["amd64" "arm/v6"]
+                      :image         {:image-name "ubuntu"
+                                      :tag        "16.04"}
+                      :ports         [{:protocol       "tcp"
+                                       :target-port    22
+                                       :published-port 8022}]})
 
 
 (deftest lifecycle
 
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon
     (-> session-anon
@@ -72,25 +72,25 @@
           (ltu/is-status 200)
           (ltu/is-count zero?)))
 
-    ;; invalid module type
+    ;; invalid module subtype
     (-> session-admin
         (request base-uri
                  :request-method :post
                  :body (json/write-str (assoc valid-entry
                                          :content valid-component
-                                         :type "bad-module-type")))
+                                         :subtype "bad-module-subtype")))
         (ltu/body->edn)
         (ltu/is-status 400))
 
     ;; adding, retrieving and  deleting entry as user should succeed
     (doseq [session [session-admin session-user]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str (assoc valid-entry :content valid-component)))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
+      (let [uri     (-> session
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (assoc valid-entry :content valid-component)))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
 
             abs-uri (str p/service-context uri)]
 

@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-hashed-password
   "
-Stores the hashed value of a password.
+Takes a plain-text password and then creates a credential containing a hash of
+that password. The credential provides actions for validating the password or
+changing it.
 "
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -11,10 +13,10 @@ Stores the hashed value of a password.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "hashed-password")
+(def ^:const credential-subtype "hashed-password")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "generate-hashed-password")
@@ -28,7 +30,7 @@ Stores the hashed value of a password.
 ;;
 
 (def ^:const template
-  {:type              credential-type
+  {:subtype           credential-subtype
    :method            method
    :name              "Hashed Password"
    :description       "stores hashed value of a password"
@@ -40,11 +42,17 @@ Stores the hashed value of a password.
 ;; initialization: register this credential-template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::hashed-password/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

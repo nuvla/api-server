@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-password-reset
+  "
+Provides the functions necessary to create a session from a password reset
+request, while also resetting the password itself.
+"
   (:require
     [buddy.hashers :as hashers]
     [sixsq.nuvla.auth.password :as auth-password]
@@ -13,6 +17,7 @@
     [sixsq.nuvla.server.resources.session-password :as session-password]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-password-reset :as st-password-reset]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -54,21 +59,31 @@
          email-id      :email :as user} (auth-password/active-user username)
 
         {email-address :address :as email} (when email-id
-                                             (crud/retrieve-by-id-as-admin email-id))
-        credential (when credential-id
-                     (crud/retrieve-by-id-as-admin credential-id))]
+                                             (crud/retrieve-by-id-as-admin email-id))]
 
-    (when-not (and email-address credential)
+    (when-not email-address
       (throw (r/ex-response (str "invalid username '" username "'") 400)))
+
+    ;; ensure credential exist or create one if user doesn't have one yet
+    (if credential-id
+      (crud/retrieve-by-id-as-admin credential-id)
+      (let [random-pass       (str (u/random-uuid) "?A")
+            new-credential-id (user-utils/create-hashed-password user-id random-pass)]
+        (user-utils/update-user user-id {:id                  user-id
+                                         :credential-password new-credential-id})))
 
     (let [[cookie-header session] (session-password/create-session-password username user headers href)
 
-          callback-data {:redirect-url  redirect-url
-                         :cookies       (:cookies cookie-header)
-                         :hash-password (hashers/derive new-password)}]
+          callback-data  {:redirect-url  redirect-url
+                          :cookies       (:cookies cookie-header)
+                          :hash-password (hashers/derive new-password)}
 
-      (-> (create-user-password-reset-callback base-uri user-id callback-data)
-          (email-utils/send-password-reset-email email-address))
+          callback-reset (create-user-password-reset-callback base-uri user-id callback-data)]
+
+
+      (if credential-id
+        (email-utils/send-password-reset-email callback-reset email-address)
+        (email-utils/send-validation-email callback-reset email-address))
 
       [(dissoc cookie-header :cookies) session])))
 

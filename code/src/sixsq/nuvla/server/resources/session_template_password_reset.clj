@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-template-password-reset
   "
-Resource that is used to reset password for a username and to create a session at the end of
-the process. This template is guaranteed to be present on all server instances.
+Resource that is used to reset password for a username and to create a session
+at the end of the process. This template is guaranteed to be present on all
+server instances.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -39,14 +40,20 @@ the process. This template is guaranteed to be present on all server instances.
 ;; initialization: register this Session template and create password reset authentication template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-password-reset/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password-reset/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

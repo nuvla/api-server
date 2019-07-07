@@ -32,7 +32,7 @@
   [request]
   (when-let [terms (parse-authn-header request)]
     (let [user-id (first terms)
-          claims (seq (rest terms))
+          claims  (seq (rest terms))
           session (first (keep is-session? (rest terms)))]
       (cond-> {}
               user-id (assoc :user-id user-id)

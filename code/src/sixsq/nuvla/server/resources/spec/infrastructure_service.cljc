@@ -16,11 +16,11 @@
              :json-schema/hidden true)))
 
 
-(s/def ::type
+(s/def ::subtype
   (-> (st/spec ::core/identifier)
-      (assoc :name "type"
-             :json-schema/display-name "service type"
-             :json-schema/description "kebab-case identifier for the service type"
+      (assoc :name "subtype"
+             :json-schema/display-name "service subtype"
+             :json-schema/description "kebab-case identifier for the service subtype"
 
              :json-schema/order 21)))
 
@@ -98,7 +98,7 @@
   (su/only-keys-maps common/common-attrs
                      {:req-un [::common/parent              ;; an id pointing to an infrastructure service group
                                ::method
-                               ::type
+                               ::subtype
                                ::state]
                       :opt-un [::endpoint
                                ::management-credential-id

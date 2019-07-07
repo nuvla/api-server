@@ -4,7 +4,18 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [spec-tools.core :as st]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]))
+
+
+(s/def ::parent (-> cred-spec/credential-id-spec
+                    (assoc :name "parent"
+                           :json-schema/type "resource-id"
+                           :json-schema/description "reference to parent credential resource"
+
+                           :json-schema/section "meta"
+                           :json-schema/editable false
+                           :json-schema/order 6)))
 
 
 (s/def ::module ::core/resource-link)
@@ -77,9 +88,6 @@
              :json-schema/order 22)))
 
 
-(s/def ::credential-id ::core/nonblank-string)
-
-
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn data-object-id? [s] (re-matches data-object-id-regex s))
 
@@ -125,9 +133,8 @@
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
-                                  ::api-credentials
                                   ::api-endpoint]
-                         :opt-un [::credential-id
+                         :opt-un [::api-credentials
                                   ::data-objects
                                   ::data-records]}]))
 

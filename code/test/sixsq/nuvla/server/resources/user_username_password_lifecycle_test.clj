@@ -28,40 +28,40 @@
 (deftest lifecycle
   (let [template-href (str user-tpl/resource-type "/" username-password/registration-method)
 
-        template-url (str p/service-context template-href)
+        template-url  (str p/service-context template-href)
 
-        session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+        session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
-    (let [template (-> session-admin
-                       (request template-url)
-                       (ltu/body->edn)
-                       (ltu/is-status 200)
-                       (get-in [:response :body]))
+    (let [template           (-> session-admin
+                                 (request template-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (get-in [:response :body]))
 
-          name-attr "name"
-          description-attr "description"
-          tags-attr ["one", "two"]
+          name-attr          "name"
+          description-attr   "description"
+          tags-attr          ["one", "two"]
           plaintext-password "Plaintext-password-1"
 
-          uname-alt "user/jane"
+          uname-alt          "user/jane"
 
-          no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
-                                                                :password plaintext-password
-                                                                :username "alice"))}
-          href-create {:description description-attr
-                       :tags        tags-attr
-                       :template    {:href     template-href
-                                     :password plaintext-password
-                                     :username "user/jane"}}
+          no-href-create     {:template (ltu/strip-unwanted-attrs (assoc template
+                                                                    :password plaintext-password
+                                                                    :username "alice"))}
+          href-create        {:description description-attr
+                              :tags        tags-attr
+                              :template    {:href     template-href
+                                            :password plaintext-password
+                                            :username "user/jane"}}
 
-          invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
+          invalid-create     (assoc-in href-create [:template :href] "user-template/unknown-template")
 
-          bad-params-create (assoc-in href-create [:template :invalid] "BAD")]
+          bad-params-create  (assoc-in href-create [:template :invalid] "BAD")]
 
 
       ;; user collection query should succeed but be empty for all users
@@ -71,9 +71,9 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-count zero?)
-            (ltu/is-operation-present "add")
-            (ltu/is-operation-absent "delete")
-            (ltu/is-operation-absent "edit")))
+            (ltu/is-operation-present :add)
+            (ltu/is-operation-absent :delete)
+            (ltu/is-operation-absent :edit)))
 
       ;; create a new user; fails without reference
       (doseq [session [session-anon session-user session-admin]]
@@ -103,15 +103,15 @@
             (ltu/is-status 400)))
 
       ;; create user, username-password template is only accessible by admin
-      (let [resp (-> session-admin
-                     (request base-uri
-                              :request-method :post
-                              :body (json/write-str href-create))
-                     (ltu/body->edn)
-                     (ltu/is-status 201))
-            user-id (get-in resp [:response :body :resource-id])
+      (let [resp                 (-> session-admin
+                                     (request base-uri
+                                              :request-method :post
+                                              :body (json/write-str href-create))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201))
+            user-id              (get-in resp [:response :body :resource-id])
 
-            username-id (get-in href-create [:template :username])
+            username-id          (get-in href-create [:template :username])
 
             session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
 
@@ -180,12 +180,12 @@
 
         ;; try to create a second user with the same identifier
         ;; this must fail and all created supporting resources must be cleaned up
-        (let [resp (-> session-admin
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str (assoc-in href-create [:template :username] "user/jane")))
-                       (ltu/body->edn)
-                       (ltu/is-status 409))
+        (let [resp    (-> session-admin
+                          (request base-uri
+                                   :request-method :post
+                                   :body (json/write-str (assoc-in href-create [:template :username] "user/jane")))
+                          (ltu/body->edn)
+                          (ltu/is-status 409))
               user-id (get-in resp [:response :body :resource-id])]
 
           ; no dangling credentials

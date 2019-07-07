@@ -90,6 +90,118 @@
              :json-schema/indexed false)))
 
 
+;;
+;; environmental variables
+;;
+
+(def env-var-regex #"^[A-Z_]+$")
+
+
+(def reserved-env-var-regex #"NUVLA_.*")
+
+
+(s/def ::name
+  (-> (st/spec (s/and string? #(re-matches env-var-regex %) #(not (re-matches reserved-env-var-regex %))))
+      (assoc :name "name"
+             :json-schema/type "string"
+             :json-schema/description "parameter name")))
+
+
+(s/def ::description
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "description"
+             :json-schema/description "parameter description")))
+
+
+(s/def ::value
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "value"
+             :json-schema/description "parameter value")))
+
+
+(s/def ::required
+  (-> (st/spec boolean?)
+      (assoc :name "required"
+             :json-schema "boolean"
+             :json-schema/description "value required? (default false)")))
+
+
+(s/def ::environmental-variable
+  (-> (st/spec (su/only-keys :req-un [::name]
+                             :opt-un [::description ::required ::value]))
+      (assoc :name "environmental-variable"
+             :json-schema/type "map"
+             :json-schema/description "environmental variable name, description, required flag, and value")))
+
+
+(s/def ::environmental-variables
+  (-> (st/spec (s/coll-of ::environmental-variable :kind vector? :min-count 1))
+      (assoc :name "environmental-variables"
+             :json-schema/type "array"
+             :json-schema/display-name "environmental variables"
+             :json-schema/description "list of environmental variable")))
+
+
+;;
+;; resource constraints
+;;
+
+(s/def ::memory
+  (-> (st/spec pos-int?)
+      (assoc :name "memory"
+             :json-schema/type "integer"
+             :json-schema/description "maximum memory in MiB")))
+
+
+(s/def ::cpus
+  (-> (st/spec (s/and double? pos?))
+      (assoc :name "cpus"
+             :json-schema/type "double"
+             :json-schema/display-name "CPUs"
+             :json-schema/description "allocated virtual CPUs")))
+
+;;
+;; restart policy
+;;
+
+(s/def ::condition
+  (-> (st/spec #{"none", "on-failure", "any"})
+      (assoc :name "condition"
+             :json-schema/type "string"
+             :json-schema/description "restart condition (none, on-failure, any)")))
+
+
+(s/def ::delay
+  (-> (st/spec nat-int?)
+      (assoc :name "delay"
+             :json-schema/type "integer"
+             :json-schema/description "delay between restarts (seconds)")))
+
+
+(s/def ::max-attempts
+  (-> (st/spec nat-int?)
+      (assoc :name "max-attempts"
+             :json-schema/type "integer"
+             :json-schema/display-name "max. attempts"
+             :json-schema/description "maximum number of restart attempts")))
+
+
+(s/def ::window
+  (-> (st/spec nat-int?)
+      (assoc :name "window"
+             :json-schema/type "integer"
+             :json-schema/description "time window used to evaluate restart policy (seconds)")))
+
+
+(s/def ::restart-policy
+  (-> (st/spec (su/only-keys :req-un [::condition]
+                             :opt-un [::delay ::max-attempts ::window]))
+      (assoc :name "restart-policy"
+             :json-schema/type "map"
+             :json-schema/display-name "restart policy"
+             :json-schema/description "Docker restart policy for the container")))
+
+
 ;; mounts spec
 
 

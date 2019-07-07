@@ -10,19 +10,19 @@
 
 (deftest check-session-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id            (str resource-type "/internal")
-             :resource-type resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
-             :identifier    "ssuser"
-             :user          "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-             :method        "internal"
-             :expiry        timestamp
-             :server        "nuv.la"
-             :client-ip     "127.0.0.1"
-             :redirect-url  "https://nuv.la/webui/profile"
-             :template      {:href "session-template/internal"}}]
+        cfg       {:id            (str resource-type "/internal")
+                   :resource-type resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
+                   :identifier    "ssuser"
+                   :user          "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                   :method        "internal"
+                   :expiry        timestamp
+                   :server        "nuv.la"
+                   :client-ip     "127.0.0.1"
+                   :redirect-url  "https://nuv.la/webui/profile"
+                   :template      {:href "session-template/internal"}}]
 
     (stu/is-valid ::session/session cfg)
 

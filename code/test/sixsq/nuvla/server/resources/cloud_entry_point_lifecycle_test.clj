@@ -25,11 +25,11 @@
 
   ;; cloud-entry-point will have been initialized in the test server fixture.
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane-updater")]
+        session-user  (header session-anon authn-info-header "user/jane-updater")]
 
     ; retrieve root resource (anonymously should work) and verify schema
     (let [cep (-> session-anon
@@ -37,8 +37,8 @@
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-resource-uri t/resource-type)
-                  (ltu/is-operation-absent "edit")
-                  (ltu/is-operation-absent "delete")
+                  (ltu/is-operation-absent :edit)
+                  (ltu/is-operation-absent :delete)
                   :response
                   :body)]
 
@@ -50,8 +50,8 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri t/resource-type)
-        (ltu/is-operation-present "edit")
-        (ltu/is-operation-absent "delete"))
+        (ltu/is-operation-present :edit)
+        (ltu/is-operation-absent :delete))
 
     ;; updating root resource as user should fail
     (-> session-user
@@ -70,7 +70,7 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri t/resource-type)
-        (ltu/is-operation-present "edit")
+        (ltu/is-operation-present :edit)
         (ltu/is-key-value :name "dummy"))
 
     ;; verify that subsequent reads find the right data
@@ -79,7 +79,7 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-resource-uri t/resource-type)
-        (ltu/is-operation-absent "edit")
+        (ltu/is-operation-absent :edit)
         (ltu/is-key-value :name "dummy"))))
 
 

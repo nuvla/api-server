@@ -65,7 +65,7 @@
            "date-time" (assoc-date m)
            "array" (:items m)
            m)
-    enum (let [vs (:enum m)
+    enum (let [vs   (:enum m)
                type (set-type-from-first-child vs)]
            (merge (dissoc m :enum) type))
     properties (assoc m :type "object")

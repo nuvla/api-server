@@ -19,7 +19,7 @@
 (s/def ::resource (s/keys :req-un [::id ::sequence ::attr1 ::attr2 ::acl]
                           :opt-un [::admin ::user]))
 
-(def admin-acl {:owners   ["group/nuvla-admin"]})
+(def admin-acl {:owners ["group/nuvla-admin"]})
 
 (def user "user/jane")
 
@@ -46,27 +46,27 @@
       (db/initialize db collection-id {:spec ::resource})
 
       ;; create an entry in the database
-      (let [n 2
+      (let [n             2
             collection-id "test-collection"
-            admin-docs (doall (for [uuid (range 0 n)]
-                                {:id       (str collection-id "/" uuid)
-                                 :sequence uuid
-                                 :attr1    "attr1"
-                                 :attr2    "attr2"
-                                 :number   1
-                                 :nested   {:child "child1"}
-                                 :admin    true
-                                 :acl      admin-acl}))
-            user-docs (doall (for [uuid (range n (* 2 n))]
-                               {:id       (str collection-id "/" uuid)
-                                :sequence uuid
-                                :attr1    "attr1"
-                                :attr2    "attr2"
-                                :nested   {:child "child2"}
-                                :user     true
-                                :number   2
-                                :acl      user-acl}))
-            docs (vec (concat admin-docs user-docs))]
+            admin-docs    (doall (for [uuid (range 0 n)]
+                                   {:id       (str collection-id "/" uuid)
+                                    :sequence uuid
+                                    :attr1    "attr1"
+                                    :attr2    "attr2"
+                                    :number   1
+                                    :nested   {:child "child1"}
+                                    :admin    true
+                                    :acl      admin-acl}))
+            user-docs     (doall (for [uuid (range n (* 2 n))]
+                                   {:id       (str collection-id "/" uuid)
+                                    :sequence uuid
+                                    :attr1    "attr1"
+                                    :attr2    "attr2"
+                                    :nested   {:child "child2"}
+                                    :user     true
+                                    :number   2
+                                    :acl      user-acl}))
+            docs          (vec (concat admin-docs user-docs))]
 
         ;; check schemas
         (doseq [doc docs]
@@ -74,14 +74,14 @@
 
         ;; add all of the docs to the database
         (doseq [doc docs]
-          (let [doc-id (:id doc)
+          (let [doc-id   (:id doc)
                 response (db/add db doc nil)]
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 
         ;; ensure that all of them can be retrieved individually
         (doseq [doc docs]
-          (let [doc-id (:id doc)
+          (let [doc-id         (:id doc)
                 retrieved-data (db/retrieve db doc-id nil)]
             (is (= doc retrieved-data))))
 
@@ -105,7 +105,7 @@
           (is (= (reverse docs) (vec query-hits))))
 
         ;; check paging
-        (let [n-drop (int (/ n 10))
+        (let [n-drop  (int (/ n 10))
               options {:cimi-params {:first   (inc n-drop)
                                      :last    (+ n n-drop)
                                      :orderby [["sequence" :desc]]}

@@ -21,12 +21,12 @@
 
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-jane  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; admin user collection query should succeed and contain exactly 1 template
     (-> session-admin
@@ -34,9 +34,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count 1)
-        (ltu/is-operation-absent "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-absent :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; a query for anyone else should fail
     (doseq [session [session-jane session-anon]]
@@ -47,13 +47,13 @@
 
 
     (let [group-tpl-id (str group-tpl/resource-type "/generic")
-          abs-url (str p/service-context group-tpl-id)]
+          abs-url      (str p/service-context group-tpl-id)]
       (-> session-admin
           (request abs-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))))
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))))
 
 
 (deftest bad-methods

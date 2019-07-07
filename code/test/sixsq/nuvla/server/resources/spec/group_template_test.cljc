@@ -11,17 +11,17 @@
 
 
 (deftest check-group-template-password-schema
-  (let [timestamp "1964-08-25T10:00:00.00Z"
-        tpl {:id               (str group-tpl/resource-type "/generic")
-             :resource-type    group-tpl/resource-type
-             :name             "my-template"
-             :description      "my template"
-             :tags             #{"1", "2"}
-             :created          timestamp
-             :updated          timestamp
-             :acl              valid-acl
+  (let [timestamp  "1964-08-25T10:00:00.00Z"
+        tpl        {:id               (str group-tpl/resource-type "/generic")
+                    :resource-type    group-tpl/resource-type
+                    :name             "my-template"
+                    :description      "my template"
+                    :tags             #{"1", "2"}
+                    :created          timestamp
+                    :updated          timestamp
+                    :acl              valid-acl
 
-             :group-identifier "my-valid-identifier"}
+                    :group-identifier "my-valid-identifier"}
 
         create-tpl {:name          "my-create"
                     :description   "my create description"

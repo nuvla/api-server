@@ -1,13 +1,12 @@
 (ns sixsq.nuvla.server.resources.event
   "
-Event resources provide a timestamp for the occurrence of some action. These
-are used, for example, to mark changes in the lifecycle of an application and
-for other important actions.
+The `event` resources provide a timestamp and other information when some
+event occurs. These are used, for example, to mark changes in the lifecycle of
+an application.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -70,11 +69,11 @@ for other important actions.
   [{:keys [id] :as resource} request]
   (if (u/is-collection? resource-type)
     (if (a/can-add? resource request)
-      (let [ops [{:rel (:add c/action-uri) :href id}]]
+      (let [ops [(u/operation-map id :add)]]
         (assoc resource :operations ops))
       (dissoc resource :operations))
     (if (a/can-edit? resource request)
-      (let [ops [{:rel (:delete c/action-uri) :href id}]]
+      (let [ops [(u/operation-map id :delete)]]
         (assoc resource :operations ops))
       (dissoc resource :operations))))
 
@@ -95,7 +94,10 @@ for other important actions.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::event/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::event/schema)
-  (md/register (gen-md/generate-metadata ::ns ::event/schema)))
+  (md/register resource-metadata))

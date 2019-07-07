@@ -17,10 +17,10 @@
   (is (thrown? Exception (crud/new-identifier {:prefix "http://example.org/invalid uri"} data-record-key/resource-type))))
 
 (deftest check-valid-new-identifer
-  (let [uri "example-org"
+  (let [uri  "example-org"
         name "price"
-        hex (data-record-key/uri->id (str uri ":" name))
-        id (str data-record-key/resource-type "/" hex)]
+        hex  (data-record-key/uri->id (str uri ":" name))
+        id   (str data-record-key/resource-type "/" hex)]
     (is (= id (:id (crud/new-identifier {:prefix uri :key name} data-record-key/resource-type)))))
 
   (let [long-uri (apply str "http://" (repeat 10000 "a"))]

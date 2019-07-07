@@ -1,18 +1,23 @@
 (ns sixsq.nuvla.server.resources.deployment
+  "
+These resources represent the deployment of a component or application within
+a container orchestration engine.
+"
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -59,21 +64,22 @@
 
   (a/throw-cannot-add collection-acl request)
 
-  (let [authn-info (auth/current-authentication request)
-        deployment (-> body
-                       (assoc :resource-type resource-type)
-                       (assoc :state "CREATED")
-                       (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
-                       (assoc :api-credentials (deployment-utils/generate-api-key-secret authn-info))
-                       (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
+  (let [authn-info      (auth/current-authentication request)
+        deployment      (-> body
+                            (assoc :resource-type resource-type)
+                            (assoc :state "CREATED")
+                            (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
+                            (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
-        href (get-in create-response [:body :resource-id])
+        deployment-id   (get-in create-response [:body :resource-id])
 
-        msg (get-in create-response [:body :message])]
+        msg             (get-in create-response [:body :message])]
 
-    (event-utils/create-event href msg (a/default-acl authn-info))
+    (event-utils/create-event deployment-id msg (a/default-acl authn-info))
+
+    (deployment-utils/assoc-api-credentials deployment-id authn-info)
 
     create-response))
 
@@ -91,17 +97,22 @@
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl (update request :body dissoc :api-credentials)))
+  (edit-impl request))
 
 
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-type "/" uuid)
-        (db/retrieve request)
-        deployment-utils/verify-can-delete
-        (a/throw-cannot-edit request)
-        (db/delete request))
+    (let [authn-info      (auth/current-authentication request)
+          deployment-id   (str resource-type "/" uuid)
+          delete-response (-> deployment-id
+                              (db/retrieve request)
+                              deployment-utils/verify-can-delete
+                              (a/throw-cannot-delete request)
+                              (db/delete request))]
+      (deployment-utils/delete-deployment-credentials authn-info deployment-id)
+      (deployment-utils/delete-deployment-parameters authn-info deployment-id)
+      delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -119,16 +130,10 @@
   (query-impl request))
 
 
-;;
-;; actions may be needed by certain authentication methods (notably external
-;; methods like GitHub and OpenID Connect) to validate a given session
-;;
-
-
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [start-op {:rel (:start c/action-uri) :href (str id "/start")}
-        stop-op {:rel (:stop c/action-uri) :href (str id "/stop")}
+  (let [start-op    (u/action-map id :start)
+        stop-op     (u/action-map id :stop)
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
@@ -139,7 +144,7 @@
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
+    (let [id      (str resource-type "/" uuid)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_deployment"
@@ -163,7 +168,7 @@
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
+    (let [id      (str resource-type "/" uuid)
           user-id (:user-id (auth/current-authentication request))
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "stop_deployment"
@@ -215,6 +220,10 @@
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::deployment-spec/deployment))
+
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::deployment-spec/deployment))
+  (std-crud/initialize resource-type ::deployment-spec/deployment)
+  (md/register resource-metadata))

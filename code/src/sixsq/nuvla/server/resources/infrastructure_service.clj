@@ -1,13 +1,13 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service
   "
 This resource represents an infrastructure service with an endpoint. Instances
-of a infrastructure-service resource must reference a
-infrastructure-service-group resource via the `parent` attribute. Associated
+of a `infrastructure-service` resource must reference an
+`infrastructure-service-group` resource via the `parent` attribute. Associated
 credentials should make an explicit reference to the relevant
-infrastructure-service resources.
+`infrastructure-service` resources.
 
 This is a templated resource. All creation requests must be done via an
-existing infrastructure-service-template resource.
+existing `infrastructure-service-template` resource.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -36,10 +36,13 @@ existing infrastructure-service-template resource.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -81,7 +84,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (a/add-acl resource request))
 
 
 ;;
@@ -134,19 +137,19 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [authn-info (auth/current-authentication request)
-        body (:body request)
-        desc-attrs (u/select-desc-keys body)
+  (let [authn-info         (auth/current-authentication request)
+        body               (:body request)
+        desc-attrs         (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
                                (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)
-        service (tpl->service validated-template)]
+        service            (tpl->service validated-template)]
     (let [response (add-impl (assoc request :body service))
-          id (-> response :body :resource-id)
-          service (assoc service :id id)]
+          id       (-> response :body :resource-id)
+          service  (assoc service :id id)]
       (post-add-hook service request)
       response)))
 

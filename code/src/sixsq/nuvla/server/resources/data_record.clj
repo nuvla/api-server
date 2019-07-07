@@ -1,17 +1,20 @@
 (ns sixsq.nuvla.server.resources.data-record
   "
-The data-record resource is the primary resource in the data catalog. Each
-record provides metadata for a particular data object.
+The `data-record` resource provides metadata for a particular data object.
+(Although `data-record` resources can also be used independently of a
+`data-object`.)
 
 The schema for the this resource is open, allowing any information to be
 associated with the data object. The only requirement is that keys must be
-prefixed. The prefixes **must** be defined in a data-record-key-prefix resource
-and the key itself **may** be described in a data-record-key resource.
+prefixed. The prefixes **must** be defined in a `data-record-key-prefix`
+resource and the key itself **may** be described in a `data-record-key`
+resource.
 "
   (:require
     [clojure.string :as str]
     [ring.util.response :as r]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -64,8 +67,8 @@ and the key itself **may** be described in a data-record-key resource.
 
 (defn- throw-wrong-namespace
   []
-  (let [code 406
-        msg "resource uses keys with undefined prefixes"
+  (let [code     406
+        msg      "resource uses keys with undefined prefixes"
         response (-> {:status code :message msg}
                      sr/json-response
                      (r/status code))]
@@ -75,7 +78,7 @@ and the key itself **may** be described in a data-record-key resource.
 (defn- validate-attributes
   [resource]
   (let [valid-prefixes (sn/all-prefixes)
-        validator (partial valid-key-prefix? valid-prefixes)]
+        validator      (partial valid-key-prefix? valid-prefixes)]
     (if (valid-attributes? validator resource)
       resource
       (throw-wrong-namespace))))
@@ -89,9 +92,26 @@ and the key itself **may** be described in a data-record-key resource.
       validate-attributes))
 
 
+;;
+;; multimethod for ACLs
+;;
+
+(defn create-acl [id]
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl [id]})
+
+
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
+
+
+(defmethod crud/add-acl resource-type
+  [{:keys [acl] :as resource} request]
+  (if acl
+    resource
+    (let [user-id (:user-id (auth/current-authentication request))]
+      (assoc resource :acl (create-acl user-id)))))
 
 
 ;;
@@ -142,8 +162,11 @@ and the key itself **may** be described in a data-record-key resource.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::data-record/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::data-record/schema)
-  (md/register (gen-md/generate-metadata ::ns ::data-record/schema)))
+  (md/register resource-metadata))
 

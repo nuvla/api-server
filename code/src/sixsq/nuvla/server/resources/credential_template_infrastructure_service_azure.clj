@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure
-  "This CredentialTemplate allows creating a Credential instance to hold
-  cloud credentials for the Azure's services."
+  "
+Allows `docker-machine` credentials for Azure to be created. The attribute
+names correspond exactly to those required by `docker-machine`.
+"
   (:require
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -10,7 +12,10 @@
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-azure")
+(def ^:const credential-subtype "infrastructure-service-azure")
+
+
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const resource-name "Azure client credentials")
@@ -27,7 +32,7 @@
 ;;
 
 (def ^:const resource
-  {:type                  credential-type
+  {:subtype               credential-subtype
    :method                method
    :name                  resource-name
    :description           "Azure cloud credentials"
@@ -52,8 +57,14 @@
 ;; initialization: register this Credential template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::service/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema))
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::service/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

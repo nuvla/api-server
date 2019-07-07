@@ -18,7 +18,7 @@
                        :view-acl ["group/nuvla-anon"]}
 
    :message           "message"
-   :type              "type"
+   :category          "type"
    :content-unique-id "content-unique-id"
 
    :target-resource   "foo/bar"
@@ -32,11 +32,11 @@
   (stu/is-invalid ::notification/schema (assoc valid-notification :message "")))
 
 
-(deftest check-type
-  (doseq [valid-type ["z" "foo" "bar-baz"]]
-    (stu/is-valid ::notification/schema (assoc valid-notification :type valid-type)))
-  (doseq [invalid-type ["" "Z" "Foo" "BaR-BaZ"]]
-    (stu/is-invalid ::notification/schema (assoc valid-notification :type invalid-type))))
+(deftest check-category
+  (doseq [valid-category ["z" "foo" "bar-baz"]]
+    (stu/is-valid ::notification/schema (assoc valid-notification :category valid-category)))
+  (doseq [invalid-category ["" "Z" "Foo" "BaR-BaZ"]]
+    (stu/is-invalid ::notification/schema (assoc valid-notification :category invalid-category))))
 
 
 (deftest check-msg-unique-id
@@ -62,7 +62,7 @@
   (stu/is-valid ::notification/schema valid-notification)
 
   ;; mandatory keywords
-  (doseq [k #{:id :resource-type :acl :message :type :content-unique-id}]
+  (doseq [k #{:id :resource-type :acl :message :category :content-unique-id}]
     (stu/is-invalid ::notification/schema (dissoc valid-notification k)))
 
   ;; optional keywords

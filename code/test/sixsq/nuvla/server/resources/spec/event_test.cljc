@@ -20,7 +20,7 @@
    :timestamp     event-timestamp
    :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
                    :state    "Started"}
-   :type          "state"
+   :category      "state"
    :severity      "critical"})
 
 
@@ -37,10 +37,10 @@
   (stu/is-invalid ::event/schema (assoc valid-event :severity "unknown-severity")))
 
 
-(deftest check-type
-  (doseq [valid-type ["state" "alarm"]]
-    (stu/is-valid ::event/schema (assoc valid-event :type valid-type)))
-  (stu/is-invalid ::event/schema (assoc valid-event :type "unknown-type")))
+(deftest check-category
+  (doseq [valid-category ["state" "alarm"]]
+    (stu/is-valid ::event/schema (assoc valid-event :category valid-category)))
+  (stu/is-invalid ::event/schema (assoc valid-event :category "unknown-category")))
 
 
 (deftest check-event-schema
@@ -48,7 +48,7 @@
   (stu/is-valid ::event/schema valid-event)
 
   ;; mandatory keywords
-  (doseq [k #{:id :resource-type :acl :timestamp :content :type :severity}]
+  (doseq [k #{:id :resource-type :acl :timestamp :content :category :severity}]
     (stu/is-invalid ::event/schema (dissoc valid-event k)))
 
   ;; optional keywords

@@ -4,7 +4,7 @@ A collection of templates that allow users to create infrastructure-service
 resources that identify other services that will be used by Nuvla, for example
 Docker Swarm clusters or S3 object stores.
 
-An ephemeral, in-memory 'database' of infrastructure-service-template
+An ephemeral, in-memory 'database' of `infrastructure-service-template`
 resources is used to store the collection. As a consequence, the filtering,
 paging, etc. parameters are not supported.
 "
@@ -134,13 +134,13 @@ paging, etc. parameters are not supported.
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
+  (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
+        entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:query-params :cimi-params])
+        options                 (select-keys request [:query-params :cimi-params])
         count-before-pagination (count entries)
-        wrapped-entries (wrapper-fn request entries)
-        entries-and-count (assoc wrapped-entries :count count-before-pagination)]
+        wrapped-entries         (wrapper-fn request entries)
+        entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
 
@@ -148,7 +148,10 @@ paging, etc. parameters are not supported.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/schema)))
+  (md/register resource-metadata))
 

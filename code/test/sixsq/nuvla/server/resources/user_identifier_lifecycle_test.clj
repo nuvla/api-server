@@ -44,11 +44,11 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
+  (let [session-anon   (-> (session (ltu/ring-app))
+                           (content-type "application/json"))
+        session-admin  (header session-anon authn-info-header
+                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane   (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
         session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
@@ -87,13 +87,13 @@
 
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-entry))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-entry))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
 
           abs-uri (str p/service-context uri)]
 
@@ -111,13 +111,13 @@
             (ltu/is-status 200)))
 
       ;; check content of the resource
-      (let [expected-id (str user-identifier/resource-type "/" (u/md5 (:identifier valid-entry)))
-            resource (-> session-admin
-                         (request abs-uri)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         :response
-                         :body)]
+      (let [expected-id (str user-identifier/resource-type "/" (-> valid-entry :identifier u/from-data-uuid))
+            resource    (-> session-admin
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            :response
+                            :body)]
 
         (is (= {:id         expected-id
                 :identifier test-identifier

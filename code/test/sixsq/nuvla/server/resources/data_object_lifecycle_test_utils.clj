@@ -76,7 +76,7 @@
 
         valid-service       {:acl      valid-acl
                              :parent   service-group-id
-                             :type     "s3"
+                             :subtype  "s3"
                              :endpoint "https://minio.example.org:9000"
                              :state    "STARTED"}
 
@@ -193,7 +193,7 @@
   (let [template       (get-template template-url)
         create-href    {:template (-> template-obj
                                       (assoc :href (:id template))
-                                      (dissoc :type))}
+                                      (dissoc :subtype))}
         create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
 
     ;; check with and without a href attribute
@@ -353,11 +353,11 @@
             (let [{:keys [acl] :as current-eo} (-> session
                                                    (request abs-uri)
                                                    (ltu/body->edn)
-                                                   (ltu/is-operation-present "upload")
-                                                   (ltu/is-operation-present "delete")
-                                                   (ltu/is-operation-present "edit")
-                                                   (ltu/is-operation-absent "ready")
-                                                   (ltu/is-operation-absent "download")
+                                                   (ltu/is-operation-present :upload)
+                                                   (ltu/is-operation-present :delete)
+                                                   (ltu/is-operation-present :edit)
+                                                   (ltu/is-operation-absent :ready)
+                                                   (ltu/is-operation-absent :download)
                                                    (ltu/is-status 200)
                                                    :response
                                                    :body)
@@ -411,13 +411,13 @@
               (let [upload-op      (-> session
                                        (request abs-uri)
                                        (ltu/body->edn)
-                                       (ltu/is-operation-present "upload")
-                                       (ltu/is-operation-present "delete")
-                                       (ltu/is-operation-present "edit")
-                                       (ltu/is-operation-absent "ready")
-                                       (ltu/is-operation-absent "download")
+                                       (ltu/is-operation-present :upload)
+                                       (ltu/is-operation-present :delete)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :ready)
+                                       (ltu/is-operation-absent :download)
                                        (ltu/is-status 200)
-                                       (ltu/get-op "upload"))
+                                       (ltu/get-op :upload))
 
                     abs-upload-uri (str p/service-context upload-op)]
 
@@ -444,11 +444,11 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :state eo/state-uploading)
-                    (ltu/is-operation-present "ready")
-                    (ltu/is-operation-present "delete")
-                    (ltu/is-operation-present "edit")
-                    (ltu/is-operation-present "upload")
-                    (ltu/is-operation-absent "download"))
+                    (ltu/is-operation-present :ready)
+                    (ltu/is-operation-present :delete)
+                    (ltu/is-operation-present :edit)
+                    (ltu/is-operation-present :upload)
+                    (ltu/is-operation-absent :download))
 
                 ;; user with view access should see change of state
                 ;; actions should be the same
@@ -457,11 +457,11 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :state eo/state-uploading)
-                    (ltu/is-operation-absent "ready")
-                    (ltu/is-operation-absent "delete")
-                    (ltu/is-operation-absent "edit")
-                    (ltu/is-operation-absent "upload")
-                    (ltu/is-operation-absent "download"))
+                    (ltu/is-operation-absent :ready)
+                    (ltu/is-operation-absent :delete)
+                    (ltu/is-operation-absent :edit)
+                    (ltu/is-operation-absent :upload)
+                    (ltu/is-operation-absent :download))
 
                 ;; doing it again should succeed, a new upload url can be obtained
                 ;; in 'uploading' state
@@ -475,10 +475,10 @@
                   (let [uploading-eo     (-> session
                                              (request abs-uri)
                                              (ltu/body->edn)
-                                             (ltu/is-operation-present "ready")
+                                             (ltu/is-operation-present :ready)
                                              (ltu/is-status 200))
 
-                        ready-url-action (str p/service-context (ltu/get-op uploading-eo "ready"))]
+                        ready-url-action (str p/service-context (ltu/get-op uploading-eo :ready))]
 
 
                     ;; triggering the ready url with anonymous, authorized or unauthorized viewer should fail
@@ -502,24 +502,24 @@
                                                   (ltu/is-key-value :state eo/state-ready)
                                                   (ltu/is-key-value :bytes 42)
                                                   (ltu/is-key-value :md5sum "md5sum")
-                                                  (ltu/is-operation-present "download")
-                                                  (ltu/is-operation-present "delete")
-                                                  (ltu/is-operation-present "edit")
-                                                  (ltu/is-operation-absent "upload")
-                                                  (ltu/is-operation-absent "ready")
+                                                  (ltu/is-operation-present :download)
+                                                  (ltu/is-operation-present :delete)
+                                                  (ltu/is-operation-present :edit)
+                                                  (ltu/is-operation-absent :upload)
+                                                  (ltu/is-operation-absent :ready)
                                                   (ltu/is-status 200))
-                          download-url-action (str p/service-context (ltu/get-op ready-eo "download"))]
+                          download-url-action (str p/service-context (ltu/get-op ready-eo :download))]
 
                       ;; check states for user with view access
                       (-> session-user-view
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-key-value :state eo/state-ready)
-                          (ltu/is-operation-present "download")
-                          (ltu/is-operation-absent "delete")
-                          (ltu/is-operation-absent "edit")
-                          (ltu/is-operation-absent "upload")
-                          (ltu/is-operation-absent "ready")
+                          (ltu/is-operation-present :download)
+                          (ltu/is-operation-absent :delete)
+                          (ltu/is-operation-absent :edit)
+                          (ltu/is-operation-absent :upload)
+                          (ltu/is-operation-absent :ready)
                           (ltu/is-status 200))
 
                       ;; triggering the download url with anonymous or unauthorized user should fail

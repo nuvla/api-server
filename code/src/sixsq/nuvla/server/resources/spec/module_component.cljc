@@ -24,10 +24,35 @@
              :json-schema/order 31)))
 
 
+;; list from https://github.com/containerd/containerd/blob/1ac546b3c4a3331a9997427052d1cb9888a2f3ef/platforms/database.go#L63
+;; arm variants added
+(def valid-architectures #{"386" "amd64" "amd64p32"
+                           "arm" "armbe" "arm64" "arm64/v8" "arm64be"
+                           "arm/v5" "arm/v6" "arm/v7"
+                           "ppc" "ppc64" "ppc64le"
+                           "mips" "mipsle" "mips64" "mips64le" "mips64p32" "mips64p32le"
+                           "s390" "s390x" "sparc" "sparc64"})
+
 (s/def ::architecture
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec (s/and string? valid-architectures))
       (assoc :name "architecture"
-             :json-schema/description "component CPU architecture"
+             :json-schema/type "string"
+             :json-schema/description "CPU architecture"
+
+             :json-schema/value-scope {:values  ["386" "amd64" "amd64p32"
+                                                 "arm" "armbe" "arm64" "arm64/v8" "arm64be"
+                                                 "arm/v5" "arm/v6" "arm/v7"
+                                                 "ppc" "ppc64" "ppc64le"
+                                                 "mips" "mipsle" "mips64" "mips64le" "mips64p32" "mips64p32le"
+                                                 "s390" "s390x" "sparc" "sparc64"]
+                                       :default "amd64"})))
+
+
+(s/def ::architectures
+  (-> (st/spec (s/coll-of ::architecture :min-count 1))
+      (assoc :name "architectures"
+             :json-schema/type "array"
+             :json-schema/description "component CPU architectures"
 
              :json-schema/order 32)))
 
@@ -79,12 +104,16 @@
 
 (def module-component-keys-spec (su/merge-keys-specs [common/common-attrs
                                                       {:req-un [::author
-                                                                ::architecture
+                                                                ::architectures
                                                                 ::container/image]
                                                        :opt-un [::commit
+                                                                ::container/memory
+                                                                ::container/cpus
+                                                                ::container/restart-policy
                                                                 ::container/ports
                                                                 ::container/mounts
                                                                 ::urls
+                                                                ::container/environmental-variables
                                                                 ::output-parameters]}]))
 
 

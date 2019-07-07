@@ -8,13 +8,18 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-tpl]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context credential/resource-type))
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str credential/resource-type "-" service-tpl/resource-url)))
 
 
 (deftest lifecycle
@@ -63,9 +68,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anonymous credential collection query should not succeed
     (-> session-anon
@@ -111,8 +116,8 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
@@ -121,8 +126,7 @@
                                  (request abs-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 :response
-                                 :body)]
+                                 (ltu/body))]
 
         (is (= name name-attr))
         (is (= description description-attr))

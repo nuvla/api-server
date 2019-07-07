@@ -61,27 +61,44 @@
   (str resource-name "/" (random-uuid)))
 
 
-(defn split-resource-id
-  "Provide a tuple of [type docid] for a resource ID. For IDs that don't have
-   an identifier part (e.g. the cloud-entry-point), the document ID will be nil."
+(defn parse-id
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [id]
-  (let [[type docid] (str/split id #"/")]
-    [type docid]))
+  (when (string? id)
+    (let [[resource uuid] (str/split id #"/")]
+      [resource uuid])))
 
 
-(defn resource-name
+(defn id->request-params
+  "Creates the request path params map {:resource-name \"name\", :uuid
+   \"uuid\"} for the given id. If the id isn't valid, then nil is returned."
+  [id]
+  (when-let [[resource-type uuid] (parse-id id)]
+    (cond-> {:resource-name resource-type}                  ;; resource-name is historical
+            uuid (assoc :uuid uuid))))
+
+
+(defn id->resource-type
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [resource-id]
-  (first (split-resource-id resource-id)))
+  (first (parse-id resource-id)))
 
 
-(defn document-id
+(defn id->uuid
+  "Parses a resource id to provide a tuple of [resource-type uuid] for an id.
+   For ids that don't have an identifier part (e.g. the cloud-entry-point), the
+   document id will be nil. For any invalid argument, nil is returned."
   [resource-id]
-  (second (split-resource-id resource-id)))
+  (second (parse-id resource-id)))
 
 
 (defn md5 [^String s]
   (let [algorithm (MessageDigest/getInstance "MD5")
-        raw (.digest algorithm (.getBytes s))]
+        raw       (.digest algorithm (.getBytes s))]
     (format "%032x" (BigInteger. 1 raw))))
 
 
@@ -139,9 +156,9 @@
 
 (defn select-desc-keys
   "Selects the common attributes that are related to the description of the
-   resource, namely 'name', 'description', and tags."
+   resource, namely 'name', 'description', 'tags', 'parent', and 'acl'."
   [m]
-  (select-keys m #{:name :description :tags}))
+  (select-keys m #{:name :description :tags :parent :acl}))
 
 
 (defn create-spec-validation-fn
@@ -150,7 +167,7 @@
    violations of the schema and a 400 ring response. If everything's
    OK, then the resource itself is returned."
   [spec]
-  (let [ok? (partial s/valid? spec)
+  (let [ok?     (partial s/valid? spec)
         explain (partial expound/expound-str spec)]
     (fn [resource]
       (if-not (ok? resource)
@@ -163,7 +180,7 @@
   [{:keys [operations]} op]
   (->> operations
        (map (juxt :rel :href))
-       (filter (fn [[rel _]] (= rel op)))
+       (filter (fn [[rel _]] (= rel (name op))))
        first
        second))
 
@@ -178,3 +195,18 @@
   "Removes required elements defined in `specs` set from `keys-spec` spec."
   [keys-spec specs]
   (remove-in keys-spec :req-un specs))
+
+
+(defn operation-map
+  "Provides the operation map for the given href and operation."
+  [href op-kw-or-name]
+  {:rel (name op-kw-or-name)
+   :href href})
+
+
+(defn action-map
+  "Provides the operation map for an action, which always has a relative path
+   to the resource's id."
+  [id op-kw-or-name]
+  (let [href (str id "/" (name op-kw-or-name))]
+    (operation-map href op-kw-or-name)))

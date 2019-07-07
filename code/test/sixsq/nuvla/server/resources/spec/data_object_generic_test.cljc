@@ -13,31 +13,31 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root (merge tpl/resource
-                    {:id            "data-object/my-report"
-                     :resource-type dot/resource-type
-                     :created       timestamp
-                     :updated       timestamp
-                     :acl           valid-acl
-                     :state         do/state-new
+        root      (merge tpl/resource
+                         {:id            "data-object/my-report"
+                          :resource-type dot/resource-type
+                          :created       timestamp
+                          :updated       timestamp
+                          :acl           valid-acl
+                          :state         do/state-new
 
-                     :credential    "credential/cloud-cred"
-                     :bucket        "bucket"
-                     :object        "object/name"
+                          :credential    "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
+                          :bucket        "bucket"
+                          :object        "object/name"
 
-                     :template      "data-object-template/generic"
+                          :template      "data-object-template/generic"
 
-                     :content-type  "text/plain"
-                     :bytes         42
-                     :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
-                     :timestamp     timestamp
-                     :location      [0.0 0.0 0.0]})]
+                          :content-type  "text/plain"
+                          :bytes         42
+                          :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
+                          :timestamp     timestamp
+                          :location      [0.0 0.0 0.0]})]
 
     (stu/is-valid ::do-generic/schema root)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :type :state :credential :bucket :object}]
+                :subtype :state :credential :bucket :object}]
       (stu/is-invalid ::do-generic/schema (dissoc root k)))
 
     ;; optional keywords

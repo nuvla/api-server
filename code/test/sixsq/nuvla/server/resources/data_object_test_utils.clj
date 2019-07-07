@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.data-object :as data-obj]
     [sixsq.nuvla.server.resources.data-object-template :as data-obj-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
@@ -32,24 +31,24 @@
 (defn data-object-lifecycle
   [objectType]
 
-  (let [href (str data-obj-tpl/resource-type "/" objectType)
-        template-url (str p/service-context data-obj-tpl/resource-type "/" objectType)
+  (let [href           (str data-obj-tpl/resource-type "/" objectType)
+        template-url   (str p/service-context data-obj-tpl/resource-type "/" objectType)
 
-        session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon   (-> (ltu/ring-app)
+                           session
+                           (content-type "application/json"))
+        session-admin  (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        resp (-> session-admin
-                 (request template-url)
-                 (ltu/body->edn)
-                 (ltu/is-status 200))
-        template (get-in resp [:response :body])
-        valid-create {:template (-> template
-                                    ltu/strip-unwanted-attrs
-                                    (assoc :instanceName (new-instance-name objectType)))}
-        href-create {:template {:href         href
-                                :instanceName (new-instance-name objectType)}}
+        resp           (-> session-admin
+                           (request template-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200))
+        template       (get-in resp [:response :body])
+        valid-create   {:template (-> template
+                                      ltu/strip-unwanted-attrs
+                                      (assoc :instanceName (new-instance-name objectType)))}
+        href-create    {:template {:href         href
+                                   :instanceName (new-instance-name objectType)}}
         invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
     ;; admin create with invalid template fails
@@ -62,13 +61,13 @@
 
 
     ;; full data object lifecycle as administrator should work
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-create))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-create))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
 
@@ -104,7 +103,7 @@
 
         ;; verify that all entries are accessible
         (let [pair-fn (juxt :id #(str p/service-context (:id %)))
-              pairs (map pair-fn entries)]
+              pairs   (map pair-fn entries)]
           (doseq [[id entry-uri] pairs]
             (-> session-admin
                 (request entry-uri)
@@ -126,13 +125,13 @@
           (ltu/is-status 404)))
 
     ;; abbreviated lifecycle using href to template instead of copy
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str href-create))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str href-create))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; admin delete succeeds
@@ -150,7 +149,7 @@
 
 (defn data-object-template-is-registered
   [objectType]
-  (let [id (str data-obj-tpl/resource-type "/" objectType)
+  (let [id  (str data-obj-tpl/resource-type "/" objectType)
         doc (crud/retrieve-by-id id)]
     (is (= id (:id doc)))))
 
@@ -159,49 +158,48 @@
 
   ;; Get all registered data object templates.
   ;; There should be only one data object of this type.
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        entries (-> session-admin
-                    (request tpl-base-uri)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-resource-uri data-obj-tpl/collection-type)
-                    (ltu/is-count pos?)
-                    (ltu/is-operation-absent "add")
-                    (ltu/is-operation-absent "delete")
-                    (ltu/is-operation-absent "edit")
-                    (ltu/is-operation-absent "describe")
-                    (ltu/entries))
-        ids (set (map :id entries))
-        types (set (map :objectType entries))]
+        entries       (-> session-admin
+                          (request tpl-base-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-resource-uri data-obj-tpl/collection-type)
+                          (ltu/is-count pos?)
+                          (ltu/is-operation-absent :add)
+                          (ltu/is-operation-absent :delete)
+                          (ltu/is-operation-absent :edit)
+                          (ltu/entries))
+        ids           (set (map :id entries))
+        types         (set (map :objectType entries))]
     (is (contains? ids (str data-obj-tpl/resource-type "/" objectType)))
     (is (contains? types objectType))
 
     ;; Get data object template and work with it.
-    (let [entry (first (filter #(= objectType (:objectType %)) entries))
-          ops (ltu/operations->map entry)
-          href (get ops (c/action-uri :describe))
-          entry-url (str p/service-context (:id entry))
+    (let [entry        (first (filter #(= objectType (:objectType %)) entries))
+          ops          (ltu/operations->map entry)
+          href         (get ops (name :describe))
+          entry-url    (str p/service-context (:id entry))
           describe-url (str p/service-context href)
 
-          entry-resp (-> session-admin
-                         (request entry-url)
-                         (ltu/is-status 200)
-                         (ltu/body->edn))
+          entry-resp   (-> session-admin
+                           (request entry-url)
+                           (ltu/is-status 200)
+                           (ltu/body->edn))
 
-          entry-body (get-in entry-resp [:response :body])
+          entry-body   (get-in entry-resp [:response :body])
 
-          desc (-> session-admin
-                   (request describe-url)
-                   (ltu/body->edn)
-                   (ltu/is-status 200))
-          desc-body (get-in desc [:response :body])]
-      (is (nil? (get ops (c/action-uri :add))))
-      (is (nil? (get ops (c/action-uri :edit))))
-      (is (nil? (get ops (c/action-uri :delete))))
+          desc         (-> session-admin
+                           (request describe-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200))
+          desc-body    (get-in desc [:response :body])]
+      (is (nil? (get ops (name :add))))
+      (is (nil? (get ops (name :edit))))
+      (is (nil? (get ops (name :delete))))
       (is (:objectType desc-body))
       (is (:acl desc-body))
 

@@ -13,16 +13,16 @@
 
 (deftest check-service-template-create-swarm-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg {:id                 (str tpl/resource-type "/swarm")
-             :resource-type      tpl/resource-type
-             :created            timestamp
-             :updated            timestamp
-             :acl                valid-acl
+        cfg       {:id                 (str tpl/resource-type "/swarm")
+                   :resource-type      tpl/resource-type
+                   :created            timestamp
+                   :updated            timestamp
+                   :acl                valid-acl
 
-             :method             tpl-swarm/method
-             :type               tpl-swarm/method
+                   :method             tpl-swarm/method
+                   :subtype            tpl-swarm/method
 
-             :service-credential {:href "credential/my-cloud-credential"}}]
+                   :service-credential {:href "credential/my-cloud-credential"}}]
 
     (stu/is-valid ::spec-swarm/schema cfg)
 

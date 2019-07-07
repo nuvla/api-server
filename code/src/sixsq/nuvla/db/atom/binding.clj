@@ -89,8 +89,8 @@
 (defn query-info
   [data-atom collection-id options]
   (let [collection-kw (keyword collection-id)
-        hits (vals (collection-kw @data-atom))
-        meta {:count (count hits)}]
+        hits          (vals (collection-kw @data-atom))
+        meta          {:count (count hits)}]
     [meta hits]))
 
 

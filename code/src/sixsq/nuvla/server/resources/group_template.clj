@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.group-template
   "
-Templates for creating a new group. The collection contains a single template
+Templates for creating a new `group`. The collection contains a single template
 (group-template/generic) that serves as a placeholder. It is not needed for
 creating a group and does not provide any useful defaults.
 "
@@ -111,13 +111,13 @@ creating a group and does not provide any useful defaults.
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
-        entries (or (filter #(a/can-view? % request) (vals @templates)) [])
+  (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+        entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:user-id :claims :query-params :cimi-params])
+        options                 (select-keys request [:user-id :claims :query-params :cimi-params])
         count-before-pagination (count entries)
-        wrapped-entries (wrapper-fn request entries)
-        entries-and-count (assoc wrapped-entries :count count-before-pagination)]
+        wrapped-entries         (wrapper-fn request entries)
+        entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
 
@@ -125,8 +125,14 @@ creating a group and does not provide any useful defaults.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::group-tpl/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata nil ::ns ::group-tpl/schema-create "create"))
+
+
 (defn initialize
   []
   (register resource)
-  (md/register (gen-md/generate-metadata ::ns ::group-tpl/schema))
-  (md/register (gen-md/generate-metadata nil ::ns ::group-tpl/schema-create "create")))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))

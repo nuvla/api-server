@@ -29,11 +29,11 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
+  (let [session-anon        (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
+        session-admin       (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user        (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
         valid-voucher-admin {:name            "my-voucher"
                              :description     "my-voucher description"
@@ -48,7 +48,7 @@
                              :acl             valid-acl-admin
                              }
 
-        valid-voucher-user (assoc valid-voucher-admin :acl valid-acl-user)]
+        valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user)]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -57,9 +57,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anon query fails
     (-> session-anon
@@ -76,25 +76,25 @@
         (ltu/is-status 403))
 
     ;; check voucher creation
-    (let [admin-uri (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-voucher-admin))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
+    (let [admin-uri     (-> session-admin
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-voucher-admin))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
           admin-abs-uri (str p/service-context admin-uri)
 
-          user-uri (-> session-user
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str valid-voucher-user))
-                       (ltu/body->edn)
-                       (ltu/is-status 201)
-                       (ltu/location))
+          user-uri      (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-voucher-user))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
-          user-abs-uri (str p/service-context user-uri)]
+          user-abs-uri  (str p/service-context user-uri)]
 
       ;; admin should see 2 voucher resources
       (-> session-admin
@@ -117,13 +117,13 @@
                              (request admin-abs-uri)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-operation-present "edit")
-                             (ltu/is-operation-present "delete")
-                             (ltu/is-operation-present "activate")
-                             (ltu/is-operation-present "expire"))
-            voucher (:body (:response voucher-full))
+                             (ltu/is-operation-present :edit)
+                             (ltu/is-operation-present :delete)
+                             (ltu/is-operation-present :activate)
+                             (ltu/is-operation-present :expire))
+            voucher      (:body (:response voucher-full))
             activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
-            expire-url (str p/service-context (ltu/get-op voucher-full "expire"))]
+            expire-url   (str p/service-context (ltu/get-op voucher-full "expire"))]
 
         (is (= "my-voucher" (:name voucher)))
         (is (= "scientists@university.com" (:target-audience voucher)))
@@ -154,8 +154,8 @@
                                   (request admin-abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  (ltu/is-operation-present "redeem"))
-              redeem-url (str p/service-context (ltu/get-op voucher-updated "redeem"))]
+                                  (ltu/is-operation-present :redeem))
+              redeem-url      (str p/service-context (ltu/get-op voucher-updated "redeem"))]
 
           ;; state is activated but anon cannot redeem, anon doesn't have can-edit
           (-> session-anon

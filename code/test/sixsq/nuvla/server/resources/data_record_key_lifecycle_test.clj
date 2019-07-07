@@ -23,7 +23,7 @@
    :description "An attribute for tests."
    :prefix      "example-org"
    :key         "test-attribute"
-   :type        "string"})
+   :subtype     "string"})
 
 
 (def invalid-entry
@@ -37,11 +37,12 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; create namespace
     (-> session-admin
@@ -66,13 +67,13 @@
         (t/is-status 403))
 
     ; adding the same attribute twice should fail
-    (let [uri (-> session-user
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-entry))
-                  (t/body->edn)
-                  (t/is-status 201)
-                  (t/location))
+    (let [uri     (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-entry))
+                      (t/body->edn)
+                      (t/is-status 201)
+                      (t/location))
           abs-uri (str p/service-context uri)]
 
 

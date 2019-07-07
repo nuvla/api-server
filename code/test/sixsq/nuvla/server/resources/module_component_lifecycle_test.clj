@@ -31,7 +31,7 @@
                   :author        "someone"
                   :commit        "wip"
 
-                  :architecture  "x86"
+                  :architectures ["amd64" "arm/v6"]
                   :image         {:image-name "ubuntu"
                                   :tag        "16.04"}
                   :ports         [{:protocol       "tcp"
@@ -41,10 +41,10 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-user]]
@@ -69,13 +69,13 @@
         (ltu/is-count 0))
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-entry))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-entry))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
 
           abs-uri (str p/service-context uri)]
 

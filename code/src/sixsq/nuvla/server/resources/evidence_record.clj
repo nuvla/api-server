@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.evidence-record
+  "
+The `evidence-record` resources provide information for auditing a process,
+justifying whether a particular check within the process has passed or failed.
+"
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -29,12 +33,12 @@
 
 (defn- validate-attributes
   [resource]
-  (let [valid-prefixes (sn/all-prefixes)
+  (let [valid-prefixes   (sn/all-prefixes)
         resource-payload (dissoc resource
                                  :acl :id :resource-type :name :description
                                  :created :updated :properties :operations
                                  :class :plan-id :start-time :end-time :passed)
-        validator (partial key-utils/valid-attribute-name? valid-prefixes)]
+        validator        (partial key-utils/valid-attribute-name? valid-prefixes)]
     (if (key-utils/valid-attributes? validator resource-payload)
       resource
       (key-utils/throw-wrong-namespace))))

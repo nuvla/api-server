@@ -1,6 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-hashed-password
   "
-Hashed value of a password.
+This credential stores the hashed value of a password. Used typically to store
+the passwords for Nuvla user accounts. The resource provides actions to check a
+plain text password against the stored hash and to change the password (hash).
 "
   (:require
     [buddy.hashers :as hashers]
@@ -8,23 +10,28 @@ Hashed value of a password.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]))
 
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema))
+  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema)
+  (md/register resource-metadata))
 
 
 ;;
@@ -48,12 +55,12 @@ Hashed value of a password.
 ;; convert template to credential: hash the plain text password.
 ;;
 
-(defmethod p/tpl->credential tpl-hashed-pwd/credential-type
-  [{:keys [type method password parent]} request]
+(defmethod p/tpl->credential tpl-hashed-pwd/credential-subtype
+  [{:keys [subtype method password parent]} request]
   (if (acceptable-password? password)
     (let [hash (hashers/derive password)]
       [nil (cond-> {:resource-type p/resource-type
-                    :type          type
+                    :subtype       subtype
                     :method        method
                     :hash          hash}
                    parent (assoc :parent parent))])
@@ -67,7 +74,7 @@ Hashed value of a password.
 (def validate-fn (u/create-spec-validation-fn ::hashed-pwd-spec/schema))
 
 
-(defmethod p/validate-subtype tpl-hashed-pwd/credential-type
+(defmethod p/validate-subtype tpl-hashed-pwd/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -75,7 +82,7 @@ Hashed value of a password.
 (def create-validate-fn (u/create-spec-validation-fn ::ct-hashed-pwd-spec/schema-create))
 
 
-(defmethod p/create-validate-subtype tpl-hashed-pwd/credential-type
+(defmethod p/create-validate-subtype tpl-hashed-pwd/credential-subtype
   [resource]
   (create-validate-fn resource))
 
@@ -84,7 +91,7 @@ Hashed value of a password.
 ;; multimethod for editing; remove keys user cannot change
 ;;
 
-(defmethod p/special-edit tpl-hashed-pwd/credential-type
+(defmethod p/special-edit tpl-hashed-pwd/credential-subtype
   [resource request]
   (dissoc resource :hash))
 
@@ -96,25 +103,24 @@ Hashed value of a password.
 (defn set-collection-ops
   [{:keys [id] :as resource} request]
   (if (a/can-add? resource request)
-    (let [ops [{:rel (:add c/action-uri) :href id}]]
-      (assoc resource :operations ops))
+    (assoc resource :operations [(u/operation-map id :add)])
     (dissoc resource :operations)))
 
 
 (defn set-resource-ops
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
-        ops (cond-> []
-                    (a/can-edit? resource request) (conj {:rel (:edit c/action-uri) :href id})
-                    (a/can-delete? resource request) (conj {:rel (:delete c/action-uri) :href id})
-                    can-manage? (conj {:rel (:check-password c/action-uri) :href (str id "/check-password")})
-                    can-manage? (conj {:rel (:change-password c/action-uri) :href (str id "/change-password")}))]
+        ops         (cond-> []
+                            (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                            (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                            can-manage? (conj (u/action-map id :check-password))
+                            can-manage? (conj (u/action-map id :change-password)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))
 
 
-(defmethod p/set-credential-operations tpl-hashed-pwd/credential-type
+(defmethod p/set-credential-operations tpl-hashed-pwd/credential-subtype
   [{:keys [resource-type] :as resource} request]
   (if (u/is-collection? resource-type)
     (set-collection-ops resource request)

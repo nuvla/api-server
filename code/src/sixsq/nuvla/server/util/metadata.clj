@@ -67,9 +67,9 @@
   "generate the attributes and value-scope fields of the resource metadata
    from the schema definition"
   [spec]
-  (let [json (jsc/transform spec)
+  (let [json       (jsc/transform spec)
 
-        required (:required json)
+        required   (:required json)
 
         attributes (->> json
                         :properties
@@ -159,31 +159,31 @@
    (generate-metadata child-ns parent-ns spec nil))
   ([child-ns parent-ns spec suffix]
    (if-let [parent-ns (as-namespace parent-ns)]
-     (let [child-ns (as-namespace child-ns)
+     (let [child-ns      (as-namespace child-ns)
 
            resource-name (cond-> (get-resource-type parent-ns)
                                  child-ns (str " \u2014 " (get-resource-type child-ns))
                                  suffix (str " \u2014 " suffix))
 
-           doc (get-doc (or child-ns parent-ns))
-           type-uri (cond-> (ns->type-uri (or child-ns parent-ns))
-                            suffix (str "-" suffix))
+           doc           (get-doc (or child-ns parent-ns))
+           type-uri      (cond-> (ns->type-uri (or child-ns parent-ns))
+                                 suffix (str "-" suffix))
+           
+           common        {:id            "resource-metadata/dummy-id"
+                          :created       "1964-08-25T10:00:00.00Z"
+                          :updated       "1964-08-25T10:00:00.00Z"
+                          :resource-type resource-metadata/resource-type
+                          :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                                   :view-acl ["group/nuvla-anon"]})
+                          :type-uri      type-uri
+                          :name          resource-name
+                          :description   doc}
 
-           common {:id            "resource-metadata/dummy-id"
-                   :created       "1964-08-25T10:00:00.00Z"
-                   :updated       "1964-08-25T10:00:00.00Z"
-                   :resource-type resource-metadata/resource-type
-                   :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
-                                                            :view-acl ["group/nuvla-anon"]})
-                   :type-uri      type-uri
-                   :name          resource-name
-                   :description   doc}
+           attributes    (generate-attributes spec)
 
-           attributes (generate-attributes spec)
+           actions       (get-actions parent-ns)
 
-           actions (get-actions parent-ns)
-
-           capabilities (get-capabilities parent-ns)]
+           capabilities  (get-capabilities parent-ns)]
 
        (if (and doc spec type-uri)
          (cond-> common

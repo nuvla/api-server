@@ -32,40 +32,40 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon        (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
+        session-admin       (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         valid-service-group {:name          "my-service-group"
                              :description   "my-description"
                              :documentation "http://my-documentation.org"}
 
-        service-group-id (-> session-user
-                             (request service-group-base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-service-group))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+        service-group-id    (-> session-user
+                                (request service-group-base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-service-group))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-        service-name "my-service"
-        service-desc "my-description"
-        service-tags ["alpha" "beta" "gamma"]
+        service-name        "my-service"
+        service-desc        "my-description"
+        service-tags        ["alpha" "beta" "gamma"]
 
-        valid-service {:acl      valid-acl
-                       :parent   service-group-id
-                       :type     "docker"
-                       :endpoint "https://docker.example.org/api"
-                       :state    "STARTED"}
+        valid-service       {:parent   service-group-id
+                             :subtype  "docker"
+                             :endpoint "https://docker.example.org/api"
+                             :state    "STARTED"}
 
-        valid-create {:name        service-name
-                      :description service-desc
-                      :tags        service-tags
-                      :template    (merge {:href (str infra-service-tpl/resource-type "/"
-                                                      infra-service-tpl-generic/method)}
-                                          valid-service)}]
+        valid-create        {:name        service-name
+                             :description service-desc
+                             :tags        service-tags
+                             :acl         valid-acl
+                             :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                             infra-service-tpl-generic/method)}
+                                                 valid-service)}]
 
     ;; admin query succeeds but is empty
     (-> session-admin
@@ -73,9 +73,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; user query succeeds but is empty
     (-> session-user
@@ -83,9 +83,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; anon query fails
     (-> session-anon
@@ -103,13 +103,14 @@
 
     ;; check creation
     (doseq [session [session-admin session-user]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str valid-create))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
+      (let [uri     (-> session
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (assoc valid-create
+                                                         :acl {:owners ["user/jane"]})))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
             abs-uri (str p/service-context uri)]
 
         ;; verify contents
@@ -117,15 +118,14 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-operation-present "edit")
-                          (ltu/is-operation-present "delete")
-                          :response
-                          :body)]
+                          (ltu/is-operation-present :edit)
+                          (ltu/is-operation-present :delete)
+                          (ltu/body))]
 
           (is (= service-name (:name service)))
           (is (= service-desc (:description service)))
           (is (= service-tags (:tags service)))
-          (is (:type service))
+          (is (:subtype service))
           (is (:endpoint service))
           (is (= "STARTED" (:state service))))
 

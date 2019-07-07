@@ -29,7 +29,7 @@
 
 (def all-defined-rights (set
                           (concat [::edit-acl]
-                                 (ancestors rights-hierarchy ::edit-acl)
+                                  (ancestors rights-hierarchy ::edit-acl)
                                   collection-rights)))
 
 
@@ -117,6 +117,7 @@
                              :name
                              :description
                              :tags
+                             :subtype
                              :parent
                              :resource-metadata
                              :operations})
@@ -126,7 +127,7 @@
   "Based on the rights, this function returns a reduced set of keys that are
    'editable'. The arguments can either be sequences or sets."
   [ks rights]
-  (let [key-set (set ks)
+  (let [key-set    (set ks)
         rights-set (set rights)]
     (cond
       (rights-set ::edit-acl) key-set                       ;; no-op, all keys are editable
@@ -204,7 +205,4 @@
   "Adds the default ACL to the given resource if an ACL doesn't already
    exist."
   [{:keys [acl] :as resource} request]
-  (assoc
-    resource
-    :acl
-    (or acl (default-acl (auth/current-authentication request)))))
+  (assoc resource :acl (or acl (default-acl (auth/current-authentication request)))))

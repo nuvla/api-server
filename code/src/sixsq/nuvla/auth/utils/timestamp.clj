@@ -16,9 +16,9 @@
   (t/with-clock
     (t/system-clock "UTC")
     (let [millis-since-epoch (* seconds-since-epoch 1000)
-          offset-date-time (-> millis-since-epoch
-                               (t/instant)
-                               (t/offset-date-time (t/zone-id)))]
+          offset-date-time   (-> millis-since-epoch
+                                 (t/instant)
+                                 (t/offset-date-time (t/zone-id)))]
       (t/format time/rfc822-formatter offset-date-time))))
 
 

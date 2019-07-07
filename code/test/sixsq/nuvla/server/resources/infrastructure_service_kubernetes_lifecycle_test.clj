@@ -39,67 +39,67 @@
 
 
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon        (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
+        session-admin       (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a service-group to act as parent for service
         valid-service-group {:name          "my-service-group"
                              :description   "my-description"
                              :documentation "http://my-documentation.org"}
 
-        service-group-id (-> session-user
-                             (request service-group-base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-service-group))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+        service-group-id    (-> session-user
+                                (request service-group-base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-service-group))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
         ;; setup a generic service to act as the 'cloud'
-        valid-create {:name        "my-cloud-service"
-                      :description "my-cloud-description"
-                      :tags        ["alpha"]
-                      :template    {:href     (str infra-service-tpl/resource-type "/"
-                                                   infra-service-tpl-generic/method)
-                                    :acl      valid-acl
-                                    :parent   service-group-id
-                                    :type     "cloud"
-                                    :endpoint "https://cloud.example.org/api"
-                                    :nodes    []
-                                    :state    "STARTED"}}
+        valid-create        {:name        "my-cloud-service"
+                             :description "my-cloud-description"
+                             :tags        ["alpha"]
+                             :template    {:href     (str infra-service-tpl/resource-type "/"
+                                                          infra-service-tpl-generic/method)
+                                           :acl      valid-acl
+                                           :parent   service-group-id
+                                           :subtype  "cloud"
+                                           :endpoint "https://cloud.example.org/api"
+                                           :nodes    []
+                                           :state    "STARTED"}}
 
 
         ;; setup a credential (not the right type) to reference
-        href (str ct/resource-type "/" akey/method)
+        href                (str ct/resource-type "/" akey/method)
 
-        create-import-href {:name        "my-credential"
-                            :description "my-credential-description"
-                            :tags        ["one" "two"]
-                            :template    {:href href
-                                          :ttl  1000}}
+        create-import-href  {:name        "my-credential"
+                             :description "my-credential-description"
+                             :tags        ["one" "two"]
+                             :template    {:href href
+                                           :ttl  1000}}
 
-        credential-id (-> session-user
-                          (request credential-base-uri
-                                   :request-method :post
-                                   :body (json/write-str create-import-href))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
+        credential-id       (-> session-user
+                                (request credential-base-uri
+                                         :request-method :post
+                                         :body (json/write-str create-import-href))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-        service-name "my-service"
-        service-desc "my-description"
-        service-tags ["alpha" "beta" "gamma"]
+        service-name        "my-service"
+        service-desc        "my-description"
+        service-tags        ["alpha" "beta" "gamma"]
 
-        valid-create {:name        service-name
-                      :description service-desc
-                      :tags        service-tags
-                      :template    {:href               (str infra-service-tpl/resource-type "/"
-                                                             infra-service-tpl-kubernetes/method)
-                                    :parent             service-group-id
-                                    :service-credential {:href credential-id}}}]
+        valid-create        {:name        service-name
+                             :description service-desc
+                             :tags        service-tags
+                             :template    {:href               (str infra-service-tpl/resource-type "/"
+                                                                    infra-service-tpl-kubernetes/method)
+                                           :parent             service-group-id
+                                           :service-credential {:href credential-id}}}]
 
     ;; anon create must fail
     (-> session-anon
@@ -111,13 +111,13 @@
 
     ;; check creation
     (doseq [session [session-admin session-user]]
-      (let [uri (-> session
-                    (request base-uri
-                             :request-method :post
-                             :body (json/write-str valid-create))
-                    (ltu/body->edn)
-                    (ltu/is-status 201)
-                    (ltu/location))
+      (let [uri     (-> session
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-create))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
             abs-uri (str p/service-context uri)]
 
         ;; verify contents
@@ -125,15 +125,15 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-operation-present "edit")
-                          (ltu/is-operation-present "delete")
+                          (ltu/is-operation-present :edit)
+                          (ltu/is-operation-present :delete)
                           :response
                           :body)]
 
           (is (= service-name (:name service)))
           (is (= service-desc (:description service)))
           (is (= service-tags (:tags service)))
-          (is (:type service))
+          (is (:subtype service))
           (is (nil? (:endpoint service)))
           (is (= "STARTING" (:state service)))
           (is (= credential-id (:management-credential-id service))))

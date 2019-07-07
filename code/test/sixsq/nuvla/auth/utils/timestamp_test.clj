@@ -25,7 +25,7 @@
 
 
 (deftest check-conversion
-  (let [now-rfc822 (t/expiry-now-rfc822)
+  (let [now-rfc822  (t/expiry-now-rfc822)
         now-iso8601 (t/rfc822->iso8601 now-rfc822)]
     (is (not (str/blank? now-iso8601)))
     (is (re-matches iso8601-like-pattern now-iso8601))))

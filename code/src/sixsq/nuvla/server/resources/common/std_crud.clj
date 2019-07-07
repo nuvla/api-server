@@ -55,14 +55,14 @@
       (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
                                           (db/retrieve (assoc-in request [:cimi-params :select] nil))
                                           (a/throw-cannot-edit request))
-            rights (a/extract-rights (auth/current-authentication request) acl)
-            dissoc-keys (-> (map keyword select)
-                            set
-                            u/strip-select-from-mandatory-attrs
-                            (a/editable-keys rights))
+            rights                   (a/extract-rights (auth/current-authentication request) acl)
+            dissoc-keys              (-> (map keyword select)
+                                         set
+                                         u/strip-select-from-mandatory-attrs
+                                         (a/editable-keys rights))
             current-without-selected (apply dissoc current dissoc-keys)
-            editable-body (select-keys body (-> body keys (a/editable-keys rights)))
-            merged (merge current-without-selected editable-body)]
+            editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
+            merged                   (merge current-without-selected editable-body)]
         (-> merged
             u/update-timestamps
             crud/validate
@@ -90,10 +90,10 @@
    (fn [request entries]
      (let [resources (cond->> entries
                               with-entries-op? (map #(crud/set-operations % request)))
-           skeleton {:acl           collection-acl
-                     :resource-type collection-uri
-                     :id            resource-name
-                     :resources     resources}]
+           skeleton  {:acl           collection-acl
+                      :resource-type collection-uri
+                      :id            resource-name
+                      :resources     resources}]
 
        (cond-> skeleton
                with-collection-op? (crud/set-operations request))))))
@@ -106,9 +106,9 @@
 
     (fn [request]
       (a/throw-cannot-query collection-acl request)
-      (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
+      (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
             [metadata entries] (db/query resource-name options)
-            updated-entries (remove nil? (map #(a/select-viewable-keys % request) entries))
+            updated-entries   (remove nil? (map #(a/select-viewable-keys % request) entries))
             entries-and-count (merge metadata (wrapper-fn request updated-entries))]
         (r/json-response entries-and-count)))))
 

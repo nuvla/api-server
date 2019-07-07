@@ -13,25 +13,25 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root {:id            (str t/resource-type "/connector-uuid")
-              :resource-type t/resource-type
-              :created       timestamp
-              :updated       timestamp
-              :acl           valid-acl
+        root      {:id            (str t/resource-type "/connector-uuid")
+                   :resource-type t/resource-type
+                   :parent        "deployment/7b1ad037-a65e-41e0-8fdf-e0e8db30bb0b"
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-              :deployment    {:href "deployment-uuid"}
-              :node-id       "node-uuid"
-              :name          "my-parameter"
-              :value         "my-parameter-value"}]
+                   :node-id       "node-uuid"
+                   :name          "my-parameter"
+                   :value         "my-parameter-value"}]
 
     (stu/is-valid ::dp/deployment-parameter root)
     (stu/is-invalid ::dp/deployment-parameter (assoc root :badKey "badValue"))
     (stu/is-invalid ::dp/deployment-parameter (assoc root :value "   "))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :deployment :name}]
+    (doseq [k #{:id :resource-type :parent :created :updated :acl :name}]
       (stu/is-invalid ::dp/deployment-parameter (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:values :node-id}]
+    (doseq [k #{:value :node-id}]
       (stu/is-valid ::dp/deployment-parameter (dissoc root k)))))

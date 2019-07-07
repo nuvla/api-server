@@ -1,17 +1,18 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-group
   "
 The infrastructure-service-group resource represents a group of
-infrastructure-service resources, which are intended to be used together.
+`infrastructure-service` resources, which are intended to be used together.
 
-The resource contains metadata concerning the infrastructure-service-group and
-an automatically generated list of associated infrastructure-service resources.
-The resources are tied to an infrastructure via the infrastructure-service
-resource's `parent` attribute, which will contain the `id` of the
-infrastructure-service-group resource.
+The resource contains metadata concerning the `infrastructure-service-group`
+and an automatically generated list of associated `infrastructure-service`
+resources. The resources are tied to an infrastructure via the
+`infrastructure-service` resource's `parent` attribute, which will contain the
+`id` of the `infrastructure-service-group` resource.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.utils :as auth-utils]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -36,10 +37,13 @@ infrastructure-service-group resource.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-group/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service-group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-group/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -60,7 +64,7 @@ infrastructure-service-group resource.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (a/add-acl resource request))
 
 
 ;;
@@ -77,8 +81,8 @@ infrastructure-service-group resource.
   ([resource-id]
    (service-query {:nuvla/authn auth/internal-identity} resource-id))
   ([initial-request resource-id]
-   (let [filter (-> {:filter (str "parent='" resource-id "'")}
-                    (cimi-params-impl/cimi-filter))
+   (let [filter  (-> {:filter (str "parent='" resource-id "'")}
+                     (cimi-params-impl/cimi-filter))
          request (-> initial-request
                      (assoc :params {:resource-name infra-service/resource-type}
                             :route-params {:resource-name infra-service/resource-type}
@@ -113,6 +117,17 @@ infrastructure-service-group resource.
   (-> request dissoc-services add-impl))
 
 
+(defn create-infrastructure-service-group
+  "Utility to facilitate creating a new infrastructure-service-group resource.
+   This will create (as an administrator) a new infrastructure-service-group
+   using the skeleton passed as an argument. The returned value is the standard
+   'add' response for the request."
+  [skeleton]
+  (add-impl {:params      {:resource-name resource-type}
+             :nuvla/authn auth-utils/internal-identity
+             :body        skeleton}))
+
+
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
 
@@ -134,7 +149,7 @@ infrastructure-service-group resource.
 
 (defmethod crud/delete resource-type
   [{{:keys [resource-name uuid]} :route-params :as request}]
-  (let [id (str resource-name "/" uuid)
+  (let [id            (str resource-name "/" uuid)
         service-count (count (service-query id))]
     (if (zero? service-count)
       (delete-impl request)

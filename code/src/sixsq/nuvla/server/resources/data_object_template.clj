@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-object-template
+  "
+This template creates resources that represent an objects in S3. Subclasses of
+this template define how the object can be accessed.
+"
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -34,12 +38,12 @@
 ;; Template validation
 ;;
 
-(defmulti validate-subtype-template :type)
+(defmulti validate-subtype-template :subtype)
 
 
 (defmethod validate-subtype-template :default
-  [{:keys [type] :as resource}]
-  (throw (ex-info (str "unknown data-object-template type: '" type "'") resource)))
+  [{:keys [subtype] :as resource}]
+  (throw (ex-info (str "unknown data-object-template subtype: '" subtype "'") resource)))
 
 
 (defmethod crud/validate resource-type
@@ -60,9 +64,9 @@
 (defn complete-resource
   "Completes the given document with server-managed information:
    resource-type, timestamps, operations, and ACL."
-  [{:keys [type] :as resource}]
-  (when type
-    (let [id (str resource-type "/" type)]
+  [{:keys [subtype] :as resource}]
+  (when subtype
+    (let [id (str resource-type "/" subtype)]
       (-> resource
           (merge {:id            id
                   :resource-type resource-type
@@ -93,10 +97,10 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [type]} :body :as request}]
-  (if (get @templates type)
+  [{{:keys [subtype]} :body :as request}]
+  (if (get @templates subtype)
     (add-impl request)
-    (throw (r/ex-bad-request (str "invalid data object type '" type "'")))))
+    (throw (r/ex-bad-request (str "invalid data object subtype '" subtype "'")))))
 
 
 (defmethod crud/retrieve resource-type
@@ -137,10 +141,10 @@
 (defmethod crud/query resource-type
   [request]
   (a/throw-cannot-query collection-acl request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+  (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:user-id :claims :query-params :cimi-params])
+        options           (select-keys request [:user-id :claims :query-params :cimi-params])
         [count-before-pagination entries] ((juxt count vals) @templates)
-        wrapped-entries (wrapper-fn request entries)
+        wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))

@@ -13,7 +13,7 @@
 (defn identifier->user-id
   [username]
   (try
-    (let [f (parser/parse-cimi-filter (format "identifier='%s'" username))
+    (let [f    (parser/parse-cimi-filter (format "identifier='%s'" username))
           opts {:cimi-params {:filter f}
                 :nuvla/authn auth/internal-identity}]
       (some-> (db/query user-identifier/resource-type opts)
@@ -70,7 +70,7 @@
 ;; FIXME: This should call the check-password action on the credential instead of checking locally.
 (defn valid-user-password
   [username password]
-  (let [user (active-user username)
+  (let [user          (active-user username)
         password-hash (some-> user
                               :credential-password
                               credential-id->credential

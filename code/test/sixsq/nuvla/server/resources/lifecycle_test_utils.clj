@@ -19,6 +19,7 @@
     [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.app.routes :as routes]
     [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
@@ -90,27 +91,38 @@
   `(is-key-value ~m :resource-type ~type-uri))
 
 
+(defn href->url
+  [href]
+  (when href
+    (str p/service-context href)))
+
+
 (defn get-op
   [m op]
   (->> (get-in m [:response :body :operations])
        (map (juxt :rel :href))
-       (filter (fn [[rel href]] (.endsWith rel op)))
+       (filter (fn [[rel href]] (= rel (name op))))
        first
        second))
 
 
+(defn get-op-url
+  [m op]
+  (href->url (get-op m op)))
+
+
 (defn select-op
   [m op]
-  (let [op-list (get-in m [:response :body :operations])
+  (let [op-list     (get-in m [:response :body :operations])
         defined-ops (map :rel op-list)]
-    [(some #(.endsWith % op) defined-ops) defined-ops]))
+    [(some #(= % (name op)) defined-ops) defined-ops]))
 
 
 (defmacro is-operation-present
   [m expected-op]
   `((fn [m# expected-op#]
       (let [[op# defined-ops#] (select-op m# expected-op#)]
-        (is op# (str "Missing " expected-op# " in " defined-ops#))
+        (is op# (str "Missing " (name expected-op#) " in " defined-ops#))
         m#))
      ~m ~expected-op))
 
@@ -152,11 +164,11 @@
   [m]
   `((fn [m#]
       (let [cookies# (get-in m# [:response :cookies])
-            n# (count cookies#)
-            token# (-> (vals cookies#)
-                       first
-                       serialize-cookie-value
-                       :value)]
+            n#       (count cookies#)
+            token#   (-> (vals cookies#)
+                         first
+                         serialize-cookie-value
+                         :value)]
         (is (= 1 n#) "incorrect number of cookies")
         (is (not= "INVALID" token#) "expecting valid token but got INVALID")
         (is (not (str/blank? token#)) "got blank token")
@@ -167,11 +179,11 @@
   [m]
   `((fn [m#]
       (let [cookies# (get-in m# [:response :cookies])
-            n# (count cookies#)
-            token# (-> (vals cookies#)
-                       first
-                       serialize-cookie-value
-                       :value)]
+            n#       (count cookies#)
+            token#   (-> (vals cookies#)
+                         first
+                         serialize-cookie-value
+                         :value)]
         (is (= 1 n#) "incorrect number of cookies")
         (is (= "INVALID" token#) "expecting INVALID but got different value")
         (is (not (str/blank? token#)) "got blank token")
@@ -182,7 +194,7 @@
   [m]
   `((fn [m#]
       (let [uri-header# (get-in m# [:response :headers "Location"])
-            uri-body# (get-in m# [:response :body :resource-id])]
+            uri-body#   (get-in m# [:response :body :resource-id])]
         (is uri-header# "Location header was not set")
         (is uri-body# "Location (resource-id) in body was not set")
         (is (= uri-header# uri-body#) (str "!!!! Mismatch in locations, header=" uri-header# ", body=" uri-body#))
@@ -194,6 +206,11 @@
   (let [uri (get-in m [:response :headers "Location"])]
     (is uri "Location header missing from response")
     uri))
+
+
+(defn location-url
+  [m]
+  (href->url (location m)))
 
 
 (defmacro is-location-value
@@ -209,12 +226,17 @@
   (into {} (map (juxt :rel :href) (:operations m))))
 
 
+(defn body
+  [m]
+  (get-in m [:response :body]))
+
+
 (defn body->edn
   [m]
-  (if-let [body (get-in m [:response :body])]
-    (let [updated-body (if (string? body)
-                         (json/read-str body :key-fn keyword :eof-error? false :eof-value {})
-                         (json/read (io/reader body) :key-fn keyword :eof-error? false :eof-value {}))]
+  (if-let [body-content (body m)]
+    (let [updated-body (if (string? body-content)
+                         (json/read-str body-content :key-fn keyword :eof-error? false :eof-value {})
+                         (json/read (io/reader body-content) :key-fn keyword :eof-error? false :eof-value {}))]
       (update-in m [:response :body] (constantly updated-body)))
     m))
 
@@ -323,7 +345,7 @@
   ([]
    (create-test-node (str (UUID/randomUUID))))
   ([^String cluster-name]
-   (let [tempDir (str (fs/temp-dir "es-data-"))
+   (let [tempDir  (str (fs/temp-dir "es-data-"))
          settings (.. (Settings/builder)
                       (put "cluster.name" cluster-name)
                       (put "action.auto_create_index" true)
@@ -336,7 +358,7 @@
                       (put "transport.type" "netty4")
                       (put "network.host" "127.0.0.1")
                       (build))
-         plugins [Netty4Plugin]]
+         plugins  [Netty4Plugin]]
 
      (LogConfigurator/configureWithoutConfig settings)
      (.. (MockNode. ^Settings settings plugins)
@@ -346,7 +368,7 @@
 (defn create-es-node-client
   []
   (log/info "creating elasticsearch node and client")
-  (let [node (create-test-node)
+  (let [node   (create-test-node)
         client (-> (esu/create-es-client)
                    esu/wait-for-cluster)]
     [node client]))
