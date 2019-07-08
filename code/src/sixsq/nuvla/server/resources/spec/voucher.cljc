@@ -27,7 +27,7 @@
                          :json-schema/order 19)))
 
 (s/def ::amount
-  (-> (st/spec (s/and double? #(> % 0)))
+  (-> (st/spec (s/and number? #(> % 0)))
       (assoc :name "amount"
              :json-schema/type "double"
 

@@ -154,7 +154,7 @@
 
 
 (s/def ::cpus
-  (-> (st/spec (s/and double? pos?))
+  (-> (st/spec (s/and number? pos?))
       (assoc :name "cpus"
              :json-schema/type "double"
              :json-schema/display-name "CPUs"
