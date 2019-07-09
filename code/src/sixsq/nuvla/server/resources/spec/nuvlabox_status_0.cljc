@@ -61,7 +61,7 @@
 
 
 (s/def ::load
-  (-> (st/spec (s/and double? #(not (neg? %))))
+  (-> (st/spec (s/and number? #(not (neg? %))))
       (assoc :name "load"
              :json-schema/type "double"
              :json-schema/description "CPU load"

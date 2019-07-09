@@ -103,7 +103,7 @@
 
 
 (s/def ::location
-  (-> (st/spec (s/coll-of double? :min-count 2 :max-count 3))
+  (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
       (assoc :name "location"
              :json-schema/type "geo-point"
              :json-schema/display-name "location"
