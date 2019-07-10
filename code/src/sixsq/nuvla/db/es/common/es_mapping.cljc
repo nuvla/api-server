@@ -56,6 +56,9 @@
            "number" (-> m
                         (assoc :type "double")
                         (dissoc :format))
+           "double" (-> m
+                        (assoc :type "double")
+                        (dissoc :format))
            "integer" (-> m
                          (assoc :type "long")
                          (dissoc :format))
