@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - User - Do not allow user to update name in user resource
+  - Module - Conflict if path already exit on add
   - ES mapping generation for double is taken into account 
   - Make double spec accept number as value
   - Upgrade to ring-container 2.0.1 and parent 6.5.1.
