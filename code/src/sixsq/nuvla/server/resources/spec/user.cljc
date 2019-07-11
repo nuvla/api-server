@@ -3,8 +3,8 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.util.spec :as su]
     [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
+    [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 ;; provide tighter definition of user id to be used elsewhere

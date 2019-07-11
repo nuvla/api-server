@@ -252,7 +252,12 @@
                 (-> session-user
                     (request dp-url)
                     (ltu/body->edn)
-                    (ltu/is-status 404))))))))))
+                    (ltu/is-status 404))))))))
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :delete)
+        (ltu/is-status 200))))
 
 
 (deftest lifecycle-error
@@ -314,7 +319,12 @@
       (-> session-user
           (request deployment-url)
           (ltu/body->edn)
-          (ltu/is-status 404)))))
+          (ltu/is-status 404)))
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :delete)
+        (ltu/is-status 200))))
 
 
 (deftest bad-methods

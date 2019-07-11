@@ -3,9 +3,9 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
     [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]
-    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]))
+    [spec-tools.core :as st]))
 
 
 (s/def ::parent (-> cred-spec/credential-id-spec
