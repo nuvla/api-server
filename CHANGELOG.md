@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.1.0] - 2019-07-11
+
 ### Changed
 
   - User - Do not allow user change his name
