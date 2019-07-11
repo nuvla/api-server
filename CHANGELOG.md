@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - User - Do not allow user change his name
   - Module - Conflict if path already exit on add
   - ES mapping generation for double is taken into account 
   - Make double spec accept number as value
