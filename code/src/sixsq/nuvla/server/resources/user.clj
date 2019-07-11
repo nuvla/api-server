@@ -225,7 +225,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                       (a/throw-cannot-edit request))
           merged  (merge current body)]
       (-> merged
-          (dissoc :href :name)
+          (dissoc :href)
           (u/update-timestamps)
           (crud/validate)
           (db/edit request)))
