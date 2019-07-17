@@ -12,26 +12,32 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root      {:id                (str t/resource-type "/module-application-uuid")
-                   :resource-type     t/resource-type
-                   :created           timestamp
-                   :updated           timestamp
-                   :acl               valid-acl
+        root      {:id                      (str t/resource-type "/module-application-uuid")
+                   :resource-type           t/resource-type
+                   :created                 timestamp
+                   :updated                 timestamp
+                   :acl                     valid-acl
 
-                   :author            "someone"
-                   :commit            "wip"
+                   :author                  "someone"
+                   :commit                  "wip"
 
-                   :urls              [["primary" "https://${host}:${port-443}/my/path"]
-                                       ["other" "http://${host}:${port-80}/path"]]
+                   :urls                    [["primary" "https://${host}:${port-443}/my/path"]
+                                             ["other" "http://${host}:${port-80}/path"]]
 
-                   :output-parameters [{:name        "alpha"
-                                        :description "my-alpha"}
-                                       {:name        "beta"
-                                        :description "my-beta"}
-                                       {:name        "gamma"
-                                        :description "my-gamma"}]
+                   :output-parameters       [{:name        "alpha"
+                                              :description "my-alpha"}
+                                             {:name        "beta"
+                                              :description "my-beta"}
+                                             {:name        "gamma"
+                                              :description "my-gamma"}]
 
-                   :docker-compose    "version: \"3.3\"\nservices:\n  web:\n    ..."}]
+                   :environmental-variables [{:name  "ALPHA_ENV"
+                                              :value "OK"}
+                                             {:name        "BETA_ENV"
+                                              :description "beta-env variable"
+                                              :required    true}]
+
+                   :docker-compose          "version: \"3.3\"\nservices:\n  web:\n    ..."}]
 
     (stu/is-valid ::module-application/schema root)
     (stu/is-invalid ::module-application/schema (assoc root :badKey "badValue"))
@@ -41,7 +47,7 @@
       (stu/is-invalid ::module-application/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :urls :output-parameters}]
+    (doseq [k #{:commit :urls :output-parameters :environmental-variables}]
       (stu/is-valid ::module-application/schema (dissoc root k)))))
 
 

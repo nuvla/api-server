@@ -17,12 +17,14 @@
              :json-schema/fulltext true)))
 
 
-(def module-application-keys-spec (su/merge-keys-specs [common/common-attrs
-                                                      {:req-un [::docker-compose
-                                                                ::module-component/author]
-                                                       :opt-un [::module-component/commit
-                                                                ::module-component/urls
-                                                                ::module-component/output-parameters]}]))
+(def module-application-keys-spec (su/merge-keys-specs
+                                    [common/common-attrs
+                                     {:req-un [::docker-compose
+                                               ::module-component/author]
+                                      :opt-un [::module-component/commit
+                                               ::module-component/urls
+                                               ::module-component/output-parameters
+                                               ::container/environmental-variables]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))
