@@ -37,6 +37,11 @@
                                               :description "beta-env variable"
                                               :required    true}]
 
+                   :files                   [{:file-name     "my-config.conf"
+                                              :file-content "file content example"}
+                                             {:file-name     "file_1"
+                                              :file-content "file content example"}]
+
                    :docker-compose          "version: \"3.3\"\nservices:\n  web:\n    ..."}]
 
     (stu/is-valid ::module-application/schema root)
@@ -47,7 +52,7 @@
       (stu/is-invalid ::module-application/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :urls :output-parameters :environmental-variables}]
+    (doseq [k #{:commit :urls :output-parameters :environmental-variables :files}]
       (stu/is-valid ::module-application/schema (dissoc root k)))))
 
 

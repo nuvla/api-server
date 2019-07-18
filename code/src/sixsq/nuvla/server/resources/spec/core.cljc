@@ -41,6 +41,13 @@
              :json-schema/type "string")))
 
 
+(defn filename? [s] (re-matches #"^[\w-\.]+$" s))
+(s/def ::filename
+  (-> (st/spec (s/and string? filename?))
+      (assoc :name "filename"
+             :json-schema/description "a sequence of one or more alphanumerical or [. - _] chars"
+             :json-schema/type "string")))
+
 (s/def ::port
   (-> (st/spec (s/int-in 1 65536))
       (assoc :name "port"

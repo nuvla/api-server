@@ -18,6 +18,32 @@
              :json-schema/fulltext true)))
 
 
+(s/def ::file-content
+  (-> (st/spec string?)
+      (assoc :name "file-content"
+             :json-schema/indexed false
+             :json-schema/fulltext true)))
+
+
+(s/def ::file-name
+  (-> (st/spec ::core/filename)
+      (assoc :name "file-name")))
+
+
+(s/def ::file
+  (-> (st/spec (su/only-keys :req-un [::file-name ::file-content]))
+                  (assoc :name "file"
+                         :json-schema/type "map")))
+
+
+(s/def ::files
+  (-> (st/spec (s/coll-of ::file :kind vector? :min-count 1))
+      (assoc :name "files"
+             :json-schema/type "array"
+             :json-schema/description "file to be used with configs and secrets")))
+
+
+
 (def module-application-keys-spec (su/merge-keys-specs
                                     [common/common-attrs
                                      {:req-un [::docker-compose
@@ -25,7 +51,8 @@
                                       :opt-un [::module-component/commit
                                                ::module-component/urls
                                                ::module-component/output-parameters
-                                               ::container/environmental-variables]}]))
+                                               ::container/environmental-variables
+                                               ::files]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))
