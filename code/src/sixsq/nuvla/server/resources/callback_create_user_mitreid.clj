@@ -30,16 +30,12 @@
               (let [{:keys [givenName familyName emails] :as userinfo} (oidc-utils/get-mitreid-userinfo user-profile-url access-token)
                     email (->> emails (filter :primary) first :value)]
                 (if email
-                  (if-let [matched-user (ex/create-user-when-missing! :mitreid {:external-login    sub
-                                                                                :external-email    email
-                                                                                :firstname         givenName
-                                                                                :lastname          familyName
-                                                                                :instance          instance
-                                                                                :fail-on-existing? true})]
-                    (do
-                      (uiu/add-user-identifier! matched-user :mitreid sub instance)
-                      matched-user)
-                    (oidc-utils/throw-user-exists sub redirect-url))
+                  (or (ex/create-user! :mitreid {:external-login sub
+                                                 :external-email email
+                                                 :firstname      givenName
+                                                 :lastname       familyName
+                                                 :instance       instance})
+                      (oidc-utils/throw-user-exists sub redirect-url))
                   (oidc-utils/throw-no-email redirect-url)))
               (oidc-utils/throw-no-subject redirect-url)))
           (catch Exception e

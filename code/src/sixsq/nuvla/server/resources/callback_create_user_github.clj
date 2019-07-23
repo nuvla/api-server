@@ -28,13 +28,9 @@
             (let [github-login (:login user-info)
                   github-email (auth-github/retrieve-email user-info access-token)]
               (if github-login
-                (if-let [matched-user (ex/create-user-when-missing! :github {:external-login    github-login
-                                                                             :external-email    github-email
-                                                                             :fail-on-existing? true})]
-                  (do
-                    (uiu/add-user-identifier! matched-user :github github-login nil)
-                    matched-user)
-                  (gu/throw-user-exists github-login redirect-url))
+                (or (ex/create-user! :github {:external-login github-login
+                                              :external-email github-email})
+                    (gu/throw-user-exists github-login redirect-url))
                 (gu/throw-no-matched-user redirect-url))))
           (gu/throw-no-user-info redirect-url))
         (gu/throw-no-access-token redirect-url))

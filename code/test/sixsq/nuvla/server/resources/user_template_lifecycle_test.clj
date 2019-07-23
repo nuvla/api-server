@@ -12,7 +12,8 @@
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-template-github :as github]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -58,12 +59,14 @@
         ids     (set (map :id entries))
         types   (set (map :method entries))]
 
-    (is (= #{(str t/resource-type "/" email-password/registration-method)
+    (is (= #{(str t/resource-type "/" minimum/registration-method)
+             (str t/resource-type "/" email-password/registration-method)
              (str t/resource-type "/" username-password/registration-method)
              (str t/resource-type "/" email-invitation/registration-method)}
            ids))
 
-    (is (= #{email-password/registration-method
+    (is (= #{minimum/registration-method
+             email-password/registration-method
              username-password/registration-method
              email-invitation/registration-method}
            types))

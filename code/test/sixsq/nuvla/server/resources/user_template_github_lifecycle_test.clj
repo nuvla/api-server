@@ -264,14 +264,18 @@
                       (ltu/body->edn)
                       (ltu/is-status create-status))
 
-                  (let [ss-username (uiu/user-identifier->user-id :github nil github-login)
+                  (let [username    (uiu/user-identifier->user-id :github nil github-login)
+                        name-value  (uiu/generate-identifier :github github-login)
                         user-record (->> github-login
                                          (uiu/user-identifier->user-id :github nil)
                                          (db/get-user))]
-                    (is (not (nil? ss-username)))
 
-                    (is (= email (:name user-record)))
-                    (is (= github/registration-method (:method user-record))))
+                    (is (not (nil? username)))
+
+                    (is (not (nil? user-record)))
+
+                    (is (= name-value (:name user-record)))
+                    #_(is (= github/registration-method (:method user-record))))
 
                   ;; try creating the same user again, should fail
                   (reset-callback! callback)

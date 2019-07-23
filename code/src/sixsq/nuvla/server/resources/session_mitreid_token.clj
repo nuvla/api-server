@@ -4,7 +4,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
-    [sixsq.nuvla.auth.internal :as auth-internal]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -14,7 +13,8 @@
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.auth.password :as password]))
 
 
 (def ^:const authn-method "mitreid-token")
@@ -60,7 +60,7 @@
               (let [session-info {:href href, :username matched-user, :redirect-url redirect-url}
                     ;; FIXME: Use correct values for username and user-id!
                     {:keys [id clientIP] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
-                    claims (cond-> (auth-internal/create-claims matched-user)
+                    claims (cond-> (password/create-claims {:id matched-user})
                                    id (assoc :session id)
                                    id (update :roles #(str id " " %))
                                    roles (update :roles #(str % " " (str/join " " roles))))

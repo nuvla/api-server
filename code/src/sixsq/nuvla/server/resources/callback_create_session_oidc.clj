@@ -5,7 +5,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
-    [sixsq.nuvla.auth.internal :as auth-internal]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.sign :as sign]
@@ -17,7 +16,8 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.auth.password :as password]))
 
 
 (def ^:const action-name "session-oidc-creation")
@@ -39,7 +39,7 @@
             (log/debug "OIDC access token claims for" instance ":" (pr-str claims))
             (if sub
               (if-let [matched-user (ex/match-oidc-username :oidc sub instance)]
-                (let [claims (cond-> (auth-internal/create-claims matched-user)
+                (let [claims (cond-> (password/create-claims {:id matched-user})
                                      session-id (assoc :session session-id)
                                      session-id (update :roles #(str session-id " " %))
                                      roles (update :roles #(str % " " (str/join " " roles)))

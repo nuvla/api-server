@@ -27,17 +27,13 @@
           (let [{:keys [sub email given_name family_name realm] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
-              (if-let [matched-user (ex/create-user-when-missing! :oidc {:external-login    sub
-                                                                         :external-email    (or email (str sub "@fake-email.com")) ;;some OIDC server do not return emails
-                                                                         :firstname         given_name
-                                                                         :lastname          family_name
-                                                                         :organization      realm
-                                                                         :instance          instance
-                                                                         :fail-on-existing? true})]
-                (do
-                  (uiu/add-user-identifier! matched-user :oidc sub instance)
-                  matched-user)
-                (oidc-utils/throw-user-exists sub redirect-url))
+              (or (ex/create-user! :oidc {:external-login sub
+                                          :external-email (or email (str sub "@fake-email.com")) ;;some OIDC server do not return emails
+                                          :firstname      given_name
+                                          :lastname       family_name
+                                          :organization   realm
+                                          :instance       instance})
+                  (oidc-utils/throw-user-exists sub redirect-url))
               (oidc-utils/throw-no-subject redirect-url)))
           (catch Exception e
             (oidc-utils/throw-invalid-access-code (str e) redirect-url)))

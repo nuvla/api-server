@@ -45,11 +45,13 @@
    (find-user-identifier (generate-identifier authn-method external-login instance))))
 
 
-(defn user-identity-exists?
-  [authn-method external-login & [instance]]
-  (->> (generate-identifier authn-method external-login instance)
-       find-user-identifier
-       boolean))
+(defn user-identifier-exists?
+  ([identifier]
+   (->> identifier
+        find-user-identifier
+        boolean))
+  ([authn-method external-login & [instance]]
+   (user-identifier-exists? (generate-identifier authn-method external-login instance))))
 
 
 (defn create-cimi-filter
@@ -57,17 +59,10 @@
   {:filter (parser/parse-cimi-filter filter)})
 
 
-(defn ignore-deleted-user
-  [user-id]
-  (when-not (= "DELETED" (:state (crud/retrieve-by-id user-id)))
-    user-id))
-
-
 (defn user-identifier->user-id
   [authn-method instance external-login]
   (some-> (find-user-identifier authn-method external-login instance)
           :parent
-          ignore-deleted-user
           (str/split #"/" 2)
           second))
 

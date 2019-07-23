@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.callback-create-session-github
-  "Creates a new Github session resource presumably after  external authentication has succeeded."
+  "Creates a new Github session resource presumably after external
+   authentication has succeeded."
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
-    [sixsq.nuvla.auth.internal :as auth-internal]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.resources.callback :as callback]
@@ -14,7 +14,8 @@
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.auth.password :as password]))
 
 
 (def ^:const action-name "session-github-creation")
@@ -33,7 +34,7 @@
             (let [external-login (:login user-info)
                   matched-user   (ex/match-existing-external-user :github external-login nil)]
               (if matched-user
-                (let [claims          (cond-> (auth-internal/create-claims matched-user)
+                (let [claims          (cond-> (password/create-claims {:id matched-user})
                                               session-id (assoc :session session-id)
                                               session-id (update :roles #(str session-id " " %))
                                               server (assoc :server server)
