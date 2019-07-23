@@ -101,7 +101,8 @@
 
 
 (s/def ::name
-  (-> (st/spec (s/and string? #(re-matches env-var-regex %) #(not (re-matches reserved-env-var-regex %))))
+  (-> (st/spec (s/and string? #(re-matches env-var-regex %)
+                      #(not (re-matches reserved-env-var-regex %))))
       (assoc :name "name"
              :json-schema/type "string"
              :json-schema/description "parameter name")))
@@ -131,7 +132,8 @@
                              :opt-un [::description ::required ::value]))
       (assoc :name "environmental-variable"
              :json-schema/type "map"
-             :json-schema/description "environmental variable name, description, required flag, and value")))
+             :json-schema/description
+             "environmental variable name, description, required flag, and value")))
 
 
 (s/def ::environmental-variables
