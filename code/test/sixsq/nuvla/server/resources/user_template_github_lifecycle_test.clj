@@ -5,11 +5,10 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
-    [sixsq.nuvla.auth.utils.db :as db]
+    [sixsq.nuvla.auth.utils.user :as auth-user]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
@@ -246,7 +245,7 @@
                       (ltu/message-matches #".*unable to retrieve GitHub access code.*")
                       (ltu/is-status status))
 
-                  (is (false? (db/user-exists? github-login)))
+                  (is (false? (auth-user/user-exists? github-login)))
 
                   (reset-callback! callback)
                   (-> session-anon
@@ -268,7 +267,7 @@
                         name-value  (uiu/generate-identifier :github github-login)
                         user-record (->> github-login
                                          (uiu/user-identifier->user-id :github nil)
-                                         (db/get-user))]
+                                         (auth-user/get-user))]
 
                     (is (not (nil? username)))
 

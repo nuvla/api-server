@@ -1,10 +1,9 @@
 (ns sixsq.nuvla.auth.external
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils.db :as db]
+    [sixsq.nuvla.auth.utils.user :as auth-user]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
 (defn- mapped-user
@@ -21,7 +20,7 @@
               :email        email
               :instance     instance
               :authn-method authn-method}]
-    (db/create-user! user))
+    (auth-user/create-user! user))
   user-id)
 
 
@@ -37,7 +36,7 @@
   [authn-method external-login instance]
   (log/debug "Matching via OIDC/MITREid username" external-login)
   (let [username-by-authn (uiu/user-identifier->user-id authn-method instance external-login)
-        username-by-name  (db/get-active-user-by-name external-login)
+        username-by-name  (auth-user/get-active-user-by-name external-login)
         username-fallback (when username-by-name (:username (mapped-user instance username-by-name)))]
     (or username-by-authn username-fallback)))
 
@@ -48,7 +47,7 @@
   (let [user-identifier (uiu/generate-identifier authn-method external-login instance)
         id              (u/random-uuid)
         user-id         (str "user/" id)]
-    (when-not (or (db/user-exists? user-id)
+    (when-not (or (auth-user/user-exists? user-id)
                   (uiu/user-identifier-exists? user-identifier))
       (internal-create-user! (assoc external-record
                                :authn-login id

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.auth.utils.db
+(ns sixsq.nuvla.auth.utils.user
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
