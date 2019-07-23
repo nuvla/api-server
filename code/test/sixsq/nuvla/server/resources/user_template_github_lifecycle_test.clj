@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
     [sixsq.nuvla.auth.utils.db :as db]
@@ -15,8 +16,7 @@
     [sixsq.nuvla.server.resources.user-template :as ut]
     [sixsq.nuvla.server.resources.user-template-github :as github]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

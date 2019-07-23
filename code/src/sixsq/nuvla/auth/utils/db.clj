@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.auth.utils.db
   (:require
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.user :as user]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.resources.user :as user]))
 
 
 ;; Only ACTIVE users can log in.  All other states (NEW, SUSPENDED) are disallowed.

@@ -10,10 +10,10 @@
     [sixsq.nuvla.server.resources.user-template :as t]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-template-github :as github]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]))
+    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
+    [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

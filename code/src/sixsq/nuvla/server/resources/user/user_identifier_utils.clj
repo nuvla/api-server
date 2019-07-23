@@ -2,11 +2,11 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (defn generate-identifier

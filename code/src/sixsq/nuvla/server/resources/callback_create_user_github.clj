@@ -9,7 +9,6 @@
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.github.utils :as gu]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [sixsq.nuvla.server.util.response :as r]))
 
 

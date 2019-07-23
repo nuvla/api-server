@@ -5,9 +5,9 @@
     [clojure.string :as str]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.group :as group]
-    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.resources.common.crud :as crud]))
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (defn identifier->user-id
