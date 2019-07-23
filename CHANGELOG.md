@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
   - Module application support added with docker-compose and files 
     fields to be mapped with Docker secrets and configs
