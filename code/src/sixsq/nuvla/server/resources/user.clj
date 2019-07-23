@@ -224,7 +224,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (let [current (-> (:id body)
                       (db/retrieve request)
                       (a/throw-cannot-edit request))
-          merged  (merge current body)]
+          merged  (->> (dissoc body :name)
+                       (merge current))]
       (-> merged
           (dissoc :href)
           (u/update-timestamps)

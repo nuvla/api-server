@@ -7,6 +7,7 @@ component, or application.
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -66,16 +67,41 @@ component, or application.
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
+(defn colliding-path?
+  [path]
+  (let [filter    (parser/parse-cimi-filter (format "path='%s'" path))
+        query-map {:params         {:resource-name resource-type}
+                   :request-method :put
+                   :nuvla/authn    auth/internal-identity
+                   :cimi-params    {:filter filter
+                                    :last   0}}]
+    (-> query-map
+        crud/query
+        :body
+        :count
+        pos?)))
+
+
+(defn throw-colliding-path
+  [path]
+  (when (colliding-path? path)
+    (throw (r/ex-response (str "path '" path "' already exist") 409))))
+
+
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
+
   (a/throw-cannot-add collection-acl request)
+
+  (throw-colliding-path (:path body))
+
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
     (if (= "project" subtype)
       (let [module-meta (module-utils/set-parent-path module-meta)]
 
-        (db/add                                             ; FIXME duplicated code
+        (db/add                                            ; FIXME duplicated code
           resource-type
           (-> module-meta
               u/strip-service-attrs
