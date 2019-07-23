@@ -13,6 +13,7 @@ component, or application.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.module-component :as module-component]
+    [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
@@ -57,6 +58,7 @@ component, or application.
   [subtype]
   (case subtype
     "component" module-component/resource-type
+    "application" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
@@ -64,6 +66,7 @@ component, or application.
   [subtype]
   (case subtype
     "component" module-component/resource-type
+    "application" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
@@ -101,7 +104,7 @@ component, or application.
     (if (= "project" subtype)
       (let [module-meta (module-utils/set-parent-path module-meta)]
 
-        (db/add                                            ; FIXME duplicated code
+        (db/add                                             ; FIXME duplicated code
           resource-type
           (-> module-meta
               u/strip-service-attrs
@@ -172,7 +175,8 @@ component, or application.
                                (crud/retrieve-by-id-as-admin)
                                (dissoc :resource-type :operations :acl))
                            (when version-index
-                             (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
+                             (throw (r/ex-not-found
+                                      (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
           (a/select-viewable-keys request)

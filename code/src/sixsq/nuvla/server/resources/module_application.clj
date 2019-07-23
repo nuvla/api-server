@@ -1,14 +1,14 @@
-(ns sixsq.nuvla.server.resources.module-component
+(ns sixsq.nuvla.server.resources.module-application
   "
-This resource represents a component module that references a single Docker
-image stored in a registry.
+This resource represents an application module that contain a Docker
+stack compose file.
 "
   (:require
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
+    [sixsq.nuvla.server.resources.spec.module-application :as module-application]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -29,7 +29,7 @@ image stored in a registry.
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::module-component/schema))
+(def validate-fn (u/create-spec-validation-fn ::module-application/schema))
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -92,9 +92,9 @@ image stored in a registry.
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::module-component/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::module-application/schema))
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::module-component/schema)
+  (std-crud/initialize resource-type ::module-application/schema)
   (md/register resource-metadata))
