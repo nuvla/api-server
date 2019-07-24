@@ -4,6 +4,8 @@
 
 ### Added
 
+  - Initial port of resources for external authentication (GitHub,
+    OIDC, and MITREid)
   - Module application support added with docker-compose and files 
     fields to be mapped with Docker secrets and configs
 
