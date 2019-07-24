@@ -20,11 +20,8 @@ authentication workflow as implemented by a Keycloak server.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners    ["group/nuvla-admin"]
+                   :view-data ["group/nuvla-anon"]})
 
 ;;
 ;; resource

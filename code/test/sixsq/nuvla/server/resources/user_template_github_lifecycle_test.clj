@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as ut]
     [sixsq.nuvla.server.resources.user-template-github :as github]
+    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -263,18 +264,18 @@
                       (ltu/body->edn)
                       (ltu/is-status create-status))
 
-                  (let [username    (uiu/user-identifier->user-id :github nil github-login)
+                  (let [user-id     (uiu/user-identifier->user-id :github nil github-login)
                         name-value  (uiu/generate-identifier :github github-login)
-                        user-record (->> github-login
-                                         (uiu/user-identifier->user-id :github nil)
-                                         (auth-user/get-user))]
+                        user-record (auth-user/get-user user-id)]
 
-                    (is (not (nil? username)))
+                    (is (not (nil? user-id)))
 
                     (is (not (nil? user-record)))
 
                     (is (= name-value (:name user-record)))
-                    #_(is (= github/registration-method (:method user-record))))
+
+                    ;; FIXME: Fix code to put in alternate method from 'minimum'.
+                    (is (= minimum/registration-method (:method user-record))))
 
                   ;; try creating the same user again, should fail
                   (reset-callback! callback)

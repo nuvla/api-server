@@ -35,9 +35,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def ^:const form-urlencoded "application/x-www-form-urlencoded")
-
-
 ;; creating a new user is a registration request, so anonymous users must
 ;; be able to view the collection and post requests to it (if a template is
 ;; visible to group/nuvla-anon.)

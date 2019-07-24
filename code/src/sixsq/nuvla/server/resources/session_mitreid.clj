@@ -49,7 +49,7 @@
         ;; FIXME: Provide real values for username and user-role!
         session (sutils/create-session "username" "user-role" session-init headers authn-method)
         session (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
-        callback-url (oidc-utils/create-callback base-uri (:id session) cb/action-name)
+        callback-url (sutils/create-callback base-uri (:id session) cb/action-name)
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
     [{:status 303, :headers {"Location" redirect-url}} session]))
 

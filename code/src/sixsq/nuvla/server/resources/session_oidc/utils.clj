@@ -9,10 +9,12 @@
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
+
 (defn prefix
   [realm attr]
   (when (and realm attr)
     (str realm ":" attr)))
+
 
 (defn extract-roles
   [{:keys [realm roles] :as claims}]
@@ -22,6 +24,7 @@
          (map (partial prefix realm))
          vec)
     []))
+
 
 (defn extract-entitlements
   [{:keys [realm entitlement] :as claims}]
@@ -33,6 +36,7 @@
            vec))
     []))
 
+
 (defn group-hierarchy
   [group]
   (if-not (str/blank? group)
@@ -41,6 +45,7 @@
         (for [i (range 1 (inc (count terms)))]
           (str "/" (str/join "/" (take i terms))))))
     []))
+
 
 (defn extract-groups
   [{:keys [realm groups] :as claims}]
@@ -57,34 +62,44 @@
 (defn throw-no-username-or-email [username email redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing name/preferred_name (" username ") or email (" email ")") redirect-url))
 
+
 (defn throw-no-matched-user [username email redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "Unable to match account to name/preferred_name (" username ") or email (" email ")") redirect-url))
+
 
 ;; general exceptions
 
 (defn throw-bad-client-config [cfg-id redirect-url]
   (logu/log-error-and-throw-with-redirect 500 (str "missing or incorrect configuration (" cfg-id ") for OIDC/MITREid authentication") redirect-url))
 
+
 (defn throw-missing-code [redirect-url]
   (logu/log-error-and-throw-with-redirect 400 "OIDC/MITREid authentication callback request does not contain required code" redirect-url))
+
 
 (defn throw-no-access-token [redirect-url]
   (logu/log-error-and-throw-with-redirect 400 "unable to retrieve OIDC/MITREid access token" redirect-url))
 
+
 (defn throw-no-email [redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "cannot retrieve OIDC/MITREid primary email") redirect-url))
+
 
 (defn throw-no-subject [redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "OIDC/MITREid token is missing subject (sub) attribute") redirect-url))
 
+
 (defn throw-invalid-access-code [msg redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "error when processing OIDC/MITREid access token: " msg) redirect-url))
+
 
 (defn throw-inactive-user [username redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "account is inactive (" username ")") redirect-url))
 
+
 (defn throw-user-exists [username redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "account already exists (" username ")") redirect-url))
+
 
 (defn throw-invalid-address [ip redirect-url]
   (logu/log-error-and-throw-with-redirect 400 (str "request from invalid IP address (" ip ")") redirect-url))
@@ -122,31 +137,12 @@
 (def config-mitreid-token-params (partial config-params "configuration/session-mitreid-token-" mitreid-token-keys))
 
 
-;; FIXME: Fix ugliness around needing to create ring requests with authentication!
-(defn create-callback [baseURI session-id action]
-  (let [callback-request {:params   {:resource-name callback/resource-type}
-                          :body     {:action         action
-                                     :targetResource {:href session-id}}
-                          :identity {:current         "INTERNAL"
-                                     :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                   :roles    ["ADMIN"]}}}}
-        {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
-    (if (= 201 status)
-      (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]
-        (if-let [validate-op (u/get-op callback-resource "execute")]
-          (str baseURI validate-op)
-          (let [msg "callback does not have execute operation"]
-            (throw (ex-info msg (r/map-response msg 500 resource-id)))))
-        (let [msg "cannot retrieve  session callback"]
-          (throw (ex-info msg (r/map-response msg 500 resource-id)))))
-      (let [msg "cannot create  session callback"]
-        (throw (ex-info msg (r/map-response msg 500 session-id)))))))
-
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
   [authorizeURL client-id callback-url]
   (let [url-params-format "?response_type=code&client_id=%s&redirect_uri=%s"]
     (str authorizeURL (format url-params-format client-id callback-url))))
+
 
 (defn get-mitreid-userinfo
   [userProfileURL access_token]
