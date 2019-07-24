@@ -38,7 +38,7 @@
 
 
 (s/def ::subtype
-  (-> (st/spec #{"project" "component"})
+  (-> (st/spec #{"project" "component" "application"})
       (assoc :name "subtype"
              :json-schema/type "string"
              :json-schema/description "module type"

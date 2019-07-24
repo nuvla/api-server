@@ -2,8 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+  - Module application support added with docker-compose and files 
+    fields to be mapped with Docker secrets and configs
+
+## [4.1.0] - 2019-07-11
+
 ### Changed
 
+  - User - Do not allow user change his name
+  - Module - Conflict if path already exit on add
+  - ES mapping generation for double is taken into account 
+  - Make double spec accept number as value
   - Upgrade to ring-container 2.0.1 and parent 6.5.1.
   - Remove 'busy' attribute from USB peripheral description
 

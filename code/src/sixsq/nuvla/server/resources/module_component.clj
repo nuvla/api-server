@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.module-component
   "
-This resource represents a component--a module that references a single Docker
+This resource represents a component module that references a single Docker
 image stored in a registry.
 "
   (:require

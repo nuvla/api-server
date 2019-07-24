@@ -29,14 +29,20 @@ an API key-secret pair.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::session/session))
+
+
 (defmethod p/validate-subtype authn-method
   [resource]
   (validate-fn resource))
 
+
 (def create-validate-fn (u/create-spec-validation-fn ::st-api-key/schema-create))
+
+
 (defmethod p/create-validate-subtype authn-method
   [resource]
   (create-validate-fn resource))
+
 
 ;;
 ;; transform template into session resource
@@ -49,6 +55,7 @@ an API key-secret pair.
     uuid
     (str "credential/" uuid)))
 
+
 (defn retrieve-credential-by-id
   "Retrieves a credential based on its identifier. Bypasses the authentication
    controls in the database CRUD layer. If the document doesn't exist or any
@@ -59,6 +66,7 @@ an API key-secret pair.
     (catch Exception _
       nil)))
 
+
 (defn valid-api-key?
   "Checks that the API key document is of the correct subtype, hasn't expired,
    and that the digest matches the given secret."
@@ -66,6 +74,7 @@ an API key-secret pair.
   (and (= api-key-tpl/credential-subtype subtype)
        (u/not-expired? expiry)
        (key-utils/valid? secret digest)))
+
 
 (defn create-cookie-info [user-id claims headers session-id client-ip]
   (let [server (:nuvla-ssl-server-name headers)]
@@ -75,6 +84,7 @@ an API key-secret pair.
             session-id (assoc :session session-id)
             session-id (update :claims #(str % " " session-id))
             client-ip (assoc :client-ip client-ip))))
+
 
 (defmethod p/tpl->session authn-method
   [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
@@ -96,6 +106,7 @@ an API key-secret pair.
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
 (defn initialize
   []
   (std-crud/initialize p/resource-type ::session/session))

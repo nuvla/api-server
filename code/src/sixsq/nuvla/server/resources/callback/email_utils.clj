@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.callback.email-utils
   (:require
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]))
 
 
 (defn validate-email!

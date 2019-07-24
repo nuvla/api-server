@@ -3,9 +3,9 @@
   (:require
     [buddy.hashers :as hashers]
     [clojure.string :as str]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
@@ -14,9 +14,8 @@
   [username]
   (try
     (let [f    (parser/parse-cimi-filter (format "identifier='%s'" username))
-          opts {:cimi-params {:filter f}
-                :nuvla/authn auth/internal-identity}]
-      (some-> (db/query user-identifier/resource-type opts)
+          opts {:cimi-params {:filter f}}]
+      (some-> (crud/query-as-admin user-identifier/resource-type opts)
               second
               first
               :parent))
@@ -81,11 +80,10 @@
 
 (defn collect-groups-for-user
   [id]
-  (let [group-set (->> (db/query
+  (let [group-set (->> (crud/query-as-admin
                          group/resource-type
                          {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
-                                        :select ["id"]}
-                          :nuvla/authn auth/internal-identity})
+                                        :select ["id"]}})
                        second
                        (map :id)
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated

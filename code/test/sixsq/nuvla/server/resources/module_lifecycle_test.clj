@@ -18,44 +18,53 @@
 
 (def timestamp "1964-08-25T10:00:00.00Z")
 
+(defn valid-module
+  [subtype content]
+  {:id                        (str module/resource-type "/connector-uuid")
+   :resource-type             module/resource-type
+   :created                   timestamp
+   :updated                   timestamp
+   :parent-path               "a/b"
+   :path                      "a/b/c"
+   :subtype                   subtype
 
-(def valid-entry {:id                        (str module/resource-type "/connector-uuid")
-                  :resource-type             module/resource-type
-                  :created                   timestamp
-                  :updated                   timestamp
-                  :parent-path               "a/b"
-                  :path                      "a/b/c"
-                  :subtype                   "component"
+   :logo-url                  "https://example.org/logo"
 
-                  :logo-url                  "https://example.org/logo"
+   :data-accept-content-types ["application/json" "application/x-something"]
+   :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                  :data-accept-content-types ["application/json" "application/x-something"]
-                  :data-access-protocols     ["http+s3" "posix+nfs"]})
-
-
-(def valid-component {:author        "someone"
-                      :commit        "wip"
-
-                      :architectures ["amd64" "arm/v6"]
-                      :image         {:image-name "ubuntu"
-                                      :tag        "16.04"}
-                      :ports         [{:protocol       "tcp"
-                                       :target-port    22
-                                       :published-port 8022}]})
+   :content                   content})
 
 
-(deftest lifecycle
-
+(defn lifecycle-test-module
+  [subtype valid-content]
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header
+                              "user/jane group/nuvla-user group/nuvla-anon")
+
+        valid-entry   {:id                        (str module/resource-type "/connector-uuid")
+                       :resource-type             module/resource-type
+                       :created                   timestamp
+                       :updated                   timestamp
+                       :parent-path               "a/b"
+                       :path                      "a/b/c"
+                       :subtype                   subtype
+
+                       :logo-url                  "https://example.org/logo"
+
+                       :data-accept-content-types ["application/json" "application/x-something"]
+                       :data-access-protocols     ["http+s3" "posix+nfs"]
+
+                       :content                   valid-content}]
 
     ;; create: NOK for anon
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-entry :content valid-component)))
+                 :body (json/write-str valid-entry))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -76,9 +85,7 @@
     (-> session-admin
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-entry
-                                         :content valid-component
-                                         :subtype "bad-module-subtype")))
+                 :body (json/write-str (assoc valid-entry :subtype "bad-module-subtype")))
         (ltu/body->edn)
         (ltu/is-status 400))
 
@@ -87,7 +94,7 @@
       (let [uri     (-> session
                         (request base-uri
                                  :request-method :post
-                                 :body (json/write-str (assoc valid-entry :content valid-component)))
+                                 :body (json/write-str valid-entry))
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
@@ -107,13 +114,13 @@
                           :response
                           :body
                           :content)]
-          (is (= valid-component (select-keys content (keys valid-component)))))
+          (is (= valid-content (select-keys content (keys valid-content)))))
 
         ;; edit: NOK for anon
         (-> session-anon
             (request abs-uri
                      :request-method :put
-                     :body (json/write-str (assoc valid-entry :content valid-component)))
+                     :body (json/write-str valid-entry))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -122,14 +129,14 @@
           (-> session-admin
               (request abs-uri
                        :request-method :put
-                       :body (json/write-str (assoc valid-entry :content valid-component)))
+                       :body (json/write-str valid-entry))
               (ltu/body->edn)
               (ltu/is-status 200)))
 
         (let [versions (-> session-admin
                            (request abs-uri
                                     :request-method :put
-                                    :body (json/write-str (assoc valid-entry :content valid-component)))
+                                    :body (json/write-str valid-entry))
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            :response
@@ -194,6 +201,27 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 404))))))
+
+(deftest lifecycle-component
+  (let [valid-component {:author        "someone"
+                         :commit        "wip"
+
+                         :architectures ["amd64" "arm/v6"]
+                         :image         {:image-name "ubuntu"
+                                         :tag        "16.04"}
+                         :ports         [{:protocol       "tcp"
+                                          :target-port    22
+                                          :published-port 8022}]}]
+    (lifecycle-test-module "component" valid-component)))
+
+
+(deftest lifecycle-application
+
+  (let [valid-application {:author         "someone"
+                           :commit         "wip"
+
+                           :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
+    (lifecycle-test-module "application" valid-application)))
 
 
 (deftest bad-methods
