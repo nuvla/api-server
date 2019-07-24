@@ -43,7 +43,8 @@ authentication workflow as implemented by a Keycloak server.
 (defn initialize
   []
   (p/register registration-method)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-oidc/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-oidc/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-oidc/schema-create "create")))
 
 
 ;;

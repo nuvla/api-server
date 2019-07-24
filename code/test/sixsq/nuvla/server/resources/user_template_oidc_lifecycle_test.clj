@@ -339,14 +339,3 @@
                                       :response
                                       :body
                                       :state))))))))))))
-
-
-(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id user/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
-                            [resource-uri :put]
-                            [resource-uri :post]])))
-
-
