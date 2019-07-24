@@ -31,8 +31,10 @@
 
 (defmethod p/tpl->user user-template/registration-method
   [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
-  (let [{:keys [client-id authorize-url]} (oidc-utils/config-mitreid-params redirect-url instance)
-        data         (when redirect-url {:redirect-url redirect-url})
-        callback-url (create-user-mitreid-callback base-uri href data)
-        redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
-    [{:status 303, :headers {"Location" redirect-url}} nil]))
+  (let [{:keys [client-id authorize-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
+    (if (and client-id authorize-url)
+      (let [data         (when redirect-url {:redirect-url redirect-url})
+            callback-url (create-user-mitreid-callback base-uri href data)
+            redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
+        [{:status 303, :headers {"Location" redirect-url}} nil])
+      (oidc-utils/throw-bad-client-config user-template/registration-method redirect-url))))

@@ -20,11 +20,8 @@ authentication workflow as implemented by a MITREid server.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners    ["group/nuvla-admin"]
+                   :view-data ["group/nuvla-anon"]})
 
 ;;
 ;; resource
@@ -46,7 +43,8 @@ authentication workflow as implemented by a MITREid server.
 (defn initialize
   []
   (p/register registration-method)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-mitreid/schema)))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-mitreid/schema))
+  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ut-mitreid/schema-create "create")))
 
 
 ;;

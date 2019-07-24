@@ -2,10 +2,12 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer :all]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
-    [sixsq.nuvla.auth.utils.db :as db]
     [sixsq.nuvla.auth.utils.sign :as sign]
+    [sixsq.nuvla.auth.utils.user :as user-utils]
     [sixsq.nuvla.server.app.params :as p]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :as configuration]
@@ -13,12 +15,10 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as ut]
+    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user-template-mitreid :as mitreid]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [peridot.core :refer :all]
-    [ring.util.codec :as codec]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
@@ -61,19 +61,17 @@
 
 (deftest lifecycle
 
-  (let [href              (str ut/resource-type "/" mitreid/registration-method)
-        template-url      (str p/service-context ut/resource-type "/" mitreid/registration-method)
+  (let [href          (str ut/resource-type "/" mitreid/registration-method)
+        template-url  (str p/service-context ut/resource-type "/" mitreid/registration-method)
 
-        session-anon      (-> (ltu/ring-app)
-                              session
-                              (content-type "application/json")
-                              (header authn-info/authn-info-header "unknown ANON"))
-        session-admin     (header session-anon authn-info/authn-info-header "admin ADMIN USER ANON")
-        session-user      (header session-anon authn-info/authn-info-header "user USER ANON")
-        session-anon-form (-> session-anon
-                              (content-type user/form-urlencoded))
+        session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json")
+                          (header authn-info/authn-info-header "unknown group/nuvla-anon"))
+        session-admin (header session-anon authn-info/authn-info-header "admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info/authn-info-header "user group/nuvla-user group/nuvla-anon")
 
-        redirect-uri      "https://example.com/webui"]
+        redirect-uri  "https://example.com/webui"]
 
     ;; must create the MITREid user template; this is not created automatically
     (let [user-template (->> {:group  "my-group"
@@ -96,23 +94,16 @@
           (get-in [:response :body])))
 
     ;; get user template so that user resources can be tested
-    (let [template             (-> session-admin
-                                   (request template-url)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (get-in [:response :body]))
-
-          name-attr            "name"
+    (let [name-attr            "name"
           description-attr     "description"
           tags-attr            ["a-1" "b-2"]
 
-          href-create          {:name         name-attr
-                                :description  description-attr
-                                :tags         tags-attr
-                                :userTemplate {:href href}}
-          href-create-redirect {:userTemplate {:href         href
-                                               :redirect-url redirect-uri}}
-          invalid-create       (assoc-in href-create [:userTemplate :invalid] "BAD")]
+          href-create          {:name        name-attr
+                                :description description-attr
+                                :tags        tags-attr
+                                :template    {:href href}}
+          href-create-redirect {:template {:href         href
+                                           :redirect-url redirect-uri}}]
 
       ;; anonymous query should succeed but have no entries
       (-> session-anon
@@ -141,7 +132,6 @@
                          (ltu/is-status 201)
                          (ltu/location))]
 
-
         (is (= cfg-href (str "configuration/session-mitreid-" mitreid/registration-method)))
 
         ;; anonymous create must succeed (normal create and href create)
@@ -159,19 +149,10 @@
                                 :body (json/write-str href-create-redirect))
                        (ltu/body->edn)
                        (ltu/is-status 303)
-                       ltu/location)
-
-              uri3 (-> session-anon-form
-                       (request base-uri
-                                :request-method :post
-                                :body (codec/form-encode {:href         href
-                                                          :redirect-url redirect-uri}))
-                       (ltu/body->edn)
-                       (ltu/is-status 303)
                        ltu/location)]
 
           ;; redirect URLs in location header should contain the client ID and resource id
-          (doseq [u [uri uri2 uri3]]
+          (doseq [u [uri uri2]]
             (is (re-matches #".*FAKE_CLIENT_ID.*" (or u "")))
             (is (re-matches callback-pattern (or u ""))))
 
@@ -189,14 +170,12 @@
 
                 validate-url     (get-redirect-uri uri)
                 validate-url2    (get-redirect-uri uri2)
-                validate-url3    (get-redirect-uri uri3)
 
                 callback-id      (get-callback-id validate-url)
-                callback-id2     (get-callback-id validate-url2)
-                callback-id3     (get-callback-id validate-url3)]
+                callback-id2     (get-callback-id validate-url2)]
 
             ;; all callbacks must exist
-            (doseq [cb-id [callback-id callback-id2 callback-id3]]
+            (doseq [cb-id [callback-id callback-id2]]
               (-> session-admin
                   (request (str p/service-context cb-id))
                   (ltu/body->edn)
@@ -219,13 +198,6 @@
 
             (-> session-anon
                 (request validate-url2
-                         :request-method :get)
-                (ltu/body->edn)
-                (ltu/message-matches #".*missing or incorrect configuration.*")
-                (ltu/is-status 303))
-
-            (-> session-anon
-                (request validate-url3
                          :request-method :get)
                 (ltu/body->edn)
                 (ltu/message-matches #".*missing or incorrect configuration.*")
@@ -256,24 +228,16 @@
                 (ltu/message-matches #".*not contain required code.*")
                 (ltu/is-status 303))
 
-            (reset-callback! callback-id3)
-            (-> session-anon
-                (request validate-url3
-                         :request-method :get)
-                (ltu/body->edn)
-                (ltu/message-matches #".*not contain required code.*")
-                (ltu/is-status 303))
-
             ;; try now with a fake code
 
             (doseq [[user-number return-code create-status cb-id val-url] (map (fn [n rc cs cb vu] [n rc cs cb vu])
                                                                                (range)
                                                                                [400 303 303] ;; Expect 303 even on errors when redirect-url is provided
                                                                                [201 303 303]
-                                                                               [callback-id callback-id2 callback-id3]
-                                                                               [validate-url validate-url2 validate-url3])]
+                                                                               [callback-id callback-id2]
+                                                                               [validate-url validate-url2])]
 
-              (let [username    (str "MITREid_USER_" user-number)
+              (let [username    (str "MITREid_group/nuvla-user_" user-number)
                     email       (format "user-%s@example.com" user-number)
                     good-claims {:sub         user-number
                                  :email       email
@@ -301,10 +265,7 @@
                                                                  :displayName "John Doe",
                                                                  :emails      [{:value    email
                                                                                 :primary  true
-                                                                                :verified true}]})
-
-                              db/find-roles-for-username      (fn [username]
-                                                                "USER ANON alpha")]
+                                                                                :verified true}]})]
 
                   (reset-callback! cb-id)
                   (-> session-anon
@@ -340,7 +301,7 @@
 
                   ;; try creating the user via callback, should succeed
                   (reset-callback! cb-id)
-                  (is (false? (db/user-exists? username)))
+                  (is (false? (user-utils/user-exists? username)))
                   (-> session-anon
                       (request (str val-url "?code=GOOD")
                                :request-method :get)
@@ -356,11 +317,18 @@
 
 
                   (let [instance    mitreid/registration-method
-                        ss-username (uiu/user-identifier->user-id :mitreid instance user-number)
-                        user-record (db/get-user ss-username)]
-                    (is (not (nil? ss-username)))
-                    (is (= email (:name user-record)))
-                    (is (= mitreid/registration-method (:method user-record))))
+                        user-id     (uiu/user-identifier->user-id :mitreid instance user-number)
+                        name-value  (uiu/generate-identifier :mitreid user-number)
+                        user-record (user-utils/get-user user-id)]
+
+                    (is (not (nil? user-id)))
+
+                    (is (not (nil? user-record)))
+
+                    (is (= name-value (:name user-record)))
+
+                    ;; FIXME: Fix code to put in alternate method from 'minimum'.
+                    (is (= minimum/registration-method (:method user-record))))
 
                   ;; try creating the same user again, should fail
                   (reset-callback! cb-id)

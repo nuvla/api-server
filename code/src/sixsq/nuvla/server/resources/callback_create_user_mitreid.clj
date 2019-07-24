@@ -18,7 +18,7 @@
 
 
 (defn register-user
-  [{{:keys [href]} :targetResource {:keys [redirect-url]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
+  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url user-profile-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
