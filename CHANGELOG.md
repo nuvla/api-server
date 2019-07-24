@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## [4.2.0] - 2019-07-24
 
 ### Added
 
+  - Initial port of resources for external authentication (GitHub,
+    OIDC, and MITREid)
   - Module application support added with docker-compose and files 
     fields to be mapped with Docker secrets and configs
 
