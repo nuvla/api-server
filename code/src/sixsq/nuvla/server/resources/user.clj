@@ -11,7 +11,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -34,9 +33,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 
 (def ^:const create-type (u/ns->create-type *ns*))
-
-
-(def ^:const form-urlencoded "application/x-www-form-urlencoded")
 
 
 ;; creating a new user is a registration request, so anonymous users must
@@ -140,6 +136,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+
 ;; requires a user-template to create new User
 (defmethod crud/add resource-type
   [{{:keys [template] :as body} :body :as request}]
@@ -148,21 +145,23 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          user       (-> body
-                         (assoc :resource-type create-type)
-                         (update-in [:template] dissoc :method :id) ;; forces use of template reference
-                         (std-crud/resolve-hrefs authn-info true)
-                         (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                         (crud/validate)
-                         (:template)
-                         (merge-with-defaults)
-                         (tpl->user request)                ;; returns a tuple [response-fragment, resource-body]
-                         (merge desc-attrs))]
+          [frag user] (-> body
+                          (assoc :resource-type create-type)
+                          (update-in [:template] dissoc :method :id) ;; forces use of template reference
+                          (std-crud/resolve-hrefs authn-info true)
+                          (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                          (crud/validate)
+                          (:template)
+                          (merge-with-defaults)
+                          (tpl->user request))]
 
-      (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body user))]
-        (when (and resource-id (= 201 status))
-          (post-user-add (assoc user :id resource-id, :redirect-url (:redirect-url template)) request))
-        result))
+      (if frag
+        frag
+        (if user
+          (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
+            (when (and resource-id (= 201 status))
+              (post-user-add (assoc user :id resource-id, :redirect-url (:redirect-url template)) request))
+            result))))
 
     (catch Exception e
       (or (ex-data e)
@@ -181,9 +180,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (doseq [children-resource-type children-resource-types]
     (try
       (let [filter  (format "%s='%s/%s'" "parent" resource-type (:uuid params))
-            entries (second (db/query children-resource-type
-                                      {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-                                       :nuvla/authn auth/internal-identity}))]
+            entries (second (crud/query-as-admin children-resource-type
+                                                 {:cimi-params {:filter (parser/parse-cimi-filter filter)}}))]
         (doseq [{:keys [id]} entries]
           (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
                                       :resource-name children-resource-type}

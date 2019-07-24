@@ -221,7 +221,8 @@
                 (ltu/body->edn)
                 (ltu/is-status 404))))
 
-        ;; create user if fail with creation of child resources are cleaned up
+        ;; ensure that user is not created and all child resources are cleaned up when
+        ;; trying to create a user with an existing identifier
         (let [resp                 (-> session-anon
                                        (request base-uri
                                                 :request-method :post
