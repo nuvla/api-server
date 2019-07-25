@@ -24,10 +24,10 @@
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
-          (let [{:keys [sub email given_name family_name realm] :as claims} (sign/unsign-cookie-info access-token public-key)]
+          (let [{:keys [sub email] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
-              (or (ex/create-user! :oidc {:external-login sub
+              (or (ex/create-user! :oidc {:external-id    sub
                                           :external-email (or email (str sub "@fake-email.com"))})
                   (oidc-utils/throw-user-exists sub redirect-url))
               (oidc-utils/throw-no-subject redirect-url)))
@@ -41,12 +41,12 @@
   [{callback-id :id {:keys [redirect-url]} :data :as callback-resource} request]
   (log/debug "Executing callback" callback-id)
   (try
-    (if-let [username (register-user callback-resource request)]
+    (if-let [user-id (register-user callback-resource request)]
       (do
         (utils/callback-succeeded! callback-id)
         (if redirect-url
-          (r/map-response (format "user '%s' created" username) 303 callback-id redirect-url)
-          (r/map-response (format "user '%s' created" username) 201)))
+          (r/map-response (format "'%s' created" user-id) 303 callback-id redirect-url)
+          (r/map-response (format "'%s' created" user-id) 201)))
       (do
         (utils/callback-failed! callback-id)
         (r/map-response "could not create OIDC user" 400)))

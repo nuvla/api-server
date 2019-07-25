@@ -14,7 +14,8 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]))
+    [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
 (def ^:const authn-method "mitreid-token")
@@ -56,24 +57,24 @@
                             (oidc-utils/extract-entitlements claims))]
           (log/debug "MITREid token authentication claims for" instance ":" (pr-str claims))
           (if sub
-            (if-let [matched-user (ex/match-oidc-username :mitreid sub instance)]
+            (if-let [matched-user (uiu/user-identifier->user-id :mitreid instance sub)]
               (let [session-info {:href href, :username matched-user, :redirect-url redirect-url}
                     ;; FIXME: Use correct values for username and user-id!
-                    {:keys [id clientIP] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
-                    claims (cond-> (password/create-claims {:id matched-user})
-                                   id (assoc :session id)
-                                   id (update :roles #(str id " " %))
-                                   roles (update :roles #(str % " " (str/join " " roles))))
-                    cookie (cookies/create-cookie claims)
-                    expires (ts/rfc822->iso8601 (:expires cookie))
+                    {:keys [id client-ip] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
+                    claims       (cond-> (password/create-claims {:id matched-user})
+                                         id (assoc :session id)
+                                         id (update :roles #(str id " " %))
+                                         roles (update :roles #(str % " " (str/join " " roles))))
+                    cookie       (cookies/create-cookie claims)
+                    expires      (ts/rfc822->iso8601 (:expires cookie))
                     claims-roles (:roles claims)
-                    session (cond-> (assoc session :expiry expires)
-                                    claims-roles (assoc :roles claims-roles))]
+                    session      (cond-> (assoc session :expiry expires)
+                                         claims-roles (assoc :roles claims-roles))]
 
                 ;; only validate the client IP address, if the parameter is set
                 (when client-ips
-                  (when-not ((set client-ips) clientIP)
-                    (oidc-utils/throw-invalid-address clientIP redirect-url)))
+                  (when-not ((set client-ips) client-ip)
+                    (oidc-utils/throw-invalid-address client-ip redirect-url)))
 
                 (log/debug "MITREid cookie token claims for" (u/id->uuid href) ":" (pr-str claims))
                 (let [cookies {authn-info/authn-cookie cookie}]

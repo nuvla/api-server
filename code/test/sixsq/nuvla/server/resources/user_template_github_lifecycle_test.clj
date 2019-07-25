@@ -234,10 +234,7 @@
                                                                       nil))
                               auth-github/get-github-user-info    (fn [access-code]
                                                                     (when (= access-code "GOOD_ACCESS_CODE")
-                                                                      {:login github-login, :email email}))
-
-                              ex/match-existing-external-user     (fn [authn-method external-login instance]
-                                                                    "MATCHED_USER")]
+                                                                      {:login github-login, :email email}))]
 
                   (-> session-anon
                       (request (str url "?code=NONE")

@@ -15,7 +15,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
 (def ^:const action-name "session-github-creation")
@@ -23,7 +24,7 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server clientIP redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [server client-ip redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -32,13 +33,13 @@
           (do
             (log/debug "github user info for" instance ":" user-info)
             (let [external-login (:login user-info)
-                  matched-user   (ex/match-existing-external-user :github external-login nil)]
+                  matched-user   (uiu/user-identifier->user-id :github nil external-login)]
               (if matched-user
                 (let [claims          (cond-> (password/create-claims {:id matched-user})
                                               session-id (assoc :session session-id)
                                               session-id (update :roles #(str session-id " " %))
                                               server (assoc :server server)
-                                              clientIP (assoc :clientIP clientIP))
+                                              client-ip (assoc :client-ip client-ip))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)

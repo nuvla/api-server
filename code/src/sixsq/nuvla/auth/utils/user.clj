@@ -37,27 +37,20 @@
   (-> username get-user :state nil? not))
 
 
-(defn existing-user-names
-  []
-  (let [users (second (crud/query-as-admin :user nil))]
-    (set (map :username users))))
-
-
 (defn create-user!
   "Create a new user in the database. Values for 'email' and 'authn-login'
    must be provided. The value used to create the account is returned."
-  ([{:keys [authn-login email authn-method] :as user-record}]
-   (when-not ((existing-user-names) authn-login)
-     (let [request {:params      {:resource-name user/resource-type}
-                    :body        {:template (cond-> {:href "user-template/minimum"}
-                                                    authn-login (assoc :username authn-login)
-                                                    email (assoc :email email)
-                                                    authn-method (assoc :method authn-method))}
-                    :nuvla/authn auth/internal-identity}
-           {{:keys [status resource-id] :as body} :body} (crud/add request)]
+  ([{:keys [user-identifier email authn-method] :as user-record}]
+   (let [request {:params      {:resource-name user/resource-type}
+                  :body        {:template (cond-> {:href "user-template/minimum"}
+                                                  user-identifier (assoc :username user-identifier)
+                                                  email (assoc :email email)
+                                                  authn-method (assoc :method authn-method))}
+                  :nuvla/authn auth/internal-identity}
+         {{:keys [status resource-id] :as body} :body} (crud/add request)]
 
-       (if (not= 201 status)
-         (throw (ex-info (str "cannot create user for " authn-login) user-record))
-         (do
-           (log/errorf "created %s" resource-id)
-           authn-login))))))
+     (if (not= 201 status)
+       (throw (ex-info (str "cannot create user for " user-identifier) user-record))
+       (do
+         (log/errorf "created %s" resource-id)
+         resource-id)))))
