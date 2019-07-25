@@ -55,7 +55,7 @@ password.
   [username user headers href]
   (if user
     (let [user-id     (:id user)
-          session     (sutils/create-session username user-id href headers authn-method)
+          session     (sutils/create-session username user-id {:href href} headers authn-method)
           cookie-info (create-cookie-info user headers (:id session) (:client-ip session))
           cookie      (cookies/create-cookie cookie-info)
           expires     (ts/rfc822->iso8601 (:expires cookie))

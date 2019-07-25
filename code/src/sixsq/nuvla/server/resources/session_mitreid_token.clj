@@ -59,7 +59,7 @@
           (if sub
             (if-let [matched-user (uiu/user-identifier->user-id :mitreid instance sub)]
               (let [session-info {:href href, :username matched-user, :redirect-url redirect-url}
-                    ;; FIXME: Use correct values for username and user-id!
+                    ;; fake session values, will be replaced after callback execution
                     {:keys [id client-ip] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
                     claims       (cond-> (password/create-claims {:id matched-user})
                                          id (assoc :session id)

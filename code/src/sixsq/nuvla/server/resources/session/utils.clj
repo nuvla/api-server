@@ -51,7 +51,7 @@
     (crud/new-identifier
       (cond-> {:method   authn-method
                :user     user-id
-               :template {:href tpl-href}}
+               :template tpl-href}
               username (assoc :identifier username)
               server (assoc :server server)
               client-ip (assoc :client-ip client-ip))

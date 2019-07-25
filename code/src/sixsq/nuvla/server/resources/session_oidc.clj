@@ -46,8 +46,8 @@
   (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
         session-init (cond-> {:href href}
                              redirect-url (assoc :redirect-url redirect-url))
-        ;; FIXME: Check that everything's correct here.
-        session (sutils/create-session client-id session-init href headers authn-method)
+        ;; fake session values, will be replaced after callback execution
+        session (sutils/create-session "username" "user-id" session-init headers authn-method)
         session (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
         callback-url (sutils/create-callback base-uri (:id session) cb/action-name)
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
