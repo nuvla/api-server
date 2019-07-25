@@ -49,7 +49,9 @@
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
-                      updated-session (cond-> (assoc current-session :username matched-user :expiry expires)
+                      updated-session (cond-> (assoc current-session
+                                                :identity matched-user
+                                                :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
                   (log/debug "OIDC cookie token claims for" instance ":" (pr-str claims))
