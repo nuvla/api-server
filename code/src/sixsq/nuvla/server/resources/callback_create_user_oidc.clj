@@ -27,7 +27,8 @@
           (let [{:keys [sub email] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
-              (or (ex/create-user! :oidc {:external-id    sub
+              (or (ex/create-user! :oidc {:instance       instance
+                                          :external-id    sub
                                           :external-email (or email (str sub "@fake-email.com"))})
                   (oidc-utils/throw-user-exists sub redirect-url))
               (oidc-utils/throw-no-subject redirect-url)))

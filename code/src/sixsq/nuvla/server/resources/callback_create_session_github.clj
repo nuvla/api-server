@@ -33,7 +33,7 @@
           (do
             (log/debug "github user info for" instance ":" user-info)
             (let [external-login (:login user-info)
-                  matched-user   (uiu/user-identifier->user-id :github nil external-login)]
+                  matched-user   (uiu/user-identifier->user-id :github instance external-login)]
               (if matched-user
                 (let [claims          (cond-> (password/create-claims {:id matched-user})
                                               session-id (assoc :session session-id)
