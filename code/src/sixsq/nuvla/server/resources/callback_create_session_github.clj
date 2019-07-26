@@ -37,10 +37,10 @@
               (if matched-user-id
                 (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
-                                              session-id (update :roles #(str session-id " " %)))
+                                              session-id (update :claims #(str session-id " " %)))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:roles claims)
+                      claims-roles    (:claims claims)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :expiry expires)

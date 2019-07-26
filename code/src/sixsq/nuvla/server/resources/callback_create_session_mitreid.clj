@@ -41,11 +41,11 @@
               (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
                 (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
-                                              session-id (update :roles #(str session-id " " %))
-                                              roles (update :roles #(str % " " (str/join " " roles))))
+                                              session-id (update :claims #(str session-id " " %))
+                                              roles (update :claims #(str % " " (str/join " " roles))))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:roles claims)
+                      claims-roles    (:claims claims)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :expiry expires)
