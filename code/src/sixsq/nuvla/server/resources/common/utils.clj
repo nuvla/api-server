@@ -200,7 +200,7 @@
 (defn operation-map
   "Provides the operation map for the given href and operation."
   [href op-kw-or-name]
-  {:rel (name op-kw-or-name)
+  {:rel  (name op-kw-or-name)
    :href href})
 
 

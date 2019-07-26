@@ -126,25 +126,25 @@
 
         (is (= cfg-href (str "configuration/session-github-" github/registration-method)))
 
-        (let [resp         (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create))
-                               (ltu/body->edn)
-                               (ltu/is-status 303))
+        (let [resp (-> session-anon
+                       (request base-uri
+                                :request-method :post
+                                :body (json/write-str href-create))
+                       (ltu/body->edn)
+                       (ltu/is-status 303))
 
-              uri          (-> resp ltu/location)
+              uri  (-> resp ltu/location)
 
-              resp         (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create-redirect))
-                               (ltu/body->edn)
-                               (ltu/is-status 303))
-              uri2         (-> resp ltu/location)
+              resp (-> session-anon
+                       (request base-uri
+                                :request-method :post
+                                :body (json/write-str href-create-redirect))
+                       (ltu/body->edn)
+                       (ltu/is-status 303))
+              uri2 (-> resp ltu/location)
 
 
-              uris         [uri uri2]]
+              uris [uri uri2]]
 
           ;; redirect URLs in location header should contain the client ID and resource id
           (doseq [u uris]
