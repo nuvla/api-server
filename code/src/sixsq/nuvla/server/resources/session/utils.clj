@@ -6,7 +6,9 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session :as p]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.db.impl :as db]))
+    [sixsq.nuvla.db.impl :as db]
+    [clojure.pprint :refer [pprint]]
+    [clojure.tools.logging :as log]))
 
 
 (defn session-edit
@@ -31,6 +33,7 @@
                         :body        updated-session
                         :nuvla/authn auth/internal-identity}
         {status :status :as resp} (session-edit update-request)]
+    (log/error "updating session %s\n%s" session-id (with-out-str (pprint update-request)))
     (if (= 200 status)
       resp
       (let [msg "cannot update session"]
