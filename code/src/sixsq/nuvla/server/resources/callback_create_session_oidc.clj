@@ -48,7 +48,7 @@
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
                       updated-session (cond-> (assoc current-session
-                                                :identifier matched-user-id
+                                                :user matched-user-id
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
