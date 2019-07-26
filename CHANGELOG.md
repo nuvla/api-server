@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed 
+
+  - External authentication resources (GitHub, OIDC, MITREid) 
+    have been validated server-side. 
+
 ## [4.2.0] - 2019-07-24
 
 ### Added
