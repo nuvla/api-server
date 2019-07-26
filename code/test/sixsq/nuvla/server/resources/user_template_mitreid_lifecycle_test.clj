@@ -3,12 +3,13 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
+    [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.sign :as sign]
-    [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
@@ -17,8 +18,7 @@
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user-template-mitreid :as mitreid]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.common.crud :as crud]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)

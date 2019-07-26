@@ -15,8 +15,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "session-github-creation")

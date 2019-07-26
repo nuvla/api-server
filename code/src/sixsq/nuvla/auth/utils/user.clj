@@ -20,7 +20,7 @@
 
      (if (= 201 status)
        (do
-         (log/errorf "created %s" resource-id)
+         (log/warnf "created %s" resource-id)
          resource-id)
        (let [msg (str "cannot create user for " user-identifier)]
          (log/errorf msg)

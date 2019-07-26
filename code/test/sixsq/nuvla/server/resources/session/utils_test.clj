@@ -3,17 +3,17 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
+    [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
+    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
-    [sixsq.nuvla.server.resources.session.utils :as session-utils]
     [sixsq.nuvla.server.resources.session-template :as st]
+    [sixsq.nuvla.server.resources.session.utils :as session-utils]
+    [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
-    [postal.core :as postal]
-    [sixsq.nuvla.server.resources.user :as user]))
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

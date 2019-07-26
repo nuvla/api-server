@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.auth.external
   (:require
     [sixsq.nuvla.auth.utils.user :as auth-user]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.resources.common.crud :as crud]))
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
 
 
 (defn get-user
