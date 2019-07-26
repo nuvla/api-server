@@ -1,7 +1,16 @@
 (ns sixsq.nuvla.auth.external
   (:require
     [sixsq.nuvla.auth.utils.user :as auth-user]
-    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]))
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]))
+
+
+(defn get-user
+  [user-id]
+  (try
+    (when user-id
+      (crud/retrieve-by-id-as-admin user-id))
+    (catch Exception _ nil)))
 
 
 (defn create-user!

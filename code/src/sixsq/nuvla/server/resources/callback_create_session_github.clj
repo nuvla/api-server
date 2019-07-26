@@ -35,7 +35,8 @@
             (let [external-login  (:login user-info)
                   matched-user-id (uiu/user-identifier->user-id :github instance external-login)]
               (if matched-user-id
-                (let [claims          (cond-> (password/create-claims {:id matched-user-id})
+                (let [{identifier :name} (ex/get-user matched-user-id)
+                      claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
                                               session-id (update :claims #(str session-id " " %)))
                       cookie          (cookies/create-cookie claims)
@@ -43,6 +44,7 @@
                       claims-roles    (:claims claims)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
+                                                :identifier (or identifier matched-user-id)
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]

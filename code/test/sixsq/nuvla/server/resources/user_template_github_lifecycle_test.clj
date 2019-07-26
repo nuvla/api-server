@@ -4,7 +4,7 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.github :as auth-github]
-    [sixsq.nuvla.auth.utils.user :as auth-user]
+    [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
@@ -32,14 +32,6 @@
 
 
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
-
-
-(defn get-user
-  [user-id]
-  (try
-    (when user-id
-      (crud/retrieve-by-id-as-admin user-id))
-    (catch Exception _ nil)))
 
 
 ;; callback state reset between tests
@@ -264,7 +256,7 @@
 
                   (let [user-id     (uiu/user-identifier->user-id :github "github" github-login)
                         name-value  (uiu/generate-identifier :github "github" github-login)
-                        user-record (get-user user-id)]
+                        user-record (ex/get-user user-id)]
 
                     (is (not (nil? user-id)))
 

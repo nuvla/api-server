@@ -5,7 +5,7 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.sign :as sign]
-    [sixsq.nuvla.auth.utils.user :as user-utils]
+    [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
@@ -34,13 +34,6 @@
 
 
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
-
-(defn get-user
-  [user-id]
-  (try
-    (when user-id
-      (crud/retrieve-by-id-as-admin user-id))
-    (catch Exception _ nil)))
 
 
 ;; callback state reset between tests
@@ -335,7 +328,7 @@
 
                   (let [user-id     (uiu/user-identifier->user-id :mitreid mitreid/registration-method user-number)
                         name-value  (uiu/generate-identifier :mitreid mitreid/registration-method user-number)
-                        user-record (get-user user-id)]
+                        user-record (ex/get-user user-id)]
 
                     (is (not (nil? user-id)))
 

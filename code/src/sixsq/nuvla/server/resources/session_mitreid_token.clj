@@ -58,7 +58,8 @@
           (log/debug "MITREid token authentication claims for" instance ":" (pr-str claims))
           (if sub
             (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
-              (let [{:keys [id client-ip] :as session} (sutils/create-session nil matched-user-id {:href href} headers authn-method redirect-url)
+              (let [{identifier :name} (ex/get-user matched-user-id)
+                    {:keys [id client-ip] :as session} (sutils/create-session nil matched-user-id {:href href} headers authn-method redirect-url)
                     claims       (cond-> (password/create-claims {:id matched-user-id})
                                          id (assoc :session id)
                                          id (update :roles #(str id " " %))
@@ -66,7 +67,8 @@
                     cookie       (cookies/create-cookie claims)
                     expires      (ts/rfc822->iso8601 (:expires cookie))
                     claims-roles (:roles claims)
-                    session      (cond-> (assoc session :expiry expires)
+                    session      (cond-> (assoc session :expiry expires
+                                                        :identifier (or identifier matched-user-id))
                                          claims-roles (assoc :roles claims-roles))]
 
                 ;; only validate the client IP address, if the parameter is set
