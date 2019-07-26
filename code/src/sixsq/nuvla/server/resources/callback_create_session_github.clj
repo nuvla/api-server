@@ -32,10 +32,10 @@
         (if-let [user-info (auth-github/get-github-user-info access-token)]
           (do
             (log/debug "github user info for" instance ":" user-info)
-            (let [external-login (:login user-info)
-                  matched-user   (uiu/user-identifier->user-id :github instance external-login)]
-              (if matched-user
-                (let [claims          (cond-> (password/create-claims {:id matched-user})
+            (let [external-login  (:login user-info)
+                  matched-user-id (uiu/user-identifier->user-id :github instance external-login)]
+              (if matched-user-id
+                (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
                                               session-id (update :roles #(str session-id " " %))
                                               server (assoc :server server)
@@ -44,7 +44,7 @@
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
                       updated-session (cond-> (assoc current-session
-                                                :identifier matched-user
+                                                :identifier matched-user-id
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]

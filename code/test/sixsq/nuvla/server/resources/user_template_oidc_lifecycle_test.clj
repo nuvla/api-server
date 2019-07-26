@@ -17,21 +17,37 @@
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user-template-oidc :as oidc]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]))
+
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context user/resource-type))
+
 
 (def configuration-base-uri (str p/service-context configuration/resource-type))
 
+
 (def user-template-base-uri (str p/service-context ut/resource-type))
 
+
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
+
+
+(defn get-user
+  [user-id]
+  (try
+    (when user-id
+      (crud/retrieve-by-id-as-admin user-id))
+    (catch Exception _ nil)))
+
 
 ;; callback state reset between tests
 (defn reset-callback! [callback-id]
   (cbu/update-callback-state! "WAITING" callback-id))
+
 
 (def auth-pubkey
   (str
@@ -42,6 +58,7 @@
     "uP73cumiWDqkmJBhKa1PYN7vixkud1Gb1UhJ77N+W32VdOOXbiS4cophQkfdNhjk"
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
+
 
 (def configuration-user-oidc {:template {:service       "session-oidc" ;;reusing configuration from session
                                          :instance      oidc/registration-method
@@ -292,9 +309,11 @@
                                       :body
                                       :state)))
 
+                  (is (nil? (uiu/user-identifier->user-id :oidc oidc/registration-method username)))
+
                   ;; try creating the user via callback, should succeed
                   (reset-callback! cb-id)
-                  (is (false? (auth-user/user-exists? username)))
+
                   (-> session-anon
                       (request (str val-url "?code=GOOD")
                                :request-method :get)
@@ -309,10 +328,9 @@
                                          :state)))
 
 
-                  (let [instance    oidc/registration-method
-                        user-id     (uiu/user-identifier->user-id :oidc nil username)
-                        name-value  (uiu/generate-identifier :oidc username)
-                        user-record (auth-user/get-user user-id)]
+                  (let [user-id     (uiu/user-identifier->user-id :oidc oidc/registration-method username)
+                        name-value  (uiu/generate-identifier :oidc oidc/registration-method username)
+                        user-record (get-user user-id)]
 
                     (is (not (nil? user-id)))
 

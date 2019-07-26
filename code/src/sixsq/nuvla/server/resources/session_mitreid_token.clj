@@ -57,11 +57,11 @@
                             (oidc-utils/extract-entitlements claims))]
           (log/debug "MITREid token authentication claims for" instance ":" (pr-str claims))
           (if sub
-            (if-let [matched-user (uiu/user-identifier->user-id :mitreid instance sub)]
-              (let [session-info {:href href, :username matched-user, :redirect-url redirect-url}
+            (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
+              (let [session-info {:href href, :username matched-user-id, :redirect-url redirect-url}
                     ;; fake session values, will be replaced after callback execution
                     {:keys [id client-ip] :as session} (sutils/create-session "username" "user-id" session-info headers authn-method)
-                    claims       (cond-> (password/create-claims {:id matched-user})
+                    claims       (cond-> (password/create-claims {:id matched-user-id})
                                          id (assoc :session id)
                                          id (update :roles #(str id " " %))
                                          roles (update :roles #(str % " " (str/join " " roles))))

@@ -2,39 +2,8 @@
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.user :as user]))
-
-
-;; Only ACTIVE users can log in.  All other states (NEW, SUSPENDED) are disallowed.
-(def ^:private active-user-filter "(state='ACTIVE')")
-
-
-(defn get-user
-  [username]
-  (try
-    (db/retrieve (str user/resource-type "/" username) {})
-    (catch Exception _ {})))
-
-
-(defn get-active-user-by-name
-  [username]
-  (when username
-    (let [filter-str (format "username='%s' and %s" username active-user-filter)
-          filter     {:filter (parser/parse-cimi-filter filter-str)}]
-      (try (-> (crud/query-as-admin :user {:cimi-params filter})
-               second
-               first)
-           (catch Exception _ {})))))
-
-
-(defn user-exists?
-  "Verifies that a user with the given username exists in the database no
-   matter what the user state is."
-  [username]
-  (-> username get-user :state nil? not))
 
 
 (defn create-user!

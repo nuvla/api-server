@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
-    [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
     [sixsq.nuvla.auth.utils.user :as auth-user]
     [sixsq.nuvla.server.app.params :as p]
@@ -16,7 +15,8 @@
     [sixsq.nuvla.server.resources.user-template-github :as github]
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -32,6 +32,14 @@
 
 
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
+
+
+(defn get-user
+  [user-id]
+  (try
+    (when user-id
+      (crud/retrieve-by-id-as-admin user-id))
+    (catch Exception _ nil)))
 
 
 ;; callback state reset between tests
@@ -132,13 +140,6 @@
                                         :body (json/write-str href-create))
                                (ltu/body->edn)
                                (ltu/is-status 303))
-
-              redirect-url (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create))
-                               (ltu/body->edn)
-                               (ltu/location))
 
               uri          (-> resp ltu/location)
 
@@ -243,7 +244,7 @@
                       (ltu/message-matches #".*unable to retrieve GitHub access code.*")
                       (ltu/is-status status))
 
-                  (is (false? (auth-user/user-exists? github-login)))
+                  (is (nil? (uiu/user-identifier->user-id :github "github" github-login)))
 
                   (reset-callback! callback)
                   (-> session-anon
@@ -261,9 +262,9 @@
                       (ltu/body->edn)
                       (ltu/is-status create-status))
 
-                  (let [user-id     (uiu/user-identifier->user-id :github nil github-login)
-                        name-value  (uiu/generate-identifier :github github-login)
-                        user-record (auth-user/get-user user-id)]
+                  (let [user-id     (uiu/user-identifier->user-id :github "github" github-login)
+                        name-value  (uiu/generate-identifier :github "github" github-login)
+                        user-record (get-user user-id)]
 
                     (is (not (nil? user-id)))
 

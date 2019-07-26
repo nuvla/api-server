@@ -17,21 +17,36 @@
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user-template-mitreid :as mitreid]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]))
+
 
 (use-fixtures :each ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context user/resource-type))
+
 
 (def configuration-base-uri (str p/service-context configuration/resource-type))
 
+
 (def user-template-base-uri (str p/service-context ut/resource-type))
 
+
 (def ^:const callback-pattern #".*/api/callback/.*/execute")
+
+(defn get-user
+  [user-id]
+  (try
+    (when user-id
+      (crud/retrieve-by-id-as-admin user-id))
+    (catch Exception _ nil)))
+
 
 ;; callback state reset between tests
 (defn reset-callback! [callback-id]
   (cbu/update-callback-state! "WAITING" callback-id))
+
 
 (def auth-pubkey
   (str
@@ -42,6 +57,7 @@
     "uP73cumiWDqkmJBhKa1PYN7vixkud1Gb1UhJ77N+W32VdOOXbiS4cophQkfdNhjk"
     "jVunw8YkO7dsBhVP/8bqLDLw/8NsSAKwlzsoNKbrjVQ/NmHMJ88QkiKwv+E6lidy"
     "3wIDAQAB"))
+
 
 (def configuration-user-mitreid {:template {:service          "session-mitreid" ;;reusing configuration from session MITREid
                                             :instance         mitreid/registration-method
@@ -298,9 +314,11 @@
                                       :body
                                       :state)))
 
+                  (is (nil? (uiu/user-identifier->user-id :mitreid mitreid/registration-method user-number)))
+
                   ;; try creating the user via callback, should succeed
                   (reset-callback! cb-id)
-                  (is (false? (user-utils/user-exists? username)))
+
                   (-> session-anon
                       (request (str val-url "?code=GOOD")
                                :request-method :get)
@@ -315,10 +333,9 @@
                                          :state)))
 
 
-                  (let [instance    mitreid/registration-method
-                        user-id     (uiu/user-identifier->user-id :mitreid instance user-number)
-                        name-value  (uiu/generate-identifier :mitreid user-number)
-                        user-record (user-utils/get-user user-id)]
+                  (let [user-id     (uiu/user-identifier->user-id :mitreid mitreid/registration-method user-number)
+                        name-value  (uiu/generate-identifier :mitreid mitreid/registration-method user-number)
+                        user-record (get-user user-id)]
 
                     (is (not (nil? user-id)))
 

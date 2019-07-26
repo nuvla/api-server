@@ -6,7 +6,7 @@
 
 (defn create-user!
   [authn-method {:keys [external-id external-email instance]}]
-  (let [user-identifier (uiu/generate-identifier authn-method external-id instance)]
+  (let [user-identifier (uiu/generate-identifier authn-method instance external-id)]
     (when-not (uiu/user-identifier-exists? user-identifier)
       (auth-user/create-user! {:user-identifier user-identifier
                                :email           external-email

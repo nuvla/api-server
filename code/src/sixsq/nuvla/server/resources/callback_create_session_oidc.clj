@@ -39,8 +39,8 @@
                               (oidc-utils/extract-entitlements claims))]
             (log/debug "OIDC access token claims for" instance ":" (pr-str claims))
             (if sub
-              (if-let [matched-user (uiu/user-identifier->user-id :oidc instance sub)]
-                (let [claims          (cond-> (password/create-claims {:id matched-user})
+              (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
+                (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
                                               session-id (update :roles #(str session-id " " %))
                                               roles (update :roles #(str % " " (str/join " " roles)))
@@ -50,7 +50,7 @@
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
                       updated-session (cond-> (assoc current-session
-                                                :identifier matched-user
+                                                :identifier matched-user-id
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
