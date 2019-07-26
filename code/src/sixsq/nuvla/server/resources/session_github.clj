@@ -44,15 +44,14 @@
   [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
   (let [[client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if (and client-id client-secret)
-      (let [session-init (cond-> {:href href}
-                                 redirect-url (assoc :redirect-url redirect-url))
-            ;; fake session values, will be replaced after callback execution
-            session      (sutils/create-session "username" "user-id" session-init headers authn-method)
+      ;; fake session values will be replaced after callback execution
+      (let [session      (sutils/create-session nil "user-id" {:href href} headers authn-method redirect-url)
             session      (assoc session :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout)))
             callback-url (sutils/create-callback base-uri (:id session) cb/action-name)
             redirect-url (format gu/github-oath-endpoint client-id callback-url)]
         [{:status 303, :headers {"Location" redirect-url}} session])
       (gu/throw-bad-client-config authn-method redirect-url))))
+
 
 ;;
 ;; initialization: no schema for this parent resource

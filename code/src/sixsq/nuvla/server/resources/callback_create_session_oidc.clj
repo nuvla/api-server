@@ -27,7 +27,7 @@
 (defn validate-session
   [{{session-id :href} :target-resource callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
 
-  (let [{:keys [server client-ip redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url]} (oidc-utils/config-oidc-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -43,9 +43,7 @@
                 (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
                                               session-id (update :roles #(str session-id " " %))
-                                              roles (update :roles #(str % " " (str/join " " roles)))
-                                              server (assoc :server server)
-                                              client-ip (assoc :client-ip client-ip))
+                                              roles (update :roles #(str % " " (str/join " " roles))))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)

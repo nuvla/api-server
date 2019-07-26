@@ -7,8 +7,8 @@
 
 
 (defn create-user!
-  "Create a new user in the database. Values for 'email' and 'authn-login'
-   must be provided. The value used to create the account is returned."
+  "Create a new user in the database. Values for 'email' and 'user-identifier'
+   must be provided. The id of the created user resource is returned."
   ([{:keys [user-identifier email authn-method] :as user-record}]
    (let [request {:params      {:resource-name user/resource-type}
                   :body        {:template (cond-> {:href "user-template/minimum"}
@@ -18,8 +18,10 @@
                   :nuvla/authn auth/internal-identity}
          {{:keys [status resource-id] :as body} :body} (crud/add request)]
 
-     (if (not= 201 status)
-       (throw (ex-info (str "cannot create user for " user-identifier) user-record))
+     (if (= 201 status)
        (do
          (log/errorf "created %s" resource-id)
-         resource-id)))))
+         resource-id)
+       (let [msg (str "cannot create user for " user-identifier)]
+         (log/errorf msg)
+         (throw (ex-info msg user-record)))))))

@@ -24,7 +24,7 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server client-ip redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -37,14 +37,12 @@
               (if matched-user-id
                 (let [claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
-                                              session-id (update :roles #(str session-id " " %))
-                                              server (assoc :server server)
-                                              client-ip (assoc :client-ip client-ip))
+                                              session-id (update :roles #(str session-id " " %)))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims-roles    (:roles claims)
                       updated-session (cond-> (assoc current-session
-                                                :identifier matched-user-id
+                                                :user matched-user-id
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
