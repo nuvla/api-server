@@ -15,7 +15,7 @@
 
 
 (def ^{:doc "Transducer that creates a sequence of five 6-character strings."}
-secret-xform
+  secret-xform
   (comp (take 30)
         (partition-all 6)
         (map (partial str/join ""))))

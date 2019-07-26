@@ -3,11 +3,8 @@
     [clj-http.client :as http]
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (defn prefix

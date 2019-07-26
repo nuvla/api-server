@@ -15,6 +15,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -23,7 +24,7 @@
 
 (defn validate-session
   [request session-id]
-  (let [{:keys [server clientIP redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -31,18 +32,20 @@
         (if-let [user-info (auth-github/get-github-user-info access-token)]
           (do
             (log/debug "github user info for" instance ":" user-info)
-            (let [external-login (:login user-info)
-                  matched-user   (ex/match-existing-external-user :github external-login nil)]
-              (if matched-user
-                (let [claims          (cond-> (password/create-claims {:id matched-user})
+            (let [external-login  (:login user-info)
+                  matched-user-id (uiu/user-identifier->user-id :github instance external-login)]
+              (if matched-user-id
+                (let [{identifier :name} (ex/get-user matched-user-id)
+                      claims          (cond-> (password/create-claims {:id matched-user-id})
                                               session-id (assoc :session session-id)
-                                              session-id (update :roles #(str session-id " " %))
-                                              server (assoc :server server)
-                                              clientIP (assoc :clientIP clientIP))
+                                              session-id (update :claims #(str session-id " " %)))
                       cookie          (cookies/create-cookie claims)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:roles claims)
-                      updated-session (cond-> (assoc current-session :username matched-user :expiry expires)
+                      claims-roles    (:claims claims)
+                      updated-session (cond-> (assoc current-session
+                                                :user matched-user-id
+                                                :identifier (or identifier matched-user-id)
+                                                :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
                   (log/debug "github cookie token claims for" instance ":" claims)

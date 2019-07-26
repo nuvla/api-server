@@ -140,6 +140,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   [resource]
   (create-validate-subtype resource))
 
+
 ;;
 ;; multimethod for ACLs
 ;;
@@ -174,11 +175,13 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (when (a/can-delete? resource request)
       [(u/operation-map id :delete)])))
 
+
 ;; Sets the operations for the given resources.  This is a
 ;; multi-method because different types of session resources
 ;; may require different operations, for example, a 'validation'
 ;; callback.
 (defmulti set-session-operations dispatch-conversion)
+
 
 ;; Default implementation adds the standard session operations
 ;; by ALWAYS replacing the :operations value.  If there are no
@@ -188,6 +191,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (let [ops (standard-session-operations resource request)]
     (cond-> (dissoc resource :operations)
             (seq ops) (assoc :operations ops))))
+
 
 ;; Just triggers the Session-level multimethod for adding operations
 ;; to the Session resource.
@@ -207,6 +211,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmulti tpl->session dispatch-conversion)
 
+
 ;; All concrete session types MUST provide an implementation of this
 ;; multimethod. The default implementation will throw an 'internal
 ;; server error' exception.
@@ -215,6 +220,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod tpl->session :default
   [resource request]
   [{:status 500, :message "invalid session resource implementation"} nil])
+
 
 ;;
 ;; CRUD operations
@@ -295,6 +301,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-type)))
 
+
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
@@ -305,6 +312,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 ;;
 
 (defmulti validate-callback dispatch-conversion)
+
 
 (defmethod validate-callback :default
   [resource request]
@@ -324,6 +332,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type nil))

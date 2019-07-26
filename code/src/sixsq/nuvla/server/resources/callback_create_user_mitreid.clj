@@ -30,7 +30,8 @@
               (let [{:keys [emails] :as userinfo} (oidc-utils/get-mitreid-userinfo user-profile-url access-token)
                     email (->> emails (filter :primary) first :value)]
                 (if email
-                  (or (ex/create-user! :mitreid {:external-login sub
+                  (or (ex/create-user! :mitreid {:instance       instance
+                                                 :external-id    sub
                                                  :external-email email})
                       (oidc-utils/throw-user-exists sub redirect-url))
                   (oidc-utils/throw-no-email redirect-url)))
@@ -45,12 +46,12 @@
   [{callback-id :id {:keys [redirect-url]} :data :as callback-resource} request]
   (log/debug "Executing callback" callback-id)
   (try
-    (if-let [username (register-user callback-resource request)]
+    (if-let [user-id (register-user callback-resource request)]
       (do
         (utils/callback-succeeded! callback-id)
         (if redirect-url
-          (r/map-response (format "user '%s' created" username) 303 callback-id redirect-url)
-          (r/map-response (format "user '%s' created" username) 201)))
+          (r/map-response (format "'%s' created" user-id) 303 callback-id redirect-url)
+          (r/map-response (format "'%s' created" user-id) 201)))
       (do
         (utils/callback-failed! callback-id)
         (r/map-response "could not create MITREid user" 400)))

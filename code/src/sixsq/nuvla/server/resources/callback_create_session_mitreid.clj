@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
+    [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -25,7 +26,7 @@
 (defn validate-session
   [{{session-id :href} :target-resource callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
 
-  (let [{:keys [server client-ip redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -37,17 +38,19 @@
                               (oidc-utils/extract-entitlements claims))]
             (log/debug "MITREid access token claims for" instance ":" (pr-str claims))
             (if sub
-              (if-let [matched-user (ex/match-oidc-username :mitreid sub instance)]
-                (let [claims (cond-> (password/create-claims {:id matched-user})
-                                     session-id (assoc :session session-id)
-                                     session-id (update :roles #(str session-id " " %))
-                                     roles (update :roles #(str % " " (str/join " " roles)))
-                                     server (assoc :server server)
-                                     client-ip (assoc :client-ip client-ip))
-                      cookie (cookies/create-cookie claims)
-                      expires (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles (:roles claims)
-                      updated-session (cond-> (assoc current-session :username matched-user :expiry expires)
+              (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
+                (let [{identifier :name} (ex/get-user matched-user-id)
+                      claims          (cond-> (password/create-claims {:id matched-user-id})
+                                              session-id (assoc :session session-id)
+                                              session-id (update :claims #(str session-id " " %))
+                                              roles (update :claims #(str % " " (str/join " " roles))))
+                      cookie          (cookies/create-cookie claims)
+                      expires         (ts/rfc822->iso8601 (:expires cookie))
+                      claims-roles    (:claims claims)
+                      updated-session (cond-> (assoc current-session
+                                                :user matched-user-id
+                                                :identifier (or identifier matched-user-id)
+                                                :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
                   (log/debug "MITREid cookie token claims for" instance ":" (pr-str claims))

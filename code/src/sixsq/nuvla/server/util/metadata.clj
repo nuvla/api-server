@@ -168,7 +168,7 @@
            doc           (get-doc (or child-ns parent-ns))
            type-uri      (cond-> (ns->type-uri (or child-ns parent-ns))
                                  suffix (str "-" suffix))
-           
+
            common        {:id            "resource-metadata/dummy-id"
                           :created       "1964-08-25T10:00:00.00Z"
                           :updated       "1964-08-25T10:00:00.00Z"

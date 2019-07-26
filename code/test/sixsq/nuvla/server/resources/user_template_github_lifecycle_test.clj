@@ -5,10 +5,10 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
-    [sixsq.nuvla.auth.utils.user :as auth-user]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
@@ -126,32 +126,25 @@
 
         (is (= cfg-href (str "configuration/session-github-" github/registration-method)))
 
-        (let [resp         (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create))
-                               (ltu/body->edn)
-                               (ltu/is-status 303))
+        (let [resp (-> session-anon
+                       (request base-uri
+                                :request-method :post
+                                :body (json/write-str href-create))
+                       (ltu/body->edn)
+                       (ltu/is-status 303))
 
-              redirect-url (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create))
-                               (ltu/body->edn)
-                               (ltu/location))
+              uri  (-> resp ltu/location)
 
-              uri          (-> resp ltu/location)
-
-              resp         (-> session-anon
-                               (request base-uri
-                                        :request-method :post
-                                        :body (json/write-str href-create-redirect))
-                               (ltu/body->edn)
-                               (ltu/is-status 303))
-              uri2         (-> resp ltu/location)
+              resp (-> session-anon
+                       (request base-uri
+                                :request-method :post
+                                :body (json/write-str href-create-redirect))
+                       (ltu/body->edn)
+                       (ltu/is-status 303))
+              uri2 (-> resp ltu/location)
 
 
-              uris         [uri uri2]]
+              uris [uri uri2]]
 
           ;; redirect URLs in location header should contain the client ID and resource id
           (doseq [u uris]
@@ -234,10 +227,7 @@
                                                                       nil))
                               auth-github/get-github-user-info    (fn [access-code]
                                                                     (when (= access-code "GOOD_ACCESS_CODE")
-                                                                      {:login github-login, :email email}))
-
-                              ex/match-existing-external-user     (fn [authn-method external-login instance]
-                                                                    "MATCHED_USER")]
+                                                                      {:login github-login, :email email}))]
 
                   (-> session-anon
                       (request (str url "?code=NONE")
@@ -246,7 +236,7 @@
                       (ltu/message-matches #".*unable to retrieve GitHub access code.*")
                       (ltu/is-status status))
 
-                  (is (false? (auth-user/user-exists? github-login)))
+                  (is (nil? (uiu/user-identifier->user-id :github "github" github-login)))
 
                   (reset-callback! callback)
                   (-> session-anon
@@ -264,9 +254,9 @@
                       (ltu/body->edn)
                       (ltu/is-status create-status))
 
-                  (let [user-id     (uiu/user-identifier->user-id :github nil github-login)
-                        name-value  (uiu/generate-identifier :github github-login)
-                        user-record (auth-user/get-user user-id)]
+                  (let [user-id     (uiu/user-identifier->user-id :github "github" github-login)
+                        name-value  (uiu/generate-identifier :github "github" github-login)
+                        user-record (ex/get-user user-id)]
 
                     (is (not (nil? user-id)))
 

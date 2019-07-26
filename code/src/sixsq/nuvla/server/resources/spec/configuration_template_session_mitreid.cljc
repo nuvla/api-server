@@ -63,7 +63,7 @@
 
 
 (s/def ::public-key
-  (-> (st/spec ::cimi-core/nonblank-string) ;; allows jwk JSON representation
+  (-> (st/spec ::cimi-core/nonblank-string)                 ;; allows jwk JSON representation
       (assoc :name "public-key"
              :json-schema/displayName "public key"
              :json-schema/description "public key of the server in PEM or JWK JSON format"
@@ -74,7 +74,7 @@
 
 
 (def configuration-template-keys-spec-req
-  {:req-un [::ps/instance ::client-id  ::client-secret ::public-key ::authorize-url ::token-url ::user-profile-url]})
+  {:req-un [::ps/instance ::client-id ::client-secret ::public-key ::authorize-url ::token-url ::user-profile-url]})
 
 (def configuration-template-keys-spec-create
   {:req-un [::ps/instance ::client-id ::client-secret ::public-key ::authorize-url ::token-url ::user-profile-url]})

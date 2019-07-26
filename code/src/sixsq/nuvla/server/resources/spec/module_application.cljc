@@ -32,8 +32,8 @@
 
 (s/def ::file
   (-> (st/spec (su/only-keys :req-un [::file-name ::file-content]))
-                  (assoc :name "file"
-                         :json-schema/type "map")))
+      (assoc :name "file"
+             :json-schema/type "map")))
 
 
 (s/def ::files
