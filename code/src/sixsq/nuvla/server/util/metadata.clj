@@ -89,13 +89,6 @@
   (-> resource-ns meta :doc))
 
 
-(defn get-resource-type
-  [ns]
-  (some-> ns
-          (ns-resolve 'resource-type)
-          deref))
-
-
 (defn get-actions
   [resource-ns]
   (some-> resource-ns
@@ -108,20 +101,6 @@
   (some-> resource-ns
           (ns-resolve 'capabilities)
           deref))
-
-
-(defn get-spec-kw
-  [resource-url]
-  (when resource-url
-    (keyword (str "sixsq.nuvla.server.resources.spec." resource-url) resource-url)))
-
-
-(defn get-spec
-  [parent-ns resource-ns]
-  (some-> (or parent-ns resource-ns)
-          (ns-resolve 'resource-url)
-          deref
-          get-spec-kw))
 
 
 (defn as-namespace
@@ -143,14 +122,6 @@
   (-> ns as-namespace str (str/split #"\.") last))
 
 
-(defn ns->resource-metadata-id
-  "Returns the resource id for the metadata associated with the given
-   namespace."
-  [ns]
-  (when ns
-    (str "resource-metadata/" (ns->type-uri ns))))
-
-
 (defn generate-metadata
   "Generate the resource-metadata from the provided namespace"
   ([parent-ns spec]
@@ -161,8 +132,7 @@
    (if-let [parent-ns (as-namespace parent-ns)]
      (let [child-ns      (as-namespace child-ns)
 
-           resource-name (cond-> (get-resource-type parent-ns)
-                                 child-ns (str " \u2014 " (get-resource-type child-ns))
+           resource-name (cond-> (ns->type-uri (or child-ns parent-ns))
                                  suffix (str " \u2014 " suffix))
 
            doc           (get-doc (or child-ns parent-ns))

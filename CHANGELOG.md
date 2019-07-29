@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+  - Add metadata for data-record-key and 
+    data-record-key-prefix resources
+
 ### Changed 
 
+  - Use the id of the metadata resources also for the name
+    (with an optional suffix for 'create' templates)
   - External authentication resources (GitHub, OIDC, MITREid) 
     have been validated server-side. 
 
