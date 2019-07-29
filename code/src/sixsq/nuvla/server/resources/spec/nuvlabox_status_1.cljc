@@ -3,7 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.resources.spec.nb-status-0 :as nb-status-0]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-status-0 :as nb-status-0]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
