@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.1] - 2019-07-29
+
 ### Added
 
   - Add metadata for data-record-key and 
