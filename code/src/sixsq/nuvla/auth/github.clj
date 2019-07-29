@@ -26,7 +26,7 @@
   [access-token]
   (let [user-emails-response (http/get "https://api.github.com/user/emails"
                                        {:headers {"Authorization" (str "token " access-token)}})
-        user-emails (-> user-emails-response :body (json/read-str :key-fn keyword))]
+        user-emails          (-> user-emails-response :body (json/read-str :key-fn keyword))]
     (primary-or-verified user-emails)))
 
 

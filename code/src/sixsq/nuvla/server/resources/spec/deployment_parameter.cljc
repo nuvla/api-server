@@ -21,12 +21,12 @@
 
 
 (s/def ::name (-> (st/spec ::core/token)
-                    (assoc :name "name"
-                           :json-schema/description "name of the deployment parameter"
+                  (assoc :name "name"
+                         :json-schema/description "name of the deployment parameter"
 
-                           :json-schema/section "meta"
-                           :json-schema/editable false
-                           :json-schema/order 7)))
+                         :json-schema/section "meta"
+                         :json-schema/editable false
+                         :json-schema/order 7)))
 
 
 (s/def ::node-id

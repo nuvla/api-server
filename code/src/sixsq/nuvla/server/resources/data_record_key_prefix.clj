@@ -1,9 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-record-key-prefix
   "
 Every attribute in a `data-record` resource must be prefixed to avoid
-collisions. The `data-record-key-prefix` resources maintain the mapping between a
-prefix and the associated, complete URI. The parameters are described in the
-table below.
+collisions. The `data-record-key-prefix` resources maintain the mapping between
+a prefix and the associated, complete URI.
 
 A `data-record` resource cannot be uploaded to the server unless all of the
 prefixes within the document have been defined.
@@ -12,11 +11,6 @@ Currently, only an administrator can create, update, or delete
 `data-record-key-prefix` resources. These actions follow the standard API
 patterns. Most users will only search these resources and look at the details
 for a particular `data-record-key-prefix` resource.
-
-Parameter | Required  | Description
---------- | --------  | -----------
-prefix | true | namespace prefix
-uri | true | full URI associated with the prefix
 "
   (:require
     [sixsq.nuvla.auth.utils :as auth]
@@ -24,7 +18,9 @@ uri | true | full URI associated with the prefix
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -131,4 +127,5 @@ uri | true | full URI associated with the prefix
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::key-prefix/schema))
+  (std-crud/initialize resource-type ::key-prefix/schema)
+  (md/register (gen-md/generate-metadata ::ns ::key-prefix/schema)))

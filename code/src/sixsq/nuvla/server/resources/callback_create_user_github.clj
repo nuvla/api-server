@@ -27,7 +27,8 @@
             (let [github-login (:login user-info)
                   github-email (auth-github/retrieve-email user-info access-token)]
               (if github-login
-                (or (ex/create-user! :github {:external-login github-login
+                (or (ex/create-user! :github {:instance       instance
+                                              :external-id    github-login
                                               :external-email github-email})
                     (gu/throw-user-exists github-login redirect-url))
                 (gu/throw-no-matched-user redirect-url))))
@@ -40,8 +41,8 @@
   [{callback-id :id {:keys [redirect-url]} :data :as callback-resource} request]
   (log/debug "Executing callback" callback-id)
   (try
-    (if-let [username (register-user callback-resource request)]
-      (let [msg (format "user '%s' created" username)]
+    (if-let [user-id (register-user callback-resource request)]
+      (let [msg (format "'%s' created" user-id)]
         (utils/callback-succeeded! callback-id)
         (if redirect-url
           (r/map-response msg 303 callback-id redirect-url)

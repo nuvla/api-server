@@ -5,9 +5,9 @@
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as key-prefix]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -34,6 +34,10 @@
 (def another-valid-namespace
   {:prefix "schema-com"
    :uri    "https://schema-com/z"})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists key-prefix/resource-type))
 
 
 (deftest lifecycle

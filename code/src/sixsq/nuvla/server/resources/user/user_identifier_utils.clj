@@ -1,32 +1,16 @@
 (ns sixsq.nuvla.server.resources.user.user-identifier-utils
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (defn generate-identifier
-  ([authn-method external-login]
-   (generate-identifier authn-method external-login nil))
-  ([authn-method external-login instance]
-   (str (or instance (name authn-method)) ":" external-login)))
-
-
-(defn add-user-identifier!
-  [username authn-method external-login instance]
-  (let [user-id    (str "user/" username)
-        identifier (generate-identifier authn-method external-login instance)]
-    (log/debugf "Creating a user-identifier resource for user %s with identifier %s" username identifier)
-    (crud/add
-      {:nuvla/authn  auth/internal-identity
-       :params       {:resource-name user-identifier/resource-type}
-       :route-params {:resource-name user-identifier/resource-type}
-       :body         {:identifier identifier
-                      :user       {:href user-id}}})))
+  "Creates the identifier for a user-identifier resource of the form
+   authn-method-instance:external-identifier. The instance may be nil."
+  [authn-method instance external-identifier]
+  (let [instance-string (if instance (str "-" instance) "")]
+    (str (name authn-method) instance-string ":" external-identifier)))
 
 
 (defn find-user-identifier
@@ -41,28 +25,20 @@
      (catch Exception _
        nil)))
 
-  ([authn-method external-login & [instance]]
-   (find-user-identifier (generate-identifier authn-method external-login instance))))
+  ([authn-method instance external-identifier]
+   (find-user-identifier (generate-identifier authn-method instance external-identifier))))
 
 
 (defn user-identifier-exists?
-  ([identifier]
-   (->> identifier
-        find-user-identifier
-        boolean))
-  ([authn-method external-login & [instance]]
-   (user-identifier-exists? (generate-identifier authn-method external-login instance))))
-
-
-(defn create-cimi-filter
-  [filter]
-  {:filter (parser/parse-cimi-filter filter)})
+  "Returns true if a user-identifier resource with the given identifier
+   exists. Returns false otherwise. Never throws an exception."
+  [identifier]
+  (->> identifier find-user-identifier boolean))
 
 
 (defn user-identifier->user-id
-  [authn-method instance external-login]
-  (some-> (find-user-identifier authn-method external-login instance)
-          :parent
-          (str/split #"/" 2)
-          second))
-
+  "Extracts the full user id (i.e. with 'user/' prefix) for the external
+   identifier created from the arguments. Returns nil if the identifier doesn't
+   exist. Never throws an exception."
+  [authn-method instance external-identifier]
+  (:parent (find-user-identifier authn-method instance external-identifier)))
