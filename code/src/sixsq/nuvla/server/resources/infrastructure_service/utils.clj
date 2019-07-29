@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service.utils
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.utils :as a]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -9,6 +10,7 @@
     [sixsq.nuvla.server.util.response :as r]))
 
 
+;; FIXME: Update to current ACL syntax.
 (def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
@@ -16,9 +18,10 @@
   [{:keys [id state] :as resource}]
   (if (#{"CREATED" "STOPPED"} state)
     resource
-    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 412 id ))))
+    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 412 id))))
 
 
+;; FIXME: Update to current ACL syntax.
 (defn queue-mgt-job
   "Creates and queues the named service management job for the given service
    id and user. Returns the `:body` of the job creation response."
@@ -49,7 +52,7 @@
       (if (= 201 status)
         (let [job-msg (format "created job %s with id %s" job-name resource-id)]
           (update-job-state service-id new-state)
-          (event-utils/create-event service-id job-msg (a/default-acl (a/current-authentication request)))
+          (event-utils/create-event service-id job-msg (acl-resource/default-acl (a/current-authentication request)))
           (r/map-response job-msg 202 service-id resource-id))
         (throw (r/ex-response (format "unable to create job %s" job-name) 500 service-id))))
     (catch Exception e
