@@ -10,14 +10,11 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def timestamp "1964-08-25T10:00:00.0Z")
+(def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (def common {:id            (str t/resource-type "/abcdef")
@@ -27,11 +24,10 @@
              :acl           valid-acl})
 
 
-(def valid-contents {:typeURI      "https://sixsq.com/slipstream/SomeResource"
+(def valid-contents {:type-uri     "https://sixsq.com/slipstream/SomeResource"
                      :actions      [action/valid]
-                     :attributes   [attribute/valid]
-                     :capabilities [capability/valid]
-                     :vscope       vscope/valid})
+                     :attributes   attribute/valid-attributes
+                     :capabilities [capability/valid]})
 
 
 (def valid (merge common valid-contents))
@@ -41,7 +37,7 @@
 
   (stu/is-valid ::spec/resource-metadata valid)
 
-  (doseq [attr #{:id :resource-type :created :updated :acl :typeURI}]
+  (doseq [attr #{:id :resource-type :created :updated :acl :type-uri}]
     (stu/is-invalid ::spec/resource-metadata (dissoc valid attr)))
 
   (doseq [attr #{:actions :attributes :capabilities :vscope}]

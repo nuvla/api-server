@@ -1,17 +1,17 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service
   "
 This resource represents an infrastructure service with an endpoint. Instances
-of a infrastructure-service resource must reference a
-infrastructure-service-group resource via the `parent` attribute. Associated
+of a `infrastructure-service` resource must reference an
+`infrastructure-service-group` resource via the `parent` attribute. Associated
 credentials should make an explicit reference to the relevant
-infrastructure-service resources.
+`infrastructure-service` resources.
 
 This is a templated resource. All creation requests must be done via an
-existing infrastructure-service-template resource.
+existing `infrastructure-service-template` resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
-    [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -19,7 +19,8 @@ existing infrastructure-service-template resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.db.impl :as db]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -31,20 +32,20 @@ existing infrastructure-service-template resource.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -86,7 +87,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (a/add-acl resource request))
 
 
 ;;
@@ -154,19 +155,19 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [idmap {:identity (:identity request)}
-        body (:body request)
-        desc-attrs (u/select-desc-keys body)
+  (let [authn-info         (auth/current-authentication request)
+        body               (:body request)
+        desc-attrs         (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
-                               (std-crud/resolve-hrefs idmap true)
+                               (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)
-        service (tpl->service validated-template)]
+        service            (tpl->service validated-template)]
     (let [response (add-impl (assoc request :body service))
-          id (-> response :body :resource-id)
-          service (assoc service :id id)]
+          id       (-> response :body :resource-id)
+          service  (assoc service :id id)]
       (post-add-hook service request)
       response)))
 
@@ -193,7 +194,7 @@ existing infrastructure-service-template resource.
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
         infra-service-utils/verify-can-delete
-        (a/can-modify? request)
+        (a/can-delete? request)
         (db/delete request))
     (catch Exception e
       (let [response (ex-data e)

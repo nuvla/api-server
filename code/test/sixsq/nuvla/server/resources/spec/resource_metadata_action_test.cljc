@@ -5,12 +5,17 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid {:name          "my-action"
-            :uri           "http://sixsq.com/slipstream/action/my-action"
-            :description   "some descriptive text"
-            :method        "GET"
-            :inputMessage  "application/json"
-            :outputMessage "text/plain"})
+(def valid {:name             "my-action"
+            :uri              "http://sixsq.com/slipstream/action/my-action"
+            :description      "some descriptive text"
+            :method           "GET"
+            :input-message    "application/json"
+            :output-message   "text/plain"
+            :input-parameters [{:name        "delay"
+                                :value-scope {:minimum 1
+                                              :maximum 200
+                                              :units   "minutes"
+                                              :default 30}}]})
 
 
 (deftest check-action
@@ -19,17 +24,17 @@
 
   (stu/is-valid ::spec/action valid)
 
-  (doseq [k #{:description}]
+  (doseq [k #{:description :input-parameters}]
     (stu/is-valid ::spec/action (dissoc valid k)))
 
-  (doseq [k #{:name :uri :method :inputMessage :outputMessage}]
+  (doseq [k #{:name :uri :method :input-message :output-message}]
     (stu/is-invalid ::spec/action (dissoc valid k)))
 
   (stu/is-invalid ::spec/action (assoc valid :badAttribute 1))
   (stu/is-invalid ::spec/action (assoc valid :name " bad name "))
   (stu/is-invalid ::spec/action (assoc valid :method "INVALID"))
-  (stu/is-invalid ::spec/action (assoc valid :inputMessage "bad-mime-type"))
-  (stu/is-invalid ::spec/action (assoc valid :outputMessage "bad-mime-type"))
+  (stu/is-invalid ::spec/action (assoc valid :input-message "bad-mime-type"))
+  (stu/is-invalid ::spec/action (assoc valid :output-message "bad-mime-type"))
 
   ;; action vector
 

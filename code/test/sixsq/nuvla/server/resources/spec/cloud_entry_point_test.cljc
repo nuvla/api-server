@@ -8,15 +8,15 @@
 
 
 (deftest check-root-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id            resource-type
-              :resource-type p/service-context
-              :created       timestamp
-              :updated       timestamp
-              :acl           resource-acl
-              :base-uri      "http://cloud.example.org/"
-              :collections   {:collection-alpha {:href "resource/alpha"}
-                              :collection-beta  {:href "resource/beta"}}}]
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        root      {:id            resource-type
+                   :resource-type p/service-context
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           resource-acl
+                   :base-uri      "http://cloud.example.org/"
+                   :collections   {:collection-alpha {:href "resource/alpha"}
+                                   :collection-beta  {:href "resource/beta"}}}]
 
     (stu/is-valid ::cep/resource root)
 

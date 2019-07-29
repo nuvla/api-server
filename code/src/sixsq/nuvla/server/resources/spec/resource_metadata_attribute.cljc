@@ -2,44 +2,40 @@
   "schema definitions for the 'attributes' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(s/def ::name ::cimi-core/token)
+(s/def ::name ::core/token)
 
-(s/def ::namespace ::cimi-core/uri)
+(s/def ::type #{"boolean"
+                "date-time" "duration"
+                "long" "integer" "number" "double"
+                "string" "resource-id" "uri"
+                "map" "array" "geo-point"
+                "any"})
 
-(s/def ::uri ::cimi-core/uri)
+;;
+;; information about whether clients can/should specify a key
+;;
 
-(s/def ::type #{"boolean" "dateTime" "duration" "integer" "string" "ref" "double" "URI"
-                "map" "Array" "Any"})
+(s/def ::server-managed boolean?)
 
-(s/def ::providerMandatory boolean?)
+(s/def ::required (s/coll-of string? :min-count 1 :type vector?))
 
-(s/def ::consumerMandatory boolean?)
-
-(s/def ::mutable boolean?)
-
-(s/def ::consumerWritable boolean?)
-
-(s/def ::templateMutable boolean?)
+(s/def ::editable boolean?)
 
 
 ;;
-;; the following attributes are extensions to the standard that are
 ;; useful for rendering forms for browser-based clients
 ;;
 
-(s/def ::displayName ::cimi-core/nonblank-string)
+(s/def ::display-name ::core/nonblank-string)
 
-(s/def ::description ::cimi-core/nonblank-string)
+(s/def ::description ::core/nonblank-string)
 
-(s/def ::help ::cimi-core/nonblank-string)
-
-(s/def ::group #{"metadata" "body" "operations" "acl"})
-
-(s/def ::category ::cimi-core/nonblank-string)
+(s/def ::section #{"meta" "data" "acl"})
 
 (s/def ::order nat-int?)
 
@@ -47,34 +43,54 @@
 
 (s/def ::sensitive boolean?)
 
-(s/def ::lines pos-int?)
+
+;;
+;; these attributes help with the interaction with elasticsearch
+;;
+
+(s/def ::indexed boolean?)
+
+
+(s/def ::fulltext boolean?)
 
 
 ;;
-;; NOTE: The CIMI specification states that the :type attributes will
-;; not be present for standard CIMI attributes.  This implementation
-;; makes :type mandatory for all attribute descriptions.  This makes
-;; life easier for clients.
+;; this definition provides a recursive schema for attributes
+;; which can have a list of attributes as a child-type element
 ;;
+;; this is useful for attributes that are themselves maps or
+;; vectors
+;;
+
+(s/def ::attribute string?)
+
+(s/def ::child-types (-> (st/spec (s/coll-of ::attribute :min-count 1 :type vector?))
+                         (assoc
+                           :json-schema/type "map"
+                           :json-schema/indexed false)))
+
 (s/def ::attribute (su/only-keys :req-un [::name
-                                          ::type
-                                          ::providerMandatory
-                                          ::consumerMandatory
-                                          ::mutable
-                                          ::consumerWritable]
-                                 :opt-un [::namespace
-                                          ::uri
-                                          ::displayName
+                                          ::type]
+                                 :opt-un [::child-types
+
+                                          ::server-managed
+                                          ::required
+                                          ::editable
+
+                                          ::display-name
                                           ::description
-                                          ::help
-                                          ::group
-                                          ::category
+                                          ::section
                                           ::order
                                           ::hidden
                                           ::sensitive
-                                          ::lines
-                                          ::templateMutable]))
+                                          ::indexed
+                                          ::fulltext
 
+                                          ::value-scope/value-scope]))
+
+
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::attributes
-  (st/spec {:spec                (s/coll-of ::attribute :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/coll-of ::attribute :min-count 1 :type vector?))

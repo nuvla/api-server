@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-swarm
+  "
+Information concerning a Docker Swarm cluster and the parameters necessary to
+manage it.
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
@@ -28,7 +32,7 @@
 (defmethod infra-service/tpl->service method
   [{{:keys [href]} :service-credential :as resource}]
   (-> resource
-      (dissoc resource :href :resourceMetadata :endpoint :service-credential)
+      (dissoc resource :href :resource-metadata :endpoint :service-credential)
       (assoc :state "CREATED"
              :management-credential-id href)))
 

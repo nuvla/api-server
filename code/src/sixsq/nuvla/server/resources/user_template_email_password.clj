@@ -21,39 +21,43 @@ optional name can also be provided.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "USER"
-                            :right     "ALL"}
-                           {:principal "ANON"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-anon"]})
 
 ;;
 ;; resource
 ;;
 
 (def ^:const resource
-  {:method           registration-method
-   :instance         registration-method
-   :name             "Registration with Email and Password"
-   :description      "allows user registration with email, password, and optional username"
-   :resourceMetadata (str "resource-metadata/" p/resource-type "-" registration-method)
-   :order            0
-   :icon             "user"
-   :acl              resource-acl})
+  {:method            registration-method
+   :instance          registration-method
+   :name              "Registration with Email and Password"
+   :description       "allows user registration with email, password, and optional username"
+   :group             "Registration with Email/Password"
+   :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
+   :order             0
+   :icon              "user"
+   :acl               resource-acl})
 
 
 ;;
 ;; initialization: register this user template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-email-password/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-email-password/schema))
+
+  (md/register resource-metadata)
+  (md/register resource-metadata-create)
+
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
 

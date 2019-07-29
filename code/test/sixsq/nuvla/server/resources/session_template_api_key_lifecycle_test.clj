@@ -2,7 +2,6 @@
   (:require
     [clojure.test :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
@@ -23,7 +22,8 @@
                      :acl         st/resource-acl})
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str st/resource-type "-" api-key/resource-url)))
+  (mdtu/check-metadata-exists (str st/resource-type "-" api-key/resource-url)
+                              (str st/resource-type "-" api-key/resource-url "-create")))
 
 
 (deftest lifecycle

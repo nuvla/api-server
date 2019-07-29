@@ -1,12 +1,11 @@
 (ns sixsq.nuvla.server.resources.data.utils
   (:require
-    [clj-time.coerce :as tc]
-    [clj-time.core :as t]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as exoscale]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as minio]
-    [sixsq.nuvla.server.util.log :as logu])
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (com.amazonaws AmazonServiceException HttpMethod SdkClientException)
     (com.amazonaws.auth AWSStaticCredentialsProvider BasicAWSCredentials)
@@ -20,19 +19,9 @@
 (def ^:const default-ttl 15)
 
 
-(def request-admin {:identity                      {:current         "internal"
-                                                    :authentications {"internal" {:roles    #{"ADMIN"}
-                                                                                  :identity "internal"}}}
-                    :sixsq.slipstream.authn/claims {:username "internal"
-                                                    :roles    "ADMIN"}
-                    :params                        {:resource-name "user"}
-                    :route-params                  {:resource-name "user"}
-                    :user-roles                    #{"ANON"}})
-
-
 (defn log-aws-exception
   [amazon-exception]
-  (let [status (.getStatusCode amazon-exception)
+  (let [status  (.getStatusCode amazon-exception)
         message (.getMessage amazon-exception)]
     (logu/log-and-throw status message)))
 
@@ -55,7 +44,7 @@
 
 (defn get-s3-client
   [{:keys [key secret endpoint]}]
-  (let [endpoint (AwsClientBuilder$EndpointConfiguration. endpoint "us-east-1")
+  (let [endpoint    (AwsClientBuilder$EndpointConfiguration. endpoint "us-east-1")
         credentials (AWSStaticCredentialsProvider. (BasicAWSCredentials. key secret))]
     (-> (AmazonS3ClientBuilder/standard)
         (.withEndpointConfiguration endpoint)
@@ -66,13 +55,15 @@
 
 (defn generate-url
   [obj-store-conf bucket obj-name verb & [{:keys [ttl content-type]}]]
-  (let [expiration (tc/to-date (-> (or ttl default-ttl) t/minutes t/from-now))
-        method (if (= verb :put)
-                 HttpMethod/PUT
-                 HttpMethod/GET)
-        req (doto (GeneratePresignedUrlRequest. bucket obj-name)
-              (.setMethod method)
-              (.setExpiration expiration))]
+  (let [expiration (-> (or ttl default-ttl)
+                       (time/from-now :minutes)
+                       (time/java-date))
+        method     (if (= verb :put)
+                     HttpMethod/PUT
+                     HttpMethod/GET)
+        req        (doto (GeneratePresignedUrlRequest. bucket obj-name)
+                     (.setMethod method)
+                     (.setExpiration expiration))]
     (cond
       content-type (.setContentType req content-type))
     (str (.generatePresignedUrl (get-s3-client obj-store-conf) req))))
@@ -136,32 +127,23 @@
 
 (defn extract-s3-key-secret
   "Returns a tuple with the key and secret for accessing the S3 service. There
-   are many types of credentials, so the fields are different in each case."
-  [{:keys [type] :as credential}]
+   are many subtypes of credentials, so the fields are different in each case."
+  [{:keys [subtype] :as credential}]
 
-  ;; FIXME: Find a better solution for dispatching on credential type.
+  ;; FIXME: Find a better solution for dispatching on credential subtype.
   (cond
-    (= minio/credential-type type) [(:access-key credential)
-                                    (:secret-key credential)]
-    (= exoscale/credential-type type) [(:exoscale-api-key credential)
-                                       (:exoscale-api-secret-key credential)]
+    (= minio/credential-subtype subtype) [(:access-key credential)
+                                          (:secret-key credential)]
+    (= exoscale/credential-subtype subtype) [(:exoscale-api-key credential)
+                                             (:exoscale-api-secret-key credential)]
     :else nil))
-
-
-(defn is-s3-service?
-  [{:keys [type] :as infrastructure-service}]
-  (= "s3" type))
 
 
 (defn extract-s3-endpoint
   "Returns the endpoint of the S3 service referenced by the credential."
-  [{:keys [infrastructure-services] :as credential}]
-  ;; FIXME: Handle cases where the service doesn't exist.
-  ;; FIXME: Short-circuit the processing to deal with only the first S3 service.
-  (->> infrastructure-services
-       (map crud/retrieve-by-id-as-admin)
-       (filter is-s3-service?)
-       first
+  [{:keys [parent] :as credential}]
+  (->> parent
+       crud/retrieve-by-id-as-admin
        :endpoint))
 
 
@@ -174,12 +156,12 @@
 
 
 (defn credential->s3-client-cfg
-  "Need type to dispatch on when loading credentials."
+  "Need subtype to dispatch on when loading credentials."
   [s3-cred-id]
   (when s3-cred-id
     (let [credential (crud/retrieve-by-id-as-admin s3-cred-id)
           [key secret] (extract-s3-key-secret credential)
-          endpoint (extract-s3-endpoint credential)]
+          endpoint   (extract-s3-endpoint credential)]
       (when (and key secret endpoint)
         {:key      key
          :secret   secret
@@ -233,19 +215,19 @@
      :versionId          (.getVersionId meta)}))
 
 
-(defn add-s3-size
+(defn add-s3-bytes
   "Adds a size attribute to external object if present in metadata
   or returns untouched data object. Ignore any S3 exception "
   [{:keys [credential bucket object] :as resource}]
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
-        size (try
-               (:contentLength (s3-object-metadata s3-client bucket object))
-               (catch Exception _
-                 (log/warn (str "Could not access the metadata for S3 object " object))))]
+        bytes     (try
+                    (:contentLength (s3-object-metadata s3-client bucket object))
+                    (catch Exception _
+                      (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
-            size (assoc :size size))))
+            bytes (assoc :bytes bytes))))
 
 
 (defn add-s3-md5sum
@@ -255,10 +237,10 @@
   (let [s3-client (-> credential
                       (credential->s3-client-cfg)
                       (get-s3-client))
-        md5 (try
-              (:contentMD5 (s3-object-metadata s3-client bucket object))
-              (catch Exception _
-                (log/warn (str "Could not access the metadata for S3 object " object))))]
+        md5       (try
+                    (:contentMD5 (s3-object-metadata s3-client bucket object))
+                    (catch Exception _
+                      (log/warn (str "Could not access the metadata for S3 object " object))))]
     (cond-> resource
             md5 (assoc :md5sum md5))))
 

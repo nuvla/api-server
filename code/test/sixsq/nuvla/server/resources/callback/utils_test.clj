@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.callback.utils-test
   (:require
-    [clj-time.core :refer [ago from-now weeks]]
     [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.server.resources.callback.utils :as t]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (deftest check-executable?
-  (let [future (-> 2 weeks from-now u/unparse-timestamp-datetime)
-        past (-> 2 weeks ago u/unparse-timestamp-datetime)]
+  (let [future (time/to-str (time/from-now 2 :weeks))
+        past   (time/to-str (time/ago 2 :weeks))]
     (are [expected arg] (= expected (t/executable? arg))
                         true {:state "WAITING", :expires future}
                         false {:state "WAITING", :expires past}

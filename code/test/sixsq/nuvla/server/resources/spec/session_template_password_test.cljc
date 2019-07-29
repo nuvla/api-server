@@ -6,33 +6,30 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-session-template-password-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id            (str st/resource-type "/password")
-             :resource-type st/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        cfg       {:id            (str st/resource-type "/password")
+                   :resource-type st/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :method        "password"
-             :instance      "password"
-             :group         "Federated Identity"
-             :redirectURI   "https://nuv.la/webui/profile"
+                   :method        "password"
+                   :instance      "password"
+                   :group         "Federated Identity"
+                   :redirect-url  "https://nuv.la/webui/profile"
 
-             :username      "user"
-             :password      "pass"}]
+                   :username      "user"
+                   :password      "pass"}]
 
     (stu/is-valid ::session-tpl/schema cfg)
 
     (doseq [attr #{:id :resource-type :created :updated :acl :method :instance :username :password}]
       (stu/is-invalid ::session-tpl/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:group :redirectURI}]
+    (doseq [attr #{:group :redirect-url}]
       (stu/is-valid ::session-tpl/schema (dissoc cfg attr)))))

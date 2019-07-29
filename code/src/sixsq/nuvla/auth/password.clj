@@ -5,19 +5,17 @@
     [clojure.string :as str]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
-
-
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
 (defn identifier->user-id
   [username]
   (try
-    (let [f (parser/parse-cimi-filter (format "identifier='%s'" username))
-          opts (merge admin-opts {:cimi-params {:filter f}})]
-      (some-> (db/query user-identifier/resource-type opts)
+    (let [f    (parser/parse-cimi-filter (format "identifier='%s'" username))
+          opts {:cimi-params {:filter f}}]
+      (some-> (crud/query-as-admin user-identifier/resource-type opts)
               second
               first
               :parent))
@@ -56,13 +54,22 @@
       false)))
 
 
+(defn extract-user
+  [username]
+  (some-> username
+          identifier->user-id
+          user-id->user))
+
+(defn active-user
+  [username]
+  (-> (extract-user username)
+      (check-user-active)))
+
+
 ;; FIXME: This should call the check-password action on the credential instead of checking locally.
-(defn valid-user
-  [{:keys [username password] :as credentials}]
-  (let [user (some-> username
-                     identifier->user-id
-                     user-id->user
-                     check-user-active)
+(defn valid-user-password
+  [username password]
+  (let [user          (active-user username)
         password-hash (some-> user
                               :credential-password
                               credential-id->credential
@@ -73,24 +80,19 @@
 
 (defn collect-groups-for-user
   [id]
-  (let [group-set (->> (db/query
+  (let [group-set (->> (crud/query-as-admin
                          group/resource-type
-                         (merge admin-opts
-                                {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
-                                               :select ["id"]}}))
+                         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
+                                        :select ["id"]}})
                        second
                        (map :id)
                        (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
                        (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
                        set)]
-    ;; FIXME: Remove addition of ADMIN, USER, and ANON when we directly use the group information.
-    (str/join " " (sort (cond-> group-set
-                                (group-set "group/nuvla-admin") (conj "ADMIN")
-                                (group-set "group/nuvla-user") (conj "USER")
-                                (group-set "group/nuvla-anon") (conj "ANON"))))))
+    (str/join " " (sort group-set))))
 
 
 (defn create-claims
   [{:keys [id] :as user}]
-  {:username id
-   :roles    (collect-groups-for-user id)})
+  {:user-id id
+   :claims  (collect-groups-for-user id)})

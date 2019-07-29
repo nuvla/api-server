@@ -21,22 +21,28 @@ credentials. This template is guaranteed to be present on all server instances.
 (def ^:const resource-url authn-method)
 
 
-(def default-template {:method           authn-method
-                       :instance         authn-method
-                       :name             "Password"
-                       :description      "Password Authentication via Username/Password"
-                       :resourceMetadata (str "resource-metadata/" p/resource-type "-" authn-method)
-                       :group            "Login with Username/Password"
-                       :username         "username"
-                       :password         "password"
-                       :order            0
-                       :icon             "user"
-                       :acl              p/resource-acl})
+(def default-template {:method            authn-method
+                       :instance          authn-method
+                       :name              "Password"
+                       :description       "Password Authentication via Username/Password"
+                       :resource-metadata (str "resource-metadata/" p/resource-type "-" authn-method)
+                       :group             "Login with Username/Password"
+                       :username          "username"
+                       :password          "password"
+                       :order             0
+                       :icon              "user"
+                       :acl               p/resource-acl})
 
 
 ;;
 ;; initialization: register this Session template and create password authentication template
 ;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema-create "create"))
+
 
 (defn initialize
   []
@@ -44,7 +50,8 @@ credentials. This template is guaranteed to be present on all server instances.
   (std-crud/initialize p/resource-type ::st-password/schema)
   (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
 
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::st-password/schema)))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

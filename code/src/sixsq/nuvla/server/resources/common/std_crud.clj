@@ -5,24 +5,23 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [clojure.walk :as w]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
 
 
-(def ^{:doc "Internal administrator identity for database queries."}
-internal-identity
-  {:current         "INTERNAL"
-   :authentications {"INTERNAL" {:identity "INTERNAL"
-                                 :roles    ["ADMIN" "USER" "ANON"]}}})
+(def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
 
 
 (defn add-fn
   [resource-name collection-acl resource-uri]
+  (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
-    (a/can-modify? {:acl collection-acl} request)
+    (a/throw-cannot-add collection-acl request)
     (db/add
       resource-name
       (-> body
@@ -41,9 +40,10 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
           (crud/set-operations request)
-          (r/json-response))
+          (a/select-viewable-keys request)
+          r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -52,17 +52,20 @@ internal-identity
   [resource-name]
   (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
     (try
-      (let [current (-> (str resource-name "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/can-modify? request))
-            dissoc-keys (-> (map keyword select)
-                            (set)
-                            (u/strip-select-from-mandatory-attrs))
+      (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
+                                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                          (a/throw-cannot-edit request))
+            rights                   (a/extract-rights (auth/current-authentication request) acl)
+            dissoc-keys              (-> (map keyword select)
+                                         set
+                                         u/strip-select-from-mandatory-attrs
+                                         (a/editable-keys rights))
             current-without-selected (apply dissoc current dissoc-keys)
-            merged (merge current-without-selected body)]
+            editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
+            merged                   (merge current-without-selected editable-body)]
         (-> merged
-            (u/update-timestamps)
-            (crud/validate)
+            u/update-timestamps
+            crud/validate
             (db/edit request)))
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -74,7 +77,7 @@ internal-identity
     (try
       (-> (str resource-name "/" uuid)
           (db/retrieve request)
-          (a/can-modify? request)
+          (a/throw-cannot-delete request)
           (db/delete request))
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -87,10 +90,10 @@ internal-identity
    (fn [request entries]
      (let [resources (cond->> entries
                               with-entries-op? (map #(crud/set-operations % request)))
-           skeleton {:acl           collection-acl
-                     :resource-type collection-uri
-                     :id            resource-name
-                     :resources     resources}]
+           skeleton  {:acl           collection-acl
+                      :resource-type collection-uri
+                      :id            resource-name
+                      :resources     resources}]
 
        (cond-> skeleton
                with-collection-op? (crud/set-operations request))))))
@@ -98,13 +101,16 @@ internal-identity
 
 (defn query-fn
   [resource-name collection-acl collection-uri]
-  (fn [request]
-    (a/can-view? {:acl collection-acl} request)
-    (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)
-          options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
-          [metadata entries] (db/query resource-name options)
-          entries-and-count (merge metadata (wrapper-fn request entries))]
-      (r/json-response entries-and-count))))
+  (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)]
+    (validate-collection-acl collection-acl)
+
+    (fn [request]
+      (a/throw-cannot-query collection-acl request)
+      (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
+            [metadata entries] (db/query resource-name options)
+            updated-entries   (remove nil? (map #(a/select-viewable-keys % request) entries))
+            entries-and-count (merge metadata (wrapper-fn request updated-entries))]
+        (r/json-response entries-and-count)))))
 
 
 (def ^:const href-not-found-msg "requested href not found")
@@ -122,19 +128,19 @@ internal-identity
 
    If a referenced document doesn't exist or if the user doesn't have read
    access to the document, then the method will throw."
-  [{:keys [href] :as resource} idmap]
+  [{:keys [href] :as resource} authn-info]
   (if-not (or (str/blank? href)
               (str/starts-with? href "http://")
               (str/starts-with? href "https://"))
     (if-let [refdoc (crud/retrieve-by-id href)]
       (try
-        (a/can-view? refdoc idmap)
+        (a/throw-cannot-view-data refdoc {:nuvla/authn authn-info})
         (-> refdoc
             (u/strip-common-attrs)
             (u/strip-service-attrs)
             (dissoc :acl)
             (merge resource))
-        (catch Exception ex
+        (catch Exception _
           (throw (r/ex-bad-request (format "%s: %s" href-not-accessible-msg href)))))
       (throw (r/ex-bad-request (format "%s: %s" href-not-found-msg href))))
     resource))
@@ -142,10 +148,10 @@ internal-identity
 
 (defn resolve-href
   "Like resolve-href-keep, except that the :href attributes are removed."
-  [{:keys [href] :as resource} idmap]
+  [{:keys [href] :as resource} authn-info]
   (if href
     (-> resource
-        (resolve-href-keep idmap)
+        (resolve-href-keep authn-info)
         (dissoc :href))
     resource))
 
@@ -154,9 +160,9 @@ internal-identity
   "Does a prewalk of the given argument, replacing any map with an :href
    attribute with the result of merging the referenced resource (see the
    resolve-href function)."
-  [resource idmap & [keep?]]
+  [resource authn-info & [keep?]]
   (let [f (if keep? resolve-href-keep resolve-href)]
-    (w/prewalk #(f % idmap) resource)))
+    (w/prewalk #(f % authn-info) resource)))
 
 
 (defn initialize
@@ -173,9 +179,9 @@ internal-identity
 (defn add-if-absent
   [resource-id resource-url resource]
   (try
-    (let [request {:params   {:resource-name resource-url}
-                   :identity internal-identity
-                   :body     resource}
+    (let [request {:params      {:resource-name resource-url}
+                   :body        resource
+                   :nuvla/authn auth/internal-identity}
           {:keys [status] :as response} (crud/add request)]
       (case status
         201 (log/infof "created %s resource" resource-id)

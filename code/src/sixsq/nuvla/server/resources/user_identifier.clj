@@ -1,22 +1,22 @@
 (ns sixsq.nuvla.server.resources.user-identifier
   "
-The UserIdentifier resources provide a mapping between an external identity
+The `user-identifier` resources provide a mapping between an external identity
 (for a given authentication method) and a registered user. Multiple external
-identities can be mapped to the same SlipStream user, allowing that user to
+identities can be mapped to the same Nuvla user, allowing that user to
 authenticate in different ways while using the same account.
 
-This resource follows the standard CIMI SCRUD patterns. However, the resource
-`id` is a hashed value of the `identifier`. This guarantees that a single
-external identifier cannot be mapped to more than one user.
+This resource follows the standard SCRUD patterns. However, the resource `id`
+is a hashed value of the `identifier`. This guarantees that a single external
+identifier cannot be mapped to more than one user.
 
 Users will normally not be concerned with these resources, although they can
 list them to see what authentication methods are mapped to their accounts.
 
-Administrators may create new UserIdentifier resources to allow a user to have
-more than one authentication method.
+Administrators may create new `user-identifier` resources to allow a user to
+have more than one authentication method.
 
 > WARNING: Because the resource identifier and the resource id are linked, you
-cannot 'edit' the `identifier` field of a UserIdentifier resource; doing so
+cannot 'edit' the `identifier` field of a `user-identifier` resource; doing so
 will invalidate resource. If you want to change an external identifier, you
 must delete the old one and create a new one.
 "
@@ -35,15 +35,11 @@ must delete the old one and create a new one.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
 
 
 ;;
@@ -62,11 +58,8 @@ must delete the old one and create a new one.
 
 (defn user-acl
   [user-id]
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal user-id
-            :type      "USER"
-            :right     "VIEW"}]})
+  {:owners   ["group/nuvla-admin"]
+   :view-acl [user-id]})
 
 
 (defmethod crud/add-acl resource-type
@@ -81,7 +74,7 @@ must delete the old one and create a new one.
 (defmethod crud/new-identifier resource-type
   [{:keys [identifier] :as resource} resource-name]
   (->> identifier
-       u/md5
+       u/from-data-uuid
        (str resource-type "/")
        (assoc resource :id)))
 
@@ -127,7 +120,11 @@ must delete the old one and create a new one.
 ;;
 ;; initialization
 ;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::user-identifier/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::user-identifier/schema)
-  (md/register (gen-md/generate-metadata ::ns ::user-identifier/schema)))
+  (md/register resource-metadata))

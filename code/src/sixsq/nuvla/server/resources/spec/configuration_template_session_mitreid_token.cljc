@@ -6,20 +6,20 @@
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::clientIPs (s/coll-of ::cimi-core/token :min-count 1 :kind vector?))
+(s/def ::client-ips (s/coll-of ::cimi-core/token :min-count 1 :kind vector?))
 
 
 (def configuration-template-keys-spec-req
   {:req-un [::ps/instance]
-   :opt-un [::clientIPs]})
+   :opt-un [::client-ips]})
 
 
 (def configuration-template-keys-spec-create
   {:req-un [::ps/instance]
-   :opt-un [::clientIPs]})
+   :opt-un [::client-ips]})
 
 
-;; Defines the contents of the OIDC authentication ConfigurationTemplate resource itself.
+;; Defines the contents of the OIDC authentication configuration-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
                      configuration-template-keys-spec-req))

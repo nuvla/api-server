@@ -6,26 +6,23 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ANON"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-anon"]})
 
 
 (deftest check-attribute
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        attr {:id            (str data-record-key-resource/resource-type "/test-attribute")
-              :name          "Test Attribute"
-              :description   "A attribute containing a test value."
-              :resource-type data-record-key-resource/resource-type
-              :created       timestamp
-              :updated       timestamp
-              :acl           valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        attr      {:id            (str data-record-key-resource/resource-type "/test-attribute")
+                   :name          "Test Attribute"
+                   :description   "A attribute containing a test value."
+                   :resource-type data-record-key-resource/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-              :prefix        "example-org"
-              :key           "test-key"
-              :type          "string"}]
+                   :prefix        "example-org"
+                   :key           "test-key"
+                   :subtype       "string"}]
 
 
     (stu/is-valid ::data-record-key/schema attr)
@@ -36,8 +33,8 @@
     (stu/is-invalid ::data-record-key/schema (assoc attr :key 0))
     (stu/is-invalid ::data-record-key/schema (assoc attr :key ""))
 
-    (stu/is-valid ::data-record-key/schema (assoc attr :type "string"))
+    (stu/is-valid ::data-record-key/schema (assoc attr :subtype "string"))
 
     ;; mandatory keywords
-    (doseq [k #{:id :name :description :created :updated :acl :prefix :key :type}]
+    (doseq [k #{:id :name :description :created :updated :acl :prefix :key :subtype}]
       (stu/is-invalid ::data-record-key/schema (dissoc attr k)))))

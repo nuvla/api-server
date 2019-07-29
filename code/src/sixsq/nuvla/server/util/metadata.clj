@@ -2,63 +2,91 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as resource-metadata]
     [spec-tools.json-schema :as jsc])
   (:import
     (clojure.lang Namespace)))
 
 
-(defn strip-for-attributes
-  [[attribute-name description]]
-  (let [{:keys [name] :as desc} (select-keys description #{:name :namespace :uri :type
-                                                           :providerMandatory :consumerMandatory :consumerWritable
-                                                           :templateMutable :mutable
-                                                           :displayName :description :help
-                                                           :group :category :order :hidden :sensitive :lines})]
-    (cond-> desc
-            (nil? name) (assoc :name attribute-name))))
+(declare select-resource-metadata-keys)
 
 
-(defn extract-value-scope
-  [[attribute-name {:keys [value-scope] :as description}]]
-  (when (and attribute-name value-scope)
-    [(keyword attribute-name) value-scope]))
+(defn treat-array
+  [{:keys [items] :as description}]
+  (when (seq items)
+    ;; items is a single attribute map, not a collection
+    [(select-resource-metadata-keys ["item" items])]))
+
+
+(defn treat-map
+  [{:keys [properties] :as description}]
+  (when (seq properties)
+    (->> properties
+         (map select-resource-metadata-keys)
+         (remove nil?)
+         vec)))
+
+
+(defn treat-children
+  [{:keys [type] :as description}]
+  (case type
+    "array" (treat-array description)
+    "map" (treat-map description)
+    "geo-point" (treat-map description)
+    nil))
+
+
+(def ^:const metadata-key-defaults
+  {:server-managed false
+   :editable       true
+   :section        "data"
+   :hidden         false
+   :sensitive      false
+   :indexed        true})
+
+
+(defn select-resource-metadata-keys
+  [[attribute-name {:keys [value-scope fulltext] :as description}]]
+  (let [{:keys [name display-name] :as desc}
+        (select-keys description #{:name :type
+                                   :server-managed :required :editable
+                                   :display-name :description :help
+                                   :section :order :hidden :sensitive
+                                   :indexed :fulltext})
+        child-types (treat-children description)]
+    (cond-> (merge metadata-key-defaults desc)
+            (nil? name) (assoc :name attribute-name)
+            (nil? display-name) (assoc :display-name (or name attribute-name))
+            (and fulltext (#{"string" "uri" "resource-id"} type)) (assoc :fulltext fulltext)
+            value-scope (assoc :value-scope value-scope)
+            child-types (assoc :child-types child-types))))
 
 
 (defn generate-attributes
-  "generate the attributes and vscope fields of the resource metadata from the
-   schema definition"
+  "generate the attributes and value-scope fields of the resource metadata
+   from the schema definition"
   [spec]
-  (let [json (jsc/transform spec)
+  (let [json       (jsc/transform spec)
+
+        required   (:required json)
 
         attributes (->> json
                         :properties
-                        (map strip-for-attributes)
+                        (map select-resource-metadata-keys)
                         (sort-by :name)
-                        vec)
+                        vec)]
 
-        vscope (->> json
-                    :properties
-                    (map extract-value-scope)
-                    (remove nil?)
-                    (into {}))]
-
-    (cond-> {}
-            (seq attributes) (assoc :attributes attributes)
-            (seq vscope) (assoc :vscope vscope))))
+    (if (seq attributes)
+      (cond-> {:attributes attributes}
+              required (assoc :required required))
+      {})))
 
 
 (defn get-doc
   "Extracts the namespace documentation provided in the namespace declaration."
   [resource-ns]
   (-> resource-ns meta :doc))
-
-
-(defn get-resource-type
-  [ns]
-  (some-> ns
-          (ns-resolve 'resource-type)
-          deref))
 
 
 (defn get-actions
@@ -75,20 +103,6 @@
           deref))
 
 
-(defn get-spec-kw
-  [resource-url]
-  (when resource-url
-    (keyword (str "sixsq.nuvla.server.resources.spec." resource-url) resource-url)))
-
-
-(defn get-spec
-  [parent-ns resource-ns]
-  (some-> (or parent-ns resource-ns)
-          (ns-resolve 'resource-url)
-          deref
-          get-spec-kw))
-
-
 (defn as-namespace
   [ns]
   (when ns
@@ -99,51 +113,47 @@
       (string? ns) (find-ns (symbol ns)))))
 
 
-(defn ns->typeURI
-  "Uses the last term of the resource's namespace as the typeURI. For a normal
-   resource this is the same as the 'resource-url' value. This will be
+(defn ns->type-uri
+  "Uses the last term of the resource's namespace as the type-uri. For a
+   normal resource this is the same as the 'resource-url' value. This will be
    different for resources with subtypes. The argument can be any value that
    can be converted to a namespace with 'as-namespace'."
   [ns]
   (-> ns as-namespace str (str/split #"\.") last))
 
 
-(defn ns->resource-metadata-id
-  "Returns the resource id for the metadata associated with the given namespace."
-  [ns]
-  (when ns
-    (str "resource-metadata/" (ns->typeURI ns))))
-
-
 (defn generate-metadata
-  "Generate the ResourceMetadata from the provided namespace"
+  "Generate the resource-metadata from the provided namespace"
   ([parent-ns spec]
-   (generate-metadata nil parent-ns spec))
+   (generate-metadata nil parent-ns spec nil))
   ([child-ns parent-ns spec]
+   (generate-metadata child-ns parent-ns spec nil))
+  ([child-ns parent-ns spec suffix]
    (if-let [parent-ns (as-namespace parent-ns)]
-     (let [child-ns (as-namespace child-ns)
+     (let [child-ns      (as-namespace child-ns)
 
-           resource-name (cond-> (get-resource-type parent-ns)
-                                 child-ns (str " \u2014 " (get-resource-type child-ns)))
+           resource-name (cond-> (ns->type-uri (or child-ns parent-ns))
+                                 suffix (str " \u2014 " suffix))
 
-           doc (get-doc (or child-ns parent-ns))
-           type-uri (ns->typeURI (or child-ns parent-ns))
+           doc           (get-doc (or child-ns parent-ns))
+           type-uri      (cond-> (ns->type-uri (or child-ns parent-ns))
+                                 suffix (str "-" suffix))
 
-           common {:id            "resource-metadata/dummy-id"
-                   :created       "1964-08-25T10:00:00.0Z"
-                   :updated       "1964-08-25T10:00:00.0Z"
-                   :resource-type resource-metadata/resource-type
-                   :acl           {:owner {:principal "ADMIN", :type "ROLE"}
-                                   :rules [{:principal "ANON", :type "ROLE", :right "VIEW"}]}
-                   :typeURI       type-uri
-                   :name          resource-name
-                   :description   doc}
+           common        {:id            "resource-metadata/dummy-id"
+                          :created       "1964-08-25T10:00:00.00Z"
+                          :updated       "1964-08-25T10:00:00.00Z"
+                          :resource-type resource-metadata/resource-type
+                          :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                                   :view-acl ["group/nuvla-anon"]})
+                          :type-uri      type-uri
+                          :name          resource-name
+                          :description   doc}
 
-           attributes (generate-attributes spec)
+           attributes    (generate-attributes spec)
 
-           actions (get-actions parent-ns)
+           actions       (get-actions parent-ns)
 
-           capabilities (get-capabilities parent-ns)]
+           capabilities  (get-capabilities parent-ns)]
 
        (if (and doc spec type-uri)
          (cond-> common

@@ -2,7 +2,7 @@
   "
 Template that allows a user to register with a username (identifier) and
 password. This template is intended to be used only by administrators for
-creating new accounts without email addresses.
+creating new accounts without email addresses or email address validation.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -22,33 +22,42 @@ creating new accounts without email addresses.
 (def ^:const resource-url registration-method)
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}})
+(def resource-acl {:owners ["group/nuvla-admin"]})
+
 
 ;;
 ;; resource
 ;;
 
 (def ^:const resource
-  {:method           registration-method
-   :instance         registration-method
-   :name             "Registration with Username and Password"
-   :description      "allows user registration with a username and password"
-   :resourceMetadata (str "resource-metadata/" p/resource-type "-" registration-method)
-   :order            0
-   :icon             "user"
-   :acl              resource-acl})
+  {:method            registration-method
+   :instance          registration-method
+   :name              "Registration with Username and Password"
+   :description       "allows user registration with a username and password"
+   :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
+   :order             0
+   :icon              "user"
+   :acl               resource-acl})
 
 
 ;;
 ;; initialization: register this user template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::spec-username-password/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-username-password/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register registration-method)
   (std-crud/initialize p/resource-type ::spec-username-password/schema)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::spec-username-password/schema))
+
+  (md/register resource-metadata)
+  (md/register resource-metadata-create)
+
   (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
 
 
@@ -57,6 +66,8 @@ creating new accounts without email addresses.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::spec-username-password/schema))
+
+
 (defmethod p/validate-subtype registration-method
   [resource]
   (validate-fn resource))

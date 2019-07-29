@@ -4,7 +4,7 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.configuration :refer :all]
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
@@ -25,21 +25,21 @@
 (defn check-existing-configuration
   [service attr-kw attr-value]
 
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        template-url (str p/service-context ct/resource-type "/" service)
-        resp (-> session-admin
-                 (request template-url)
-                 (ltu/body->edn)
-                 (ltu/is-status 200))
-        template (get-in resp [:response :body])
-        valid-create {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
+        template-url  (str p/service-context ct/resource-type "/" service)
+        resp          (-> session-admin
+                          (request template-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200))
+        template      (get-in resp [:response :body])
+        valid-create  {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
-        uri (str resource-type "/" service)
-        abs-uri (str p/service-context uri)]
+        uri           (str resource-type "/" service)
+        abs-uri       (str p/service-context uri)]
 
     ;; verify that the auto-generated configuration is present
     (-> session-admin

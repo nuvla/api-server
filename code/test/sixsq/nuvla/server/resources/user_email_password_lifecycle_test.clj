@@ -5,7 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -30,21 +30,21 @@
 (deftest lifecycle
   (let [validation-link (atom nil)
 
-        template-url (str p/service-context user-tpl/resource-type "/" email-password/registration-method)
+        template-url    (str p/service-context user-tpl/resource-type "/" email-password/registration-method)
 
-        session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+        session         (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+        session-admin   (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user    (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon    (header session authn-info-header "user/unknown group/nuvla-anon")]
 
-    (with-redefs [email-utils/smtp-cfg (fn []
-                                         {:host "smtp@example.com"
-                                          :port 465
-                                          :ssl  true
-                                          :user "admin"
-                                          :pass "password"})
+    (with-redefs [email-utils/extract-smtp-cfg
+                                      (fn [_] {:host "smtp@example.com"
+                                               :port 465
+                                               :ssl  true
+                                               :user "admin"
+                                               :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body] :as message}]
@@ -52,44 +52,38 @@
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
-      (let [template (-> session-admin
-                         (request template-url)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         (get-in [:response :body]))
+      (let [template           (-> session-admin
+                                   (request template-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (get-in [:response :body]))
 
+            href               (str user-tpl/resource-type "/" email-password/registration-method)
 
-            href (str user-tpl/resource-type "/" email-password/registration-method)
-
-            name-attr "name"
-            description-attr "description"
-            tags-attr ["one", "two"]
+            name-attr          "name"
+            description-attr   "description"
+            tags-attr          ["one", "two"]
             plaintext-password "Plaintext-password-1"
 
-            uname-alt "jane"
+            uname-alt          "user/jane"
 
-            no-href-create {:template (ltu/strip-unwanted-attrs (assoc template
-                                                                  :password plaintext-password
-                                                                  :password-repeated plaintext-password
-                                                                  :username "alice"
-                                                                  :email "alice@example.org"))}
-            href-create {:name        name-attr
-                         :description description-attr
-                         :tags        tags-attr
-                         :template    {:href              href
-                                       :password          plaintext-password
-                                       :password-repeated plaintext-password
-                                       :username          "jane"
-                                       :email             "jane@example.org"}}
+            no-href-create     {:template (ltu/strip-unwanted-attrs (assoc template
+                                                                      :password plaintext-password
+                                                                      :username "alice"
+                                                                      :email "alice@example.org"))}
+            href-create        {;:name        name-attr
+                                :description description-attr
+                                :tags        tags-attr
+                                :template    {:href     href
+                                              :password plaintext-password
+                                              ;:username "user/jane"
+                                              :email    "jane@example.org"}}
 
-            href-create-alt (assoc-in href-create [:template :username] uname-alt)
+            href-create-alt    (assoc-in href-create [:template :username] uname-alt)
 
-            href-create-redirect (assoc-in href-create-alt [:template :redirectURI] "http://redirect.example.org")
+            invalid-create     (assoc-in href-create [:template :href] "user-template/unknown-template")
 
-            invalid-create (assoc-in href-create [:template :href] "user-template/unknown-template")
-
-            bad-params-create (assoc-in href-create [:template :invalid] "BAD")
-            bad-params-create-redirect (assoc-in href-create-redirect [:template :invalid] "BAD")]
+            bad-params-create  (assoc-in href-create [:template :invalid] "BAD")]
 
 
         ;; user collection query should succeed but be empty for all users
@@ -99,9 +93,9 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count zero?)
-              (ltu/is-operation-present "add")
-              (ltu/is-operation-absent "delete")
-              (ltu/is-operation-absent "edit")))
+              (ltu/is-operation-present :add)
+              (ltu/is-operation-absent :delete)
+              (ltu/is-operation-absent :edit)))
 
         ;; create a new user; fails without reference
         (doseq [session [session-anon session-user session-admin]]
@@ -130,30 +124,26 @@
               (ltu/body->edn)
               (ltu/is-status 400)))
 
-        (doseq [session [session-anon session-user session-admin]]
-          (-> session
-              (request base-uri
-                       :request-method :post
-                       :body (json/write-str bad-params-create-redirect))
-              (ltu/body->edn)
-              (ltu/is-status 303)))
-
 
         ;; create user
-        (let [resp (-> session-anon
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str href-create))
-                       (ltu/body->edn)
-                       (ltu/is-status 201))
-              user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))]
+        (let [resp                 (-> session-anon
+                                       (request base-uri
+                                                :request-method :post
+                                                :body (json/write-str href-create))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201))
+              user-id              (get-in resp [:response :body :resource-id])
+              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
           (let [{credential-id :credential-password,
                  email-id      :email :as user} (-> session-created-user
                                                     (request (str p/service-context user-id))
                                                     (ltu/body->edn)
                                                     (get-in [:response :body]))]
+
+            ;; verify name attribute (should default to username if no :name)
+            (is (= "jane@example.org" (:name user)))
+
             ; credential password is created and visible by the created user
             (-> session-created-user
                 (request (str p/service-context credential-id))
@@ -165,12 +155,12 @@
                 (ltu/body->edn)
                 (ltu/is-status 403))
 
-            ; 2 identifier are visible for the created user one for email and another one for the username
+            ; 1 identifier is visible for the created user one for email (username was not provided)
             (-> session-created-user
                 (request (str p/service-context user-identifier/resource-type))
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-count 2))
+                (ltu/is-count 1))
 
             ; one email is visible for the user
             (-> session-created-user
@@ -229,25 +219,26 @@
             (-> session-created-user
                 (request (str p/service-context email-id))
                 (ltu/body->edn)
-                (ltu/is-status 404)))
-          )
+                (ltu/is-status 404))))
 
-        ;; create user if fail with creation of child resources are cleaned up
-        (let [resp (-> session-anon
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str
-                                        (assoc-in href-create
-                                                  [:template :username] "jane@example.org")))
-                       (ltu/body->edn)
-                       (ltu/is-status 409))
-              user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))]
+        ;; ensure that user is not created and all child resources are cleaned up when
+        ;; trying to create a user with an existing identifier
+        (let [resp                 (-> session-anon
+                                       (request base-uri
+                                                :request-method :post
+                                                :body (json/write-str
+                                                        (assoc-in href-create
+                                                                  [:template :username] "jane@example.org")))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 409))
+              user-id              (get-in resp [:response :body :resource-id])
+              session-created-user (header session authn-info-header
+                                           (str user-id " group/nuvla-user group/nuvla-anon"))]
 
-          (let [{:keys [credential-password, email] :as user} (-> session-created-user
-                                                                  (request (str p/service-context user-id))
-                                                                  (ltu/body->edn)
-                                                                  (get-in [:response :body]))]
+          (let [{:keys [email] :as user} (-> session-created-user
+                                             (request (str p/service-context user-id))
+                                             (ltu/body->edn)
+                                             (get-in [:response :body]))]
             ; credential cleanup
             (-> session-admin
                 (request (str p/service-context credential/resource-type))
@@ -272,72 +263,4 @@
             (-> session-created-user
                 (request (str p/service-context email))
                 (ltu/body->edn)
-                (ltu/is-status 404))))
-
-        ;; create user with redirect
-        (let [resp (-> session-anon
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str href-create-redirect))
-                       (ltu/body->edn)
-                       (ltu/is-status 303))
-              user-id (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " USER ANON"))
-              uri (-> resp
-                      (ltu/location))]
-          (is user-id)
-          (is (= "http://redirect.example.org" uri))
-
-          (let [{:keys [credential-password, email] :as user} (-> session-created-user
-                                                                  (request (str p/service-context user-id))
-                                                                  (ltu/body->edn)
-                                                                  (get-in [:response :body]))]
-            ; credential password is created and visible by the created user
-            (-> session-created-user
-                (request (str p/service-context credential-password))
-                (ltu/body->edn)
-                (ltu/is-status 200))
-
-            (-> session-user
-                (request (str p/service-context credential-password))
-                (ltu/body->edn)
-                (ltu/is-status 403))
-
-            ; 2 identifier are visible for the created user one for email and another one for the username
-            (-> session-created-user
-                (request (str p/service-context user-identifier/resource-type))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-count 2))
-
-            ; one email is visible for the user
-            (-> session-created-user
-                (request (str p/service-context email))
-                (ltu/body->edn)
-                (ltu/is-status 200))
-
-            ;user can delete his account
-            (-> session-created-user
-                (request (str p/service-context user-id)
-                         :request-method :delete)
-                (ltu/body->edn)
-                (ltu/is-status 200))
-
-            (-> session-created-user
-                (request (str p/service-context credential-password))
-                (ltu/body->edn)
-                (ltu/is-status 404))
-
-            ; 2 identifier are visible for the created user one for email and another one for the username
-            (-> session-created-user
-                (request (str p/service-context user-identifier/resource-type))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-count 0))
-
-            ; one email is visible for the user
-            (-> session-created-user
-                (request (str p/service-context email))
-                (ltu/body->edn)
-                (ltu/is-status 404))))
-        ))))
+                (ltu/is-status 404))))))))

@@ -4,11 +4,12 @@
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-tpl]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -17,45 +18,48 @@
 (def base-uri (str p/service-context credential/resource-type))
 
 
+(deftest check-metadata
+  (mdtu/check-metadata-exists (str credential/resource-type "-" service-tpl/resource-url)))
+
+
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")
+  (let [session               (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+        session-admin         (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user          (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon          (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        name-attr "name"
-        description-attr "description"
-        tags-attr ["one", "two"]
+        name-attr             "name"
+        description-attr      "description"
+        tags-attr             ["one", "two"]
 
-        ca-value "my-ca-certificate"
-        cert-value "my-public-certificate"
-        key-value "my-private-key"
+        ca-value              "my-ca-certificate"
+        cert-value            "my-public-certificate"
+        key-value             "my-private-key"
 
-        infrastructure-services-value ["infrastructure-service/alpha"
-                                       "infrastructure-service/beta"]
+        parent-value          "infrastructure-service/alpha"
 
-        href (str ct/resource-type "/" service-tpl/method)
-        template-url (str p/service-context ct/resource-type "/" service-tpl/method)
+        href                  (str ct/resource-type "/" service-tpl/method)
+        template-url          (str p/service-context ct/resource-type "/" service-tpl/method)
 
-        template (-> session-admin
-                     (request template-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     :response
-                     :body)
+        template              (-> session-admin
+                                  (request template-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :response
+                                  :body)
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
-        create-import-href {:name        name-attr
-                            :description description-attr
-                            :tags        tags-attr
-                            :template    {:href                    href
-                                          :infrastructure-services infrastructure-services-value
-                                          :ca                      ca-value
-                                          :cert                    cert-value
-                                          :key                     key-value}}]
+        create-import-href    {:name        name-attr
+                               :description description-attr
+                               :tags        tags-attr
+                               :template    {:href   href
+                                             :parent parent-value
+                                             :ca     ca-value
+                                             :cert   cert-value
+                                             :key    key-value}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -64,9 +68,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
-          (ltu/is-operation-present "add")
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
 
     ;; anonymous credential collection query should not succeed
     (-> session-anon
@@ -92,15 +96,15 @@
         (ltu/is-status 400))
 
     ;; create a credential as a normal user
-    (let [resp (-> session-user
-                   (request base-uri
-                            :request-method :post
-                            :body (json/write-str create-import-href))
-                   (ltu/body->edn)
-                   (ltu/is-status 201))
-          id (get-in resp [:response :body :resource-id])
-          uri (-> resp
-                  (ltu/location))
+    (let [resp    (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str create-import-href))
+                      (ltu/body->edn)
+                      (ltu/is-status 201))
+          id      (get-in resp [:response :body :resource-id])
+          uri     (-> resp
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       ;; resource id and the uri (location) should be the same
@@ -112,18 +116,17 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present "delete")
-            (ltu/is-operation-present "edit")))
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
                     ca cert key
-                    infrastructure-services]} (-> session-user
-                                                  (request abs-uri)
-                                                  (ltu/body->edn)
-                                                  (ltu/is-status 200)
-                                                  :response
-                                                  :body)]
+                    parent]} (-> session-user
+                                 (request abs-uri)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/body))]
 
         (is (= name name-attr))
         (is (= description description-attr))
@@ -131,7 +134,7 @@
         (is (= ca ca-value))
         (is (= cert cert-value))
         (is (= key key-value))
-        (is (= infrastructure-services infrastructure-services-value)))
+        (is (= parent parent-value)))
 
       ;; delete the credential
       (-> session-user
@@ -139,15 +142,3 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))))
-
-
-
-
-
-
-
-
-
-
-
-

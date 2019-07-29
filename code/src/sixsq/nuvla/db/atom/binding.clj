@@ -18,8 +18,8 @@
      The collection IDs are keywords, the document identifiers (uuids) are
      strings, and the document is standard EDN data."
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.binding :refer [Binding]]
-    [sixsq.nuvla.db.utils.acl :as acl-utils]
     [sixsq.nuvla.db.utils.common :as cu]
     [sixsq.nuvla.server.util.response :as r])
   (:import
@@ -39,6 +39,7 @@
       (throw (r/ex-conflict id))
       (->> data
            acl-utils/force-admin-role-right-all
+           acl-utils/normalize-acl-for-resource
            (assoc-in db path)))
     (throw (r/ex-bad-request "invalid document id"))))
 
@@ -57,6 +58,7 @@
     (if (get-in db path)
       (->> data
            acl-utils/force-admin-role-right-all
+           acl-utils/normalize-acl-for-resource
            (assoc-in db path))
       (throw (r/ex-not-found id)))
     (throw (r/ex-bad-request "invalid document id"))))
@@ -87,8 +89,8 @@
 (defn query-info
   [data-atom collection-id options]
   (let [collection-kw (keyword collection-id)
-        hits (vals (collection-kw @data-atom))
-        meta {:count (count hits)}]
+        hits          (vals (collection-kw @data-atom))
+        meta          {:count (count hits)}]
     [meta hits]))
 
 

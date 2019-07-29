@@ -8,7 +8,7 @@
     [sixsq.nuvla.auth.password :as t]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
@@ -50,22 +50,22 @@
 (deftest check-collect-groups-for-user
   (with-redefs [db/query (constantly nil)]
     (let [result (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")]
-      (= #{"USER" "ANON" "group/nuvla-user" "group/nuvla-anon"} (set (str/split result #"\s"))))))
+      (= #{"group/nuvla-user" "group/nuvla-anon"} (set (str/split result #"\s"))))))
 
 
 (deftest check-collect-groups-for-user-with-real-groups
 
-  (let [app (ltu/ring-app)
-        session-json (content-type (session app) "application/json")
-        session-admin (header session-json authn-info-header "root ADMIN USER ANON")
+  (let [app             (ltu/ring-app)
+        session-json    (content-type (session app) "application/json")
+        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         admin-group-uri (str p/service-context group/resource-type "/nuvla-admin")
 
-        user-id "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
+        user-id         "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
 
-        test-group-tpl {:template {:group-identifier "test-group"}}
+        test-group-tpl  {:template {:group-identifier "test-group"}}
 
-        test-group-uri (str p/service-context group/resource-type "/test-group")]
+        test-group-uri  (str p/service-context group/resource-type "/test-group")]
 
     ;; create a group and add the user
     (-> session-admin
@@ -106,5 +106,5 @@
 
       ;; check that the changes have been picked up
       (let [result (t/collect-groups-for-user user-id)]
-        (is (= #{"ADMIN" "USER" "ANON" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
+        (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
                (set (str/split result #"\s"))))))))

@@ -1,21 +1,21 @@
 (ns sixsq.nuvla.server.resources.spec.evidence-record
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
-(s/def ::class ::cimi-core/nonblank-string)
+(s/def ::class ::core/nonblank-string)
 
 
-(s/def ::end-time ::cimi-core/timestamp)
+(s/def ::end-time ::core/timestamp)
 
 
-(s/def ::start-time ::cimi-core/timestamp)
+(s/def ::start-time ::core/timestamp)
 
 
-(s/def ::plan-id ::cimi-core/nonblank-string)
+(s/def ::plan-id ::core/nonblank-string)
 
 
 (s/def ::passed boolean?)
@@ -30,5 +30,5 @@
 
 (s/def ::schema
   (su/constrained-map keyword? any?
-                      cimi-common/common-attrs
+                      common/common-attrs
                       evidence-record-spec))

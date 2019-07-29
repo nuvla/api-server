@@ -1,21 +1,13 @@
 (ns sixsq.nuvla.server.resources.event.test-utils
   (:require
-    [clj-time.core :as time]
-    [clj-time.format :as time-fmt]
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
     [peridot.core :refer :all]
     [ring.util.codec :as rc]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
-
-
-(defn to-time
-  "Tries to parse the given string as a DateTime value.  Returns the DateTime
-   instance on success and nil on failure."
-  [s]
-  (time-fmt/parse (:date-time time-fmt/formatters) s))
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn- urlencode-param
@@ -40,21 +32,15 @@
 
 (defn exec-request
   ([uri query-string auth-name]
-   (-> (ltu/ring-app)
-       session
-       (content-type "application/json")
-       (header authn-info-header auth-name)
-       (request (str uri (urlencode-params query-string))
-                :content-type "application/x-www-form-urlencoded")
-       (ltu/body->edn)))
+   (exec-request uri query-string auth-name :get nil))
 
   ([uri query-string auth-name http-verb body]
    (-> (ltu/ring-app)
        session
        (content-type "application/json")
-       (header authn-info-header auth-name)
+       (header authn-info-header (str/join " " [auth-name "group/nuvla-user" "group/nuvla-anon"]))
        (request (str uri (urlencode-params query-string))
-                :body (json/write-str body)
+                :body (some-> body json/write-str)
                 :request-method http-verb
                 :content-type "application/json")
        (ltu/body->edn))))
@@ -82,7 +68,7 @@
 
 (defn ordered-desc?
   [timestamps]
-  (every? (fn [[a b]] (not-before? (to-time a) (to-time b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-before? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
 
 
 (def not-after? (complement time/after?))
@@ -90,6 +76,6 @@
 
 (defn ordered-asc?
   [timestamps]
-  (every? (fn [[a b]] (not-after? (to-time a) (to-time b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-after? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
 
 

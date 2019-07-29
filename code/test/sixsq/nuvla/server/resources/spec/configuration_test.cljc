@@ -12,21 +12,18 @@
 (s/def ::configuration (su/only-keys-maps cts/resource-keys-spec))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest test-configuration-schema-check
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id            (str resource-type "/test")
-             :resource-type resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
-             :service       "foo"}]
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        cfg       {:id            (str resource-type "/test")
+                   :resource-type resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
+                   :service       "foo"}]
 
     (is (stu/is-valid ::configuration cfg))
 

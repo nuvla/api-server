@@ -1,12 +1,13 @@
 (ns sixsq.nuvla.server.resources.callback
   "
 Deferred actions that must be triggered by a user or other external agent.
-For example, used for email validation.
+For example, callbacks can used for email validation.
 
 Each callback represents a single, atomic action that must be triggered by an
 external agent. The action is identified by the `action` attribute. Some
 actions may require state information, which may be provided in the `data`
-attribute.
+attribute. Each action is implemented as a sub-resource of the generic
+callback.
 
 All callback resources support the CIMI `execute` action, which triggers the
 action of the callback. The state of the callback will indicate the success or
@@ -14,14 +15,14 @@ failure of the action.
 
 Generally, these resources are created by CIMI server resources rather than
 end-users. Anyone with the URL of the callback can trigger the `execute`
-action. Consequently, the callback id should only be communicated to
+action. Consequently, the callback id should securely communicated to
 appropriate users.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -37,11 +38,9 @@ appropriate users.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-admin"]
+                     :add   ["group/nuvla-admin"]})
+
 
 ;;
 ;; validate subclasses of callbacks
@@ -58,11 +57,7 @@ appropriate users.
 ;;
 
 (defn create-acl []
-  {:owner {:principal "ADMIN"
-           :type      "ROLE"}
-   :rules [{:principal "ADMIN"
-            :type      "ROLE"
-            :right     "VIEW"}]})
+  {:owners ["group/nuvla-admin"]})
 
 
 (defmethod crud/add-acl resource-type
@@ -105,13 +100,13 @@ appropriate users.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
-  (let [href (str id "/execute")
-        collection? (u/is-collection? resource-type)
-        modifiable? (a/modifiable? resource request)
-        ops (cond-> []
-                    (and collection? modifiable?) (conj {:rel (:add c/action-uri) :href id})
-                    (and (not collection?) modifiable?) (conj {:rel (:delete c/action-uri) :href id})
-                    (and (not collection?) (utils/executable? resource)) (conj {:rel (:execute c/action-uri) :href href}))]
+  (let [collection? (u/is-collection? resource-type)
+        can-delete? (a/can-delete? resource request)
+        can-add?    (a/can-add? resource request)
+        ops         (cond-> []
+                            (and collection? can-add?) (conj (u/operation-map id :add))
+                            (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
+                            (and (not collection?) (utils/executable? resource)) (conj (u/action-map id :execute)))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))
@@ -151,20 +146,17 @@ appropriate users.
 ;; general utility for creating a new callback in other resources
 ;;
 
-;; FIXME: Fix ugliness around needing to create ring requests with authentication!
 (defn create
   "Creates a callback resource with the given action-name, base-uri, target
    resource, data (optional). Returns the URL to trigger the callback's action."
   ([action-name base-uri href]
    (create action-name base-uri href nil))
   ([action-name base-uri href data]
-   (let [callback-request {:params   {:resource-name resource-type}
-                           :body     (cond-> {:action         action-name
-                                              :targetResource {:href href}}
-                                             data (assoc :data data))
-                           :identity {:current         "INTERNAL"
-                                      :authentications {"INTERNAL" {:identity "INTERNAL"
-                                                                    :roles    ["ADMIN"]}}}}
+   (let [callback-request {:params      {:resource-name resource-type}
+                           :body        (cond-> {:action          action-name
+                                                 :target-resource {:href href}}
+                                                data (assoc :data data))
+                           :nuvla/authn auth/internal-identity}
          {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 
      (if (= 201 status)
@@ -182,7 +174,10 @@ appropriate users.
 ;;
 ;; initialization: common schema for all subtypes
 ;;
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::callback/schema))
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::callback/schema)
-  (md/register (gen-md/generate-metadata ::ns ::callback/schema)))
+  (md/register resource-metadata))

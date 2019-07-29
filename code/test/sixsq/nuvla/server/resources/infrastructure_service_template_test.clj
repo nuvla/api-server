@@ -3,7 +3,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -21,17 +21,17 @@
 
 
 (deftest ensure-templates-exist
-  (doseq [type [tpl-generic/method]]
+  (doseq [subtype [tpl-generic/method]]
 
-    (let [session (-> (ltu/ring-app)
-                      session
-                      (content-type "application/json"))
-          session-admin (header session authn-info-header "root ADMIN USER ANON")
-          session-user (header session authn-info-header "jane USER ANON")
-          session-anon (header session authn-info-header "unknown ANON")
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 
-          tpl (str tpl/resource-type "/" type)
-          resource-uri (str p/service-context tpl)]
+          tpl           (str tpl/resource-type "/" subtype)
+          resource-uri  (str p/service-context tpl)]
 
       ;; anonymous access to template must fail
       (-> session-anon

@@ -1,13 +1,12 @@
 (ns sixsq.nuvla.server.resources.session-api-key-lifecycle-test
   (:require
-    [clj-time.core :as time]
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-api-key :as api-key-tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
@@ -16,7 +15,8 @@
     [sixsq.nuvla.server.resources.session-api-key :as t]
     [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]))
+    [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
+    [sixsq.nuvla.server.util.time :as time]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
@@ -34,45 +34,45 @@
                                :acl         st/resource-acl})
 
 (deftest check-uuid->id
-  (let [uuid (u/random-uuid)
+  (let [uuid       (u/random-uuid)
         correct-id (str "credential/" uuid)]
     (is (= correct-id (t/uuid->id uuid)))
     (is (= correct-id (t/uuid->id correct-id)))))
 
 (deftest check-valid-api-key
-  (let [type api-key-tpl/credential-type
-        expired (-> 10 time/seconds time/ago u/unparse-timestamp-datetime)
-        current (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
+  (let [subtype       api-key-tpl/credential-subtype
+        expired       (time/to-str (time/ago 10 :seconds))
+        current       (time/to-str (time/from-now 1 :hours))
         [secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
-        valid-api-key {:type   type
-                       :expiry current
-                       :digest digest}]
+        valid-api-key {:subtype subtype
+                       :expiry  current
+                       :digest  digest}]
     (is (true? (t/valid-api-key? valid-api-key secret)))
     (are [v] (true? (t/valid-api-key? v secret))
              valid-api-key
              (dissoc valid-api-key :expiry))
     (are [v] (false? (t/valid-api-key? v secret))
              {}
-             (dissoc valid-api-key :type)
-             (assoc valid-api-key :type "incorrect-type")
+             (dissoc valid-api-key :subtype)
+             (assoc valid-api-key :subtype "incorrect-subtype")
              (assoc valid-api-key :expiry expired)
              (assoc valid-api-key :digest bad-digest))
     (is (false? (t/valid-api-key? valid-api-key "bad-secret")))))
 
 (deftest check-create-claims
-  (let [username "root"
-        server "nuv.la"
-        headers {:slipstream-ssl-server-name server}
-        roles ["ADMIN" "USER" "ANON"]
+  (let [user-id    "user/root"
+        server     "nuv.la"
+        headers    {:nuvla-ssl-server-name server}
+        claims     #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
-        client-ip "127.0.0.1"]
-    (is (= {:username username
-            :session  session-id
-            :roles    (str/join " " ["ADMIN" "USER" "ANON" session-id])
-            :server   server
-            :clientIP client-ip}
-           (t/create-claims username roles headers session-id client-ip)))))
+        client-ip  "127.0.0.1"]
+    (is (= {:client-ip "127.0.0.1"
+            :claims    (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
+            :user-id   "user/root"
+            :server    "nuv.la"
+            :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
+           (t/create-cookie-info user-id claims headers session-id client-ip)))))
 
 (defn mock-retrieve-by-id [doc-id]
   nil)
@@ -81,14 +81,14 @@
 
   (let [[secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
-        uuid (u/random-uuid)
-        valid-api-key {:id     (str "credential/" uuid)
-                       :type   api-key-tpl/credential-type
-                       :method api-key-tpl/method
-                       :expiry (-> 1 time/hours time/from-now u/unparse-timestamp-datetime)
-                       :digest digest
-                       :claims {:identity "jane"
-                                :roles    ["USER" "ANON"]}}
+        uuid                (u/random-uuid)
+        valid-api-key       {:id      (str "credential/" uuid)
+                             :subtype api-key-tpl/credential-subtype
+                             :method  api-key-tpl/method
+                             :expiry  (time/to-str (time/from-now 1 :hours))
+                             :digest  digest
+                             :claims  {:identity "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                                       :roles    ["group/nuvla-user" "group/nuvla-anon"]}}
         mock-retrieve-by-id {(:id valid-api-key) valid-api-key
                              uuid                valid-api-key}]
 
@@ -98,38 +98,38 @@
       (is (= valid-api-key (t/retrieve-credential-by-id (:id valid-api-key))))
       (is (= valid-api-key (t/retrieve-credential-by-id uuid)))
 
-      (let [app (ltu/ring-app)
-            session-json (content-type (session app) "application/json")
-            session-anon (header session-json authn-info-header "unknown ANON")
-            session-user (header session-json authn-info-header "user USER ANON")
-            session-admin (header session-json authn-info-header "root ADMIN USER ANON")
+      (let [app                 (ltu/ring-app)
+            session-json        (content-type (session app) "application/json")
+            session-anon        (header session-json authn-info-header "user/unknown group/nuvla-anon")
+            session-user        (header session-json authn-info-header "user/user group/nuvla-user group/nuvla-anon")
+            session-admin       (header session-json authn-info-header
+                                        "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
             ;;
             ;; create the session template to use for these tests
             ;;
-            href (str st/resource-type "/api-key")
+            href                (str st/resource-type "/api-key")
 
-            template-url (str p/service-context href)
+            template-url        (str p/service-context href)
 
-            resp (-> session-anon
-                     (request template-url)
-                     (ltu/body->edn)
-                     (ltu/is-status 200))
-            template (get-in resp [:response :body])
+            resp                (-> session-anon
+                                    (request template-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200))
+            template            (get-in resp [:response :body])
 
-            name-attr "name"
-            description-attr "description"
-            tags-attr ["one", "two"]
+            name-attr           "name"
+            description-attr    "description"
+            tags-attr           ["one", "two"]
 
-            valid-create {:name        name-attr
-                          :description description-attr
-                          :tags        tags-attr
-                          :template    {:href   href
-                                        :key    uuid
-                                        :secret secret}}
-            valid-create-redirect (assoc-in valid-create [:template :redirectURI] "http://redirect.example.org")
+            valid-create        {:name        name-attr
+                                 :description description-attr
+                                 :tags        tags-attr
+                                 :template    {:href   href
+                                               :key    uuid
+                                               :secret secret}}
             unauthorized-create (update-in valid-create [:template :secret] (constantly bad-digest))
-            invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
+            invalid-create      (assoc-in valid-create [:template :invalid] "BAD")]
 
         ;; anonymous query should succeed but have no entries
         (-> session-anon
@@ -147,50 +147,27 @@
             (ltu/is-status 403))
 
         ;; anonymous create must succeed; also with redirect
-        (let [resp (-> session-anon
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str valid-create))
-                       (ltu/body->edn)
-                       (ltu/is-set-cookie)
-                       (ltu/is-status 201))
-              id (get-in resp [:response :body :resource-id])
+        (let [resp        (-> session-anon
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-create))
+                              (ltu/body->edn)
+                              (ltu/is-set-cookie)
+                              (ltu/is-status 201))
+              id          (get-in resp [:response :body :resource-id])
 
-              token (get-in resp [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-              claims (if token (sign/unsign-claims token) {})
+              token       (get-in resp [:response :cookies authn-cookie :value])
+              cookie-info (if token (sign/unsign-cookie-info token) {})
 
-              uri (-> resp
-                      (ltu/location))
-              abs-uri (str p/service-context uri)
+              uri         (-> resp
+                              (ltu/location))
+              abs-uri     (str p/service-context uri)]
 
-              resp2 (-> session-anon
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create-redirect))
-                        (ltu/body->edn)
-                        (ltu/is-set-cookie)
-                        (ltu/is-status 303))
-              id2 (get-in resp2 [:response :body :resource-id])
-
-              token2 (get-in resp2 [:response :cookies "com.sixsq.nuvla.cookie" :value :token])
-              claims2 (if token2 (sign/unsign-claims token2) {})
-
-              uri2 (-> resp2
-                       (ltu/location))
-              abs-uri2 (str p/service-context uri2)]
-
-          ;; check claims in cookie
-          (is (= "jane" (:username claims)))
-          (is (= (str/join " " ["USER" "ANON" uri]) (:roles claims))) ;; uri is also session id
-          (is (= uri (:session claims)))                    ;; uri is also session id
-          (is (not (nil? (:exp claims))))
-
-          ;; check claims in cookie for redirect
-          (is (= "jane" (:username claims2)))
-          (is (= (str/join " " ["USER" "ANON" id2]) (:roles claims2))) ;; uri is also session id
-          (is (= id2 (:session claims2)))                   ;; uri is also session id
-          (is (not (nil? (:exp claims2))))
-          (is (= "http://redirect.example.org" uri2))
+          ;; check cookie-info in cookie
+          (is (= "user/abcdef01-abcd-abcd-abcd-abcdef012345" (:user-id cookie-info)))
+          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
+          (is (= uri (:session cookie-info)))               ;; uri is also session id
+          (is (not (nil? (:exp cookie-info))))
 
           ;; user should not be able to see session without session role
           (-> session-user
@@ -221,17 +198,17 @@
 
           ;; user should be able to see session with session role
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request abs-uri)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-id id)
-              (ltu/is-operation-present "delete")
-              (ltu/is-operation-absent "edit"))
+              (ltu/is-operation-present :delete)
+              (ltu/is-operation-absent :edit))
 
           ;; user query with session role should succeed but and have one entry
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user/user group/nuvla-user " id))
               (request base-uri)
               (ltu/body->edn)
               (ltu/is-status 200)
@@ -239,7 +216,7 @@
 
           ;; check contents of session resource
           (let [{:keys [name description tags] :as body} (-> (session app)
-                                                             (header authn-info-header (str "user USER " id))
+                                                             (header authn-info-header (str "user/user group/nuvla-user " id))
                                                              (request abs-uri)
                                                              (ltu/body->edn)
                                                              :response
@@ -250,7 +227,7 @@
 
           ;; user with session role can delete resource
           (-> (session app)
-              (header authn-info-header (str "user USER " id))
+              (header authn-info-header (str "user group/nuvla-user " id))
               (request abs-uri
                        :request-method :delete)
               (ltu/is-unset-cookie)

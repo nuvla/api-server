@@ -1,26 +1,24 @@
 (ns sixsq.nuvla.server.resources.event.utils
   (:require
-    [clj-time.core :as time]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event :as event]
-    [sixsq.nuvla.server.resources.spec.event :as event-spec]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn create-event
-  [resource-href message acl & {:keys [severity type]
-                                :or   {severity event-spec/severity-medium
-                                       type     event-spec/type-action}}]
+  [resource-href message acl & {:keys [severity category]
+                                :or   {severity "medium"
+                                       category "action"}}]
 
-  (let [event-map {:resource-type event/resource-type
-                   :content       {:resource {:href resource-href}
-                                   :state    message}
-                   :severity      severity
-                   :type          type
-                   :timestamp     (u/unparse-timestamp-datetime (time/now))
-                   :acl           acl}
-        create-request {:params   {:resource-name event/resource-type}
-                        :identity std-crud/internal-identity
-                        :body     event-map}]
+  (let [event-map      {:resource-type event/resource-type
+                        :content       {:resource {:href resource-href}
+                                        :state    message}
+                        :severity      severity
+                        :category      category
+                        :timestamp     (time/now-str)
+                        :acl           acl}
+        create-request {:params      {:resource-name event/resource-type}
+                        :body        event-map
+                        :nuvla/authn auth/internal-identity}]
     (crud/add create-request)))

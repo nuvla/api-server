@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.resources.callback.utils
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
-
-
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 (defn executable?
   [{:keys [state expires]}]
@@ -19,7 +17,7 @@
     (-> (crud/retrieve-by-id-as-admin callback-id)
         (u/update-timestamps)
         (assoc :state state)
-        (db/edit admin-opts))
+        (db/edit {:nuvla/authn auth/internal-identity}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

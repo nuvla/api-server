@@ -1,4 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-username-password
+  "
+Provides the functions necessary to create a `user` resource from a username,
+password, and other given information."
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
@@ -27,12 +30,9 @@
 ;;
 
 (defmethod p/tpl->user username-password/registration-method
-  [{:keys [redirectURI] :as resource} request]
-  (let [user-map (-> (password-utils/create-user-map resource)
-                     (assoc :state "ACTIVE"))]
-    (if redirectURI
-      [{:status 303, :headers {"Location" redirectURI}} user-map]
-      [nil user-map])))
+  [resource request]
+  [nil (-> (password-utils/create-user-map resource)
+           (assoc :state "ACTIVE"))])
 
 
 ;;

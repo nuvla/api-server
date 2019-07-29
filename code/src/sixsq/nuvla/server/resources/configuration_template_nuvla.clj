@@ -1,7 +1,9 @@
 (ns sixsq.nuvla.server.resources.configuration-template-nuvla
   "
 This configuration-template contains the core configuration attributes of the
-Nuvla platform.
+Nuvla platform. In particular, the configuration for an SMTP (mail relay)
+server should be provided. If this isn't provided email validations and other
+notifications will not work.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -33,10 +35,18 @@ Nuvla platform.
 ;; initialization: register this configuration-template
 ;;
 
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-nuvla/schema)))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

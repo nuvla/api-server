@@ -6,24 +6,21 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-group-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        group {:id            (str t/resource-type "/abcdef")
-               :resource-type t/resource-type
-               :created       timestamp
-               :updated       timestamp
-               :acl           valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        group     {:id            (str t/resource-type "/abcdef")
+                   :resource-type t/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-               :users         ["user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                               "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                               "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]}]
+                   :users         ["user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                                   "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                                   "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]}]
 
     (stu/is-valid ::group/schema group)
 

@@ -1,7 +1,12 @@
 (ns sixsq.nuvla.server.resources.data-object-template
+  "
+This template creates resources that represent an objects in S3. Subclasses of
+this template define how the object can be accessed.
+"
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -10,28 +15,15 @@
 
 (def ^:const resource-type (u/ns->type *ns*))
 
+
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "VIEW"}
-                           {:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}
-                           ]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "VIEW"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;
@@ -46,11 +38,13 @@
 ;; Template validation
 ;;
 
-(defmulti validate-subtype-template :type)
+(defmulti validate-subtype-template :subtype)
+
 
 (defmethod validate-subtype-template :default
-  [resource]
-  (throw (ex-info (str "unknown External object template type: '" (:type resource) "'") resource)))
+  [{:keys [subtype] :as resource}]
+  (throw (ex-info (str "unknown data-object-template subtype: '" subtype "'") resource)))
+
 
 (defmethod crud/validate resource-type
   [resource]
@@ -58,19 +52,21 @@
 
 
 ;;
-;; atom to keep track of the loaded DataObjectTemplate resources
+;; atom to keep track of the loaded data-object-template resources
 ;;
-;;
+
 (def templates (atom {}))
+
+
 (def name->kw (atom {}))
 
 
 (defn complete-resource
   "Completes the given document with server-managed information:
    resource-type, timestamps, operations, and ACL."
-  [{:keys [type] :as resource}]
-  (when type
-    (let [id (str resource-type "/" type)]
+  [{:keys [subtype] :as resource}]
+  (when subtype
+    (let [id (str resource-type "/" subtype)]
       (-> resource
           (merge {:id            id
                   :resource-type resource-type
@@ -80,18 +76,17 @@
 
 
 (defn register
-  "Registers a given DataObjectTemplate resource with the server.
-   The resource document (resource) must be valid.
-   The key will be used to create the id of
-   the resource as 'data-object-template/key'."
+  "Registers a given data-object-template resource with the server. The
+   resource document (resource) must be valid. The key will be used to create
+   the id of the resource as 'data-object-template/key'."
   [resource & [name-kw-map]]
   (when-let [full-resource (complete-resource resource)]
     (let [id (:id full-resource)]
       (swap! templates assoc id full-resource)
-      (log/info "loaded DataObjectTemplate" id)
+      (log/info "loaded data-object-template" id)
       (when name-kw-map
         (swap! name->kw assoc id name-kw-map)
-        (log/info "added name->kw mapping from DataObjectTemplate" id)))))
+        (log/info "added name->kw mapping from data-object-template" id)))))
 
 
 ;;
@@ -102,10 +97,10 @@
 
 
 (defmethod crud/add resource-type
-  [{{:keys [type]} :body :as request}]
-  (if (get @templates type)
+  [{{:keys [subtype]} :body :as request}]
+  (if (get @templates subtype)
     (add-impl request)
-    (throw (r/ex-bad-request (str "invalid data object type '" type "'")))))
+    (throw (r/ex-bad-request (str "invalid data object subtype '" subtype "'")))))
 
 
 (defmethod crud/retrieve resource-type
@@ -113,7 +108,8 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -144,11 +140,11 @@
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+  (a/throw-cannot-query collection-acl request)
+  (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :user-name :user-roles])
+        options           (select-keys request [:user-id :claims :query-params :cimi-params])
         [count-before-pagination entries] ((juxt count vals) @templates)
-        wrapped-entries (wrapper-fn request entries)
+        wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))

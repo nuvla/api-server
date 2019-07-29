@@ -18,8 +18,14 @@
             :zeta  item/valid})
 
 
+(def ^:const valid-value-scopes #{enumeration/valid
+                                  range/valid
+                                  single-value/valid
+                                  unit/valid
+                                  item/valid})
+
+
 (deftest check-value-scope
 
-  (stu/is-valid ::spec/vscope valid)
-
-  (stu/is-invalid ::spec/vscope {:badAttribute 1}))
+  (doseq [value-scope valid-value-scopes]
+    (stu/is-valid ::spec/value-scope value-scope)))

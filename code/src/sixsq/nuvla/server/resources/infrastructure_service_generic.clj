@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-generic
+  "
+A generic infrastructure service that is characterized by a service type and
+an endpoint.
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
@@ -26,6 +30,6 @@
 
 (defmethod infra-service/tpl->service method
   [{:keys [state] :as resource}]
-  (cond-> (dissoc resource :href :resourceMetadata)
+  (cond-> (dissoc resource :href :resource-metadata)
           (nil? state) (assoc :state "STARTED")))
 

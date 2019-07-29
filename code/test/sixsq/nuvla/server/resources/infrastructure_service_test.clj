@@ -15,11 +15,8 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "USER"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-user"]})
 
 
 (deftest check-metadata

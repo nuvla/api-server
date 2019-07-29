@@ -13,25 +13,24 @@
 
 
 (deftest test-credential-template-service-schema-check
-  (let [timestamp "1972-10-08T10:00:00.0Z"
-        tpl {:id                      (str ct/resource-type "/uuid")
-             :resource-type           p/resource-type
-             :created                 timestamp
-             :updated                 timestamp
-             :acl                     valid-acl
-             :type                    service/credential-type
-             :method                  service/method
-             :infrastructure-services ["infrastructure-service/service-1"
-                                       "infrastructure-service/service-2"]
-             :amazonec2-access-key    "foo"
-             :amazonec2-secret-key    "bar"}]
+  (let [timestamp "1972-10-08T10:00:00.00Z"
+        tpl       {:id                   (str ct/resource-type "/uuid")
+                   :resource-type        p/resource-type
+                   :created              timestamp
+                   :updated              timestamp
+                   :acl                  valid-acl
+                   :subtype              service/credential-subtype
+                   :method               service/method
+                   :parent               "infrastructure-service/service-1"
+                   :amazonec2-access-key "foo"
+                   :amazonec2-secret-key "bar"}]
 
     (stu/is-valid ::service-spec/schema tpl)
 
     ;; mandatory keys
-    (doseq [k (-> tpl (dissoc :infrastructure-services) keys set)]
+    (doseq [k (-> tpl (dissoc :parent) keys set)]
       (stu/is-invalid ::service-spec/schema (dissoc tpl k)))
 
     ;; optional keys
-    (doseq [k #{:infrastructure-services}]
+    (doseq [k #{:parent}]
       (stu/is-valid ::service-spec/schema (dissoc tpl k)))))

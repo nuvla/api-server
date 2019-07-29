@@ -4,13 +4,14 @@ A collection of templates that allow users to create infrastructure-service
 resources that identify other services that will be used by Nuvla, for example
 Docker Swarm clusters or S3 object stores.
 
-An ephemeral, in-memory 'database' of infrastructure-service-template
+An ephemeral, in-memory 'database' of `infrastructure-service-template`
 resources is used to store the collection. As a consequence, the filtering,
 paging, etc. parameters are not supported.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -26,21 +27,11 @@ paging, etc. parameters are not supported.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "ADMIN"
-                            :type      "ROLE"
-                            :right     "ALL"}
-                           {:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;
@@ -113,7 +104,8 @@ paging, etc. parameters are not supported.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -139,23 +131,16 @@ paging, etc. parameters are not supported.
   (throw (r/ex-bad-method request)))
 
 
-(defn- viewable? [request {:keys [acl] :as entry}]
-  (try
-    (a/can-view? {:acl acl} request)
-    (catch Exception _
-      false)))
-
-
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter (partial viewable? request) (vals @templates)) [])
+  (a/throw-cannot-query collection-acl request)
+  (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
+        entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])
+        options                 (select-keys request [:query-params :cimi-params])
         count-before-pagination (count entries)
-        wrapped-entries (wrapper-fn request entries)
-        entries-and-count (assoc wrapped-entries :count count-before-pagination)]
+        wrapped-entries         (wrapper-fn request entries)
+        entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
 
@@ -163,7 +148,10 @@ paging, etc. parameters are not supported.
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/schema)))
+  (md/register resource-metadata))
 

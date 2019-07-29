@@ -149,9 +149,9 @@
 
 
 (defn ex-redirect
-  "Provides an exception that will redirect (303) to the given redirectURI, by
+  "Provides an exception that will redirect (303) to the given redirect-url, by
    setting the Location header. The message is added as an 'error' query
-   parameter to the redirectURI."
-  [msg id redirectURI]
+   parameter to the redirect-url."
+  [msg id redirect-url]
   (let [query (str "?error=" (codec/url-encode msg))]
-    (ex-response msg 303 id (str redirectURI query))))
+    (ex-response msg 303 id (str redirect-url query))))

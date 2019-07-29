@@ -1,27 +1,31 @@
 (ns sixsq.nuvla.server.resources.data-object-template-public
+  "
+This template creates a resource representing an object in S3 that can be
+accessed by anyone via a fixed URL.
+"
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-object :as do]
     [sixsq.nuvla.server.resources.data-object-template :as dot]
-    [sixsq.nuvla.server.resources.spec.data-object-public :as do-public]
     [sixsq.nuvla.server.resources.spec.data-object-template-public :as dot-public]))
 
-(def ^:const data-object-type "public")
+
+(def ^:const data-object-subtype "public")
+
 
 ;;
 ;; resource
 ;;
+
 (def ^:const resource
-  {:type         data-object-type
-   :content-type "content/type"
-   :credential   "credential/cloud-cred"
-   :bucket       "bucket"
-   :object       "object/name"})
+  {:subtype      data-object-subtype
+   :content-type "application/octet-stream"})
 
 
 ;;
 ;; initialization: register this data object generic template
 ;;
+
 (defn initialize
   []
   (dot/register resource))
@@ -30,17 +34,18 @@
 ;;
 ;; multimethods for validation
 ;;
-(def validate-fn (u/create-spec-validation-fn ::do-public/data-object))
-(defmethod do/validate-subtype data-object-type
-  [resource]
-  (validate-fn resource))
 
-(def create-validate-fn (u/create-spec-validation-fn ::dot-public/data-object-create))
-(defmethod do/create-validate-subtype data-object-type
+(def create-validate-fn (u/create-spec-validation-fn ::dot-public/schema-create))
+
+
+(defmethod do/create-validate-subtype data-object-subtype
   [resource]
   (create-validate-fn resource))
 
+
 (def validate-fn (u/create-spec-validation-fn ::dot-public/template))
-(defmethod dot/validate-subtype-template data-object-type
+
+
+(defmethod dot/validate-subtype-template data-object-subtype
   [resource]
   (validate-fn resource))

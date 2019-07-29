@@ -4,24 +4,32 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
+
 (def base-uri (str p/service-context callback/resource-type))
 
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists callback/resource-type))
+
+
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-user (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "group/nuvla-anon")]
 
 
     ;; admin collection query should succeed but be empty
@@ -30,10 +38,10 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-present "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit")
-        (ltu/is-operation-absent "execute"))
+        (ltu/is-operation-present :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit)
+        (ltu/is-operation-absent :execute))
 
     ;; user collection query should not succeed
     (-> session-user
@@ -49,22 +57,22 @@
 
 
     ;; create a callback as an admin
-    (let [create-test-callback {:action         "action-name"
-                                :targetResource {:href "email/1234579abcdef"}
-                                :state          "SUCCEEDED"} ;; state should be ignored
+    (let [create-test-callback {:action          "action-name"
+                                :target-resource {:href "email/1234579abcdef"}
+                                :state           "SUCCEEDED"} ;; state should be ignored
 
-          resp-test (-> session-admin
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str create-test-callback))
-                        (ltu/body->edn)
-                        (ltu/is-status 201))
+          resp-test            (-> session-admin
+                                   (request base-uri
+                                            :request-method :post
+                                            :body (json/write-str create-test-callback))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201))
 
-          id-test (get-in resp-test [:response :body :resource-id])
+          id-test              (get-in resp-test [:response :body :resource-id])
 
-          location-test (str p/service-context (-> resp-test ltu/location))
+          location-test        (str p/service-context (-> resp-test ltu/location))
 
-          test-uri (str p/service-context id-test)]
+          test-uri             (str p/service-context id-test)]
 
       (is (= location-test test-uri))
 
@@ -73,9 +81,9 @@
           (request test-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-present "delete")
-          (ltu/is-operation-absent "edit")
-          (ltu/is-operation-present "execute"))
+          (ltu/is-operation-present :delete)
+          (ltu/is-operation-absent :edit)
+          (ltu/is-operation-present :execute))
 
       ;; user cannot directly see the callback
       (-> session-user
@@ -84,12 +92,12 @@
           (ltu/is-status 403))
 
       ;; check contents and editing
-      (let [reread-test-callback (-> session-admin
-                                     (request test-uri)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     :response
-                                     :body)
+      (let [reread-test-callback       (-> session-admin
+                                           (request test-uri)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           :response
+                                           :body)
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)
@@ -101,7 +109,7 @@
                            (request test-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/is-operation-absent (:execute c/action-uri))
+                           (ltu/is-operation-absent :execute)
                            :response
                            :body)]
           (is (= "FAILED" (:state callback)))
@@ -113,7 +121,7 @@
                            (request test-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/is-operation-absent (:execute c/action-uri))
+                           (ltu/is-operation-absent :execute)
                            :response
                            :body)]
           (is (= "SUCCEEDED" (:state callback)))

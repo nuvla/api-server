@@ -5,7 +5,8 @@ is a kebab-case string, provided when the group is created. All group names
 that start with 'nuvla-' are reserved for the server.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -25,11 +26,8 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -56,9 +54,11 @@ that start with 'nuvla-' are reserved for the server.
 ;; multimethod for ACLs
 ;;
 
+;; forces update of acl to have admin as owner and all users can view metadata
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (assoc resource :acl {:owners    ["group/nuvla-admin"]
+                        :view-meta ["group/nuvla-user"]}))
 
 
 ;;
@@ -76,7 +76,7 @@ that start with 'nuvla-' are reserved for the server.
 
 ;; modified to retain id and not call new-identifier
 (defn add-impl [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
+  (a/throw-cannot-add collection-acl request)
   (let [id (:id body)]
     (db/add
       resource-type
@@ -92,16 +92,16 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
-  (let [idmap {:identity (:identity request)}
+  (a/throw-cannot-add collection-acl request)
+  (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
-        body (-> body
-                 (assoc :resource-type create-type)
-                 (std-crud/resolve-hrefs idmap)
-                 (update-in [:template] merge desc-attrs)   ;; validate desc attrs
-                 (crud/validate)
-                 :template
-                 tpl->group)]
+        body       (-> body
+                       (assoc :resource-type create-type)
+                       (std-crud/resolve-hrefs authn-info)
+                       (update-in [:template] merge desc-attrs) ;; validate desc attrs
+                       (crud/validate)
+                       :template
+                       tpl->group)]
     (add-impl (assoc request :body body))))
 
 
@@ -145,10 +145,13 @@ that start with 'nuvla-' are reserved for the server.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::group/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::group/schema)
-  (md/register (gen-md/generate-metadata ::ns ::group/schema))
+  (md/register resource-metadata)
 
   (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
                           {:name        "Nuvla Administrator Group"

@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.job.utils
   (:require
-    [clj-time.core :as time]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 (def state-running "RUNNING")
@@ -44,39 +44,37 @@
   (contains? #{state-failed state-success} state))
 
 
-(defn add-targetResource-in-affectedResources
-  [{:keys [targetResource affectedResources] :as job}]
-  (assoc job :affectedResources (conj affectedResources targetResource)))
+(defn add-target-resource-in-affected-resources
+  [{:keys [target-resource affected-resources] :as job}]
+  (assoc job :affected-resources (conj affected-resources target-resource)))
 
 
-(defn should_insert_targetResource-in-affectedResources?
-  [{:keys [targetResource affectedResources] :as job}]
-  (when targetResource
-    (not-any? #(= targetResource %) affectedResources)))
+(defn should_insert_target-resource-in-affected-resources?
+  [{:keys [target-resource affected-resources] :as job}]
+  (when target-resource
+    (not-any? #(= target-resource %) affected-resources)))
 
 
-(defn update-timeOfStatusChange
+(defn update-time-of-status-change
   [job]
-  (assoc job :timeOfStatusChange (u/unparse-timestamp-datetime (time/now))))
+  (assoc job :time-of-status-change (time/now-str)))
 
 
 (defn job-cond->addition
-  [{:keys [progress statusMessage] :as job}]
+  [{:keys [progress status-message] :as job}]
   (cond-> job
-          statusMessage update-timeOfStatusChange
+          status-message update-time-of-status-change
           (not progress) (assoc :progress 0)
-          (should_insert_targetResource-in-affectedResources? job) add-targetResource-in-affectedResources))
+          (should_insert_target-resource-in-affected-resources? job) add-target-resource-in-affected-resources))
 
 
 (defn job-cond->edition
-  [{:keys [statusMessage state started] :as job}]
+  [{:keys [status-message state started] :as job}]
   (cond-> job
           (and (not started)
-               (= state state-running)) (assoc :started (u/unparse-timestamp-datetime (time/now)))
+               (= state state-running)) (assoc :started (time/now-str))
           true (dissoc :priority)
-          statusMessage (update-timeOfStatusChange)
+          status-message (update-time-of-status-change)
           (is-final-state? job) (assoc :progress 100
                                        :duration (some-> started
-                                                         (u/as-datetime)
-                                                         (time/interval (time/now))
-                                                         (time/in-seconds)))))
+                                                         (time/time-between-date-now :seconds)))))

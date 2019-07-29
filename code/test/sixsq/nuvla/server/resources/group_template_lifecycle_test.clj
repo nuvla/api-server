@@ -3,10 +3,11 @@
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -15,13 +16,17 @@
 (def base-uri (str p/service-context group-tpl/resource-type))
 
 
+(deftest check-metadata
+  (mdtu/check-metadata-exists group-tpl/resource-type (str group-tpl/resource-type "-create")))
+
+
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-jane (header session authn-info-header "jane USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
     ;; admin user collection query should succeed and contain exactly 1 template
     (-> session-admin
@@ -29,9 +34,9 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count 1)
-        (ltu/is-operation-absent "add")
-        (ltu/is-operation-absent "delete")
-        (ltu/is-operation-absent "edit"))
+        (ltu/is-operation-absent :add)
+        (ltu/is-operation-absent :delete)
+        (ltu/is-operation-absent :edit))
 
     ;; a query for anyone else should fail
     (doseq [session [session-jane session-anon]]
@@ -42,13 +47,13 @@
 
 
     (let [group-tpl-id (str group-tpl/resource-type "/generic")
-          abs-url (str p/service-context group-tpl-id)]
+          abs-url      (str p/service-context group-tpl-id)]
       (-> session-admin
           (request abs-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-operation-absent "delete")
-          (ltu/is-operation-absent "edit")))))
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))))
 
 
 (deftest bad-methods

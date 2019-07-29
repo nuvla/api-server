@@ -4,10 +4,10 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as key-prefix]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -36,12 +36,16 @@
    :uri    "https://schema-com/z"})
 
 
+(deftest check-metadata
+  (mdtu/check-metadata-exists key-prefix/resource-type))
+
+
 (deftest lifecycle
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-user (header session-anon authn-info-header "jane USER ANON")]
+  (let [session-anon  (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous create should fail
     (-> session-anon
@@ -59,19 +63,19 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-namespace))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-namespace))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)
-          doc (-> session-user
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (get-in [:response :body]))]
+          doc     (-> session-user
+                      (request abs-uri)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (get-in [:response :body]))]
 
       (is (= "schema-org" (:prefix doc)))
       (is (= "https://schema-org/a/b/c.md" (:uri doc)))

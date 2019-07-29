@@ -6,26 +6,23 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-email-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        data-set {:id                 (str t/resource-type "/abcdef")
-                  :name               "my great data set"
-                  :description        "collects all of my favorite data"
-                  :resource-type      t/resource-type
-                  :created            timestamp
-                  :updated            timestamp
-                  :acl                valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        data-set  {:id                 (str t/resource-type "/abcdef")
+                   :name               "my great data set"
+                   :description        "collects all of my favorite data"
+                   :resource-type      t/resource-type
+                   :created            timestamp
+                   :updated            timestamp
+                   :acl                valid-acl
 
-                  :module-filter      "(filter='module')"
-                  :data-object-filter "(filter='object')"
-                  :data-record-filter "(filter='record')"}]
+                   :module-filter      "(filter='module')"
+                   :data-object-filter "(filter='object')"
+                   :data-record-filter "(filter='record')"}]
 
     (stu/is-valid ::data-set/schema data-set)
 

@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.common.crud
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -17,7 +17,7 @@
 
 (defn resource-id-dispatch
   [resource-id & _]
-  (first (u/split-resource-id resource-id)))
+  (first (u/parse-id resource-id)))
 
 
 (defn resource-name-and-action-dispatch
@@ -45,6 +45,13 @@
   (throw (r/ex-bad-method request)))
 
 
+(defn query-as-admin
+  "Calls the database query with with the administrator user identity merged
+   into the given options."
+  [collection-id options]
+  (db/query collection-id (merge options {:nuvla/authn auth/internal-identity})))
+
+
 (defmulti retrieve resource-name-dispatch)
 
 
@@ -65,7 +72,7 @@
    identity to the administrator to allow access to any resource. Works around
    the authentication enforcement at the database level."
   [resource-id]
-  (let [opts {:user-name "INTERNAL" :user-roles ["ADMIN"]}]
+  (let [opts {:nuvla/authn auth/internal-identity}]
     (retrieve-by-id resource-id opts)))
 
 
@@ -122,17 +129,29 @@
           :resource-type)
 
 
-(defn set-standard-operations
-  [{:keys [id resource-type] :as resource} request]
-  (try
-    (a/can-modify? resource request)
-    (let [ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href id}]
-                [{:rel (:edit c/action-uri) :href id}
-                 {:rel (:delete c/action-uri) :href id}])]
+(defn set-standard-collection-operations
+  [{:keys [id] :as resource} request]
+  (if (a/can-add? resource request)
+    (let [ops [(u/operation-map id :add)]]
       (assoc resource :operations ops))
-    (catch Exception e
+    (dissoc resource :operations)))
+
+
+(defn set-standard-resource-operations
+  [{:keys [id] :as resource} request]
+  (let [ops (cond-> []
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
       (dissoc resource :operations))))
+
+
+(defn set-standard-operations
+  [{:keys [resource-type] :as resource} request]
+  (if (u/is-collection? resource-type)
+    (set-standard-collection-operations resource request)
+    (set-standard-resource-operations resource request)))
 
 
 (defmethod set-operations :default

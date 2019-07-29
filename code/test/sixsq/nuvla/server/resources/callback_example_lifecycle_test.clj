@@ -4,7 +4,7 @@
     [clojure.test :refer :all]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-example :as example]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -15,52 +15,52 @@
 (def base-uri (str p/service-context callback/resource-type))
 
 (deftest lifecycle
-  (let [session (-> (ltu/ring-app)
-                    session
-                    (content-type "application/json"))
-        session-admin (header session authn-info-header "root ADMIN USER ANON")
-        session-anon (header session authn-info-header "unknown ANON")]
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "group/nuvla-anon")]
 
     ;; create a callback as an admin
-    (let [create-callback-succeeds {:action         example/action-name
-                                    :targetResource {:href "example/resource-x"}
-                                    :data           {:ok? true}}
+    (let [create-callback-succeeds {:action          example/action-name
+                                    :target-resource {:href "example/resource-x"}
+                                    :data            {:ok? true}}
 
-          create-callback-fails {:action         example/action-name
-                                 :targetResource {:href "example/resource-y"}
-                                 :data           {:ok? false}}
+          create-callback-fails    {:action          example/action-name
+                                    :target-resource {:href "example/resource-y"}
+                                    :data            {:ok? false}}
 
-          uri-succeeds (str p/service-context (-> session-admin
-                                                  (request base-uri
-                                                           :request-method :post
-                                                           :body (json/write-str create-callback-succeeds))
-                                                  (ltu/body->edn)
-                                                  (ltu/is-status 201)
-                                                  :response
-                                                  :body
-                                                  :resource-id))
+          uri-succeeds             (str p/service-context (-> session-admin
+                                                              (request base-uri
+                                                                       :request-method :post
+                                                                       :body (json/write-str create-callback-succeeds))
+                                                              (ltu/body->edn)
+                                                              (ltu/is-status 201)
+                                                              :response
+                                                              :body
+                                                              :resource-id))
 
-          trigger-succeeds (str p/service-context (-> session-admin
-                                                      (request uri-succeeds)
-                                                      (ltu/body->edn)
-                                                      (ltu/is-status 200)
-                                                      (ltu/get-op "execute")))
+          trigger-succeeds         (str p/service-context (-> session-admin
+                                                              (request uri-succeeds)
+                                                              (ltu/body->edn)
+                                                              (ltu/is-status 200)
+                                                              (ltu/get-op "execute")))
 
-          uri-fails (str p/service-context (-> session-admin
-                                               (request base-uri
-                                                        :request-method :post
-                                                        :body (json/write-str create-callback-fails))
-                                               (ltu/body->edn)
-                                               (ltu/is-status 201)
-                                               :response
-                                               :body
-                                               :resource-id))
+          uri-fails                (str p/service-context (-> session-admin
+                                                              (request base-uri
+                                                                       :request-method :post
+                                                                       :body (json/write-str create-callback-fails))
+                                                              (ltu/body->edn)
+                                                              (ltu/is-status 201)
+                                                              :response
+                                                              :body
+                                                              :resource-id))
 
-          trigger-fails (str p/service-context (-> session-admin
-                                                   (request uri-fails)
-                                                   (ltu/body->edn)
-                                                   (ltu/is-status 200)
-                                                   (ltu/get-op "execute")))]
+          trigger-fails            (str p/service-context (-> session-admin
+                                                              (request uri-fails)
+                                                              (ltu/body->edn)
+                                                              (ltu/is-status 200)
+                                                              (ltu/get-op "execute")))]
 
       ;; anon should be able to trigger the callbacks
       (-> session-anon

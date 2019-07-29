@@ -8,31 +8,41 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "USER"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-user"]})
 
 
 (deftest test-schema-check
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        root (merge tpl/resource
-                    {:id            "data-object/my-public-object"
-                     :resource-type dot/resource-type
-                     :created       timestamp
-                     :updated       timestamp
-                     :acl           valid-acl
-                     :state         do/state-new
-                     :url           "http://bucket.s3.com"})]
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        root      (merge tpl/resource
+                         {:id            "data-object/my-public-object"
+                          :resource-type dot/resource-type
+                          :created       timestamp
+                          :updated       timestamp
+                          :acl           valid-acl
+                          :state         do/state-new
 
-    (stu/is-valid ::do-public/data-object root)
+                          :credential    "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
+                          :bucket        "bucket"
+                          :object        "object/name"
+
+                          :template      "data-object-template/generic"
+
+                          :content-type  "text/plain"
+                          :bytes         42
+                          :md5sum        "3deb5ba5d971c85dd979b7466debfdee"
+                          :timestamp     timestamp
+                          :location      [0.0 0.0 0.0]
+
+                          :url           "http://bucket.s3.com"})]
+
+    (stu/is-valid ::do-public/schema root)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl
-                :type :state :object :bucket :credential}]
-      (stu/is-invalid ::do-public/data-object (dissoc root k)))
+                :subtype :state :credential :bucket :object}]
+      (stu/is-invalid ::do-public/schema (dissoc root k)))
 
     ;; optional keywords
-    (doseq [k #{:url}]
-      (stu/is-valid ::do-public/data-object (dissoc root k)))))
+    (doseq [k #{:href :content-type :bytes :md5sum :timestamp :location :url}]
+      (stu/is-valid ::do-public/schema (dissoc root k)))))

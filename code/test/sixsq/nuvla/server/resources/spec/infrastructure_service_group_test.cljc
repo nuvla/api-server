@@ -6,15 +6,12 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "jane"
-                         :type      "USER"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["user/jane"]})
 
 
 (deftest check-service-group
-  (let [timestamp "1964-08-25T10:00:00.0Z"
+  (let [timestamp     "1964-08-25T10:00:00.00Z"
         service-group {:id                      (str service/resource-type "/uuid")
                        :resource-type           service/resource-type
                        :created                 timestamp

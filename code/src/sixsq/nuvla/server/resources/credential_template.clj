@@ -2,39 +2,29 @@
   "
 A collection of templates that are used to create a variety of credentials.
 
-**NOTE**: CredentialTemplate resources are in-memory resources and
-consequently do **not** support the CIMI filtering parameters.
+> NOTE: The `credential-template` resources are in-memory resources and do
+**not** support the CIMI filtering parameters.
 
-SlipStream must manage a variety of credentials to provide, for example,
-programmatic access to SlipStream or SSH access to virtual machines running on
-a cloud infrastructure. The CredentialTemplate resources correspond to the
-various methods that can be used to create these resources.
+Nuvla must manage a variety of credentials to provide, for example,
+programmatic access to Nuvla or access to cloud infrastructures. The
+`credential-template` resources correspond to the types and methods that can be
+used to create these resources.
 
 The parameters required can be found within each template, using the standard
-CIMI read pattern. Details for each parameter can be found by invoking looking
-at the ResourceMetadata resource for the type.
-
-Template | Credential | Description
--------- | ---------- | -----------
-import-ssh-public-key | ssh-public-key | imports an SSH public key from an existing key pair
-generate-ssh-key-pair | ssh-public-key | generates a new SSH key pair, storing public key and returning private key
-generate-api-key | api-key | generates API key and secret, storing secret digest and returning secret
-cloud* | cloud-cred-* | credentials specific to particular cloud infrastructures
-
-Typically, there will also be Credential Template resources that describe the
-credentials for each supported cloud infrastructure.
+CIMI read pattern. Details for each parameter can be found by looking at the
+ResourceMetadata resource for the type.
 
 ```shell
 # List all of the credential creation mechanisms
 # NOTE: You must be authenticated.  Add the appropriate
 # cookie options to the curl command.
 #
-curl https://nuv.la/api/credential-template
+curl https://nuvla.io/api/credential-template
 ```
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -55,14 +45,7 @@ curl https://nuv.la/api/credential-template
 ;; able to list and view templates (if anonymous registration is
 ;; permitted)
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ANON"
-                              :type      "ROLE"
-                              :right     "VIEW"}
-                             {:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-anon"]})
 
 
 ;;
@@ -130,7 +113,8 @@ curl https://nuv.la/api/credential-template
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -156,23 +140,17 @@ curl https://nuv.la/api/credential-template
   (throw (r/ex-bad-method request)))
 
 
-(defn- viewable? [request {:keys [acl] :as entry}]
-  (try
-    (a/can-view? {:acl acl} request)
-    (catch Exception _
-      false)))
-
-
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
-        entries (or (filter (partial viewable? request) (vals @templates)) [])
+  (a/throw-cannot-query collection-acl request)
+  (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
+        entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
+        updated-entries         (remove nil? (map #(a/select-viewable-keys % request) entries))
         ;; FIXME: At least the paging options should be supported.
-        options (select-keys request [:identity :query-params :cimi-params :credential-name :credential-roles])
-        count-before-pagination (count entries)
-        wrapped-entries (wrapper-fn request entries)
-        entries-and-count (assoc wrapped-entries :count count-before-pagination)]
+        options                 (select-keys request [:user-id :claims :query-params :cimi-params])
+        count-before-pagination (count updated-entries)
+        wrapped-entries         (wrapper-fn request updated-entries)
+        entries-and-count       (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 
 
@@ -180,7 +158,10 @@ curl https://nuv.la/api/credential-template
 ;; initialization: create metadata for this collection
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::ct/schema))
+
+
 (defn initialize
   []
-  (md/register (gen-md/generate-metadata ::ns ::ct/schema)))
+  (md/register resource-metadata))
 

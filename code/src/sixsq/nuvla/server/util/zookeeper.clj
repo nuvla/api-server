@@ -56,8 +56,8 @@
 
 (defmacro get-znode [path & options]
   `(let [result# (retry-zk-client zk/data ~path ~@options)
-         data# (:data result#)
-         value# (when (-> data# nil? not) (String. data#))]
+         data#   (:data result#)
+         value#  (when (-> data# nil? not) (String. data#))]
      (assoc result# :data value#)))
 
 
@@ -78,7 +78,7 @@
 
 (defmacro set-data [path value & options]
   `(let [version# (get-version ~path)
-         data# (string-to-byte ~value)]
+         data#    (string-to-byte ~value)]
      (retry-zk-client zk/set-data ~path data# version# ~@options)))
 
 

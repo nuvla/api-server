@@ -6,49 +6,51 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def event-timestamp "2015-01-16T08:05:00.0Z")
+(def event-timestamp "2015-01-16T08:05:00.00Z")
 
 
 (def valid-event
   {:id            "event/262626262626262"
    :resource-type resource-type
-   :acl           {:owner {:type "USER" :principal "joe"}
-                   :rules [{:type "ROLE" :principal "ANON" :right "ALL"}]}
+   :created       event-timestamp
+   :updated       event-timestamp
+   :acl           {:owners   ["user/joe"]
+                   :view-acl ["group/nuvla-anon"]}
 
    :timestamp     event-timestamp
    :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
                    :state    "Started"}
-   :type          "state"
+   :category      "state"
    :severity      "critical"})
 
 
 (deftest check-reference
   (let [updated-event (assoc-in valid-event [:content :resource :href] "another/valid-identifier")]
-    (stu/is-valid ::event/event updated-event))
+    (stu/is-valid ::event/schema updated-event))
   (let [updated-event (assoc-in valid-event [:content :resource :href] "/not a valid reference/")]
-    (stu/is-invalid ::event/event updated-event)))
+    (stu/is-invalid ::event/schema updated-event)))
 
 
 (deftest check-severity
   (doseq [valid-severity ["critical" "high" "medium" "low"]]
-    (stu/is-valid ::event/event (assoc valid-event :severity valid-severity)))
-  (stu/is-invalid ::event/event (assoc valid-event :severity "unknown-severity")))
+    (stu/is-valid ::event/schema (assoc valid-event :severity valid-severity)))
+  (stu/is-invalid ::event/schema (assoc valid-event :severity "unknown-severity")))
 
 
-(deftest check-type
-  (doseq [valid-type ["state" "alarm"]]
-    (stu/is-valid ::event/event (assoc valid-event :type valid-type)))
-  (stu/is-invalid ::event/event (assoc valid-event :type "unknown-type")))
+(deftest check-category
+  (doseq [valid-category ["state" "alarm"]]
+    (stu/is-valid ::event/schema (assoc valid-event :category valid-category)))
+  (stu/is-invalid ::event/schema (assoc valid-event :category "unknown-category")))
 
 
 (deftest check-event-schema
 
-  (stu/is-valid ::event/event valid-event)
+  (stu/is-valid ::event/schema valid-event)
 
   ;; mandatory keywords
-  (doseq [k #{:id :resource-type :acl :timestamp :content :type :severity}]
-    (stu/is-invalid ::event/event (dissoc valid-event k)))
+  (doseq [k #{:id :resource-type :acl :timestamp :content :category :severity}]
+    (stu/is-invalid ::event/schema (dissoc valid-event k)))
 
   ;; optional keywords
   (doseq [k #{}]
-    (stu/is-valid ::event/event (dissoc valid-event k))))
+    (stu/is-valid ::event/schema (dissoc valid-event k))))

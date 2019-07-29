@@ -1,32 +1,37 @@
 (ns sixsq.nuvla.server.resources.credential-hashed-password
   "
-Hashed value of a password.
+This credential stores the hashed value of a password. Used typically to store
+the passwords for Nuvla user accounts. The resource provides actions to check a
+plain text password against the stored hash and to change the password (hash).
 "
   (:require
     [buddy.hashers :as hashers]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as tpl-hashed-pwd]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-hashed-password :as hashed-pwd-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-hashed-password :as ct-hashed-pwd-spec]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
-
-
-(def ^:const admin-opts {:user-name "INTERNAL", :user-roles ["ADMIN"]})
 
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::hashed-pwd-spec/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema))
+  (std-crud/initialize p/resource-type ::hashed-pwd-spec/schema)
+  (md/register resource-metadata))
 
 
 ;;
@@ -50,18 +55,16 @@ Hashed value of a password.
 ;; convert template to credential: hash the plain text password.
 ;;
 
-(defmethod p/tpl->credential tpl-hashed-pwd/credential-type
-  [{:keys [type method password password-repeated parent]} request]
-  (if (= password password-repeated)
-    (if (acceptable-password? password)
-      (let [hash (hashers/derive password)]
-        [nil (cond-> {:resource-type p/resource-type
-                      :type          type
-                      :method        method
-                      :hash          hash}
-                     parent (assoc :parent parent))])
-      (throw (r/ex-response acceptable-password-msg 400)))
-    (throw (r/ex-response "mismatched passwords" 400))))
+(defmethod p/tpl->credential tpl-hashed-pwd/credential-subtype
+  [{:keys [subtype method password parent]} request]
+  (if (acceptable-password? password)
+    (let [hash (hashers/derive password)]
+      [nil (cond-> {:resource-type p/resource-type
+                    :subtype       subtype
+                    :method        method
+                    :hash          hash}
+                   parent (assoc :parent parent))])
+    (throw (r/ex-response acceptable-password-msg 400))))
 
 
 ;;
@@ -71,7 +74,7 @@ Hashed value of a password.
 (def validate-fn (u/create-spec-validation-fn ::hashed-pwd-spec/schema))
 
 
-(defmethod p/validate-subtype tpl-hashed-pwd/credential-type
+(defmethod p/validate-subtype tpl-hashed-pwd/credential-subtype
   [resource]
   (validate-fn resource))
 
@@ -79,7 +82,7 @@ Hashed value of a password.
 (def create-validate-fn (u/create-spec-validation-fn ::ct-hashed-pwd-spec/schema-create))
 
 
-(defmethod p/create-validate-subtype tpl-hashed-pwd/credential-type
+(defmethod p/create-validate-subtype tpl-hashed-pwd/credential-subtype
   [resource]
   (create-validate-fn resource))
 
@@ -88,7 +91,7 @@ Hashed value of a password.
 ;; multimethod for editing; remove keys user cannot change
 ;;
 
-(defmethod p/special-edit tpl-hashed-pwd/credential-type
+(defmethod p/special-edit tpl-hashed-pwd/credential-subtype
   [resource request]
   (dissoc resource :hash))
 
@@ -97,21 +100,31 @@ Hashed value of a password.
 ;; operations
 ;;
 
-(defmethod p/set-credential-operations tpl-hashed-pwd/credential-type
-  [resource request]
-  (try
-    (a/can-modify? resource request)
-    (let [href (:id resource)
-          ^String resource-type (:resource-type resource)
-          ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href href}]
-                [{:rel (:edit c/action-uri) :href href}
-                 {:rel (:delete c/action-uri) :href href}
-                 {:rel (:check-password c/action-uri) :href (str href "/check-password")}
-                 {:rel (:change-password c/action-uri) :href (str href "/change-password")}])]
-      (assoc resource :operations ops))
-    (catch Exception e
+(defn set-collection-ops
+  [{:keys [id] :as resource} request]
+  (if (a/can-add? resource request)
+    (assoc resource :operations [(u/operation-map id :add)])
+    (dissoc resource :operations)))
+
+
+(defn set-resource-ops
+  [{:keys [id] :as resource} request]
+  (let [can-manage? (a/can-manage? resource request)
+        ops         (cond-> []
+                            (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                            (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                            can-manage? (conj (u/action-map id :check-password))
+                            can-manage? (conj (u/action-map id :change-password)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
       (dissoc resource :operations))))
+
+
+(defmethod p/set-credential-operations tpl-hashed-pwd/credential-subtype
+  [{:keys [resource-type] :as resource} request]
+  (if (u/is-collection? resource-type)
+    (set-collection-ops resource request)
+    (set-resource-ops resource request)))
 
 
 ;;
@@ -122,7 +135,7 @@ Hashed value of a password.
   [{{uuid :uuid} :params :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-modify? resource request)
+      (a/can-edit? resource request)
       (let [current-password (get-in request [:body :password])]
         (if (hashers/check current-password hash)
           (r/map-response "valid password" 200)
@@ -130,18 +143,15 @@ Hashed value of a password.
 
 
 (defmethod crud/do-action [p/resource-type "change-password"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (let [id (str p/resource-type "/" uuid)]
     (when-let [{:keys [hash] :as resource} (crud/retrieve-by-id-as-admin id)]
-      (a/can-modify? resource request)
-      (let [current-password (get-in request [:body :current-password])]
+      (a/can-edit? resource request)
+      (let [{:keys [current-password new-password]} body]
         (if (hashers/check current-password hash)
-          (let [{:keys [new-password new-password-repeated]} (:body request)]
-            (if (= new-password new-password-repeated)
-              (if (acceptable-password? new-password)
-                (let [new-hash (hashers/derive new-password)]
-                  (db/edit (assoc resource :hash new-hash) admin-opts)
-                  (r/map-response "password changed" 200))
-                (throw (r/ex-response acceptable-password-msg 400)))
-              (throw (r/ex-response "mismatched passwords" 400))))
+          (if (acceptable-password? new-password)
+            (let [new-hash (hashers/derive new-password)]
+              (db/edit (assoc resource :hash new-hash) {:nuvla/authn auth/internal-identity})
+              (r/map-response "password changed" 200))
+            (throw (r/ex-response acceptable-password-msg 400)))
           (throw (r/ex-response "invalid password" 403)))))))

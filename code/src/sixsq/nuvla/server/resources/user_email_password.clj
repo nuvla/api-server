@@ -1,4 +1,8 @@
 (ns sixsq.nuvla.server.resources.user-email-password
+  "
+Contains the functions necessary to create a user resource from an email
+address and password.
+"
   (:require
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-callback]
@@ -29,11 +33,8 @@
 ;;
 
 (defmethod p/tpl->user email-password/registration-method
-  [{:keys [redirectURI] :as resource} request]
-  (let [user-map (password-utils/create-user-map resource)]
-    (if redirectURI
-      [{:status 303, :headers {"Location" redirectURI}} user-map]
-      [nil user-map])))
+  [resource request]
+  [nil (password-utils/create-user-map resource)])
 
 
 ;;
@@ -50,12 +51,13 @@
 
 
 (defmethod p/post-user-add email-password/registration-method
-  [{user-id :id :as resource} {:keys [base-uri body] :as request}]
+  [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
   (try
-    (let [{{:keys [email password username]} :template} body]
-      (user-utils/create-user-subresources user-id email password username)
-      (-> (create-user-email-callback base-uri user-id)
+    (let [{{:keys [email password username]} :template} body
+          callback-data {:redirect-url redirect-url}]
+      (user-utils/create-user-subresources id email password username)
+      (-> (create-user-email-callback base-uri id callback-data)
           (email-utils/send-validation-email email)))
     (catch Exception e
-      (user-utils/delete-user user-id)
+      (user-utils/delete-user id)
       (throw e))))
