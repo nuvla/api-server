@@ -2,30 +2,40 @@
   "schema definitions for the 'actions' field of a ResourceMetadata resource"
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(s/def ::name ::cimi-core/token)
+(s/def ::name ::core/token)
 
-(s/def ::uri ::cimi-core/uri)
+(s/def ::uri ::core/uri)
 
-(s/def ::description ::cimi-core/nonblank-string)
+(s/def ::description ::core/nonblank-string)
 
 ;; only those methods typically used in REST APIs are permitted by this implementation
 (s/def ::method #{"GET" "POST" "PUT" "DELETE"})
 
-(s/def ::inputMessage ::cimi-core/mimetype)
+(s/def ::input-message ::core/mimetype)
 
-(s/def ::outputMessage ::cimi-core/mimetype)
+(s/def ::output-message ::core/mimetype)
+
+(s/def ::parameter (su/only-keys :req-un [::name]
+                                 :opt-un [::value-scope/value-scope]))
+
+(s/def ::input-parameters
+  (s/coll-of ::parameter :min-count 1 :type vector?))
 
 (s/def ::action (su/only-keys :req-un [::name
                                        ::uri
                                        ::method
-                                       ::inputMessage
-                                       ::outputMessage]
-                              :opt-un [::description]))
+                                       ::input-message
+                                       ::output-message]
+                              :opt-un [::description
+                                       ::input-parameters]))
 
+;; Ideally, keys within this collection should not be indexed. However,
+;; when wrapping this with st/spec, an exception is thrown when evaluating
+;; the spec. Use clojure spec directly to work around this problem.
 (s/def ::actions
-  (st/spec {:spec                (s/coll-of ::action :min-count 1 :type vector?)
-            :json-schema/indexed false}))
+  (s/spec (s/coll-of ::action :min-count 1 :type vector?)))

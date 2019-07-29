@@ -2,35 +2,32 @@
   (:require
     [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as tpl-swarm]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as spec-swarm]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-kubernetes :as tpl-kubernetes]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-kubernetes :as spec-kubernetes]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-service-template-create-swarm-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id                 (str tpl/resource-type "/swarm")
-             :resource-type      tpl/resource-type
-             :created            timestamp
-             :updated            timestamp
-             :acl                valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        cfg       {:id                 (str tpl/resource-type "/kubernetes")
+                   :resource-type      tpl/resource-type
+                   :created            timestamp
+                   :updated            timestamp
+                   :acl                valid-acl
 
-             :method             tpl-swarm/method
-             :type               tpl-swarm/method
+                   :method             tpl-kubernetes/method
+                   :subtype            tpl-kubernetes/method
 
-             :service-credential {:href "credential/my-cloud-credential"}}]
+                   :service-credential {:href "credential/my-cloud-credential"}}]
 
-    (stu/is-valid ::spec-swarm/schema cfg)
+    (stu/is-valid ::spec-kubernetes/schema cfg)
 
     (doseq [attr #{:id :resource-type :created :updated :acl :method :service-credential}]
-      (stu/is-invalid ::spec-swarm/schema (dissoc cfg attr)))))
+      (stu/is-invalid ::spec-kubernetes/schema (dissoc cfg attr)))))
 
 
 

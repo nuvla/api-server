@@ -1,4 +1,9 @@
 (ns sixsq.nuvla.server.resources.configuration-nuvla
+  "
+Contains the core configuration of the Nuvla server. This resource must always
+exist. If it isn't found when the server starts, then it will be created with
+default values.
+"
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

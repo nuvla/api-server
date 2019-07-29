@@ -11,29 +11,29 @@
 
 (deftest test-key-path
   (with-redefs [environ/env {}]
-    (is (= t/default-private-key-path
-           (t/key-path :auth-private-key t/default-private-key-path)))
-    (is (= t/default-public-key-path
-           (t/key-path :auth-public-key t/default-public-key-path))))
+    (is (= t/default-session-crt-path
+           (t/key-path :nuvla-session-key t/default-session-crt-path)))
+    (is (= t/default-session-key-path
+           (t/key-path :nuvla-session-crt t/default-session-key-path))))
 
   (with-redefs [environ/env env-fixture/env-map]
-    (is (= (get env-fixture/env-authn "AUTH_PRIVATE_KEY")
-           (t/key-path :auth-private-key t/default-private-key-path)))
-    (is (= (get env-fixture/env-authn "AUTH_PUBLIC_KEY")
-           (t/key-path :auth-public-key t/default-public-key-path)))))
+    (is (= (get env-fixture/env-authn "NUVLA_SESSION_KEY")
+           (t/key-path :nuvla-session-key t/default-session-crt-path)))
+    (is (= (get env-fixture/env-authn "NUVLA_SESSION_CRT")
+           (t/key-path :nuvla-session-crt t/default-session-key-path)))))
 
 (deftest check-read-key
   (with-redefs [environ/env env-fixture/env-map]
-    (is (t/read-key ks/private-key t/default-private-key-path :auth-private-key))
-    (is (t/private-key :auth-private-key))
-    (is (t/read-key ks/public-key t/default-public-key-path :auth-public-key))
-    (is (t/public-key :auth-public-key))))
+    (is (t/read-key ks/private-key t/default-session-crt-path :nuvla-session-key))
+    (is (t/private-key :nuvla-session-key))
+    (is (t/read-key ks/public-key t/default-session-key-path :nuvla-session-crt))
+    (is (t/public-key :nuvla-session-crt))))
 
 (deftest check-throws-unknown-key
-  (with-redefs [t/key-path (fn [_ _] "/unknown/key-path.pem")
+  (with-redefs [t/key-path       (fn [_ _] "/unknown/key-path.pem")
                 environ.core/env {}]
-    (is (thrown? Exception (t/read-key ks/private-key t/default-private-key-path :auth-private-key)))
-    (is (thrown? Exception (t/read-key ks/public-key t/default-public-key-path :auth-public-key)))))
+    (is (thrown? Exception (t/read-key ks/private-key t/default-session-crt-path :nuvla-session-key)))
+    (is (thrown? Exception (t/read-key ks/public-key t/default-session-key-path :nuvla-session-crt)))))
 
 (deftest check-parse-key-string
   (is (t/parse-key-string test-rsa-key))

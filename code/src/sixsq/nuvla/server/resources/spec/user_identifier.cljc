@@ -1,53 +1,46 @@
 (ns sixsq.nuvla.server.resources.spec.user-identifier
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as c]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
+
+; redefine parent to put it as mandatory
+(s/def ::parent (-> (st/spec ::user/id)
+                    (assoc :name "parent"
+                           :json-schema/type "resource-id"
+                           :json-schema/description "reference to parent resource"
+
+                           :json-schema/section "meta"
+                           :json-schema/editable false
+                           :json-schema/order 6)))
 
 
 (s/def ::identifier
   (-> (st/spec string?)
       (assoc :name "identifier"
-             :json-schema/name "identifier"
              :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "identifier"
              :json-schema/description "identifier to associate with a user"
-             :json-schema/help "unique (external) identifier to associate with a user"
-             :json-schema/group "body"
-             :json-schema/order 10
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
 
-;; Less restrictive than standard ::cimi-common/id to accommodate OIDC, etc.
-(s/def ::userid (s/and string? #(re-matches #"^user/.*" %)))
+             :json-schema/order 10)))
 
-(s/def ::href ::userid)
-(s/def ::resource-link (s/keys :req-un [::href]))
 
-(s/def ::user
-  (-> (st/spec ::resource-link)
-      (assoc :name "user"
-             :json-schema/name "user"
-             :json-schema/type "ref"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
+(def ^:const user-identifier-common-attrs
+  {:req-un [::common/id
+            ::common/resource-type
+            ::common/created
+            ::common/updated
+            ::common/acl
+            ::parent]
+   :opt-un [::common/name
+            ::common/description
+            ::common/tags
+            ::common/resource-metadata
+            ::common/operations]})
 
-             :json-schema/displayName "user"
-             :json-schema/description "id of user resource"
-             :json-schema/help "id of user resource associated with the linked identifier"
-             :json-schema/group "body"
-             :json-schema/order 11
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
 
 (s/def ::schema
-  (su/only-keys-maps c/common-attrs
-                     {:req-un [::identifier ::user]}))
+  (su/only-keys-maps user-identifier-common-attrs
+                     {:req-un [::parent
+                               ::identifier]}))

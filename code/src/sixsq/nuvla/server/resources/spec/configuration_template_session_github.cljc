@@ -7,59 +7,38 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::clientID
+(s/def ::client-id
   (-> (st/spec ::cimi-core/token)
-      (assoc :name "clientID"
-             :json-schema/name "clientID"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
+      (assoc :name "client-id"
              :json-schema/displayName "client ID"
-             :json-schema/description "GitHub client ID"
-             :json-schema/help "GitHub client ID associated with registered application"
+             :json-schema/description "GitHub client ID associated with registered application"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
 
-(s/def ::clientSecret
+(s/def ::client-secret
   (-> (st/spec ::cimi-core/token)
-      (assoc :name "clientSecret"
-             :json-schema/name "clientSecret"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
+      (assoc :name "client-secret"
              :json-schema/displayName "client secret"
-             :json-schema/description "GitHub client secret"
-             :json-schema/help "GitHub client secret associated with registered application"
+             :json-schema/description "GitHub client secret associated with registered application"
              :json-schema/group "body"
              :json-schema/order 21
              :json-schema/hidden false
              :json-schema/sensitive true)))
 
 
-(s/def ::instance
-  (-> (st/spec ::ps/instance)
-      (assoc :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable false
-             :json-schema/consumerWritable true)))
+(s/def ::instance (st/spec ::ps/instance))
 
 
 (def configuration-template-keys-spec-req
-  {:req-un [::instance ::clientID ::clientSecret]})
+  {:req-un [::instance ::client-id ::client-secret]})
 
 (def configuration-template-keys-spec-create
-  {:req-un [::instance ::clientID ::clientSecret]})
+  {:req-un [::instance ::client-id ::client-secret]})
 
-;; Defines the contents of the github authentication ConfigurationTemplate resource itself.
+;; Defines the contents of the github authentication configuration-template resource itself.
 (s/def ::schema
   (su/only-keys-maps ps/resource-keys-spec
                      configuration-template-keys-spec-req))

@@ -17,4 +17,4 @@
   ([collection-id]
    (collection-id->index default-index-prefix collection-id))
   ([index-prefix collection-id]
-   (str index-prefix collection-id)))
+   (str index-prefix (name collection-id))))

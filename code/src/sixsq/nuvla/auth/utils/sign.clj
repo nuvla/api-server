@@ -9,9 +9,9 @@
 (def default-algorithm :rs256)
 
 
-(defn sign-claims
-  [claims]
-  (jwt/sign claims (certs/private-key :auth-private-key) {:alg default-algorithm}))
+(defn sign-cookie-info
+  [cookie-info]
+  (jwt/sign cookie-info (certs/private-key :nuvla-session-key) {:alg default-algorithm}))
 
 
 (defn algorithm-option
@@ -23,16 +23,16 @@
       {:alg default-algorithm})))
 
 
-(defn unsign-claims
-  "If passed only the token from which to extract the claims, then the public
-   key in the path defined by the keyword :auth-public-key will be used to
-   verify the claims. If a second keyword argument is provided, it will be used
+(defn unsign-cookie-info
+  "If passed only the token from which to extract the cookie info, then the public
+   key in the path defined by the keyword :nuvla-session-crt will be used to
+   verify the cookie info. If a second keyword argument is provided, it will be used
    to find the public key path. If the second argument is a string, it is
    treated as a raw public key string and will be used directly."
   ([token]
-   (unsign-claims token :auth-public-key))
+   (unsign-cookie-info token :nuvla-session-crt))
   ([token env-var-kw-or-cert-string]
-   (let [options (algorithm-option token)
+   (let [options    (algorithm-option token)
          public-key (if (keyword? env-var-kw-or-cert-string)
                       (certs/public-key env-var-kw-or-cert-string)
                       (certs/str->public-key env-var-kw-or-cert-string))]

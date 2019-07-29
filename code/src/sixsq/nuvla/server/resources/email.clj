@@ -9,9 +9,8 @@ will send an email to the user with a callback URL to validate the email
 address. When the callback is triggered, the `validated` flag is set to true.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -27,19 +26,16 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
-(def actions [{:name          "validate"
-               :uri           (:validate c/action-uri)
-               :description   "starts the workflow to validate the email address"
-               :method        "POST"
-               :inputMessage  "application/json"
-               :outputMessage "application/json"}])
+(def actions [{:name           "validate"
+               :uri            "validate"
+               :description    "starts the workflow to validate the email address"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}])
 
 
 ;;
@@ -54,10 +50,10 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-;; resource identifier is the MD5 checksum of the email address
+;; resource identifier a UUID generated from the email address
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
-  (if-let [new-id (some-> resource :address u/md5)]
+  (if-let [new-id (some-> resource :address u/from-data-uuid)]
     (assoc resource :id (str resource-name "/" new-id))))
 
 
@@ -93,15 +89,13 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;;
 
 (defmethod crud/set-operations resource-type
-  [{:keys [validated] :as resource} request]
+  [{:keys [id resource-type validated] :as resource} request]
   (try
-    (a/can-modify? resource request)
-    (let [href (:id resource)
-          ^String resource-type (:resource-type resource)
-          ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href href}]
-                (cond-> [{:rel (:delete c/action-uri) :href href}]
-                        (not validated) (conj {:rel (:validate c/action-uri) :href (str href "/validate")})))]
+    (a/can-edit? resource request)
+    (let [ops (if (u/is-collection? resource-type)
+                [(u/operation-map id :add)]
+                (cond-> [(u/operation-map id :delete)]
+                        (not validated) (conj (u/action-map id :validate))))]
       (assoc resource :operations ops))
     (catch Exception _
       (dissoc resource :operations))))
@@ -139,7 +133,10 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::email/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::email/schema)
-  (md/register (gen-md/generate-metadata ::ns ::email/schema)))
+  (md/register resource-metadata))

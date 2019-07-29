@@ -1,16 +1,17 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service
   "
 This resource represents an infrastructure service with an endpoint. Instances
-of a infrastructure-service resource must reference a
-infrastructure-service-group resource via the `parent` attribute. Associated
+of a `infrastructure-service` resource must reference an
+`infrastructure-service-group` resource via the `parent` attribute. Associated
 credentials should make an explicit reference to the relevant
-infrastructure-service resources.
+`infrastructure-service` resources.
 
 This is a templated resource. All creation requests must be done via an
-existing infrastructure-service-template resource.
+existing `infrastructure-service-template` resource.
 "
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -29,20 +30,20 @@ existing infrastructure-service-template resource.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 ;;
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service/schema))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-service/schema)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service/schema)))
+  (md/register resource-metadata))
 
 
 ;;
@@ -110,7 +111,7 @@ existing infrastructure-service-template resource.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl (dissoc resource :acl) request))
+  (a/add-acl resource request))
 
 
 ;;
@@ -139,13 +140,13 @@ existing infrastructure-service-template resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [service template]
+          (fn [service request]
             (:method service)))
 
 
 ;; default post-add hook is a no-op
 (defmethod post-add-hook :default
-  [service template]
+  [service request]
   nil)
 
 
@@ -163,20 +164,20 @@ existing infrastructure-service-template resource.
 
   ;; name, description, and tags values are taken from
   ;; the create wrapper, NOT the contents of :template
-  (let [idmap {:identity (:identity request)}
-        body (:body request)
-        desc-attrs (u/select-desc-keys body)
+  (let [authn-info         (auth/current-authentication request)
+        body               (:body request)
+        desc-attrs         (u/select-desc-keys body)
         validated-template (-> body
                                (assoc :resource-type create-type)
-                               (std-crud/resolve-hrefs idmap true)
+                               (std-crud/resolve-hrefs authn-info true)
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)
-        service (tpl->service validated-template)]
+        service            (tpl->service validated-template)]
     (let [response (add-impl (assoc request :body service))
-          id (-> response :body :resource-id)
-          service (assoc service :id id)]
-      (post-add-hook service validated-template)
+          id       (-> response :body :resource-id)
+          service  (assoc service :id id)]
+      (post-add-hook service request)
       response)))
 
 

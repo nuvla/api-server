@@ -45,13 +45,18 @@
     allOf (first allOf)
     anyOf (first anyOf)
     type (case type
-           "ref" (assoc m :type "object")
            "map" (assoc m :type "object")
-           "URI" (assoc m :type "keyword")
+           "geo-point" (assoc m :type "geo_point"
+                                :ignore_z_value true)
            "string" (if (= format "date-time")
                       (assoc-date m)
                       (assoc m :type "keyword"))
+           "resource-id" (assoc m :type "keyword")
+           "uri" (assoc m :type "keyword")
            "number" (-> m
+                        (assoc :type "double")
+                        (dissoc :format))
+           "double" (-> m
                         (assoc :type "double")
                         (dissoc :format))
            "integer" (-> m
@@ -60,11 +65,10 @@
            "long" (-> m
                       (assoc :type "long")
                       (dissoc :format))
-           "dateTime" (assoc-date m)
+           "date-time" (assoc-date m)
            "array" (:items m)
-           "Array" (:items m)
            m)
-    enum (let [vs (:enum m)
+    enum (let [vs   (:enum m)
                type (set-type-from-first-child vs)]
            (merge (dissoc m :enum) type))
     properties (assoc m :type "object")
@@ -83,14 +87,15 @@
 
 (defn json-schema->es-mapping
   "Function to be used with w/postwalk to transform a JSON schema into an
-   Elasticsearch mapping."
+   Elasticsearch mapping. The default is that the field will be indexed and be
+   included in the 'fulltext' pseudo-field when marked as an indexed keyword."
   [m]
   (if (map? m)
-    (let [{:keys [searchable indexed] :or {indexed true, searchable false}} m
-          result (cond-> (transform-type->es-type m)
-                         searchable (assoc :copy_to "fulltext")
-                         (not indexed) (assoc-not-indexed)
-                         )]
+    (let [{:keys [fulltext indexed] :or {indexed true, fulltext false}} m
+          {:keys [type] :as updated-m} (transform-type->es-type m)
+          result (cond-> updated-m
+                         (and (= type "keyword") fulltext) (assoc :copy_to "fulltext")
+                         (not indexed) (assoc-not-indexed))]
       (into {} (filter keep-key? result)))
     m))
 

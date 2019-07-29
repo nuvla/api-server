@@ -2,9 +2,10 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [are deftest is use-fixtures]]
+    [environ.core :as env]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info-header :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
@@ -17,14 +18,10 @@
 (def base-uri (str p/service-context user-identifier/resource-type))
 
 
-(def valid-acl {:owner {:type      "ROLE"
-                        :principal "ADMIN"}
-                :rules [{:principal "ADMIN"
-                         :right     "ALL"
-                         :type      "ROLE"}]})
+(def valid-acl {:owners ["group/nuvla-admin"]})
 
 
-(def timestamp "1964-08-25T10:00:00.0Z")
+(def timestamp "1964-08-25T10:00:00.00Z")
 
 
 (def test-identifier "some-user-identifer")
@@ -38,7 +35,7 @@
 
                   :identifier    test-identifier
 
-                  :user          {:href "user/jane"}})
+                  :parent        "user/abcdef01-abcd-abcd-abcd-abcdef012345"})
 
 
 (deftest check-metadata
@@ -47,11 +44,12 @@
 
 (deftest lifecycle
 
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "super ADMIN USER ANON")
-        session-jane (header session-anon authn-info-header "jane USER ANON")
-        session-tarzan (header session-anon authn-info-header "tarzan USER ANON")]
+  (let [session-anon   (-> (session (ltu/ring-app))
+                           (content-type "application/json"))
+        session-admin  (header session-anon authn-info-header
+                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane   (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
+        session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-jane session-tarzan]]
@@ -68,8 +66,20 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    (doseq [session [session-jane session-tarzan session-admin]]
+    (doseq [session [session-jane session-tarzan]]
       (-> session
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0)))
+
+    (if (env/env :nuvla-super-password)
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1))
+      (-> session-admin
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
@@ -77,13 +87,13 @@
 
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (let [uri (-> session-admin
-                  (request base-uri
-                           :request-method :post
-                           :body (json/write-str valid-entry))
-                  (ltu/body->edn)
-                  (ltu/is-status 201)
-                  (ltu/location))
+    (let [uri     (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-entry))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
 
           abs-uri (str p/service-context uri)]
 
@@ -101,18 +111,18 @@
             (ltu/is-status 200)))
 
       ;; check content of the resource
-      (let [expected-id (str user-identifier/resource-type "/" (u/md5 (:identifier valid-entry)))
-            resource (-> session-admin
-                         (request abs-uri)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         :response
-                         :body)]
+      (let [expected-id (str user-identifier/resource-type "/" (-> valid-entry :identifier u/from-data-uuid))
+            resource    (-> session-admin
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            :response
+                            :body)]
 
         (is (= {:id         expected-id
                 :identifier test-identifier
-                :user       {:href "user/jane"}}
-               (select-keys resource #{:id :identifier :user}))))
+                :parent     "user/abcdef01-abcd-abcd-abcd-abcdef012345"}
+               (select-keys resource #{:id :identifier :parent}))))
 
       ;; adding the same resource a second time must fail
       (-> session-admin

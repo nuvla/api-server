@@ -1,11 +1,15 @@
 (ns sixsq.nuvla.server.resources.evidence-record
+  "
+The `evidence-record` resources provide information for auditing a process,
+justifying whether a particular check within the process has passed or failed.
+"
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [sixsq.nuvla.server.resources.service-catalog.utils :as sc]
+    [sixsq.nuvla.server.resources.data.keys :as key-utils]
     [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]))
 
 
@@ -15,11 +19,8 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 (defmethod crud/add-acl resource-type
@@ -32,15 +33,15 @@
 
 (defn- validate-attributes
   [resource]
-  (let [valid-prefixes (sn/all-prefixes)
+  (let [valid-prefixes   (sn/all-prefixes)
         resource-payload (dissoc resource
                                  :acl :id :resource-type :name :description
-                                 :created :updated :properties :operations
+                                 :created :updated :tags :operations
                                  :class :plan-id :start-time :end-time :passed)
-        validator (partial sc/valid-attribute-name? valid-prefixes)]
-    (if (sc/valid-attributes? validator resource-payload)
+        validator        (partial key-utils/valid-attribute-name? valid-prefixes)]
+    (if (key-utils/valid-attributes? validator resource-payload)
       resource
-      (sc/throw-wrong-namespace))))
+      (key-utils/throw-wrong-namespace))))
 
 
 (def validate-fn (u/create-spec-validation-fn ::evidence-record/schema))
@@ -62,12 +63,14 @@
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+
 (defmethod crud/add resource-type
   [request]
   (add-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
+
 
 (defmethod crud/retrieve resource-type
   [request]
@@ -76,12 +79,14 @@
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
+
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
+
 
 (defmethod crud/query resource-type
   [request]
@@ -91,6 +96,7 @@
 ;;
 ;; initialization
 ;;
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::evidence-record/schema))

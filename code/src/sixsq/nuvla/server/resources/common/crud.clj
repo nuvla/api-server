@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.common.crud
   (:require
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.common.schema :as c]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -14,19 +14,23 @@
   [request]
   (get-in request [:params :resource-name]))
 
+
 (defn resource-id-dispatch
   [resource-id & _]
-  (first (u/split-resource-id resource-id)))
+  (first (u/parse-id resource-id)))
+
 
 (defn resource-name-and-action-dispatch
   [request]
   ((juxt :resource-name :action) (:params request)))
+
 
 ;;
 ;; Primary CRUD multi-methods
 ;;
 
 (defmulti add resource-name-dispatch)
+
 
 (defmethod add :default
   [request]
@@ -35,12 +39,21 @@
 
 (defmulti query resource-name-dispatch)
 
+
 (defmethod query :default
   [request]
   (throw (r/ex-bad-method request)))
 
 
+(defn query-as-admin
+  "Calls the database query with with the administrator user identity merged
+   into the given options."
+  [collection-id options]
+  (db/query collection-id (merge options {:nuvla/authn auth/internal-identity})))
+
+
 (defmulti retrieve resource-name-dispatch)
+
 
 (defmethod retrieve :default
   [request]
@@ -48,19 +61,23 @@
 
 (defmulti retrieve-by-id resource-id-dispatch)
 
+
 (defmethod retrieve-by-id :default
   [resource-id & [options]]
   (db/retrieve resource-id (or options {})))
+
 
 (defn retrieve-by-id-as-admin
   "Calls the retrieve-by-id multimethod with options that set the user
    identity to the administrator to allow access to any resource. Works around
    the authentication enforcement at the database level."
   [resource-id]
-  (let [opts {:user-name "INTERNAL" :user-roles ["ADMIN"]}]
+  (let [opts {:nuvla/authn auth/internal-identity}]
     (retrieve-by-id resource-id opts)))
 
+
 (defmulti edit resource-name-dispatch)
+
 
 (defmethod edit :default
   [request]
@@ -69,15 +86,19 @@
 
 (defmulti delete resource-name-dispatch)
 
+
 (defmethod delete :default
   [request]
   (throw (r/ex-bad-method request)))
 
+
 (defmulti do-action resource-name-and-action-dispatch)
+
 
 (defmethod do-action :default
   [request]
   (throw (r/ex-bad-action request (resource-name-and-action-dispatch request))))
+
 
 ;;
 ;; Resource schema validation.
@@ -89,9 +110,11 @@
            dispatch value, the method throws an exception."
           :resource-type)
 
+
 (defmethod validate :default
   [resource]
   (throw (ex-info (str "unknown resource type: " (:resource-type resource)) (or resource {}))))
+
 
 ;;
 ;; Provide allowed operations for resources and collections
@@ -105,21 +128,36 @@
            if the current user has the MODIFY right."
           :resource-type)
 
-(defn set-standard-operations
-  [{:keys [id resource-type] :as resource} request]
-  (try
-    (a/can-modify? resource request)
-    (let [ops (if (u/is-collection? resource-type)
-                [{:rel (:add c/action-uri) :href id}]
-                [{:rel (:edit c/action-uri) :href id}
-                 {:rel (:delete c/action-uri) :href id}])]
+
+(defn set-standard-collection-operations
+  [{:keys [id] :as resource} request]
+  (if (a/can-add? resource request)
+    (let [ops [(u/operation-map id :add)]]
       (assoc resource :operations ops))
-    (catch Exception e
+    (dissoc resource :operations)))
+
+
+(defn set-standard-resource-operations
+  [{:keys [id] :as resource} request]
+  (let [ops (cond-> []
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
       (dissoc resource :operations))))
+
+
+(defn set-standard-operations
+  [{:keys [resource-type] :as resource} request]
+  (if (u/is-collection? resource-type)
+    (set-standard-collection-operations resource request)
+    (set-standard-resource-operations resource request)))
+
 
 (defmethod set-operations :default
   [resource request]
   (set-standard-operations resource request))
+
 
 ;;
 ;; Determine the identifier for a new resource.
@@ -132,9 +170,11 @@
           (fn [json resource-name]
             resource-name))
 
+
 (defmethod new-identifier :default
   [json resource-name]
   (assoc json :id (u/new-resource-id resource-name)))
+
 
 ;;
 ;; Determine the ACL to use for a new resource.
@@ -144,6 +184,7 @@
 (defmulti add-acl
           (fn [{:keys [resource-type]} request]
             resource-type))
+
 
 (defmethod add-acl :default
   [json request]

@@ -1,14 +1,23 @@
 (ns sixsq.nuvla.server.resources.module
+  "
+This resource represents a module--the generic term for any project, image,
+component, or application.
+"
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -18,18 +27,15 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::module/module))
+(def validate-fn (u/create-spec-validation-fn ::module/schema))
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -48,27 +54,54 @@
 ;; CRUD operations
 ;;
 
-(defn type->resource-name
-  [type]
-  (case type
-    "COMPONENT" module-component/resource-type
-    (throw (r/ex-bad-request (str "unknown module type: " type)))))
+(defn subtype->resource-name
+  [subtype]
+  (case subtype
+    "component" module-component/resource-type
+    "application" module-application/resource-type
+    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
-(defn type->resource-uri
-  [type]
-  (case type
-    "COMPONENT" module-component/resource-type
-    (throw (r/ex-bad-request (str "unknown module type: " type)))))
+(defn subtype->resource-uri
+  [subtype]
+  (case subtype
+    "component" module-component/resource-type
+    "application" module-application/resource-type
+    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
+
+
+(defn colliding-path?
+  [path]
+  (let [filter    (parser/parse-cimi-filter (format "path='%s'" path))
+        query-map {:params         {:resource-name resource-type}
+                   :request-method :put
+                   :nuvla/authn    auth/internal-identity
+                   :cimi-params    {:filter filter
+                                    :last   0}}]
+    (-> query-map
+        crud/query
+        :body
+        :count
+        pos?)))
+
+
+(defn throw-colliding-path
+  [path]
+  (when (colliding-path? path)
+    (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-  (a/can-modify? {:acl collection-acl} request)
-  (let [[{:keys [type] :as module-meta}
+
+  (a/throw-cannot-add collection-acl request)
+
+  (throw-colliding-path (:path body))
+
+  (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
-    (if (= "PROJECT" type)
+    (if (= "project" subtype)
       (let [module-meta (module-utils/set-parent-path module-meta)]
 
         (db/add                                             ; FIXME duplicated code
@@ -81,22 +114,22 @@
               (crud/add-acl request)
               crud/validate)
           {}))
-      (let [content-url (type->resource-name type)
-            content-uri (type->resource-uri type)
+      (let [content-url     (subtype->resource-name subtype)
+            content-uri     (subtype->resource-uri subtype)
 
-            content-body (merge module-content {:resource-type content-uri})
+            content-body    (merge module-content {:resource-type content-uri})
 
-            content-request {:params   {:resource-name content-url}
-                             :identity std-crud/internal-identity
-                             :body     content-body}
+            content-request {:params      {:resource-name content-url}
+                             :body        content-body
+                             :nuvla/authn auth/internal-identity}
 
-            response (crud/add content-request)
+            response        (crud/add content-request)
 
-            content-id (-> response :body :resource-id)
-            module-meta (-> (assoc module-meta :versions [(cond-> {:href   content-id
-                                                                   :author author}
-                                                                  commit (assoc :commit commit))])
-                            module-utils/set-parent-path)]
+            content-id      (-> response :body :resource-id)
+            module-meta     (-> (assoc module-meta :versions [(cond-> {:href   content-id
+                                                                       :author author}
+                                                                      commit (assoc :commit commit))])
+                                module-utils/set-parent-path)]
 
         (db/add
           resource-type
@@ -121,7 +154,7 @@
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" (-> uuid split-uuid first))
       (db/retrieve request)
-      (a/can-view? request)))
+      (a/throw-cannot-view request)))
 
 
 (defn retrieve-content-id
@@ -135,16 +168,18 @@
   [{{uuid :uuid} :params :as request}]
   (try
     (let [{:keys [versions] :as module-meta} (retrieve-edn request)
-          version-index (second (split-uuid uuid))
-          version-id (retrieve-content-id versions version-index)
+          version-index  (second (split-uuid uuid))
+          version-id     (retrieve-content-id versions version-index)
           module-content (if version-id
                            (-> version-id
                                (crud/retrieve-by-id-as-admin)
                                (dissoc :resource-type :operations :acl))
                            (when version-index
-                             (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
+                             (throw (r/ex-not-found
+                                      (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch IndexOutOfBoundsException _
       (r/response-not-found (str resource-type "/" uuid)))
@@ -161,34 +196,34 @@
     (let [id (str resource-type "/" (-> request :params :uuid))
           [module-meta {:keys [author commit] :as module-content}]
           (-> body u/strip-service-attrs module-utils/split-resource)
-          {:keys [type versions acl]} (crud/retrieve-by-id-as-admin id)]
+          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)]
 
-      (a/can-modify? {:acl acl} request)
+      (a/can-edit? {:acl acl} request)
 
-      (if (= "PROJECT" type)
-        (let [module-meta (-> (assoc module-meta :type type)
+      (if (= "project" subtype)
+        (let [module-meta (-> (assoc module-meta :subtype subtype)
                               module-utils/set-parent-path)]
 
           (edit-impl (assoc request :body module-meta)))
-        (let [content-url (type->resource-name type)
-              content-uri (type->resource-uri type)
+        (let [content-url     (subtype->resource-name subtype)
+              content-uri     (subtype->resource-uri subtype)
 
-              content-body (merge module-content {:resource-type content-uri})
+              content-body    (merge module-content {:resource-type content-uri})
 
-              content-request {:params   {:resource-name content-url}
-                               :identity std-crud/internal-identity
-                               :body     content-body}
+              content-request {:params      {:resource-name content-url}
+                               :body        content-body
+                               :nuvla/authn auth/internal-identity}
 
-              response (crud/add content-request)
+              response        (crud/add content-request)
 
-              content-id (-> response :body :resource-id)
+              content-id      (-> response :body :resource-id)
 
-              versions (conj versions (cond-> {:href   content-id
-                                               :author author}
-                                              commit (assoc :commit commit)))
-              module-meta (-> (assoc module-meta :versions versions
-                                                 :type type)
-                              module-utils/set-parent-path)]
+              versions        (conj versions (cond-> {:href   content-id
+                                                      :author author}
+                                                     commit (assoc :commit commit)))
+              module-meta     (-> (assoc module-meta :versions versions
+                                                     :subtype subtype)
+                                  module-utils/set-parent-path)]
 
           (edit-impl (assoc request :body module-meta)))))
     (catch Exception e
@@ -206,28 +241,28 @@
 
 
 (defn delete-content
-  [content-id type]
-  (let [delete-request {:params   {:uuid          (-> content-id u/split-resource-id second)
-                                   :resource-name (type->resource-name type)}
-                        :identity std-crud/internal-identity
-                        :body     {:id content-id}}]
+  [content-id subtype]
+  (let [delete-request {:params      {:uuid          (-> content-id u/parse-id second)
+                                      :resource-name (subtype->resource-name subtype)}
+                        :body        {:id content-id}
+                        :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
 
 
 (defn delete-all
-  [request {:keys [type versions] :as module-meta}]
+  [request {:keys [subtype versions] :as module-meta}]
   (doseq [version versions]
     (when version
-      (delete-content (:href version) type)))
+      (delete-content (:href version) subtype)))
   (delete-impl request))
 
 
 (defn delete-item
-  [request {:keys [type versions] :as module-meta} version-index]
-  (let [content-id (retrieve-content-id versions version-index)
-        delete-response (delete-content content-id type)
+  [request {:keys [subtype versions] :as module-meta} version-index]
+  (let [content-id       (retrieve-content-id versions version-index)
+        delete-response  (delete-content content-id subtype)
         updated-versions (remove-version versions version-index)
-        module-meta (assoc module-meta :versions updated-versions)
+        module-meta      (assoc module-meta :versions updated-versions)
         {:keys [status]} (edit-impl (assoc request :request-method :put
                                                    :body module-meta))]
     (when (not= status 200)
@@ -242,10 +277,10 @@
 
     (let [module-meta (retrieve-edn request)
 
-          _ (a/can-modify? module-meta request)
+          _           (a/throw-cannot-edit module-meta request)
 
           [uuid version-index] (split-uuid uuid-full)
-          request (assoc-in request [:params :uuid] uuid)]
+          request     (assoc-in request [:params :uuid] uuid)]
 
       (if version-index
         (delete-item request module-meta version-index)
@@ -269,6 +304,10 @@
 ;; initialization
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::module/schema))
+
+
 (defn initialize
   []
-  (std-crud/initialize resource-type ::module/module))
+  (std-crud/initialize resource-type ::module/schema)
+  (md/register resource-metadata))

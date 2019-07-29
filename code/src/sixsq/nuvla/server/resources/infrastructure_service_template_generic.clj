@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-template-generic
   "
-Template that requires all the core attributes of an infrastructure-service
-resource.
+Template that requires all the core attributes of a generic
+`infrastructure-service` resource.
 "
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -14,27 +14,34 @@ resource.
 (def ^:const method "generic")
 
 
-(def template {:method           method
+(def template {:method            method
 
-               :name             "generic service template"
-               :description      "template requiring basic service resource attributes"
-               :resourceMetadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
+               :name              "generic service template"
+               :description       "template requiring basic service resource attributes"
+               :resource-metadata (str "resource-metadata/" infra-service-tpl/resource-type "-" method)
 
-               :type             "my-service"
-               :endpoint         "https://service.example.org:1234"
-               :state            "STARTED"
+               :subtype           "my-service"
+               :endpoint          "https://service.example.org:1234"
+               :state             "STARTED"
 
-               :acl              infra-service-tpl/resource-acl})
+               :acl               infra-service-tpl/resource-acl})
 
 
 ;;
 ;; initialization: register this template and provide metadata description
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema-create "create"))
+
+
 (defn initialize
   []
   (infra-service-tpl/register template)
-  (md/register (gen-md/generate-metadata ::ns ::infra-service-tpl/ns ::infra-service-tpl-generic/schema)))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 
 ;;

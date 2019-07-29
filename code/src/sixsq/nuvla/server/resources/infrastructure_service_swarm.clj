@@ -1,11 +1,20 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-swarm
+  "
+Information concerning a Docker Swarm cluster and the parameters necessary to
+manage it.
+"
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as tpl]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]))
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as tpl-swarm]
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const method "swarm")
@@ -38,7 +47,7 @@
 (defmethod infra-service/tpl->service method
   [{{:keys [href]} :service-credential :as resource}]
   (-> resource
-      (dissoc resource :href :resourceMetadata :endpoint :service-credential)
+      (dissoc resource :href :resource-metadata :endpoint :service-credential)
       (assoc :state "CREATED"
              :management-credential-id href)))
 
@@ -64,8 +73,24 @@
 ;;
 
 (defmethod infra-service/post-add-hook method
-  [service template]
-  (log/error "SWARM POST ADD HOOK:\n"
-             (with-out-str (clojure.pprint/pprint service)) "\n"
-             (with-out-str (clojure.pprint/pprint template)))
-  nil)
+  [service request]
+  (try
+    (let [id      (:id service)
+          user-id (:user-id (auth/current-authentication request))
+          {{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "start_infrastructure_service_swarm"
+                                                       {:owners   ["group/nuvla-admin"]
+                                                        :view-acl [user-id]}
+                                                       :priority 50)
+          job-msg (str "starting " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response "unable to create async job to start infrastructure service swarm" 500 id)))
+      (-> id
+          (db/retrieve request)
+          (a/throw-cannot-edit request)
+          (assoc :state "STARTING")
+          (db/edit request))
+      (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))

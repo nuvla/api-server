@@ -1,29 +1,26 @@
 (ns sixsq.nuvla.server.resources.data-record-key-prefix
   "
-Every attribute in a data-record resource must be prefixed to avoid
-collisions. The data-record-key-prefix resources maintain the mapping between a
-prefix and the associated, complete URI. The parameters are described in the
-table below.
+Every attribute in a `data-record` resource must be prefixed to avoid
+collisions. The `data-record-key-prefix` resources maintain the mapping between
+a prefix and the associated, complete URI.
 
-A data-record resource cannot be uploaded to the server unless all of the
+A `data-record` resource cannot be uploaded to the server unless all of the
 prefixes within the document have been defined.
 
 Currently, only an administrator can create, update, or delete
-data-record-key-prefix resources. These actions follow the standard CIMI
+`data-record-key-prefix` resources. These actions follow the standard API
 patterns. Most users will only search these resources and look at the details
-for a particular data-record-key-prefix resource.
-
-Parameter | Required  | Description
---------- | --------  | -----------
-prefix | true | namespace prefix
-uri | true | full URI associated with the prefix
+for a particular `data-record-key-prefix` resource.
 "
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -33,18 +30,12 @@ uri | true | full URI associated with the prefix
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl {:owners   ["group/nuvla-admin"]
+                   :view-acl ["group/nuvla-user"]})
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"]})
 
 
 ;;
@@ -66,14 +57,10 @@ uri | true | full URI associated with the prefix
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-;; FIXME: Roles are needed in two locations!  Should be unique way to specify authentication information.
-(def ^:private all-query-map {:identity       {:current         "slipstream",
-                                               :authentications {"slipstream"
-                                                                 {:identity "slipstream"
-                                                                  :roles    ["ADMIN" "USER" "ANON"]}}}
-                              :params         {:resource-name resource-type}
-                              :user-roles     ["ADMIN" "USER" "ANON"]
-                              :request-method :get})
+;; TODO ACL: Roles are needed in two locations!  Should be unique way to specify authentication information.
+(def ^:private all-query-map {:params         {:resource-name resource-type}
+                              :request-method :get
+                              :nuvla/authn    auth/internal-identity})
 
 (defn extract-field-values
   "returns a set of the values of the field k (as a keyword) from the
@@ -140,4 +127,5 @@ uri | true | full URI associated with the prefix
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::key-prefix/schema))
+  (std-crud/initialize resource-type ::key-prefix/schema)
+  (md/register (gen-md/generate-metadata ::ns ::key-prefix/schema)))

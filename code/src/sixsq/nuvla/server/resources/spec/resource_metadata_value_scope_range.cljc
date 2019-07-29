@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-range
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
@@ -17,7 +17,7 @@
 (s/def ::default int?)
 
 
-(s/def ::units ::cimi-core/token)
+(s/def ::units ::core/token)
 
 
 (s/def ::range (s/or :both (su/only-keys :req-un [::minimum

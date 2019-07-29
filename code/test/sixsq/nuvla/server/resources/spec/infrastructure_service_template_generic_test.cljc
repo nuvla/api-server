@@ -7,30 +7,27 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:type      "ROLE",
-                         :principal "ADMIN",
-                         :right     "ALL"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-service-template-generic-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        cfg {:id            (str infra-service-tpl/resource-type "/generic")
-             :resource-type infra-service-tpl/resource-type
-             :created       timestamp
-             :updated       timestamp
-             :acl           valid-acl
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        cfg       {:id            (str infra-service-tpl/resource-type "/generic")
+                   :resource-type infra-service-tpl/resource-type
+                   :created       timestamp
+                   :updated       timestamp
+                   :acl           valid-acl
 
-             :method        infra-service-tpl-generic/method
+                   :method        infra-service-tpl-generic/method
 
-             :type          "s3"
-             :endpoint      "https://s3.example.org:2000"
-             :state         "STARTED"}]
+                   :subtype       "s3"
+                   :endpoint      "https://s3.example.org:2000"
+                   :state         "STARTED"}]
 
     (stu/is-valid ::spec-generic/schema cfg)
 
-    (doseq [attr #{:id :resource-type :created :updated :acl :method :type :endpoint}]
+    (doseq [attr #{:id :resource-type :created :updated :acl :method :subtype :endpoint}]
       (stu/is-invalid ::spec-generic/schema (dissoc cfg attr)))
 
     (doseq [attr #{:state}]

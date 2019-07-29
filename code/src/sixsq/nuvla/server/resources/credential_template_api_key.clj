@@ -1,9 +1,12 @@
 (ns sixsq.nuvla.server.resources.credential-template-api-key
   "
-Allows an API key-secret pair to be created that allows the holder of the
-secret to access the server. The credential can optionally be limited in time.
+Used to create an API key-secret pair that allows the holder of the secret to
+access the server via the API. The credential can optionally be limited in
+time. The rights associated with the key-secret pair are taken from the
+`session` that created the key-secret pair.
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -11,36 +14,33 @@ secret to access the server. The credential can optionally be limited in time.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "api-key")
+(def ^:const credential-subtype "api-key")
 
 
 (def ^:const resource-name "API Key")
 
 
-(def ^:const resource-url credential-type)
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "generate-api-key")
 
 
-(def resource-acl {:owner {:principal "ADMIN"
-                           :type      "ROLE"}
-                   :rules [{:principal "USER"
-                            :type      "ROLE"
-                            :right     "VIEW"}]})
+(def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                            :view-acl ["group/nuvla-user"]}))
 
 ;;
 ;; resource
 ;;
 
 (def ^:const resource
-  {:type             credential-type
-   :method           method
-   :name             "Generate API Key"
-   :description      "generates an API key and stores hash"
-   :ttl              0
-   :acl              resource-acl
-   :resourceMetadata "resource-metadata/credential-template-api-key"})
+  {:subtype           credential-subtype
+   :method            method
+   :name              "Generate API Key"
+   :description       "generates an API key and stores hash"
+   :ttl               0
+   :acl               resource-acl
+   :resource-metadata "resource-metadata/credential-template-api-key"})
 
 
 ;;
@@ -57,9 +57,16 @@ secret to access the server. The credential can optionally be limited in time.
 ;; initialization: register this Credential template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register resource)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-api-key/schema)))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
 
 

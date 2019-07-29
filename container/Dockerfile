@@ -1,4 +1,4 @@
-FROM nuvladev/ring:master
+FROM nuvla/ring:2.0.1
                 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
@@ -15,16 +15,16 @@ LABEL travis.build.number=${TRAVIS_BUILD_NUMBER}
 LABEL travis.build.web.url=${TRAVIS_BUILD_WEB_URL}
 
 ADD target/dependency/lib /opt/nuvla/server/lib.d/api
-ADD src/scripts/generate-auth-keys.sh /opt/nuvla/server/bin/generate-auth-keys.sh
-ADD src/scripts/start-api.sh /opt/nuvla/server/bin/start-api.sh
 
-RUN chmod 0755 /opt/nuvla/server/bin/generate-auth-keys.sh
+ADD src/scripts/start-api.sh /opt/nuvla/server/bin/start-api.sh
 RUN chmod 0755 /opt/nuvla/server/bin/start-api.sh
+ADD src/scripts/session-key-pair.sh /opt/nuvla/server/bin/session-key-pair.sh
+RUN chmod 0755 /opt/nuvla/server/bin/session-key-pair.sh
 
 ENV NUVLA_SERVER_INIT=sixsq.nuvla.server.app.server/init
 ENV PERSISTENT_DB_BINDING=sixsq.nuvla.db.es.loader
 ENV EPHEMERAL_DB_BINDING=sixsq.nuvla.db.es.loader
 ENV ES_HOST=localhost
-ENV ES_PORT=9300
+ENV ES_PORT=9200
 
 ENTRYPOINT ["/opt/nuvla/server/bin/start-api.sh"]

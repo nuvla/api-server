@@ -6,41 +6,38 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ANON"
-                         :type      "ROLE"
-                         :right     "VIEW"}]})
+(def valid-acl {:owners   ["group/nuvla-admin"]
+                :view-acl ["group/nuvla-anon"]})
 
 
 (deftest test-schema-check
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        root {:id                        (str t/resource-type "/connector-uuid")
-              :resource-type             t/resource-type
-              :created                   timestamp
-              :updated                   timestamp
-              :acl                       valid-acl
-              :parent-path               "a/b"
-              :path                      "a/b/c"
-              :type                      "COMPONENT"
-              :versions                  [{:href   "module-component/xyz"
-                                           :author "someone"
-                                           :commit "wip"}
-                                          nil
-                                          {:href "module-component/abc"}]
-              :logo-url                  "https://example.org/logo"
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        root      {:id                        (str t/resource-type "/connector-uuid")
+                   :resource-type             t/resource-type
+                   :created                   timestamp
+                   :updated                   timestamp
+                   :acl                       valid-acl
+                   :parent-path               "a/b"
+                   :path                      "a/b/c"
+                   :subtype                   "component"
+                   :versions                  [{:href   "module-component/xyz"
+                                                :author "someone"
+                                                :commit "wip"}
+                                               nil
+                                               {:href "module-component/abc"}]
+                   :logo-url                  "https://example.org/logo"
 
-              :data-accept-content-types ["application/json" "application/x-something"]
-              :data-access-protocols     ["http+s3" "posix+nfs"]}]
+                   :data-accept-content-types ["application/json" "application/x-something"]
+                   :data-access-protocols     ["http+s3" "posix+nfs"]}]
 
-    (stu/is-valid ::module/module root)
-    (stu/is-invalid ::module/module (assoc root :bad-key "badValue"))
-    (stu/is-invalid ::module/module (assoc root :type "BAD_VALUE"))
+    (stu/is-valid ::module/schema root)
+    (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
+    (stu/is-invalid ::module/schema (assoc root :subtype "BAD_VALUE"))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :created :updated :acl :path :type}]
-      (stu/is-invalid ::module/module (dissoc root k)))
+    (doseq [k #{:id :resource-type :created :updated :acl :path :subtype}]
+      (stu/is-invalid ::module/schema (dissoc root k)))
 
     ;; optional attributes
     (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols}]
-      (stu/is-valid ::module/module (dissoc root k)))))
+      (stu/is-valid ::module/schema (dissoc root k)))))

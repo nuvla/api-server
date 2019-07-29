@@ -1,26 +1,22 @@
 (ns sixsq.nuvla.server.resources.data-record-key
   "
-A data-record-key resource provides semantic information concerning an key
-that appears in data-record resources. This resource is intended to provide
+A `data-record-key` resource provides semantic information concerning a key
+that appears in `data-record` resources. This resource is intended to provide
 information that helps humans understand the information provided in a
-data-record resource.
+`data-record` resource.
 
-Parameter | Required  | Description
---------- | --------  | -----------
-name | true | short human-readable tag
-description | true | longer human-readable description
-prefix | true | namespace prefix
-key | true | name of the attribute itself
-type | true | type of the attribute's value
+The `name` and `description` attributes are required for this resource.
 "
   (:require
     [ring.util.response :as r]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record-key :as data-record-key]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as sr])
   (:import
     [java.math BigInteger]
@@ -34,11 +30,8 @@ type | true | type of the attribute's value
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "USER"
-                              :type      "ROLE"
-                              :right     "MODIFY"}]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-user"]})
 
 
 ;;
@@ -49,9 +42,9 @@ type | true | type of the attribute's value
   [resource]
   (if ((san/all-prefixes) (:prefix resource))
     resource
-    (let [code 406
-          msg (str "resource attributes do not satisfy defined namespaces, prefix='"
-                   (:prefix resource) "'")
+    (let [code     406
+          msg      (str "resource attributes do not satisfy defined namespaces, prefix='"
+                        (:prefix resource) "'")
           response (-> {:status code :message msg}
                        sr/json-response
                        (r/status code))]
@@ -131,4 +124,5 @@ type | true | type of the attribute's value
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::data-record-key/schema))
+  (std-crud/initialize resource-type ::data-record-key/schema)
+  (md/register (gen-md/generate-metadata ::ns ::data-record-key/schema)))

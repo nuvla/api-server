@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.auth.cookies
   "utilities for embedding and extracting tokens in cookies"
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils.sign :as sg]
     [sixsq.nuvla.auth.utils.timestamp :as ts]))
@@ -18,66 +17,29 @@
    {name (revoked-cookie)}))
 
 
-(defn claims-cookie
+(defn create-cookie
   "Return a cookie (as a map) that has a token generated from the provided
-   claims and the default expiration time. If a name is provided, then a map
+   info and the default expiration time. If a name is provided, then a map
    is returned with a single entry with the key being the name and the value
    being the cookie."
-  ([claims]
-   (let [timestamp (ts/expiry-later)
-         claims (assoc claims :exp timestamp)
-         token (sg/sign-claims claims)]
-     {:value   {:token token}                               ;; FIXME: Remove :token, requires java-side changes as well.
+  ([info]
+   (let [timestamp   (ts/expiry-later)
+         cookie-info (assoc info :exp timestamp)
+         token       (sg/sign-cookie-info cookie-info)]
+     {:value   token
       :secure  true
       :path    "/"
       :expires (ts/rfc822 timestamp)}))
-  ([claims name]
-   {name (claims-cookie claims)}))
+  ([info name]
+   {name (create-cookie info)}))
 
-
-(defn extract-claims
-  "Extracts the claims from the value of a cookie. Throws an exception if the
-   claims are not valid or cannot be extracted. NOTE: This can only be used on
-   cookies that have been serialized through the ring wrap-cookies middleware!
-   You cannot roundtrip the claims directly through `claims-cookie` and
-   `extract-claims`."
+(defn extract-cookie-info
+  "Extracts cookie info. Returns nil if no cookie is
+   provided or if there is an error when extracting the value from the cookie."
   [{:keys [value] :as cookie}]
-  (when value
-    (-> value
-        (str/split #"^token=")                              ;; FIXME: remove this
-        second                                              ;; FIXME: and this
-        sg/unsign-claims)))
-
-
-(defn claims->authn-info
-  "Returns a tuple with the username (identifier) and list of roles based on the
-   provided claims map."
-  [{:keys [username roles session] :as claims}]
-  (when username
-    (let [roles (set (remove str/blank? (-> roles
-                                            (or "")
-                                            (str/split #"\s+")
-                                            (conj session))))]
-      [username roles])))
-
-
-(defn extract-cookie-claims
-  "Extracts authentication claims from a cookie. Returns nil if no cookie is
-   provided or if there is an error when extracting the claims from the cookie."
-  [cookie]
   (try
-    (-> cookie
-        extract-claims)
+    (when value
+      (sg/unsign-cookie-info value))
     (catch Exception e
       (log/warn "Error in extract-cookie-claims: " (str e))
       nil)))
-
-
-(defn extract-cookie-info
-  "Extracts authentication information from a cookie. Returns nil if no cookie is
-   provided or if there is an error when extracting the claims from the cookie."
-  [cookie]
-  (-> cookie
-      extract-cookie-claims
-      claims->authn-info))
-

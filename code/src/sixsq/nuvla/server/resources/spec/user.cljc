@@ -1,216 +1,76 @@
 (ns sixsq.nuvla.server.resources.spec.user
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as cimi-common]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
+    [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
+;; provide tighter definition of user id to be used elsewhere
 
-;; Less restrictive than standard ::cimi-common/id to accommodate OIDC, etc.
-(s/def ::id (s/and string? #(re-matches #"^user/.*" %)))
+(def ^:const user-id-regex #"^user/[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$")
 
+(defn user-id? [s] (re-matches user-id-regex s))
 
-(s/def ::username
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "username"
-             :json-schema/name "username"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
+(s/def ::id
+  (-> (st/spec (s/and string? user-id?))
+      (assoc :name "id"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of user resource"
 
-             :json-schema/displayName "username"
-             :json-schema/description "username for your account"
-             :json-schema/help "username for your account"
-             :json-schema/group "body"
-             :json-schema/order 20
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::emailAddress
-  (-> (st/spec ::cimi-core/email)
-      (assoc :name "emailAddress"
-             :json-schema/name "emailAddress"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "email address"
-             :json-schema/description "your email address"
-             :json-schema/help "your email address"
-             :json-schema/group "body"
-             :json-schema/order 21
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::password
-  (-> (st/spec ::cimi-core/nonblank-string)
-      (assoc :name "password"
-             :json-schema/name "password"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "password"
-             :json-schema/description "password for your account"
-             :json-schema/help "password for your account"
-             :json-schema/group "body"
-             :json-schema/order 22
-             :json-schema/hidden false
-             :json-schema/sensitive true)))
-
-
-(s/def ::full-name
-  (-> (st/spec string?)
-      (assoc :name "full-name"
-             :json-schema/name "full-name"
-             :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "full name"
-             :json-schema/description "your full name"
-             :json-schema/help "your full name"
-             :json-schema/group "body"
-             :json-schema/order 30
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::state
-  (-> (st/spec #{"NEW" "ACTIVE" "DELETED" "SUSPENDED"})
-      (assoc :name "state"
-             :json-schema/name "state"
-             :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "state"
-             :json-schema/description "state of user's account"
-             :json-schema/help "state of user's account"
-             :json-schema/group "body"
-             :json-schema/order 34
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::isSuperUser
-  (-> (st/spec boolean?)
-      (assoc :name "isSuperUser"
-             :json-schema/name "isSuperUser"
-             :json-schema/type "boolean"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "super user?"
-             :json-schema/description "flag to indicate if user is super user"
-             :json-schema/help "flag to indicate if user is super use"
-             :json-schema/group "body"
-             :json-schema/order 39
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
-
-
-(s/def ::deleted
-  (-> (st/spec boolean?)
-      (assoc :name "deleted"
-             :json-schema/name "deleted"
-             :json-schema/type "boolean"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "deleted"
-             :json-schema/description "flag to indicate if user has been deleted"
-             :json-schema/help "flag to indicate if user has been deleted"
-             :json-schema/group "body"
-             :json-schema/order 40
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/order 34)))
 
 
 (s/def ::method
-  (-> (st/spec ::cimi-core/identifier)
+  (-> (st/spec ::core/identifier)
       (assoc :name "method"
-             :json-schema/name "method"
-             :json-schema/type "string"
-             :json-schema/providerMandatory true
-             :json-schema/consumerMandatory true
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
-
-             :json-schema/displayName "method"
              :json-schema/description "user creation method"
-             :json-schema/help "user creation method"
-             :json-schema/group "body"
-             :json-schema/order 50
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+
+             :json-schema/editable false
+             :json-schema/order 30)))
 
 
-(s/def ::href
-  (-> (st/spec string?)
-      (assoc :name "href"
-             :json-schema/name "href"
+(s/def ::state
+  (-> (st/spec #{"NEW" "ACTIVE" "SUSPENDED"})
+      (assoc :name "state"
              :json-schema/type "string"
-             :json-schema/providerMandatory false
-             :json-schema/consumerMandatory false
-             :json-schema/mutable true
-             :json-schema/consumerWritable true
+             :json-schema/description "state of user's account"
 
-             :json-schema/displayName "href"
-             :json-schema/group "body"
-             :json-schema/order 51
-             :json-schema/hidden false
-             :json-schema/sensitive false)))
+             :json-schema/server-managed true
+             :json-schema/editable false
+             :json-schema/order 31)))
 
 
-;;
-;; redefined common attributes to allow for less restrictive
-;; resource identifier (::id) for user resources
-;;
+(def ^:const email-id-regex #"^email/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 
-(def ^:const user-common-attrs
-  {:req-un [::id
-            ::cimi-common/resource-type
-            ::cimi-common/created
-            ::cimi-common/updated
-            ::cimi-common/acl]
-   :opt-un [::cimi-common/name
-            ::cimi-common/description
-            ::cimi-common/tags
-            ::cimi-common/parent
-            ::cimi-common/resourceMetadata
-            ::cimi-common/operations]})
+(defn email-id? [s] (re-matches email-id-regex s))
+
+(s/def ::email
+  (-> (st/spec (s/and string? email-id?))
+      (assoc :name "email"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of primary email address resource"
+
+             :json-schema/order 32)))
+
+
+(s/def ::credential-password
+  (-> cred-spec/credential-id-spec
+      (assoc :name "credential-password"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of password credential"
+
+             :json-schema/order 33)))
 
 
 (def user-keys-spec
-  {:req-un [::username
-            ::emailAddress]
-   :opt-un [::full-name
-            ::method
-            ::href
-            ::password
-            ::isSuperUser
-            ::state
-            ::deleted]})
+  {:req-un [::state]
+   :opt-un [::method
+            ::credential-password
+            ::email]})
 
 
 (s/def ::schema
-  (su/only-keys-maps user-common-attrs
+  (su/only-keys-maps common/common-attrs
                      user-keys-spec))

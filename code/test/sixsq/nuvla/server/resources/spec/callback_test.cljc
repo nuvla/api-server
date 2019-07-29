@@ -6,26 +6,24 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owner {:principal "ADMIN"
-                        :type      "ROLE"}
-                :rules [{:principal "ADMIN"
-                         :type      "ROLE"
-                         :right     "MODIFY"}]})
+(def valid-acl
+  {:owners   ["group/nuvla-admin"]
+   :edit-acl ["group/nuvla-admin"]})
 
 
 (deftest check-callback-schema
-  (let [timestamp "1964-08-25T10:00:00.0Z"
-        callback {:id             (str t/resource-type "/test-callback")
-                  :resource-type  t/resource-type
-                  :created        timestamp
-                  :updated        timestamp
-                  :acl            valid-acl
-                  :action         "validate-something"
-                  :state          "WAITING"
-                  :targetResource {:href "email/1230958abdef"}
-                  :expires        timestamp
-                  :data           {:some    "value"
-                                   :another "value"}}]
+  (let [timestamp "1964-08-25T10:00:00.00Z"
+        callback  {:id              (str t/resource-type "/test-callback")
+                   :resource-type   t/resource-type
+                   :created         timestamp
+                   :updated         timestamp
+                   :acl             valid-acl
+                   :action          "validate-something"
+                   :state           "WAITING"
+                   :target-resource {:href "email/1230958abdef"}
+                   :expires         timestamp
+                   :data            {:some    "value"
+                                     :another "value"}}]
 
     (stu/is-valid ::callback/schema callback)
     (stu/is-valid ::callback/schema (assoc callback :state "SUCCEEDED"))
@@ -35,5 +33,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :action :state}]
       (stu/is-invalid ::callback/schema (dissoc callback attr)))
 
-    (doseq [attr #{:targetResource :expires :data}]
+    (doseq [attr #{:target-resource :expires :data}]
       (stu/is-valid ::callback/schema (dissoc callback attr)))))

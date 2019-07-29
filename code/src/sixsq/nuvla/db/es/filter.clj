@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [clojure.walk :as w]
     [sixsq.nuvla.db.es.query :as query]
-    [sixsq.nuvla.db.utils.time-utils :as time]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn- strip-quotes
@@ -35,7 +35,7 @@
 
 
 (defmethod convert :DateValue [[_ ^String s]]
-  [:Value (time/to-time-or-date s)])
+  [:Value (time/date-from-str s)])
 
 
 (defmethod convert :NullValue [[_ ^String s]]
@@ -46,8 +46,8 @@
   (let [args (rest v)]
     (if (= 1 (count args))
       (first args)                                          ;; (a=1 and b=2) case
-      (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp  Value] :as m} (into {} args)
-            Op (or EqOp RelOp PrefixOp FullTextOp)
+      (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp Value] :as m} (into {} args)
+            Op    (or EqOp RelOp PrefixOp FullTextOp)
             order (ffirst args)]
         (case [Op order]
           ["=" :Attribute] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))

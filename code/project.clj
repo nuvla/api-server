@@ -1,21 +1,20 @@
-(def +version+ "0.0.1-SNAPSHOT")
+(def parent-version "6.5.1")
+(def nuvla-ring-version "2.0.1")
 
-(def nuvla-ring-version "0.0.1-SNAPSHOT")
-
-(defproject sixsq.nuvla.server/api-jar "0.0.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "4.2.2-SNAPSHOT"
 
   :description "core api server"
 
   :url "https://github.com/nuvla/server"
 
-  :license {:name "Apache 2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+  :license {:name         "Apache 2.0"
+            :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
             [lein-environ "1.1.0"]]
 
-  :parent-project {:coords  [sixsq.nuvla/parent "6.2.0"]
+  :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
                              :min-lein-version
                              :managed-dependencies
@@ -37,7 +36,7 @@
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
-   [clj-time]
+   [clojure.java-time]
    [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
@@ -63,20 +62,20 @@
                              [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
 
 
-  :test     {:dependencies  [[me.raynes/fs]
-                             [peridot]
-                             [org.apache.logging.log4j/log4j-core]      ;; needed for ES logging
-                             [org.apache.logging.log4j/log4j-api]       ;; needed for ES logging
-                             [org.clojure/test.check]
-                             [org.elasticsearch.client/transport]
-                             [org.elasticsearch.test/framework]
-                             [org.slf4j/slf4j-api]
-                             [org.slf4j/slf4j-log4j12]
-                             [com.cemerick/url]
-                             [org.apache.curator/curator-test]]
+   :test     {:dependencies   [[me.raynes/fs]
+                               [peridot]
+                               [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
+                               [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
+                               [org.clojure/test.check]
+                               [org.elasticsearch.client/transport]
+                               [org.elasticsearch.test/framework]
+                               [org.slf4j/slf4j-api]
+                               [org.slf4j/slf4j-log4j12]
+                               [com.cemerick/url]
+                               [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
-              :env            {:auth-private-key "test-resources/auth_privkey.pem"
-                               :auth-public-key  "test-resources/auth_pubkey.pem"}
+              :env            {:nuvla-session-key "test-resources/session.key"
+                               :nuvla-session-crt "test-resources/session.crt"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]}
    })

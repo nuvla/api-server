@@ -29,5 +29,5 @@
 
 (deftest existing-content-type
   (let [content-type "text/x-existing"
-        result (updated-content-type {:headers {"content-type" content-type}})]
+        result       (updated-content-type {:headers {"content-type" content-type}})]
     (is (= content-type result))))

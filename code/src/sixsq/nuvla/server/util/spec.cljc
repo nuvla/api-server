@@ -9,18 +9,22 @@
     [spec-tools.parse :as st-parse]
     [spec-tools.visitor :as visitor]))
 
+
 (def ^:private all-ascii-chars (map str (map char (range 0 256))))
+
 
 (defn- regex-chars
   "Provides a list of ASCII characters that satisfy the regex pattern."
   [pattern]
   (set (filter #(re-matches pattern %) all-ascii-chars)))
 
+
 (defn merge-kw-lists
   "Merges two lists (or seqs) of namespaced keywords. The results will
    be a sorted vector with duplicates removed."
   [kws1 kws2]
   (vec (sort (set/union (set kws1) (set kws2)))))
+
 
 (defn merge-keys-specs
   "Merges the given clojure.spec/keys specs provided as a list of maps.
@@ -29,6 +33,7 @@
   (->> map-specs
        (map eval)
        (apply merge-with merge-kw-lists)))
+
 
 (defmacro only-keys
   "Creates a closed map definition where only the defined keys are
@@ -43,6 +48,7 @@
                                     (map (comp keyword name) opt-un)))
                       any?)))
 
+
 (defmacro only-keys-maps
   "Creates a closed map definition from one or more maps that contain
    key specifications as for clojure.spec/keys. All of the arguments
@@ -56,6 +62,7 @@
                                       opt
                                       (map (comp keyword name) opt-un)))
                         any?))))
+
 
 (defmacro constrained-map
   "Creates an open map spec using the supplied keys specs with the
@@ -129,10 +136,10 @@
 
 (defmethod jsc/accept-spec 'sixsq.nuvla.server.util.spec/only-keys-maps [_ spec children _]
   (let [{:keys [req req-un opt opt-un]} (impl/parse-keys (transform-form (impl/extract-form spec)))
-        names-un (map name (concat req-un opt-un))
-        names (map impl/qualified-name (concat req opt))
-        required (map impl/qualified-name req)
-        required-un (map name req-un)
+        names-un     (map name (concat req-un opt-un))
+        names        (map impl/qualified-name (concat req opt))
+        required     (map impl/qualified-name req)
+        required-un  (map name req-un)
         all-required (not-empty (concat required required-un))]
     (#'jsc/maybe-with-title
       (merge

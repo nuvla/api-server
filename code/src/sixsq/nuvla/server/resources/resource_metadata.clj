@@ -1,11 +1,14 @@
 (ns sixsq.nuvla.server.resources.resource-metadata
-  "This resource provides metadata associated with other CIMI resourced. It
-   can be used to understand the attributes, allow values, actions, and
-   capabilities. This information is linked to a resource through the typeURI
-   attribute."
+  "
+This resource provides metadata associated with other resources. It can be
+used to understand the attributes and allowed values, actions, and
+capabilities. This information is linked to a resource through the type-uri
+attribute.
+"
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl :as a]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -19,21 +22,12 @@
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def default-resource-acl {:owner {:principal "ADMIN"
-                                   :type      "ROLE"}
-                           :rules [{:principal "ANON"
-                                    :type      "ROLE"
-                                    :right     "VIEW"}]})
+(def default-resource-acl (acl-utils/normalize-acl {:owners    ["group/nuvla-admin"]
+                                                    :view-data ["group/nuvla-anon"]}))
 
 
-(def collection-acl {:owner {:principal "ADMIN"
-                             :type      "ROLE"}
-                     :rules [{:principal "ADMIN"
-                              :type      "ROLE"
-                              :right     "MODIFY"}
-                             {:principal "ANON"
-                              :type      "ROLE"
-                              :right     "VIEW"}]})
+(def collection-acl {:owners ["group/nuvla-admin"]
+                     :query  ["group/nuvla-anon"]})
 
 
 ;;
@@ -59,10 +53,10 @@
 
 (defn register
   "Registers a given resource-metadata resource with the server. The resource
-   document must be valid. The `typeURI` attribute will be used to create the
-   id of the resource as 'resource-metadata/typeURI'."
-  [{:keys [typeURI] :as resource}]
-  (when-let [full-resource (complete-resource typeURI resource)]
+   document must be valid. The `type-uri` attribute will be used to create the
+   id of the resource as 'resource-metadata/type-uri'."
+  [{:keys [type-uri] :as resource}]
+  (when-let [full-resource (complete-resource type-uri resource)]
     (let [id (:id full-resource)]
       (try
         (crud/validate full-resource)
@@ -96,7 +90,8 @@
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (get @templates id)
-          (a/can-view? request)
+          (a/throw-cannot-view request)
+          (a/select-viewable-keys request)
           (r/json-response)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -124,10 +119,10 @@
 
 (defmethod crud/query resource-type
   [request]
-  (a/can-view? {:acl collection-acl} request)
-  (let [wrapper-fn (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
+  (a/throw-cannot-query collection-acl request)
+  (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         [count-before-pagination entries] ((juxt count vals) @templates)
-        wrapped-entries (wrapper-fn request entries)
+        wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
     (r/json-response entries-and-count)))
 

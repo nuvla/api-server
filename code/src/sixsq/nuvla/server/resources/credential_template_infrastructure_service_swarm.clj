@@ -5,6 +5,7 @@ These credentials include a certificate authority's public certificate ('ca'),
 the user's public certificate ('cert'), and the user's private key ('key').
 "
   (:require
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -12,34 +13,31 @@ the user's public certificate ('cert'), and the user's private key ('key').
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-type "infrastructure-service-swarm")
+(def ^:const credential-subtype "infrastructure-service-swarm")
+
+
+(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "infrastructure-service-swarm")
 
 
-(def ^:const template-acl {:owner {:principal "ADMIN"
-                                   :type      "ROLE"}
-                           :rules [{:principal "USER"
-                                    :type      "ROLE"
-                                    :right     "VIEW"}]})
+(def ^:const resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                    :view-acl ["group/nuvla-user"]}))
 
 
-;; No reasonable defaults for :infrastructure-services, :ca, :cert, :key.
+;; No reasonable defaults for :parent, :ca, :cert, :key.
 ;; Do not provide values for those in the template
-(def ^:const template {:id                      (str p/resource-type "/" method)
-                       :resource-type           p/resource-type
-                       :acl                     template-acl
+(def ^:const template {:id            (str p/resource-type "/" method)
+                       :resource-type p/resource-type
+                       :acl           resource-acl
 
-                       :type                    credential-type
-                       :method                  method
+                       :subtype       credential-subtype
+                       :method        method
 
-                       :infrastructure-services ["infrastructure-service/service-example-1"
-                                                 "infrastructure-service/service-example-2"]
-
-                       :ca                      "ca-public-certificate"
-                       :cert                    "client-public-certificate"
-                       :key                     "client-private-certificate"})
+                       :ca            "ca-public-certificate"
+                       :cert          "client-public-certificate"
+                       :key           "client-private-certificate"})
 
 
 ;;
@@ -56,7 +54,14 @@ the user's public certificate ('cert'), and the user's private key ('key').
 ;; initialization: register this credential-template
 ;;
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema))
+
+
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema-create "create"))
+
+
 (defn initialize
   []
   (p/register template)
-  (md/register (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema)))
+  (md/register resource-metadata)
+  (md/register resource-metadata-create))
