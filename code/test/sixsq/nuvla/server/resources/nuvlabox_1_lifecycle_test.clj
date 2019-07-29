@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-0-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-1-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -13,7 +13,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-0 :as nb-0]
+    [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -51,8 +51,11 @@
                                         :view-acl ["user/jane"]
                                         :manage   ["user/jane"]}
 
-                     ;; This is not the default version, so it must appear explicitly.
-                     :version          0
+                     ;; This doesn't need to be specified as it will default to the
+                     ;; latest version (which is currently 1). If new versions are added,
+                     ;; the following line must be uncommented; the value must be the
+                     ;; version number to test.
+                     ;:version          1
 
                      :owner            nuvlabox-owner
                      :organization     "ACME"
@@ -68,7 +71,7 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists nb/resource-type
-                              (str nb/resource-type "-" nb-0/schema-version)))
+                              (str nb/resource-type "-" nb-1/schema-version)))
 
 
 (deftest create-delete-lifecycle

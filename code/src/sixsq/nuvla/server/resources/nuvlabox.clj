@@ -54,7 +54,7 @@ particular NuvlaBox release.
 ;;
 ;; WARNING: This must be updated when new nuvlabox schemas are added!
 ;;
-(def ^:const latest-version 0)
+(def ^:const latest-version 1)
 
 
 (def ^:const default-refresh-interval 90)

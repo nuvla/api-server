@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-peripheral-0
+(ns sixsq.nuvla.server.resources.spec.nuvlabox-peripheral-1
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]

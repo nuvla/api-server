@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-peripheral-0-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-peripheral-1-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -40,7 +40,7 @@
                        :created       timestamp
                        :updated       timestamp
 
-                       :version       0
+                       :version       1
 
                        :identifier    "046d:082d"
                        :available     true
@@ -107,7 +107,6 @@
       (-> session-owner
           (request peripheral-url)
           (ltu/body->edn)
-          (ltu/dump)
           (ltu/is-status 200))
 
       ;; nuvlabox user is able to update nuvlabox-peripheral
