@@ -291,3 +291,37 @@
             (throw (ex-info msg (r/map-response msg 400 "")))))))))
 
 
+(defn commission
+  [{:keys [id owner] :as resource}
+   {{:keys [swarm-endpoint
+            swarm-token-manager swarm-token-worker
+            swarm-client-key swarm-client-cert swarm-client-ca
+            minio-endpoint
+            minio-access-key minio-secret-key]} :body :as request}]
+
+  ;; This code will not create duplicate resources when commission is called multiple times.
+  ;; However, it won't update those resources if the content changes.
+  ;; FIXME: allow updates of existing resources
+  (when-let [isg-id (get-isg-id id)]
+    (let [swarm-id (or
+                     (get-swarm-service isg-id)
+                     (create-swarm-service id owner isg-id swarm-endpoint))
+          minio-id (or
+                     (get-minio-service isg-id)
+                     (create-minio-service id owner isg-id minio-endpoint))]
+
+      (when swarm-id
+        (or
+          (get-swarm-cred swarm-id)
+          (create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca))
+        (or
+          (get-swarm-token swarm-id "MANAGER")
+          (create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager))
+        (or
+          (get-swarm-token swarm-id "WORKER")
+          (create-swarm-token id owner swarm-id "WORKER" swarm-token-worker)))
+
+      (when minio-id
+        (or
+          (get-minio-cred minio-id)
+          (create-minio-cred id owner minio-id minio-access-key minio-secret-key))))))
