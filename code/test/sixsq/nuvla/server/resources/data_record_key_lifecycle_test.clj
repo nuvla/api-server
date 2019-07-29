@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.data-record-key :refer :all]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -33,6 +34,10 @@
 (def valid-namespace
   {:prefix "example-org"
    :uri    "https://schema-org/a/b/c.md"})
+
+
+(deftest check-metadata
+  (mdtu/check-metadata-exists resource-type))
 
 
 (deftest lifecycle

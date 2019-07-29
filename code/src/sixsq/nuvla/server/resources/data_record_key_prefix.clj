@@ -24,7 +24,9 @@ uri | true | full URI associated with the prefix
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.data-record-key-prefix :as key-prefix]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -131,4 +133,5 @@ uri | true | full URI associated with the prefix
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type ::key-prefix/schema))
+  (std-crud/initialize resource-type ::key-prefix/schema)
+  (md/register (gen-md/generate-metadata ::ns ::key-prefix/schema)))
