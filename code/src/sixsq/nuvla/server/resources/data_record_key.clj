@@ -1,17 +1,11 @@
 (ns sixsq.nuvla.server.resources.data-record-key
   "
-A `data-record-key` resource provides semantic information concerning an key
+A `data-record-key` resource provides semantic information concerning a key
 that appears in `data-record` resources. This resource is intended to provide
 information that helps humans understand the information provided in a
 `data-record` resource.
 
-Parameter | Required  | Description
---------- | --------  | -----------
-name | true | short human-readable tag
-description | true | longer human-readable description
-prefix | true | namespace prefix
-key | true | name of the attribute itself
-type | true | type of the attribute's value
+The `name` and `description` attributes are required for this resource.
 "
   (:require
     [ring.util.response :as r]

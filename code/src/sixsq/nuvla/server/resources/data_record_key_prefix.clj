@@ -1,9 +1,8 @@
 (ns sixsq.nuvla.server.resources.data-record-key-prefix
   "
 Every attribute in a `data-record` resource must be prefixed to avoid
-collisions. The `data-record-key-prefix` resources maintain the mapping between a
-prefix and the associated, complete URI. The parameters are described in the
-table below.
+collisions. The `data-record-key-prefix` resources maintain the mapping between
+a prefix and the associated, complete URI.
 
 A `data-record` resource cannot be uploaded to the server unless all of the
 prefixes within the document have been defined.
@@ -12,11 +11,6 @@ Currently, only an administrator can create, update, or delete
 `data-record-key-prefix` resources. These actions follow the standard API
 patterns. Most users will only search these resources and look at the details
 for a particular `data-record-key-prefix` resource.
-
-Parameter | Required  | Description
---------- | --------  | -----------
-prefix | true | namespace prefix
-uri | true | full URI associated with the prefix
 "
   (:require
     [sixsq.nuvla.auth.utils :as auth]
