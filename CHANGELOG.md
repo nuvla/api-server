@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+  - Added the nuvlabox-peripheral resource and updated the
+   version numbers (v1) for the other nuvlabox resources.
+
 ### Changed
 
   - Update to parent version 6.6.0 and ring 2.0.2
