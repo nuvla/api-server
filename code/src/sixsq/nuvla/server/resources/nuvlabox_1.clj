@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-0
+(ns sixsq.nuvla.server.resources.nuvlabox-1
   "
-The nuvlabox (version 0) contains attributes to describe and configure
+The nuvlabox (version 1) contains attributes to describe and configure
 a NuvlaBox.
 "
   (:require
@@ -9,18 +9,18 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
+    [sixsq.nuvla.server.resources.spec.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def schema-version 0)
+(def schema-version 1)
 
 
 ;;
 ;; multimethod for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::nb-0/schema))
+(def validate-fn (u/create-spec-validation-fn ::nb-1/schema))
 
 
 (defmethod nb/validate-subtype schema-version
@@ -41,10 +41,10 @@ a NuvlaBox.
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::nb/ns ::nb-0/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb/ns ::nb-1/schema))
 
 
 (defn initialize
   []
-  (std-crud/initialize nb/resource-type ::nb-0/schema)
+  (std-crud/initialize nb/resource-type ::nb-1/schema)
   (md/register resource-metadata))
