@@ -9,19 +9,26 @@ visited, the email identifier is marked as validated.
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.log :as log-util]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]))
 
 
 (def ^:const action-name "email-validation")
 
 
 (defmethod callback/execute action-name
-  [{{:keys [href]} :target-resource :as callback-resource} request]
-  (let [{:keys [id validated] :as email} (crud/retrieve-by-id-as-admin href)]
-    (if-not validated
-      (let [msg (str id " successfully validated")]
-        (email-utils/validate-email! id)
-        (log/info msg)
-        (r/map-response msg 200 id))
-      (log-util/log-and-throw 400 (format "%s already validated" id)))))
+  [{callback-id    :id
+    {:keys [href]} :target-resource :as callback-resource} request]
+  (try
+    (let [{:keys [id validated] :as email} (crud/retrieve-by-id-as-admin href)]
+      (if-not validated
+        (let [msg (str id " successfully validated")]
+          (email-utils/validate-email! id)
+          (log/info msg)
+          (r/map-response msg 200 id))
+        (do
+          (utils/callback-failed! callback-id)
+          (r/map-response (format "%s already validated" id) 400))))
+    (catch Exception e
+      (utils/callback-failed! callback-id)
+      (or (ex-data e) (throw e)))))
