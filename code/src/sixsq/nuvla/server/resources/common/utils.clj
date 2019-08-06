@@ -3,6 +3,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
+    [clojure.walk :as walk]
     [expound.alpha :as expound]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
@@ -10,6 +11,8 @@
     (java.security MessageDigest)
     (java.util UUID)))
 
+
+(def ^:const form-urlencoded "application/x-www-form-urlencoded")
 
 ;;
 ;; resource type from namespace
@@ -210,3 +213,33 @@
   [id op-kw-or-name]
   (let [href (str id "/" (name op-kw-or-name))]
     (operation-map href op-kw-or-name)))
+
+
+(defn convert-form
+  "Allow form encoded data to be supplied for a session. This is required to
+   support external authentication methods triggered via a 'submit' button in
+   an HTML form. This takes the flat list of form parameters, keywordizes the
+   keys, and adds the parent :sessionTemplate key."
+  [tpl form-data]
+  {tpl (walk/keywordize-keys form-data)})
+
+
+(defn is-content-type?
+  "Checks if the given header name is 'content-type' in various forms."
+  [k]
+  (try
+    (= :content-type (-> k name str/lower-case keyword))
+    (catch Exception _
+      false)))
+
+
+(defn is-form?
+  "Checks the headers to see if the content type is
+   application/x-www-form-urlencoded. Converts the header names to lowercase
+   and keywordizes the result to collect the various header name variants."
+  [headers]
+  (->> headers
+       (filter #(is-content-type? (first %)))
+       first
+       second
+       (= form-urlencoded)))
