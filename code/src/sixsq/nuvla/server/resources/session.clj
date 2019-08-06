@@ -246,7 +246,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (try
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          [cookie-header {:keys [id] :as body}] (-> body (if (u/is-form? headers) (u/convert-form :template form-params) body)
+          [cookie-header {:keys [id] :as body}] (-> (if (u/is-form? headers)
+                                                      (u/convert-form :template form-params)
+                                                      body)
                                                     (assoc :resource-type create-type)
                                                     (std-crud/resolve-hrefs authn-info true)
                                                     (update-in [:template] merge desc-attrs) ;; validate desc attrs

@@ -145,7 +145,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
     (let [authn-info (auth/current-authentication request)
           desc-attrs (u/select-desc-keys body)
-          [frag user] (->  body (if (u/is-form? headers) (u/convert-form :template form-params) body)
+          [frag user] (-> (if (u/is-form? headers) (u/convert-form :template form-params) body)
                           (assoc :resource-type create-type)
                           (update-in [:template] dissoc :method :id) ;; forces use of template reference
                           (std-crud/resolve-hrefs authn-info true)
