@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.2] - 2019-08-07
+
 ### Added
 
   - Added the nuvlabox-peripheral resource and updated the
