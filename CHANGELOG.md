@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - Create user callback should not fail silently
+
 ## [4.2.2] - 2019-08-07
 
 ### Added
