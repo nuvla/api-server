@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.2] - 2019-08-07
+
 ### Added
 
   - Added the nuvlabox-peripheral resource and updated the
@@ -9,6 +11,7 @@
 
 ### Changed
 
+  - Add form support for session and user needed for UI redirection
   - Callback - email validation, user email validation and user 
     password reset callbacks should be in final state after execution
   - Update to parent version 6.6.0 and ring 2.0.2
