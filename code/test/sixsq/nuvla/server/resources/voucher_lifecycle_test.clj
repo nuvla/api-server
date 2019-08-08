@@ -44,11 +44,12 @@
                              :code            "vH72Hks209"
                              :state           "NEW"
                              :target-audience "scientists@university.com"
+                             :supplier        "cloud A"
 
                              :acl             valid-acl-admin
                              }
 
-        valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user)]
+        valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user :code "differentCode")]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -95,6 +96,14 @@
                             (ltu/location))
 
           user-abs-uri  (str p/service-context user-uri)]
+
+      ;; creating a new voucher with the same code and supplier must fail
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-voucher-user))
+          (ltu/body->edn)
+          (ltu/is-status 409))
 
       ;; admin should see 2 voucher resources
       (-> session-admin

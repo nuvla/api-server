@@ -121,7 +121,6 @@
              :json-schema/order 28)))
 
 
-
 (s/def ::batch
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "batch"
@@ -141,6 +140,15 @@
              :json-schema/group "body"
              :json-schema/order 30)))
 
+
+(s/def ::supplier
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "supplier"
+             :json-schema/type "string"
+
+             :json-schema/description "name identifier for the supplier"
+             :json-schema/group "body"
+             :json-schema/order 31)))
 ;;
 ;; -------
 ;;
@@ -152,7 +160,8 @@
                                ::currency
                                ::code
                                ::state
-                               ::target-audience]
+                               ::target-audience
+                               ::supplier]
                       :opt-un [::expiry
                                ::activated
                                ::service-info-url
