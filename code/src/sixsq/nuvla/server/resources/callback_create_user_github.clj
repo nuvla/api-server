@@ -27,10 +27,11 @@
             (let [github-login (:login user-info)
                   github-email (auth-github/retrieve-email user-info access-token)]
               (if github-login
-                (or (ex/create-user! :github {:instance       instance
-                                              :external-id    github-login
-                                              :external-email github-email})
-                    (gu/throw-user-exists github-login redirect-url))
+                (or
+                  (ex/create-user! :github {:instance       instance
+                                            :external-id    github-login
+                                            :external-email github-email})
+                  (gu/throw-user-exists github-login redirect-url))
                 (gu/throw-no-matched-user redirect-url))))
           (gu/throw-no-user-info redirect-url))
         (gu/throw-no-access-token redirect-url))
