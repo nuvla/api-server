@@ -29,20 +29,20 @@
 
 
 (deftest lifecycle
-  (let [session-anon        (-> (ltu/ring-app)
-                                session
-                                (content-type "application/json"))
-        session-admin       (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user        (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
+  (let [session-anon               (-> (ltu/ring-app)
+                                       session
+                                       (content-type "application/json"))
+        session-admin              (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user               (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
-        valid-voucher-report-admin {:name            "my-voucher-report"
-                                    :description     "my-voucher-report description"
+        valid-voucher-report-admin {:name         "my-voucher-report"
+                                    :description  "my-voucher-report description"
 
-                                    :supplier        "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-                                    :parent          "voucher/abcdef01-abcd-abcd-abcd-abcdef012346"
-                                    :amount-spent    50.0
+                                    :supplier     "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                                    :parent       "voucher/abcdef01-abcd-abcd-abcd-abcdef012346"
+                                    :amount-spent 50.0
 
-                                    :acl             valid-acl-admin
+                                    :acl          valid-acl-admin
                                     }
 
         valid-voucher-report-user  (assoc valid-voucher-report-admin :acl valid-acl-user)]

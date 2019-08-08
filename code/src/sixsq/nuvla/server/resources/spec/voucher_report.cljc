@@ -9,13 +9,13 @@
 
 
 (s/def ::supplier (-> (st/spec ::user/id)
-                   (assoc :name "supplier"
-                          :json-schema/type "resource-id"
-                          :json-schema/description "reference to supplier user id"
+                      (assoc :name "supplier"
+                             :json-schema/type "resource-id"
+                             :json-schema/description "reference to supplier user id"
 
-                          :json-schema/section "meta"
-                          :json-schema/group "body"
-                          :json-schema/order 18)))
+                             :json-schema/section "meta"
+                             :json-schema/group "body"
+                             :json-schema/order 18)))
 
 
 (s/def ::amount-left

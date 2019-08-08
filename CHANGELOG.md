@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+  - Voucher report - create new voucher-report resource
+
+### Change
+
+  - Voucher - add supplier to voucher
+
 ## [4.2.2] - 2019-08-07
 
 ### Added

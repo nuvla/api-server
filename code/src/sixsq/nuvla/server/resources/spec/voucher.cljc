@@ -121,7 +121,6 @@
              :json-schema/order 28)))
 
 
-
 (s/def ::batch
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "batch"
