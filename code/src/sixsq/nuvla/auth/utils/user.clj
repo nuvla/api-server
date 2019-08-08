@@ -22,6 +22,6 @@
        (do
          (log/warnf "created %s" resource-id)
          resource-id)
-       (let [msg (str "cannot create user for " user-identifier)]
-         (log/errorf msg)
-         (throw (ex-info msg user-record)))))))
+       (do
+         (log/errorf "cannot create user for %s" user-identifier)
+         nil)))))
