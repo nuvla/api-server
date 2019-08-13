@@ -9,10 +9,10 @@ either a manager or worker within the Swarm.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as tpl-swarm-token]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-swarm-token :as swarm-token-spec]
     [sixsq.nuvla.server.resources.spec.credential-template-swarm-token :as ct-swarm-token-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 ;;

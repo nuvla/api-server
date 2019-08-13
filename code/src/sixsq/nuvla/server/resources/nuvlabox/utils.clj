@@ -4,7 +4,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -85,11 +84,10 @@
   "Finds the infrastructure-service-group that is associated with the given
    nuvlabox-id."
   [nuvlabox-id]
-  (let [filter (format "parent='%s'" nuvlabox-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query isg/resource-type body)
+  (let [filter  (format "parent='%s'" nuvlabox-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin isg/resource-type options)
         second
         first
         :id)))
@@ -98,11 +96,10 @@
 (defn get-service-credential-id
   "Finds the credential linked to the given infrastructure-service id."
   [service-id]
-  (let [filter (format "parent='%s'" service-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query infra-service/resource-type body)
+  (let [filter  (format "parent='%s'" service-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin infra-service/resource-type options)
         second
         first
         :id)))
@@ -137,11 +134,10 @@
    linked to the given infrastructure-service-group. If found, the identifier
    is returned."
   [subtype isg-id]
-  (let [filter (format "subtype='%s' and parent='%s'" subtype isg-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query infra-service/resource-type body)
+  (let [filter  (format "subtype='%s' and parent='%s'" subtype isg-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin infra-service/resource-type options)
         second
         first
         :id)))
@@ -183,11 +179,10 @@
   "Searches for an existing swarm credential tied to the given service.
    If found, the identifier is returned."
   [swarm-id]
-  (let [filter (format "subtype='infrastructure-service-swarm' and parent='%s'" swarm-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query credential/resource-type body)
+  (let [filter  (format "subtype='infrastructure-service-swarm' and parent='%s'" swarm-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin credential/resource-type options)
         second
         first
         :id)))
@@ -225,11 +220,10 @@
   "Searches for an existing swarm token credential tied to the given service.
    If found, the identifier is returned."
   [swarm-id scope]
-  (let [filter (format "subtype='swarm-token' and scope='%s' and parent='%s'" scope swarm-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query credential/resource-type body)
+  (let [filter  (format "subtype='swarm-token' and scope='%s' and parent='%s'" scope swarm-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin credential/resource-type options)
         second
         first
         :id)))
@@ -264,11 +258,10 @@
   "Searches for an existing minio credential tied to the given service. If
    found, the identifier is returned."
   [minio-id]
-  (let [filter (format "subtype='infrastructure-service-minio' and parent='%s'" minio-id)
-        body   {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                              :select ["id"]}
-                :nuvla/authn auth/internal-identity}]
-    (-> (db/query credential/resource-type body)
+  (let [filter  (format "subtype='infrastructure-service-minio' and parent='%s'" minio-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin credential/resource-type options)
         second
         first
         :id)))
@@ -298,3 +291,37 @@
             (throw (ex-info msg (r/map-response msg 400 "")))))))))
 
 
+(defn commission
+  [{:keys [id owner] :as resource}
+   {{:keys [swarm-endpoint
+            swarm-token-manager swarm-token-worker
+            swarm-client-key swarm-client-cert swarm-client-ca
+            minio-endpoint
+            minio-access-key minio-secret-key]} :body :as request}]
+
+  ;; This code will not create duplicate resources when commission is called multiple times.
+  ;; However, it won't update those resources if the content changes.
+  ;; FIXME: allow updates of existing resources
+  (when-let [isg-id (get-isg-id id)]
+    (let [swarm-id (or
+                     (get-swarm-service isg-id)
+                     (create-swarm-service id owner isg-id swarm-endpoint))
+          minio-id (or
+                     (get-minio-service isg-id)
+                     (create-minio-service id owner isg-id minio-endpoint))]
+
+      (when swarm-id
+        (or
+          (get-swarm-cred swarm-id)
+          (create-swarm-cred id owner swarm-id swarm-client-key swarm-client-cert swarm-client-ca))
+        (or
+          (get-swarm-token swarm-id "MANAGER")
+          (create-swarm-token id owner swarm-id "MANAGER" swarm-token-manager))
+        (or
+          (get-swarm-token swarm-id "WORKER")
+          (create-swarm-token id owner swarm-id "WORKER" swarm-token-worker)))
+
+      (when minio-id
+        (or
+          (get-minio-cred minio-id)
+          (create-minio-cred id owner minio-id minio-access-key minio-secret-key))))))

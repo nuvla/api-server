@@ -62,8 +62,9 @@
                                :identifier identifier}
                  :nuvla/authn auth/internal-identity}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
-    (if (= status 201)
-      resource-id
+    (case status
+      201 resource-id
+      409 (throw (r/ex-response (format "identifier (%s) is associated with an existing account" identifier) 409 identifier))
       (throw (ex-info (format "could not create identifier for '%s' -> '%s'" user-id identifier) body)))))
 
 
@@ -98,22 +99,7 @@
                                  email-id (assoc :email email-id)))
 
     (when email
-      (try
-        (create-identifier user-id email)
-        (catch Exception e
-          (if-let [{:keys [status] :as data} (ex-data e)]
-            (if (= 409 status)
-              (throw (r/ex-response (format "email address (%s) is associated with an existing account" email) 409 email))
-              (throw e))
-            (throw e)))))
+      (create-identifier user-id email))
 
     (when username
-      (try
-        (create-identifier user-id username)
-        (catch Exception e
-          (if-let [{:keys [status] :as data} (ex-data e)]
-            (if (= 409 status)
-              (throw (r/ex-response (format "identifier (%s) is associated with an existing account" username) 409 username))
-              (throw e))
-            (throw e)))))))
-
+      (create-identifier user-id username))))

@@ -7,10 +7,12 @@ component, or application.
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -56,6 +58,7 @@ component, or application.
   [subtype]
   (case subtype
     "component" module-component/resource-type
+    "application" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
@@ -63,12 +66,38 @@ component, or application.
   [subtype]
   (case subtype
     "component" module-component/resource-type
+    "application" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
+
+
+(defn colliding-path?
+  [path]
+  (let [filter    (parser/parse-cimi-filter (format "path='%s'" path))
+        query-map {:params         {:resource-name resource-type}
+                   :request-method :put
+                   :nuvla/authn    auth/internal-identity
+                   :cimi-params    {:filter filter
+                                    :last   0}}]
+    (-> query-map
+        crud/query
+        :body
+        :count
+        pos?)))
+
+
+(defn throw-colliding-path
+  [path]
+  (when (colliding-path? path)
+    (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
+
   (a/throw-cannot-add collection-acl request)
+
+  (throw-colliding-path (:path body))
+
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
 
@@ -146,7 +175,8 @@ component, or application.
                                (crud/retrieve-by-id-as-admin)
                                (dissoc :resource-type :operations :acl))
                            (when version-index
-                             (throw (r/ex-not-found (str "Module version not found: " resource-type "/" uuid)))))]
+                             (throw (r/ex-not-found
+                                      (str "Module version not found: " resource-type "/" uuid)))))]
       (-> (assoc module-meta :content module-content)
           (crud/set-operations request)
           (a/select-viewable-keys request)

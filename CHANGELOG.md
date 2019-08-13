@@ -2,8 +2,58 @@
 
 ## Unreleased
 
+### Added
+
+  - Voucher report - create new voucher-report resource
+
+### Change
+
+  - Voucher - add supplier to voucher
+  - Create user callback should not fail silently
+
+## [4.2.2] - 2019-08-07
+
+### Added
+
+  - Added the nuvlabox-peripheral resource and updated the
+   version numbers (v1) for the other nuvlabox resources.
+
 ### Changed
 
+  - Add form support for session and user needed for UI redirection
+  - Callback - email validation, user email validation and user 
+    password reset callbacks should be in final state after execution
+  - Update to parent version 6.6.0 and ring 2.0.2
+
+## [4.2.1] - 2019-07-29
+
+### Added
+
+  - Add metadata for data-record-key and 
+    data-record-key-prefix resources
+
+### Changed 
+
+  - Use the id of the metadata resources also for the name
+    (with an optional suffix for 'create' templates)
+  - External authentication resources (GitHub, OIDC, MITREid) 
+    have been validated server-side. 
+
+## [4.2.0] - 2019-07-24
+
+### Added
+
+  - Initial port of resources for external authentication (GitHub,
+    OIDC, and MITREid)
+  - Module application support added with docker-compose and files 
+    fields to be mapped with Docker secrets and configs
+
+## [4.1.0] - 2019-07-11
+
+### Changed
+
+  - User - Do not allow user change his name
+  - Module - Conflict if path already exit on add
   - ES mapping generation for double is taken into account 
   - Make double spec accept number as value
   - Upgrade to ring-container 2.0.1 and parent 6.5.1.

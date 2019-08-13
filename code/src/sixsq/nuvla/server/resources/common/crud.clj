@@ -45,6 +45,13 @@
   (throw (r/ex-bad-method request)))
 
 
+(defn query-as-admin
+  "Calls the database query with with the administrator user identity merged
+   into the given options."
+  [collection-id options]
+  (db/query collection-id (merge options {:nuvla/authn auth/internal-identity})))
+
+
 (defmulti retrieve resource-name-dispatch)
 
 

@@ -25,7 +25,8 @@ voucher via the 'expire' operation.
     [sixsq.nuvla.server.resources.spec.voucher :as voucher]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [clojure.string :as str]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -70,6 +71,22 @@ voucher via the 'expire' operation.
 (defmethod crud/add-acl resource-type
   [resource request]
   (a/add-acl resource request))
+
+
+;;
+;; set the resource identifier to "voucher/uuid"
+;;
+
+(defn voucher->uuid
+  [code supplier]
+  (let [id (str/join ":" [code supplier])]
+    (u/from-data-uuid id)))
+
+(defmethod crud/new-identifier resource-type
+  [{:keys [code supplier] :as voucher} resource-name]
+  (->> (voucher->uuid code supplier)
+       (str resource-type "/")
+       (assoc voucher :id)))
 
 
 ;;

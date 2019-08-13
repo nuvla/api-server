@@ -14,11 +14,11 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -54,7 +54,7 @@ particular NuvlaBox release.
 ;;
 ;; WARNING: This must be updated when new nuvlabox schemas are added!
 ;;
-(def ^:const latest-version 0)
+(def ^:const latest-version 1)
 
 
 (def ^:const default-refresh-interval 90)

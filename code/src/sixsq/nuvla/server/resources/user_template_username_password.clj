@@ -24,6 +24,7 @@ creating new accounts without email addresses or email address validation.
 
 (def resource-acl {:owners ["group/nuvla-admin"]})
 
+
 ;;
 ;; resource
 ;;
@@ -65,6 +66,8 @@ creating new accounts without email addresses or email address validation.
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::spec-username-password/schema))
+
+
 (defmethod p/validate-subtype registration-method
   [resource]
   (validate-fn resource))

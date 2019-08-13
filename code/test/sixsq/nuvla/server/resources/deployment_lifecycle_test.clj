@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.resources.deployment :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
+    [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -28,61 +29,68 @@
 (def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-module {:id                        (str module/resource-type "/connector-uuid")
-                   :resource-type             module/resource-type
-                   :created                   timestamp
-                   :updated                   timestamp
-                   :parent-path               "a/b"
-                   :path                      "a/b/c"
-                   :subtype                   "component"
+(defn valid-module
+  [subtype content]
+  {:id                        (str module/resource-type "/connector-uuid")
+   :resource-type             module/resource-type
+   :created                   timestamp
+   :updated                   timestamp
+   :parent-path               "a/b"
+   :path                      "a/b/c"
+   :subtype                   subtype
 
-                   :logo-url                  "https://example.org/logo"
+   :logo-url                  "https://example.org/logo"
 
-                   :data-accept-content-types ["application/json" "application/x-something"]
-                   :data-access-protocols     ["http+s3" "posix+nfs"]})
+   :data-accept-content-types ["application/json" "application/x-something"]
+   :data-access-protocols     ["http+s3" "posix+nfs"]
+
+   :content                   content})
 
 
-(def valid-module-component {:author                  "someone"
-                             :commit                  "wip"
+(def valid-component {:author                  "someone"
+                      :commit                  "wip"
 
-                             :architectures           ["amd64" "arm/v6"]
-                             :image                   {:image-name "ubuntu"
-                                                       :tag        "16.04"}
-                             :ports                   [{:protocol       "tcp"
-                                                        :target-port    22
-                                                        :published-port 8022}]
+                      :architectures           ["amd64" "arm/v6"]
+                      :image                   {:image-name "ubuntu"
+                                                :tag        "16.04"}
+                      :ports                   [{:protocol       "tcp"
+                                                 :target-port    22
+                                                 :published-port 8022}]
 
-                             :environmental-variables [{:name  "ALPHA_ENV"
-                                                        :value "OK"}
-                                                       {:name        "BETA_ENV"
-                                                        :description "beta-env variable"
-                                                        :required    true}]
+                      :environmental-variables [{:name  "ALPHA_ENV"
+                                                 :value "OK"}
+                                                {:name        "BETA_ENV"
+                                                 :description "beta-env variable"
+                                                 :required    true}]
 
-                             :output-parameters       [{:name        "alpha"
-                                                        :description "my-alpha"}
-                                                       {:name        "beta"
-                                                        :description "my-beta"}
-                                                       {:name        "gamma"
-                                                        :description "my-gamma"}]})
+                      :output-parameters       [{:name        "alpha"
+                                                 :description "my-alpha"}
+                                                {:name        "beta"
+                                                 :description "my-beta"}
+                                                {:name        "gamma"
+                                                 :description "my-gamma"}]})
 
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
 
 
-(deftest lifecycle
+(defn lifecycle-deployment
+  [subtype valid-module-content]
   (let [session-anon     (-> (ltu/ring-app)
                              session
                              (content-type "application/json"))
         session-admin    (header session-anon authn-info-header
                                  "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user     (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header
+                                 "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a module that can be referenced from the deployment
         module-id        (-> session-user
                              (request module-base-uri
                                       :request-method :post
-                                      :body (json/write-str (assoc valid-module :content valid-module-component)))
+                                      :body (json/write-str
+                                              (valid-module subtype valid-module-content)))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -191,11 +199,12 @@
               (let [dp-url (-> session-admin
                                (request (str p/service-context "deployment-parameter")
                                         :request-method :post
-                                        :body (json/write-str {:parent  deployment-id
-                                                               :name    "test-parameter"
-                                                               :node-id "machine"
-                                                               :acl     {:owners   ["group/nuvla-admin"]
-                                                                         :edit-acl ["user/jane"]}}))
+                                        :body (json/write-str
+                                                {:parent  deployment-id
+                                                 :name    "test-parameter"
+                                                 :node-id "machine"
+                                                 :acl     {:owners   ["group/nuvla-admin"]
+                                                           :edit-acl ["user/jane"]}}))
                                (ltu/body->edn)
                                (ltu/is-status 201)
                                (ltu/location-url))]
@@ -252,7 +261,16 @@
                 (-> session-user
                     (request dp-url)
                     (ltu/body->edn)
-                    (ltu/is-status 404))))))))))
+                    (ltu/is-status 404))))))))
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :delete)
+        (ltu/is-status 200))))
+
+
+(deftest lifecycle-deployment-component
+  (lifecycle-deployment "component" valid-component))
 
 
 (deftest lifecycle-error
@@ -261,13 +279,15 @@
                              (content-type "application/json"))
         session-admin    (header session-anon authn-info-header
                                  "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user     (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header
+                                 "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a module that can be referenced from the deployment
         module-id        (-> session-user
                              (request module-base-uri
                                       :request-method :post
-                                      :body (json/write-str (assoc valid-module :content valid-module-component)))
+                                      :body (json/write-str
+                                              (valid-module "component" valid-component)))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -314,7 +334,27 @@
       (-> session-user
           (request deployment-url)
           (ltu/body->edn)
-          (ltu/is-status 404)))))
+          (ltu/is-status 404)))
+
+    (-> session-user
+        (request (str p/service-context module-id)
+                 :request-method :delete)
+        (ltu/is-status 200))))
+
+
+(deftest lifecycle-application
+  (let [valid-application {:id             (str module-application/resource-type
+                                                "/module-application-uuid")
+                           :resource-type  module-application/resource-type
+                           :created        timestamp
+                           :updated        timestamp
+                           :acl            valid-acl
+
+                           :author         "someone"
+                           :commit         "wip"
+
+                           :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
+    (lifecycle-deployment "application" valid-application)))
 
 
 (deftest bad-methods
