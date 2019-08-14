@@ -151,7 +151,7 @@ a container orchestration engine.
           resource (crud/retrieve-by-id-as-admin id)]
       (a/throw-cannot-manage resource request)
 
-      (let [user-id (:user-id (auth/current-authentication request))
+      (let [user-id (auth/current-user-id request)
             {{job-id     :resource-id
               job-status :status} :body} (job/create-job id (str action "_deployment")
                                                          {:owners   ["group/nuvla-admin"]

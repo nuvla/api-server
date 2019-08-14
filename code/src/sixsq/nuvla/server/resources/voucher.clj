@@ -152,7 +152,7 @@ voucher via the 'expire' operation.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id      (str resource-type "/" uuid)
-          user-id (:user-id (auth/current-authentication request))
+          user-id (auth/current-user-id request)
           voucher (db/retrieve id request)
           new-acl (update (:acl voucher) :manage conj user-id)]
       (try
