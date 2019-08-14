@@ -15,6 +15,7 @@ Finally, at any time, the owner or user of the voucher can terminate the
 voucher via the 'expire' operation.
 "
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -25,8 +26,7 @@ voucher via the 'expire' operation.
     [sixsq.nuvla.server.resources.spec.voucher :as voucher]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

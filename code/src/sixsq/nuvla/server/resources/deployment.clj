@@ -16,6 +16,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
+    [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -132,58 +133,64 @@ a container orchestration engine.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [start-op    (u/action-map id :start)
-        stop-op     (u/action-map id :stop)
-        can-manage? (a/can-manage? resource request)]
+  (let [start-op      (u/action-map id :start)
+        stop-op       (u/action-map id :stop)
+        create-log-op (u/action-map id :create-log)
+        can-manage?   (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
             (and can-manage? (#{"STARTING" "STARTED" "ERROR"} state)) (update :operations conj stop-op)
+            (and can-manage? (#{"STARTED" "ERROR"} state)) (update :operations conj create-log-op)
             (not (deployment-utils/can-delete? resource)) (update :operations deployment-utils/remove-delete))))
 
 
-(defmethod crud/do-action [resource-type "start"]
-  [{{uuid :uuid} :params :as request}]
+(defn create-job
+  [action new-state {{uuid :uuid} :params :as request}]
   (try
-    (let [id      (str resource-type "/" uuid)
-          user-id (:user-id (auth/current-authentication request))
-          {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "start_deployment"
-                                                       {:owners   ["group/nuvla-admin"]
-                                                        :edit-acl [user-id]}
-                                                       :priority 50)
-          job-msg (str "starting " id " with async " job-id)]
-      (when (not= job-status 201)
-        (throw (r/ex-response "unable to create async job to start deployment" 500 id)))
-      (-> id
-          (db/retrieve request)
-          (a/throw-cannot-edit request)
-          (assoc :state "STARTING")
-          (db/edit request))
-      (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
-      (r/map-response job-msg 202 id job-id))
+    (let [id       (str resource-type "/" uuid)
+          resource (crud/retrieve-by-id-as-admin id)]
+      (a/throw-cannot-manage resource request)
+
+      (let [user-id (:user-id (auth/current-authentication request))
+            {{job-id     :resource-id
+              job-status :status} :body} (job/create-job id (str action "_deployment")
+                                                         {:owners   ["group/nuvla-admin"]
+                                                          :edit-acl [user-id]}
+                                                         :priority 50)
+            job-msg (str "starting " id " with async " job-id)]
+        (when (not= job-status 201)
+          (throw (r/ex-response (format "unable to create async job to %s deployment" action) 500 id)))
+        (-> id
+            (db/retrieve request)
+            (a/throw-cannot-edit request)
+            (assoc :state new-state)
+            (db/edit request))
+        (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+        (r/map-response job-msg 202 id job-id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
+(defmethod crud/do-action [resource-type "start"]
+  [request]
+  (create-job "start" "STARTING" request))
+
+
 (defmethod crud/do-action [resource-type "stop"]
+  [request]
+  (create-job "stop" "STOPPING" request))
+
+
+(defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id      (str resource-type "/" uuid)
-          user-id (:user-id (auth/current-authentication request))
-          {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "stop_deployment"
-                                                       {:owners   ["group/nuvla-admin"]
-                                                        :view-acl [user-id]}
-                                                       :priority 60)
-          job-msg (str "stopping " id " with async " job-id)]
-      (when (not= job-status 201)
-        (throw (r/ex-response "unable to create async job to stop deployment" 500 id)))
-      (-> id
-          (db/retrieve request)
-          (a/throw-cannot-edit request)
-          (assoc :state "STOPPING")
-          (db/edit request))
-      (r/map-response job-msg 202 id job-id))
+    (let [id       (str resource-type "/" uuid)
+          resource (crud/retrieve-by-id-as-admin id)]
+      (a/throw-cannot-manage resource request)
+
+      ;; FIXME: Pull service and other parameters from request.
+      (let [session-id (auth/current-session-id request)]
+        (deployment-log/create-log id session-id "my-service")))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

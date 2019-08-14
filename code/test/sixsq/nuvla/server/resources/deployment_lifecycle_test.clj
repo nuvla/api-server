@@ -71,6 +71,10 @@
                                                  :description "my-gamma"}]})
 
 
+(def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
+
+
+
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
 
@@ -81,9 +85,9 @@
                              session
                              (content-type "application/json"))
         session-admin    (header session-anon authn-info-header
-                                 "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                 (str "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon "  session-id))
         session-user     (header session-anon authn-info-header
-                                 "user/jane group/nuvla-user group/nuvla-anon")
+                                 (str "user/jane group/nuvla-user group/nuvla-anon " session-id))
 
         ;; setup a module that can be referenced from the deployment
         module-id        (-> session-user
@@ -192,6 +196,42 @@
                                           (ltu/is-key-value :state "STARTING"))
 
                   stop-url            (ltu/get-op-url deployment-response "stop")]
+
+              ;; the deployment would be set to "STARTED" via the job
+              ;; for the tests, set this manually to continue with the workflow
+              (-> session-user
+                  (request deployment-url
+                           :request-method :put
+                           :body (json/write-str {:state "STARTED"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+
+              ;; check create-log operation
+              (let [response       (-> session-user
+                                       (request deployment-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-present :stop)
+                                       (ltu/is-operation-present :create-log)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :start)
+                                       (ltu/is-key-value :state "STARTED"))
+
+                    create-log-url (ltu/get-op-url response "create-log")
+
+                    log-url        (-> session-user
+                                       (request create-log-url
+                                                :request-method :post)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/location-url))]
+
+                ;; verify that the log resource exists
+                (-> session-user
+                    (request log-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)))
 
               ;; normally the start job would create the deployment parameters
               ;; create one manually to verify later that it is removed with the

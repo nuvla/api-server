@@ -9,12 +9,11 @@ is marked as validated."
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.callback.utils :as utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "user-email-validation")
