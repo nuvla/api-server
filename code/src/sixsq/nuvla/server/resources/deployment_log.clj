@@ -120,11 +120,6 @@ These resources represent the logs of a deployment.
               job-msg (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response (format "unable to create async job to % log" job-type) 500 id)))
-          (-> id
-              (db/retrieve request)
-              (a/throw-cannot-edit request)
-              (assoc :state "STARTING")
-              (db/edit request))
           (r/map-response job-msg 202 id job-id))
         (throw (r/ex-response "current authentication has no session identifier" 500 id))))
     (catch Exception e
