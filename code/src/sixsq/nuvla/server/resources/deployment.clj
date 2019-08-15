@@ -182,15 +182,15 @@ a container orchestration engine.
 
 
 (defmethod crud/do-action [resource-type "create-log"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params {:keys [service ] :as body} :body :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
           resource (crud/retrieve-by-id-as-admin id)]
       (a/throw-cannot-manage resource request)
 
-      ;; FIXME: Pull service and other parameters from request.
-      (let [session-id (auth/current-session-id request)]
-        (deployment-log/create-log id session-id "my-service")))
+      (let [session-id (auth/current-session-id request)
+            opts (select-keys body #{:since :head-or-tail :lines})]
+        (deployment-log/create-log id session-id service opts)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

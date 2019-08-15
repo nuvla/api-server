@@ -140,7 +140,7 @@ These resources represent the logs of a deployment.
 ;;
 
 (defn create-log
-  [deployment-id session-id service & {:keys [since head-or-tail lines]}]
+  [deployment-id session-id service & [{:keys [since head-or-tail lines]}]]
   (let [acl            {:owners    ["group/nuvla-admin"]
                         :edit-data [session-id]
                         :manage    [session-id]}
