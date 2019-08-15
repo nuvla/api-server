@@ -38,6 +38,14 @@
              :json-schema/order 21)))
 
 
+(s/def ::last-timestamp
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "since"
+             :json-schema/description "timestamp of the most recent line in the log"
+
+             :json-schema/order 22)))
+
+
 (s/def ::head-or-tail
   (-> (st/spec (s/and string? #{"head" "tail" "all"}))
       (assoc :name "head-or-tail"
@@ -45,7 +53,7 @@
              :json-schema/display-name "head or tail"
              :json-schema/description "whether to take number of lines from head or tail of log; 'all' takes all lines"
 
-             :json-schema/order 22)))
+             :json-schema/order 23)))
 
 
 (s/def ::lines
@@ -53,22 +61,30 @@
       (assoc :name "lines"
              :json-schema/description "number of lines to include in the log"
 
-             :json-schema/order 23)))
+             :json-schema/order 24)))
+
+
+(s/def ::log-line
+  (-> (st/spec string?)
+      (assoc :name "lines"
+             :json-schema/type "string"
+             :json-schema/description "a single line from the log")))
 
 
 (s/def ::log
-  (-> (st/spec string?)
+  (-> (st/spec (s/coll-of ::log-line :type vector?))
       (assoc :name "log"
+             :json-schema/type "array"
              :json-schema/description "contents of log"
 
-             :json-schema/order 24
+             :json-schema/order 25
              :json-schema/indexed false)))
 
 
 (def deployment-log-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::parent ::service]
-                         :opt-un [::since ::head-or-tail ::lines ::log]}]))
+                         :opt-un [::since ::last-timestamp ::head-or-tail ::lines ::log]}]))
 
 
 (s/def ::schema (su/only-keys-maps deployment-log-keys-spec))

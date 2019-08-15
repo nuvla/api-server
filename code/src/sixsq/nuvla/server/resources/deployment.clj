@@ -34,11 +34,47 @@ a container orchestration engine.
                      :add   ["group/nuvla-user"]})
 
 
+(def actions [{:name           "start"
+               :uri            "start"
+               :description    "starts the deployment"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "stop"
+               :uri            "stop"
+               :description    "stops the deployment"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name             "create-log"
+               :uri              "create-log"
+               :description      "creates a new deployment-log resource to collect logging information"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+
+               :input-parameters [{:name "service"}
+
+                                  {:name "since"}
+
+                                  {:name        "head-or-tail"
+                                   :value-scope {:values  ["head" "tail" "all"]
+                                                 :default "all"}}
+
+                                  {:name        "lines"
+                                   :value-scope {:minimum 1
+                                                 :default 200}}]}])
+
+
 ;;
 ;; validate deployment
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::deployment-spec/deployment))
+
+
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
@@ -104,15 +140,13 @@ a container orchestration engine.
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [authn-info      (auth/current-authentication request)
-          deployment-id   (str resource-type "/" uuid)
+    (let [deployment-id   (str resource-type "/" uuid)
           delete-response (-> deployment-id
                               (db/retrieve request)
                               deployment-utils/verify-can-delete
                               (a/throw-cannot-delete request)
                               (db/delete request))]
-      (deployment-utils/delete-deployment-credentials authn-info deployment-id)
-      (deployment-utils/delete-deployment-parameters authn-info deployment-id)
+      (deployment-utils/delete-all-child-resources deployment-id)
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -182,14 +216,14 @@ a container orchestration engine.
 
 
 (defmethod crud/do-action [resource-type "create-log"]
-  [{{uuid :uuid} :params {:keys [service ] :as body} :body :as request}]
+  [{{uuid :uuid} :params {:keys [service] :as body} :body :as request}]
   (try
     (let [id       (str resource-type "/" uuid)
           resource (crud/retrieve-by-id-as-admin id)]
       (a/throw-cannot-manage resource request)
 
       (let [session-id (auth/current-session-id request)
-            opts (select-keys body #{:since :head-or-tail :lines})]
+            opts       (select-keys body #{:since :head-or-tail :lines})]
         (deployment-log/create-log id session-id service opts)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

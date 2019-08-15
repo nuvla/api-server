@@ -33,7 +33,7 @@
   {:name    parameter-name
    :parent  parent-id
    :service "my-service"
-   :log     "my-log-information"
+   :log     ["my-log-information"]
    :acl     {:owners   ["group/nuvla-admin"]
              :edit-acl ["user/jane"]}})
 
@@ -117,31 +117,29 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-operation-present :fetch)
-                          (ltu/is-operation-present :next)
                           (ltu/is-operation-present :edit)
                           (ltu/is-operation-absent :delete))
 
             fetch-url (ltu/get-op-url resp "fetch")
-
-            next-url  (ltu/get-op-url resp "next")
 
             original  (ltu/body resp)]
 
         (-> session-jane
             (request test-uri
                      :request-method :put
-                     :body (json/write-str {:parent  bad-id
-                                            :name    "updated-name"
-                                            :service "bad-service"
-                                            :log     "OK!"}))
+                     :body (json/write-str {:parent         bad-id
+                                            :name           "updated-name"
+                                            :service        "bad-service"
+                                            :last-timestamp "1964-08-25T10:00:00.00Z"
+                                            :log            ["OK!"]}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        (let [{:keys [id name service log]} (-> session-jane
-                                                (request test-uri)
-                                                (ltu/body->edn)
-                                                (ltu/is-status 200)
-                                                (ltu/body))]
+        (let [{:keys [id name service log last-timestamp]} (-> session-jane
+                                                               (request test-uri)
+                                                               (ltu/body->edn)
+                                                               (ltu/is-status 200)
+                                                               (ltu/body))]
 
           (is (= id (:id original)))
           (is (not= bad-id id))
@@ -152,22 +150,22 @@
           (is (= service (:service original)))
           (is (not= service "bad-service"))
 
-          (is (= log "OK!")))
+          (is (= last-timestamp "1964-08-25T10:00:00.00Z"))
+
+          (is (= log ["OK!"])))
 
         ;; check the actions
-        (doseq [url [fetch-url next-url]]
-          (-> session-jane
-              (request url
-                       :request-method :post)
-              (ltu/body->edn)
-              (ltu/is-status 202)))
+        (-> session-jane
+            (request fetch-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 202))
 
-        (doseq [url [fetch-url next-url]]
-          (-> session-other
-              (request url
-                       :request-method :post)
-              (ltu/body->edn)
-              (ltu/is-status 403))))
+        (-> session-other
+            (request fetch-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 403)))
 
       (-> session-anon
           (request test-uri

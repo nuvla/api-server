@@ -26,6 +26,13 @@ These resources represent the logs of a deployment.
                      :add   ["group/nuvla-admin"]})
 
 
+(def actions [{:name             "fetch"
+               :uri              "fetch"
+               :description      "fetches the next set of lines from the log"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"}])
+
 ;;
 ;; multimethod for ACLs
 ;;
@@ -128,11 +135,6 @@ These resources represent the logs of a deployment.
 (defmethod crud/do-action [resource-type "fetch"]
   [{{uuid :uuid} :params :as request}]
   (create-job "fetch" request))
-
-
-(defmethod crud/do-action [resource-type "next"]
-  [{{uuid :uuid} :params :as request}]
-  (create-job "next" request))
 
 
 ;;
