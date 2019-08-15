@@ -8,6 +8,7 @@
 
 ### Change
 
+  - Nuvlabox - use name of nuvlabox when user define it in all sub-resources
   - Voucher - add supplier to voucher
   - Create user callback should not fail silently
 
