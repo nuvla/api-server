@@ -98,10 +98,9 @@ These resources represent the logs of a deployment.
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [fetch-op    (u/action-map id :fetch)
-        next-op     (u/action-map id :next)
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
-            can-manage? (update :operations conj fetch-op next-op))))
+            can-manage? (update :operations conj fetch-op))))
 
 
 (defn create-job
