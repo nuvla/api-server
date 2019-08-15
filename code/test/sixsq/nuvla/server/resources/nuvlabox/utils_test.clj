@@ -7,4 +7,4 @@
 (deftest check-short-nb-id
 
   (is (nil? (t/short-nb-id nil)))
-  (is (= "NB abc" (t/short-nb-id "nuvlabox/abc-def-ghi-jkl"))))
+  (is (= "abc" (t/short-nb-id "nuvlabox/abc-def-ghi-jkl"))))
