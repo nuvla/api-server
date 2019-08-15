@@ -173,12 +173,20 @@
             (is (= deployment-id (:parent credential)))
 
 
-            ;; attempt to start the deployment
-            (-> session-user
-                (request start-url
-                         :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 202))
+            ;; attempt to start the deployment and check the start job was created
+            (let [job-url (-> session-user
+                              (request start-url
+                                       :request-method :post)
+                              (ltu/body->edn)
+                              (ltu/is-status 202)
+                              (ltu/location-url))]
+              (-> session-user
+                  (request job-url
+                           :request-method :get)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :state "QUEUED")
+                  (ltu/is-key-value :action t/start-job-action-name)))
 
             ;; verify that the state has changed
             (let [deployment-response (-> session-user
@@ -215,12 +223,73 @@
                     (ltu/body->edn)
                     (ltu/is-status 200))
 
-                ;; try to stop the deployment
+                ;; the deployment would be set to "STARTED" via the job
+                ;; for the tests, set this manually to continue with the workflow
                 (-> session-user
-                    (request stop-url
-                             :request-method :post)
+                    (request deployment-url
+                             :request-method :put
+                             :body (json/write-str {:state "STARTED"}))
                     (ltu/body->edn)
-                    (ltu/is-status 202))
+                    (ltu/is-status 200))
+
+                ;; update deployment
+                (let [update-url (-> session-user
+                                     (request deployment-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :edit)
+                                     (ltu/is-operation-present :stop)
+                                     (ltu/is-operation-present :update)
+                                     (ltu/is-operation-absent :delete)
+                                     (ltu/is-operation-absent :start)
+                                     (ltu/is-key-value :state "STARTED")
+                                     (ltu/get-op-url "update"))]
+
+                  ;; try to update the deployment and check the update job was created
+                  (let [job-url (-> session-user
+                                    (request update-url
+                                             :request-method :get)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    (ltu/location-url))]
+                    (-> session-user
+                        (request job-url
+                                 :request-method :get)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-key-value :state "QUEUED")
+                        (ltu/is-key-value :action t/update-job-action-name)))
+
+                  ;; verify that the state has been updated
+                  (-> session-user
+                      (request deployment-url)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :state "UPDATING"))
+
+                  ;; on success, the deployment update job would set the deployment state to "STARTED"
+                  ;; for the tests, set this manually to continue with the workflow
+                  (-> session-user
+                      (request deployment-url
+                               :request-method :put
+                               :body (json/write-str {:state "STARTED"}))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)))
+
+                ;; try to stop the deployment and check the stop job was created
+                (let [job-url (-> session-user
+                                  (request stop-url
+                                           :request-method :post)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  (ltu/location-url))]
+                  (-> session-user
+                        (request job-url
+                                 :request-method :get)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-key-value :state "QUEUED")
+                        (ltu/is-key-value :action t/stop-job-action-name)))
 
                 ;; verify that the state has been updated
                 (-> session-user
