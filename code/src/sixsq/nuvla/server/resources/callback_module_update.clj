@@ -26,5 +26,5 @@
 
 
 (defmethod callback/execute action-name
-  [{{id :href} :target-resource :as callback-resource} request]
-  (update-component! id (:data callback-resource)))
+  [{{module-id :href} :target-resource :as callback-resource} request]
+  (update-component! module-id (:data callback-resource)))
