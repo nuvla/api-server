@@ -46,22 +46,12 @@
              :json-schema/order 22)))
 
 
-(s/def ::head-or-tail
-  (-> (st/spec (s/and string? #{"head" "tail" "all"}))
-      (assoc :name "head-or-tail"
-             :json-schema/type "string"
-             :json-schema/display-name "head or tail"
-             :json-schema/description "whether to take number of lines from head or tail of log; 'all' takes all lines"
-
-             :json-schema/order 23)))
-
-
 (s/def ::lines
   (-> (st/spec pos-int?)
       (assoc :name "lines"
              :json-schema/description "number of lines to include in the log"
 
-             :json-schema/order 24)))
+             :json-schema/order 23)))
 
 
 (s/def ::log-line
@@ -77,14 +67,14 @@
              :json-schema/type "array"
              :json-schema/description "contents of log"
 
-             :json-schema/order 25
+             :json-schema/order 24
              :json-schema/indexed false)))
 
 
 (def deployment-log-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::parent ::service]
-                         :opt-un [::since ::last-timestamp ::head-or-tail ::lines ::log]}]))
+                         :opt-un [::since ::last-timestamp ::lines ::log]}]))
 
 
 (s/def ::schema (su/only-keys-maps deployment-log-keys-spec))

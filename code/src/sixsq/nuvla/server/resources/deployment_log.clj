@@ -136,7 +136,7 @@ These resources represent the logs of a deployment.
 ;;
 
 (defn create-log
-  [deployment-id session-id service & [{:keys [since head-or-tail lines]}]]
+  [deployment-id session-id service & [{:keys [since lines]}]]
   (let [acl            {:owners    ["group/nuvla-admin"]
                         :edit-data [session-id]
                         :manage    [session-id]}
@@ -144,7 +144,6 @@ These resources represent the logs of a deployment.
                                 :service service
                                 :acl     acl}
                                since (assoc :since since)
-                               head-or-tail (assoc :head-or-tail head-or-tail)
                                lines (assoc :lines lines))
         create-request {:params      {:resource-name resource-type}
                         :body        log-map

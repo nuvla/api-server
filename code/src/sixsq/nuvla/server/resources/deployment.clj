@@ -59,10 +59,6 @@ a container orchestration engine.
 
                                   {:name "since"}
 
-                                  {:name        "head-or-tail"
-                                   :value-scope {:values  ["head" "tail" "all"]
-                                                 :default "all"}}
-
                                   {:name        "lines"
                                    :value-scope {:minimum 1
                                                  :default 200}}]}])
@@ -223,7 +219,7 @@ a container orchestration engine.
       (a/throw-cannot-manage resource request)
 
       (let [session-id (auth/current-session-id request)
-            opts       (select-keys body #{:since :head-or-tail :lines})]
+            opts       (select-keys body #{:since :lines})]
         (deployment-log/create-log id session-id service opts)))
     (catch Exception e
       (or (ex-data e) (throw e)))))

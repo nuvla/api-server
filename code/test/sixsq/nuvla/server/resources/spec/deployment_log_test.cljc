@@ -22,20 +22,16 @@
                    :service        "my-service"
                    :since          "1964-08-25T10:00:00.00Z"
                    :last-timestamp "2019-08-25T10:00:00.00Z"
-                   :head-or-tail   "head"
                    :lines          10
                    :log            ["some\nlong\nlog\ninformation\n"]}]
 
     (stu/is-valid ::dl/schema root)
     (stu/is-invalid ::dl/schema (assoc root :badKey "badValue"))
-    (stu/is-valid ::dl/schema (assoc root :head-or-tail "tail"))
-    (stu/is-valid ::dl/schema (assoc root :head-or-tail "all"))
-    (stu/is-invalid ::dl/schema (assoc root :head-or-tail "neither"))
 
     ;; required attributes
     (doseq [k #{:id :resource-type :parent :created :updated :acl :service}]
       (stu/is-invalid ::dl/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:name :since :last-timestamp :head-or-tail :lines :log}]
+    (doseq [k #{:name :since :last-timestamp :lines :log}]
       (stu/is-valid ::dl/schema (dissoc root k)))))
