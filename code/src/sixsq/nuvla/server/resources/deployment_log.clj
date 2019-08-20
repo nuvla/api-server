@@ -5,7 +5,6 @@ These resources represent the logs of a deployment.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -13,7 +12,9 @@ These resources represent the logs of a deployment.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-log :as dl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -26,12 +27,12 @@ These resources represent the logs of a deployment.
                      :add   ["group/nuvla-admin"]})
 
 
-(def actions [{:name             "fetch"
-               :uri              "fetch"
-               :description      "fetches the next set of lines from the log"
-               :method           "POST"
-               :input-message    "application/json"
-               :output-message   "application/json"}])
+(def actions [{:name           "fetch"
+               :uri            "fetch"
+               :description    "fetches the next set of lines from the log"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}])
 
 ;;
 ;; multimethod for ACLs
@@ -67,7 +68,7 @@ These resources represent the logs of a deployment.
 
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
-  (let [updated-body (dissoc body :parent :service)]
+  (let [updated-body (dissoc body :parent :service :last-timestamp)]
     (edit-impl (assoc request :body updated-body))))
 
 
@@ -106,10 +107,7 @@ These resources represent the logs of a deployment.
 (defn create-job
   [job-type {{uuid :uuid} :params :as request}]
   (try
-    (let [id       (str resource-type "/" uuid)
-          resource (crud/retrieve-by-id-as-admin id)]
-      (a/throw-cannot-manage resource request)
-
+    (let [id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
         (let [
               {{job-id     :resource-id
@@ -126,9 +124,34 @@ These resources represent the logs of a deployment.
       (or (ex-data e) (throw e)))))
 
 
+(defn already-job-exist
+  [job-type {{uuid :uuid} :params :as request}]
+  (try
+    (let [id               (str resource-type "/" uuid)
+          filter           (format "action='%s' and target-resource/href='%s' and %s"
+                                   (str job-type "_deployment_log")
+                                   id
+                                   "(state='QUEUED' or state='RUNNING')")
+          entries          (second (crud/query-as-admin
+                                     job/resource-type
+                                     {:cimi-params {:filter (parser/parse-cimi-filter filter)}}))
+          alive-jobs-count (count entries)]
+      (when (pos? alive-jobs-count)
+        (let [job-id (-> entries first :id)]
+          (r/map-response (format "existing async %s for %s" job-id id) 202 id job-id))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type "fetch"]
   [{{uuid :uuid} :params :as request}]
-  (create-job "fetch" request))
+  (let [id       (str resource-type "/" uuid)
+        resource (crud/retrieve-by-id-as-admin id)
+        job-type "fetch"]
+    (a/throw-cannot-manage resource request)
+    (if-let [response (already-job-exist job-type request)]
+      response
+      (create-job job-type request))))
 
 
 ;;

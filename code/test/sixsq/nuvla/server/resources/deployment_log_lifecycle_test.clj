@@ -8,7 +8,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-log :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.string :as str]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -150,7 +151,7 @@
           (is (= service (:service original)))
           (is (not= service "bad-service"))
 
-          (is (= last-timestamp "1964-08-25T10:00:00.00Z"))
+          (is (= last-timestamp (:last-timestamp original)))
 
           (is (= log ["OK!"])))
 
@@ -159,13 +160,22 @@
             (request fetch-url
                      :request-method :post)
             (ltu/body->edn)
-            (ltu/is-status 202))
+            (ltu/is-status 202)
+            (ltu/is-key-value #(-> % (str/split #" ") first) :message "starting"))
 
         (-> session-other
             (request fetch-url
                      :request-method :post)
             (ltu/body->edn)
-            (ltu/is-status 403)))
+            (ltu/is-status 403))
+
+        ;; check the fetch action doesn't create additional job if another one is pending
+        (-> session-jane
+            (request fetch-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 202)
+            (ltu/is-key-value #(-> % (str/split #" ") first) :message "existing")))
 
       (-> session-anon
           (request test-uri

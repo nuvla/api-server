@@ -70,11 +70,11 @@
 
 (defn job-cond->edition
   [{:keys [status-message state started] :as job}]
-  (cond-> job
-          (and (not started)
-               (= state state-running)) (assoc :started (time/now-str))
-          true (dissoc :priority)
-          status-message (update-time-of-status-change)
-          (is-final-state? job) (assoc :progress 100
-                                       :duration (some-> started
-                                                         (time/time-between-date-now :seconds)))))
+  (let [job-in-final-state? (is-final-state? job)]
+    (cond-> (dissoc job :priority)
+            (and (not started)
+                 (= state state-running)) (assoc :started (time/now-str))
+            status-message (update-time-of-status-change)
+            job-in-final-state? (assoc :progress 100)
+            (and job-in-final-state?
+                 started) (assoc :duration (time/time-between-date-now started :seconds)))))
