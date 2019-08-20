@@ -8,6 +8,11 @@
 
 ### Change
 
+  - The user resource ACL grants the user all rights except manage
+    and edit-acl. The user may now change the value of the name 
+    attribute.
+  - The user collection ACL now only allows an administrator to list
+    users. 
   - Nuvlabox - use name of nuvlabox when user define it in all sub-resources
   - Voucher - add supplier to voucher
   - Create user callback should not fail silently

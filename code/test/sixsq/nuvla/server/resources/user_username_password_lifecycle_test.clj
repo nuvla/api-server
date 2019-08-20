@@ -64,16 +64,21 @@
           bad-params-create  (assoc-in href-create [:template :invalid] "BAD")]
 
 
-      ;; user collection query should succeed but be empty for all users
-      (doseq [session [session-anon session-user session-admin]]
+      ;; user collection query is only allowed for admin
+      (doseq [session [session-anon session-user]]
         (-> session
             (request base-uri)
             (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count zero?)
-            (ltu/is-operation-present :add)
-            (ltu/is-operation-absent :delete)
-            (ltu/is-operation-absent :edit)))
+            (ltu/is-status 403)))
+
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?)
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit))
 
       ;; create a new user; fails without reference
       (doseq [session [session-anon session-user session-admin]]
@@ -124,12 +129,11 @@
         ;; verify the ACL of the user
         (let [user-acl (:acl user)]
           (is (some #{"group/nuvla-admin"} (:owners user-acl)))
-          (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
+          (is (not (some #{"group/nuvla-user"} (:view-meta user-acl))))
 
-          ;; user should have all rights
+          ;; user should have most rights (not edit-acl or manage)
           (doseq [right [:view-meta :view-data :view-acl
-                         :edit-meta :edit-data :edit-acl
-                         :manage :delete]]
+                         :edit-meta :edit-data :delete]]
             (is (some #{user-id} (right user-acl)))))
 
         ;; verify name attribute (should default to username)

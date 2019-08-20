@@ -97,13 +97,18 @@
                                            :redirect-url redirect-url-example}}
           invalid-create       (assoc-in href-create [:template :invalid] "BAD")]
 
-      ;; queries by anyone should succeed but have no entries
-      (doseq [session [session-anon session-user session-admin]]
+      ;; user collection query is only allowed for admin
+      (doseq [session [session-anon session-user]]
         (-> session
             (request base-uri)
             (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count zero?)))
+            (ltu/is-status 403)))
+
+      (-> session-admin
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?))
 
       ;; configuration must have GitHub client ID or secret, if not should get 500
       (-> session-anon
@@ -149,14 +154,6 @@
           (doseq [u uris]
             (is (re-matches #".*FAKE_CLIENT_ID.*" (or u "")))
             (is (re-matches callback-pattern (or u ""))))
-
-          ;; anonymous, user and admin query should succeed but have no users
-          (doseq [session [session-anon session-user session-admin]]
-            (-> session
-                (request base-uri)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-count zero?)))
 
           ;;
           ;; test validation callback

@@ -86,16 +86,21 @@
             bad-params-create  (assoc-in href-create [:template :invalid] "BAD")]
 
 
-        ;; user collection query should succeed but be empty for all users
-        (doseq [session [session-anon session-user session-admin]]
+        ;; user collection query is only allowed for admin
+        (doseq [session [session-anon session-user]]
           (-> session
               (request base-uri)
               (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count zero?)
-              (ltu/is-operation-present :add)
-              (ltu/is-operation-absent :delete)
-              (ltu/is-operation-absent :edit)))
+              (ltu/is-status 403)))
+
+        (-> session-admin
+            (request base-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count zero?)
+            (ltu/is-operation-present :add)
+            (ltu/is-operation-absent :delete)
+            (ltu/is-operation-absent :edit))
 
         ;; create a new user; fails without reference
         (doseq [session [session-anon session-user session-admin]]
