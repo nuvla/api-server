@@ -68,7 +68,7 @@ These resources represent the logs of a deployment.
 
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
-  (let [updated-body (dissoc body :parent :service :last-timestamp)]
+  (let [updated-body (dissoc body :parent :service)]
     (edit-impl (assoc request :body updated-body))))
 
 

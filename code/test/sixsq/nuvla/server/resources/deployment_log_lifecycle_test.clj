@@ -151,7 +151,7 @@
           (is (= service (:service original)))
           (is (not= service "bad-service"))
 
-          (is (= last-timestamp (:last-timestamp original)))
+          (is (= last-timestamp "1964-08-25T10:00:00.00Z"))
 
           (is (= log ["OK!"])))
 
