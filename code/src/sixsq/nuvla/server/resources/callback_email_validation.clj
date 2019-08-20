@@ -8,9 +8,9 @@ visited, the email identifier is marked as validated.
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.callback.utils :as utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "email-validation")

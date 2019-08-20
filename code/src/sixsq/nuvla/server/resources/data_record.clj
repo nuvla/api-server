@@ -110,7 +110,7 @@ resource.
   [{:keys [acl] :as resource} request]
   (if acl
     resource
-    (let [user-id (:user-id (auth/current-authentication request))]
+    (let [user-id (auth/current-user-id request)]
       (assoc resource :acl (create-acl user-id)))))
 
 
