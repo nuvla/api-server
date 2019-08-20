@@ -4,6 +4,7 @@
 
 ### Added
 
+  - Deployment log resource
   - Voucher report - create new voucher-report resource
 
 ### Change
@@ -13,6 +14,7 @@
     attribute.
   - The user collection ACL now only allows an administrator to list
     users. 
+  - Job - Fix spec error when job is not started and duration set to nil
   - Nuvlabox - use name of nuvlabox when user define it in all sub-resources
   - Voucher - add supplier to voucher
   - Create user callback should not fail silently
