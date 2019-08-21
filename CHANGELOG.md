@@ -9,9 +9,8 @@
 
 ### Change
 
-  - The user resource ACL grants the user all rights except manage
-    and edit-acl. The user may now change the value of the name 
-    attribute.
+  - The user resource ACL grants the user all rights except edit-acl. 
+    The user may now change the value of the name attribute.
   - The user collection ACL now only allows an administrator to list
     users. 
   - Job - Fix spec error when job is not started and duration set to nil
