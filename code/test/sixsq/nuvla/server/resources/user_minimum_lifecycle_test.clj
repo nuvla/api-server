@@ -178,6 +178,25 @@
                                            :body)]
           (is (= "ACTIVE" state)))
 
+        ;; ensure that user can change name/description of user resource
+        (-> session-created-user
+            (request (str p/service-context user-id)
+                     :request-method :put
+                     :body (json/write-str {:id          user-id
+                                            :name        "updated name"
+                                            :description "updated description"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [{:keys [name description]} (-> session-created-user
+                                             (request (str p/service-context user-id))
+                                             (ltu/body->edn)
+                                             (ltu/is-status 200)
+                                             (get-in [:response :body]))]
+
+          (is (= "updated name" name))
+          (is (= "updated description" description)))
+
         ;; user can delete his account
         (-> session-created-user
             (request (str p/service-context user-id)
