@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.callback-module-update
   (:require
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.server.resources.notification :refer [resource-type]]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.module :as m]))
+    [sixsq.nuvla.server.resources.module :as m]
+    [sixsq.nuvla.server.resources.notification :refer [resource-type]]))
 
 
 (def ^:const action-name "module-update")

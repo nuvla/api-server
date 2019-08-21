@@ -174,7 +174,7 @@
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :state "QUEUED")
-                (ltu/is-key-value :action deployment/update-job-action-name)
+                (ltu/is-key-value :action "update_deployment")
                 (ltu/is-key-value :target-resource {:href deployment-id})))
 
           (let [new-content (-> session-admin

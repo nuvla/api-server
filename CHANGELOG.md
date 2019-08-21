@@ -4,10 +4,14 @@
 
 ### Added
 
+  - Deployment log resource
   - Voucher report - create new voucher-report resource
 
 ### Change
 
+  - Module component - image update action 
+  - Deployment - component image update action
+  - Job - Fix spec error when job is not started and duration set to nil
   - Nuvlabox - use name of nuvlabox when user define it in all sub-resources
   - Voucher - add supplier to voucher
   - Create user callback should not fail silently

@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.callback-deployment-update
   (:require
-    [sixsq.nuvla.server.resources.notification :refer [resource-type]]
-    [sixsq.nuvla.server.resources.deployment :as depl]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.deployment :as depl]
+    [sixsq.nuvla.server.resources.notification :refer [resource-type]]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -22,7 +22,7 @@
 (defn update-deployment!
   [module-content request]
   (edit-deployment module-content request)
-  (depl/update-action-mpl request))
+  (depl/update-deployment-impl request))
 
 
 (defmethod callback/execute action-name

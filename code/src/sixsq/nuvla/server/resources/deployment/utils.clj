@@ -1,12 +1,14 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
+    [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -39,53 +41,38 @@
       (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))
 
 
-(defn delete-deployment-credentials
-  "Attempts to delete all credentials associated with the deployment via the
-   parent attribute. Exceptions are logged but otherwise ignored."
-  [authn-info deployment-id]
+(defn delete-child-resources
+  "Attempts to delete (as admin) all child resources associated with the
+   deployment via the parent attribute. The type of resource is provided as a
+   parameter. Exceptions are logged but otherwise ignored."
+  [resource-name deployment-id]
   (try
-    (let [credentials-query {:params      {:resource-name credential/resource-type}
-                             :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
-                                           :select ["id"]}
-                             :nuvla/authn authn-info}
-          credential-ids    (->> credentials-query crud/query :body :resources (map :id))]
+    (let [query     {:params      {:resource-name resource-name}
+                     :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
+                                   :select ["id"]}
+                     :nuvla/authn auth/internal-identity}
+          child-ids (->> query crud/query :body :resources (map :id))]
 
-      (doseq [credential-id credential-ids]
+      (doseq [child-id child-ids]
         (try
-          (let [[resource-name uuid] (u/parse-id credential-id)
-                request {:params      {:resource-name credential/resource-type
-                                       :uuid          uuid}
-                         :nuvla/authn authn-info}]
-            (crud/delete request))
-          (catch Exception e
-            (log/error (str "error deleting " (:id credential-id) " for " deployment-id ": " e))))))
-    (catch Exception e
-      (log/error "cannot query credentials related to " deployment-id))))
-
-
-(defn delete-deployment-parameters
-  "Attempts to delete all deployment-parameter resources associated with the
-   deployment via the parent attribute. Exceptions are logged but otherwise
-   ignored."
-  [authn-info deployment-id]
-  (try
-    (let [query  {:params      {:resource-name "deployment-parameter"} ;; hard-coded to avoid cyclic dependency
-                  :cimi-params {:filter (cimi-params-impl/cimi-filter {:filter (str "parent='" deployment-id "'")})
-                                :select ["id"]}
-                  :nuvla/authn authn-info}
-          dp-ids (->> query crud/query :body :resources (map :id))]
-
-      (doseq [dp-id dp-ids]
-        (try
-          (let [[resource-name uuid] (u/parse-id dp-id)
+          (let [[resource-name uuid] (u/parse-id child-id)
                 request {:params      {:resource-name resource-name
                                        :uuid          uuid}
-                         :nuvla/authn authn-info}]
+                         :nuvla/authn auth/internal-identity}]
             (crud/delete request))
           (catch Exception e
-            (log/error (str "error deleting " (:id dp-id) " for " deployment-id ": " e))))))
-    (catch Exception e
-      (log/error "cannot query deployment-parameter resources related to " deployment-id))))
+            (log/error (str "error deleting " (:id child-id) " for " deployment-id ": " e))))))
+    (catch Exception _
+      (log/errorf "cannot query %s resources related to %s" resource-name deployment-id))))
+
+
+(defn delete-all-child-resources
+  "Attempts to delete (as admin) all credential, deployment-parameter, and
+   deployment-log resources associated with the deployment. Exceptions are
+   logged but otherwise ignored."
+  [deployment-id]
+  (doseq [resource-name #{credential/resource-type "deployment-parameter" deployment-log/resource-type}]
+    (delete-child-resources resource-name deployment-id)))
 
 
 (defn resolve-module [{:keys [href]} authn-info]

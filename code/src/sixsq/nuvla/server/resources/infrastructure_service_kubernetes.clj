@@ -50,7 +50,7 @@ manage it.
   [service request]
   (try
     (let [id      (:id service)
-          user-id (:user-id (auth/current-authentication request))
+          user-id (auth/current-user-id request)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_infrastructure_service_kubernetes"
                                                        {:owners   ["group/nuvla-admin"]
