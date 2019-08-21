@@ -83,6 +83,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :edit-data [id]
                         :view-acl  [id]
+                        :manage    [id]
                         :delete    [id]}))
 
 ;;

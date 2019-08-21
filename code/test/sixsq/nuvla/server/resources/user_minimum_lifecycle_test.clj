@@ -128,9 +128,9 @@
           (is (some #{"group/nuvla-admin"} (:owners user-acl)))
           (is (not (some #{"group/nuvla-user"} (:view-meta user-acl))))
 
-          ;; user should have most rights (not edit ACL or manage)
+          ;; user should have most rights (not edit-acl)
           (doseq [right [:view-meta :view-data :view-acl
-                         :edit-meta :edit-data :delete]]
+                         :edit-meta :edit-data :delete :manage]]
             (is (some #{user-id} (right user-acl)))))
 
         ;; verify name attribute (should default to username)

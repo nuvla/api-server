@@ -32,8 +32,8 @@
                 (if email
                   (or
                     (ex/create-user! :mitreid {:instance       instance
-                                              :external-id    sub
-                                              :external-email email})
+                                               :external-id    sub
+                                               :external-email email})
                     (oidc-utils/throw-user-exists sub redirect-url))
                   (oidc-utils/throw-no-email redirect-url)))
               (oidc-utils/throw-no-subject redirect-url)))
