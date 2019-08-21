@@ -11,22 +11,22 @@
 
 
 (deftest check-voucher-report-schema
-  (let [timestamp "1964-08-25T10:00:00.00Z"
-        voucher-report   {:id               (str t/resource-type "/abcdef")
-                          :name             "my voucher-report"
-                          :description      "description of my voucher-report"
-                          :resource-type    t/resource-type
-                          :created          timestamp
-                          :updated          timestamp
-                          :acl              valid-acl
+  (let [timestamp      "1964-08-25T10:00:00.00Z"
+        voucher-report {:id            (str t/resource-type "/abcdef")
+                        :name          "my voucher-report"
+                        :description   "description of my voucher-report"
+                        :resource-type t/resource-type
+                        :created       timestamp
+                        :updated       timestamp
+                        :acl           valid-acl
 
-                          :supplier         "user/abcdef01-abcd-abcd-abcd-abcdef012340"
-                          :parent           "voucher/abcdef01-abcd-abcd-abcd-abcdef012341"
-                          :amount-left      -10.50
-                          :amount-spent     55
-                          :currency         "EUR"
-                          :redeemed         timestamp
-                          }]
+                        :supplier      "user/abcdef01-abcd-abcd-abcd-abcdef012340"
+                        :parent        "voucher/abcdef01-abcd-abcd-abcd-abcdef012341"
+                        :amount-left   -10.50
+                        :amount-spent  55
+                        :currency      "EUR"
+                        :redeemed      timestamp
+                        }]
 
     (stu/is-valid ::voucher-report/schema voucher-report)
 
