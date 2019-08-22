@@ -9,6 +9,7 @@
 
 ### Change
 
+  - When location is set in map-response, put it also in response json
   - Module component - image update action 
   - Deployment - component image update action
   - The user resource ACL grants the user all rights except edit-acl. 
