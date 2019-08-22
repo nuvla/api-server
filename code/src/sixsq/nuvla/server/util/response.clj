@@ -45,7 +45,8 @@
    (map-response msg status id nil))
   ([msg status id location]
    (let [resp (-> (cond-> {:status status, :message msg}
-                          id (assoc :resource-id id))
+                          id (assoc :resource-id id)
+                          location (assoc :location location))
                   json-response
                   (r/status status))]
      (cond-> resp

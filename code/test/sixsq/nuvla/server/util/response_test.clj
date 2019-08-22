@@ -74,7 +74,8 @@
                                     "Location"     location}
                           :body    {:message     msg
                                     :status      status
-                                    :resource-id id}})))
+                                    :resource-id id
+                                    :location    location}})))
 
 
 (deftest check-ex-response
@@ -108,7 +109,8 @@
                                     "Location"     location}
                           :body    {:message     msg
                                     :status      status
-                                    :resource-id id}})))
+                                    :resource-id id
+                                    :location    location}})))
 
 
 (deftest check-response-deleted
