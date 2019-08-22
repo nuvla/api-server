@@ -50,7 +50,8 @@ a container orchestration engine.
 
               {:name             "create-log"
                :uri              "create-log"
-               :description      "creates a new deployment-log resource to collect logging information"
+               :description      (str "creates a new deployment-log resource "
+                                      "to collect logging information")
                :method           "POST"
                :input-message    "application/json"
                :output-message   "application/json"
@@ -61,7 +62,21 @@ a container orchestration engine.
 
                                   {:name        "lines"
                                    :value-scope {:minimum 1
-                                                 :default 200}}]}])
+                                                 :default 200}}]}
+
+              {:name           "update"
+               :uri            "update"
+               :description    "update the deployment image"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}])
+
+
+(def start-job-action-name "start_deployment")
+
+(def stop-job-action-name "stop_deployment")
+
+(def update-job-action-name "update_deployment")
 
 
 ;;
@@ -101,8 +116,10 @@ a container orchestration engine.
         deployment      (-> body
                             (assoc :resource-type resource-type)
                             (assoc :state "CREATED")
-                            (assoc :module (deployment-utils/resolve-module (:module body) authn-info))
-                            (assoc :api-endpoint (str/replace-first base-uri #"/api/" ""))) ;; FIXME: Correct the value passed to the python API.
+                            (assoc :module
+                                   (deployment-utils/resolve-module (:module body) authn-info))
+                            (assoc :api-endpoint (str/replace-first base-uri #"/api/" "")))
+        ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
 
@@ -165,13 +182,23 @@ a container orchestration engine.
   [{:keys [id state] :as resource} request]
   (let [start-op      (u/action-map id :start)
         stop-op       (u/action-map id :stop)
+        update-op     (u/action-map id :update)
         create-log-op (u/action-map id :create-log)
         can-manage?   (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
+
             (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
-            (and can-manage? (#{"STARTING" "STARTED" "ERROR"} state)) (update :operations conj stop-op)
-            (and can-manage? (#{"STARTED" "ERROR"} state)) (update :operations conj create-log-op)
-            (not (deployment-utils/can-delete? resource)) (update :operations deployment-utils/remove-delete))))
+
+            (and can-manage? (#{"STARTING" "UPDATING" "STARTED" "ERROR"} state))
+            (update :operations conj stop-op)
+
+            (and can-manage? (#{"STARTED"} state)) (update :operations conj update-op)
+
+            (and can-manage? (#{"STARTED" "UPDATING" "ERROR"} state))
+            (update :operations conj create-log-op)
+
+            (not (deployment-utils/can-delete? resource))
+            (update :operations deployment-utils/remove-delete))))
 
 
 (defn create-job
@@ -189,7 +216,8 @@ a container orchestration engine.
                                                          :priority 50)
             job-msg (str "starting " id " with async " job-id)]
         (when (not= job-status 201)
-          (throw (r/ex-response (format "unable to create async job to %s deployment" action) 500 id)))
+          (throw (r/ex-response
+                   (format "unable to create async job to %s deployment" action) 500 id)))
         (-> id
             (db/retrieve request)
             (a/throw-cannot-edit request)
@@ -223,6 +251,15 @@ a container orchestration engine.
         (deployment-log/create-log id session-id service opts)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+(defn update-deployment-impl
+  [request]
+  (create-job "update" "UPDATING" request))
+
+(defmethod crud/do-action [resource-type "update"]
+  [request]
+  (update-deployment-impl request))
 
 
 ;;

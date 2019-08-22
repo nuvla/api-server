@@ -177,12 +177,21 @@
             (is (= deployment-id (:parent credential)))
 
 
-            ;; attempt to start the deployment
-            (-> session-user
-                (request start-url
-                         :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 202))
+
+            ;; attempt to start the deployment and check the start job was created
+            (let [job-url (-> session-user
+                              (request start-url
+                                       :request-method :post)
+                              (ltu/body->edn)
+                              (ltu/is-status 202)
+                              (ltu/location-url))]
+              (-> session-user
+                  (request job-url
+                           :request-method :get)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :state "QUEUED")
+                  (ltu/is-key-value :action "start_deployment")))
 
             ;; verify that the state has changed
             (let [deployment-response (-> session-user
@@ -206,7 +215,6 @@
                   (ltu/body->edn)
                   (ltu/is-status 200))
 
-              ;; check create-log operation
               (let [response       (-> session-user
                                        (request deployment-url)
                                        (ltu/body->edn)
@@ -217,98 +225,141 @@
                                        (ltu/is-operation-absent :delete)
                                        (ltu/is-operation-absent :start)
                                        (ltu/is-key-value :state "STARTED"))
-
                     create-log-url (ltu/get-op-url response "create-log")
+                    update-url     (ltu/get-op-url response "update")]
 
-                    log-url        (-> session-user
-                                       (request create-log-url
-                                                :request-method :post
-                                                :body (json/write-str {:service "my-service"}))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201)
-                                       (ltu/location-url))]
 
-                ;; verify that the log resource exists
-                (-> session-user
-                    (request log-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200))
-
-                ;; normally the start job would create the deployment parameters
-                ;; create one manually to verify later that it is removed with the
-                ;; deployment
-                (let [dp-url (-> session-admin
-                                 (request (str p/service-context "deployment-parameter")
-                                          :request-method :post
-                                          :body (json/write-str
-                                                  {:parent  deployment-id
-                                                   :name    "test-parameter"
-                                                   :node-id "machine"
-                                                   :acl     {:owners   ["group/nuvla-admin"]
-                                                             :edit-acl ["user/jane"]}}))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location-url))]
-
-                  ;; verify that the deployment parameter was created
+                ;; update deployment
+                ;; try to update the deployment and check the update job was created
+                (let [job-url (-> session-user
+                                  (request update-url
+                                           :request-method :get)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  (ltu/location-url))]
                   (-> session-user
-                      (request dp-url)
+                      (request job-url
+                               :request-method :get)
                       (ltu/body->edn)
-                      (ltu/is-status 200))
-
-                  ;; try to stop the deployment
-                  (-> session-user
-                      (request stop-url
-                               :request-method :post)
-                      (ltu/body->edn)
-                      (ltu/is-status 202))
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :state "QUEUED")
+                      (ltu/is-key-value :action "update_deployment"))
 
                   ;; verify that the state has been updated
                   (-> session-user
                       (request deployment-url)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-key-value :state "STOPPING"))
+                      (ltu/is-key-value :state "UPDATING"))
 
-                  ;; the deployment would be set to "STOPPED" via the job
+                  ;; on success, the deployment update job would set the deployment state to "STARTED"
                   ;; for the tests, set this manually to continue with the workflow
                   (-> session-user
                       (request deployment-url
                                :request-method :put
-                               :body (json/write-str {:state "STOPPED"}))
+                               :body (json/write-str {:state "STARTED"}))
                       (ltu/body->edn)
-                      (ltu/is-status 200))
+                      (ltu/is-status 200)))
 
-                  ;; verify that the user can delete the deployment
-                  (-> session-user
-                      (request deployment-url
-                               :request-method :delete)
-                      (ltu/body->edn)
-                      (ltu/is-status 200))
 
-                  ;; verify that the deployment has disappeared
-                  (-> session-user
-                      (request deployment-url)
-                      (ltu/body->edn)
-                      (ltu/is-status 404))
+                ;; check create-log operation
+                (let [log-url (-> session-user
+                                  (request create-log-url
+                                           :request-method :post
+                                           :body (json/write-str {:service "my-service"}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location-url))]
 
-                  ;; verify that the associated credential has also been removed
-                  (-> session-user
-                      (request credential-url)
-                      (ltu/body->edn)
-                      (ltu/is-status 404))
-
-                  ;; verify that the deployment parameter has disappeared
-                  (-> session-user
-                      (request dp-url)
-                      (ltu/body->edn)
-                      (ltu/is-status 404))
-
-                  ;; verify that the deployment log has disappeared
+                  ;; verify that the log resource exists
                   (-> session-user
                       (request log-url)
                       (ltu/body->edn)
-                      (ltu/is-status 404)))))))))
+                      (ltu/is-status 200))
+
+                  ;; normally the start job would create the deployment parameters
+                  ;; create one manually to verify later that it is removed with the
+                  ;; deployment
+                  (let [dp-url (-> session-admin
+                                   (request (str p/service-context "deployment-parameter")
+                                            :request-method :post
+                                            :body (json/write-str
+                                                    {:parent  deployment-id
+                                                     :name    "test-parameter"
+                                                     :node-id "machine"
+                                                     :acl     {:owners   ["group/nuvla-admin"]
+                                                               :edit-acl ["user/jane"]}}))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201)
+                                   (ltu/location-url))]
+
+                    ;; verify that the deployment parameter was created
+                    (-> session-user
+                        (request dp-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 200))
+
+                    ;; try to stop the deployment and check the stop job was created
+                    (let [job-url (-> session-user
+                                      (request stop-url
+                                               :request-method :post)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 202)
+                                      (ltu/location-url))]
+                      (-> session-user
+                          (request job-url
+                                   :request-method :get)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value :state "QUEUED")
+                          (ltu/is-key-value :action "stop_deployment")))
+
+                    ;; verify that the state has been updated
+                    (-> session-user
+                        (request deployment-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-key-value :state "STOPPING"))
+
+                    ;; the deployment would be set to "STOPPED" via the job
+                    ;; for the tests, set this manually to continue with the workflow
+                    (-> session-user
+                        (request deployment-url
+                                 :request-method :put
+                                 :body (json/write-str {:state "STOPPED"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 200))
+
+                    ;; verify that the user can delete the deployment
+                    (-> session-user
+                        (request deployment-url
+                                 :request-method :delete)
+                        (ltu/body->edn)
+                        (ltu/is-status 200))
+
+                    ;; verify that the deployment has disappeared
+                    (-> session-user
+                        (request deployment-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 404))
+
+                    ;; verify that the associated credential has also been removed
+                    (-> session-user
+                        (request credential-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 404))
+
+                    ;; verify that the deployment parameter has disappeared
+                    (-> session-user
+                        (request dp-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 404))
+
+                    ;; verify that the deployment log has disappeared
+                    (-> session-user
+                        (request log-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 404))))))))))
 
     (-> session-user
         (request (str p/service-context module-id)
