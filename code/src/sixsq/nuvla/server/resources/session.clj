@@ -245,7 +245,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   [{:keys [body headers form-params] :as request}]
   (try
     (let [authn-info (auth/current-authentication request)
-          body (if (u/is-form? headers) (u/convert-form :template form-params) body)
+          body       (if (u/is-form? headers) (u/convert-form :template form-params) body)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}] (-> body
                                                     (assoc :resource-type create-type)
