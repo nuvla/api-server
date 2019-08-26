@@ -65,7 +65,7 @@ creating a group and does not provide any useful defaults.
       (crud/validate full-resource)
       (swap! templates assoc id full-resource)
       (log/info "loaded group-template" id)
-      (catch Exception e
+      (catch Exception _
         (log/error "invalid group-template:" resource)))))
 
 

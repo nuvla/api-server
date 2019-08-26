@@ -11,7 +11,6 @@
     [sixsq.nuvla.server.resources.infrastructure-service :as t]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as infra-service-tpl-swarm]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -58,19 +57,6 @@
                                 (ltu/body->edn)
                                 (ltu/is-status 201)
                                 (ltu/location))
-
-        ;; setup a generic service to act as the 'cloud'
-        valid-create        {:name        "my-cloud-service"
-                             :description "my-cloud-description"
-                             :tags        ["alpha"]
-                             :template    {:href     (str infra-service-tpl/resource-type "/"
-                                                          infra-service-tpl-generic/method)
-                                           :acl      valid-acl
-                                           :parent   service-group-id
-                                           :subtype  "cloud"
-                                           :endpoint "https://cloud.example.org/api"
-                                           :state    "STARTED"}}
-
 
         ;; setup a credential (not the right type) to reference
         href                (str ct/resource-type "/" akey/method)

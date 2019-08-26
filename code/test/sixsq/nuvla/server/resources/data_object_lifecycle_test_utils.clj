@@ -203,14 +203,13 @@
 
 (defn full-eo-lifecycle
   [template-url template-obj]
-  (let [template       (get-template template-url)
-        create-href    {:template (-> template-obj
-                                      (assoc :href (:id template))
-                                      (dissoc :subtype))}
-        create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
+  (let [template    (get-template template-url)
+        create-href {:template (-> template-obj
+                                   (assoc :href (:id template))
+                                   (dissoc :subtype))}]
 
     ;; check with and without a href attribute
-    (doseq [valid-create [create-href #_create-no-href]]    ;; FIXME: PUT BACK ALL OPTIONS
+    (doseq [valid-create [create-href]]
 
       (let [invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
@@ -223,7 +222,7 @@
             (ltu/is-status 403))
 
         ;; full data object lifecycle as administrator/user should work
-        (doseq [session [session-admin #_session-user]]     ;; FIXME: PUT BACK ALL USERS
+        (doseq [session [session-admin]]
 
           ;; create with invalid template fails
           (-> session

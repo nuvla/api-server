@@ -43,7 +43,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -204,12 +204,12 @@
             (ltu/is-operation-absent :edit))
 
         ; check contents of session
-        (let [{:keys [name description tags] :as body} (-> session-user
-                                                           (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                                           (request abs-uri)
-                                                           (ltu/body->edn)
-                                                           :response
-                                                           :body)]
+        (let [{:keys [name description tags]} (-> session-user
+                                                  (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                                                  (request abs-uri)
+                                                  (ltu/body->edn)
+                                                  :response
+                                                  :body)]
           (is (= name name-attr))
           (is (= description description-attr))
           (is (= tags tags-attr)))

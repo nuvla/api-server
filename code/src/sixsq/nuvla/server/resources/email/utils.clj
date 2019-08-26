@@ -76,7 +76,7 @@
       (if-not (= :SUCCESS (:error resp))
         (let [msg (str "cannot send verification email: " (:message resp))]
           (throw (r/ex-bad-request msg)))))
-    (catch Exception e
+    (catch Exception _
       (let [error-msg "server configuration for SMTP is missing"]
         (throw (ex-info error-msg (r/map-response error-msg 500)))))))
 

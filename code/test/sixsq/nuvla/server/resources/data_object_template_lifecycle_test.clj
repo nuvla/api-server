@@ -58,20 +58,10 @@
 
       (doseq [entry entries]
         (let [ops        (ltu/operations->map entry)
-              entry-url  (str p/service-context (:id entry))
-
-              entry-resp (-> session-admin
-                             (request entry-url)
-                             (ltu/is-status 200)
-                             (ltu/body->edn))
-
-              entry-body (get-in entry-resp [:response :body])]
+              entry-url  (str p/service-context (:id entry))]
           (is (nil? (get ops (name :add))))
           (is (nil? (get ops (name :edit))))
           (is (nil? (get ops (name :delete))))
-
-          ;; FIXME: CAL!
-          #_(is (crud/validate (dissoc entry-body :id)))
 
           ;; anonymous access not permitted
           (-> session-anon

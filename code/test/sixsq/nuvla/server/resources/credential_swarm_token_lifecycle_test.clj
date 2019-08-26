@@ -123,11 +123,11 @@
           (ltu/is-status 403))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags scope token] :as cred} (-> session-user
-                                                                     (request abs-uri)
-                                                                     (ltu/body->edn)
-                                                                     (ltu/is-status 200)
-                                                                     (ltu/body))]
+      (let [{:keys [name description tags scope token]} (-> session-user
+                                                            (request abs-uri)
+                                                            (ltu/body->edn)
+                                                            (ltu/is-status 200)
+                                                            (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))

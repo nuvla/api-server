@@ -255,13 +255,13 @@
                     bad-claims  {}
                     bad-token   (sign/sign-cookie-info bad-claims)]
 
-                (with-redefs [auth-oidc/get-access-token      (fn [client-id client-secret tokenurl oauth-code redirect-uri]
+                (with-redefs [auth-oidc/get-access-token      (fn [_ _ _ oauth-code _]
                                                                 (case oauth-code
                                                                   "GOOD" good-token
                                                                   "BAD" bad-token
                                                                   nil))
 
-                              oidc-utils/get-mitreid-userinfo (fn [userInfoURL access_token]
+                              oidc-utils/get-mitreid-userinfo (fn [_ _]
                                                                 {:id          42
                                                                  :updatedAt   "2018-06-13T11:48:48"
                                                                  :username    username

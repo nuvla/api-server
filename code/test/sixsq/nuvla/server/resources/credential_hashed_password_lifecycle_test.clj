@@ -125,12 +125,12 @@
           (ltu/is-status 403))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags hash] :as cred} (-> session-user
-                                                              (request abs-uri)
-                                                              (ltu/body->edn)
-                                                              (ltu/is-status 200)
-                                                              :response
-                                                              :body)]
+      (let [{:keys [name description tags hash]} (-> session-user
+                                                     (request abs-uri)
+                                                     (ltu/body->edn)
+                                                     (ltu/is-status 200)
+                                                     :response
+                                                     :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))

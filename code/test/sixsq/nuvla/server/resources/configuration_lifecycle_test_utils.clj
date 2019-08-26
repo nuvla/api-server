@@ -84,11 +84,11 @@
           (ltu/is-status 200))
 
       ;; check the contents
-      (let [{:keys [name description tags] :as body} (-> session-admin
-                                                         (request abs-uri)
-                                                         (ltu/body->edn)
-                                                         :response
-                                                         :body)]
+      (let [{:keys [name description tags]} (-> session-admin
+                                                (request abs-uri)
+                                                (ltu/body->edn)
+                                                :response
+                                                :body)]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr)))

@@ -46,7 +46,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! reset-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -97,11 +97,11 @@
                                                              :password plaintext-password
                                                              :activated? true
                                                              :email "jane@example.org")
-            {:keys [credential-password] :as jane-user} (-> session-admin
-                                                            (request (str p/service-context jane-user-id))
-                                                            (ltu/body->edn)
-                                                            :response
-                                                            :body)
+            {:keys [credential-password]} (-> session-admin
+                                              (request (str p/service-context jane-user-id))
+                                              (ltu/body->edn)
+                                              :response
+                                              :body)
             jane-credential       (-> session-admin
                                       (request (str p/service-context credential-password))
                                       (ltu/body->edn)

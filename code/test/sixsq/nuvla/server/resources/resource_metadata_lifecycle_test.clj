@@ -27,7 +27,7 @@
 
     ;; anyone can query the metadata
     ;; because of automatic registration, the list may not be empty
-    (doseq [session [session-admin #_session-user #_session-anon]]
+    (doseq [session [session-admin session-user session-anon]]
       (-> session
           (request base-uri)
           (ltu/body->edn)
@@ -53,15 +53,15 @@
             (ltu/is-resource-uri t/collection-type)
             (ltu/is-count pos?))
 
-        (let [{:keys [id] :as metadata} (-> session
-                                            (request abs-uri)
-                                            (ltu/body->edn)
-                                            (ltu/is-status 200)
-                                            (ltu/is-operation-absent :add)
-                                            (ltu/is-operation-absent :edit)
-                                            (ltu/is-operation-absent :delete)
-                                            :response
-                                            :body)]
+        (let [{:keys [id]} (-> session
+                               (request abs-uri)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/is-operation-absent :add)
+                               (ltu/is-operation-absent :edit)
+                               (ltu/is-operation-absent :delete)
+                               :response
+                               :body)]
 
           (is (= (u/id->uuid id) identifier)))))))
 

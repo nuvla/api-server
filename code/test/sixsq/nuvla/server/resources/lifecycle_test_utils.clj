@@ -101,7 +101,7 @@
   [m op]
   (->> (get-in m [:response :body :operations])
        (map (juxt :rel :href))
-       (filter (fn [[rel href]] (= rel (name op))))
+       (filter (fn [[rel _]] (= rel (name op))))
        first
        second))
 

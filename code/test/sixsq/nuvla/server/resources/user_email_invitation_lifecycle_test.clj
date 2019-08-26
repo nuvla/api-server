@@ -45,7 +45,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -172,18 +172,18 @@
                                                                  :body
                                                                  :message)))
 
-          (let [{:keys [state] :as user} (-> session-created-user
-                                             (request (str p/service-context user-id))
-                                             (ltu/body->edn)
-                                             :response
-                                             :body)]
+          (let [{:keys [state]} (-> session-created-user
+                                    (request (str p/service-context user-id))
+                                    (ltu/body->edn)
+                                    :response
+                                    :body)]
             (is (= "ACTIVE" state)))
 
-          (let [{:keys [validated] :as email} (-> session-created-user
-                                                  (request (str p/service-context email-id))
-                                                  (ltu/body->edn)
-                                                  :response
-                                                  :body)]
+          (let [{:keys [validated]} (-> session-created-user
+                                        (request (str p/service-context email-id))
+                                        (ltu/body->edn)
+                                        :response
+                                        :body)]
             (is validated))
 
           ;; user can delete his account

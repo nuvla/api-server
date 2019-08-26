@@ -47,7 +47,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -60,26 +60,20 @@
 
             href               (str user-tpl/resource-type "/" email-password/registration-method)
 
-            name-attr          "name"
             description-attr   "description"
             tags-attr          ["one", "two"]
             plaintext-password "Plaintext-password-1"
-
-            uname-alt          "user/jane"
 
             no-href-create     {:template (ltu/strip-unwanted-attrs (assoc template
                                                                       :password plaintext-password
                                                                       :username "alice"
                                                                       :email "alice@example.org"))}
-            href-create        {;:name        name-attr
-                                :description description-attr
+            href-create        {:description description-attr
                                 :tags        tags-attr
                                 :template    {:href     href
                                               :password plaintext-password
                                               ;:username "user/jane"
                                               :email    "jane@example.org"}}
-
-            href-create-alt    (assoc-in href-create [:template :username] uname-alt)
 
             invalid-create     (assoc-in href-create [:template :href] "user-template/unknown-template")
 
@@ -189,18 +183,18 @@
                                                                  :body
                                                                  :message)))
 
-          (let [{:keys [state] :as user} (-> session-created-user
-                                             (request (str p/service-context user-id))
-                                             (ltu/body->edn)
-                                             :response
-                                             :body)]
+          (let [{:keys [state]} (-> session-created-user
+                                    (request (str p/service-context user-id))
+                                    (ltu/body->edn)
+                                    :response
+                                    :body)]
             (is (= "ACTIVE" state)))
 
-          (let [{:keys [validated] :as email} (-> session-created-user
-                                                  (request (str p/service-context email-id))
-                                                  (ltu/body->edn)
-                                                  :response
-                                                  :body)]
+          (let [{:keys [validated]} (-> session-created-user
+                                        (request (str p/service-context email-id))
+                                        (ltu/body->edn)
+                                        :response
+                                        :body)]
             (is validated))
 
           ;; user can delete his account
@@ -240,10 +234,10 @@
               session-created-user (header session authn-info-header
                                            (str user-id " group/nuvla-user group/nuvla-anon"))
 
-              {:keys [email] :as user} (-> session-created-user
-                                           (request (str p/service-context user-id))
-                                           (ltu/body->edn)
-                                           (get-in [:response :body]))]
+              {:keys [email]} (-> session-created-user
+                                  (request (str p/service-context user-id))
+                                  (ltu/body->edn)
+                                  (get-in [:response :body]))]
 
           ; credential cleanup
           (-> session-admin

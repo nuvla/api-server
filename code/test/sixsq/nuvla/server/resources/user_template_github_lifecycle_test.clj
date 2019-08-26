@@ -216,7 +216,7 @@
               (let [github-login (str "GITHUB_USER_" n)
                     email        (format "user-%s@example.com" n)]
 
-                (with-redefs [auth-github/get-github-access-token (fn [client-id client-secret oauth-code]
+                (with-redefs [auth-github/get-github-access-token (fn [_ _ oauth-code]
                                                                     (case oauth-code
                                                                       "GOOD" "GOOD_ACCESS_CODE"
                                                                       "BAD" "BAD_ACCESS_CODE"

@@ -73,8 +73,6 @@
             :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
            (t/create-cookie-info user-id claims headers session-id client-ip)))))
 
-(defn mock-retrieve-by-id [doc-id]
-  nil)
 
 (deftest lifecycle
 
@@ -108,14 +106,6 @@
             ;; create the session template to use for these tests
             ;;
             href                (str st/resource-type "/api-key")
-
-            template-url        (str p/service-context href)
-
-            resp                (-> session-anon
-                                    (request template-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200))
-            template            (get-in resp [:response :body])
 
             name-attr           "name"
             description-attr    "description"
@@ -214,12 +204,12 @@
               (ltu/is-count 1))
 
           ;; check contents of session resource
-          (let [{:keys [name description tags] :as body} (-> (session app)
-                                                             (header authn-info-header (str "user/user group/nuvla-user " id))
-                                                             (request abs-uri)
-                                                             (ltu/body->edn)
-                                                             :response
-                                                             :body)]
+          (let [{:keys [name description tags]} (-> (session app)
+                                                    (header authn-info-header (str "user/user group/nuvla-user " id))
+                                                    (request abs-uri)
+                                                    (ltu/body->edn)
+                                                    :response
+                                                    :body)]
             (is (= name name-attr))
             (is (= description description-attr))
             (is (= tags tags-attr)))

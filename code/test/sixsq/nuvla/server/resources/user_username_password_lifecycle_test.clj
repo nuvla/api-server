@@ -43,12 +43,9 @@
                                (ltu/is-status 200)
                                (get-in [:response :body]))
 
-        name-attr          "name"
         description-attr   "description"
         tags-attr          ["one", "two"]
         plaintext-password "Plaintext-password-1"
-
-        uname-alt          "user/jane"
 
         no-href-create     {:template (ltu/strip-unwanted-attrs (assoc template
                                                                   :password plaintext-password
@@ -174,11 +171,11 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (let [{:keys [state] :as user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         :response
-                                         :body)]
+      (let [{:keys [state]} (-> session-created-user
+                                (request (str p/service-context user-id))
+                                (ltu/body->edn)
+                                :response
+                                :body)]
         (is (= "ACTIVE" state)))
 
       ;; try to create a second user with the same identifier
@@ -239,5 +236,4 @@
       (-> session-created-user
           (request (str p/service-context user-id))
           (ltu/body->edn)
-          (ltu/is-status 404)))
-    ))
+          (ltu/is-status 404)))))

@@ -38,7 +38,7 @@
   [:Value (time/date-from-str s)])
 
 
-(defmethod convert :NullValue [[_ ^String s]]
+(defmethod convert :NullValue [[_ ^String _]]
   [:Value nil])
 
 

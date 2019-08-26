@@ -220,16 +220,16 @@
           (is (= (set user-docs) (set query-hits))))
 
         ;; aggregation
-        (let [[query-meta query-hits] (db/query db collection-id {:cimi-params {:aggregation
-                                                                                [[:terms "attr1"]
-                                                                                 [:terms "nested/child"]
-                                                                                 [:min "number"]
-                                                                                 [:max "number"]
-                                                                                 [:sum "number"]
-                                                                                 [:avg "number"]
-                                                                                 [:value_count "id"]
-                                                                                 [:cardinality "id"]]}
-                                                                  :nuvla/authn auth/internal-identity})]
+        (let [[query-meta _] (db/query db collection-id {:cimi-params {:aggregation
+                                                                       [[:terms "attr1"]
+                                                                        [:terms "nested/child"]
+                                                                        [:min "number"]
+                                                                        [:max "number"]
+                                                                        [:sum "number"]
+                                                                        [:avg "number"]
+                                                                        [:value_count "id"]
+                                                                        [:cardinality "id"]]}
+                                                         :nuvla/authn auth/internal-identity})]
 
           (is (= {:terms:nested/child {:doc_count_error_upper_bound 0,
                                        :sum_other_doc_count         0,

@@ -170,11 +170,11 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (let [{:keys [state] :as user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         :response
-                                         :body)]
+      (let [{:keys [state]} (-> session-created-user
+                                (request (str p/service-context user-id))
+                                (ltu/body->edn)
+                                :response
+                                :body)]
         (is (= "ACTIVE" state)))
 
       ;; ensure that user can change name/description of user resource
