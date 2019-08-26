@@ -119,36 +119,35 @@
                         (ltu/is-status 201))
             id      (get-in resp [:response :body :resource-id])
 
-            uri     (ltu/location resp)
-            abs-uri (str p/service-context uri)]
+            abs-url (ltu/location-url resp)
+
+            {:keys [name description tags] :as original-session}
+            (-> session-user
+                (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                (request abs-url)
+                (ltu/body->edn)
+                :response
+                :body)]
 
         ; check contents of session
-        (let [{:keys [name description tags] :as original-session}
-              (-> session-user
-                  (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  :response
-                  :body)]
+        (is (= name name-attr))
+        (is (= description description-attr))
+        (is (= tags tags-attr))
 
-          (is (= name name-attr))
-          (is (= description description-attr))
-          (is (= tags tags-attr))
+        ;; After the setup, NOW verify that the session can be updated!
+        (let [new-name        "UPDATED SESSION NAME"
+              correct-session (assoc original-session :name new-name)]
 
-          ;; After the setup, NOW verify that the session can be updated!
-          (let [new-name        "UPDATED SESSION NAME"
-                correct-session (assoc original-session :name new-name)]
+          (session-utils/update-session (:id original-session) correct-session)
 
-            (session-utils/update-session (:id original-session) correct-session)
+          (let [updated-session (-> session-user
+                                    (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                                    (request abs-url)
+                                    (ltu/body->edn)
+                                    :response
+                                    :body)]
 
-            (let [updated-session (-> session-user
-                                      (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                      (request abs-uri)
-                                      (ltu/body->edn)
-                                      :response
-                                      :body)]
-
-              (is (= new-name (:name updated-session)))
-              (is (not= (:updated original-session) (:updated updated-session)))
-              (is (= (dissoc correct-session :updated) (dissoc updated-session :updated))))))))))
+            (is (= new-name (:name updated-session)))
+            (is (not= (:updated original-session) (:updated updated-session)))
+            (is (= (dissoc correct-session :updated) (dissoc updated-session :updated)))))))))
 

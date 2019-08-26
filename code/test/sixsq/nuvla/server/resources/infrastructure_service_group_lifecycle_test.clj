@@ -93,90 +93,90 @@
 
     ;; check creation
     (doseq [session [session-admin session-user]]
-      (let [uri     (-> session
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-service-group))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location))
-            abs-uri (str p/service-context uri)]
+      (let [uri           (-> session
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-service-group))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location))
+            abs-uri       (str p/service-context uri)
 
-        ;; verify contents
-        (let [service-group (-> session
-                                (request abs-uri)
-                                (ltu/body->edn)
-                                (ltu/is-status 200)
-                                (ltu/is-operation-present :edit)
-                                (ltu/is-operation-present :delete)
-                                :response
-                                :body)]
+            ;; verify contents
+            service-group (-> session
+                              (request abs-uri)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-operation-present :edit)
+                              (ltu/is-operation-present :delete)
+                              :response
+                              :body)]
 
-          (is (= service-group-name (:name service-group)))
-          (is (= "http://my-documentation.org" (:documentation service-group)))
-          (is (vector? (:infrastructure-services service-group)))
-          (is (zero? (count (:infrastructure-services service-group))))
+        (is (= service-group-name (:name service-group)))
+        (is (= "http://my-documentation.org" (:documentation service-group)))
+        (is (vector? (:infrastructure-services service-group)))
+        (is (zero? (count (:infrastructure-services service-group))))
 
-          ;; creating infrastructure-services that have a parent attribute referencing the service-group
-          ;; should show up automatically in the service-group
-          (let [service-ids           (set (for [_ (range 3)]
-                                             (-> session
-                                                 (request service-base-uri
-                                                          :request-method :post
-                                                          :body (json/write-str (-> valid-service-create
-                                                                                    (assoc-in [:template :parent] uri)
-                                                                                    (assoc :acl {:owners ["user/jane"]}))))
-                                                 (ltu/body->edn)
-                                                 (ltu/is-status 201)
-                                                 :response
-                                                 :body
-                                                 :resource-id)))
+        ;; creating infrastructure-services that have a parent attribute referencing the service-group
+        ;; should show up automatically in the service-group
+        (let [service-ids           (set (for [_ (range 3)]
+                                           (-> session
+                                               (request service-base-uri
+                                                        :request-method :post
+                                                        :body (json/write-str (-> valid-service-create
+                                                                                  (assoc-in [:template :parent] uri)
+                                                                                  (assoc :acl {:owners ["user/jane"]}))))
+                                               (ltu/body->edn)
+                                               (ltu/is-status 201)
+                                               :response
+                                               :body
+                                               :resource-id)))
 
-                updated-service-group (-> session
-                                          (request abs-uri)
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200)
-                                          (ltu/is-operation-present :edit)
-                                          (ltu/is-operation-present :delete)
-                                          :response
-                                          :body)
+              updated-service-group (-> session
+                                        (request abs-uri)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-operation-present :edit)
+                                        (ltu/is-operation-present :delete)
+                                        :response
+                                        :body)
 
-                service-hrefs         (->> updated-service-group
-                                           :infrastructure-services
-                                           (map :href)
-                                           set)]
+              service-hrefs         (->> updated-service-group
+                                         :infrastructure-services
+                                         (map :href)
+                                         set)]
 
-            (is (vector? (:infrastructure-services updated-service-group)))
-            (is (= service-ids service-hrefs))
+          (is (vector? (:infrastructure-services updated-service-group)))
+          (is (= service-ids service-hrefs))
 
-            ;; service-group with linked infrastructure-services cannot be deleted
+          ;; service-group with linked infrastructure-services cannot be deleted
+          (-> session
+              (request abs-uri :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 409))
+
+          ;; remove the infrastructure-services
+          (doseq [service-id service-ids]
             (-> session
-                (request abs-uri :request-method :delete)
+                (request (str p/service-context service-id)
+                         :request-method :delete)
                 (ltu/body->edn)
-                (ltu/is-status 409))
+                (ltu/is-status 200)))
 
-            ;; remove the infrastructure-services
-            (doseq [service-id service-ids]
-              (-> session
-                  (request (str p/service-context service-id)
-                           :request-method :delete)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)))
-
-            ;; verify that the infrastructure-services are gone
-            (doseq [service-id service-ids]
-              (-> session
-                  (request (str p/service-context service-id))
-                  (ltu/body->edn)
-                  (ltu/is-status 404)))
-
-            (ltu/refresh-es-indices)
-
-            ;; now service-group can be deleted
+          ;; verify that the infrastructure-services are gone
+          (doseq [service-id service-ids]
             (-> session
-                (request abs-uri :request-method :delete)
+                (request (str p/service-context service-id))
                 (ltu/body->edn)
-                (ltu/is-status 200))))))))
+                (ltu/is-status 404)))
+
+          (ltu/refresh-es-indices)
+
+          ;; now service-group can be deleted
+          (-> session
+              (request abs-uri :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200)))))))
 
 
 (deftest bad-methods

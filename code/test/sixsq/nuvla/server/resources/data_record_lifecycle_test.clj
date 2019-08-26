@@ -236,32 +236,32 @@
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-    (let [connector-with-namespaced-key
-                        (format "
+        connector-with-namespaced-key
+                      (format "
           {\"infrastructure-service\":\"infrastructure-service/cloud-software-solution\",
           \"%s:attr-name\":\"123.456\"}
           " ns1-prefix)
 
-          uri-of-posted (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body connector-with-namespaced-key)
-                            (t/body->edn)
-                            (t/is-status 201)
-                            (t/location))
+        uri-of-posted (-> session-user
+                          (request base-uri
+                                   :request-method :post
+                                   :body connector-with-namespaced-key)
+                          (t/body->edn)
+                          (t/is-status 201)
+                          (t/location))
 
-          abs-uri       (str p/service-context uri-of-posted)
+        abs-uri       (str p/service-context uri-of-posted)
 
-          doc           (-> session-admin
-                            (request abs-uri)
-                            (t/body->edn)
-                            (t/is-status 200)
-                            (get-in [:response :body]))]
+        doc           (-> session-admin
+                          (request abs-uri)
+                          (t/body->edn)
+                          (t/is-status 200)
+                          (get-in [:response :body]))]
 
-      (is ((keyword (str ns1-prefix ":attr-name")) doc))
-      (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
+    (is ((keyword (str ns1-prefix ":attr-name")) doc))
+    (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc)))))
 
 
 (deftest nested-values
@@ -355,15 +355,15 @@
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
-    (let [_                  (-> session-user
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str valid-nested-2-levels))
-                                 (t/body->edn)
-                                 (t/is-status 201)
-                                 (t/location))
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str valid-nested-2-levels))
+        (t/body->edn)
+        (t/is-status 201)
+        (t/location))
 
-          cimi-url-ok        (str p/service-context
+    (let [cimi-url-ok        (str p/service-context
                                   resource-type
                                   (format "?filter=%s:att3/%s:att4='456'" ns1-prefix ns1-prefix))
           cimi-url-no-result (str p/service-context
@@ -414,6 +414,7 @@
                                  (t/body->edn)
                                  (t/is-status 200)
                                  (get-in [:response :body]))]
+
       (is (= 1 (:count res-ok)))
       (is (= 0 (:count no-result)))
       (is (= 1 (:count res-ok-put)))

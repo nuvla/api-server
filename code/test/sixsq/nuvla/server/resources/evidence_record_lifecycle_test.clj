@@ -219,14 +219,14 @@
 
 (deftest uris-as-keys
 
-  (let [session-admin (-> (session (ltu/ring-app))
-                          (content-type "application/json")
-                          (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-        session-user  (-> (session (ltu/ring-app))
-                          (content-type "application/json")
-                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))]
+  (let [session-admin       (-> (session (ltu/ring-app))
+                                (content-type "application/json")
+                                (header authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon"))
+        session-user        (-> (session (ltu/ring-app))
+                                (content-type "application/json")
+                                (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
 
-    (let [with-namespaced-key (format "
+        with-namespaced-key (format "
     {\"plan-id\":\"abcd\",
      \"passed\": true,
      \"end-time\": \"1964-08-25T10:00:00.00Z\",
@@ -235,24 +235,24 @@
      \"%s:attr-name\":\"123.456\"}
      " ns1-prefix)
 
-          uri-of-posted       (-> session-user
-                                  (request base-uri
-                                           :request-method :post
-                                           :body with-namespaced-key)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 201)
-                                  (ltu/location))
+        uri-of-posted       (-> session-user
+                                (request base-uri
+                                         :request-method :post
+                                         :body with-namespaced-key)
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
-          abs-uri             (str p/service-context uri-of-posted)
+        abs-uri             (str p/service-context uri-of-posted)
 
-          doc                 (-> session-admin
-                                  (request abs-uri)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (get-in [:response :body]))]
+        doc                 (-> session-admin
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (get-in [:response :body]))]
 
-      (is ((keyword (str ns1-prefix ":attr-name")) doc))
-      (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc))))))
+    (is ((keyword (str ns1-prefix ":attr-name")) doc))
+    (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc)))))
 
 
 (deftest nested-values

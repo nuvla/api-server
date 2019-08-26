@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.notification-test
+(ns sixsq.nuvla.server.resources.notification-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer :all]
@@ -14,14 +14,20 @@
 
 (def base-uri (str p/service-context resource-type))
 
+
 (def message "message")
+
+
 (def content-unique-id "content-hash")
+
 
 (def valid-notification {:message           message
                          :category          "some-category"
                          :content-unique-id content-unique-id})
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (deftest lifecycle
   (let [session-anon  (-> (session (ltu/ring-app))
@@ -187,18 +193,21 @@
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
-        uri          (str p/service-context "resource-metadata/" resource-type)]
-    (let [actions     (-> session-user
-                          (request uri)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/has-key :actions)
-                          (get-in [:response :body :actions]))
-          delay-param (->> actions
-                           (filter (fn [x] (= "defer" (:name x))))
-                           first
-                           :input-parameters
-                           (filter (fn [x] (= defer-param-name (:name x))))
-                           first)]
-      (is (seq delay-param))
-      (is (= delay-default (get-in delay-param [:value-scope :default]))))))
+        uri          (str p/service-context "resource-metadata/" resource-type)
+
+        actions      (-> session-user
+                         (request uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/has-key :actions)
+                         (get-in [:response :body :actions]))
+
+        delay-param  (->> actions
+                          (filter (fn [x] (= "defer" (:name x))))
+                          first
+                          :input-parameters
+                          (filter (fn [x] (= defer-param-name (:name x))))
+                          first)]
+
+    (is (seq delay-param))
+    (is (= delay-default (get-in delay-param [:value-scope :default])))))
