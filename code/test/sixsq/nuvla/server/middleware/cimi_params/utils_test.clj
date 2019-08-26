@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.middleware.cimi-params.utils-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [are deftest]]
     [sixsq.nuvla.server.middleware.cimi-params.utils :as t]))
+
 
 (deftest check-as-vector
   (are [expect arg] (= expect (t/as-vector arg))
@@ -11,6 +12,7 @@
                     [1 2] '(1 2)
                     [1 2] [1 2]
                     [1 "a"] '(1 "a")))
+
 
 (deftest check-as-long
   (are [expect arg] (= expect (t/as-long arg))
@@ -25,6 +27,7 @@
                     -1 "-1"
                     nil "2.5"
                     nil "10/3"))
+
 
 (deftest check-first-valid-long
   (are [expect arg] (= expect (t/first-valid-long arg))
@@ -42,6 +45,7 @@
                     nil [nil nil]
                     nil [{:a 1} [2]]))
 
+
 (deftest check-comma-split
   (are [expect arg] (= expect (t/comma-split arg))
                     ["a" "b"] "a,b"
@@ -51,11 +55,13 @@
                     [] ","
                     [] nil))
 
+
 (deftest check-reduce-select-set
   (are [expect arg] (= expect (t/reduce-select-set arg))
                     #{"a" "b"} (set ["a" "b" "a" "b"])
                     nil (set ["a" "b" "*"])
                     nil nil))
+
 
 (deftest check-reduce-expand-set
   (are [expect arg] (= expect (t/reduce-expand-set arg))
@@ -63,6 +69,7 @@
                     :none #{}
                     :none nil
                     #{"a" "b"} #{"a" "b"}))
+
 
 (deftest check-orderby-clause
   (are [expect arg] (= expect (t/orderby-clause arg))
@@ -76,6 +83,7 @@
                     ["a:" :asc] "a:"
                     ["a" :desc] "a:desc"
                     ["a:dummy" :asc] "a:dummy"))
+
 
 (deftest check-aggregation-clause
   (are [expect arg] (= expect (t/aggregation-clause arg))

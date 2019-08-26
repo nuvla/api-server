@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.configuration-nuvla-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.configuration :refer :all]
+    [sixsq.nuvla.server.resources.configuration :as cfg]
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as ct-nuvla]
@@ -15,7 +15,7 @@
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context cfg/resource-type))
 
 
 ;; must have specialized checks for the nuvla configuration because
@@ -31,14 +31,15 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         template-url  (str p/service-context ct/resource-type "/" service)
-        resp          (-> session-admin
+        template      (-> session-admin
                           (request template-url)
                           (ltu/body->edn)
-                          (ltu/is-status 200))
-        template      (get-in resp [:response :body])
+                          (ltu/is-status 200)
+                          (ltu/body))
+
         valid-create  {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
-        uri           (str resource-type "/" service)
+        uri           (str cfg/resource-type "/" service)
         abs-uri       (str p/service-context uri)]
 
     ;; verify that the auto-generated configuration is present

@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.configuration-lifecycle-test-utils
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [is]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.configuration :refer :all]
+    [sixsq.nuvla.server.resources.configuration :as cfg]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context cfg/resource-type))
 
 
 (defn check-lifecycle
@@ -28,12 +28,14 @@
         tags-attr        ["one", "two"]
 
         href             (str ct/resource-type "/" service)
+
         template-url     (str p/service-context ct/resource-type "/" service)
-        resp             (-> session-admin
+        template         (-> session-admin
                              (request template-url)
                              (ltu/body->edn)
-                             (ltu/is-status 200))
-        template         (get-in resp [:response :body])
+                             (ltu/is-status 200)
+                             (ltu/body))
+
         valid-create     {:name        name-attr
                           :description description-attr
                           :tags        tags-attr
@@ -84,11 +86,10 @@
           (ltu/is-status 200))
 
       ;; check the contents
-      (let [{:keys [name description tags] :as body} (-> session-admin
-                                                         (request abs-uri)
-                                                         (ltu/body->edn)
-                                                         :response
-                                                         :body)]
+      (let [{:keys [name description tags]} (-> session-admin
+                                                (request abs-uri)
+                                                (ltu/body->edn)
+                                                (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr)))
@@ -105,7 +106,7 @@
                                  (request base-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (ltu/is-resource-uri collection-type)
+                                 (ltu/is-resource-uri cfg/collection-type)
                                  (ltu/entries))]
         (is ((set (map :id entries)) uri))
         (is (= 1 (count (filter service-matches? entries))))
@@ -125,8 +126,7 @@
                                   (request abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  :response
-                                  :body)
+                                  (ltu/body))
             old-flag          (get old-cfg attr-kw)
             new-cfg           (assoc old-cfg attr-kw attr-new-value)
             _                 (-> session-admin
@@ -138,8 +138,7 @@
                                   (request abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  :response
-                                  :body
+                                  (ltu/body)
                                   (get attr-kw))]
         (is (not= old-flag reread-attr-value))
         (is (= attr-new-value reread-attr-value)))
@@ -183,7 +182,7 @@
 
 (defn check-bad-methods
   []
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id cfg/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

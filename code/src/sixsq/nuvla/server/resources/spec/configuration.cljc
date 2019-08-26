@@ -1,7 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.configuration
-  (:require
-    [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.configuration-template]))
+(ns sixsq.nuvla.server.resources.spec.configuration)
 
 ;;
 ;; Note that all of the keys and keys specs are already defined

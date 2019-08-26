@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.email-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.email :as t]
     [sixsq.nuvla.server.resources.spec.email :as email]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.app.main-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.server.app.main :as t]))
 
 (deftest check-parse-port

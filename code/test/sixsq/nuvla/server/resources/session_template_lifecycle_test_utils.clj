@@ -1,14 +1,13 @@
 (ns sixsq.nuvla.server.resources.session-template-lifecycle-test-utils
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [is]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.session-template :as st]
-    [sixsq.nuvla.server.resources.session-template :refer :all]))
+    [sixsq.nuvla.server.resources.session-template :as st]))
 
 
 (defn check-existing-session-template [base-uri valid-template]
@@ -80,7 +79,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-type)
+        (ltu/is-resource-uri st/collection-type)
         (ltu/is-operation-absent :add)
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
@@ -90,7 +89,7 @@
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 200)
-        (ltu/is-resource-uri collection-type)
+        (ltu/is-resource-uri st/collection-type)
         (ltu/is-operation-present :add)
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
@@ -134,16 +133,14 @@
       (let [{:keys [id instance]} (-> session-anon
                                       (request abs-uri)
                                       (ltu/body->edn)
-                                      :response
-                                      :body)]
-        (is (= id (str resource-type "/" instance))))
+                                      (ltu/body))]
+        (is (= id (str st/resource-type "/" instance))))
 
       ;; verify that editing/updating the template works
       (let [orig-template    (-> session-anon
                                  (request abs-uri)
                                  (ltu/body->edn)
-                                 :response
-                                 :body)
+                                 (ltu/body))
             updated-template (assoc orig-template :name "UPDATED_NAME")]
 
         (-> session-admin
@@ -156,8 +153,7 @@
         (let [reread-template (-> session-anon
                                   (request abs-uri)
                                   (ltu/body->edn)
-                                  :response
-                                  :body)]
+                                  (ltu/body))]
 
           (is (= (dissoc orig-template :name :updated) (dissoc reread-template :name :updated)))
           (is (= "UPDATED_NAME" (:name reread-template)))
@@ -169,7 +165,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-type)
+                        (ltu/is-resource-uri st/collection-type)
                         (ltu/entries))]
         (is (= 1 (count (filter #(= method (:method %)) entries)))))
 
@@ -191,12 +187,12 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-type)
+                        (ltu/is-resource-uri st/collection-type)
                         (ltu/entries))]
         (is (zero? (count (filter #(= method (:method %)) entries))))))))
 
 (defn bad-methods [base-uri]
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id st/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

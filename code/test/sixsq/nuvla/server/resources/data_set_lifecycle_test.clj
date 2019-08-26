@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -111,8 +111,7 @@
                          (ltu/is-status 200)
                          (ltu/is-operation-present :edit)
                          (ltu/is-operation-present :delete)
-                         :response
-                         :body)]
+                         (ltu/body))]
 
         (is (= "my-data-set" (:name data-set)))
         (is (= "(filter='module')" (:module-filter data-set)))
@@ -126,15 +125,13 @@
                        :body (json/write-str updated))
               (ltu/body->edn)
               (ltu/is-status 200)
-              :response
-              :body)
+              (ltu/body))
 
           (let [updated-body (-> session-admin
                                  (request admin-abs-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 :response
-                                 :body)]
+                                 (ltu/body))]
 
             (is (= "(filter='updated')" (:module-filter updated-body))))))
 

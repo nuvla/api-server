@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-swarm-token-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -43,8 +43,7 @@
                              (request template-url)
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             :response
-                             :body)
+                             (ltu/body))
 
         create-no-href   {:template (-> template
                                         ltu/strip-unwanted-attrs
@@ -99,7 +98,7 @@
                                :body (json/write-str create-href))
                       (ltu/body->edn)
                       (ltu/is-status 201))
-          id      (get-in resp [:response :body :resource-id])
+          id      (ltu/body-resource-id resp)
           uri     (-> resp
                       (ltu/location))
           abs-uri (str p/service-context uri)]
@@ -123,11 +122,11 @@
           (ltu/is-status 403))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags scope token] :as cred} (-> session-user
-                                                                     (request abs-uri)
-                                                                     (ltu/body->edn)
-                                                                     (ltu/is-status 200)
-                                                                     (ltu/body))]
+      (let [{:keys [name description tags scope token]} (-> session-user
+                                                            (request abs-uri)
+                                                            (ltu/body->edn)
+                                                            (ltu/is-status 200)
+                                                            (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))

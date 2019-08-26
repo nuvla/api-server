@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -116,7 +116,7 @@
                                                                               :acl valid-acl)))
                             (ltu/body->edn)
                             (ltu/is-status 201)
-                            (get-in [:response :body :resource-id]))]
+                            (ltu/body-resource-id))]
 
       (let [state-url (str p/service-context state-id)]
 

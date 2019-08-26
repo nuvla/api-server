@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.email-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -42,8 +42,7 @@
                                (request md-uri)
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               :response
-                               :body
+                               (ltu/body)
                                :type-uri)))
 
     ;; admin query succeeds but is empty
@@ -141,7 +140,7 @@
                                                      :pass "password"})
 
                         ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                        postal/send-message (fn [_ {:keys [body] :as message}]
+                        postal/send-message (fn [_ {:keys [body]}]
                                               (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                                 (reset! validation-link url))
                                               {:code 0, :error :SUCCESS, :message "OK"})]
@@ -156,8 +155,7 @@
                                 (request @validation-link)
                                 (ltu/body->edn)
                                 (ltu/is-status 200)
-                                :response
-                                :body
+                                (ltu/body)
                                 :message)))
 
             (is (true? (-> session-admin
@@ -167,8 +165,7 @@
                            (ltu/is-operation-absent :edit)
                            (ltu/is-operation-present :delete)
                            (ltu/is-operation-absent :validate)
-                           :response
-                           :body
+                           (ltu/body)
                            :validated))))))
 
       ;; verify contents of user email
@@ -179,8 +176,7 @@
                              (ltu/is-operation-absent :edit)
                              (ltu/is-operation-present :delete)
                              (ltu/is-operation-present :validate)
-                             :response
-                             :body)
+                             (ltu/body))
             validate-url (->> (u/get-op email "validate")
                               (str p/service-context))]
         (is (= "user@example.com" (:address email)))

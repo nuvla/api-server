@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-swarm-token-test
   (:require
-    [clojure.spec.alpha :as s]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]

@@ -1,22 +1,25 @@
 (ns sixsq.nuvla.db.filter.parser-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [are deftest]]
     [instaparse.core :as insta]
-    [sixsq.nuvla.db.filter.parser :refer :all]))
+    [sixsq.nuvla.db.filter.parser :as t]))
+
 
 (defn fails-fn
   "Provides a function that will parse a string from the given point
   in the grammar and returns a truthy value if the parsing failed."
   [start]
-  (let [parser (insta/parser filter-grammar-url :start start)]
+  (let [parser (insta/parser t/filter-grammar-url :start start)]
     (fn [s]
       (insta/failure? (parser s)))))
+
 
 (defn passes-fn
   [start]
   (let [fails (fails-fn start)]
     (fn [s]
       (not (fails s)))))
+
 
 ;; valid double quoted strings
 (deftest check-double-quoted-strings
@@ -30,6 +33,7 @@
              "\"b0\""
              "\"b-0\""))
 
+
 ;; valid single quoted strings
 (deftest check-single-quotes-string
   (are [arg] ((passes-fn :SingleQuoteString) arg)
@@ -41,6 +45,7 @@
              "'a\\'a'"
              "'b0'"
              "'b-0'"))
+
 
 ;; valid dates
 (deftest check-valid-dates
@@ -54,6 +59,7 @@
              "2012-01-02T13:14:25+02:30"
              "2012-01-02T13:14:25.6+02:30"))
 
+
 ;; invalid dates
 (deftest check-invalid-dates
   (are [arg] ((fails-fn :DateValue) arg)
@@ -62,6 +68,7 @@
              "2012-01-02T13:14:25.6Q"
              "2012-01:02T25:14:25.6-01:15"
              "2012-01-02T13:14:25.6+02-30"))
+
 
 ;; valid filters
 (deftest check-valid-filters
@@ -91,6 +98,7 @@
              "'abc'^=alpha"
              "\"abc\"^=alpha"))
 
+
 ;; invalid filters
 (deftest check-invalid-filters
   (are [arg] ((fails-fn :Filter) arg)
@@ -104,8 +112,9 @@
              "alpha^=3"
              "alpha^=null"))
 
+
 ;; invalid filters: all property support removed
-(deftest check-invalid-filters
+(deftest check-invalid-property-filters
   (are [arg] ((fails-fn :Filter) arg)
              "property['beta']='4'"
              "property['beta']!='4'"
@@ -115,6 +124,7 @@
              "property['beta']=4"
              "property['beta']<'4'"
              "4=property['beta']"))
+
 
 ;; valid attributes
 (deftest check-valid-attributes
@@ -127,6 +137,7 @@
              "a1/b2/c3"
              "schema-org:attr1"
              "schema-org:attr1/schema-org:attr2"))
+
 
 ;; invalid attributes
 (deftest check-invalid-attributes

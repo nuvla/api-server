@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.credential-api-key-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as env]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -14,7 +14,9 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context credential/resource-type))
 
@@ -26,6 +28,7 @@
 (deftest check-strip-session-role
   (is (= ["alpha" "beta"] (t/strip-session-role ["alpha" "session/2d273461-2778-4a66-9017-668f6fed43ae" "beta"])))
   (is (= [] (t/strip-session-role ["session/2d273461-2778-4a66-9017-668f6fed43ae"]))))
+
 
 (deftest lifecycle
   (let [session                     (-> (ltu/ring-app)
@@ -47,7 +50,7 @@
                                         (request template-url)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
-                                        (get-in [:response :body]))
+                                        (ltu/body))
 
         create-import-no-href       {:template (ltu/strip-unwanted-attrs template)}
 
@@ -111,7 +114,7 @@
                                   :body (json/write-str create-import-href))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -138,8 +141,7 @@
                                                (request abs-uri)
                                                (ltu/body->edn)
                                                (ltu/is-status 200)
-                                               :response
-                                               :body)]
+                                               (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
@@ -162,7 +164,7 @@
                                   :body (json/write-str create-import-href-no-ttl))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -188,8 +190,7 @@
                                                (request abs-uri)
                                                (ltu/body->edn)
                                                (ltu/is-status 200)
-                                               :response
-                                               :body)]
+                                               (ltu/body))]
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is (nil? expiry))
@@ -209,7 +210,7 @@
                                   :body (json/write-str create-import-href-zero-ttl))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -235,8 +236,7 @@
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            (ltu/is-status 200)
-                                                           :response
-                                                           :body)]
+                                                           (ltu/body))]
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is (nil? expiry))
@@ -261,8 +261,7 @@
                            (request abs-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           :response
-                           :body)]
+                           (ltu/body))]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread))))
@@ -288,8 +287,7 @@
                            (request abs-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           :response
-                           :body)]
+                           (ltu/body))]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread)))))

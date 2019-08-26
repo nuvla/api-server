@@ -81,5 +81,6 @@
 
 (defn time-between-date-now
   [^String start-date unit]
-  (-> (date-from-str start-date)
+  (-> start-date
+      date-from-str
       (t/time-between (now) unit)))

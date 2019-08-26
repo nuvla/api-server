@@ -9,7 +9,6 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.response :as r]))
@@ -39,7 +38,7 @@
                   :description (str "services available on " (format-nb-name name id))
                   :parent      id
                   :acl         isg-acl}
-        {:keys [status body] :as resp} (service-group/create-infrastructure-service-group skeleton)]
+        {:keys [status body] :as resp} (isg/create-infrastructure-service-group skeleton)]
     (if (= 201 status)
       (assoc nuvlabox :infrastructure-service-group (:resource-id body))
       (let [msg (str "creating infrastructure-service-group resource failed:"

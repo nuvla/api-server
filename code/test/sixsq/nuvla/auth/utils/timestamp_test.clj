@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [update])
   (:require
     [clojure.string :as str]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.auth.utils.timestamp :as t]))
 
 

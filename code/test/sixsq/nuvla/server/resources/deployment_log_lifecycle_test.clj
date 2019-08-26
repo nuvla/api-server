@@ -2,8 +2,8 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -89,7 +89,7 @@
     ;; create a deployment log as an admin user using internal utility function
     (let [resp-test     {:response (t/create-log parent-id session-id service)}
 
-          id-test       (get-in resp-test [:response :body :resource-id])
+          id-test       (ltu/body-resource-id resp-test)
 
           location-test (str p/service-context (-> resp-test ltu/location))
 

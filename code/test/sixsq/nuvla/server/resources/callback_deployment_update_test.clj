@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
@@ -70,34 +70,34 @@
 
 (defn lifecycle-deployment
   [subtype valid-module-content]
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header
-                             "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon     (-> (ltu/ring-app)
+                             session
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header
+                                 "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header
+                                 "user/jane group/nuvla-user group/nuvla-anon")
 
         ;; setup a module that can be referenced from the deployment
-        module-id (-> session-user
-                      (request module-base-uri
-                               :request-method :post
-                               :body (json/write-str
-                                       (valid-module subtype valid-module-content)))
-                      (ltu/body->edn)
-                      (ltu/is-status 201)
-                      (ltu/location))
+        module-id        (-> session-user
+                             (request module-base-uri
+                                      :request-method :post
+                                      :body (json/write-str
+                                              (valid-module subtype valid-module-content)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
         valid-deployment {:module {:href module-id}}]
 
     ;; create deployment
-    (let [deployment-id (-> session-user
-                            (request deployment-base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-deployment))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
+    (let [deployment-id  (-> session-user
+                             (request deployment-base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-deployment))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
           deployment-url (str p/service-context deployment-id)]
 
@@ -110,7 +110,7 @@
                                     (ltu/is-operation-present :start)
                                     (ltu/is-key-value :state "CREATED"))
 
-            start-url (ltu/get-op-url deployment-response "start")]
+            start-url           (ltu/get-op-url deployment-response "start")]
 
         ;; start the deployment
         (-> session-user
@@ -141,21 +141,20 @@
             (ltu/is-status 200))
 
         ;; create callback
-        (let [callback-body {:action          cdu/action-name
-                             :target-resource {:href deployment-id}
-                             :data            {:image  {:image-name image-name
-                                                        :tag        new-image-tag}
-                                               :commit new-commit-msg}}
+        (let [callback-body    {:action          cdu/action-name
+                                :target-resource {:href deployment-id}
+                                :data            {:image  {:image-name image-name
+                                                           :tag        new-image-tag}
+                                                  :commit new-commit-msg}}
 
-              callback-url (str p/service-context (-> session-admin
-                                                      (request callback-base-uri
-                                                               :request-method :post
-                                                               :body (json/write-str callback-body))
-                                                      (ltu/body->edn)
-                                                      (ltu/is-status 201)
-                                                      :response
-                                                      :body
-                                                      :resource-id))
+              callback-url     (str p/service-context (-> session-admin
+                                                          (request callback-base-uri
+                                                                   :request-method :post
+                                                                   :body (json/write-str callback-body))
+                                                          (ltu/body->edn)
+                                                          (ltu/is-status 201)
+                                                          (ltu/body)
+                                                          :resource-id))
               callback-execute (str p/service-context (-> session-admin
                                                           (request callback-url)
                                                           (ltu/body->edn)

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.job.utils
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 

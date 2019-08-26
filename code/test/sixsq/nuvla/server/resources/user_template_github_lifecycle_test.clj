@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.user-template-github-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
     [sixsq.nuvla.server.app.params :as p]
@@ -81,7 +81,7 @@
           (request template-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body])))
+          (ltu/body)))
 
     ;; get user template so that user resources can be tested
     (let [name-attr            "name"
@@ -216,7 +216,7 @@
               (let [github-login (str "GITHUB_USER_" n)
                     email        (format "user-%s@example.com" n)]
 
-                (with-redefs [auth-github/get-github-access-token (fn [client-id client-secret oauth-code]
+                (with-redefs [auth-github/get-github-access-token (fn [_ _ oauth-code]
                                                                     (case oauth-code
                                                                       "GOOD" "GOOD_ACCESS_CODE"
                                                                       "BAD" "BAD_ACCESS_CODE"

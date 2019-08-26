@@ -126,10 +126,10 @@ component, or application.
             response        (crud/add content-request)
 
             content-id      (-> response :body :resource-id)
-            module-meta     (-> (assoc module-meta :versions [(cond-> {:href   content-id
-                                                                       :author author}
-                                                                      commit (assoc :commit commit))])
-                                module-utils/set-parent-path)]
+            module-meta     (module-utils/set-parent-path
+                              (assoc module-meta :versions [(cond-> {:href   content-id
+                                                                     :author author}
+                                                                    commit (assoc :commit commit))]))]
 
         (db/add
           resource-type
@@ -201,8 +201,7 @@ component, or application.
       (a/can-edit? {:acl acl} request)
 
       (if (= "project" subtype)
-        (let [module-meta (-> (assoc module-meta :subtype subtype)
-                              module-utils/set-parent-path)]
+        (let [module-meta (module-utils/set-parent-path (assoc module-meta :subtype subtype))]
 
           (edit-impl (assoc request :body module-meta)))
         (let [content-url     (subtype->resource-name subtype)
@@ -221,9 +220,9 @@ component, or application.
               versions        (conj versions (cond-> {:href   content-id
                                                       :author author}
                                                      commit (assoc :commit commit)))
-              module-meta     (-> (assoc module-meta :versions versions
-                                                     :subtype subtype)
-                                  module-utils/set-parent-path)]
+              module-meta     (module-utils/set-parent-path
+                                (assoc module-meta :versions versions
+                                                   :subtype subtype))]
 
           (edit-impl (assoc request :body module-meta)))))
     (catch Exception e

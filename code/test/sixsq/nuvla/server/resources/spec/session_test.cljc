@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.session-test
   (:require
-    [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.resources.session :refer :all]
+    [clojure.test :refer [deftest]]
+    [sixsq.nuvla.server.resources.session :as t]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
@@ -10,8 +10,8 @@
 
 (deftest check-session-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg       {:id            (str resource-type "/internal")
-                   :resource-type resource-type
+        cfg       {:id            (str t/resource-type "/internal")
+                   :resource-type t/resource-type
                    :created       timestamp
                    :updated       timestamp
                    :acl           valid-acl

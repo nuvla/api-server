@@ -1,27 +1,43 @@
 (ns sixsq.nuvla.db.binding-queries
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [is]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
+
 (s/def ::id string?)
+
+
 (s/def ::sequence int?)
+
+
 (s/def ::attr1 string?)
+
+
 (s/def ::attr2 string?)
+
+
 (s/def ::admin boolean?)
+
+
 (s/def ::user boolean?)
 
+
 (s/def ::acl ::acl-resource/acl)
+
 
 (s/def ::resource (s/keys :req-un [::id ::sequence ::attr1 ::attr2 ::acl]
                           :opt-un [::admin ::user]))
 
+
 (def admin-acl {:owners ["group/nuvla-admin"]})
 
+
 (def user "user/jane")
+
 
 (def user-acl {:owners    ["group/nuvla-admin"]
                :delete    ["user/jane"]
@@ -32,6 +48,7 @@
                :view-acl  ["user/jane"]
                :view-data ["user/jane"]
                :view-meta ["user/jane"]})
+
 
 (def user-authn-info {:nuvla/authn {:user-id user
                                     :claims  #{user "group/nuvla-user" "group/nuvla-anon"}}})
@@ -203,16 +220,16 @@
           (is (= (set user-docs) (set query-hits))))
 
         ;; aggregation
-        (let [[query-meta query-hits] (db/query db collection-id {:cimi-params {:aggregation
-                                                                                [[:terms "attr1"]
-                                                                                 [:terms "nested/child"]
-                                                                                 [:min "number"]
-                                                                                 [:max "number"]
-                                                                                 [:sum "number"]
-                                                                                 [:avg "number"]
-                                                                                 [:value_count "id"]
-                                                                                 [:cardinality "id"]]}
-                                                                  :nuvla/authn auth/internal-identity})]
+        (let [[query-meta _] (db/query db collection-id {:cimi-params {:aggregation
+                                                                       [[:terms "attr1"]
+                                                                        [:terms "nested/child"]
+                                                                        [:min "number"]
+                                                                        [:max "number"]
+                                                                        [:sum "number"]
+                                                                        [:avg "number"]
+                                                                        [:value_count "id"]
+                                                                        [:cardinality "id"]]}
+                                                         :nuvla/authn auth/internal-identity})]
 
           (is (= {:terms:nested/child {:doc_count_error_upper_bound 0,
                                        :sum_other_doc_count         0,

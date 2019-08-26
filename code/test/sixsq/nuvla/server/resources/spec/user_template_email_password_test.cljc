@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.user-template-email-password-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.user-template-email-password :as spec-email-password]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]

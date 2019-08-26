@@ -2,10 +2,10 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
@@ -42,7 +42,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -61,8 +61,7 @@
                               (request @validation-link)
                               (ltu/body->edn)
                               (ltu/is-status 200)
-                              :response
-                              :body
+                              (ltu/body)
                               :message))))
         user-id))))
 
@@ -117,38 +116,37 @@
                         (ltu/body->edn)
                         (ltu/is-set-cookie)
                         (ltu/is-status 201))
-            id      (get-in resp [:response :body :resource-id])
+            id      (ltu/body-resource-id resp)
 
-            uri     (ltu/location resp)
-            abs-uri (str p/service-context uri)]
+            abs-url (ltu/location-url resp)
+
+            {:keys [name description tags] :as original-session}
+            (-> session-user
+                (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                (request abs-url)
+                (ltu/body->edn)
+                :response
+                :body)]
 
         ; check contents of session
-        (let [{:keys [name description tags] :as original-session}
-              (-> session-user
-                  (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                  (request abs-uri)
-                  (ltu/body->edn)
-                  :response
-                  :body)]
+        (is (= name name-attr))
+        (is (= description description-attr))
+        (is (= tags tags-attr))
 
-          (is (= name name-attr))
-          (is (= description description-attr))
-          (is (= tags tags-attr))
+        ;; After the setup, NOW verify that the session can be updated!
+        (let [new-name        "UPDATED SESSION NAME"
+              correct-session (assoc original-session :name new-name)]
 
-          ;; After the setup, NOW verify that the session can be updated!
-          (let [new-name        "UPDATED SESSION NAME"
-                correct-session (assoc original-session :name new-name)]
+          (session-utils/update-session (:id original-session) correct-session)
 
-            (session-utils/update-session (:id original-session) correct-session)
+          (let [updated-session (-> session-user
+                                    (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                                    (request abs-url)
+                                    (ltu/body->edn)
+                                    :response
+                                    :body)]
 
-            (let [updated-session (-> session-user
-                                      (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                      (request abs-uri)
-                                      (ltu/body->edn)
-                                      :response
-                                      :body)]
-
-              (is (= new-name (:name updated-session)))
-              (is (not= (:updated original-session) (:updated updated-session)))
-              (is (= (dissoc correct-session :updated) (dissoc updated-session :updated))))))))))
+            (is (= new-name (:name updated-session)))
+            (is (not= (:updated original-session) (:updated updated-session)))
+            (is (= (dissoc correct-session :updated) (dissoc updated-session :updated)))))))))
 

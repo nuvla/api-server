@@ -146,12 +146,14 @@ existing `infrastructure-service-template` resource.
                                (update-in [:template] merge desc-attrs) ;; validate desc attrs
                                crud/validate
                                :template)
-        service            (tpl->service validated-template)]
-    (let [response (add-impl (assoc request :body service))
-          id       (-> response :body :resource-id)
-          service  (assoc service :id id)]
-      (post-add-hook service request)
-      response)))
+        service            (tpl->service validated-template)
+
+        response           (add-impl (assoc request :body service))
+        id                 (-> response :body :resource-id)
+        service            (assoc service :id id)]
+
+    (post-add-hook service request)
+    response))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

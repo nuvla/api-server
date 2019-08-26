@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.spec.evidence-record-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.evidence-record :as evidence-record]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

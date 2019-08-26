@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.module-application-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]

@@ -293,7 +293,7 @@ include aggregating values over a collection of resources.
 "
   (:require
     [clojure.tools.logging :as log]
-    [compojure.core :refer [ANY defroutes DELETE GET POST PUT]]
+    [compojure.core :refer [ANY defroutes GET PUT]]
     [ring.util.response :as r]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]

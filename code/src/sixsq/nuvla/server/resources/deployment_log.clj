@@ -3,7 +3,6 @@
 These resources represent the logs of a deployment.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]

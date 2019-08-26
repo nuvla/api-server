@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.session-template-mitreid-token-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.spec.session-template-mitreid-token :as st-mitreid-token]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

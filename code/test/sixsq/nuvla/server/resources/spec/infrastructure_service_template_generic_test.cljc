@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as spec-generic]

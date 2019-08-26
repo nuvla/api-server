@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.user-template-oidc-registration-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.user-template-oidc :as ut-oidc]
     [sixsq.nuvla.server.resources.user-template :as st]))

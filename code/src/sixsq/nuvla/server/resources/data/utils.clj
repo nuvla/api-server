@@ -185,7 +185,7 @@
       (try
         (create-bucket! s3-client bucket)
         resource
-        (catch Exception e
+        (catch Exception _
           (logu/log-and-throw 503 (format "Unable to create the bucket %s" bucket)))))))
 
 

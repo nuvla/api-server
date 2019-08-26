@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.user-identifier-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as env]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -116,8 +116,7 @@
                             (request abs-uri)
                             (ltu/body->edn)
                             (ltu/is-status 200)
-                            :response
-                            :body)]
+                            (ltu/body))]
 
         (is (= {:id         expected-id
                 :identifier test-identifier

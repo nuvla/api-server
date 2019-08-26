@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.data.utils-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.data.utils :as u])
   (:import
     (com.amazonaws AmazonServiceException)))

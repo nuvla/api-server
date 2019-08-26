@@ -1,12 +1,11 @@
 (ns sixsq.nuvla.server.resources.cloud-entry-point-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.cloud-entry-point :as t]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
@@ -39,8 +38,7 @@
                   (ltu/is-resource-uri t/resource-type)
                   (ltu/is-operation-absent :edit)
                   (ltu/is-operation-absent :delete)
-                  :response
-                  :body)]
+                  (ltu/body))]
 
       (stu/is-valid ::cep/resource cep))
 

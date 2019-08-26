@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.db.utils.common-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [are deftest]]
     [sixsq.nuvla.db.utils.common :as t]))
 
 

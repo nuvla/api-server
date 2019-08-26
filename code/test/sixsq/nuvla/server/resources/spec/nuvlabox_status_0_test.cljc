@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-status-0-test
   (:require
-    [clojure.test :refer [are deftest]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nbs]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status-0 :as nb-status-0]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

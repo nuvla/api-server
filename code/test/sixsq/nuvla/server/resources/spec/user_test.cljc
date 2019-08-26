@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.user-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.user :as user]
-    [sixsq.nuvla.server.resources.user :refer :all]))
+    [sixsq.nuvla.server.resources.user :as t]))
 
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
@@ -12,9 +12,9 @@
 
 (deftest check-user-schema
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg       {:id                  (str resource-type "/uuid")
+        cfg       {:id                  (str t/resource-type "/uuid")
 
-                   :resource-type       resource-type
+                   :resource-type       t/resource-type
 
                    :created             timestamp
                    :updated             timestamp

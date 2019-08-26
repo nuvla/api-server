@@ -2,15 +2,13 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
@@ -98,7 +96,7 @@
           (request template-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body])))
+          (ltu/body)))
 
     ;; get user template so that user resources can be tested
     (let [name-attr            "name"
@@ -261,7 +259,7 @@
                     bad-claims  {}
                     bad-token   (sign/sign-cookie-info bad-claims)]
 
-                (with-redefs [auth-oidc/get-access-token (fn [client-id client-secret tokenurl oauth-code redirect-uri]
+                (with-redefs [auth-oidc/get-access-token (fn [_ _ _ oauth-code _]
                                                            (case oauth-code
                                                              "GOOD" good-token
                                                              "BAD" bad-token
@@ -279,8 +277,7 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state)))
 
                   (reset-callback! cb-id)
@@ -295,8 +292,7 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state)))
 
                   (is (nil? (uiu/user-identifier->user-id :oidc oidc/registration-method username)))
@@ -313,8 +309,7 @@
                                          (request (str p/service-context cb-id))
                                          (ltu/body->edn)
                                          (ltu/is-status 200)
-                                         :response
-                                         :body
+                                         (ltu/body)
                                          :state)))
 
 
@@ -344,6 +339,5 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state))))))))))))

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.infrastructure-service-template-kubernetes-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-swarm :as tpl-swarm]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-swarm :as spec-swarm]

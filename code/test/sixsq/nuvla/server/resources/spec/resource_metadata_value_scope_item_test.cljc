@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-item-test
   (:require
-    [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-enumeration-test :as enumeration]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-item :as spec]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-range-test :as range]
@@ -13,8 +12,7 @@
 (def valid {:item {:alpha enumeration/valid
                    :beta  range/valid
                    :gamma single-value/valid
-                   :delta unit/valid
-                   }})
+                   :delta unit/valid}})
 
 
 (deftest check-value-scope-item

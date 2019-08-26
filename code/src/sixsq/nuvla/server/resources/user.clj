@@ -158,13 +158,12 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                           (merge-with-defaults)
                           (tpl->user request))]
 
-      (if frag
-        frag
-        (if user
-          (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
-            (when (and resource-id (= 201 status))
-              (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
-            result))))
+      (or frag
+          (if user
+            (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
+              (when (and resource-id (= 201 status))
+                (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
+              result))))
 
     (catch Exception e
       (or (ex-data e)
@@ -217,8 +216,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (logu/log-and-throw-400 "id is not provided in the document.")))
 
 
-(defn edit-impl [{body :body :as request}]
+(defn edit-impl
   "Returns edited document or exception data in case of an error."
+  [{body :body :as request}]
   (throw-no-id body)
   (try
     (let [current (-> (:id body)
@@ -266,8 +266,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
               (when (not= status 200)
                 (log/error "could not append super in nuvla-admin group!"))))
         (log/error "could not create user 'super'")))
-    (do
-      (log/info "user 'super' already exists; skip trying to create it"))))
+    (log/info "user 'super' already exists; skip trying to create it")))
 
 
 (defn initialize

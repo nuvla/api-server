@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.group-template-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl-spec]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

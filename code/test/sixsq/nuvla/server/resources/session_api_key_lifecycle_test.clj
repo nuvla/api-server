@@ -2,8 +2,8 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [are deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
@@ -13,7 +13,6 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-api-key :as t]
-    [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
     [sixsq.nuvla.server.util.time :as time]))
@@ -22,7 +21,7 @@
 
 (def base-uri (str p/service-context session/resource-type))
 
-(def session-template-base-uri (str p/service-context ct/resource-type))
+(def session-template-base-uri (str p/service-context st/resource-type))
 
 
 (def session-template-api-key {:method      api-key/authn-method
@@ -74,8 +73,6 @@
             :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
            (t/create-cookie-info user-id claims headers session-id client-ip)))))
 
-(defn mock-retrieve-by-id [doc-id]
-  nil)
 
 (deftest lifecycle
 
@@ -109,14 +106,6 @@
             ;; create the session template to use for these tests
             ;;
             href                (str st/resource-type "/api-key")
-
-            template-url        (str p/service-context href)
-
-            resp                (-> session-anon
-                                    (request template-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200))
-            template            (get-in resp [:response :body])
 
             name-attr           "name"
             description-attr    "description"
@@ -154,7 +143,7 @@
                               (ltu/body->edn)
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
-              id          (get-in resp [:response :body :resource-id])
+              id          (ltu/body-resource-id resp)
 
               token       (get-in resp [:response :cookies authn-cookie :value])
               cookie-info (if token (sign/unsign-cookie-info token) {})
@@ -215,12 +204,12 @@
               (ltu/is-count 1))
 
           ;; check contents of session resource
-          (let [{:keys [name description tags] :as body} (-> (session app)
-                                                             (header authn-info-header (str "user/user group/nuvla-user " id))
-                                                             (request abs-uri)
-                                                             (ltu/body->edn)
-                                                             :response
-                                                             :body)]
+          (let [{:keys [name description tags]} (-> (session app)
+                                                    (header authn-info-header (str "user/user group/nuvla-user " id))
+                                                    (request abs-uri)
+                                                    (ltu/body->edn)
+                                                    :response
+                                                    :body)]
             (is (= name name-attr))
             (is (= description description-attr))
             (is (= tags tags-attr)))

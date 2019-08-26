@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-exoscale-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -41,7 +41,7 @@
                                   (request template-url)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  (get-in [:response :body]))
+                                  (ltu/body))
 
         create-import-no-href {:template (ltu/strip-unwanted-attrs template)}
 
@@ -94,7 +94,7 @@
                                :body (json/write-str create-import-href))
                       (ltu/body->edn)
                       (ltu/is-status 201))
-          id      (get-in resp [:response :body :resource-id])
+          id      (ltu/body-resource-id resp)
           uri     (-> resp
                       (ltu/location))
           abs-uri (str p/service-context uri)]

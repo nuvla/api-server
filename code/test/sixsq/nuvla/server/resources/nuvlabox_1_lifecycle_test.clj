@@ -92,17 +92,17 @@
                              (ltu/location))
             nuvlabox-url (str p/service-context nuvlabox-id)
 
-            {:keys [id acl] :as nb} (-> session
-                                        (request nuvlabox-url)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-operation-present :edit)
-                                        (ltu/is-operation-present :delete)
-                                        (ltu/is-operation-present :activate)
-                                        (ltu/is-operation-absent :commission)
-                                        (ltu/is-operation-absent :decommission)
-                                        (ltu/is-key-value :state "NEW")
-                                        (ltu/body))]
+            {:keys [id acl]} (-> session
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-operation-present :edit)
+                                 (ltu/is-operation-present :delete)
+                                 (ltu/is-operation-present :activate)
+                                 (ltu/is-operation-absent :commission)
+                                 (ltu/is-operation-absent :decommission)
+                                 (ltu/is-key-value :state "NEW")
+                                 (ltu/body))]
 
         ;; check generated ACL
         (is (contains? (set (:owners acl)) nuvlabox-owner))
@@ -181,11 +181,11 @@
 
               claims         (:claims credential-nuvlabox)
 
-              {:keys [owner] :as nuvlabox} (-> session-admin
-                                               (request nuvlabox-url)
-                                               (ltu/body->edn)
-                                               (ltu/is-status 200)
-                                               (ltu/body))]
+              {:keys [owner]} (-> session-admin
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/body))]
 
           ;; check ACL and claims of generated credential.
           (is (= (:identity claims) nuvlabox-id))
@@ -201,32 +201,32 @@
           (is (not (contains? (set (:view-data acl)) owner)))
 
           ;; verify that an infrastructure-service-group has been created for this nuvlabox
-          (let [{:keys [acl] :as isg} (-> session-admin
-                                          (content-type "application/x-www-form-urlencoded")
-                                          (request isg-collection-uri
-                                                   :request-method :put
-                                                   :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                          (ltu/body->edn)
-                                          (ltu/is-status 200)
-                                          (ltu/is-count 1)
-                                          (ltu/entries)
-                                          first)]
+          (let [{:keys [acl]} (-> session-admin
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (request isg-collection-uri
+                                           :request-method :put
+                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-count 1)
+                                  (ltu/entries)
+                                  first)]
 
             (is (= ["group/nuvla-admin"] (:owners acl)))
             (is (contains? (set (:view-meta acl)) owner))
             (is (not (contains? (set (:edit-meta acl)) owner))))
 
           ;; verify that an nuvlabox-status has been created for this nuvlabox
-          (let [{:keys [acl] :as nb-status} (-> session-admin
-                                                (content-type "application/x-www-form-urlencoded")
-                                                (request nb-status-collection-uri
-                                                         :request-method :put
-                                                         :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                                (ltu/body->edn)
-                                                (ltu/is-status 200)
-                                                (ltu/is-count 1)
-                                                (ltu/entries)
-                                                first)]
+          (let [{:keys [acl]} (-> session-admin
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (request nb-status-collection-uri
+                                           :request-method :put
+                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-count 1)
+                                  (ltu/entries)
+                                  first)]
 
             (is (= ["group/nuvla-admin"] (:owners acl)))
             (is (contains? (set (:edit-meta acl)) nuvlabox-id))
@@ -427,7 +427,7 @@
                               (ltu/entries))]
 
                 ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl] :as cred} creds]
+                (doseq [{:keys [acl]} creds]
                   (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
@@ -482,7 +482,7 @@
                               (ltu/entries))]
 
                 ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl] :as cred} creds]
+                (doseq [{:keys [acl]} creds]
                   (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
@@ -536,7 +536,7 @@
                               (ltu/entries))]
 
                 ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl] :as cred} creds]
+                (doseq [{:keys [acl]} creds]
                   (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)

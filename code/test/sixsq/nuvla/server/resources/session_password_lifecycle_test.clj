@@ -3,7 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
@@ -43,7 +43,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -62,8 +62,7 @@
                               (request @validation-link)
                               (ltu/body->edn)
                               (ltu/is-status 200)
-                              :response
-                              :body
+                              (ltu/body)
                               :message))))
         user-id))))
 
@@ -146,7 +145,7 @@
                            (ltu/body->edn)
                            (ltu/is-set-cookie)
                            (ltu/is-status 201))
-            id         (get-in resp [:response :body :resource-id])
+            id         (ltu/body-resource-id resp)
 
             token      (get-in resp [:response :cookies authn-cookie :value])
             authn-info (if token (sign/unsign-cookie-info token) {})
@@ -204,12 +203,12 @@
             (ltu/is-operation-absent :edit))
 
         ; check contents of session
-        (let [{:keys [name description tags] :as body} (-> session-user
-                                                           (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                                           (request abs-uri)
-                                                           (ltu/body->edn)
-                                                           :response
-                                                           :body)]
+        (let [{:keys [name description tags]} (-> session-user
+                                                  (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                                                  (request abs-uri)
+                                                  (ltu/body->edn)
+                                                  :response
+                                                  :body)]
           (is (= name name-attr))
           (is (= description description-attr))
           (is (= tags tags-attr)))

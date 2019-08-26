@@ -140,11 +140,8 @@ voucher via the 'expire' operation.
 (defn activate
   [voucher]
   (if (= (:state voucher) "NEW")
-    (do
-      (let [activated-timestamp (time/now-str)
-            activated-voucher   (assoc voucher :state "ACTIVATED"
-                                               :activated activated-timestamp)]
-        activated-voucher))
+    (assoc voucher :state "ACTIVATED"
+                   :activated (time/now-str))
     (throw (r/ex-response "activation is not allowed for this voucher" 400 (:id voucher)))))
 
 
@@ -175,11 +172,8 @@ voucher via the 'expire' operation.
 (defn redeem
   [voucher]
   (if (= (:state voucher) "ACTIVATED")
-    (do
-      (let [redeemed-timestamp (time/now-str)
-            redeemed-voucher   (assoc voucher :state "REDEEMED"
-                                              :redeemed redeemed-timestamp)]
-        redeemed-voucher))
+    (assoc voucher :state "REDEEMED"
+                   :redeemed (time/now-str))
     (throw (r/ex-response "redeem is not allowed for this voucher" 400 (:id voucher)))))
 
 
@@ -206,10 +200,8 @@ voucher via the 'expire' operation.
 
 (defn expire
   [voucher]
-  (if (not (= (:state voucher) "EXPIRED"))
-    (do
-      (let [expired-voucher (assoc voucher :state "EXPIRED")]
-        expired-voucher))
+  (if (not= (:state voucher) "EXPIRED")
+    (assoc voucher :state "EXPIRED")
     (throw (r/ex-response "voucher is already expired" 400 (:id voucher)))))
 
 

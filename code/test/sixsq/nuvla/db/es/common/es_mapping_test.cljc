@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.db.es.common.es-mapping-test
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is testing]]
+    [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.db.es.common.es-mapping :as t]
     [spec-tools.core :as st]
     [spec-tools.data-spec :as ds]
@@ -11,24 +11,44 @@
 
 
 (s/def ::integer integer?)
+
+
 (s/def ::string string?)
+
+
 (s/def ::set-long #{1 2 3})
+
+
 (s/def ::set-number #{1.0 2.0 3.0})                         ;; all non-integer numbers are promoted to doubles
+
+
 (s/def ::set-string #{"a" "b" "c"})
 
+
 (s/def ::a string?)
+
+
 (s/def ::b string?)
+
+
 (s/def ::c string?)
+
+
 (s/def ::d string?)
+
+
 (s/def ::e string?)
+
 
 (s/def ::keys (s/keys :opt [::e]
                       :opt-un [::e]
                       :req [::a (or ::b (and ::c ::d))]
                       :req-un [::a (or ::b (and ::c ::d))]))
 
+
 (s/def ::keys-no-req (s/keys :opt [::e]
                              :opt-un [::e]))
+
 
 (deftest simple-spec-test
   (testing "primitive predicates"
@@ -117,6 +137,7 @@
 
 (s/def ::age (s/and integer? #(> % 18)))
 
+
 (def person-spec
   (ds/spec
     ::person
@@ -141,6 +162,7 @@
                                                                              "zip"    {:type "keyword"}}}}}
          (t/transform person-spec))))
 
+
 (deftest additional-json-schema-data-test
   (is (= {:type "long"}
          (t/transform
@@ -149,6 +171,7 @@
               :name                "integer"
               :description         "it's an int"
               :json-schema/default 42})))))
+
 
 (deftest deeply-nested-test
   (is (= {:type "keyword"}
@@ -161,6 +184,7 @@
 (s/def ::name string?)
 (s/def ::parent (s/nilable ::user))
 (s/def ::user (s/keys :req-un [::name ::parent]))
+
 
 (deftest recursive-spec-test
   (is (= {:type       "object",

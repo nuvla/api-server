@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -46,7 +46,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
                                           (reset! reset-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -97,11 +97,11 @@
                                                              :password plaintext-password
                                                              :activated? true
                                                              :email "jane@example.org")
-            {:keys [credential-password] :as jane-user} (-> session-admin
-                                                            (request (str p/service-context jane-user-id))
-                                                            (ltu/body->edn)
-                                                            :response
-                                                            :body)
+            {:keys [credential-password]} (-> session-admin
+                                              (request (str p/service-context jane-user-id))
+                                              (ltu/body->edn)
+                                              :response
+                                              :body)
             jane-credential       (-> session-admin
                                       (request (str p/service-context credential-password))
                                       (ltu/body->edn)
@@ -133,8 +133,7 @@
         (is (= jane-credential (-> session-admin
                                    (request (str p/service-context credential-password))
                                    (ltu/body->edn)
-                                   :response
-                                   :body)))
+                                   (ltu/body))))
 
         (-> session-anon
             (request @reset-link)
@@ -146,8 +145,7 @@
         (is (not= jane-credential (-> session-admin
                                       (request (str p/service-context credential-password))
                                       (ltu/body->edn)
-                                      :response
-                                      :body)))
+                                      (ltu/body))))
 
         (-> session-anon
             (request base-uri

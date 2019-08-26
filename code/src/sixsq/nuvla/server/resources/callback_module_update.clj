@@ -4,8 +4,7 @@
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.module :as m]
-    [sixsq.nuvla.server.resources.notification :refer [resource-type]]))
+    [sixsq.nuvla.server.resources.module :as m]))
 
 
 (def ^:const action-name "module-update")
@@ -13,10 +12,10 @@
 
 (defn update-component!
   [module-id data]
-  (let [module (:body (crud/retrieve {:params         {:uuid          (u/id->uuid module-id)
-                                                       :resource-name m/resource-type}
-                                      :request-method :get
-                                      :nuvla/authn    auth/internal-identity}))
+  (let [module     (:body (crud/retrieve {:params         {:uuid          (u/id->uuid module-id)
+                                                           :resource-name m/resource-type}
+                                          :request-method :get
+                                          :nuvla/authn    auth/internal-identity}))
         new-module (update module :content #(merge % data))]
     (crud/edit {:params         {:uuid          (u/id->uuid module-id)
                                  :resource-name m/resource-type}

@@ -7,7 +7,6 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth-utils]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -78,7 +77,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                  :status        "UNKNOWN"
                                  :acl           status-acl}
         nuvlabox-status-request {:params      {:resource-name resource-type}
-                                 :nuvla/authn auth-utils/internal-identity
+                                 :nuvla/authn auth/internal-identity
                                  :body        body}]
     (add-impl nuvlabox-status-request)))
 

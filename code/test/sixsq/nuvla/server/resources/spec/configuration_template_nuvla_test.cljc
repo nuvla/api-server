@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.spec.configuration-template-nuvla-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.configuration-nuvla :as nuvla]
     [sixsq.nuvla.server.resources.configuration-template :as ct]

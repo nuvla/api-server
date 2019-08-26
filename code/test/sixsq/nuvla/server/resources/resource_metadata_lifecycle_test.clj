@@ -1,12 +1,10 @@
 (ns sixsq.nuvla.server.resources.resource-metadata-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.common.utils :as cu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as t]
     [sixsq.nuvla.server.resources.spec.resource-metadata-test :as resource-metadata]))
@@ -29,7 +27,7 @@
 
     ;; anyone can query the metadata
     ;; because of automatic registration, the list may not be empty
-    (doseq [session [session-admin #_session-user #_session-anon]]
+    (doseq [session [session-admin session-user session-anon]]
       (-> session
           (request base-uri)
           (ltu/body->edn)
@@ -55,17 +53,16 @@
             (ltu/is-resource-uri t/collection-type)
             (ltu/is-count pos?))
 
-        (let [{:keys [id] :as metadata} (-> session
-                                            (request abs-uri)
-                                            (ltu/body->edn)
-                                            (ltu/is-status 200)
-                                            (ltu/is-operation-absent :add)
-                                            (ltu/is-operation-absent :edit)
-                                            (ltu/is-operation-absent :delete)
-                                            :response
-                                            :body)]
+        (let [{:keys [id]} (-> session
+                               (request abs-uri)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/is-operation-absent :add)
+                               (ltu/is-operation-absent :edit)
+                               (ltu/is-operation-absent :delete)
+                               (ltu/body))]
 
-          (is (= (cu/id->uuid id) identifier)))))))
+          (is (= (u/id->uuid id) identifier)))))))
 
 
 (deftest bad-methods

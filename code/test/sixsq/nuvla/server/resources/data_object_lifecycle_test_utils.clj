@@ -3,7 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [is]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -30,14 +30,21 @@
 
 
 (def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+
 (def ^:const admin-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-(def ^:const user-creds-info-header "user/creds group/nuvla-user group/nuvla-anon")
 
 (def ^:const username-view "user/tarzan")
+
+
 (def ^:const user-view-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
+
+
 (def ^:const tarzan-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
 
 (def ^:const username-no-view "user/other")
+
+
 (def ^:const user-no-view-info-header (str username-no-view " group/nuvla-user group/nuvla-anon"))
 
 
@@ -47,11 +54,24 @@
               session
               (content-type "application/json")) authn-info-header identity))
 
+
 (def session-admin (build-session admin-info-header))
-(def session-user (build-session user-info-header))
+
+
+(def session-jane (build-session user-info-header))
 
 (def session-user-view (build-session user-view-info-header))
+
+
 (def session-user-no-view (build-session user-no-view-info-header))
+
+
+(def session-anon (-> (ltu/ring-app)
+                      session
+                      (content-type "application/json")))
+
+
+(def session-tarzan (header session-anon authn-info-header tarzan-info-header))
 
 
 (def ^:dynamic *s3-credential-id* nil)
@@ -116,7 +136,7 @@
 
 (defn create-s3-credential!
   [f]
-  (create-cloud-cred session-user)
+  (create-cloud-cred session-jane)
   (f))
 
 
@@ -171,33 +191,24 @@
 (def base-uri (str p/service-context eo/resource-type))
 
 
-(def session-anon (-> (ltu/ring-app)
-                      session
-                      (content-type "application/json")))
-(def session-user (header session-anon authn-info-header user-info-header))
-(def session-other (header session-anon authn-info-header tarzan-info-header))
-(def session-admin (header session-anon authn-info-header admin-info-header))
-
 (defn get-template
   [template-url]
   (-> session-admin
       (request template-url)
       (ltu/body->edn)
       (ltu/is-status 200)
-      :response
-      :body))
+      (ltu/body)))
 
 
 (defn full-eo-lifecycle
   [template-url template-obj]
-  (let [template       (get-template template-url)
-        create-href    {:template (-> template-obj
-                                      (assoc :href (:id template))
-                                      (dissoc :subtype))}
-        create-no-href {:template (merge (ltu/strip-unwanted-attrs template) template-obj)}]
+  (let [template    (get-template template-url)
+        create-href {:template (-> template-obj
+                                   (assoc :href (:id template))
+                                   (dissoc :subtype))}]
 
     ;; check with and without a href attribute
-    (doseq [valid-create [create-href #_create-no-href]]    ;; FIXME: PUT BACK ALL OPTIONS
+    (doseq [valid-create [create-href]]
 
       (let [invalid-create (assoc-in valid-create [:template :invalid] "BAD")]
 
@@ -210,7 +221,7 @@
             (ltu/is-status 403))
 
         ;; full data object lifecycle as administrator/user should work
-        (doseq [session [session-admin #_session-user]]     ;; FIXME: PUT BACK ALL USERS
+        (doseq [session [session-admin]]
 
           ;; create with invalid template fails
           (-> session
@@ -254,7 +265,7 @@
               ;; another user should not be able to delete data object
               (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found]
-                (-> session-other
+                (-> session-tarzan
                     (request abs-uri
                              :request-method :delete)
                     (ltu/body->edn)
@@ -359,8 +370,7 @@
                                                    (ltu/is-operation-absent :ready)
                                                    (ltu/is-operation-absent :download)
                                                    (ltu/is-status 200)
-                                                   :response
-                                                   :body)
+                                                   (ltu/body))
 
                   updated-acl (update acl :view-acl conj username-view)
 
@@ -382,8 +392,7 @@
                               (request abs-uri)
                               (ltu/body->edn)
                               (ltu/is-status 200)
-                              :response
-                              :body)]
+                              (ltu/body))]
 
               (is (= "NEW_VALUE_OK" (:name updated)))
               (is (not= "BAD_VALUE_IGNORED" (:state updated))))
@@ -548,8 +557,7 @@
                                                       :request-method :post)
                                              (ltu/body->edn)
                                              (ltu/is-status 303)
-                                             :response
-                                             :body
+                                             (ltu/body)
                                              :uri)]
                         (is (str/starts-with? download-uri "http")))))))
 

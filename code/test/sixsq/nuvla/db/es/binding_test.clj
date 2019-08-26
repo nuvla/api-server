@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.db.es.binding-test
   (:require
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.db.binding-lifecycle :as lifecycle]
     [sixsq.nuvla.db.binding-queries :as queries]
     [sixsq.nuvla.db.es.binding :as t]

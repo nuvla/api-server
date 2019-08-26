@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.user-identifier-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-identifier :as ui]))

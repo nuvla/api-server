@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.auth.cookies-test
   (:refer-clojure :exclude [update])
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [environ.core :as environ]
     [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as t]

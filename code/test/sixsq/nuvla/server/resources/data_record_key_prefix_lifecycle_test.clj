@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.data-record-key-prefix-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.data-record-key-prefix :as key-prefix]
+    [sixsq.nuvla.server.resources.data-record-key-prefix :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -13,7 +13,7 @@
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context key-prefix/resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def valid-namespace
@@ -37,7 +37,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists key-prefix/resource-type))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -75,7 +75,7 @@
                       (request abs-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (get-in [:response :body]))]
+                      (ltu/body))]
 
       (is (= "schema-org" (:prefix doc)))
       (is (= "https://schema-org/a/b/c.md" (:uri doc)))
@@ -85,7 +85,7 @@
           (request "/api/data-record-key-prefix")
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body]))
+          (ltu/body))
 
       ;; trying to create another namespace with same name is forbidden
       (-> session-admin
@@ -94,9 +94,7 @@
                    :body (json/write-str namespace-same-prefix))
           (ltu/body->edn)
           (ltu/is-status 409)
-          (get-in [:response :body :message])
-          (= (str "conflict with " uri))
-          is)
+          (ltu/message-matches (str "conflict with " uri)))
 
       ;; trying to create another namespace with same uri is forbidden
       (-> session-admin
@@ -105,9 +103,7 @@
                    :body (json/write-str namespace-same-uri))
           (ltu/body->edn)
           (ltu/is-status 409)
-          (get-in [:response :body :message])
-          (= (str "conflict with " uri))
-          is)
+          (ltu/message-matches (str "conflict with " uri)))
 
       ;; trying to create another namespace with other name and URI is ok
       (-> session-admin

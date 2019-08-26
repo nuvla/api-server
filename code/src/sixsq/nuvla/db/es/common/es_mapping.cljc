@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.db.es.common.es-mapping
   "Utility for converting clojure.spec definitions to Elasticsearch mappings."
   (:require
-    [clojure.data :refer [diff]]
     [clojure.walk :as w]
     [spec-tools.json-schema :as jsc]))
 

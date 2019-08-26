@@ -60,10 +60,10 @@
           identifier->user-id
           user-id->user))
 
+
 (defn active-user
   [username]
-  (-> (extract-user username)
-      (check-user-active)))
+  (-> username extract-user check-user-active))
 
 
 ;; FIXME: This should call the check-password action on the credential instead of checking locally.

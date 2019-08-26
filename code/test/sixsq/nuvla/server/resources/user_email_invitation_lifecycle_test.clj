@@ -45,7 +45,7 @@
                                                :pass "password"})
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body] :as message}]
+                  postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*" body))]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -54,7 +54,7 @@
                                   (request template-url)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  (get-in [:response :body]))
+                                  (ltu/body))
 
             href              (str user-tpl/resource-type "/" email-invitation/registration-method)
 
@@ -131,78 +131,72 @@
                                                 :body (json/write-str href-create))
                                        (ltu/body->edn)
                                        (ltu/is-status 201))
-              user-id              (get-in resp [:response :body :resource-id])
-              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
+              user-id              (ltu/body-resource-id resp)
+              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
 
-          (let [{email-id :email :as user} (-> session-created-user
-                                               (request (str p/service-context user-id))
-                                               (ltu/body->edn)
-                                               (get-in [:response :body]))]
+              {email-id :email :as user} (-> session-created-user
+                                             (request (str p/service-context user-id))
+                                             (ltu/body->edn)
+                                             (ltu/body))]
 
-            ;; verify name attribute (should default to username if no :name)
-            (is (= "jane@example.org" (:name user)))
+          ;; verify name attribute (should default to username if no :name)
+          (is (= "jane@example.org" (:name user)))
 
 
-            ; 1 identifier is visible for the created user one for email
-            (-> session-created-user
-                (request (str p/service-context user-identifier/resource-type))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-count 1))
+          ; 1 identifier is visible for the created user one for email
+          (-> session-created-user
+              (request (str p/service-context user-identifier/resource-type))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-count 1))
 
-            ; one email is visible for the user
-            (-> session-created-user
-                (request (str p/service-context email-id))
-                (ltu/body->edn)
-                (ltu/is-status 200))
+          ; one email is visible for the user
+          (-> session-created-user
+              (request (str p/service-context email-id))
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
-            ;; check validation of resource
-            (is (not (nil? @validation-link)))
+          ;; check validation of resource
+          (is (not (nil? @validation-link)))
 
-            (-> session-admin
-                (request (str p/service-context user-id))
-                (ltu/body->edn)
-                (ltu/is-status 200))
+          (-> session-admin
+              (request (str p/service-context user-id))
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
-            (is (re-matches #"^email.*successfully validated$" (-> session-anon
-                                                                   (request @validation-link)
-                                                                   (ltu/body->edn)
-                                                                   (ltu/is-status 200)
-                                                                   :response
-                                                                   :body
-                                                                   :message)))
+          (is (re-matches #"^email.*successfully validated$" (-> session-anon
+                                                                 (request @validation-link)
+                                                                 (ltu/body->edn)
+                                                                 (ltu/is-status 200)
+                                                                 (ltu/body)
+                                                                 :message)))
 
-            (let [{:keys [state] :as user} (-> session-created-user
-                                               (request (str p/service-context user-id))
-                                               (ltu/body->edn)
-                                               :response
-                                               :body)]
-              (is (= "ACTIVE" state)))
+          (let [{:keys [state]} (-> session-created-user
+                                    (request (str p/service-context user-id))
+                                    (ltu/body->edn)
+                                    (ltu/body))]
+            (is (= "ACTIVE" state)))
 
-            (let [{:keys [validated] :as email} (-> session-created-user
-                                                    (request (str p/service-context email-id))
-                                                    (ltu/body->edn)
-                                                    :response
-                                                    :body)]
-              (is validated))
+          (let [{:keys [validated]} (-> session-created-user
+                                        (request (str p/service-context email-id))
+                                        (ltu/body->edn)
+                                        (ltu/body))]
+            (is validated))
 
-            ;; user can delete his account
-            (-> session-created-user
-                (request (str p/service-context user-id)
-                         :request-method :delete)
-                (ltu/body->edn)
-                (ltu/is-status 200))
+          ;; user can delete his account
+          (-> session-created-user
+              (request (str p/service-context user-id)
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
-            (-> session-created-user
-                (request (str p/service-context user-identifier/resource-type))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-count 0))
+          (-> session-created-user
+              (request (str p/service-context user-identifier/resource-type))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-count 0))
 
-            (-> session-created-user
-                (request (str p/service-context email-id))
-                (ltu/body->edn)
-                (ltu/is-status 404)))
-          )
-
-        ))))
+          (-> session-created-user
+              (request (str p/service-context email-id))
+              (ltu/body->edn)
+              (ltu/is-status 404)))))))

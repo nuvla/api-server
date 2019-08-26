@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.middleware.redirect-cep-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.middleware.redirect-cep :as t]))
 
 

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.credential-lifecycle-test
   (:require
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]

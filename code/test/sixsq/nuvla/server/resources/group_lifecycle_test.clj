@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.group-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -96,8 +96,7 @@
         (let [{:keys [id name description tags users] :as body} (-> session-admin
                                                                     (request abs-uri)
                                                                     (ltu/body->edn)
-                                                                    :response
-                                                                    :body)]
+                                                                    (ltu/body))]
           (is (= id expected-id))
           (is (= name name-attr))
           (is (= description description-attr))
@@ -116,11 +115,10 @@
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
-            (let [{updated-users :users :as body} (-> session-admin
-                                                      (request abs-uri)
-                                                      (ltu/body->edn)
-                                                      :response
-                                                      :body)]
+            (let [{updated-users :users} (-> session-admin
+                                             (request abs-uri)
+                                             (ltu/body->edn)
+                                             (ltu/body))]
               (is (= users updated-users)))))
 
         ;; delete should work

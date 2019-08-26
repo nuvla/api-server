@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.data-object-template-lifecycle-test
   (:require
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -57,21 +57,11 @@
                       (ltu/entries))]
 
       (doseq [entry entries]
-        (let [ops        (ltu/operations->map entry)
-              entry-url  (str p/service-context (:id entry))
-
-              entry-resp (-> session-admin
-                             (request entry-url)
-                             (ltu/is-status 200)
-                             (ltu/body->edn))
-
-              entry-body (get-in entry-resp [:response :body])]
+        (let [ops       (ltu/operations->map entry)
+              entry-url (str p/service-context (:id entry))]
           (is (nil? (get ops (name :add))))
           (is (nil? (get ops (name :edit))))
           (is (nil? (get ops (name :delete))))
-
-          ;; FIXME: CAL!
-          #_(is (crud/validate (dissoc entry-body :id)))
 
           ;; anonymous access not permitted
           (-> session-anon

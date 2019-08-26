@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.callback-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
@@ -68,7 +68,7 @@
                                    (ltu/body->edn)
                                    (ltu/is-status 201))
 
-          id-test              (get-in resp-test [:response :body :resource-id])
+          id-test              (ltu/body-resource-id resp-test)
 
           location-test        (str p/service-context (-> resp-test ltu/location))
 
@@ -96,8 +96,7 @@
                                            (request test-uri)
                                            (ltu/body->edn)
                                            (ltu/is-status 200)
-                                           :response
-                                           :body)
+                                           (ltu/body))
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)
@@ -110,8 +109,7 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/is-operation-absent :execute)
-                           :response
-                           :body)]
+                           (ltu/body))]
           (is (= "FAILED" (:state callback)))
           (is (not= original-updated-timestamp (:updated callback))))
 
@@ -122,8 +120,7 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/is-operation-absent :execute)
-                           :response
-                           :body)]
+                           (ltu/body))]
           (is (= "SUCCEEDED" (:state callback)))
           (is (not= original-updated-timestamp (:updated callback)))))
 
