@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.auth.utils.acl-test
   (:refer-clojure :exclude [update])
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [are deftest]]
     [sixsq.nuvla.auth.utils.acl :as t]))
 
 

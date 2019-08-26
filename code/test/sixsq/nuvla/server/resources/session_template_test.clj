@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.session-template-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]

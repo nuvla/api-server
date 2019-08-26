@@ -4,7 +4,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.auth.password :as t]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]

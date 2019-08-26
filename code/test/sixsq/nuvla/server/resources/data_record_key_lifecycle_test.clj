@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.data-record-key-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.data-record-key :refer :all]
+    [sixsq.nuvla.server.resources.data-record-key :as t]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -15,7 +15,7 @@
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def valid-entry
@@ -36,7 +36,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists resource-type))
+  (mdtu/check-metadata-exists t/resource-type))
 
 
 (deftest lifecycle
@@ -100,7 +100,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

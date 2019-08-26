@@ -3,7 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as env]
-    [peridot.core :refer :all]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]

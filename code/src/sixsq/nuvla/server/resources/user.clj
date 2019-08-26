@@ -217,8 +217,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (logu/log-and-throw-400 "id is not provided in the document.")))
 
 
-(defn edit-impl [{body :body :as request}]
+(defn edit-impl
   "Returns edited document or exception data in case of an error."
+  [{body :body :as request}]
   (throw-no-id body)
   (try
     (let [current (-> (:id body)

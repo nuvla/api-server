@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.notification-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.notification :refer :all]))
+    [sixsq.nuvla.server.resources.notification :as t]))
 
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def message "message")
@@ -148,7 +148,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {defer-param-kw 5.0}))
+                     :body (json/write-str {t/defer-param-kw 5.0}))
             (ltu/body->edn)
             (ltu/is-status 400))
 
@@ -156,7 +156,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {defer-param-kw 10}))
+                     :body (json/write-str {t/defer-param-kw 10}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -170,7 +170,7 @@
         (-> session-user
             (request defer-url
                      :request-method :post
-                     :body (json/write-str {defer-param-kw 60}))
+                     :body (json/write-str {t/defer-param-kw 60}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -191,7 +191,7 @@
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
                          (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
-        uri          (str p/service-context "resource-metadata/" resource-type)
+        uri          (str p/service-context "resource-metadata/" t/resource-type)
 
         actions      (-> session-user
                          (request uri)
@@ -204,8 +204,8 @@
                           (filter (fn [x] (= "defer" (:name x))))
                           first
                           :input-parameters
-                          (filter (fn [x] (= defer-param-name (:name x))))
+                          (filter (fn [x] (= t/defer-param-name (:name x))))
                           first)]
 
     (is (seq delay-param))
-    (is (= delay-default (get-in delay-param [:value-scope :default])))))
+    (is (= t/delay-default (get-in delay-param [:value-scope :default])))))

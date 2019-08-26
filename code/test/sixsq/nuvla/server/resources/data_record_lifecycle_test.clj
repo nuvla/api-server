@@ -1,18 +1,18 @@
 (ns sixsq.nuvla.server.resources.data-record-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.data-record :refer :all]
+    [sixsq.nuvla.server.resources.data-record :as t]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def ns1-prefix (ltu/random-string "ns1-"))
@@ -211,7 +211,7 @@
                         (request base-uri)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-resource-uri collection-type)
+                        (ltu/is-resource-uri t/collection-type)
                         (ltu/is-count pos?)
                         (ltu/entries))]
 
@@ -318,14 +318,14 @@
         (ltu/location))
 
     (let [cimi-url-ok        (str p/service-context
-                                  resource-type
+                                  t/resource-type
                                   (format "?filter=%s:%s='123.456'" ns1-prefix attr))
           cimi-url-no-result (str p/service-context
-                                  resource-type
+                                  t/resource-type
                                   (format "?filter=%s:%s='xxx'" ns1-prefix attr))
 
           res-all            (-> session-admin
-                                 (request (str p/service-context resource-type))
+                                 (request (str p/service-context t/resource-type))
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (get-in [:response :body]))
@@ -363,10 +363,10 @@
         (ltu/location))
 
     (let [cimi-url-ok        (str p/service-context
-                                  resource-type
+                                  t/resource-type
                                   (format "?filter=%s:att3/%s:att4='456'" ns1-prefix ns1-prefix))
           cimi-url-no-result (str p/service-context
-                                  resource-type
+                                  t/resource-type
                                   (format "?filter=%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix))
           res-ok             (-> session-admin
                                  (request cimi-url-ok)
@@ -423,7 +423,7 @@
 
 
 (deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

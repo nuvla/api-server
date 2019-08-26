@@ -2,16 +2,16 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.event :refer :all]
+    [sixsq.nuvla.server.resources.event :as t]
     [sixsq.nuvla.server.resources.event.test-utils :as tu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context t/resource-type))
 
 
 (def ^:private nb-events 20)

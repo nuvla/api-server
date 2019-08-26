@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.configuration-lifecycle-test-utils
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer :all]
-    [peridot.core :refer :all]
+    [clojure.test :refer [is]]
+    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.configuration :refer :all]
+    [sixsq.nuvla.server.resources.configuration :as cfg]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
-(def base-uri (str p/service-context resource-type))
+(def base-uri (str p/service-context cfg/resource-type))
 
 
 (defn check-lifecycle
@@ -105,7 +105,7 @@
                                  (request base-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (ltu/is-resource-uri collection-type)
+                                 (ltu/is-resource-uri cfg/collection-type)
                                  (ltu/entries))]
         (is ((set (map :id entries)) uri))
         (is (= 1 (count (filter service-matches? entries))))
@@ -183,7 +183,7 @@
 
 (defn check-bad-methods
   []
-  (let [resource-uri (str p/service-context (u/new-resource-id resource-type))]
+  (let [resource-uri (str p/service-context (u/new-resource-id cfg/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
                             [base-uri :delete]
                             [resource-uri :options]

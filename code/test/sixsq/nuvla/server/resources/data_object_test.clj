@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-object-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.data-object :as eo]
     [sixsq.nuvla.server.resources.data.utils :as s3])
   (:import (clojure.lang ExceptionInfo)))

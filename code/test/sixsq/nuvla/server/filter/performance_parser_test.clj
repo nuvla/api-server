@@ -1,12 +1,14 @@
 (ns sixsq.nuvla.server.filter.performance-parser-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.db.filter.parser :as parser]))
+
 
 (defn cimi-filter
   [n op]
   (str/join op (repeat n "(a='1')")))
+
 
 ;;
 ;; This test ensures that the performance of the CIMI filter

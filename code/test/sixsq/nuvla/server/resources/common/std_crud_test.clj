@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.common.std-crud-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.db.impl :as db-impl]
     [sixsq.nuvla.server.resources.common.std-crud :as t])

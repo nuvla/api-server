@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.event-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.event :refer :all]
+    [sixsq.nuvla.server.resources.event :as t]
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
@@ -11,7 +11,7 @@
 
 (def valid-event
   {:id            "event/262626262626262"
-   :resource-type resource-type
+   :resource-type t/resource-type
    :created       event-timestamp
    :updated       event-timestamp
    :acl           {:owners   ["user/joe"]

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.user-lifecycle-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]

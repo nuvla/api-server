@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-service-minio-test
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as service]

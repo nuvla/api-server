@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.session-template-github-lifecycle-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-template :as st]

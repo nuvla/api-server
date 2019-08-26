@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [update])
   (:require
     [buddy.core.keys :as ks]
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [environ.core :as environ]
     [sixsq.nuvla.auth.env-fixture :as env-fixture]
     [sixsq.nuvla.auth.utils.certs :as t]))

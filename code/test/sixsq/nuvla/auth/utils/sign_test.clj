@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.auth.utils.sign-test
   (:refer-clojure :exclude [update])
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest is]]
     [environ.core :as environ]
     [sixsq.nuvla.auth.env-fixture :as env-fixture]
     [sixsq.nuvla.auth.utils.sign :as t]

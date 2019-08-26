@@ -2,14 +2,14 @@
   (:require
     [clojure.test :refer [are deftest]]
     [instaparse.core :as insta]
-    [sixsq.nuvla.db.filter.parser :refer :all]))
+    [sixsq.nuvla.db.filter.parser :as t]))
 
 
 (defn fails-fn
   "Provides a function that will parse a string from the given point
   in the grammar and returns a truthy value if the parsing failed."
   [start]
-  (let [parser (insta/parser filter-grammar-url :start start)]
+  (let [parser (insta/parser t/filter-grammar-url :start start)]
     (fn [s]
       (insta/failure? (parser s)))))
 

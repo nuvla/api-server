@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.notification-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.notification :refer :all]
+    [sixsq.nuvla.server.resources.notification :as t]
     [sixsq.nuvla.server.resources.spec.notification :as notification]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
@@ -11,7 +11,7 @@
 
 (def valid-notification
   {:id                "notification/1234567890"
-   :resource-type     resource-type
+   :resource-type     t/resource-type
    :created           timestamp
    :updated           timestamp
    :acl               {:owners   ["user/joe"]
