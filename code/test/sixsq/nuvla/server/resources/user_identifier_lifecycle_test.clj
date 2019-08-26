@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-identifier-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as env]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]

@@ -1,11 +1,12 @@
 (ns sixsq.nuvla.server.resources.spec.common-test
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.util.spec :as su]))
+
 
 (deftest check-nonblank-string
   (doseq [v #{"ok" " ok" "ok " " ok "}]
@@ -55,6 +56,7 @@
 
 
 (s/def ::common-attrs (su/only-keys-maps common/common-attrs))
+
 
 (deftest check-common-attrs
   (let [date    "2012-01-01T01:23:45.678Z"

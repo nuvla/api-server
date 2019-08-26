@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-1-test
   (:require
-    [clojure.test :refer [are deftest]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.spec.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

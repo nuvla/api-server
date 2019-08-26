@@ -1,21 +1,32 @@
 (ns sixsq.nuvla.db.binding-lifecycle
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [is]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
+
 (s/def ::id string?)
+
+
 (s/def ::long int?)
+
+
 (s/def ::boolean boolean?)
+
+
 (s/def ::string string?)
+
 
 (s/def ::resource (s/keys :req-un [::id ::long ::boolean ::string]))
 
+
 (s/def ::acl ::acl-resource/acl)
 
+
 (def admin-acl {:owners ["group/nuvla-admin"]})
+
 
 (defn check-binding-lifecycle [db-impl]
   (with-open [db db-impl]
@@ -96,5 +107,4 @@
             (is (nil? "retrieve of non-existent resource did not throw an exception"))
             (catch Exception e
               (let [response (ex-data e)]
-                (is (= 404 (:status response))))))
-          )))))
+                (is (= 404 (:status response)))))))))))

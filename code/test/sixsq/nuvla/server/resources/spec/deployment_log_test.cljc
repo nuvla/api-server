@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.deployment-log-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.deployment-log :as t]
     [sixsq.nuvla.server.resources.spec.deployment-log :as dl]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

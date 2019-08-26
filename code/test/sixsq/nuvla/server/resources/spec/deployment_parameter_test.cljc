@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.deployment-parameter-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.module :as t]
     [sixsq.nuvla.server.resources.spec.deployment-parameter :as dp]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

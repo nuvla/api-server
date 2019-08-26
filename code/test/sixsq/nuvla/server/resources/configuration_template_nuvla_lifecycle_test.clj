@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.configuration-template-nuvla-lifecycle-test
   (:require
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-lifecycle-test-utils :as test-utils]

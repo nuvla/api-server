@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.session-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.session :refer :all]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

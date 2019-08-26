@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.credential-api-key-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as env]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]
@@ -14,7 +14,9 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
+
 (use-fixtures :once ltu/with-test-server-fixture)
+
 
 (def base-uri (str p/service-context credential/resource-type))
 
@@ -26,6 +28,7 @@
 (deftest check-strip-session-role
   (is (= ["alpha" "beta"] (t/strip-session-role ["alpha" "session/2d273461-2778-4a66-9017-668f6fed43ae" "beta"])))
   (is (= [] (t/strip-session-role ["session/2d273461-2778-4a66-9017-668f6fed43ae"]))))
+
 
 (deftest lifecycle
   (let [session                     (-> (ltu/ring-app)

@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.resource-metadata :as t]
     [sixsq.nuvla.server.resources.spec.resource-metadata :as spec]
     [sixsq.nuvla.server.resources.spec.resource-metadata-action-test :as action]

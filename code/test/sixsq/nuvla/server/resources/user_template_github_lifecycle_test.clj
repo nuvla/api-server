@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.user-template-github-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]

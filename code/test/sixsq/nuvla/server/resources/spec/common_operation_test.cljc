@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.common-operation-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 

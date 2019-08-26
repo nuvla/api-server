@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.util.es-mapping-test
   (:require
-    [clojure.test :refer [are deftest is testing]]
+    [clojure.test :refer [are deftest]]
     [sixsq.nuvla.db.es.common.es-mapping :as t]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.common-operation :as common-operation]

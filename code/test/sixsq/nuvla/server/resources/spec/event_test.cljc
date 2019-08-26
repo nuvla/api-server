@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.event-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.event :refer :all]
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

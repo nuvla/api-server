@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.cloud-entry-point-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.cloud-entry-point :refer :all]
     [sixsq.nuvla.server.resources.spec.cloud-entry-point :as cep]

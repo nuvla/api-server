@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-item-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-enumeration-test :as enumeration]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-item :as spec]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope-range-test :as range]

@@ -1,17 +1,20 @@
 (ns sixsq.nuvla.server.resources.credential.key-utils-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.credential.key-utils :as t]))
+
 
 (deftest check-chars
   (is (= 56 (count t/secret-chars)))
   (is (= 56 (count t/secret-chars-set)))
   (is (= (set t/secret-chars) t/secret-chars-set)))
 
+
 (deftest check-strip-invalid-chars
   (is (= "" (t/strip-invalid-chars "1lI0oO./-")))
   (is (= "YEA" (t/strip-invalid-chars "-Y1ElAI!."))))
+
 
 (deftest test-digest-valid?-generate
   (is (= 2 (count (t/generate))))

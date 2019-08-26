@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.module-component-test
   (:require
-    [clojure.test :refer [are deftest is]]
+    [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.module-component :as t]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

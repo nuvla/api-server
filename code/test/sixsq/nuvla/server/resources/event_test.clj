@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.event :refer :all]
-    [sixsq.nuvla.server.resources.event.test-utils :as tu :refer [exec-request is-count urlencode-params]]
+    [sixsq.nuvla.server.resources.event.test-utils :as tu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
@@ -68,7 +68,7 @@
        false?
        is)
 
-  (->> (exec-request base-uri "" "user/joe")
+  (->> (tu/exec-request base-uri "" "user/joe")
        ltu/entries
        (map :timestamp)
        tu/ordered-desc?
@@ -76,7 +76,7 @@
 
 
 (deftest check-events-can-be-reordered
-  (->> (exec-request base-uri "?orderby=timestamp:asc" "user/joe")
+  (->> (tu/exec-request base-uri "?orderby=timestamp:asc" "user/joe")
        ltu/entries
        (map :timestamp)
        (tu/ordered-asc?)
@@ -85,7 +85,7 @@
 
 (defn timestamp-paginate-single
   [n]
-  (-> (exec-request base-uri (str "?first=" n "&last=" n) "user/joe")
+  (-> (tu/exec-request base-uri (str "?first=" n "&last=" n) "user/joe")
       ltu/entries
       first
       :timestamp))
@@ -172,7 +172,7 @@
 
 
 (deftest filter-wrong-param
-  (-> (exec-request base-uri "?filter=category='missing end quote" "user/joe")
+  (-> (tu/exec-request base-uri "?filter=category='missing end quote" "user/joe")
       (ltu/is-status 400)
       (get-in [:response :body :message])
       (.startsWith "Invalid CIMI filter. Parse error at line 1, column 11")
