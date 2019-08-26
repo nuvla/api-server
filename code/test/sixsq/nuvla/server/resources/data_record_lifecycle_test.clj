@@ -9,7 +9,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record :refer :all]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
@@ -114,36 +113,36 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-entry))
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ;; anonymous query should also fail
     (-> session-anon
         (request base-uri)
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ;; creation rejected because attribute belongs to unknown namespace
     (-> session-user
         (request base-uri
                  :request-method :post
                  :body (json/write-str entry-wrong-namespace))
-        (t/is-status 406))
+        (ltu/is-status 406))
 
     ;; adding, retrieving and  deleting entry as user should succeed
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
                                :body (json/write-str valid-entry))
-                      (t/body->edn)
-                      (t/is-status 201)
-                      (t/location))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       (let [data-record-acl (-> session-user
                                 (request abs-uri)
-                                (t/body->edn)
-                                (t/is-status 200)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
                                 :response
                                 :body
                                 :acl)]
@@ -155,46 +154,46 @@
       (-> (session (ltu/ring-app))
           (header authn-info-header "user/jane role1 group/nuvla-admin")
           (request abs-uri :request-method :delete)
-          (t/body->edn)
-          (t/is-status 200)))
+          (ltu/body->edn)
+          (ltu/is-status 200)))
 
     ;; adding as user, retrieving and deleting entry as group/nuvla-admin should work
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
                                :body (json/write-str valid-entry))
-                      (t/body->edn)
-                      (t/is-status 201)
-                      (t/location))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       (-> session-admin
           (request abs-uri)
-          (t/body->edn)
-          (t/is-status 200))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
       (-> session-admin
           (request abs-uri
                    :request-method :delete)
-          (t/body->edn)
-          (t/is-status 200))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
       ;; try adding invalid entry
       (-> session-admin
           (request base-uri
                    :request-method :post
                    :body (json/write-str invalid-entry))
-          (t/body->edn)
-          (t/is-status 400)))
+          (ltu/body->edn)
+          (ltu/is-status 400)))
 
     ;; add a new entry
     (let [uri     (-> session-admin
                       (request base-uri
                                :request-method :post
                                :body (json/write-str valid-entry))
-                      (t/body->edn)
-                      (t/is-status 201)
-                      (t/location))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
       (is uri)
@@ -202,33 +201,33 @@
       ;; verify that the new entry is accessible
       (-> session-admin
           (request abs-uri)
-          (t/body->edn)
-          (t/is-status 200)
+          (ltu/body->edn)
+          (ltu/is-status 200)
           (dissoc :acl)                                     ;; ACL added automatically
-          (t/does-body-contain valid-entry))
+          (ltu/does-body-contain valid-entry))
 
       ;; query to see that entry is listed
       (let [entries (-> session-admin
                         (request base-uri)
-                        (t/body->edn)
-                        (t/is-status 200)
-                        (t/is-resource-uri collection-type)
-                        (t/is-count pos?)
-                        (t/entries))]
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-resource-uri collection-type)
+                        (ltu/is-count pos?)
+                        (ltu/entries))]
 
         (is ((set (map :id entries)) uri))
 
         ;; delete the entry
         (-> session-admin
             (request abs-uri :request-method :delete)
-            (t/body->edn)
-            (t/is-status 200))
+            (ltu/body->edn)
+            (ltu/is-status 200))
 
         ;; ensure that it really is gone
         (-> session-admin
             (request abs-uri)
-            (t/body->edn)
-            (t/is-status 404))))))
+            (ltu/body->edn)
+            (ltu/is-status 404))))))
 
 
 (deftest uris-as-keys
@@ -248,16 +247,16 @@
                           (request base-uri
                                    :request-method :post
                                    :body connector-with-namespaced-key)
-                          (t/body->edn)
-                          (t/is-status 201)
-                          (t/location))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
 
         abs-uri       (str p/service-context uri-of-posted)
 
         doc           (-> session-admin
                           (request abs-uri)
-                          (t/body->edn)
-                          (t/is-status 200)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
                           (get-in [:response :body]))]
 
     (is ((keyword (str ns1-prefix ":attr-name")) doc))
@@ -275,15 +274,15 @@
                       (request base-uri
                                :request-method :post
                                :body (json/write-str valid-nested-entry))
-                      (t/body->edn)
-                      (t/is-status 201)
-                      (t/location))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)
 
           doc     (-> session-admin
                       (request abs-uri)
-                      (t/body->edn)
-                      (t/is-status 200)
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
                       (get-in [:response :body]))]
 
       (is (= "enough of nested" (get-in doc [(keyword (str ns1-prefix ":attnested"))
@@ -295,8 +294,8 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str invalid-nested-entry))
-        (t/body->edn)
-        (t/is-status 406))))
+        (ltu/body->edn)
+        (ltu/is-status 406))))
 
 
 (deftest cimi-filter-namespaced-attributes
@@ -314,9 +313,9 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-entry))
-        (t/body->edn)
-        (t/is-status 201)
-        (t/location))
+        (ltu/body->edn)
+        (ltu/is-status 201)
+        (ltu/location))
 
     (let [cimi-url-ok        (str p/service-context
                                   resource-type
@@ -327,20 +326,20 @@
 
           res-all            (-> session-admin
                                  (request (str p/service-context resource-type))
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           res-ok             (-> session-admin
                                  (request cimi-url-ok)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           res-empty          (-> session-admin
                                  (request cimi-url-no-result)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))]
 
       (is (pos? (:count res-all)))
@@ -359,9 +358,9 @@
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-nested-2-levels))
-        (t/body->edn)
-        (t/is-status 201)
-        (t/location))
+        (ltu/body->edn)
+        (ltu/is-status 201)
+        (ltu/location))
 
     (let [cimi-url-ok        (str p/service-context
                                   resource-type
@@ -371,15 +370,15 @@
                                   (format "?filter=%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix))
           res-ok             (-> session-admin
                                  (request cimi-url-ok)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           res-ok-put         (-> session-admin
                                  (request cimi-url-ok
                                           :request-method :put)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           res-ok-put-body    (-> (session (ltu/ring-app))
@@ -388,21 +387,21 @@
                                  (request cimi-url-ok
                                           :request-method :put
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='456'" ns1-prefix ns1-prefix)}))
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           no-result          (-> session-admin
                                  (request cimi-url-no-result)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           no-result-put      (-> session-admin
                                  (request cimi-url-no-result
                                           :request-method :put)
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))
 
           no-result-put-body (-> (session (ltu/ring-app))
@@ -411,8 +410,8 @@
                                  (request cimi-url-no-result
                                           :request-method :put
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix)}))
-                                 (t/body->edn)
-                                 (t/is-status 200)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
                                  (get-in [:response :body]))]
 
       (is (= 1 (:count res-ok)))

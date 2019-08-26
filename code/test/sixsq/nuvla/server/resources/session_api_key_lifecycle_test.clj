@@ -13,7 +13,6 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-api-key :as t]
-    [sixsq.nuvla.server.resources.session-template :as ct]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
     [sixsq.nuvla.server.util.time :as time]))
@@ -22,7 +21,7 @@
 
 (def base-uri (str p/service-context session/resource-type))
 
-(def session-template-base-uri (str p/service-context ct/resource-type))
+(def session-template-base-uri (str p/service-context st/resource-type))
 
 
 (def session-template-api-key {:method      api-key/authn-method

@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record-key :refer :all]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as san]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -54,50 +53,50 @@
         (request (str p/service-context san/resource-type)
                  :request-method :post
                  :body (json/write-str valid-namespace))
-        (t/body->edn)
-        (t/is-status 201))
+        (ltu/body->edn)
+        (ltu/is-status 201))
 
     ;; anonymous create should fail
     (-> session-anon
         (request base-uri
                  :request-method :post
                  :body (json/write-str valid-entry))
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ;; anonymous query should also fail
     (-> session-anon
         (request base-uri)
-        (t/body->edn)
-        (t/is-status 403))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
     ; adding the same attribute twice should fail
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
                                :body (json/write-str valid-entry))
-                      (t/body->edn)
-                      (t/is-status 201)
-                      (t/location))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
           abs-uri (str p/service-context uri)]
 
 
       (-> session-user
           (request abs-uri)
-          (t/body->edn)
-          (t/is-status 200))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
       (-> session-user
           (request base-uri
                    :request-method :post
                    :body (json/write-str valid-entry))
-          (t/body->edn)
-          (t/is-status 409))
+          (ltu/body->edn)
+          (ltu/is-status 409))
 
       (-> session-user
           (request abs-uri :request-method :delete)
-          (t/body->edn)
-          (t/is-status 200)))))
+          (ltu/body->edn)
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods

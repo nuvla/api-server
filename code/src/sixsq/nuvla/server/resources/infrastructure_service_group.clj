@@ -12,7 +12,6 @@ resources. The resources are tied to an infrastructure via the
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.auth.utils :as auth-utils]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -124,7 +123,7 @@ resources. The resources are tied to an infrastructure via the
    'add' response for the request."
   [skeleton]
   (add-impl {:params      {:resource-name resource-type}
-             :nuvla/authn auth-utils/internal-identity
+             :nuvla/authn auth/internal-identity
              :body        skeleton}))
 
 

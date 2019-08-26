@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.common.utils :as cu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as t]
     [sixsq.nuvla.server.resources.spec.resource-metadata-test :as resource-metadata]))
@@ -64,7 +63,7 @@
                                             :response
                                             :body)]
 
-          (is (= (cu/id->uuid id) identifier)))))))
+          (is (= (u/id->uuid id) identifier)))))))
 
 
 (deftest bad-methods
