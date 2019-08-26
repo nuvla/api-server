@@ -45,34 +45,34 @@
                                       :published-port 8022}]})
 
 (deftest callback-module-update
-  (let [session-anon (-> (session (ltu/ring-app))
-                         (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+  (let [session-anon     (-> (session (ltu/ring-app))
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-        module-resource (-> session-user
-                            (request (str p/service-context module/resource-type)
-                                     :request-method :post
-                                     :body (json/write-str (assoc module-entry :content module-content)))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
+        module-resource  (-> session-user
+                             (request (str p/service-context module/resource-type)
+                                      :request-method :post
+                                      :body (json/write-str (assoc module-entry :content module-content)))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
-        create-callback {:action          cmu/action-name
-                         :target-resource {:href module-resource}
-                         :data            {:image  {:image-name image-name
-                                                    :tag        new-image-tag}
-                                           :commit new-commit-msg}}
+        create-callback  {:action          cmu/action-name
+                          :target-resource {:href module-resource}
+                          :data            {:image  {:image-name image-name
+                                                     :tag        new-image-tag}
+                                            :commit new-commit-msg}}
 
-        callback-uri (str p/service-context (-> session-admin
-                                                (request base-uri
-                                                         :request-method :post
-                                                         :body (json/write-str create-callback))
-                                                (ltu/body->edn)
-                                                (ltu/is-status 201)
-                                                :response
-                                                :body
-                                                :resource-id))
+        callback-uri     (str p/service-context (-> session-admin
+                                                    (request base-uri
+                                                             :request-method :post
+                                                             :body (json/write-str create-callback))
+                                                    (ltu/body->edn)
+                                                    (ltu/is-status 201)
+                                                    :response
+                                                    :body
+                                                    :resource-id))
         callback-trigger (str p/service-context (-> session-admin
                                                     (request callback-uri)
                                                     (ltu/body->edn)

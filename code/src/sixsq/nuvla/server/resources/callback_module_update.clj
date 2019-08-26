@@ -13,10 +13,10 @@
 
 (defn update-component!
   [module-id data]
-  (let [module (:body (crud/retrieve {:params         {:uuid          (u/id->uuid module-id)
-                                                       :resource-name m/resource-type}
-                                      :request-method :get
-                                      :nuvla/authn    auth/internal-identity}))
+  (let [module     (:body (crud/retrieve {:params         {:uuid          (u/id->uuid module-id)
+                                                           :resource-name m/resource-type}
+                                          :request-method :get
+                                          :nuvla/authn    auth/internal-identity}))
         new-module (update module :content #(merge % data))]
     (crud/edit {:params         {:uuid          (u/id->uuid module-id)
                                  :resource-name m/resource-type}

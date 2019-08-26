@@ -14,8 +14,8 @@
 (defn edit-deployment
   [module-content request]
   (let [deployment-current (:body (crud/retrieve request))
-        deployment-new (update-in deployment-current [:module :content] #(merge % module-content))
-        new-request (assoc request :request-method :put :body deployment-new)]
+        deployment-new     (update-in deployment-current [:module :content] #(merge % module-content))
+        new-request        (assoc request :request-method :put :body deployment-new)]
     (crud/edit new-request)))
 
 
@@ -27,9 +27,9 @@
 
 (defmethod callback/execute action-name
   [{{dpl-id :href} :target-resource :as callback-resource} request]
-  (let [depl-req-base {:params         {:uuid          (u/id->uuid dpl-id)
-                                        :resource-name depl/resource-type}
-                       :request-method :get
-                       :nuvla/authn    (:nuvla/authn request)}
+  (let [depl-req-base  {:params         {:uuid          (u/id->uuid dpl-id)
+                                         :resource-name depl/resource-type}
+                        :request-method :get
+                        :nuvla/authn    (:nuvla/authn request)}
         module-content (:data callback-resource)]
     (update-deployment! module-content depl-req-base)))
