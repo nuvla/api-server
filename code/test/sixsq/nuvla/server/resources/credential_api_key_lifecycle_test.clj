@@ -50,7 +50,7 @@
                                         (request template-url)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
-                                        (get-in [:response :body]))
+                                        (ltu/body))
 
         create-import-no-href       {:template (ltu/strip-unwanted-attrs template)}
 
@@ -114,7 +114,7 @@
                                   :body (json/write-str create-import-href))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -141,8 +141,7 @@
                                                (request abs-uri)
                                                (ltu/body->edn)
                                                (ltu/is-status 200)
-                                               :response
-                                               :body)]
+                                               (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
@@ -165,7 +164,7 @@
                                   :body (json/write-str create-import-href-no-ttl))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -191,8 +190,7 @@
                                                (request abs-uri)
                                                (ltu/body->edn)
                                                (ltu/is-status 200)
-                                               :response
-                                               :body)]
+                                               (ltu/body))]
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is (nil? expiry))
@@ -212,7 +210,7 @@
                                   :body (json/write-str create-import-href-zero-ttl))
                          (ltu/body->edn)
                          (ltu/is-status 201))
-          id         (get-in resp [:response :body :resource-id])
+          id         (ltu/body-resource-id resp)
           secret-key (get-in resp [:response :body :secret-key])
           uri        (-> resp
                          (ltu/location))
@@ -238,8 +236,7 @@
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            (ltu/is-status 200)
-                                                           :response
-                                                           :body)]
+                                                           (ltu/body))]
         (is digest)
         (is (key-utils/valid? secret-key digest))
         (is (nil? expiry))
@@ -264,8 +261,7 @@
                            (request abs-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           :response
-                           :body)]
+                           (ltu/body))]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread))))
@@ -291,8 +287,7 @@
                            (request abs-uri)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           :response
-                           :body)]
+                           (ltu/body))]
 
           (is (= (dissoc expected :updated) (dissoc reread :updated)))
           (is (not= (:updated expected) (:updated reread)))))

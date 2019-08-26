@@ -98,7 +98,7 @@
           (request template-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body])))
+          (ltu/body)))
 
     ;; get user template so that user resources can be tested
     (let [name-attr            "name"
@@ -284,8 +284,7 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state)))
 
                   (reset-callback! cb-id)
@@ -300,8 +299,7 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state)))
 
                   (is (nil? (uiu/user-identifier->user-id :mitreid mitreid/registration-method user-number)))
@@ -318,8 +316,7 @@
                                          (request (str p/service-context cb-id))
                                          (ltu/body->edn)
                                          (ltu/is-status 200)
-                                         :response
-                                         :body
+                                         (ltu/body)
                                          :state)))
 
 
@@ -349,6 +346,5 @@
                                       (request (str p/service-context cb-id))
                                       (ltu/body->edn)
                                       (ltu/is-status 200)
-                                      :response
-                                      :body
+                                      (ltu/body)
                                       :state))))))))))))

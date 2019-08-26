@@ -75,7 +75,7 @@
                       (request abs-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (get-in [:response :body]))]
+                      (ltu/body))]
 
       (is (= "schema-org" (:prefix doc)))
       (is (= "https://schema-org/a/b/c.md" (:uri doc)))
@@ -85,7 +85,7 @@
           (request "/api/data-record-key-prefix")
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body]))
+          (ltu/body))
 
       ;; trying to create another namespace with same name is forbidden
       (-> session-admin
@@ -94,9 +94,7 @@
                    :body (json/write-str namespace-same-prefix))
           (ltu/body->edn)
           (ltu/is-status 409)
-          (get-in [:response :body :message])
-          (= (str "conflict with " uri))
-          is)
+          (ltu/message-matches (str "conflict with " uri)))
 
       ;; trying to create another namespace with same uri is forbidden
       (-> session-admin
@@ -105,9 +103,7 @@
                    :body (json/write-str namespace-same-uri))
           (ltu/body->edn)
           (ltu/is-status 409)
-          (get-in [:response :body :message])
-          (= (str "conflict with " uri))
-          is)
+          (ltu/message-matches (str "conflict with " uri)))
 
       ;; trying to create another namespace with other name and URI is ok
       (-> session-admin

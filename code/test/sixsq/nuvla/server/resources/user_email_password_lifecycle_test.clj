@@ -56,7 +56,7 @@
                                    (request template-url)
                                    (ltu/body->edn)
                                    (ltu/is-status 200)
-                                   (get-in [:response :body]))
+                                   (ltu/body))
 
             href               (str user-tpl/resource-type "/" email-password/registration-method)
 
@@ -131,14 +131,14 @@
                                                 :body (json/write-str href-create))
                                        (ltu/body->edn)
                                        (ltu/is-status 201))
-              user-id              (get-in resp [:response :body :resource-id])
+              user-id              (ltu/body-resource-id resp)
               session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
 
               {credential-id :credential-password,
                email-id      :email :as user} (-> session-created-user
                                                   (request (str p/service-context user-id))
                                                   (ltu/body->edn)
-                                                  (get-in [:response :body]))]
+                                                  (ltu/body))]
 
           ;; verify name attribute (should default to username if no :name)
           (is (= "jane@example.org" (:name user)))
@@ -179,22 +179,19 @@
                                                                  (request @validation-link)
                                                                  (ltu/body->edn)
                                                                  (ltu/is-status 200)
-                                                                 :response
-                                                                 :body
+                                                                 (ltu/body)
                                                                  :message)))
 
           (let [{:keys [state]} (-> session-created-user
                                     (request (str p/service-context user-id))
                                     (ltu/body->edn)
-                                    :response
-                                    :body)]
+                                    (ltu/body))]
             (is (= "ACTIVE" state)))
 
           (let [{:keys [validated]} (-> session-created-user
                                         (request (str p/service-context email-id))
                                         (ltu/body->edn)
-                                        :response
-                                        :body)]
+                                        (ltu/body))]
             (is validated))
 
           ;; user can delete his account
@@ -230,14 +227,14 @@
                                                                   [:template :username] "jane@example.org")))
                                        (ltu/body->edn)
                                        (ltu/is-status 409))
-              user-id              (get-in resp [:response :body :resource-id])
+              user-id              (ltu/body-resource-id resp)
               session-created-user (header session authn-info-header
                                            (str user-id " group/nuvla-user group/nuvla-anon"))
 
               {:keys [email]} (-> session-created-user
                                   (request (str p/service-context user-id))
                                   (ltu/body->edn)
-                                  (get-in [:response :body]))]
+                                  (ltu/body))]
 
           ; credential cleanup
           (-> session-admin

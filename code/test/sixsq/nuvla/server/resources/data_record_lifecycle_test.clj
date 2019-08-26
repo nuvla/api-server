@@ -143,8 +143,7 @@
                                 (request abs-uri)
                                 (ltu/body->edn)
                                 (ltu/is-status 200)
-                                :response
-                                :body
+                                (ltu/body)
                                 :acl)]
 
         ;; check the default ACL
@@ -257,7 +256,7 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (get-in [:response :body]))]
+                          (ltu/body))]
 
     (is ((keyword (str ns1-prefix ":attr-name")) doc))
     (is (= "123.456" ((keyword (str ns1-prefix ":attr-name")) doc)))))
@@ -283,7 +282,7 @@
                       (request abs-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (get-in [:response :body]))]
+                      (ltu/body))]
 
       (is (= "enough of nested" (get-in doc [(keyword (str ns1-prefix ":attnested"))
                                              (keyword (str ns2-prefix ":subnested"))
@@ -328,19 +327,19 @@
                                  (request (str p/service-context t/resource-type))
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           res-ok             (-> session-admin
                                  (request cimi-url-ok)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           res-empty          (-> session-admin
                                  (request cimi-url-no-result)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))]
+                                 (ltu/body))]
 
       (is (pos? (:count res-all)))
       (is (= 1 (:count res-ok)))
@@ -372,14 +371,14 @@
                                  (request cimi-url-ok)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           res-ok-put         (-> session-admin
                                  (request cimi-url-ok
                                           :request-method :put)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           res-ok-put-body    (-> (session (ltu/ring-app))
                                  (content-type "application/x-www-form-urlencoded")
@@ -389,20 +388,20 @@
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='456'" ns1-prefix ns1-prefix)}))
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           no-result          (-> session-admin
                                  (request cimi-url-no-result)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           no-result-put      (-> session-admin
                                  (request cimi-url-no-result
                                           :request-method :put)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))
+                                 (ltu/body))
 
           no-result-put-body (-> (session (ltu/ring-app))
                                  (content-type "application/x-www-form-urlencoded")
@@ -412,7 +411,7 @@
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix)}))
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 (get-in [:response :body]))]
+                                 (ltu/body))]
 
       (is (= 1 (:count res-ok)))
       (is (= 0 (:count no-result)))

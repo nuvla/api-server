@@ -116,8 +116,7 @@
                             (request abs-uri)
                             (ltu/body->edn)
                             (ltu/is-status 200)
-                            :response
-                            :body)]
+                            (ltu/body))]
 
         (is (= {:id         expected-id
                 :identifier test-identifier

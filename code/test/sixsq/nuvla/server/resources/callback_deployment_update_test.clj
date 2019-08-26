@@ -153,8 +153,7 @@
                                                                    :body (json/write-str callback-body))
                                                           (ltu/body->edn)
                                                           (ltu/is-status 201)
-                                                          :response
-                                                          :body
+                                                          (ltu/body)
                                                           :resource-id))
               callback-execute (str p/service-context (-> session-admin
                                                           (request callback-url)

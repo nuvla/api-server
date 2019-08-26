@@ -34,8 +34,7 @@
                                                                      :body (json/write-str create-callback-succeeds))
                                                             (ltu/body->edn)
                                                             (ltu/is-status 201)
-                                                            :response
-                                                            :body
+                                                            (ltu/body)
                                                             :resource-id))
 
         trigger-succeeds         (str p/service-context (-> session-admin
@@ -50,8 +49,7 @@
                                                                      :body (json/write-str create-callback-fails))
                                                             (ltu/body->edn)
                                                             (ltu/is-status 201)
-                                                            :response
-                                                            :body
+                                                            (ltu/body)
                                                             :resource-id))
 
         trigger-fails            (str p/service-context (-> session-admin

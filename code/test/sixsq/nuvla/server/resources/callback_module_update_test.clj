@@ -70,8 +70,7 @@
                                                              :body (json/write-str create-callback))
                                                     (ltu/body->edn)
                                                     (ltu/is-status 201)
-                                                    :response
-                                                    :body
+                                                    (ltu/body)
                                                     :resource-id))
         callback-trigger (str p/service-context (-> session-admin
                                                     (request callback-uri)
@@ -87,8 +86,7 @@
     (let [new-content (-> session-admin
                           (request (str p/service-context module-resource))
                           (ltu/body->edn)
-                          :response
-                          :body
+                          (ltu/body)
                           :content)]
       (is (= (-> new-content :commit) new-commit-msg))
       (is (= (-> new-content :image :image-name) image-name))

@@ -116,7 +116,7 @@
                                                                               :acl valid-acl)))
                             (ltu/body->edn)
                             (ltu/is-status 201)
-                            (get-in [:response :body :resource-id]))]
+                            (ltu/body-resource-id))]
 
       (let [state-url (str p/service-context state-id)]
 

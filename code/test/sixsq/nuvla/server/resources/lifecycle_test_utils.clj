@@ -56,8 +56,13 @@
   [m re]
   `((fn [m# re#]
       (let [message# (get-in m# [:response :body :message])]
-        (is (re-matches re# message#) (str "Message does not match pattern. " (or message# "nil") " " re#))
-        m#)) ~m ~re))
+        (if (string? re#)
+          (do
+            (is (.startsWith (or message# "") re#) (str "Message does not start with string. " (or message# "nil") " " re#))
+            m#)
+          (do
+            (is (re-matches re# message#) (str "Message does not match pattern. " " " re#))
+            m#)))) ~m ~re))
 
 
 (defmacro is-status
@@ -231,6 +236,11 @@
   (get-in m [:response :body]))
 
 
+(defn body-resource-id
+  [m]
+  (get-in m [:response :body :resource-id]))
+
+
 (defn body->edn
   [m]
   (if-let [body-content (body m)]
@@ -263,12 +273,6 @@
   (pprint response)
   (println message "<<--")
   response)
-
-
-(defn dump-message
-  [request]
-  (println (get-in request [:response :body :message]))
-  request)
 
 
 (defn refresh-es-indices

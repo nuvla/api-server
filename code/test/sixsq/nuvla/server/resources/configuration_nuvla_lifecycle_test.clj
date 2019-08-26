@@ -31,11 +31,12 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         template-url  (str p/service-context ct/resource-type "/" service)
-        resp          (-> session-admin
+        template      (-> session-admin
                           (request template-url)
                           (ltu/body->edn)
-                          (ltu/is-status 200))
-        template      (get-in resp [:response :body])
+                          (ltu/is-status 200)
+                          (ltu/body))
+
         valid-create  {:template (ltu/strip-unwanted-attrs (assoc template attr-kw attr-value))}
 
         uri           (str cfg/resource-type "/" service)

@@ -74,7 +74,7 @@
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/is-operation-present :stop)
-                             (get-in [:response :body]))
+                             (ltu/body))
           zookeeper-path (some-> job :tags first)]
 
       (is (= "QUEUED" (:state job)))
@@ -87,7 +87,7 @@
           (request "/api/job")
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body]))
+          (ltu/body))
 
       (-> session-admin
           (request abs-uri :request-method :put
@@ -123,8 +123,7 @@
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (ltu/is-operation-present :stop)
-                                 :response
-                                 :body
+                                 (ltu/body)
                                  :tags
                                  first)]
       (is (str/starts-with? zookeeper-path (str zk-job-path-start-subs "050-"))))))

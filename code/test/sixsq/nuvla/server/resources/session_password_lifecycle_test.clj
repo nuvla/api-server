@@ -62,8 +62,7 @@
                               (request @validation-link)
                               (ltu/body->edn)
                               (ltu/is-status 200)
-                              :response
-                              :body
+                              (ltu/body)
                               :message))))
         user-id))))
 
@@ -146,7 +145,7 @@
                            (ltu/body->edn)
                            (ltu/is-set-cookie)
                            (ltu/is-status 201))
-            id         (get-in resp [:response :body :resource-id])
+            id         (ltu/body-resource-id resp)
 
             token      (get-in resp [:response :cookies authn-cookie :value])
             authn-info (if token (sign/unsign-cookie-info token) {})

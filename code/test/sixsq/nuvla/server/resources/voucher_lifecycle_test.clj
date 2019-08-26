@@ -203,15 +203,13 @@
                        :body (json/write-str updated))
               (ltu/body->edn)
               (ltu/is-status 200)
-              :response
-              :body)
+              (ltu/body))
 
           (let [updated-body (-> session-admin
                                  (request admin-abs-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 :response
-                                 :body)]
+                                 (ltu/body))]
 
             (is (= "scientists@university.com" (:target-audience updated-body))))))
 

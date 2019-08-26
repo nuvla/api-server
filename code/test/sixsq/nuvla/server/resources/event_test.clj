@@ -174,6 +174,4 @@
 (deftest filter-wrong-param
   (-> (tu/exec-request base-uri "?filter=category='missing end quote" "user/joe")
       (ltu/is-status 400)
-      (get-in [:response :body :message])
-      (.startsWith "Invalid CIMI filter. Parse error at line 1, column 11")
-      is))
+      (ltu/message-matches "Invalid CIMI filter. Parse error at line 1, column 11")))

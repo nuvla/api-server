@@ -112,8 +112,7 @@
                           (ltu/is-status 200)
                           (ltu/is-operation-present :edit)
                           (ltu/is-operation-present :delete)
-                          :response
-                          :body)]
+                          (ltu/body))]
 
           (is (= service-name (:name service)))
           (is (= service-desc (:description service)))

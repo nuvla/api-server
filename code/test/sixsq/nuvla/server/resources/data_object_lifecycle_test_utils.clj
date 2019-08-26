@@ -197,8 +197,7 @@
       (request template-url)
       (ltu/body->edn)
       (ltu/is-status 200)
-      :response
-      :body))
+      (ltu/body)))
 
 
 (defn full-eo-lifecycle
@@ -371,8 +370,7 @@
                                                    (ltu/is-operation-absent :ready)
                                                    (ltu/is-operation-absent :download)
                                                    (ltu/is-status 200)
-                                                   :response
-                                                   :body)
+                                                   (ltu/body))
 
                   updated-acl (update acl :view-acl conj username-view)
 
@@ -394,8 +392,7 @@
                               (request abs-uri)
                               (ltu/body->edn)
                               (ltu/is-status 200)
-                              :response
-                              :body)]
+                              (ltu/body))]
 
               (is (= "NEW_VALUE_OK" (:name updated)))
               (is (not= "BAD_VALUE_IGNORED" (:state updated))))
@@ -560,8 +557,7 @@
                                                       :request-method :post)
                                              (ltu/body->edn)
                                              (ltu/is-status 303)
-                                             :response
-                                             :body
+                                             (ltu/body)
                                              :uri)]
                         (is (str/starts-with? download-uri "http")))))))
 

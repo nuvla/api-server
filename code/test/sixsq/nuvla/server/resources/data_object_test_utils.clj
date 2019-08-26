@@ -39,11 +39,12 @@
                            (content-type "application/json"))
         session-admin  (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-        resp           (-> session-admin
+        template       (-> session-admin
                            (request template-url)
                            (ltu/body->edn)
-                           (ltu/is-status 200))
-        template       (get-in resp [:response :body])
+                           (ltu/is-status 200)
+                           (ltu/body))
+
         valid-create   {:template (-> template
                                       ltu/strip-unwanted-attrs
                                       (assoc :instanceName (new-instance-name objectType)))}

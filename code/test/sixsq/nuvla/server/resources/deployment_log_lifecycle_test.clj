@@ -89,7 +89,7 @@
     ;; create a deployment log as an admin user using internal utility function
     (let [resp-test     {:response (t/create-log parent-id session-id service)}
 
-          id-test       (get-in resp-test [:response :body :resource-id])
+          id-test       (ltu/body-resource-id resp-test)
 
           location-test (str p/service-context (-> resp-test ltu/location))
 

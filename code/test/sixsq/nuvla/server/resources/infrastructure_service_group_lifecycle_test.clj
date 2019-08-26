@@ -109,8 +109,7 @@
                               (ltu/is-status 200)
                               (ltu/is-operation-present :edit)
                               (ltu/is-operation-present :delete)
-                              :response
-                              :body)]
+                              (ltu/body))]
 
         (is (= service-group-name (:name service-group)))
         (is (= "http://my-documentation.org" (:documentation service-group)))
@@ -128,8 +127,7 @@
                                                                                   (assoc :acl {:owners ["user/jane"]}))))
                                                (ltu/body->edn)
                                                (ltu/is-status 201)
-                                               :response
-                                               :body
+                                               (ltu/body)
                                                :resource-id)))
 
               updated-service-group (-> session
@@ -138,8 +136,7 @@
                                         (ltu/is-status 200)
                                         (ltu/is-operation-present :edit)
                                         (ltu/is-operation-present :delete)
-                                        :response
-                                        :body)
+                                        (ltu/body))
 
               service-hrefs         (->> updated-service-group
                                          :infrastructure-services

@@ -96,8 +96,7 @@
         (let [{:keys [id name description tags users] :as body} (-> session-admin
                                                                     (request abs-uri)
                                                                     (ltu/body->edn)
-                                                                    :response
-                                                                    :body)]
+                                                                    (ltu/body))]
           (is (= id expected-id))
           (is (= name name-attr))
           (is (= description description-attr))
@@ -119,8 +118,7 @@
             (let [{updated-users :users} (-> session-admin
                                              (request abs-uri)
                                              (ltu/body->edn)
-                                             :response
-                                             :body)]
+                                             (ltu/body))]
               (is (= users updated-users)))))
 
         ;; delete should work

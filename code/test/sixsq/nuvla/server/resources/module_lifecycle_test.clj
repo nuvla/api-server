@@ -111,8 +111,7 @@
                           (request abs-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          :response
-                          :body
+                          (ltu/body)
                           :content)]
           (is (= valid-content (select-keys content (keys valid-content)))))
 
@@ -139,8 +138,7 @@
                                     :body (json/write-str valid-entry))
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           :response
-                           :body
+                           (ltu/body)
                            :versions)]
           (is (= 7 (count versions)))
 
@@ -150,8 +148,7 @@
                                  (request (str abs-uri i))
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
-                                 :response
-                                 :body
+                                 (ltu/body)
                                  :content
                                  :id)]
               (is (= (-> versions (nth n) :href) content-id))

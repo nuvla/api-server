@@ -85,7 +85,7 @@
                             (ltu/body->edn)
                             (ltu/is-status 201))
 
-          id-test       (get-in resp-test [:response :body :resource-id])
+          id-test       (ltu/body-resource-id resp-test)
 
           location-test (str p/service-context (-> resp-test ltu/location))
 

@@ -38,8 +38,7 @@
                   (ltu/is-resource-uri t/resource-type)
                   (ltu/is-operation-absent :edit)
                   (ltu/is-operation-absent :delete)
-                  :response
-                  :body)]
+                  (ltu/body))]
 
       (stu/is-valid ::cep/resource cep))
 

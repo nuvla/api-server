@@ -168,8 +168,7 @@
                                    (request credential-url)
                                    (ltu/body->edn)
                                    (ltu/is-status 200)
-                                   :response
-                                   :body)]
+                                   (ltu/body))]
 
             ;; verify that the credential has the correct metadata
             (is (:name credential))

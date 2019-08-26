@@ -45,8 +45,7 @@
                                (request template-url)
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               :response
-                               :body)
+                               (ltu/body))
 
         create-no-href     {:template (-> template
                                           ltu/strip-unwanted-attrs
@@ -99,7 +98,7 @@
                                :body (json/write-str create-href))
                       (ltu/body->edn)
                       (ltu/is-status 201))
-          id      (get-in resp [:response :body :resource-id])
+          id      (ltu/body-resource-id resp)
           uri     (-> resp
                       (ltu/location))
           abs-uri (str p/service-context uri)]
@@ -129,8 +128,7 @@
                                                      (request abs-uri)
                                                      (ltu/body->edn)
                                                      (ltu/is-status 200)
-                                                     :response
-                                                     :body)]
+                                                     (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))

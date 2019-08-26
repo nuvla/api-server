@@ -41,7 +41,7 @@
                                (request template-url)
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (get-in [:response :body]))
+                               (ltu/body))
 
         description-attr   "description"
         tags-attr          ["one", "two"]
@@ -110,7 +110,7 @@
                                             :body (json/write-str href-create))
                                    (ltu/body->edn)
                                    (ltu/is-status 201))
-          user-id              (get-in resp [:response :body :resource-id])
+          user-id              (ltu/body-resource-id resp)
 
           username-id          (get-in href-create [:template :username])
 
@@ -120,7 +120,7 @@
                                                      (request (str p/service-context user-id))
                                                      (ltu/body->edn)
                                                      (ltu/is-status 200)
-                                                     (get-in [:response :body]))]
+                                                     (ltu/body))]
 
       ;; verify the ACL of the user
       (let [user-acl (:acl user)]
@@ -174,8 +174,7 @@
       (let [{:keys [state]} (-> session-created-user
                                 (request (str p/service-context user-id))
                                 (ltu/body->edn)
-                                :response
-                                :body)]
+                                (ltu/body))]
         (is (= "ACTIVE" state)))
 
       ;; try to create a second user with the same identifier
@@ -186,7 +185,7 @@
                                  :body (json/write-str (assoc-in href-create [:template :username] "user/jane")))
                         (ltu/body->edn)
                         (ltu/is-status 409))
-            user-id (get-in resp [:response :body :resource-id])]
+            user-id (ltu/body-resource-id resp)]
 
         ; no dangling credentials
         (-> session-admin

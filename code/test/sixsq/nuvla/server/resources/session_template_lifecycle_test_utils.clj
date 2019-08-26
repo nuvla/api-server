@@ -133,16 +133,14 @@
       (let [{:keys [id instance]} (-> session-anon
                                       (request abs-uri)
                                       (ltu/body->edn)
-                                      :response
-                                      :body)]
+                                      (ltu/body))]
         (is (= id (str st/resource-type "/" instance))))
 
       ;; verify that editing/updating the template works
       (let [orig-template    (-> session-anon
                                  (request abs-uri)
                                  (ltu/body->edn)
-                                 :response
-                                 :body)
+                                 (ltu/body))
             updated-template (assoc orig-template :name "UPDATED_NAME")]
 
         (-> session-admin
@@ -155,8 +153,7 @@
         (let [reread-template (-> session-anon
                                   (request abs-uri)
                                   (ltu/body->edn)
-                                  :response
-                                  :body)]
+                                  (ltu/body))]
 
           (is (= (dissoc orig-template :name :updated) (dissoc reread-template :name :updated)))
           (is (= "UPDATED_NAME" (:name reread-template)))

@@ -133,8 +133,7 @@
         (is (= jane-credential (-> session-admin
                                    (request (str p/service-context credential-password))
                                    (ltu/body->edn)
-                                   :response
-                                   :body)))
+                                   (ltu/body))))
 
         (-> session-anon
             (request @reset-link)
@@ -146,8 +145,7 @@
         (is (not= jane-credential (-> session-admin
                                       (request (str p/service-context credential-password))
                                       (ltu/body->edn)
-                                      :response
-                                      :body)))
+                                      (ltu/body))))
 
         (-> session-anon
             (request base-uri

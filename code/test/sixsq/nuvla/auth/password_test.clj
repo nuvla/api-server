@@ -81,8 +81,7 @@
           {existing-users :users :as body} (-> session-admin
                                                (request admin-group-uri)
                                                (ltu/body->edn)
-                                               :response
-                                               :body)]
+                                               (ltu/body))]
 
       (-> session-admin
           (request admin-group-uri

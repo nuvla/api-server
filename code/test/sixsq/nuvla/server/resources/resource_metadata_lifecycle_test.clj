@@ -60,8 +60,7 @@
                                (ltu/is-operation-absent :add)
                                (ltu/is-operation-absent :edit)
                                (ltu/is-operation-absent :delete)
-                               :response
-                               :body)]
+                               (ltu/body))]
 
           (is (= (u/id->uuid id) identifier)))))))
 

@@ -81,7 +81,7 @@
           (request template-url)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (get-in [:response :body])))
+          (ltu/body)))
 
     ;; get user template so that user resources can be tested
     (let [name-attr            "name"

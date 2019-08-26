@@ -68,7 +68,7 @@
                                    (ltu/body->edn)
                                    (ltu/is-status 201))
 
-          id-test              (get-in resp-test [:response :body :resource-id])
+          id-test              (ltu/body-resource-id resp-test)
 
           location-test        (str p/service-context (-> resp-test ltu/location))
 
@@ -96,8 +96,7 @@
                                            (request test-uri)
                                            (ltu/body->edn)
                                            (ltu/is-status 200)
-                                           :response
-                                           :body)
+                                           (ltu/body))
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)
@@ -110,8 +109,7 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/is-operation-absent :execute)
-                           :response
-                           :body)]
+                           (ltu/body))]
           (is (= "FAILED" (:state callback)))
           (is (not= original-updated-timestamp (:updated callback))))
 
@@ -122,8 +120,7 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/is-operation-absent :execute)
-                           :response
-                           :body)]
+                           (ltu/body))]
           (is (= "SUCCEEDED" (:state callback)))
           (is (not= original-updated-timestamp (:updated callback)))))
 

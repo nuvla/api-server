@@ -28,12 +28,14 @@
         tags-attr        ["one", "two"]
 
         href             (str ct/resource-type "/" service)
+        
         template-url     (str p/service-context ct/resource-type "/" service)
-        resp             (-> session-admin
+        template         (-> session-admin
                              (request template-url)
                              (ltu/body->edn)
-                             (ltu/is-status 200))
-        template         (get-in resp [:response :body])
+                             (ltu/is-status 200)
+                             (ltu/body))
+
         valid-create     {:name        name-attr
                           :description description-attr
                           :tags        tags-attr
@@ -87,8 +89,7 @@
       (let [{:keys [name description tags]} (-> session-admin
                                                 (request abs-uri)
                                                 (ltu/body->edn)
-                                                :response
-                                                :body)]
+                                                (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr)))
@@ -125,8 +126,7 @@
                                   (request abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  :response
-                                  :body)
+                                  (ltu/body))
             old-flag          (get old-cfg attr-kw)
             new-cfg           (assoc old-cfg attr-kw attr-new-value)
             _                 (-> session-admin
@@ -138,8 +138,7 @@
                                   (request abs-uri)
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
-                                  :response
-                                  :body
+                                  (ltu/body)
                                   (get attr-kw))]
         (is (not= old-flag reread-attr-value))
         (is (= attr-new-value reread-attr-value)))
