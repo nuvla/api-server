@@ -200,7 +200,7 @@ voucher via the 'expire' operation.
 
 (defn expire
   [voucher]
-  (if (not (= (:state voucher) "EXPIRED"))
+  (if (not= (:state voucher) "EXPIRED")
     (assoc voucher :state "EXPIRED")
     (throw (r/ex-response "voucher is already expired" 400 (:id voucher)))))
 

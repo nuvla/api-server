@@ -31,7 +31,8 @@ password, and other given information."
 
 (defmethod p/tpl->user username-password/registration-method
   [resource request]
-  [nil (-> (password-utils/create-user-map resource)
+  [nil (-> resource
+           password-utils/create-user-map
            (assoc :state "ACTIVE"))])
 
 

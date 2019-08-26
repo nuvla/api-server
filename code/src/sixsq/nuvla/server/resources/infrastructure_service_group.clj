@@ -80,13 +80,12 @@ resources. The resources are tied to an infrastructure via the
   ([resource-id]
    (service-query {:nuvla/authn auth/internal-identity} resource-id))
   ([initial-request resource-id]
-   (let [filter  (-> {:filter (str "parent='" resource-id "'")}
-                     (cimi-params-impl/cimi-filter))
-         request (-> initial-request
-                     (assoc :params {:resource-name infra-service/resource-type}
-                            :route-params {:resource-name infra-service/resource-type}
-                            :cimi-params {:filter filter
-                                          :select ["id"]}))]
+   (let [filter  (cimi-params-impl/cimi-filter {:filter (str "parent='" resource-id "'")})
+         request (assoc initial-request
+                   :params {:resource-name infra-service/resource-type}
+                   :route-params {:resource-name infra-service/resource-type}
+                   :cimi-params {:filter filter
+                                 :select ["id"]})]
      (try
        (->> request
             crud/query

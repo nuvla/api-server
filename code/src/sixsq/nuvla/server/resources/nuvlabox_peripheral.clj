@@ -51,7 +51,8 @@ nuvlabox.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (-> (a/add-acl resource request)
+  (-> resource
+      (a/add-acl request)
       (update-in [:acl :view-data] (comp vec conj) "group/nuvla-user")))
 
 

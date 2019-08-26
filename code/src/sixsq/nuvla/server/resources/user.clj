@@ -158,13 +158,12 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                           (merge-with-defaults)
                           (tpl->user request))]
 
-      (if frag
-        frag
-        (if user
-          (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
-            (when (and resource-id (= 201 status))
-              (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
-            result))))
+      (or frag
+          (if user
+            (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
+              (when (and resource-id (= 201 status))
+                (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
+              result))))
 
     (catch Exception e
       (or (ex-data e)
