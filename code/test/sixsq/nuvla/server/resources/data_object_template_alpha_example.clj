@@ -79,17 +79,17 @@
   (validate-fn resource))
 
 
-(def validate-fn (u/create-spec-validation-fn :cimi/data-object-template.alpha-create))
+(def create-validate-fn (u/create-spec-validation-fn :cimi/data-object-template.alpha-create))
 
 
 (defmethod do-resource/create-validate-subtype data-object-subtype
   [resource]
-  (validate-fn resource))
+  (create-validate-fn resource))
 
 
-(def validate-fn (u/create-spec-validation-fn :cimi.data-object-template.alpha/template))
+(def template-validate-fn (u/create-spec-validation-fn :cimi.data-object-template.alpha/template))
 
 
 (defmethod dot/validate-subtype-template data-object-subtype
   [resource]
-  (validate-fn resource))
+  (template-validate-fn resource))

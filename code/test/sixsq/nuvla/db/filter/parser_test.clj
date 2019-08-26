@@ -114,7 +114,7 @@
 
 
 ;; invalid filters: all property support removed
-(deftest check-invalid-filters
+(deftest check-invalid-property-filters
   (are [arg] ((fails-fn :Filter) arg)
              "property['beta']='4'"
              "property['beta']!='4'"

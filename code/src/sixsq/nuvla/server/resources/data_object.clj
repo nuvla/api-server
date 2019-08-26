@@ -42,23 +42,6 @@ how the object can be accessed.
 
 
 ;;
-;; validate subclasses of data-object
-;;
-
-(defmulti validate-subtype
-          :subtype)
-
-
-(defmethod validate-subtype :default
-  [resource]
-  (throw (ex-info (str "unknown External object type: '" (:subtype resource) "'") resource)))
-
-
-(defmethod crud/validate resource-type
-  [resource]
-  (validate-subtype resource))
-
-;;
 ;; validate create requests for subclasses of data objects
 ;;
 

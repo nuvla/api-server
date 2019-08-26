@@ -30,14 +30,21 @@
 
 
 (def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+
 (def ^:const admin-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-(def ^:const user-creds-info-header "user/creds group/nuvla-user group/nuvla-anon")
 
 (def ^:const username-view "user/tarzan")
+
+
 (def ^:const user-view-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
+
+
 (def ^:const tarzan-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
 
 (def ^:const username-no-view "user/other")
+
+
 (def ^:const user-no-view-info-header (str username-no-view " group/nuvla-user group/nuvla-anon"))
 
 
@@ -47,11 +54,24 @@
               session
               (content-type "application/json")) authn-info-header identity))
 
+
 (def session-admin (build-session admin-info-header))
-(def session-user (build-session user-info-header))
+
+
+(def session-jane (build-session user-info-header))
 
 (def session-user-view (build-session user-view-info-header))
+
+
 (def session-user-no-view (build-session user-no-view-info-header))
+
+
+(def session-anon (-> (ltu/ring-app)
+                      session
+                      (content-type "application/json")))
+
+
+(def session-tarzan (header session-anon authn-info-header tarzan-info-header))
 
 
 (def ^:dynamic *s3-credential-id* nil)
@@ -116,7 +136,7 @@
 
 (defn create-s3-credential!
   [f]
-  (create-cloud-cred session-user)
+  (create-cloud-cred session-jane)
   (f))
 
 
@@ -170,13 +190,6 @@
 
 (def base-uri (str p/service-context eo/resource-type))
 
-
-(def session-anon (-> (ltu/ring-app)
-                      session
-                      (content-type "application/json")))
-(def session-user (header session-anon authn-info-header user-info-header))
-(def session-other (header session-anon authn-info-header tarzan-info-header))
-(def session-admin (header session-anon authn-info-header admin-info-header))
 
 (defn get-template
   [template-url]
@@ -254,7 +267,7 @@
               ;; another user should not be able to delete data object
               (with-redefs [s3/bucket-exists?   (fn [_ _] true)
                             s3/delete-s3-object delete-s3-object-not-found]
-                (-> session-other
+                (-> session-tarzan
                     (request abs-uri
                              :request-method :delete)
                     (ltu/body->edn)
