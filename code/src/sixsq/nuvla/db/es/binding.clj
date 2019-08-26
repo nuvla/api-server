@@ -170,7 +170,7 @@
     (catch Exception e
       (let [{:keys [body] :as response} (ex-data e)
             error (:error body)
-            msg (str "unexpected exception querying: " (or error e))]
+            msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
 

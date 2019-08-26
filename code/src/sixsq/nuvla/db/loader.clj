@@ -16,7 +16,7 @@
       (log/errorf "cannot require namespace %s: %s" db-binding-ns (.getMessage e))
       (throw e)))
   (try
-    (let [load (-> db-binding-ns symbol find-ns (ns-resolve 'load))
+    (let [load         (-> db-binding-ns symbol find-ns (ns-resolve 'load))
           binding-impl (load)]
       (log/infof "created binding implementation from %s" db-binding-ns)
       binding-impl)
