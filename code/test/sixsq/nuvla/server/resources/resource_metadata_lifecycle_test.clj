@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.resource-metadata-lifecycle-test
   (:require
-    [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer :all]
     [sixsq.nuvla.server.app.params :as p]

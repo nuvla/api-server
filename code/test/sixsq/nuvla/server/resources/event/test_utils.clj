@@ -2,7 +2,6 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [is]]
     [peridot.core :refer :all]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]

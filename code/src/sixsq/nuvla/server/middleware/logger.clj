@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.middleware.logger
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.middleware.authn-info :as aih]))
+    [clojure.tools.logging :as log]))
+
 
 (defn- display-querystring
   [request]

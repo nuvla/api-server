@@ -5,6 +5,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
 
+
 (defn executable?
   [{:keys [state expires]}]
   (and (= state "WAITING")

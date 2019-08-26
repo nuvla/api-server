@@ -11,7 +11,6 @@ resource and the key itself **may** be described in a `data-record-key`
 resource.
 "
   (:require
-    [clojure.string :as str]
     [ring.util.response :as r]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]

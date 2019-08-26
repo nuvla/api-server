@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 

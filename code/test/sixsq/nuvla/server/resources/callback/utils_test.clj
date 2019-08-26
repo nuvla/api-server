@@ -2,7 +2,6 @@
   (:require
     [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.server.resources.callback.utils :as t]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.time :as time]))
 
 

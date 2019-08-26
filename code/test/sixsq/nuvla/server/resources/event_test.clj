@@ -4,8 +4,6 @@
     [clojure.string :as str]
     [clojure.test :refer :all]
     [peridot.core :refer :all]
-    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
-    [ring.middleware.params :refer [wrap-params]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.event :refer :all]

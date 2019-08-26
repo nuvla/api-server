@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-hashed-password-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]

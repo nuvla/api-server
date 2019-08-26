@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-amazonec2-test
   (:require
-    [clojure.spec.alpha :as s]
     [clojure.test :refer :all]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]

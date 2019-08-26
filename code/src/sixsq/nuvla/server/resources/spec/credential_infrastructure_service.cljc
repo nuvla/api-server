@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service
   (:require
-    [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template]
-    [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [sixsq.nuvla.server.util.spec :as su]))
 
 
 (def credential-service-keys-spec

@@ -5,7 +5,6 @@
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session-template :as session-tpl]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
-    [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.util.spec :as su]))
 
 
