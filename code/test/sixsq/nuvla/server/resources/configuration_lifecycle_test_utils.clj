@@ -28,7 +28,7 @@
         tags-attr        ["one", "two"]
 
         href             (str ct/resource-type "/" service)
-        
+
         template-url     (str p/service-context ct/resource-type "/" service)
         template         (-> session-admin
                              (request template-url)

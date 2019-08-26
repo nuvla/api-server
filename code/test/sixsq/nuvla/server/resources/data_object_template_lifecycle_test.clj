@@ -57,8 +57,8 @@
                       (ltu/entries))]
 
       (doseq [entry entries]
-        (let [ops        (ltu/operations->map entry)
-              entry-url  (str p/service-context (:id entry))]
+        (let [ops       (ltu/operations->map entry)
+              entry-url (str p/service-context (:id entry))]
           (is (nil? (get ops (name :add))))
           (is (nil? (get ops (name :edit))))
           (is (nil? (get ops (name :delete))))
