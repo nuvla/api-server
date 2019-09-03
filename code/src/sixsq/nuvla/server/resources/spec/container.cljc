@@ -94,7 +94,7 @@
 ;; environmental variables
 ;;
 
-(def env-var-regex #"^[A-Z_]+$")
+(def env-var-regex #"^[a-zA-Z_]+[a-zA-Z0-9_]*$")
 
 
 (def reserved-env-var-regex #"NUVLA_.*")

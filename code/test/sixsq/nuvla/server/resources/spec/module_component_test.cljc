@@ -72,7 +72,12 @@
     (stu/is-invalid ::module-component/schema (assoc root :badKey "badValue"))
     (stu/is-invalid ::module-component/schema (assoc root :os "BAD_OS"))
 
-    (stu/is-invalid ::module-component/schema (assoc root :environmental-variables [{:name "NUVLA_RESERVED"}]))
+    (stu/is-invalid ::module-component/schema
+                    (assoc root :environmental-variables [{:name "NUVLA_RESERVED"}]))
+    (stu/is-invalid ::module-component/schema
+                    (assoc root :environmental-variables [{:name "1_something"}]))
+    (stu/is-valid ::module-component/schema
+                  (assoc root :environmental-variables [{:name "something_1"}]))
 
     ;; required attributes
     (doseq [k #{:id :resource-type :created :updated :acl :author :architectures :image}]

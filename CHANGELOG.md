@@ -9,6 +9,7 @@
 
 ### Change
 
+  - Container spec - environmental variable spec fix
   - When location is set in map-response, put it also in response json
   - Module component - image update action 
   - Deployment - component image update action
