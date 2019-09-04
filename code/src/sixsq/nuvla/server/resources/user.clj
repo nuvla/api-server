@@ -36,9 +36,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 
 ;; creating a new user is a registration request, so anonymous users must
-;; be able to post requests to it (if a template is visible to group/nuvla-anon.)
+;; be able to view the collection and post requests to it (if a template is
+;; visible to group/nuvla-anon.)
 
-(def collection-acl {:query ["group/nuvla-admin"]
+(def collection-acl {:query ["group/nuvla-anon"]
                      :add   ["group/nuvla-anon"]})
 
 
@@ -81,10 +82,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} request]
   (assoc resource :acl {:owners    ["group/nuvla-admin"]
-                        :edit-data [id]
-                        :view-acl  [id]
-                        :manage    [id]
-                        :delete    [id]}))
+                        :view-meta ["group/nuvla-user"]
+                        :edit-acl  [id]}))
 
 ;;
 ;; template processing
@@ -223,8 +222,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (try
     (let [current (-> (:id body)
                       (db/retrieve request)
-                      (a/throw-cannot-edit request))]
-      (-> (merge current body)
+                      (a/throw-cannot-edit request))
+          merged  (->> (dissoc body :name)
+                       (merge current))]
+      (-> merged
           (dissoc :href)
           (u/update-timestamps)
           (crud/validate)

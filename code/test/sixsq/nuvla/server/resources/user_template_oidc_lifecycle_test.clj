@@ -110,6 +110,13 @@
           href-create-redirect {:template {:href         href
                                            :redirect-url redirect-url}}]
 
+      ;; anonymous query should succeed but have no entries
+      (-> session-anon
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?))
+
       ;; configuration must have OIDC client id and base URL, if not should get 500
       (-> session-anon
           (request base-uri
@@ -162,18 +169,13 @@
             (is (re-matches #".*FAKE_CLIENT_ID.*" (or u "")))
             (is (re-matches callback-pattern (or u ""))))
 
-          ;; user collection query is only allowed for admin
-          (doseq [session [session-anon session-user]]
+          ;; anonymous, user and admin query should succeed but have no users
+          (doseq [session [session-anon session-user session-admin]]
             (-> session
                 (request base-uri)
                 (ltu/body->edn)
-                (ltu/is-status 403)))
-
-          (-> session-admin
-              (request base-uri)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count zero?))
+                (ltu/is-status 200)
+                (ltu/is-count zero?)))
 
           ;; validate callbacks
           (let [get-redirect-uri #(->> % (re-matches #".*redirect_uri=(.*)$") second)

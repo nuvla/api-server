@@ -57,12 +57,12 @@
 
         bad-params-create (assoc-in href-create [:template :invalid] "BAD")]
 
-    ;; user collection query is only allowed for admin
-    (doseq [session [session-anon session-user]]
+    ;; user collection query should succeed but be empty for all users
+    (doseq [session [session-anon session-user session-admin]]
       (-> session
           (request base-uri)
           (ltu/body->edn)
-          (ltu/is-status 403)))
+          (ltu/is-status 200)))
 
     (-> session-admin
         (request base-uri)
@@ -100,6 +100,44 @@
           (ltu/body->edn)
           (ltu/is-status 400)))
 
+    ;; user collection query should succeed but be empty for all users
+    (doseq [session [session-anon session-user session-admin]]
+      (-> session
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count zero?)
+          (ltu/is-operation-present :add)
+          (ltu/is-operation-absent :delete)
+          (ltu/is-operation-absent :edit)))
+
+    ;; create a new user; fails without reference
+    (doseq [session [session-anon session-user session-admin]]
+      (-> session
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str no-href-create))
+          (ltu/body->edn)
+          (ltu/is-status 400)))
+
+    ;; create with invalid template fails
+    (doseq [session [session-anon session-user session-admin]]
+      (-> session
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str invalid-create))
+          (ltu/body->edn)
+          (ltu/is-status 404)))
+
+    ;; create with bad parameters fails
+    (doseq [session [session-anon session-user session-admin]]
+      (-> session
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str bad-params-create))
+          (ltu/body->edn)
+          (ltu/is-status 400)))
+
     ;; create user, minimum template is only accessible by admin
     (let [resp                 (-> session-admin
                                    (request base-uri
@@ -108,7 +146,7 @@
                                    (ltu/body->edn)
                                    (ltu/is-status 201))
 
-          user-id              (ltu/body-resource-id resp)
+          user-id              (get-in resp [:response :body :resource-id])
 
           username-id          (get-in href-create [:template :username])
 
@@ -120,16 +158,17 @@
                                    (request (str p/service-context user-id))
                                    (ltu/body->edn)
                                    (ltu/is-status 200)
-                                   (ltu/body))]
+                                   (get-in [:response :body]))]
 
       ;; verify the ACL of the user
       (let [user-acl (:acl user)]
         (is (some #{"group/nuvla-admin"} (:owners user-acl)))
-        (is (not (some #{"group/nuvla-user"} (:view-meta user-acl))))
+        (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
 
-        ;; user should have most rights (not edit-acl)
+        ;; user should have all rights
         (doseq [right [:view-meta :view-data :view-acl
-                       :edit-meta :edit-data :delete :manage]]
+                       :edit-meta :edit-data :edit-acl
+                       :manage :delete]]
           (is (some #{user-id} (right user-acl)))))
 
       ;; verify name attribute (should default to username)
@@ -170,30 +209,12 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (let [{:keys [state]} (-> session-created-user
-                                (request (str p/service-context user-id))
-                                (ltu/body->edn)
-                                (ltu/body))]
+      (let [{:keys [state] :as user} (-> session-created-user
+                                         (request (str p/service-context user-id))
+                                         (ltu/body->edn)
+                                         :response
+                                         :body)]
         (is (= "ACTIVE" state)))
-
-      ;; ensure that user can change name/description of user resource
-      (-> session-created-user
-          (request (str p/service-context user-id)
-                   :request-method :put
-                   :body (json/write-str {:id          user-id
-                                          :name        "updated name"
-                                          :description "updated description"}))
-          (ltu/body->edn)
-          (ltu/is-status 200))
-
-      (let [{:keys [name description]} (-> session-created-user
-                                           (request (str p/service-context user-id))
-                                           (ltu/body->edn)
-                                           (ltu/is-status 200)
-                                           (ltu/body))]
-
-        (is (= "updated name" name))
-        (is (= "updated description" description)))
 
       ;; user can delete his account
       (-> session-created-user
