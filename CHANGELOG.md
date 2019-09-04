@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.3] - 2019-09-04
+
 ### Added
 
   - Deployment log resource
