@@ -160,8 +160,7 @@ These resources represent the logs of a deployment.
 (defn create-log
   [deployment-id session-id service & [{:keys [since lines]}]]
   (let [acl            {:owners    ["group/nuvla-admin"]
-                        :edit-data [session-id]
-                        :manage    [session-id]}
+                        :edit-acl [session-id]}
         log-map        (cond-> {:parent  deployment-id
                                 :service service
                                 :acl     acl}
