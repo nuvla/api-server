@@ -4,6 +4,8 @@
 
 ### Change
 
+  - Notification for component and component deployment delete notification when callback is 
+    executed successfully
   - Deployment log - resource can be deleted by user session
 
 ## [4.2.3] - 2019-09-04
