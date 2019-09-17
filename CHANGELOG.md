@@ -4,6 +4,8 @@
 
 ### Change
 
+  - Cloud-entry-point - Duplicate port fix in base uri when used with 
+    x-forwarded-host header and dynamic port
   - Deployment log - resource can be deleted by user session
 
 ## [4.2.3] - 2019-09-04
