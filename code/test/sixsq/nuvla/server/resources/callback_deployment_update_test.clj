@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.callback-deployment-update :as cdu]
     [sixsq.nuvla.server.resources.deployment :as deployment]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.module :as module]))
+    [sixsq.nuvla.server.resources.module :as module]
+    [sixsq.nuvla.server.resources.notification :as notif]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -141,25 +142,50 @@
             (ltu/is-status 200))
 
         ;; create callback
-        (let [callback-body    {:action          cdu/action-name
-                                :target-resource {:href deployment-id}
-                                :data            {:image  {:image-name image-name
-                                                           :tag        new-image-tag}
-                                                  :commit new-commit-msg}}
+        (let [callback-body       {:action          cdu/action-name
+                                   :target-resource {:href deployment-id}
+                                   :data            {:image  {:image-name image-name
+                                                              :tag        new-image-tag}
+                                                     :commit new-commit-msg}}
 
-              callback-url     (str p/service-context (-> session-admin
-                                                          (request callback-base-uri
-                                                                   :request-method :post
-                                                                   :body (json/write-str callback-body))
-                                                          (ltu/body->edn)
-                                                          (ltu/is-status 201)
-                                                          (ltu/body)
-                                                          :resource-id))
-              callback-execute (str p/service-context (-> session-admin
-                                                          (request callback-url)
-                                                          (ltu/body->edn)
-                                                          (ltu/is-status 200)
-                                                          (ltu/get-op "execute")))]
+              callback-id         (-> session-admin
+                                      (request callback-base-uri
+                                               :request-method :post
+                                               :body (json/write-str callback-body))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/body)
+                                      :resource-id)
+
+              callback-url        (str p/service-context callback-id)
+
+              create-notification {:callback          callback-id
+                                   :category          "x"
+                                   :message           "x"
+                                   :content-unique-id "x"}
+
+              notification-id     (-> session-admin
+                                      (request (str p/service-context notif/resource-type)
+                                               :request-method :post
+                                               :body (json/write-str create-notification))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 201)
+                                      (ltu/body)
+                                      :resource-id)
+
+              notification-uri    (str p/service-context notification-id)
+
+              callback-execute    (str p/service-context (-> session-admin
+                                                             (request callback-url)
+                                                             (ltu/body->edn)
+                                                             (ltu/is-status 200)
+                                                             (ltu/get-op "execute")))]
+
+          ;; notification exist
+          (-> session-admin
+              (request notification-uri)
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
           ;; execute callback and check created job
           (let [job-url (-> session-admin
@@ -175,6 +201,12 @@
                 (ltu/is-key-value :state "QUEUED")
                 (ltu/is-key-value :action "update_deployment")
                 (ltu/is-key-value :target-resource {:href deployment-id})))
+
+          ;; notification has been deleted after execution of the callback
+          (-> session-admin
+              (request notification-uri)
+              (ltu/body->edn)
+              (ltu/is-status 404))
 
           (let [new-content (-> session-admin
                                 (request deployment-url)
