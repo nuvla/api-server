@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.4] - 2019-09-18
+
 ### Change
 
   - Notification for component and component deployment delete notification when callback is 
