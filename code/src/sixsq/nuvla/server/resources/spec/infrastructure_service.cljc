@@ -25,6 +25,13 @@
              :json-schema/order 21)))
 
 
+(s/def ::instance
+  (-> (st/spec ::core/identifier)
+      (assoc :name "instance"
+             :json-schema/display-name "instance"
+             :json-schema/description "instance name for the service")))
+
+
 (s/def ::endpoint
   (-> (st/spec ::core/url)
       (assoc :name "endpoint"
@@ -102,4 +109,5 @@
                                ::state]
                       :opt-un [::endpoint
                                ::management-credential-id
-                               ::nodes]}))
+                               ::nodes
+                               ::instance]}))
