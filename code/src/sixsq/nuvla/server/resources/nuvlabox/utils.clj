@@ -61,7 +61,7 @@
   "Create api key that allow NuvlaBox to update it's own state."
   [{:keys [id name owner] :as nuvlabox}]
   (let [identity  {:user-id id
-                   :claims  #{id "group/nuvla-user" "group/nuvla-anon"}}
+                   :claims  #{id "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}}
 
         cred-acl  {:owners    ["group/nuvla-admin"]
                    :view-meta [owner]

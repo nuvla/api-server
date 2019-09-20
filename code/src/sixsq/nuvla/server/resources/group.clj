@@ -164,4 +164,8 @@ that start with 'nuvla-' are reserved for the server.
   (std-crud/add-if-absent (str resource-type "/nuvla-anon") resource-type
                           {:name        "Nuvla Anonymous Users"
                            :description "pseudo-group of all users authenticated or not"
-                           :template    {:group-identifier "nuvla-anon"}}))
+                           :template    {:group-identifier "nuvla-anon"}})
+  (std-crud/add-if-absent (str resource-type "/nuvla-nuvlabox") resource-type
+                          {:name        "Nuvla NuvlaBox Systems"
+                           :description "pseudo-group of all NuvlaBox systems"
+                           :template    {:group-identifier "nuvla-nuvlabox"}}))

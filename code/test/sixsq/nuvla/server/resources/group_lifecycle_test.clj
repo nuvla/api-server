@@ -54,9 +54,10 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 3)
+                      (ltu/is-count 4)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}
+             (set (map :id entries))))
       (is (= (every? #(not (nil? %)) (set (map :name entries)))))
       (is (= (every? #(not (nil? %)) (set (map :description entries))))))
 
@@ -66,10 +67,11 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 3)
+                      (ltu/is-count 4)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
-      (is (= [nil nil nil] (map :users entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}
+             (set (map :id entries))))
+      (is (= [nil nil nil nil] (map :users entries))))
 
     ;; anon query should see nothing
     (-> session-anon

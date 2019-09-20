@@ -188,7 +188,8 @@
           (is (= (:identity claims) nuvlabox-id))
           (is (= (-> claims :roles set) #{nuvlabox-id
                                           "group/nuvla-user"
-                                          "group/nuvla-anon"}))
+                                          "group/nuvla-anon"
+                                          "group/nuvla-nuvlabox"}))
 
           ;; checks of acl for created credential
           (is (= ["group/nuvla-admin"] (:owners acl)))
