@@ -66,7 +66,8 @@ This template requires the parameters necessary to create a new OpenVpn server.
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "openvpn-ca-certificate"
              :json-schema/display-name "openvpn ca certificate"
-             :json-schema/description "openvpn ca certificate")))
+             :json-schema/description "openvpn ca certificate"
+             :json-schema/indexed false)))
 
 
 (s/def ::openvpn-common-name-prefix
