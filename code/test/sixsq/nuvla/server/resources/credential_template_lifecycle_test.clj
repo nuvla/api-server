@@ -9,12 +9,14 @@
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as service-aws]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as service-azure]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as service-exo]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as service-gce]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as service-minio]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-swarm]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as srvc-aws]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
+     :as srvc-openvpn]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -29,12 +31,12 @@
 (deftest check-retrieve-by-id
   (doseq [registration-method [akey/method
                                hashed-password/method
-                               service-aws/method
-                               service-azure/method
-                               service-exo/method
-                               service-gce/method
-                               service-minio/method
-                               service-swarm/method
+                               srvc-aws/method
+                               srvc-azure/method
+                               srvc/method
+                               srvc-gce/method
+                               srvc-minio/method
+                               srvc-swarm/method
                                swarm-token/method]]
     (let [id  (str ct/resource-type "/" registration-method)
           doc (crud/retrieve-by-id id)]
@@ -46,12 +48,12 @@
 
   (doseq [resource-url [akey/resource-url
                         hashed-password/resource-url
-                        service-aws/credential-subtype
-                        service-azure/credential-subtype
-                        service-exo/credential-subtype
-                        service-gce/credential-subtype
-                        service-minio/credential-subtype
-                        service-swarm/credential-subtype
+                        srvc-aws/credential-subtype
+                        srvc-azure/credential-subtype
+                        srvc/credential-subtype
+                        srvc-gce/credential-subtype
+                        srvc-minio/credential-subtype
+                        srvc-swarm/credential-subtype
                         swarm-token/credential-subtype]]
     (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
                                 (str ct/resource-type "-" resource-url "-create"))))
@@ -77,31 +79,34 @@
         types        (set (map :subtype entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
              (str ct/resource-type "/" hashed-password/method)
-             (str ct/resource-type "/" service-minio/method)
-             (str ct/resource-type "/" service-swarm/method)
-             (str ct/resource-type "/" service-aws/method)
-             (str ct/resource-type "/" service-azure/method)
-             (str ct/resource-type "/" service-exo/method)
-             (str ct/resource-type "/" service-gce/method)
-             (str ct/resource-type "/" swarm-token/method)}
+             (str ct/resource-type "/" srvc-minio/method)
+             (str ct/resource-type "/" srvc-swarm/method)
+             (str ct/resource-type "/" srvc-aws/method)
+             (str ct/resource-type "/" srvc-azure/method)
+             (str ct/resource-type "/" srvc/method)
+             (str ct/resource-type "/" srvc-gce/method)
+             (str ct/resource-type "/" swarm-token/method)
+             (str ct/resource-type "/" srvc-openvpn/method)}
            ids))
     (is (= #{akey/method
              hashed-password/method
-             service-minio/method
-             service-swarm/method
-             service-aws/method
-             service-azure/method
-             service-exo/method
-             service-gce/method
+             srvc-minio/method
+             srvc-swarm/method
+             srvc-aws/method
+             srvc-azure/method
+             srvc/method
+             srvc-gce/method
+             srvc-openvpn/method
              swarm-token/method} methods))
     (is (= #{akey/credential-subtype
              hashed-password/credential-subtype
-             service-minio/credential-subtype
-             service-swarm/credential-subtype
-             service-aws/credential-subtype
-             service-azure/credential-subtype
-             service-exo/credential-subtype
-             service-gce/credential-subtype
+             srvc-minio/credential-subtype
+             srvc-swarm/credential-subtype
+             srvc-aws/credential-subtype
+             srvc-azure/credential-subtype
+             srvc/credential-subtype
+             srvc-gce/credential-subtype
+             srvc-openvpn/credential-subtype
              swarm-token/credential-subtype} types))
 
     (doseq [entry entries]
