@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Change
+
+  - Callback - Allow re-execution of callbacks for user-registration, reset-password and for
+    email validation.
+  - Reset password callback expire after 1 day
+
 ## [4.2.4] - 2019-09-18
 
 ### Change
