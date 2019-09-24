@@ -62,7 +62,7 @@ using an email address.
                                  invited-by-user-id))]
       (user-utils/create-user-subresources id email nil nil)
 
-      (-> (create-user-email-callback base-uri id callback-data)
+      (-> (create-user-email-callback base-uri id :data callback-data)
           (email-utils/send-invitation-email email invited-by)))
     (catch Exception e
       (user-utils/delete-user id)

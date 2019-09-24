@@ -49,7 +49,8 @@ request, while also resetting the password itself.
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href username new-password redirect-url] :as resource} {:keys [base-uri headers] :as request}]
+  [{:keys [href username new-password redirect-url] :as resource}
+   {:keys [base-uri headers] :as request}]
 
   (when-not (hashed-password/acceptable-password? new-password)
     (throw (r/ex-response hashed-password/acceptable-password-msg 400)))
@@ -72,13 +73,17 @@ request, while also resetting the password itself.
         (user-utils/update-user user-id {:id                  user-id
                                          :credential-password new-credential-id})))
 
-    (let [[cookie-header session] (session-password/create-session-password username user headers href)
+    (let [[cookie-header session] (session-password/create-session-password
+                                    username user headers href)
 
           callback-data  {:redirect-url  redirect-url
                           :cookies       (:cookies cookie-header)
                           :hash-password (hashers/derive new-password)}
 
-          callback-reset (create-user-password-reset-callback base-uri user-id callback-data)]
+          callback-reset (create-user-password-reset-callback base-uri user-id
+                                                              :data callback-data
+                                                              :expires (u/ttl->timestamp
+                                                                         (* 86400)))] ;; 1 day
 
 
       (if credential-id

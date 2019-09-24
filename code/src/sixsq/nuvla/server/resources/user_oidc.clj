@@ -33,6 +33,6 @@
   [{:keys [href instance redirect-url] :as resource} {:keys [base-uri] :as request}]
   (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
         data         (when redirect-url {:redirect-url redirect-url})
-        callback-url (create-user-oidc-callback base-uri href data)
+        callback-url (create-user-oidc-callback base-uri href :data data)
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
     [{:status 303, :headers {"Location" redirect-url}} nil]))

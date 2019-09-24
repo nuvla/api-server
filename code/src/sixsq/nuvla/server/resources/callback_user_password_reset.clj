@@ -38,7 +38,6 @@ password is changed and the user is logged in.
           msg (str "reset password for " id " successfully executed")]
       (update-password! credential-password hash-password)
       (log/info msg)
-      (utils/callback-succeeded! callback-id)
       (if redirect-url
         (merge (r/map-response msg 303 id)
                {:headers {"Location" redirect-url}, :cookies cookies})
