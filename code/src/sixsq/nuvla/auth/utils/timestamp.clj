@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.util.time :as time]))
 
 
-(def default-ttl-minutes (* 24 60))                         ;; 1 day
+(def default-ttl-minutes 10080)                       ;; 1 week
 
 
 (defn rfc822
