@@ -35,12 +35,11 @@ is marked as validated."
     {:keys [redirect-url]} :data :as callback-resource} request]
   (try
     (let [{:keys [id state email] :as user} (crud/retrieve-by-id-as-admin href)]
-      (if (= "NEW" state)
+      (if (contains? #{"NEW" "ACTIVE"} state)
         (let [msg (str "email for " id " successfully validated")]
           (email-utils/validate-email! email)
           (activate-user! id)
           (log/info msg)
-          (utils/callback-succeeded! callback-id)
           (if redirect-url
             (merge (r/map-response msg 303 id)
                    {:headers {"Location" redirect-url}})

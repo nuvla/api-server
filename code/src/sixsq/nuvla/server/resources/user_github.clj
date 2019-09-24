@@ -34,7 +34,7 @@
   (let [[client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if (and client-id client-secret)
       (let [data         (when redirect-url {:redirect-url redirect-url})
-            callback-url (create-user-github-callback base-uri href data)
+            callback-url (create-user-github-callback base-uri href :data data)
             redirect-url (format gu/github-oath-endpoint client-id callback-url)]
         [{:status 303, :headers {"Location" redirect-url}} nil])
       (gu/throw-bad-client-config user-template/registration-method redirect-url))))

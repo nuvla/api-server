@@ -29,7 +29,8 @@ appropriate users.
     [sixsq.nuvla.server.resources.spec.callback :as callback]
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -100,13 +101,15 @@ appropriate users.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id resource-type] :as resource} request]
-  (let [collection? (u/is-collection? resource-type)
-        can-delete? (a/can-delete? resource request)
-        can-add?    (a/can-add? resource request)
-        ops         (cond-> []
-                            (and collection? can-add?) (conj (u/operation-map id :add))
-                            (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
-                            (and (not collection?) (utils/executable? resource)) (conj (u/action-map id :execute)))]
+  (let
+    [collection? (u/is-collection? resource-type)
+     can-delete? (a/can-delete? resource request)
+     can-add?    (a/can-add? resource request)
+     ops         (cond-> []
+                         (and collection? can-add?) (conj (u/operation-map id :add))
+                         (and (not collection?) can-delete?) (conj (u/operation-map id :delete))
+                         (and (not collection?)
+                              (utils/executable? resource)) (conj (u/action-map id :execute)))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))
@@ -126,7 +129,8 @@ appropriate users.
 (defmethod execute :default
   [{:keys [id] :as callback-resource} request]
   (utils/callback-failed! id)
-  (let [msg (format "error executing callback: '%s' of type '%s'" id (action-dispatch callback-resource request))]
+  (let [msg (format "error executing callback: '%s' of type '%s'"
+                    id (action-dispatch callback-resource request))]
     (log-util/log-and-throw 400 msg)))
 
 
@@ -148,27 +152,28 @@ appropriate users.
 
 (defn create
   "Creates a callback resource with the given action-name, base-uri, target
-   resource, data (optional). Returns the URL to trigger the callback's action."
-  ([action-name base-uri href]
-   (create action-name base-uri href nil))
-  ([action-name base-uri href data]
-   (let [callback-request {:params      {:resource-name resource-type}
-                           :body        (cond-> {:action          action-name
-                                                 :target-resource {:href href}}
-                                                data (assoc :data data))
-                           :nuvla/authn auth/internal-identity}
-         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
+   resource, data (optional), expires (optional).
+   Returns the URL to trigger the callback's action."
+  [action-name base-uri href & {:keys [data expires]}]
+  (let [callback-request {:params      {:resource-name resource-type}
+                          :body        (cond-> {:action          action-name
+                                                :target-resource {:href href}}
+                                               data (assoc :data data)
+                                               expires (assoc :expires expires))
+                          :nuvla/authn auth/internal-identity}
+        {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 
-     (if (= 201 status)
-       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]
-         (if-let [validate-op (u/get-op callback-resource "execute")]
-           (str base-uri validate-op)
-           (let [msg "callback does not have execute operation"]
-             (throw (ex-info msg (r/map-response msg 500 resource-id)))))
-         (let [msg "cannot retrieve user create callback"]
-           (throw (ex-info msg (r/map-response msg 500 resource-id)))))
-       (let [msg "cannot create user callback"]
-         (throw (ex-info msg (r/map-response msg 500 ""))))))))
+    (if (= 201 status)
+      (if-let [callback-resource (crud/set-operations
+                                   (crud/retrieve-by-id-as-admin resource-id) {})]
+        (if-let [validate-op (u/get-op callback-resource "execute")]
+          (str base-uri validate-op)
+          (let [msg "callback does not have execute operation"]
+            (throw (ex-info msg (r/map-response msg 500 resource-id)))))
+        (let [msg "cannot retrieve user create callback"]
+          (throw (ex-info msg (r/map-response msg 500 resource-id)))))
+      (let [msg "cannot create user callback"]
+        (throw (ex-info msg (r/map-response msg 500 "")))))))
 
 
 ;;
