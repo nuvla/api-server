@@ -49,28 +49,28 @@
                                  :tags        tags-attr
                                  :template    {:group-identifier valid-create-no-href-id}}]
 
-    ;; admin query should succeed and have three entries
+    ;; admin query should succeed and have 4 entries
     (let [entries (-> session-admin
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-count 4)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}
-             (set (map :id entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user"
+               "group/nuvla-nuvlabox" "group/nuvla-anon"} (set (map :id entries))))
       (is (= (every? #(not (nil? %)) (set (map :name entries)))))
       (is (= (every? #(not (nil? %)) (set (map :description entries))))))
 
 
-    ;; user query should also have three entries, but only common attributes (i.e. no :users field)
+    ;; user query should also have 4 entries, but only common attributes (i.e. no :users field)
     (let [entries (-> session-user
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/is-count 4)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}
-             (set (map :id entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-nuvlabox"
+               "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
       (is (= [nil nil nil nil] (map :users entries))))
 
     ;; anon query should see nothing
