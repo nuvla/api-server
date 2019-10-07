@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.app.routes
   (:require
     [compojure.core :refer [ANY DELETE GET let-routes POST PUT routes]]
-    [compojure.route :as route]
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -47,18 +45,12 @@
       (r/map-response "unknown resource" 404 uri))))
 
 
-(def final-routes
-  [collection-routes
-   resource-routes
-   action-routes
-   (not-found)])
-
-
 (defn get-main-routes
   "Returns all of the routes defined for the server.  This uses
    dynamic loading to discover all of the defined resources on the
    classpath."
   []
-  (apply routes (doall (concat [(route/resources (str p/service-context "static"))]
-                               (dyn/resource-routes)
-                               final-routes))))
+  (routes collection-routes
+          resource-routes
+          action-routes
+          (not-found)))
