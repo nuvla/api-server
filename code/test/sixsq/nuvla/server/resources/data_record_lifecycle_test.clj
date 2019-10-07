@@ -421,9 +421,66 @@
       (is (= 0 (:count no-result-put-body))))))
 
 
+(deftest bulk-delete
+
+  (let [session-anon  (-> (session (ltu/ring-app))
+                          (content-type "application/json"))
+        session-admin (header session-anon authn-info-header
+                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+
+    ;; adding
+    (let [data-record {:infrastructure-service "infrastructure-service/cloud-software-solution-1"}]
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str data-record))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str data-record))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str data-record))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :put)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 4))
+
+      (-> session-admin
+          (request base-uri
+                   :request-method :put)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 5))
+
+      (-> session-user
+          (request base-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :deleted 4))
+
+      (-> session-admin
+        (request base-uri
+                :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :deleted 1))
+      )))
+
+
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
                             [resource-uri :options]
                             [resource-uri :post]])))

@@ -48,6 +48,7 @@
                                ::a/edit-meta
                                ::a/view-data
                                ::a/query
+                               ::a/bulk-delete
                                ::a/add} {:claims #{"user/user1"}}
 
                              #{::a/edit-acl
@@ -59,6 +60,7 @@
                                ::a/edit-meta
                                ::a/view-data
                                ::a/query
+                               ::a/bulk-delete
                                ::a/add} {:claims #{"group/nuvla-admin"}}
 
                              #{::a/view-acl
@@ -79,6 +81,7 @@
                                ::a/edit-meta
                                ::a/view-data
                                ::a/query
+                               ::a/bulk-delete
                                ::a/add} {:claims #{"user/user1", "group/role2"}}
 
                              #{::a/delete
@@ -142,14 +145,15 @@
       (is (isa? a/rights-hierarchy right right)))
 
     ;; ::edit-acl covers everything except ::query and ::add
-    (doseq [right (disj all-rights ::a/edit-acl ::a/query ::a/add)]
+    (doseq [right (disj all-rights ::a/edit-acl ::a/query ::a/add ::a/bulk-delete)]
       (is (isa? a/rights-hierarchy ::a/edit-acl right))
       (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
   (doseq [right (vals (dissoc a/rights-keywords
                               ::a/edit-acl :edit-acl
                               ::a/query :query
-                              ::a/add :add))]
+                              ::a/add :add
+                              ::a/bulk-delete :bulk-delete))]
     (is (isa? a/rights-hierarchy ::a/edit-acl right))
     (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 

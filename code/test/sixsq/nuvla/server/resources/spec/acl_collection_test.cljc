@@ -7,8 +7,9 @@
 
 (deftest check-collection-acl
 
-  (let [acl {:query ["user/id1" "group/nuvla-admin"]
-             :add   ["group/nuvla-user"]}]
+  (let [acl {:query       ["user/id1" "group/nuvla-admin"]
+             :add         ["group/nuvla-user"]
+             :bulk-delete ["group/nuvla-user"]}]
 
     ;; empty map is valid
     (stu/is-valid ::acl-collection/acl {})

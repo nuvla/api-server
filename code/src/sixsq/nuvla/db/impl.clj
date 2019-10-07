@@ -41,6 +41,10 @@
   (p/query *impl* collection-id options))
 
 
+(defn bulk-delete [collection-id options]
+  (p/bulk-delete *impl* collection-id options))
+
+
 (defn close []
   (when-let [^Closeable impl *impl*]
     (try

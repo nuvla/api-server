@@ -113,6 +113,16 @@
         (r/json-response entries-and-count)))))
 
 
+(defn bulk-delete-fn
+  [resource-name collection-acl collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [request]
+    (a/throw-cannot-bulk-delete collection-acl request)
+    (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
+          result (db/bulk-delete resource-name options)]
+      (r/json-response result))))
+
+
 (def ^:const href-not-found-msg "requested href not found")
 
 
