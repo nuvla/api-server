@@ -34,9 +34,9 @@
     (org.apache.curator.test TestingServer)
     (org.elasticsearch.common.logging LogConfigurator)
     (org.elasticsearch.common.settings Settings)
+    (org.elasticsearch.index.reindex ReindexPlugin)
     (org.elasticsearch.node MockNode)
-    (org.elasticsearch.transport Netty4Plugin)
-    (org.elasticsearch.index.reindex ReindexPlugin)))
+    (org.elasticsearch.transport Netty4Plugin)))
 
 
 (defn random-string
