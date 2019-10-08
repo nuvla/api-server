@@ -182,7 +182,7 @@
 
 (defn throw-cannot-bulk-delete
   "Will throw an error ring response if the user identified in the request cannot
-   bulk delete into the given collection;"
+   bulk delete into the given collection."
   [collection-acl request]
   (throw-without-rights #{::bulk-delete} {:acl collection-acl} request))
 

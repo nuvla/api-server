@@ -316,15 +316,13 @@
         (ltu/is-status 201)
         (ltu/location))
 
-    (let [cimi-url-ok        (str p/service-context
-                                  t/resource-type
+    (let [cimi-url-ok        (str base-uri
                                   (format "?filter=%s:%s='123.456'" ns1-prefix attr))
-          cimi-url-no-result (str p/service-context
-                                  t/resource-type
+          cimi-url-no-result (str base-uri
                                   (format "?filter=%s:%s='xxx'" ns1-prefix attr))
 
           res-all            (-> session-admin
-                                 (request (str p/service-context t/resource-type))
+                                 (request base-uri)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (ltu/body))
@@ -361,11 +359,9 @@
         (ltu/is-status 201)
         (ltu/location))
 
-    (let [cimi-url-ok        (str p/service-context
-                                  t/resource-type
+    (let [cimi-url-ok        (str base-uri
                                   (format "?filter=%s:att3/%s:att4='456'" ns1-prefix ns1-prefix))
-          cimi-url-no-result (str p/service-context
-                                  t/resource-type
+          cimi-url-no-result (str base-uri
                                   (format "?filter=%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix))
           res-ok             (-> session-admin
                                  (request cimi-url-ok)
@@ -429,50 +425,115 @@
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
-    ;; adding
-    (let [data-record {:infrastructure-service "infrastructure-service/cloud-software-solution-1"}]
-      (-> session-user
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str data-record))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-      (-> session-user
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str data-record))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str data-record))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-      (-> session-user
-          (request base-uri
-                   :request-method :put)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 4))
+    (let [data-record-fn    (fn [infra-id]
+                              {:infrastructure-service (str "infrastructure-service/" infra-id)})
+          count-existing-dr (-> session-admin
+                                (request base-uri
+                                         :request-method :put)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (get-in [:response :body :count]))
+          base-uri-filter   (str base-uri "?filter=id!=null")] ;; empty filter isnn't allowed bulk
 
-      (-> session-admin
-          (request base-uri
-                   :request-method :put)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 5))
+      ;; cleanup all existing data record if any
+      (when (pos? count-existing-dr)
+        (-> session-admin
+            (request base-uri-filter
+                     :request-method :delete
+                     :headers {:bulk true})
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :deleted count-existing-dr)))
+
+      ;; user create 10 data-records
+      (doseq [infra-id (range 10)]
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (data-record-fn infra-id)))
+            (ltu/body->edn)
+            (ltu/is-status 201)))
+
+      ;; user try to delete but forgot the header bulk
+      ;; server doesn't allow bulk delete without the special header
 
       (-> session-user
           (request base-uri
                    :request-method :delete)
           (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/is-key-value :message "Bulk operation should contain bulk http header."))
+
+      ;; user try to delete but without a cimi filter
+      ;; server doesn't allow bulk delete without a filter
+
+      (-> session-user
+          (request base-uri
+                   :request-method :delete
+                   :headers {:bulk true})
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/is-key-value :message "Bulk operation should contain a non empty cimi filter."))
+
+      ;; user can use filter in bulk delete operation
+
+      (let [query-filter (str base-uri
+                              "?filter=infrastructure-service='infrastructure-service/5'")]
+        (-> session-user
+            (request query-filter
+                     :request-method :delete
+                     :headers {:bulk true})
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :deleted 1))
+
+        ;; the data record was deleted
+        (-> session-user
+            (request query-filter
+                     :request-method :put)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count 0)))
+
+      ;; user delete the 9 left records
+      (-> session-user
+          (request base-uri-filter
+                   :request-method :delete
+                   :headers {:bulk true})
+          (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-key-value :deleted 4))
+          (ltu/is-key-value :deleted 9))
+
+      ;; admin add data record which can be deleted by user
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc (data-record-fn 100)
+                                           :acl {:owners ["group/nuvla-admin"]
+                                                 :delete ["user/jane"]})))
+          (ltu/body->edn)
+          (ltu/is-status 201))
 
       (-> session-admin
-        (request base-uri
-                :request-method :delete)
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (data-record-fn 101)))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      ; delete acl is taken into account for the user
+      (-> session-user
+          (request base-uri-filter
+                   :request-method :delete
+                   :headers {:bulk true})
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :deleted 1))
+
+      (-> session-admin
+          (request base-uri-filter
+                   :request-method :delete
+                   :headers {:bulk true})
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-key-value :deleted 1))

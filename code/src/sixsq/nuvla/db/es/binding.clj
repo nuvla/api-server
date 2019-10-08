@@ -187,7 +187,7 @@
           success? (-> body-response :failures empty?)]
       (if success?
         body-response
-        (let [msg (str "error when delete by query: " body-response)]
+        (let [msg (str "error when deleting by query: " body-response)]
           (throw (r/ex-response msg 500)))))
     (catch Exception e
       (let [{:keys [body] :as response} (ex-data e)

@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.response :as ru]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -116,7 +117,11 @@
 (defn bulk-delete-fn
   [resource-name collection-acl collection-uri]
   (validate-collection-acl collection-acl)
-  (fn [request]
+  (fn [{:keys [headers cimi-params] :as request}]
+    (when-not (contains? headers "bulk")
+      (throw (ru/ex-bad-request "Bulk operation should contain bulk http header.")))
+    (when-not (coll? (:filter cimi-params))
+      (throw (ru/ex-bad-request "Bulk operation should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-delete collection-acl request)
     (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
           result (db/bulk-delete resource-name options)]
