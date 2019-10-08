@@ -423,7 +423,8 @@
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header
+                              "user/jane group/nuvla-user group/nuvla-anon")]
 
     (let [data-record-fn    (fn [infra-id]
                               {:infrastructure-service (str "infrastructure-service/" infra-id)})
@@ -495,7 +496,7 @@
             (ltu/is-status 200)
             (ltu/is-count 0)))
 
-      ;; user delete the 9 left records
+      ;; user delete the 9 left data records
       (-> session-user
           (request base-uri-filter
                    :request-method :delete
@@ -536,8 +537,7 @@
                    :headers {:bulk true})
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-key-value :deleted 1))
-      )))
+          (ltu/is-key-value :deleted 1)))))
 
 
 (deftest bad-methods

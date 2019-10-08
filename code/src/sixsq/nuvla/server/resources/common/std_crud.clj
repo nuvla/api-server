@@ -53,9 +53,10 @@
   [resource-name]
   (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
     (try
-      (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
-                                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                          (a/throw-cannot-edit request))
+      (let [{:keys [acl] :as current} (->
+                                        (str resource-name "/" uuid)
+                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                        (a/throw-cannot-edit request))
             rights                   (a/extract-rights (auth/current-authentication request) acl)
             dissoc-keys              (-> (map keyword select)
                                          set
@@ -123,8 +124,8 @@
     (when-not (coll? (:filter cimi-params))
       (throw (ru/ex-bad-request "Bulk operation should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-delete collection-acl request)
-    (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
-          result (db/bulk-delete resource-name options)]
+    (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
+          result  (db/bulk-delete resource-name options)]
       (r/json-response result))))
 
 
@@ -201,7 +202,8 @@
       (case status
         201 (log/infof "created %s resource" resource-id)
         409 (log/infof "%s resource already exists; new resource not created." resource-id)
-        (log/errorf "unexpected status code (%s) when creating %s resource:" (str status) resource-id)))
+        (log/errorf "unexpected status code (%s) when creating %s resource:"
+                    (str status) resource-id)))
     (catch Exception e
       (log/errorf "error when creating %s resource: %s\n%s"
                   resource-id
