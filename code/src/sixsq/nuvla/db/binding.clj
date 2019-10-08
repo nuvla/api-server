@@ -82,5 +82,18 @@
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,
      then a 400 (bad-request) response must be returned.  Other appropriate
+     error codes can also be thrown.")
+
+  (bulk-delete
+    [this collection-id options]
+    "This function removes the given resources in the database where the
+    collection-id corresponds to the name of a Collection.
+
+     On success, the function must return a the summary map of what was done
+     on the db..
+
+     On failure, the function must throw an ex-info containing the error
+     ring response.  If the resource-id does not correspond to a Collection,
+     then a 400 (bad-request) response must be returned.  Other appropriate
      error codes can also be thrown."))
 

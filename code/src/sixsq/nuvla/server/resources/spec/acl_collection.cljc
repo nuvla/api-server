@@ -19,8 +19,14 @@
              :json-schema/description "list of principals that can add a new resource to a collection")))
 
 
+(s/def ::bulk-delete
+  (-> (st/spec ::acl-common/principals)
+      (assoc :name "bulk-delete"
+             :json-schema/description "list of principals that can bulk delete to a collection")))
+
+
 (s/def ::acl
-  (-> (st/spec (su/only-keys :opt-un [::query ::add]))
+  (-> (st/spec (su/only-keys :opt-un [::query ::add ::bulk-delete]))
       (assoc :name "acl"
              :json-schema/type "map"
              :json-schema/display-name "ACL"

@@ -5,9 +5,9 @@
 
 (defn and-acl
   "Enriches query-builder by adding a clause on ACL (extracted from options)"
-  [query {:keys [nuvla/authn] :as options}]
+  [query {:keys [nuvla/authn] :as options} right]
   (let [claims                (:claims authn)
-        acl-view-meta-clauses (map vector (repeat "acl.view-meta") claims)
+        acl-view-meta-clauses (map vector (repeat (str "acl." right)) claims)
 
         acl-owners-clauses    (map vector (repeat "acl.owners") claims)
         acl-clauses           (concat acl-view-meta-clauses
@@ -15,3 +15,13 @@
         acl-queries           (map (fn [[field value]] (ef/eq field value)) acl-clauses)
         query-acl             (if (empty? acl-queries) (ef/match-none-query) (ef/or acl-queries))]
     (ef/and [query-acl query])))
+
+
+(defn and-acl-query
+  [query options]
+  (and-acl query options "view-meta"))
+
+
+(defn and-acl-delete
+  [query options]
+  (and-acl query options "delete"))

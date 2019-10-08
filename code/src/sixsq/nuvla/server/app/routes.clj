@@ -17,6 +17,8 @@
       (crud/query request))
     (GET uri request
       (crud/query request))
+    (DELETE uri request
+      (crud/bulk-delete request))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
 
