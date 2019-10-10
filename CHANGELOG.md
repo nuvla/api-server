@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.5] - 2019-10-10
+
 ### Change
 
   - Data record - Allow bulk delete
