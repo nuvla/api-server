@@ -52,7 +52,7 @@ This template requires the parameters necessary to create a new OpenVpn server.
       (assoc :name "openvpn-scope"
              :json-schema/type "string"
              :json-schema/description "openvpn scope to be used with"
-             :json-schema/value-scope {:values ["CUSTOMER", "NUVLABOX"]})))
+             :json-schema/value-scope {:values ["customer", "nuvlabox"]})))
 
 
 (s/def ::openvpn-shared-key
