@@ -87,7 +87,8 @@ an application.
 
 (defmethod crud/query resource-type
   [{{:keys [orderby]} :cimi-params :as request}]
-  (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
+  (query-impl
+    (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
 
 
 ;;

@@ -2,8 +2,12 @@
 
 ## Unreleased
 
+## [4.2.5] - 2019-10-10
+
 ### Change
 
+  - Data record - Allow bulk delete
+  - CIMI - Bulk delete route for collections
   - Group - Allow setting acl at group creation time
   - Session - Extend validity of cookie from 1 day to 1 week
   - Callback - Allow re-execution of callbacks for user-registration, reset-password and for

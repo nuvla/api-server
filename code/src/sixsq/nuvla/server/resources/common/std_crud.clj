@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.response :as ru]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -52,9 +53,10 @@
   [resource-name]
   (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
     (try
-      (let [{:keys [acl] :as current} (-> (str resource-name "/" uuid)
-                                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                          (a/throw-cannot-edit request))
+      (let [{:keys [acl] :as current} (->
+                                        (str resource-name "/" uuid)
+                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                        (a/throw-cannot-edit request))
             rights                   (a/extract-rights (auth/current-authentication request) acl)
             dissoc-keys              (-> (map keyword select)
                                          set
@@ -111,6 +113,20 @@
             updated-entries   (remove nil? (map #(a/select-viewable-keys % request) entries))
             entries-and-count (merge metadata (wrapper-fn request updated-entries))]
         (r/json-response entries-and-count)))))
+
+
+(defn bulk-delete-fn
+  [resource-name collection-acl collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [headers cimi-params] :as request}]
+    (when-not (contains? headers "bulk")
+      (throw (ru/ex-bad-request "Bulk operation should contain bulk http header.")))
+    (when-not (coll? (:filter cimi-params))
+      (throw (ru/ex-bad-request "Bulk operation should contain a non empty cimi filter.")))
+    (a/throw-cannot-bulk-delete collection-acl request)
+    (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
+          result  (db/bulk-delete resource-name options)]
+      (r/json-response result))))
 
 
 (def ^:const href-not-found-msg "requested href not found")
@@ -186,7 +202,8 @@
       (case status
         201 (log/infof "created %s resource" resource-id)
         409 (log/infof "%s resource already exists; new resource not created." resource-id)
-        (log/errorf "unexpected status code (%s) when creating %s resource:" (str status) resource-id)))
+        (log/errorf "unexpected status code (%s) when creating %s resource:"
+                    (str status) resource-id)))
     (catch Exception e
       (log/errorf "error when creating %s resource: %s\n%s"
                   resource-id

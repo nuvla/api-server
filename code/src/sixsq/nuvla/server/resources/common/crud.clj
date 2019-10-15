@@ -52,6 +52,14 @@
   (db/query collection-id (merge options {:nuvla/authn auth/internal-identity})))
 
 
+(defmulti bulk-delete resource-name-dispatch)
+
+
+(defmethod bulk-delete :default
+  [request]
+  (throw (r/ex-bad-method request)))
+
+
 (defmulti retrieve resource-name-dispatch)
 
 

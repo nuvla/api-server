@@ -152,7 +152,7 @@
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
           selected                (select/select cimi-params)
-          query                   {:query (acl/and-acl (filter/filter cimi-params) options)}
+          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
           body                    (merge paging orderby selected query aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
@@ -171,6 +171,28 @@
       (let [{:keys [body] :as response} (ex-data e)
             error (:error body)
             msg   (str "unexpected exception querying: " (or error e))]
+        (throw (r/ex-response msg 500))))))
+
+
+(defn bulk-delete-data
+  [client collection-id {:keys [cimi-params] :as options}]
+  (try
+    (let [index    (escu/collection-id->index collection-id)
+          query    {:query (acl/and-acl-delete (filter/filter cimi-params) options)}
+          response (spandex/request client {:url    [index :_delete_by_query]
+                                            :query-string {:refresh true}
+                                            :method :post
+                                            :body   query})
+          body-response (:body response)
+          success? (-> body-response :failures empty?)]
+      (if success?
+        body-response
+        (let [msg (str "error when deleting by query: " body-response)]
+          (throw (r/ex-response msg 500)))))
+    (catch Exception e
+      (let [{:keys [body] :as response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception delete by query: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
 
@@ -206,6 +228,9 @@
 
   (query [_ collection-id options]
     (query-data client collection-id options))
+
+  (bulk-delete [_ collection-id options]
+    (bulk-delete-data client collection-id options))
 
 
   Closeable

@@ -251,7 +251,7 @@
           (is (= 2 (:count query-meta))))
 
 
-        ;; delete all of the docs
+        ;; delete all of the docs one by one
         (doseq [doc docs]
           (let [response (db/delete db doc nil)]
             (is (= 200 (:status response)))))
@@ -263,4 +263,19 @@
             (is (nil? "delete of non-existent resource did not throw an exception"))
             (catch Exception e
               (let [response (ex-data e)]
-                (is (= 404 (:status response)))))))))))
+                (is (= 404 (:status response)))))))
+
+        ;; add all of the docs to the database
+        (doseq [doc docs]
+          (let [doc-id   (:id doc)
+                response (db/add db doc nil)]
+            (is (= 201 (:status response)))
+            (is (= doc-id (get-in response [:headers "Location"])))))
+
+        ;; delete all of the docs
+        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
+                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                       :nuvla/authn auth/internal-identity}
+              response (db/bulk-delete db collection-id options)]
+          (is (= 2 (:deleted response))))
+        ))))

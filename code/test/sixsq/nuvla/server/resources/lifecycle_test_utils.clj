@@ -34,6 +34,7 @@
     (org.apache.curator.test TestingServer)
     (org.elasticsearch.common.logging LogConfigurator)
     (org.elasticsearch.common.settings Settings)
+    (org.elasticsearch.index.reindex ReindexPlugin)
     (org.elasticsearch.node MockNode)
     (org.elasticsearch.transport Netty4Plugin)))
 
@@ -362,7 +363,8 @@
                       (put "transport.type" "netty4")
                       (put "network.host" "127.0.0.1")
                       (build))
-         plugins  [Netty4Plugin]]
+         plugins  [Netty4Plugin
+                   ReindexPlugin]]
 
      (LogConfigurator/configureWithoutConfig settings)
      (.. (MockNode. ^Settings settings plugins)
