@@ -13,11 +13,12 @@
 ;;
 
 (def ^:const resource
-  {:service     service
-   :name        "OpenVPN API Configuration"
-   :description "OpenVPN API Configuration to use when creating openvpn credentials"
-   :instance    "openvpn-instance"
-   :endpoint    "http://openvpn.example"})
+  {:service                 service
+   :name                    "OpenVPN API Configuration"
+   :description             "OpenVPN API Configuration to use when creating openvpn credentials"
+   :instance                "openvpn-instance"
+   :endpoint                "http://openvpn.example"
+   :infrastructure-services ["infrastructure-service/openvpn-example"]})
 
 
 ;;

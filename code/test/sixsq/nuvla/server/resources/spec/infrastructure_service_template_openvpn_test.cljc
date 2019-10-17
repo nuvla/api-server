@@ -22,8 +22,6 @@
                    :method                     tpl-openvpn/method
                    :subtype                    tpl-openvpn/subtype
 
-                   :instance                   "nuvlabox-vpn"
-
                    :openvpn-ca-certificate     "ca certif"
                    :openvpn-common-name-prefix "common name prefix"
                    :openvpn-scope              "nuvlabox"
@@ -32,7 +30,9 @@
                                                  :endpoint "10.0.0.1"}
                                                 {:protocol "udp"
                                                  :port     1194
-                                                 :endpoint "10.0.0.1"}]}]
+                                                 :endpoint "10.0.0.1"}]
+                   :openvpn-intermediate-ca    ["certif-1"
+                                                "certif-2"]}]
 
     (stu/is-valid ::spec-openvpn/schema cfg)
 
@@ -40,27 +40,5 @@
                    :openvpn-ca-certificate :openvpn-endpoints :openvpn-scope}]
       (stu/is-invalid ::spec-openvpn/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:openvpn-common-name-prefix}]
+    (doseq [attr #{:openvpn-common-name-prefix :openvpn-intermediate-ca}]
       (stu/is-valid ::spec-openvpn/schema (dissoc cfg attr)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -28,8 +28,6 @@ Docker Swarm cluster on a given cloud infrastructure.
 
                :acl                    infra-service-tpl/resource-acl
 
-               :instance               "nuvlabox-vpn"
-
                :openvpn-ca-certificate "ca certif"
                :openvpn-scope          "nuvlabox"
                :openvpn-endpoints      [{:protocol "udp"

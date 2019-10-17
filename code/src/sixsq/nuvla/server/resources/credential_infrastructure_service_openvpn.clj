@@ -8,10 +8,14 @@ OpenVPN service.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer :as tpl-customer]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
+     :as tpl-customer]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as ctiso]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
+    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 ;;
@@ -32,29 +36,59 @@ OpenVPN service.
 ;;
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
-  [{:keys [subtype method parent openvpn-certificate openvpn-common-name]} request]
-  (let [user-id (auth/current-user-id request)
-        acl     (if (= method tpl-customer/method)
-                  {:owners   ["group/nuvla-admin"]
-                   :view-acl [user-id]
-                   :delete   [user-id]}
-                  {:owners   ["group/nuvla-admin"]
-                   :view-acl ["group/nuvla-nuvlabox"]
-                   :delete   ["group/nuvla-nuvlabox"]})]
-    [nil (cond-> {:resource-type       p/resource-type
-                  :subtype             subtype
-                  :method              method
-                  :openvpn-certificate openvpn-certificate
-                  :openvpn-common-name openvpn-common-name
-                  :acl                 acl}
-                 parent (assoc :parent parent))]))
+  [{:keys [subtype method parent]}
+   request]
+  #_(retrieve configuation_to_generate_cred by communcating with openvpn api)
+  (let [user-id    (auth/current-user-id request)
+        authn-info (auth/current-authentication request)
+        customer?  (= method tpl-customer/method)
+        {service-scope   :openvpn-scope
+         service-subtype :subtype} (openvpn-utils/get-service authn-info parent)
+        acl        (if customer?
+                     {:owners   ["group/nuvla-admin"]
+                      :view-acl [user-id]
+                      :delete   [user-id]}
+                     {:owners   ["group/nuvla-admin"]
+                      :view-acl ["group/nuvla-nuvlabox"]
+                      :delete   ["group/nuvla-nuvlabox"]})]
 
+    (when (not= service-subtype "openvpn")
+      (logu/log-and-throw-400
+        "Bad infrastructure service subtype. Subtype should be openvpn!"))
+
+    (when (not= service-scope (if customer? "customer" "nuvlabox"))
+      (logu/log-and-throw-400
+        "Bad infrastructure service scope for selected credential template!"))
+
+    (when (openvpn-utils/credentials-already-exist? parent user-id)
+      (logu/log-and-throw-400
+        "Credential with following common-name already exist!"))
+
+
+    (let [{openvpn-endpoint :endpoint} (openvpn-utils/get-configuration parent)]
+      (when-not openvpn-endpoint
+        (logu/log-and-throw-400
+          (format "No openvpn api endpoint found for '%s'." parent)))
+
+      ;; call openvpn api
+      (let [response-openvpn-api (openvpn-utils/generate-credential
+                                   openvpn-endpoint user-id parent)
+            intermediate-ca      (:intermediate-ca response-openvpn-api)]
+        [nil (cond->
+               {:resource-type       p/resource-type
+                :subtype             subtype
+                :method              method
+                :openvpn-certificate (:certificate response-openvpn-api)
+                :openvpn-common-name (:common-name response-openvpn-api)
+                :acl                 acl
+                :parent              parent}
+               intermediate-ca (assoc :openvpn-intermediate-ca intermediate-ca))]))))
 
 ;;
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::ctiso/schema))
+(def validate-fn (u/create-spec-validation-fn ::ciso/schema))
 
 
 (defmethod p/validate-subtype tpl-customer/credential-subtype

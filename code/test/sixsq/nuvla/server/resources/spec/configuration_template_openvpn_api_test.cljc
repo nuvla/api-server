@@ -12,21 +12,24 @@
 
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00Z"
-        root      {:id            (str ct/resource-type "/openvpn-api-test-instance")
-                   :resource-type ct/resource-type
-                   :created       timestamp
-                   :updated       timestamp
-                   :acl           valid-acl
+        root      {:id                      (str ct/resource-type "/openvpn-api-test-instance")
+                   :resource-type           ct/resource-type
+                   :created                 timestamp
+                   :updated                 timestamp
+                   :acl                     valid-acl
 
-                   :service       "openvpn-api"
-                   :instance      "test-instance"
+                   :service                 "openvpn-api"
+                   :instance                "test-instance"
 
-                   :endpoint     "http://openvpn.api"}]
+                   :endpoint                "http://openvpn.api"
+
+                   :infrastructure-services ["infrastructure-service/openvpn-1"
+                                             "infrastructure-service/openvpn-2"]}]
 
     (stu/is-valid ::cts-openvpn-api/schema root)
 
     (stu/is-invalid ::cts-openvpn-api/schema (assoc root :bad "BAD"))
 
     (doseq [k #{:id :resource-type :created :updated :acl
-                :service :instance :endpoint}]
+                :service :instance :endpoint :infrastructure-services}]
       (stu/is-invalid ::cts-openvpn-api/schema (dissoc root k)))))

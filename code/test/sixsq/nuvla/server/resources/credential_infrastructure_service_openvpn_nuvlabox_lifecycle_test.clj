@@ -55,9 +55,7 @@
                                    :description description-attr
                                    :tags        tags-attr
                                    :template    {:href                href
-                                                 :parent              parent-value
-                                                 :openvpn-common-name openvpn-common-name-value
-                                                 :openvpn-certificate openvpn-certificate-value}}]
+                                                 :parent              parent-value}}]
 
     ;; nuvla user is not able to see the template
     (-> session-user

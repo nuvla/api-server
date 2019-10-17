@@ -33,8 +33,7 @@ This credential-template creates a credential for a nuvlabox on OpenVPN service.
                        :subtype             credential-subtype
                        :method              method
 
-                       :openvpn-certificate "certificate"
-                       :openvpn-common-name "common-name-example"})
+                       :parent "infrastructure-service/uuid"})
 
 
 ;;

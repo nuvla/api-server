@@ -70,6 +70,14 @@ This template requires the parameters necessary to create a new OpenVpn server.
              :json-schema/indexed false)))
 
 
+(s/def ::openvpn-intermediate-ca
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+      (assoc :name "intermediate-ca"
+             :json-schema/type "array"
+             :json-schema/description "openvpn intermediate ca certificates"
+             :json-schema/indexed false)))
+
+
 (s/def ::openvpn-common-name-prefix
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "openvpn-common-name-prefix"
@@ -82,7 +90,8 @@ This template requires the parameters necessary to create a new OpenVpn server.
             ::openvpn-endpoints
             ::openvpn-ca-certificate]
    :opt-un [::openvpn-shared-key
-            ::openvpn-common-name-prefix]})
+            ::openvpn-common-name-prefix
+            ::openvpn-intermediate-ca]})
 
 
 ;; Defines the contents of the this service-template resource.

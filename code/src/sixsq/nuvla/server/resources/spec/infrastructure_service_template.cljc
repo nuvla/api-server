@@ -18,8 +18,7 @@
 
 
 (def service-template-keys-spec {:req-un [::infrastructure-service/subtype
-                                          ::infrastructure-service/method]
-                                 :opt-un [::infrastructure-service/instance]})
+                                          ::infrastructure-service/method]})
 
 
 (def resource-keys-spec

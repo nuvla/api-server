@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
+    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -19,14 +19,14 @@
 
 
 (def credential-template-keys-spec
-  {:req-un [::ciso/openvpn-common-name
-            ::ciso/openvpn-certificate]
+  {:req-un [::common/parent]
    :opt-un [::openvpn-csr]})
 
+
 (def credential-template-create-keys-spec
-  {:req-un [::ciso/openvpn-common-name
-            ::ciso/openvpn-certificate]
+  {:req-un [::common/parent]
    :opt-un [::openvpn-csr]})
+
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema
