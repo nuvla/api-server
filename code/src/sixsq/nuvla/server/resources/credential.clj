@@ -23,8 +23,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"
+                             "group/nuvla-nuvlabox"]
+                     :add   ["group/nuvla-user"
+                             "group/nuvla-nuvlabox"]})
 
 
 ;;

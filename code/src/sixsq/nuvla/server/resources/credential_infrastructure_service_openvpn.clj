@@ -10,12 +10,12 @@ OpenVPN service.
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as ctiso]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
     [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as ctiso]
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 ;;

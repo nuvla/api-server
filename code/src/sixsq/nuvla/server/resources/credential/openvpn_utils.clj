@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.server.resources.credential.openvpn-utils
   (:require
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [clj-http.client :as http]
+    [clojure.data.json :as json]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
      :as tpl-customer]
-    [clj-http.client :as http]
-    [clojure.data.json :as json]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]))
 
 
 (defn get-service
