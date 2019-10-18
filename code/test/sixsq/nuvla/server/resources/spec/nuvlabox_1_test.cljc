@@ -3,7 +3,8 @@
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.spec.nuvlabox-1 :as nb-1]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
+    [clojure.spec.alpha :as s]))
 
 
 (def valid-acl {:owners ["group/nuvla-admin"]})
@@ -51,12 +52,14 @@
                :lan-cidr                     "0.0.0.0/32"
                :os-version                   "OS version"
                :hw-revision-code             "a020d3"
-               :monitored                    true})
+               :monitored                    true
+               :vpn-server-id                "infrastructure-service/uuid-1"})
 
 
 (deftest check-nuvlabox
 
   (stu/is-valid ::nb-1/schema valid-nb)
+  (s/explain  ::nb-1/schema valid-nb)
   (stu/is-invalid ::nb-1/schema (assoc valid-nb :bad-attr "BAD_ATTR"))
 
   ;; required
@@ -85,5 +88,6 @@
                  :lan-cidr
                  :os-version
                  :hw-revision-code
-                 :monitored}]
+                 :monitored
+                 :infrastructure-service-id}]
     (stu/is-valid ::nb-1/schema (dissoc valid-nb attr))))

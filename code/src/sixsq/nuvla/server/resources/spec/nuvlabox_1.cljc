@@ -33,4 +33,5 @@
                                ::nb-0/lan-cidr
                                ::nb-0/os-version
                                ::nb-0/hw-revision-code
-                               ::nb-0/monitored]}))
+                               ::nb-0/monitored
+                               ::nb-0/vpn-server-id]}))

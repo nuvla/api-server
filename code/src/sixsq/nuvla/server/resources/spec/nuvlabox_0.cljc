@@ -199,6 +199,18 @@
              :json-schema/order 30)))
 
 
+
+(def infra-srvc-id-regex #"^infrastructure-service/[a-zA-Z0-9-]+$")
+
+(s/def ::vpn-server-id
+  (-> (st/spec (s/and string? #(re-matches infra-srvc-id-regex %)))
+      (assoc :name "vpn-server-id"
+             :json-schema/type "string"
+             :json-schema/display-name "vpn server id"
+             :json-schema/description "Openvpn infrastructure service id to connect"
+             :json-schema/order 31)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -222,5 +234,6 @@
                                ::lan-cidr
                                ::os-version
                                ::hw-revision-code
-                               ::monitored]}))
+                               ::monitored
+                               ::vpn-server-id]}))
 
