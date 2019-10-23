@@ -25,7 +25,7 @@
 
 (defn format-nb-name
   [name id-or-short-id]
-  (str "NB " (or name id-or-short-id)))
+  (or name id-or-short-id))
 
 
 (defn create-infrastructure-service-group
@@ -115,9 +115,8 @@
   (if endpoint
     (let [acl     {:owners [nuvlabox-owner]}
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str "Minio "
-                                                   (format-nb-name nuvlabox-name
-                                                                   (short-nb-id nuvlabox-id)))
+                   :body        {:name        (format-nb-name nuvlabox-name
+                                                              (short-nb-id nuvlabox-id))
                                  :description (str "Minio (S3) on "
                                                    (format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
@@ -205,11 +204,9 @@
     (if (and key cert ca)
       (let [acl     {:owners [nuvlabox-owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        (str "Swarm TLS "
-                                                     (format-nb-name nuvlabox-name
-                                                                     (short-nb-id nuvlabox-id)))
-                                   :description (str "Docker Swarm client credential for "
-                                                     swarm-id " linked to "
+                     :body        {:name        (format-nb-name nuvlabox-name
+                                                                (short-nb-id nuvlabox-id))
+                                   :description (str "Docker Swarm client credential linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
                                    :parent      swarm-id
                                    :acl         acl
@@ -252,11 +249,9 @@
     (if (and scope token)
       (let [acl     {:owners [nuvlabox-owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        (str "Swarm Token "
-                                                     (format-nb-name nuvlabox-name
-                                                                     (short-nb-id nuvlabox-id)))
-                                   :description (str "Docker Swarm token for "
-                                                     swarm-id " linked to "
+                     :body        {:name        (format-nb-name nuvlabox-name
+                                                                (short-nb-id nuvlabox-id))
+                                   :description (str "Docker Swarm token linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
                                    :parent      swarm-id
                                    :acl         acl
@@ -295,11 +290,9 @@
     (if (and access-key secret-key)
       (let [acl     {:owners [nuvlabox-owner]}
             request {:params      {:resource-name credential/resource-type}
-                     :body        {:name        (str "Minio "
-                                                     (format-nb-name nuvlabox-name
-                                                                     (short-nb-id nuvlabox-id)))
-                                   :description (str "Minio (S3) credential for "
-                                                     minio-id " linked to "
+                     :body        {:name        (format-nb-name nuvlabox-name
+                                                                (short-nb-id nuvlabox-id))
+                                   :description (str "Minio (S3) credential linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
                                    :parent      minio-id
                                    :acl         acl

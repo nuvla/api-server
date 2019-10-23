@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Change
+
+  - NuvlaBox - Simplify names of nuvlabox sub-resources at commission time
+
 ## [4.2.5] - 2019-10-10
 
 ### Change
