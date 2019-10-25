@@ -4,6 +4,7 @@
 
 ### Change
 
+  - Job - Stale job because of race condition fix
   - NuvlaBox - Simplify names of nuvlabox sub-resources at commission time
 
 ## [4.2.5] - 2019-10-10

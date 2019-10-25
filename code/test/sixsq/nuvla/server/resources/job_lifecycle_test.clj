@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.job-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -25,9 +24,6 @@
    :acl           {:owners   ["group/nuvla-admin"]
                    :view-acl ["user/jane"]
                    :manage   ["user/jane"]}})
-
-
-(def zk-job-path-start-subs "/job/entries/entry-")
 
 
 (deftest check-metadata
@@ -74,14 +70,7 @@
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/is-operation-present :stop)
-                             (ltu/body))
-          zookeeper-path (some-> job :tags first)]
-
-      (is (= "QUEUED" (:state job)))
-
-      (is (str/starts-with? zookeeper-path (str zk-job-path-start-subs "999-")))
-
-      (is (= (uzk/get-data zookeeper-path) uri))
+                             (ltu/is-key-value :state "QUEUED"))]
 
       (-> session-user
           (request "/api/job")
@@ -110,20 +99,9 @@
           (ltu/body->edn)
           (ltu/is-status 200)))
 
-    (let [uri            (-> session-admin
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str (assoc valid-job :priority 50)))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-          abs-uri        (str p/service-context uri)
-          zookeeper-path (some-> session-user
-                                 (request abs-uri)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-operation-present :stop)
-                                 (ltu/body)
-                                 :tags
-                                 first)]
-      (is (str/starts-with? zookeeper-path (str zk-job-path-start-subs "050-"))))))
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-job :priority 50)))
+        (ltu/body->edn)
+        (ltu/is-status 201))))

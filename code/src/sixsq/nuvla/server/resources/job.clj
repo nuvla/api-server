@@ -10,6 +10,7 @@ represents a task that will be executed only when triggered by an external
 request.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -73,7 +74,6 @@ request.
 (defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [id             (u/new-resource-id resource-type)
-        zookeeper-path (ju/add-job-to-queue id priority)
         new-job        (-> body
                            u/strip-service-attrs
                            (assoc :resource-type resource-type)
@@ -82,9 +82,11 @@ request.
                            u/update-timestamps
                            ju/job-cond->addition
                            (crud/add-acl request)
-                           (assoc :tags [zookeeper-path])
-                           (crud/validate))]
-    (db/add resource-type new-job {})))
+                           (crud/validate))
+        response       (db/add resource-type new-job {})
+        zookeeper-path (ju/add-job-to-queue id priority)]
+    (log/debugf "Added %s, zookeeper path %s." id zookeeper-path)
+    response))
 
 
 (defmethod crud/add resource-type
