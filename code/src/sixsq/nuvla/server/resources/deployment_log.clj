@@ -22,8 +22,9 @@ These resources represent the logs of a deployment.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-admin"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-admin"]
+                     :bulk-delete ["group/nuvla-admin"]})
 
 
 (def actions [{:name           "fetch"
@@ -95,6 +96,14 @@ These resources represent the logs of a deployment.
   (query-impl request))
 
 
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
+
+
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [fetch-op    (u/action-map id :fetch)
@@ -159,7 +168,7 @@ These resources represent the logs of a deployment.
 
 (defn create-log
   [deployment-id session-id service & [{:keys [since lines]}]]
-  (let [acl            {:owners    ["group/nuvla-admin"]
+  (let [acl            {:owners   ["group/nuvla-admin"]
                         :edit-acl [session-id]}
         log-map        (cond-> {:parent  deployment-id
                                 :service service

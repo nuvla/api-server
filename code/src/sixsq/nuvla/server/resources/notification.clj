@@ -48,8 +48,9 @@ provide an explicit ACL that the describes the desired visibility.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-admin"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-admin"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 (def resource-acl {:owners ["group/nuvla-admin"]})
 
@@ -189,7 +190,16 @@ provide an explicit ACL that the describes the desired visibility.
 
 (defmethod crud/query resource-type
   [{{:keys [orderby]} :cimi-params :as request}]
-  (query-impl (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["updated" :desc]]))))
+  (query-impl (assoc-in request [:cimi-params :orderby]
+                        (if (seq orderby) orderby [["updated" :desc]]))))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 
 ;;

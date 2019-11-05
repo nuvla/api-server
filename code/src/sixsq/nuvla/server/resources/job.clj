@@ -29,8 +29,9 @@ request.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-admin"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-admin"]
+                     :bulk-delete ["group/nuvla-admin"]})
 
 ;;
 ;; initialization
@@ -141,6 +142,14 @@ request.
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 
 ;;
