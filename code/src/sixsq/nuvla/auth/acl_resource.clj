@@ -110,6 +110,9 @@
 (def can-view? (partial has-rights? #{::view-meta ::view-data ::view-acl}))
 
 
+(def can-bulk-delete? (partial has-rights? #{::bulk-delete}))
+
+
 (def ^:const metadata-keys #{:id
                              :resource-type
                              :created
