@@ -141,7 +141,7 @@
   [{:keys [id] :as resource} request]
   (let [ops (cond-> []
                     (a/can-add? resource request) (conj (u/operation-map id :add))
-                    (a/can-bulk-delete? resource request) (conj (u/operation-map id :add)))]
+                    (a/can-bulk-delete? resource request) (conj (u/operation-map id :bulk-delete)))]
     (if (empty? ops)
       (dissoc resource :operations)
       (assoc resource :operations ops))))
