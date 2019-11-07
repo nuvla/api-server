@@ -10,6 +10,8 @@
    the configuration parameters from the environmental variables ES_HOST and
    ES_PORT. These default to 'localhost' and '9200' if not specified."
   []
-  (-> (esru/create-es-client)
-      esru/wait-for-cluster
-      esrb/->ElasticsearchRestBinding))
+  (let [client (-> (esru/create-es-client)
+                    esru/wait-for-cluster)
+        ;; TODO: provide options to sniffer creation.
+        sniffer (esrb/create-sniffer client {})]
+    (esrb/->ElasticsearchRestBinding client sniffer)))

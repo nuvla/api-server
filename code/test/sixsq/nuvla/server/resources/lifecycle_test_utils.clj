@@ -418,8 +418,9 @@
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [client# (second (set-es-node-client-cache))]
-     (db/set-impl! (esb/->ElasticsearchRestBinding client#))
+  `(let [client# (second (set-es-node-client-cache))
+         sniffer# (esb/create-sniffer client# {})]
+     (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      (esu/reset-index client# (str escu/default-index-prefix "*"))
      ~@body))
 

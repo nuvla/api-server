@@ -26,6 +26,11 @@
   (spandex/client options))
 
 
+(defn create-sniffer
+  [client options]
+  (spandex/sniffer client options))
+
+
 (defn create-index
   [client index]
   (try
@@ -196,7 +201,7 @@
         (throw (r/ex-response msg 500))))))
 
 
-(deftype ElasticsearchRestBinding [client]
+(deftype ElasticsearchRestBinding [client sniffer]
   Binding
 
   (initialize [_ collection-id {:keys [spec] :as options}]
@@ -235,4 +240,5 @@
 
   Closeable
   (close [_]
-    (spandex/close! client)))
+    (spandex/close! client)
+    (spandex/close! sniffer)))
