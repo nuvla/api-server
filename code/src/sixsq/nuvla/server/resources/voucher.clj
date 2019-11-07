@@ -35,8 +35,9 @@ voucher via the 'expire' operation.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 
 ;;
@@ -130,6 +131,14 @@ voucher via the 'expire' operation.
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 
 

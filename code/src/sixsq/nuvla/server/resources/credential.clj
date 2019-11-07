@@ -23,8 +23,9 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 
 ;;
@@ -232,3 +233,9 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))

@@ -22,8 +22,9 @@ configuration option.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-admin"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-admin"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 
 (defn parameter->uuid
@@ -99,6 +100,14 @@ configuration option.
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

@@ -29,8 +29,7 @@ appropriate users.
     [sixsq.nuvla.server.resources.spec.callback :as callback]
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -39,8 +38,9 @@ appropriate users.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-admin"]
-                     :add   ["group/nuvla-admin"]})
+(def collection-acl {:query       ["group/nuvla-admin"]
+                     :add         ["group/nuvla-admin"]
+                     :bulk-delete ["group/nuvla-admin"]})
 
 
 ;;
@@ -94,6 +94,12 @@ appropriate users.
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 ;;
 ;; available operations
