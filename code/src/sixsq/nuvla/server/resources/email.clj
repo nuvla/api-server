@@ -26,8 +26,9 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 
 (def actions [{:name           "validate"
@@ -83,6 +84,13 @@ address. When the callback is triggered, the `validated` flag is set to true.
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 ;;
 ;; available operations; disallows editing of resource, adds validate action for unvalidated emails

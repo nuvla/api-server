@@ -139,10 +139,12 @@
 
 (defn set-standard-collection-operations
   [{:keys [id] :as resource} request]
-  (if (a/can-add? resource request)
-    (let [ops [(u/operation-map id :add)]]
-      (assoc resource :operations ops))
-    (dissoc resource :operations)))
+  (let [ops (cond-> []
+                    (a/can-add? resource request) (conj (u/operation-map id :add))
+                    (a/can-bulk-delete? resource request) (conj (u/operation-map id :bulk-delete)))]
+    (if (empty? ops)
+      (dissoc resource :operations)
+      (assoc resource :operations ops))))
 
 
 (defn set-standard-resource-operations

@@ -38,25 +38,25 @@ OpenVPN service.
 (defmethod p/tpl->credential tpl-customer/credential-subtype
   [{:keys [subtype method parent]}
    request]
-  #_(retrieve configuation_to_generate_cred by communcating with openvpn api)
-  (let [user-id    (auth/current-user-id request)
-        authn-info (auth/current-authentication request)
-        customer?  (= method tpl-customer/method)
-        {service-scope   :openvpn-scope
-         service-subtype :subtype} (openvpn-utils/get-service authn-info parent)
-        acl        (if customer?
-                     {:owners   ["group/nuvla-admin"]
-                      :view-acl [user-id]
-                      :delete   [user-id]}
-                     {:owners   ["group/nuvla-admin"]
-                      :view-acl ["group/nuvla-nuvlabox"]
-                      :delete   ["group/nuvla-nuvlabox"]})]
+  (let [user-id         (auth/current-user-id request)
+        authn-info      (auth/current-authentication request)
+        customer?       (= method tpl-customer/method)
+        openvpn-service (openvpn-utils/get-service authn-info parent)
 
-    (when (not= service-subtype "openvpn")
+        acl             (if customer?
+                          {:owners   ["group/nuvla-admin"]
+                           :view-acl [user-id]
+                           :delete   [user-id]}
+                          {:owners   ["group/nuvla-admin"]
+                           :view-acl ["group/nuvla-nuvlabox"]
+                           :delete   ["group/nuvla-nuvlabox"]})]
+
+    (when (not= (:subtype openvpn-service) "openvpn")
       (logu/log-and-throw-400
         "Bad infrastructure service subtype. Subtype should be openvpn!"))
 
-    (when (not= service-scope (if customer? "customer" "nuvlabox"))
+    (when (not= (:openvpn-scope openvpn-service)
+                (if customer? "customer" "nuvlabox"))
       (logu/log-and-throw-400
         "Bad infrastructure service scope for selected credential template!"))
 
