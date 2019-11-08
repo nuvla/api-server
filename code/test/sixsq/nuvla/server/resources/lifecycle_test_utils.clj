@@ -376,8 +376,9 @@
   (log/info "creating elasticsearch node and client")
   (let [node   (create-test-node)
         client (-> (esu/create-es-client)
-                   esu/wait-for-cluster)]
-    [node client]))
+                   esu/wait-for-cluster)
+        sniffer (esu/create-es-sniffer client)]
+    [node client sniffer]))
 
 
 (def ^:private es-node-client-cache (atom nil))
@@ -402,10 +403,14 @@
    values are not nil, then the node and client will be closed, with errors
    silently ignored."
   []
-  (let [[[node client] _] (swap-vals! es-node-client-cache (constantly nil))]
+  (let [[[node client sniffer] _] (swap-vals! es-node-client-cache (constantly nil))]
     (when client
       (try
         (.close client)
+        (catch Exception _)))
+    (when sniffer
+      (try
+        (.close sniffer)
         (catch Exception _)))
     (when node
       (try
@@ -418,8 +423,9 @@
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [client# (second (set-es-node-client-cache))
-         sniffer# (esb/create-sniffer client# {})]
+  `(let [cache# (set-es-node-client-cache)
+         client# (second cache#)
+         sniffer# (nth cache# 2)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      (esu/reset-index client# (str escu/default-index-prefix "*"))
      ~@body))

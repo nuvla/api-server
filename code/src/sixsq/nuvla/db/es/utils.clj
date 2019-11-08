@@ -66,3 +66,21 @@
 
      (log/info "creating elasticsearch client:" es-host es-port)
      (esrb/create-client hosts))))
+
+
+(defn create-es-sniffer
+  "Creates a sniffer connected to an Elasticsearch cluster. The 1-arity
+  version takes Elasticsearch `client` and creates the sniffer using
+  environment variables SNIFF_INTERVAL and SNIFF_AFTER_FAILURE_DELAY, or
+  uses defaults if the environment variables are not set. The 2-arity
+  version takes Elasticsearch `client` and `options` map, which can either
+  be empty (then defaults will be used) or contain sniffer initialisation
+  options."
+  ([client]
+   (let [interval (or (env/env :sniff-interval) esrb/sniff-interval-mills)
+         delay (or (env/env :sniff-after-failure-delay) esrb/sniff-after-failure-delay-mills)]
+     (create-es-sniffer client {:sniff-interval interval
+                                :sniff-after-failure-delay delay})))
+  ([client options]
+   (log/info "creating elasticsearch sniffer:" options)
+   (esrb/create-sniffer client (or options {}))))

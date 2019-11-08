@@ -12,6 +12,5 @@
   []
   (let [client (-> (esru/create-es-client)
                     esru/wait-for-cluster)
-        ;; TODO: provide options to sniffer creation.
-        sniffer (esrb/create-sniffer client {})]
+        sniffer (esru/create-es-sniffer client)]
     (esrb/->ElasticsearchRestBinding client sniffer)))
