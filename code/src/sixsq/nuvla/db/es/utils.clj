@@ -63,9 +63,12 @@
   host1[:port] as a vector. If the vector is empty, ['localhost:9200']
   is used."
   ([]
-   (let [hosts (-> (or (env/env :es-hosts) ES_HOST)
+   (let [env-hosts (env/env :es-hosts)
+         hosts (-> (or (if (> (count env-hosts) 0) env-hosts) ES_HOST)
                    (clojure.string/split #","))
-         es-hosts (map #(if-not (.contains % ":") (str % ES_PORT) %) hosts)]
+         es-hosts (->> hosts
+                       (map #(if-not (.contains % ":") (str % ":" ES_PORT) %))
+                       distinct)]
      (create-es-client es-hosts)))
   ([es-hosts]
    (let [hosts   {:hosts (if (empty? es-hosts) [ES_HOST] es-hosts)}]
