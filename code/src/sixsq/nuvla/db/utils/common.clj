@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.db.utils.common
   "General utilities for dealing with resources."
   (:require
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [environ.core :as env]))
 
 
 (defn split-id
@@ -22,3 +23,14 @@
   (when id
     (let [[type docid] (str/split id #"/")]
       [(keyword type) (or docid type)])))
+
+
+(defn env-get-as-int
+  "Returns environment variable identified by 'e' converted into integer. If
+  conversion fails (environment variable is not set, empty or not integer),
+  returns 'default' (if provided), otherwise, throws the conversion exception."
+  [e & [default]]
+  (try
+    (Integer/valueOf (env/env e))
+    (catch Exception ex
+      (or default (throw ex)))))

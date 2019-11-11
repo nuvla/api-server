@@ -4,7 +4,8 @@
     [clojure.tools.logging :as log]
     [environ.core :as env]
     [qbits.spandex :as spandex]
-    [sixsq.nuvla.db.es.binding :as esrb]))
+    [sixsq.nuvla.db.es.binding :as esrb]
+    [sixsq.nuvla.db.utils.common :as cu]))
 
 
 (def ^:private ok-health-statuses #{"green" "yellow"})
@@ -57,23 +58,23 @@
 
 (defn create-es-client
   "Creates a client connecting to an Elasticsearch instance. The 0-arity
-  version takes the host and port from the environment variable ES_HOSTS,
+  version takes the host and port from the environment variable ES_ENDPOINTS,
   which is the comma separated list of host1[:port][,host2[:port],...]. If
-  ES_HOSTS is not set, 'localhost:9200' is used. The 1-arity version takes
+  ES_ENDPOINTS is not set, 'localhost:9200' is used. The 1-arity version takes
   host1[:port] as a vector. If the vector is empty, ['localhost:9200']
   is used."
   ([]
-   (let [env-hosts (env/env :es-hosts)
-         hosts (-> (or (if (> (count env-hosts) 0) env-hosts) ES_HOST)
+   (let [env-endpoints (env/env :es-endpoints)
+         endpoints (-> (or (if (> (count env-endpoints) 0) env-endpoints) ES_HOST)
                    (clojure.string/split #","))
-         es-hosts (->> hosts
+         es-endpoints (->> endpoints
                        (map #(if-not (.contains % ":") (str % ":" ES_PORT) %))
                        distinct)]
-     (create-es-client es-hosts)))
-  ([es-hosts]
-   (let [hosts   {:hosts (if (empty? es-hosts) [ES_HOST] es-hosts)}]
-     (log/info "creating elasticsearch client:" es-hosts)
-     (esrb/create-client hosts))))
+     (create-es-client es-endpoints)))
+  ([es-endpoints]
+   (let [endpoints   {:hosts (if (empty? es-endpoints) [ES_HOST] es-endpoints)}]
+     (log/info "creating elasticsearch client:" es-endpoints)
+     (esrb/create-client endpoints))))
 
 
 (defn create-es-sniffer
@@ -85,8 +86,8 @@
   be empty (then defaults will be used) or contain sniffer initialisation
   options."
   ([client]
-   (let [interval (or (env/env :sniff-interval) esrb/sniff-interval-mills)
-         delay (or (env/env :sniff-after-failure-delay) esrb/sniff-after-failure-delay-mills)]
+   (let [interval (cu/env-get-as-int :es-sniff-interval esrb/sniff-interval-mills)
+         delay (cu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
      (create-es-sniffer client {:sniff-interval interval
                                 :sniff-after-failure-delay delay})))
   ([client options]
