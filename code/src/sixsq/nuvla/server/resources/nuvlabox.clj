@@ -20,7 +20,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -140,9 +141,10 @@ particular NuvlaBox release.
 
 
 (defmethod crud/edit resource-type
-  [{:keys [body] :as request}]
-  (let [restricted-body (select-keys body [:acl :name :description])]
-    (edit-impl (assoc request :body restricted-body))))
+  [{:keys [nuvla/authn body] :as request}]
+  (let [is-admin? (acl-resource/is-admin? authn)
+        new-body  (if is-admin? body (select-keys body [:acl :name :description]))]
+    (edit-impl (assoc request :body new-body))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

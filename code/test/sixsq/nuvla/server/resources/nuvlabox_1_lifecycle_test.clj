@@ -109,7 +109,7 @@
         (is (contains? (set (:manage acl)) id))
         (is (contains? (set (:edit-acl acl)) "group/nuvla-admin"))
 
-        ;; only name description acl are editable other changes are ignored
+        ;; only name description acl are editable for normal user other changes are ignored
         (let [new-name  "name NB changed"
               new-owner "user/beta"]
           (-> session
