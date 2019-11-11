@@ -51,20 +51,25 @@
                              :method :delete})))
 
 
+(def ^:const ES_PORT "9200")
+(def ^:const ES_HOST (str "localhost:" ES_PORT))
+
+
 (defn create-es-client
   "Creates a client connecting to an Elasticsearch instance. The 0-arity
-  version takes the host and port from the environmental variables ES_HOST and
-  ES_PORT. The 2-arity version takes these values as explicit parameters. If
-  the host or port is nil, then \"localhost\" or \"9200\" are used,
-  respectively."
+  version takes the host and port from the environment variable ES_HOSTS,
+  which is the comma separated list of host1[:port][,host2[:port],...]. If
+  ES_HOSTS is not set, 'localhost:9200' is used. The 1-arity version takes
+  host1[:port] as a vector. If the vector is empty, ['localhost:9200']
+  is used."
   ([]
-   (create-es-client (env/env :es-host) (env/env :es-port)))
-  ([es-host es-port]
-   (let [es-host (or es-host "localhost")
-         es-port (or es-port "9200")
-         hosts   {:hosts [(str es-host ":" es-port)]}]
-
-     (log/info "creating elasticsearch client:" es-host es-port)
+   (let [hosts (-> (or (env/env :es-hosts) ES_HOST)
+                   (clojure.string/split #","))
+         es-hosts (map #(if-not (.contains % ":") (str % ES_PORT) %) hosts)]
+     (create-es-client es-hosts)))
+  ([es-hosts]
+   (let [hosts   {:hosts (if (empty? es-hosts) [ES_HOST] es-hosts)}]
+     (log/info "creating elasticsearch client:" es-hosts)
      (esrb/create-client hosts))))
 
 
