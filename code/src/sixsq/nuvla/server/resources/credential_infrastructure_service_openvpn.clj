@@ -41,39 +41,29 @@ OpenVPN service.
   (let [user-id         (auth/current-user-id request)
         authn-info      (auth/current-authentication request)
         customer?       (= method tpl-customer/method)
-        openvpn-service (openvpn-utils/get-service authn-info parent)
+        expected-scope  (if customer? "customer" "nuvlabox")
+        openvpn-service (openvpn-utils/get-service authn-info parent)]
 
-        acl             (if customer?
-                          {:owners   ["group/nuvla-admin"]
-                           :view-acl [user-id]
-                           :delete   [user-id]}
-                          {:owners   ["group/nuvla-admin"]
-                           :view-acl ["group/nuvla-nuvlabox"]
-                           :delete   ["group/nuvla-nuvlabox"]})]
+    (openvpn-utils/check-service-subtype openvpn-service)
+    (openvpn-utils/check-scope openvpn-service expected-scope)
+    (openvpn-utils/check-existing-credential parent user-id)
 
-    (when (not= (:subtype openvpn-service) "openvpn")
-      (logu/log-and-throw-400
-        "Bad infrastructure service subtype. Subtype should be openvpn!"))
+    (let [configuration-openvpn (openvpn-utils/get-configuration parent)
+          openvpn-endpoint      (:endpoint configuration-openvpn)]
 
-    (when (not= (:openvpn-scope openvpn-service)
-                (if customer? "customer" "nuvlabox"))
-      (logu/log-and-throw-400
-        "Bad infrastructure service scope for selected credential template!"))
-
-    (when (openvpn-utils/credentials-already-exist? parent user-id)
-      (logu/log-and-throw-400
-        "Credential with following common-name already exist!"))
-
-
-    (let [{openvpn-endpoint :endpoint} (openvpn-utils/get-configuration parent)]
-      (when-not openvpn-endpoint
-        (logu/log-and-throw-400
-          (format "No openvpn api endpoint found for '%s'." parent)))
+      (openvpn-utils/check-openvpn-endpoint parent openvpn-endpoint)
 
       ;; call openvpn api
       (let [response-openvpn-api (openvpn-utils/generate-credential
                                    openvpn-endpoint user-id parent)
-            intermediate-ca      (:intermediate-ca response-openvpn-api)]
+            intermediate-ca      (:intermediate-ca response-openvpn-api)
+            acl                  (if customer?
+                                   {:owners   ["group/nuvla-admin"]
+                                    :view-acl [user-id]
+                                    :delete   [user-id]}
+                                   {:owners   ["group/nuvla-admin"]
+                                    :view-acl ["group/nuvla-nuvlabox"]
+                                    :delete   ["group/nuvla-nuvlabox"]})]
         [response-openvpn-api
          (cond->
            {:resource-type       p/resource-type

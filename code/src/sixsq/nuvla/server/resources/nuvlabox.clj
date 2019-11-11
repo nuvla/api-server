@@ -116,11 +116,10 @@ particular NuvlaBox release.
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
 
-  #_(when vpn-server-id
+  (when vpn-server-id
     (let [authn-info  (auth/current-authentication request)
           vpn-service (openvpn-utils/get-service authn-info vpn-server-id)]
-
-      ))
+      (openvpn-utils/check-service-subtype vpn-service)))
 
   (let [new-nuvlabox (assoc body :version version
                                  :state state-new
@@ -142,7 +141,8 @@ particular NuvlaBox release.
 
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
-  (edit-impl request (assoc request :body (select-keys [:acl :name :description] body))))
+  (let [restricted-body (select-keys body [:acl :name :description])]
+    (edit-impl (assoc request :body restricted-body))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

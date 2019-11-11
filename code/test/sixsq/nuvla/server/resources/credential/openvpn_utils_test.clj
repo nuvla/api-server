@@ -37,6 +37,7 @@
         common-name-value        user-id
         certificate-value        "my-public-certificate"
         inter-ca-values          ["certif-1"]
+        private-key-value        "private key visible only once at creation time"
 
         infra-service-create     {:template {:href          (str infra-service-tpl/resource-type "/"
                                                                  infra-srvc-tpl-openvpn/method)
@@ -114,7 +115,8 @@
     (with-redefs [openvpn-utils/generate-credential (fn [_ _ _]
                                                       {:certificate     certificate-value
                                                        :common-name     common-name-value
-                                                       :intermediate-ca inter-ca-values})]
+                                                       :intermediate-ca inter-ca-values
+                                                       :private-key     private-key-value})]
       (-> session-user-or-nuvlabox
           (request base-uri
                    :request-method :post
@@ -148,7 +150,10 @@
                                  :request-method :post
                                  :body (json/write-str create-import-href))
                         (ltu/body->edn)
-                        (ltu/is-status 201))
+                        (ltu/is-status 201)
+                        (ltu/is-key-value :private-key private-key-value)
+                        (ltu/is-key-value :common-name common-name-value)
+                        (ltu/is-key-value :intermediate-ca inter-ca-values))
             id      (ltu/body-resource-id resp)
             uri     (-> resp
                         (ltu/location))

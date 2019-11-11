@@ -74,7 +74,7 @@
                               (str nb/resource-type "-" nb-1/schema-version)))
 
 
-(deftest create-delete-lifecycle
+(deftest create-edit-delete-lifecycle
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
@@ -108,6 +108,23 @@
         (is (contains? (set (:owners acl)) nuvlabox-owner))
         (is (contains? (set (:manage acl)) id))
         (is (contains? (set (:edit-acl acl)) "group/nuvla-admin"))
+
+        ;; only name description acl are editable other changes are ignored
+        (let [new-name  "name NB changed"
+              new-owner "user/beta"]
+          (-> session
+              (request nuvlabox-url
+                       :request-method :put
+                       :body (json/write-str
+                               {:name  new-name
+                                :state "change is ignored"
+                                :acl   (assoc acl :owners (conj (:owners acl) new-owner))}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "NEW")
+              (ltu/is-key-value :name new-name)
+              (ltu/is-key-value :owners :acl (conj (:owners acl) new-owner))
+              (ltu/body)))
 
         (-> session
             (request nuvlabox-url

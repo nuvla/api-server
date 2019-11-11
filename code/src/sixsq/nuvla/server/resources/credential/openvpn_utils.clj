@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]))
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (defn get-service
@@ -49,4 +50,33 @@
                    :content-type       :json
                    :socket-timeout     30000
                    :connection-timeout 30000})
-       :body (json/read-str :key-fn keyword))))
+       :body
+       (json/read-str :key-fn keyword))))
+
+
+(defn check-service-subtype
+  [service]
+  (when (not= (:subtype service) "openvpn")
+    (logu/log-and-throw-400
+      "Bad infrastructure service subtype. Subtype should be openvpn!")))
+
+
+(defn check-scope
+  [service expected-scope]
+  (when (not= (:openvpn-scope service) expected-scope)
+    (logu/log-and-throw-400
+      "Bad infrastructure service scope for selected credential template!")))
+
+
+(defn check-existing-credential
+  [is-id user-id]
+  (when (credentials-already-exist? is-id user-id)
+   (logu/log-and-throw-400
+     "Credential with following common-name already exist!")))
+
+
+(defn check-openvpn-endpoint
+  [is-id endpoint]
+  (when-not endpoint
+    (logu/log-and-throw-400
+      (format "No openvpn api endpoint found for '%s'." is-id))))
