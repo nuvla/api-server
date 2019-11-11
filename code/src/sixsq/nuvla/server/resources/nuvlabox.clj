@@ -18,7 +18,9 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils :as auth]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -109,10 +111,16 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval]
+  [{{:keys [version refresh-interval vpn-server-id]
      :or   {version          latest-version
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
+
+  #_(when vpn-server-id
+    (let [authn-info  (auth/current-authentication request)
+          vpn-service (openvpn-utils/get-service authn-info vpn-server-id)]
+
+      ))
 
   (let [new-nuvlabox (assoc body :version version
                                  :state state-new
@@ -133,8 +141,8 @@ particular NuvlaBox release.
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{:keys [body] :as request}]
+  (edit-impl request (assoc request :body (select-keys [:acl :name :description] body))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

@@ -74,15 +74,16 @@ OpenVPN service.
       (let [response-openvpn-api (openvpn-utils/generate-credential
                                    openvpn-endpoint user-id parent)
             intermediate-ca      (:intermediate-ca response-openvpn-api)]
-        [nil (cond->
-               {:resource-type       p/resource-type
-                :subtype             subtype
-                :method              method
-                :openvpn-certificate (:certificate response-openvpn-api)
-                :openvpn-common-name (:common-name response-openvpn-api)
-                :acl                 acl
-                :parent              parent}
-               intermediate-ca (assoc :openvpn-intermediate-ca intermediate-ca))]))))
+        [response-openvpn-api
+         (cond->
+           {:resource-type       p/resource-type
+            :subtype             subtype
+            :method              method
+            :openvpn-certificate (:certificate response-openvpn-api)
+            :openvpn-common-name (:common-name response-openvpn-api)
+            :acl                 acl
+            :parent              parent}
+           intermediate-ca (assoc :openvpn-intermediate-ca intermediate-ca))]))))
 
 ;;
 ;; multimethods for validation
