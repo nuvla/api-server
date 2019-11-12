@@ -21,9 +21,18 @@
 
 ;; FIXME: Need to understand why the refresh parameter must be used to make unit test pass.
 
+(def ^:const sniff-interval-mills 5000)
+(def ^:const sniff-after-failure-delay-mills 1000)
+
+
 (defn create-client
   [options]
   (spandex/client options))
+
+
+(defn create-sniffer
+  [client options]
+  (spandex/sniffer client (or options {})))
 
 
 (defn create-index
@@ -196,7 +205,7 @@
         (throw (r/ex-response msg 500))))))
 
 
-(deftype ElasticsearchRestBinding [client]
+(deftype ElasticsearchRestBinding [client sniffer]
   Binding
 
   (initialize [_ collection-id {:keys [spec] :as options}]
@@ -235,4 +244,5 @@
 
   Closeable
   (close [_]
-    (spandex/close! client)))
+    (spandex/close! client)
+    (spandex/close! sniffer)))
