@@ -7,7 +7,7 @@
 
 (defn load
   "Creates an Elasticsearch client based on the Elasticsearch Java API. Takes
-   the configuration parameters from the environmental variable ES_HOSTS.
+   the configuration parameters from the environmental variable ES_ENDPOINTS.
    These default to 'localhost:9200' if not specified."
   []
   (let [client (-> (esru/create-es-client)
