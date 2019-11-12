@@ -1,9 +1,9 @@
-(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn-test
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-vpn-test
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn
-     :as cred-infra-service-openvpn]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-vpn
+     :as cred-infra-service-vpn]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -19,24 +19,24 @@
                    :updated                   timestamp
                    :acl                       valid-acl
 
-                   :subtype                   "openvpn"
-                   :method                    "openvpn"
+                   :subtype                   "vpn"
+                   :method                    "vpn"
 
                    :parent                    "infrastructure-service/service-1"
 
-                   :openvpn-common-name       "common-name-example"
-                   :openvpn-certificate       "client certificate example"
-                   :openvpn-certificate-owner "user/jane"
-                   :openvpn-intermediate-ca   ["certif-1"
+                   :vpn-common-name       "common-name-example"
+                   :vpn-certificate       "client certificate example"
+                   :vpn-certificate-owner "user/jane"
+                   :vpn-intermediate-ca   ["certif-1"
                                                "certif-2"]}]
 
-    (stu/is-valid ::cred-infra-service-openvpn/schema tpl)
+    (stu/is-valid ::cred-infra-service-vpn/schema tpl)
 
     ;; mandatory keywords
     (doseq [k #{:id :resource-type :created :updated :acl :subtype :method :parent
-                :openvpn-common-name :openvpn-certificate}]
-      (stu/is-invalid ::cred-infra-service-openvpn/schema (dissoc tpl k)))
+                :vpn-common-name :vpn-certificate}]
+      (stu/is-invalid ::cred-infra-service-vpn/schema (dissoc tpl k)))
 
     ;; optional keywords
-    (doseq [k #{:openvpn-intermediate-ca}]
-      (stu/is-valid ::cred-infra-service-openvpn/schema (dissoc tpl k)))))
+    (doseq [k #{:vpn-intermediate-ca}]
+      (stu/is-valid ::cred-infra-service-vpn/schema (dissoc tpl k)))))

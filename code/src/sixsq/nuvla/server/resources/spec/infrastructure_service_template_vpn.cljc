@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.spec.infrastructure-service-template-openvpn
+(ns sixsq.nuvla.server.resources.spec.infrastructure-service-template-vpn
   "
-This template requires the parameters necessary to create a new OpenVpn server.
+This template requires the parameters necessary to create a new VPN server.
   "
   (:require
     [clojure.spec.alpha :as s]
@@ -13,7 +13,7 @@ This template requires the parameters necessary to create a new OpenVpn server.
 (s/def ::endpoint
   (-> (st/spec ::core/url)
       (assoc :name "endpoint"
-             :json-schema/description "openvpn API endpoint")))
+             :json-schema/description "vpn API endpoint")))
 
 
 (s/def ::protocol
@@ -31,7 +31,7 @@ This template requires the parameters necessary to create a new OpenVpn server.
              :json-schema/display-name "port"
              :json-schema/description "port")))
 
-(s/def ::openvpn-endpoint
+(s/def ::vpn-endpoint
   (-> (st/spec (su/only-keys :req-un [::port ::protocol ::endpoint]))
       (assoc :name "operation"
              :json-schema/type "map"
@@ -40,58 +40,58 @@ This template requires the parameters necessary to create a new OpenVpn server.
              :json-schema/server-managed true
              :json-schema/editable false)))
 
-(s/def ::openvpn-endpoints
-  (-> (st/spec (s/coll-of ::openvpn-endpoint :kind vector? :min-count 1))
-      (assoc :name "openvpn-endpoints"
-             :json-schema/description "openvpn endpoints"
-             :json-schema/description "openvpn endpoints")))
+(s/def ::vpn-endpoints
+  (-> (st/spec (s/coll-of ::vpn-endpoint :kind vector? :min-count 1))
+      (assoc :name "vpn-endpoints"
+             :json-schema/description "vpn endpoints"
+             :json-schema/description "vpn endpoints")))
 
 
-(s/def ::openvpn-scope
+(s/def ::vpn-scope
   (-> (st/spec #{"customer", "nuvlabox"})
-      (assoc :name "openvpn-scope"
+      (assoc :name "vpn-scope"
              :json-schema/type "string"
-             :json-schema/description "openvpn scope to be used with"
+             :json-schema/description "vpn scope to be used with"
              :json-schema/value-scope {:values ["customer", "nuvlabox"]})))
 
 
-(s/def ::openvpn-shared-key
+(s/def ::vpn-shared-key
   (-> (st/spec ::core/nonblank-string)
-      (assoc :name "openvpn-shared-key"
-             :json-schema/display-name "openvpn shared key"
-             :json-schema/description "openvpn shared key for initial packets encryption")))
+      (assoc :name "vpn-shared-key"
+             :json-schema/display-name "vpn shared key"
+             :json-schema/description "vpn shared key for initial packets encryption")))
 
 
-(s/def ::openvpn-ca-certificate
+(s/def ::vpn-ca-certificate
   (-> (st/spec ::core/nonblank-string)
-      (assoc :name "openvpn-ca-certificate"
-             :json-schema/display-name "openvpn ca certificate"
-             :json-schema/description "openvpn ca certificate"
+      (assoc :name "vpn-ca-certificate"
+             :json-schema/display-name "vpn ca certificate"
+             :json-schema/description "vpn ca certificate"
              :json-schema/indexed false)))
 
 
-(s/def ::openvpn-intermediate-ca
+(s/def ::vpn-intermediate-ca
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
       (assoc :name "intermediate-ca"
              :json-schema/type "array"
-             :json-schema/description "openvpn intermediate ca certificates"
+             :json-schema/description "vpn intermediate ca certificates"
              :json-schema/indexed false)))
 
 
-(s/def ::openvpn-common-name-prefix
+(s/def ::vpn-common-name-prefix
   (-> (st/spec ::core/nonblank-string)
-      (assoc :name "openvpn-common-name-prefix"
-             :json-schema/display-name "openvpn common name prefix"
-             :json-schema/description "openvpn common name prefix")))
+      (assoc :name "vpn-common-name-prefix"
+             :json-schema/display-name "vpn common name prefix"
+             :json-schema/description "vpn common name prefix")))
 
 
 (def service-template-keys-spec
-  {:req-un [::openvpn-scope
-            ::openvpn-endpoints
-            ::openvpn-ca-certificate]
-   :opt-un [::openvpn-shared-key
-            ::openvpn-common-name-prefix
-            ::openvpn-intermediate-ca]})
+  {:req-un [::vpn-scope
+            ::vpn-endpoints
+            ::vpn-ca-certificate]
+   :opt-un [::vpn-shared-key
+            ::vpn-common-name-prefix
+            ::vpn-intermediate-ca]})
 
 
 ;; Defines the contents of the this service-template resource.

@@ -1,19 +1,19 @@
-(ns sixsq.nuvla.server.resources.credential-infrastructure-service-openvpn
+(ns sixsq.nuvla.server.resources.credential-infrastructure-service-vpn
   "
-This represents an OpenVPN client credential that allows users to access the
-OpenVPN service.
+This represents an VPN client credential that allows users to access the
+VPN service.
 "
   (:require
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as ctiso]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-vpn :as ciso]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-vpn :as ctiso]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -35,26 +35,26 @@ OpenVPN service.
 ;;
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
-  [{:keys [subtype method parent openvpn-csr]} request]
+  [{:keys [subtype method parent vpn-csr]} request]
   (let [user-id         (auth/current-user-id request)
         authn-info      (auth/current-authentication request)
         customer?       (= method tpl-customer/method)
         expected-scope  (if customer? "customer" "nuvlabox")
-        openvpn-service (openvpn-utils/get-service authn-info parent)]
+        vpn-service (vpn-utils/get-service authn-info parent)]
 
-    (openvpn-utils/check-service-subtype openvpn-service)
-    (openvpn-utils/check-scope openvpn-service expected-scope)
-    (openvpn-utils/check-existing-credential parent user-id)
+    (vpn-utils/check-service-subtype vpn-service)
+    (vpn-utils/check-scope vpn-service expected-scope)
+    (vpn-utils/check-existing-credential parent user-id)
 
-    (let [configuration-openvpn (openvpn-utils/get-configuration parent)
-          openvpn-endpoint      (:endpoint configuration-openvpn)]
+    (let [configuration-vpn (vpn-utils/get-configuration parent)
+          vpn-endpoint      (:endpoint configuration-vpn)]
 
-      (openvpn-utils/check-openvpn-endpoint parent openvpn-endpoint)
+      (vpn-utils/check-vpn-endpoint parent vpn-endpoint)
 
-      ;; call openvpn api
-      (let [response-openvpn-api (openvpn-utils/generate-credential
-                                   openvpn-endpoint user-id parent openvpn-csr)
-            intermediate-ca      (:intermediate-ca response-openvpn-api)
+      ;; call vpn api
+      (let [response-vpn-api (vpn-utils/generate-credential
+                                   vpn-endpoint user-id parent vpn-csr)
+            intermediate-ca      (:intermediate-ca response-vpn-api)
             acl                  (if customer?
                                    {:owners   ["group/nuvla-admin"]
                                     :view-acl [user-id]
@@ -62,27 +62,27 @@ OpenVPN service.
                                    {:owners   ["group/nuvla-admin"]
                                     :view-acl ["group/nuvla-nuvlabox"]
                                     :delete   ["group/nuvla-nuvlabox"]})]
-        [response-openvpn-api
+        [response-vpn-api
          (cond->
            {:resource-type       p/resource-type
             :subtype             subtype
             :method              method
-            :openvpn-certificate (:certificate response-openvpn-api)
-            :openvpn-common-name (:common-name response-openvpn-api)
-            :openvpn-certificate-owner (auth/current-user-id request)
+            :vpn-certificate (:certificate response-vpn-api)
+            :vpn-common-name (:common-name response-vpn-api)
+            :vpn-certificate-owner (auth/current-user-id request)
             :acl                 acl
             :parent              parent}
-           intermediate-ca (assoc :openvpn-intermediate-ca intermediate-ca))]))))
+           intermediate-ca (assoc :vpn-intermediate-ca intermediate-ca))]))))
 
 
 (defmethod p/special-delete tpl-customer/credential-subtype
   [{is-id :parent cred-id :id} request]
-  (let [configuration-openvpn (openvpn-utils/get-configuration is-id)
-        openvpn-endpoint      (:endpoint configuration-openvpn)]
+  (let [configuration-vpn (vpn-utils/get-configuration is-id)
+        vpn-endpoint      (:endpoint configuration-vpn)]
 
-    (openvpn-utils/check-openvpn-endpoint is-id openvpn-endpoint)
+    (vpn-utils/check-vpn-endpoint is-id vpn-endpoint)
 
-    (openvpn-utils/delete-credential openvpn-endpoint cred-id))
+    (vpn-utils/delete-credential vpn-endpoint cred-id))
   (p/delete-impl request))
 
 ;;

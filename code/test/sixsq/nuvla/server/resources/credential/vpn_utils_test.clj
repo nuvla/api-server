@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential.openvpn-utils-test
+(ns sixsq.nuvla.server.resources.credential.vpn-utils-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -8,21 +8,21 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
-    [sixsq.nuvla.server.resources.configuration-template-openvpn-api :as configuration-tpl-openvpn]
+    [sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-openvpn
-     :as infra-srvc-tpl-openvpn]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-vpn
+     :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (def base-uri (str p/service-context credential/resource-type))
 
-(defn credential-openvpn-lifecycle-test
-  [method openvpn-scope user-id claims method-not-corresponding-to-scope]
+(defn credential-vpn-lifecycle-test
+  [method vpn-scope user-id claims method-not-corresponding-to-scope]
   (let [session                  (-> (ltu/ring-app)
                                      session
                                      (content-type "application/json"))
@@ -40,8 +40,8 @@
         private-key-value        "private key visible only once at creation time"
 
         infra-service-create     {:template {:href          (str infra-service-tpl/resource-type "/"
-                                                                 infra-srvc-tpl-openvpn/method)
-                                             :openvpn-scope openvpn-scope
+                                                                 infra-srvc-tpl-vpn/method)
+                                             :vpn-scope vpn-scope
                                              :acl           {:owners   ["nuvla/admin"]
                                                              :view-acl ["nuvla/user"
                                                                         "nuvla/nuvlabox"]}}}
@@ -55,9 +55,9 @@
 
         configuration-create     {:template
                                   {:href                    (str configuration-tpl/resource-type "/"
-                                                                 configuration-tpl-openvpn/service)
-                                   :instance                "openvpn"
-                                   :endpoint                "http://openvpn.test"
+                                                                 configuration-tpl-vpn/service)
+                                   :instance                "vpn"
+                                   :endpoint                "http://vpn.test"
                                    :infrastructure-services [infra-service-id]}}
 
         href                     (str ct/resource-type "/" method)
@@ -112,7 +112,7 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
-    (with-redefs [openvpn-utils/generate-credential (fn [_ _ _ _]
+    (with-redefs [vpn-utils/generate-credential (fn [_ _ _ _]
                                                       {:certificate     certificate-value
                                                        :common-name     common-name-value
                                                        :intermediate-ca inter-ca-values
@@ -124,7 +124,7 @@
           (ltu/body->edn)
           (ltu/is-status 400)
           (ltu/is-key-value
-            #(str/starts-with? % "No openvpn api endpoint found for ") :message true))
+            #(str/starts-with? % "No vpn api endpoint found for ") :message true))
 
       (-> session-admin
           (request (str p/service-context configuration/resource-type)
@@ -181,8 +181,8 @@
 
         ;; ensure credential contains correct information
         (let [{:keys [name description tags
-                      openvpn-common-name openvpn-certificate
-                      openvpn-intermediate-ca parent]} (-> session-user-or-nuvlabox
+                      vpn-common-name vpn-certificate
+                      vpn-intermediate-ca parent]} (-> session-user-or-nuvlabox
                                                            (request abs-uri)
                                                            (ltu/body->edn)
                                                            (ltu/is-status 200)
@@ -191,10 +191,10 @@
           (is (= name name-attr))
           (is (= description description-attr))
           (is (= tags tags-attr))
-          (is (= openvpn-common-name common-name-value))
-          (is (= openvpn-certificate certificate-value))
+          (is (= vpn-common-name common-name-value))
+          (is (= vpn-certificate certificate-value))
           (is (= parent infra-service-id))
-          (is (= openvpn-intermediate-ca inter-ca-values)))
+          (is (= vpn-intermediate-ca inter-ca-values)))
 
         (-> session-user-or-nuvlabox
             (request base-uri
@@ -204,8 +204,8 @@
             (ltu/is-key-value :message "Credential with following common-name already exist!")
             (ltu/is-status 400))
 
-        ;; credential should not be deleted if openvpn api respond with error
-        (with-redefs [openvpn-utils/delete-credential
+        ;; credential should not be deleted if vpn api respond with error
+        (with-redefs [vpn-utils/delete-credential
                       (fn [_ _]
                         (throw (ex-info "test " {})))]
           (-> session-user-or-nuvlabox
@@ -221,7 +221,7 @@
             (ltu/is-status 200))
 
         ;; delete credential should succeed
-        (with-redefs [openvpn-utils/delete-credential (fn [_ _])]
+        (with-redefs [vpn-utils/delete-credential (fn [_ _])]
           (-> session-user-or-nuvlabox
               (request abs-uri
                        :request-method :delete)

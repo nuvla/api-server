@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.infrastructure-service-openvpn-lifecycle-test
+(ns sixsq.nuvla.server.resources.infrastructure-service-vpn-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -9,7 +9,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service :as t]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as service-group]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-openvpn :as infra-service-tpl-openvpn]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-service-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -31,8 +31,8 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str infra-service-tpl/resource-type "-" infra-service-tpl-openvpn/method)
-                              (str infra-service-tpl/resource-type "-" infra-service-tpl-openvpn/method "-create")))
+  (mdtu/check-metadata-exists (str infra-service-tpl/resource-type "-" infra-service-tpl-vpn/method)
+                              (str infra-service-tpl/resource-type "-" infra-service-tpl-vpn/method "-create")))
 
 
 (deftest lifecycle
@@ -64,7 +64,7 @@
                              :description service-desc
                              :tags        service-tags
                              :template    {:href   (str infra-service-tpl/resource-type "/"
-                                                        infra-service-tpl-openvpn/method)
+                                                        infra-service-tpl-vpn/method)
                                            :parent service-group-id}}]
 
     ;; anon create must fail

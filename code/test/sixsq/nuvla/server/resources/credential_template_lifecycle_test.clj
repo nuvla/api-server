@@ -14,9 +14,9 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
-     :as srvc-openvpn]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
+     :as srvc-vpn]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -86,7 +86,7 @@
              (str ct/resource-type "/" srvc/method)
              (str ct/resource-type "/" srvc-gce/method)
              (str ct/resource-type "/" swarm-token/method)
-             (str ct/resource-type "/" srvc-openvpn/method)}
+             (str ct/resource-type "/" srvc-vpn/method)}
            ids))
     (is (= #{akey/method
              hashed-password/method
@@ -96,7 +96,7 @@
              srvc-azure/method
              srvc/method
              srvc-gce/method
-             srvc-openvpn/method
+             srvc-vpn/method
              swarm-token/method} methods))
     (is (= #{akey/credential-subtype
              hashed-password/credential-subtype
@@ -106,7 +106,7 @@
              srvc-azure/credential-subtype
              srvc/credential-subtype
              srvc-gce/credential-subtype
-             srvc-openvpn/credential-subtype
+             srvc-vpn/credential-subtype
              swarm-token/credential-subtype} types))
 
     (doseq [entry entries]

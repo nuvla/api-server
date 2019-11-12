@@ -8,7 +8,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-nuvlabox
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-nuvlabox
      :as ctison]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
@@ -232,12 +232,12 @@
         nil))))
 
 
-(defn get-openvpn-cred
-  "Searches for an existing openvpn credential tied to the given nuvlabox.
+(defn get-vpn-cred
+  "Searches for an existing vpn credential tied to the given nuvlabox.
    If found, the identifier is returned."
   [vpn-server-id user-id]
   (let [filter  (str "subtype='" ctison/credential-subtype "' and parent='" vpn-server-id
-                     "' and openvpn-certificate-owner='" user-id "'")
+                     "' and vpn-certificate-owner='" user-id "'")
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
                                :select ["id"]}}]
     (-> (crud/query-as-admin credential/resource-type options)
@@ -246,15 +246,15 @@
         :id)))
 
 
-(defn delete-openvpn-cred
+(defn delete-vpn-cred
   [id auth-info]
   (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
                               :resource-name credential/resource-type}
                 :nuvla/authn auth-info}))
 
 
-(defn create-openvpn-cred
-  [nuvlabox-id nuvlabox-name vpn-server-id openvpn-csr auth-info]
+(defn create-vpn-cred
+  [nuvlabox-id nuvlabox-name vpn-server-id vpn-csr auth-info]
   (let [acl  {:owners [nuvlabox-id]}
         tmpl {:name        (format-nb-name nuvlabox-name (short-nb-id nuvlabox-id))
               :description (str/join " " ["Generated VPN Key for "
@@ -263,13 +263,13 @@
               :template    {:href        (str "credential-template/" ctison/method)
                             :subtype     ctison/credential-subtype
                             :method      ctison/method
-                            :openvpn-csr openvpn-csr}}
+                            :vpn-csr vpn-csr}}
 
         {:keys [status body] :as resp} (credential/create-credential tmpl auth-info)
         {:keys [resource-id]} body]
     (if (= 201 status)
       resource-id
-      (let [msg (str "creating credential openvpn resource failed:" status (:message body))]
+      (let [msg (str "creating credential vpn resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
@@ -361,7 +361,7 @@
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
             minio-access-key minio-secret-key
-            openvpn-csr]} :body :as request}]
+            vpn-csr]} :body :as request}]
 
   ;; This code will not create duplicate resources when commission is called multiple times.
   ;; However, it won't update those resources if the content changes.
@@ -391,11 +391,11 @@
           (get-minio-cred minio-id)
           (create-minio-cred id name owner minio-id minio-access-key minio-secret-key)))
 
-      (when (and vpn-server-id openvpn-csr)
+      (when (and vpn-server-id vpn-csr)
         (let [user-id         (auth/current-user-id request)
-              openvpn-cred-id (get-openvpn-cred vpn-server-id user-id)
+              vpn-cred-id (get-vpn-cred vpn-server-id user-id)
               authn-info      (auth/current-authentication request)]
-          (when openvpn-cred-id
-            (delete-openvpn-cred openvpn-cred-id authn-info))
-          (create-openvpn-cred id name vpn-server-id openvpn-csr authn-info)))
+          (when vpn-cred-id
+            (delete-vpn-cred vpn-cred-id authn-info))
+          (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
       )))

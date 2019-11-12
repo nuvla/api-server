@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.infrastructure-service-openvpn
+(ns sixsq.nuvla.server.resources.infrastructure-service-vpn
   "
 Information concerning a Docker Swarm cluster and the parameters necessary to
 manage it.
@@ -6,20 +6,20 @@ manage it.
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-openvpn :as tpl-openvpn]))
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-vpn :as tpl-vpn]))
 
 
-(def ^:const subtype "openvpn")
+(def ^:const subtype "vpn")
 
 
-(def ^:const method "openvpn")
+(def ^:const method "vpn")
 
 
 ;;
 ;; multimethods for create request validation
 ;;
 
-(def create-validate-fn (u/create-spec-validation-fn ::tpl-openvpn/schema-create))
+(def create-validate-fn (u/create-spec-validation-fn ::tpl-vpn/schema-create))
 
 (defmethod infra-service/create-validate-subtype method
   [resource]
@@ -29,7 +29,7 @@ manage it.
 ;; multimethods for valide subtype
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::tpl-openvpn/schema))
+(def validate-fn (u/create-spec-validation-fn ::tpl-vpn/schema))
 
 (defmethod infra-service/validate-subtype subtype
   [resource]

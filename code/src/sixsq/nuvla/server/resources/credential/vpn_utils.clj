@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential.openvpn-utils
+(ns sixsq.nuvla.server.resources.credential.vpn-utils
   (:require
     [clj-http.client :as http]
     [clojure.data.json :as json]
@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
     [sixsq.nuvla.server.util.log :as logu]))
 
@@ -28,7 +28,7 @@
 
 (defn credentials-already-exist?
   [is-id user-id]
-  (let [filter  (format "parent='%s' and openvpn-certificate-owner='%s' and subtype='%s'"
+  (let [filter  (format "parent='%s' and vpn-certificate-owner='%s' and subtype='%s'"
                         is-id user-id tpl-customer/credential-subtype)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}]
     (-> (crud/query-as-admin credential/resource-type options)
@@ -38,8 +38,8 @@
 
 
 (defn generate-credential
-  [openvpn-endpoint user-id vpn_service_id csr]
-  (-> openvpn-endpoint
+  [vpn-endpoint user-id vpn_service_id csr]
+  (-> vpn-endpoint
       (http/post
         {:form-params        (cond-> {:requester_id   user-id
                                       :vpn_service_id vpn_service_id}
@@ -52,8 +52,8 @@
 
 
 (defn delete-credential
-  [openvpn-endpoint cred-id]
-  (http/delete openvpn-endpoint
+  [vpn-endpoint cred-id]
+  (http/delete vpn-endpoint
                {:form-params        {:credential_id cred-id}
                 :content-type       :json
                 :socket-timeout     30000
@@ -62,14 +62,14 @@
 
 (defn check-service-subtype
   [service]
-  (when (not= (:subtype service) "openvpn")
+  (when (not= (:subtype service) "vpn")
     (logu/log-and-throw-400
-      "Bad infrastructure service subtype. Subtype should be openvpn!")))
+      "Bad infrastructure service subtype. Subtype should be vpn!")))
 
 
 (defn check-scope
   [service expected-scope]
-  (when (not= (:openvpn-scope service) expected-scope)
+  (when (not= (:vpn-scope service) expected-scope)
     (logu/log-and-throw-400
       "Bad infrastructure service scope for selected credential template!")))
 
@@ -81,8 +81,8 @@
       "Credential with following common-name already exist!")))
 
 
-(defn check-openvpn-endpoint
+(defn check-vpn-endpoint
   [is-id endpoint]
   (when-not endpoint
     (logu/log-and-throw-400
-      (format "No openvpn api endpoint found for '%s'." is-id))))
+      (format "No vpn api endpoint found for '%s'." is-id))))

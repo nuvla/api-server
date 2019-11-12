@@ -1,11 +1,11 @@
-(ns sixsq.nuvla.server.resources.configuration-template-openvpn-api
+(ns sixsq.nuvla.server.resources.configuration-template-vpn-api
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-template :as p]
-    [sixsq.nuvla.server.resources.spec.configuration-template-openvpn-api :as cts-openvpn-api]))
+    [sixsq.nuvla.server.resources.spec.configuration-template-vpn-api :as cts-vpn-api]))
 
 
-(def ^:const service "openvpn-api")
+(def ^:const service "vpn-api")
 
 
 ;;
@@ -14,18 +14,18 @@
 
 (def ^:const resource
   {:service                 service
-   :name                    "OpenVPN API Configuration"
-   :description             "OpenVPN API Configuration to use when creating openvpn credentials"
-   :instance                "openvpn-instance"
-   :endpoint                "http://openvpn.example"
-   :infrastructure-services ["infrastructure-service/openvpn-example"]})
+   :name                    "VPN API Configuration"
+   :description             "VPN API Configuration to use when creating vpn credentials"
+   :instance                "vpn-instance"
+   :endpoint                "http://vpn.example"
+   :infrastructure-services ["infrastructure-service/vpn-example"]})
 
 
 ;;
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::cts-openvpn-api/schema))
+(def validate-fn (u/create-spec-validation-fn ::cts-vpn-api/schema))
 
 
 (defmethod p/validate-subtype service

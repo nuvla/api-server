@@ -11,13 +11,13 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
-    [sixsq.nuvla.server.resources.configuration-template-openvpn-api :as configuration-tpl-openvpn]
+    [sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
     [sixsq.nuvla.server.resources.credential :as credential]
-    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-openvpn :as infra-srvc-tpl-openvpn]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
@@ -679,8 +679,8 @@
         session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
 
     (let [infra-srvc-vpn-create {:template {:href          (str infra-service-tpl/resource-type "/"
-                                                                infra-srvc-tpl-openvpn/method)
-                                            :openvpn-scope "nuvlabox"
+                                                                infra-srvc-tpl-vpn/method)
+                                            :vpn-scope "nuvlabox"
                                             :acl           {:owners   ["nuvla/admin"]
                                                             :view-acl ["nuvla/user"
                                                                        "nuvla/nuvlabox"]}}}
@@ -694,9 +694,9 @@
 
           conf-vpn-create       {:template
                                  {:href                    (str configuration-tpl/resource-type "/"
-                                                                configuration-tpl-openvpn/service)
-                                  :instance                "openvpn"
-                                  :endpoint                "http://openvpn.test"
+                                                                configuration-tpl-vpn/service)
+                                  :instance                "vpn"
+                                  :endpoint                "http://vpn.test"
                                   :infrastructure-services [infra-srvc-vpn-id]}}
 
           nuvlabox-id           (-> session-owner
@@ -746,21 +746,21 @@
 
 
         ;; commissioning of the resource
-        (with-redefs [openvpn-utils/generate-credential (fn [_ _ _ _]
+        (with-redefs [vpn-utils/generate-credential (fn [_ _ _ _]
                                                           {:certificate     certificate-value
                                                            :common-name     common-name-value
                                                            :intermediate-ca inter-ca-values})
-                      openvpn-utils/delete-credential   (fn [_ _])]
+                      vpn-utils/delete-credential   (fn [_ _])]
 
           (-> session-nuvlabox
               (request commission
                        :request-method :post
-                       :body (json/write-str {:openvpn-csr "foo"}))
+                       :body (json/write-str {:vpn-csr "foo"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
           (let [filter-str  (str "parent='" infra-srvc-vpn-id
-                                 "' and openvpn-certificate-owner='" nuvlabox-id "'")
+                                 "' and vpn-certificate-owner='" nuvlabox-id "'")
                 vpn-cred    (-> session-nuvlabox
                                 (content-type "application/x-www-form-urlencoded")
                                 (request credential-collection-uri
@@ -773,7 +773,7 @@
                                 (ltu/entries)
                                 first)
                 vpn-cred-id (:id vpn-cred)]
-            (is (= common-name-value (:openvpn-common-name vpn-cred)))
+            (is (= common-name-value (:vpn-common-name vpn-cred)))
 
             (-> session-nuvlabox
                 (request (str p/service-context vpn-cred-id)
@@ -785,7 +785,7 @@
             (-> session-nuvlabox
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:openvpn-csr "foo"}))
+                         :body (json/write-str {:vpn-csr "foo"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 

@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.configuration-template-openvpn-api
+(ns sixsq.nuvla.server.resources.spec.configuration-template-vpn-api
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.configuration-template :as ps]
@@ -10,7 +10,7 @@
 (s/def ::endpoint
   (-> (st/spec ::core/url)
       (assoc :name "endpoint"
-             :json-schema/description "Endpoint api to use to generate openvpn credentials"
+             :json-schema/description "Endpoint api to use to generate vpn credentials"
              :json-schema/group "body"
              :json-schema/order 20
              :json-schema/hidden false

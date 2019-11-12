@@ -1,11 +1,11 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn-test
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-vpn-test
   (:require
     [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer :as service]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as service-spec]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer :as service]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-vpn :as service-spec]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 

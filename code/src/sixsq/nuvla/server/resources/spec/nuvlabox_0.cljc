@@ -207,7 +207,7 @@
       (assoc :name "vpn-server-id"
              :json-schema/type "string"
              :json-schema/display-name "vpn server id"
-             :json-schema/description "Openvpn infrastructure service id to connect"
+             :json-schema/description "VPN infrastructure service id to connect"
              :json-schema/order 31)))
 
 
