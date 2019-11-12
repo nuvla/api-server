@@ -28,7 +28,7 @@
 
 (defn credentials-already-exist?
   [is-id user-id]
-  (let [filter  (format "parent='%s' and openvpn-common-name='%s' and subtype='%s'"
+  (let [filter  (format "parent='%s' and openvpn-certificate-owner='%s' and subtype='%s'"
                         is-id user-id tpl-customer/credential-subtype)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}]
     (-> (crud/query-as-admin credential/resource-type options)

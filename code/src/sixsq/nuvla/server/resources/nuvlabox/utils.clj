@@ -8,6 +8,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-nuvlabox
+     :as ctison]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
@@ -67,14 +69,14 @@
                    :view-meta [owner]
                    :delete    [owner]}
 
-        cred-tmpl {:name        (str "API Key " (format-nb-name name (short-nb-id id)))
+        cred-tmpl {:name        (format-nb-name name (short-nb-id id))
                    :description (str/join " " ["Generated API Key for " (format-nb-name name id)])
                    :parent      id
+                   :acl         cred-acl
                    :template    {:href    (str "credential-template/" cred-tmpl-api/method)
                                  :subtype cred-tmpl-api/credential-subtype
                                  :method  cred-tmpl-api/method
-                                 :ttl     0
-                                 :acl     cred-acl}}
+                                 :ttl     0}}
 
         {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
         {:keys [resource-id secret-key]} body]
@@ -230,6 +232,47 @@
         nil))))
 
 
+(defn get-openvpn-cred
+  "Searches for an existing openvpn credential tied to the given nuvlabox.
+   If found, the identifier is returned."
+  [vpn-server-id user-id]
+  (let [filter  (str "subtype='" ctison/credential-subtype "' and parent='" vpn-server-id
+                     "' and openvpn-certificate-owner='" user-id "'")
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin credential/resource-type options)
+        second
+        first
+        :id)))
+
+
+(defn delete-openvpn-cred
+  [id auth-info]
+  (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
+                              :resource-name credential/resource-type}
+                :nuvla/authn auth-info}))
+
+
+(defn create-openvpn-cred
+  [nuvlabox-id nuvlabox-name vpn-server-id openvpn-csr auth-info]
+  (let [acl  {:owners [nuvlabox-id]}
+        tmpl {:name        (format-nb-name nuvlabox-name (short-nb-id nuvlabox-id))
+              :description (str/join " " ["Generated VPN Key for "
+                                          (format-nb-name nuvlabox-name nuvlabox-id)])
+              :parent      vpn-server-id
+              :template    {:href        (str "credential-template/" ctison/method)
+                            :subtype     ctison/credential-subtype
+                            :method      ctison/method
+                            :openvpn-csr openvpn-csr}}
+
+        {:keys [status body] :as resp} (credential/create-credential tmpl auth-info)
+        {:keys [resource-id]} body]
+    (if (= 201 status)
+      resource-id
+      (let [msg (str "creating credential openvpn resource failed:" status (:message body))]
+        (r/ex-bad-request msg)))))
+
+
 (defn get-swarm-token
   "Searches for an existing swarm token credential tied to the given service.
    If found, the identifier is returned."
@@ -312,13 +355,13 @@
 
 
 (defn commission
-  [{:keys [id name owner] :as resource}
+  [{:keys [id name owner vpn-server-id] :as resource}
    {{:keys [swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
             minio-access-key minio-secret-key
-            csr-nuvlabox]} :body :as request}]
+            openvpn-csr]} :body :as request}]
 
   ;; This code will not create duplicate resources when commission is called multiple times.
   ;; However, it won't update those resources if the content changes.
@@ -346,4 +389,13 @@
       (when minio-id
         (or
           (get-minio-cred minio-id)
-          (create-minio-cred id name owner minio-id minio-access-key minio-secret-key))))))
+          (create-minio-cred id name owner minio-id minio-access-key minio-secret-key)))
+
+      (when (and vpn-server-id openvpn-csr)
+        (let [user-id         (auth/current-user-id request)
+              openvpn-cred-id (get-openvpn-cred vpn-server-id user-id)
+              authn-info      (auth/current-authentication request)]
+          (when openvpn-cred-id
+            (delete-openvpn-cred openvpn-cred-id authn-info))
+          (create-openvpn-cred id name vpn-server-id openvpn-csr authn-info)))
+      )))

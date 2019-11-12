@@ -3,14 +3,21 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration :as configuration]
+    [sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
+    [sixsq.nuvla.server.resources.configuration-template-openvpn-api :as configuration-tpl-openvpn]
     [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-openvpn :as infra-srvc-tpl-openvpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
@@ -660,6 +667,145 @@
                      :request-method :delete)
             (ltu/body->edn)
             (ltu/is-status 200))))))
+
+
+(deftest create-activate-commission-vpn-lifecycle
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+
+    (let [infra-srvc-vpn-create {:template {:href          (str infra-service-tpl/resource-type "/"
+                                                                infra-srvc-tpl-openvpn/method)
+                                            :openvpn-scope "nuvlabox"
+                                            :acl           {:owners   ["nuvla/admin"]
+                                                            :view-acl ["nuvla/user"
+                                                                       "nuvla/nuvlabox"]}}}
+          infra-srvc-vpn-id     (-> session-admin
+                                    (request (str p/service-context infra-service/resource-type)
+                                             :request-method :post
+                                             :body (json/write-str infra-srvc-vpn-create))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          conf-vpn-create       {:template
+                                 {:href                    (str configuration-tpl/resource-type "/"
+                                                                configuration-tpl-openvpn/service)
+                                  :instance                "openvpn"
+                                  :endpoint                "http://openvpn.test"
+                                  :infrastructure-services [infra-srvc-vpn-id]}}
+
+          nuvlabox-id           (-> session-owner
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str
+                                                     (assoc valid-nuvlabox
+                                                       :vpn-server-id infra-srvc-vpn-id)))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          nuvlabox-url          (str p/service-context nuvlabox-id)
+
+          activate-url          (-> session-owner
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state "NEW")
+                                    (ltu/get-op-url :activate))]
+
+      (-> session-admin
+          (request (str p/service-context configuration/resource-type)
+                   :request-method :post
+                   :body (json/write-str conf-vpn-create))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      ;; activate nuvlabox
+      (-> session-anon
+          (request activate-url
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [session-nuvlabox  (header session authn-info-header
+                                      (str nuvlabox-id
+                                           " group/nuvla-nuvlabox group/nuvla-anon"))
+            commission        (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/get-op-url :commission))
+            certificate-value "certificate-value"
+            common-name-value "foo"
+            inter-ca-values   ["inter-ca-values"]]
+
+
+        ;; commissioning of the resource
+        (with-redefs [openvpn-utils/generate-credential (fn [_ _ _ _]
+                                                          {:certificate     certificate-value
+                                                           :common-name     common-name-value
+                                                           :intermediate-ca inter-ca-values})
+                      openvpn-utils/delete-credential   (fn [_ _])]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post
+                       :body (json/write-str {:openvpn-csr "foo"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [filter-str  (str "parent='" infra-srvc-vpn-id
+                                 "' and openvpn-certificate-owner='" nuvlabox-id "'")
+                vpn-cred    (-> session-nuvlabox
+                                (content-type "application/x-www-form-urlencoded")
+                                (request credential-collection-uri
+                                         :request-method :put
+                                         :body (rc/form-encode
+                                                 {:filter filter-str}))
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-count 1)
+                                (ltu/entries)
+                                first)
+                vpn-cred-id (:id vpn-cred)]
+            (is (= common-name-value (:openvpn-common-name vpn-cred)))
+
+            (-> session-nuvlabox
+                (request (str p/service-context vpn-cred-id)
+                         :request-method :get)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            ;; commison a second time will delete and recreate a new cred
+            (-> session-nuvlabox
+                (request commission
+                         :request-method :post
+                         :body (json/write-str {:openvpn-csr "foo"}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            ;; old vpn credential was deleted
+            (-> session-nuvlabox
+                (request (str p/service-context vpn-cred-id)
+                         :request-method :get)
+                (ltu/body->edn)
+                (ltu/is-status 404))
+
+            ;; a new vpn credential was recreated
+            (-> session-nuvlabox
+                (content-type "application/x-www-form-urlencoded")
+                (request credential-collection-uri
+                         :request-method :put
+                         :body (rc/form-encode
+                                 {:filter filter-str}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-count 1))))))))
 
 
 (deftest bad-methods

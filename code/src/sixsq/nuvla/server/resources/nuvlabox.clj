@@ -7,10 +7,13 @@ particular NuvlaBox release.
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
@@ -18,10 +21,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.credential.openvpn-utils :as openvpn-utils]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
