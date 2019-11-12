@@ -14,7 +14,6 @@ OpenVPN service.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-openvpn :as ciso]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openvpn :as ctiso]
-    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -36,8 +35,7 @@ OpenVPN service.
 ;;
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
-  [{:keys [subtype method parent]}
-   request]
+  [{:keys [subtype method parent openvpn-csr]} request]
   (let [user-id         (auth/current-user-id request)
         authn-info      (auth/current-authentication request)
         customer?       (= method tpl-customer/method)
@@ -55,7 +53,7 @@ OpenVPN service.
 
       ;; call openvpn api
       (let [response-openvpn-api (openvpn-utils/generate-credential
-                                   openvpn-endpoint user-id parent)
+                                   openvpn-endpoint user-id parent openvpn-csr)
             intermediate-ca      (:intermediate-ca response-openvpn-api)
             acl                  (if customer?
                                    {:owners   ["group/nuvla-admin"]
@@ -71,9 +69,21 @@ OpenVPN service.
             :method              method
             :openvpn-certificate (:certificate response-openvpn-api)
             :openvpn-common-name (:common-name response-openvpn-api)
+            :openvpn-certificate-owner (auth/current-user-id request)
             :acl                 acl
             :parent              parent}
            intermediate-ca (assoc :openvpn-intermediate-ca intermediate-ca))]))))
+
+
+(defmethod p/special-delete tpl-customer/credential-subtype
+  [{is-id :parent cred-id :id} request]
+  (let [configuration-openvpn (openvpn-utils/get-configuration is-id)
+        openvpn-endpoint      (:endpoint configuration-openvpn)]
+
+    (openvpn-utils/check-openvpn-endpoint is-id openvpn-endpoint)
+
+    (openvpn-utils/delete-credential openvpn-endpoint cred-id))
+  (p/delete-impl request))
 
 ;;
 ;; multimethods for validation

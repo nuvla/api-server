@@ -30,10 +30,17 @@
              :json-schema/description "client certificate"
              :json-schema/indexed false)))
 
+(s/def ::openvpn-certificate-owner
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "openvpn-certificate-owner"
+             :json-schema/display-name "openvpn certificate owner"
+             :json-schema/description "openvpn certificate owner ID")))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      cred-infra-service/credential-service-keys-spec
                      {:req-un [::openvpn-certificate
-                               ::openvpn-common-name]
+                               ::openvpn-common-name
+                               ::openvpn-certificate-owner]
                       :opt-un [::openvpn-intermediate-ca]}))

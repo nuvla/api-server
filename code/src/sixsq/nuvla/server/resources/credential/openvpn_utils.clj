@@ -2,14 +2,12 @@
   (:require
     [clj-http.client :as http]
     [clojure.data.json :as json]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openvpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.util.log :as logu]))
 
 
@@ -40,18 +38,26 @@
 
 
 (defn generate-credential
-  ([openvpn-endpoint user-id vpn_service_id]
-   (generate-credential openvpn-endpoint user-id vpn_service_id nil))
-  ([openvpn-endpoint user-id vpn_service_id csr]
-   (-> (http/post openvpn-endpoint
-                  {:form-params        (cond-> {:requester_id   user-id
-                                                :vpn_service_id vpn_service_id}
-                                               csr (assoc :csr csr))
-                   :content-type       :json
-                   :socket-timeout     30000
-                   :connection-timeout 30000})
-       :body
-       (json/read-str :key-fn keyword))))
+  [openvpn-endpoint user-id vpn_service_id csr]
+  (-> openvpn-endpoint
+      (http/post
+        {:form-params        (cond-> {:requester_id   user-id
+                                      :vpn_service_id vpn_service_id}
+                                     csr (assoc :csr csr))
+         :content-type       :json
+         :socket-timeout     30000
+         :connection-timeout 30000})
+      :body
+      (json/read-str :key-fn keyword)))
+
+
+(defn delete-credential
+  [openvpn-endpoint cred-id]
+  (http/delete openvpn-endpoint
+               {:form-params        {:credential_id cred-id}
+                :content-type       :json
+                :socket-timeout     30000
+                :connection-timeout 30000}))
 
 
 (defn check-service-subtype
@@ -71,8 +77,8 @@
 (defn check-existing-credential
   [is-id user-id]
   (when (credentials-already-exist? is-id user-id)
-   (logu/log-and-throw-400
-     "Credential with following common-name already exist!")))
+    (logu/log-and-throw-400
+      "Credential with following common-name already exist!")))
 
 
 (defn check-openvpn-endpoint

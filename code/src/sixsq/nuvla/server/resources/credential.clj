@@ -10,7 +10,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.auth.acl-resource :as a]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -23,11 +24,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 
 ;; only authenticated users can view and create credentials
-(def collection-acl {:query       ["group/nuvla-user"
-                                   "group/nuvla-nuvlabox"]
-                     :add         ["group/nuvla-user"
-                                   "group/nuvla-nuvlabox"]
-                     :bulk-delete ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"
+                             "group/nuvla-nuvlabox"]
+                     :add   ["group/nuvla-user"
+                             "group/nuvla-nuvlabox"]})
 
 
 ;;
@@ -113,7 +113,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod tpl->credential :default
   [resource request]
   (logu/log-and-throw-400
-    (str "cannot transform credential-template document to template for subtype: '" (:subtype resource) "'")))
+    (str "cannot transform credential-template document to template for subtype: '"
+         (:subtype resource) "'")))
 
 
 ;;
@@ -205,6 +206,15 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   resource)
 
 
+(defmulti special-delete dispatch-conversion)
+
+
+(def delete-impl (std-crud/delete-fn resource-type))
+(defmethod special-delete :default
+  [_ request]
+  (delete-impl request))
+
+
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
@@ -225,19 +235,15 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   (retrieve-impl request))
 
 
-(def delete-impl (std-crud/delete-fn resource-type))
 (defmethod crud/delete resource-type
-  [request]
-  (delete-impl request))
+  [{{uuid :uuid} :params body :body :as request}]
+  (-> (str resource-type "/" uuid)
+      (db/retrieve request)
+      (a/throw-cannot-delete request)
+      (special-delete request)))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
-
-(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
-(defmethod crud/bulk-delete resource-type
-  [request]
-  (bulk-delete-impl request))

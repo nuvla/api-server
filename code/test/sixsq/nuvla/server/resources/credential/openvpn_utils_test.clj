@@ -112,7 +112,7 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
-    (with-redefs [openvpn-utils/generate-credential (fn [_ _ _]
+    (with-redefs [openvpn-utils/generate-credential (fn [_ _ _ _]
                                                       {:certificate     certificate-value
                                                        :common-name     common-name-value
                                                        :intermediate-ca inter-ca-values
@@ -204,11 +204,30 @@
             (ltu/is-key-value :message "Credential with following common-name already exist!")
             (ltu/is-status 400))
 
-        ;; delete the credential
+        ;; credential should not be deleted if openvpn api respond with error
+        (with-redefs [openvpn-utils/delete-credential
+                      (fn [_ _]
+                        (throw (ex-info "test " {})))]
+          (-> session-user-or-nuvlabox
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 500)))
+
+        ;; credential wasn't deleted
         (-> session-user-or-nuvlabox
-            (request abs-uri
-                     :request-method :delete)
+            (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200))
-        ))))
+
+        ;; delete credential should succeed
+        (with-redefs [openvpn-utils/delete-credential (fn [_ _])]
+          (-> session-user-or-nuvlabox
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        ))
+    ))
 

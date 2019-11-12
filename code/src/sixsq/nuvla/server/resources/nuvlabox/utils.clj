@@ -317,7 +317,8 @@
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
-            minio-access-key minio-secret-key]} :body :as request}]
+            minio-access-key minio-secret-key
+            csr-nuvlabox]} :body :as request}]
 
   ;; This code will not create duplicate resources when commission is called multiple times.
   ;; However, it won't update those resources if the content changes.
