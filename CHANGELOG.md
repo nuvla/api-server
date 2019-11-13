@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.6] - 2019-11-13
+
 ### Change
 
   - Dockerfile update to ring 2.0.3
