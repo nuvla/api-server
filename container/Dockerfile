@@ -24,7 +24,6 @@ RUN chmod 0755 /opt/nuvla/server/bin/session-key-pair.sh
 ENV NUVLA_SERVER_INIT=sixsq.nuvla.server.app.server/init
 ENV PERSISTENT_DB_BINDING=sixsq.nuvla.db.es.loader
 ENV EPHEMERAL_DB_BINDING=sixsq.nuvla.db.es.loader
-ENV ES_HOST=localhost
-ENV ES_PORT=9200
+ENV ES_ENDPOINTS=localhost:9200
 
 ENTRYPOINT ["/opt/nuvla/server/bin/start-api.sh"]

@@ -12,13 +12,12 @@
 
 (deftest check-es-protocol
 
-  (with-open [binding (-> {:hosts ["localhost:9200"]}
-                          t/create-client
-                          t/->ElasticsearchRestBinding)]
+  (with-open [client (t/create-client {:hosts ["localhost:9200"]})
+              sniffer (t/create-sniffer client {})
+              binding (t/->ElasticsearchRestBinding client sniffer)]
     (lifecycle/check-binding-lifecycle binding))
 
-
-  (with-open [binding (-> {:hosts ["localhost:9200"]}
-                          t/create-client
-                          t/->ElasticsearchRestBinding)]
+  (with-open [client (t/create-client {:hosts ["localhost:9200"]})
+              sniffer (t/create-sniffer client {})
+              binding (t/->ElasticsearchRestBinding client sniffer)]
     (queries/check-binding-queries binding)))
