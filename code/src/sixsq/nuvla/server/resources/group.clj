@@ -182,3 +182,4 @@ that start with 'nuvla-' are reserved for the server.
                              :description "pseudo-group of all NuvlaBox systems"
                              :template    {:group-identifier "nuvla-nuvlabox"
                                            :acl              default-acl}})))
+

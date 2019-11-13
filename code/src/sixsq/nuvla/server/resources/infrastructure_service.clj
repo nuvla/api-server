@@ -52,9 +52,17 @@ existing `infrastructure-service-template` resource.
 (def validate-fn (u/create-spec-validation-fn ::infra-service/schema))
 
 
-(defmethod crud/validate resource-type
+(defmulti validate-subtype :subtype)
+
+
+(defmethod validate-subtype :default
   [resource]
   (validate-fn resource))
+
+
+(defmethod crud/validate resource-type
+  [resource]
+  (validate-subtype resource))
 
 
 ;;

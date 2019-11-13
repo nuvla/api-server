@@ -16,5 +16,6 @@
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id credential/resource-type))]
     (ltu/verify-405-status [[base-uri :options]
+                            [base-uri :delete]
                             [resource-uri :options]
                             [resource-uri :post]])))

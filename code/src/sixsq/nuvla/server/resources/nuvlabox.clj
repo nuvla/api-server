@@ -7,10 +7,13 @@ particular NuvlaBox release.
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
@@ -109,10 +112,15 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval]
+  [{{:keys [version refresh-interval vpn-server-id]
      :or   {version          latest-version
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
+
+  (when vpn-server-id
+    (let [authn-info  (auth/current-authentication request)
+          vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
+      (vpn-utils/check-service-subtype vpn-service)))
 
   (let [new-nuvlabox (assoc body :version version
                                  :state state-new
@@ -133,8 +141,10 @@ particular NuvlaBox release.
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{:keys [nuvla/authn body] :as request}]
+  (let [is-admin? (acl-resource/is-admin? authn)
+        new-body  (if is-admin? body (select-keys body [:acl :name :description]))]
+    (edit-impl (assoc request :body new-body))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

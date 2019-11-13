@@ -16,6 +16,7 @@
 ;; is no sense in defining map resources for the resource itself.
 ;;
 
+
 (def service-template-keys-spec {:req-un [::infrastructure-service/subtype
                                           ::infrastructure-service/method]})
 
