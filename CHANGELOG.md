@@ -4,6 +4,7 @@
 
 ### Change
 
+  - Dockerfile update to ring 2.0.3
   - Generation of VPN credentials
   - Configuration template VPN added
   - Infrastructure service VPN resource added
