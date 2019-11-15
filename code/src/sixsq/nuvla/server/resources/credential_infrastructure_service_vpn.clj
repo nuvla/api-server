@@ -35,12 +35,12 @@ VPN service.
 ;;
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
-  [{:keys [subtype method parent vpn-csr]} request]
-  (let [user-id         (auth/current-user-id request)
-        authn-info      (auth/current-authentication request)
-        customer?       (= method tpl-customer/method)
-        expected-scope  (if customer? "customer" "nuvlabox")
-        vpn-service (vpn-utils/get-service authn-info parent)]
+  [{:keys [subtype method parent vpn-csr acl]} request]
+  (let [user-id        (auth/current-user-id request)
+        authn-info     (auth/current-authentication request)
+        customer?      (= method tpl-customer/method)
+        expected-scope (if customer? "customer" "nuvlabox")
+        vpn-service    (vpn-utils/get-service authn-info parent)]
 
     (vpn-utils/check-service-subtype vpn-service)
     (vpn-utils/check-scope vpn-service expected-scope)
@@ -52,25 +52,23 @@ VPN service.
       (vpn-utils/check-vpn-endpoint parent vpn-endpoint)
 
       ;; call vpn api
-      (let [response-vpn-api (vpn-utils/generate-credential
-                                   vpn-endpoint user-id parent vpn-csr)
-            intermediate-ca      (:intermediate-ca response-vpn-api)
-            acl                  (if customer?
-                                   {:owners   ["group/nuvla-admin"]
-                                    :view-acl [user-id, parent]
-                                    :delete   [user-id]}
-                                   {:owners   ["group/nuvla-admin"]
-                                    :view-acl [parent, "group/nuvla-nuvlabox"]})]
+      (let [response-vpn-api (vpn-utils/try-generate-credential vpn-endpoint user-id parent vpn-csr)
+            intermediate-ca  (:intermediate-ca response-vpn-api)
+            acl              (if customer?
+                               {:owners   ["group/nuvla-admin"]
+                                :view-acl [user-id, parent]
+                                :delete   [user-id]}
+                               acl)]
         [response-vpn-api
          (cond->
-           {:resource-type       p/resource-type
-            :subtype             subtype
-            :method              method
-            :vpn-certificate (:certificate response-vpn-api)
-            :vpn-common-name (:common-name response-vpn-api)
+           {:resource-type         p/resource-type
+            :subtype               subtype
+            :method                method
+            :vpn-certificate       (:certificate response-vpn-api)
+            :vpn-common-name       (:common-name response-vpn-api)
             :vpn-certificate-owner (auth/current-user-id request)
-            :acl                 acl
-            :parent              parent}
+            :acl                   acl
+            :parent                parent}
            intermediate-ca (assoc :vpn-intermediate-ca intermediate-ca))]))))
 
 
@@ -81,7 +79,8 @@ VPN service.
 
     (vpn-utils/check-vpn-endpoint is-id vpn-endpoint)
 
-    (vpn-utils/delete-credential vpn-endpoint cred-id))
+    (vpn-utils/try-delete-credential vpn-endpoint cred-id))
+
   (p/delete-impl request))
 
 ;;

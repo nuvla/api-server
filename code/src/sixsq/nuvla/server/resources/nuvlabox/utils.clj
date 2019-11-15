@@ -255,14 +255,16 @@
 
 (defn create-vpn-cred
   [nuvlabox-id nuvlabox-name vpn-server-id vpn-csr auth-info]
-  (let [acl  {:owners [nuvlabox-id]}
+  (let [acl  {:owners   [nuvlabox-id]
+              :view-acl [vpn-server-id, "group/nuvla-nuvlabox"]}
         tmpl {:name        (format-nb-name nuvlabox-name (short-nb-id nuvlabox-id))
               :description (str/join " " ["Generated VPN Key for "
                                           (format-nb-name nuvlabox-name nuvlabox-id)])
               :parent      vpn-server-id
-              :template    {:href        (str "credential-template/" ctison/method)
-                            :subtype     ctison/credential-subtype
-                            :method      ctison/method
+              :acl         acl
+              :template    {:href    (str "credential-template/" ctison/method)
+                            :subtype ctison/credential-subtype
+                            :method  ctison/method
                             :vpn-csr vpn-csr}}
 
         {:keys [status body] :as resp} (credential/create-credential tmpl auth-info)
@@ -392,9 +394,9 @@
           (create-minio-cred id name owner minio-id minio-access-key minio-secret-key)))
 
       (when (and vpn-server-id vpn-csr)
-        (let [user-id         (auth/current-user-id request)
+        (let [user-id     (auth/current-user-id request)
               vpn-cred-id (get-vpn-cred vpn-server-id user-id)
-              authn-info      (auth/current-authentication request)]
+              authn-info  (auth/current-authentication request)]
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))

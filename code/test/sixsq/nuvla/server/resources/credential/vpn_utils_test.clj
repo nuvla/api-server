@@ -176,8 +176,7 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present :delete)
-            (ltu/is-operation-absent :edit))
+            (ltu/is-operation-present :delete))
 
         ;; ensure credential contains correct information
         (let [{:keys [name description tags
@@ -207,12 +206,12 @@
         ;; credential should not be deleted if vpn api respond with error
         (with-redefs [vpn-utils/delete-credential
                       (fn [_ _]
-                        (throw (ex-info "test " {})))]
+                        (throw (Exception.)))]
           (-> session-user-or-nuvlabox
               (request abs-uri
                        :request-method :delete)
               (ltu/body->edn)
-              (ltu/is-status 500)))
+              (ltu/is-status 400)))
 
         ;; credential wasn't deleted
         (-> session-user-or-nuvlabox

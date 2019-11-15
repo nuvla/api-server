@@ -8,7 +8,8 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn get-service
@@ -50,6 +51,15 @@
       :body
       (json/read-str :key-fn keyword)))
 
+(defn try-generate-credential
+  [vpn-endpoint user-id vpn_service_id csr]
+  (try
+    (generate-credential vpn-endpoint user-id vpn_service_id csr)
+    (catch Exception e
+      (throw (r/ex-response
+               (str "Error occured during communication with VPN "
+                    vpn-endpoint "! " (str e)) 400)))))
+
 
 (defn delete-credential
   [vpn-endpoint cred-id]
@@ -58,6 +68,16 @@
                 :content-type       :json
                 :socket-timeout     30000
                 :connection-timeout 30000}))
+
+
+(defn try-delete-credential
+  [vpn-endpoint cred-id]
+  (try
+    (delete-credential vpn-endpoint cred-id)
+    (catch Exception e
+      (throw (r/ex-response
+               (str "Error occured during communication with VPN "
+                    vpn-endpoint "! " (str e)) 400)))))
 
 
 (defn check-service-subtype
