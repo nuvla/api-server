@@ -57,11 +57,10 @@ VPN service.
             intermediate-ca      (:intermediate-ca response-vpn-api)
             acl                  (if customer?
                                    {:owners   ["group/nuvla-admin"]
-                                    :view-acl [user-id]
+                                    :view-acl [user-id, parent]
                                     :delete   [user-id]}
                                    {:owners   ["group/nuvla-admin"]
-                                    :view-acl ["group/nuvla-nuvlabox"]
-                                    :delete   ["group/nuvla-nuvlabox"]})]
+                                    :view-acl [parent, "group/nuvla-nuvlabox"]})]
         [response-vpn-api
          (cond->
            {:resource-type       p/resource-type
