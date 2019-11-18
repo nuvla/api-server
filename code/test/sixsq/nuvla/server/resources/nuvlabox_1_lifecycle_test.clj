@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -773,6 +772,7 @@
                                 (ltu/entries)
                                 first)
                 vpn-cred-id (:id vpn-cred)]
+
             (is (= common-name-value (:vpn-common-name vpn-cred)))
 
             (-> session-nuvlabox
