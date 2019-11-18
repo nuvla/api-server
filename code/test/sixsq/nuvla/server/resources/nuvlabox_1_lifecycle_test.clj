@@ -770,6 +770,7 @@
                                 (ltu/body->edn)
                                 (ltu/is-status 200)
                                 (ltu/is-count 1)
+                                (ltu/dump)
                                 (ltu/entries)
                                 first)
                 vpn-cred-id (:id vpn-cred)]

@@ -51,14 +51,14 @@
       :body
       (json/read-str :key-fn keyword)))
 
+
 (defn try-generate-credential
   [vpn-endpoint user-id vpn_service_id csr]
   (try
     (generate-credential vpn-endpoint user-id vpn_service_id csr)
     (catch Exception e
-      (throw (r/ex-response
-               (str "Error occured during communication with VPN "
-                    vpn-endpoint "! " (str e)) 400)))))
+      (throw
+        (r/ex-response (str "Error occured during communication with VPN. " e) 400)))))
 
 
 (defn delete-credential
@@ -75,9 +75,8 @@
   (try
     (delete-credential vpn-endpoint cred-id)
     (catch Exception e
-      (throw (r/ex-response
-               (str "Error occured during communication with VPN "
-                    vpn-endpoint "! " (str e)) 400)))))
+      (throw
+        (r/ex-response (str "Error occured during communication with VPN. " e) 400)))))
 
 
 (defn check-service-subtype

@@ -255,8 +255,9 @@
 
 (defn create-vpn-cred
   [nuvlabox-id nuvlabox-name vpn-server-id vpn-csr auth-info]
-  (let [acl  {:owners   [nuvlabox-id]
-              :view-acl [vpn-server-id, "group/nuvla-nuvlabox"]}
+  (let [acl  {:owners   ["group/nuvla-admin"]
+              :delete   [nuvlabox-id]
+              :view-acl [nuvlabox-id, vpn-server-id, "group/nuvla-nuvlabox"]}
         tmpl {:name        (format-nb-name nuvlabox-name (short-nb-id nuvlabox-id))
               :description (str/join " " ["Generated VPN Key for "
                                           (format-nb-name nuvlabox-name nuvlabox-id)])
