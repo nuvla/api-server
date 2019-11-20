@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Change
+
+  - Credential openvpn - change error message when duplicated credential
+  - Update to parent 6.7.0
+  - Dockerfile update to ring 2.0.4
+
 ## [4.2.6] - 2019-11-13
 
 ### Change

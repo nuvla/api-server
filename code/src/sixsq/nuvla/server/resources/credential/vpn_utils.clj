@@ -78,7 +78,7 @@
   [is-id user-id]
   (when (credentials-already-exist? is-id user-id)
     (logu/log-and-throw-400
-      "Credential with following common-name already exist!")))
+      "Credential VPN already exist for your account on selected VPN infrastructure service!")))
 
 
 (defn check-vpn-endpoint

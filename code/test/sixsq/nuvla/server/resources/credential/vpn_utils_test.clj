@@ -201,7 +201,8 @@
                      :request-method :post
                      :body (json/write-str create-import-href))
             (ltu/body->edn)
-            (ltu/is-key-value :message "Credential with following common-name already exist!")
+            (ltu/is-key-value :message (str "Credential VPN already exist for your account on "
+                                            "selected VPN infrastructure service!"))
             (ltu/is-status 400))
 
         ;; credential should not be deleted if vpn api respond with error
