@@ -97,10 +97,11 @@ particular NuvlaBox release.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [{:keys [id owner] :as resource} request]
-  (let [acl {:owners    [owner]
-             :manage    [id]
-             :view-data [id]}]
+  [{:keys [id owner vpn-server-id] :as resource} request]
+  (let [acl (cond-> {:owners    [owner]
+                     :manage    [id]
+                     :view-data [id]}
+                    vpn-server-id (assoc :view-acl [vpn-server-id]))]
     (assoc resource :acl acl)))
 
 

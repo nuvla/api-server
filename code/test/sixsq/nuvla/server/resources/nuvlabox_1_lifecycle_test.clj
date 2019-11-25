@@ -678,12 +678,12 @@
         session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
 
-    (let [infra-srvc-vpn-create {:template {:href          (str infra-service-tpl/resource-type "/"
-                                                                infra-srvc-tpl-vpn/method)
+    (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
+                                                            infra-srvc-tpl-vpn/method)
                                             :vpn-scope "nuvlabox"
-                                            :acl           {:owners   ["nuvla/admin"]
-                                                            :view-acl ["nuvla/user"
-                                                                       "nuvla/nuvlabox"]}}}
+                                            :acl       {:owners   ["nuvla/admin"]
+                                                        :view-acl ["nuvla/user"
+                                                                   "nuvla/nuvlabox"]}}}
           infra-srvc-vpn-id     (-> session-admin
                                     (request (str p/service-context infra-service/resource-type)
                                              :request-method :post
@@ -716,6 +716,8 @@
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
                                     (ltu/is-key-value :state "NEW")
+                                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin"
+                                                                      infra-srvc-vpn-id])
                                     (ltu/get-op-url :activate))]
 
       (-> session-admin
@@ -747,9 +749,9 @@
 
         ;; commissioning of the resource
         (with-redefs [vpn-utils/generate-credential (fn [_ _ _ _]
-                                                          {:certificate     certificate-value
-                                                           :common-name     common-name-value
-                                                           :intermediate-ca inter-ca-values})
+                                                      {:certificate     certificate-value
+                                                       :common-name     common-name-value
+                                                       :intermediate-ca inter-ca-values})
                       vpn-utils/delete-credential   (fn [_ _])]
 
           (-> session-nuvlabox
