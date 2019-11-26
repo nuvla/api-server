@@ -44,7 +44,9 @@
                              :code            "vH72Hks209"
                              :state           "NEW"
                              :target-audience "scientists@university.com"
-                             :supplier        "cloud A"
+                             ;:supplier        "cloud A"
+                             ;:distributor     "distributor A"
+                             :platform        "cloud A"
 
                              :acl             valid-acl-admin
                              }
@@ -128,10 +130,12 @@
                              (ltu/is-status 200)
                              (ltu/is-operation-present :edit)
                              (ltu/is-operation-present :delete)
-                             (ltu/is-operation-present :activate)
+                             ;(ltu/is-operation-present :activate)
+                             (ltu/is-operation-present :distribute)
                              (ltu/is-operation-present :expire))
             voucher      (:body (:response voucher-full))
-            activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
+            ;activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
+            distribute-url (str p/service-context (ltu/get-op voucher-full "distribute"))
             expire-url   (str p/service-context (ltu/get-op voucher-full "expire"))]
 
         (is (= "my-voucher" (:name voucher)))
@@ -139,7 +143,7 @@
 
         ;; check activation acls - fail as anon
         (-> session-anon
-            (request activate-url
+            (request distribute-url
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 403))
@@ -151,14 +155,36 @@
             (ltu/body->edn)
             (ltu/is-status 403))
 
-        ;; success as regular user
-        (-> session-user
-            (request activate-url
+        ;; success as voucher owner
+        (-> session-admin
+            (request distribute-url
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; now the redeem url should finally exist
+        ;; now the activate url should finally exist
+        (let [voucher-updated (-> session-admin
+                                  (request admin-abs-uri)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present :activate))
+              activate-url      (str p/service-context (ltu/get-op voucher-updated "activate"))]
+
+          ;; state is distributed but anon cannot activate, anon doesn't have can-view
+          (-> session-anon
+              (request activate-url
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          ; but user can activate
+          (-> session-user
+              (request activate-url
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200)))
+
+        ;; now the redeem is ok
         (let [voucher-updated (-> session-admin
                                   (request admin-abs-uri)
                                   (ltu/body->edn)

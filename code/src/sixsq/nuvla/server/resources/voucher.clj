@@ -79,13 +79,13 @@ voucher via the 'expire' operation.
 ;;
 
 (defn voucher->uuid
-  [code supplier]
-  (let [id (str/join ":" [code supplier])]
+  [code platform]
+  (let [id (str/join ":" [code platform])]
     (u/from-data-uuid id)))
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [code supplier] :as voucher} resource-name]
-  (->> (voucher->uuid code supplier)
+  [{:keys [code platform] :as voucher} resource-name]
+  (->> (voucher->uuid code platform)
        (str resource-type "/")
        (assoc voucher :id)))
 
@@ -143,12 +143,44 @@ voucher via the 'expire' operation.
 
 
 ;;
-;; Activate operation
+;; DISTRIBUTE operation
 ;;
 
 (defn activate
   [voucher]
   (if (= (:state voucher) "NEW")
+    (assoc voucher :state "DISTRIBUTED"
+                   :activated (time/now-str))
+    (throw (r/ex-response "distribution is not allowed for this voucher" 400 (:id voucher)))))
+
+
+(defmethod crud/do-action [resource-type "distribute"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id      (str resource-type "/" uuid)
+          user-id (auth/current-user-id request)
+          voucher (db/retrieve id request)
+          new-acl (update (:acl voucher) :manage conj user-id)]
+      (try
+        (-> id
+            (db/retrieve request)
+            (a/throw-cannot-view-data request)
+            activate
+            (assoc :user user-id :acl new-acl)
+            (db/edit request))
+        (catch Exception ei
+          (ex-data ei))))
+    (catch Exception ei
+      (ex-data ei))))
+
+
+;;
+;; Activate operation
+;;
+
+(defn activate
+  [voucher]
+  (if (= (:state voucher) "DISTRIBUTED")
     (assoc voucher :state "ACTIVATED"
                    :activated (time/now-str))
     (throw (r/ex-response "activation is not allowed for this voucher" 400 (:id voucher)))))
@@ -236,7 +268,8 @@ voucher via the 'expire' operation.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [activate-op (u/action-map id :activate)
+  (let [distribute-op (u/action-map id :distribute)
+        activate-op (u/action-map id :activate)
         expire-op   (u/action-map id :expire)
         redeem-op   (u/action-map id :redeem)
         can-manage? (a/can-manage? resource request)
@@ -244,4 +277,5 @@ voucher via the 'expire' operation.
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
             (and can-manage? (#{"NEW" "ACTIVATED" "REDEEMED"} state)) (update :operations conj expire-op)
-            (and can-view? (#{"NEW"} state)) (update :operations conj activate-op))))
+            (and can-manage? (#{"NEW"} state)) (update :operations conj distribute-op)
+            (and can-view? (#{"DISTRIBUTED"} state)) (update :operations conj activate-op))))
