@@ -146,7 +146,7 @@ voucher via the 'expire' operation.
 ;; DISTRIBUTE operation
 ;;
 
-(defn activate
+(defn distribute
   [voucher]
   (if (= (:state voucher) "NEW")
     (assoc voucher :state "DISTRIBUTED"
@@ -164,9 +164,8 @@ voucher via the 'expire' operation.
       (try
         (-> id
             (db/retrieve request)
-            (a/throw-cannot-view-data request)
-            activate
-            (assoc :user user-id :acl new-acl)
+            (a/throw-cannot-manage request)
+            distribute
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))
