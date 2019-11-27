@@ -10,12 +10,24 @@
 
 
 (s/def ::docker-compose
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "docker-compose"
-             :json-schema/description "docker-compose file in yaml format"
-             :json-schema/indexed false
+  (->
+    (st/spec ::core/nonblank-string)
+    (assoc :name "docker-compose"
+           :json-schema/description "Text in yaml format for docker-compose or kubernetes manifest"
+           :json-schema/indexed false
 
-             :json-schema/fulltext true)))
+           :json-schema/fulltext true)))
+
+
+(s/def ::infra-subtype
+  (->
+    (st/spec #{"swarm" "kubernetes"})
+    (assoc :name "infra-subtype"
+           :json-schema/type "string"
+           :json-schema/description "Should be used on infrastructure service of specified subtype"
+           :json-schema/value-scope {:values  ["swarm" "kubernetes"]
+                                     :default "swarm"}
+           :json-schema/fulltext true)))
 
 
 (s/def ::file-content
@@ -52,7 +64,8 @@
                                                ::module-component/urls
                                                ::module-component/output-parameters
                                                ::container/environmental-variables
-                                               ::files]}]))
+                                               ::files
+                                               ::infra-subtype]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))
