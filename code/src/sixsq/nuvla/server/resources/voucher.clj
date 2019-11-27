@@ -157,10 +157,7 @@ voucher via the 'expire' operation.
 (defmethod crud/do-action [resource-type "distribute"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id      (str resource-type "/" uuid)
-          user-id (auth/current-user-id request)
-          voucher (db/retrieve id request)
-          new-acl (update (:acl voucher) :manage conj user-id)]
+    (let [id      (str resource-type "/" uuid)]
       (try
         (-> id
             (db/retrieve request)
