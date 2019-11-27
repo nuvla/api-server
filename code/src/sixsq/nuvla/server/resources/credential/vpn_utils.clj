@@ -51,6 +51,14 @@
       (json/read-str :key-fn keyword)))
 
 
+(defn try-generate-credential
+  [vpn-endpoint user-id vpn_service_id csr]
+  (try
+    (generate-credential vpn-endpoint user-id vpn_service_id csr)
+    (catch Exception e
+      (logu/log-and-throw 500 "Exception during generation of credential on VPN!"))))
+
+
 (defn delete-credential
   [vpn-endpoint cred-id]
   (http/delete vpn-endpoint
@@ -58,6 +66,14 @@
                 :content-type       :json
                 :socket-timeout     30000
                 :connection-timeout 30000}))
+
+
+(defn try-delete-credential
+  [vpn-endpoint cred-id]
+  (try
+    (delete-credential vpn-endpoint cred-id)
+    (catch Exception _
+      (logu/log-and-throw 500 "Exception during deletion of credential on VPN!"))))
 
 
 (defn check-service-subtype
