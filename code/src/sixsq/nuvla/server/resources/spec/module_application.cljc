@@ -19,17 +19,6 @@
            :json-schema/fulltext true)))
 
 
-(s/def ::infra-subtype
-  (->
-    (st/spec #{"swarm" "kubernetes"})
-    (assoc :name "infra-subtype"
-           :json-schema/type "string"
-           :json-schema/description "Should be used on infrastructure service of specified subtype"
-           :json-schema/value-scope {:values  ["swarm" "kubernetes"]
-                                     :default "swarm"}
-           :json-schema/fulltext true)))
-
-
 (s/def ::file-content
   (-> (st/spec string?)
       (assoc :name "file-content"
@@ -64,8 +53,7 @@
                                                ::module-component/urls
                                                ::module-component/output-parameters
                                                ::container/environmental-variables
-                                               ::files
-                                               ::infra-subtype]}]))
+                                               ::files]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))
