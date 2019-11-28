@@ -67,6 +67,7 @@ component, or application.
   [subtype]
   (case subtype
     "component" module-component/resource-type
+    "application" module-application/resource-type
     "application_kubernetes" module-application/resource-type
     (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
