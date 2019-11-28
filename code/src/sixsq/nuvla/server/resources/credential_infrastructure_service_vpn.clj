@@ -56,10 +56,12 @@ VPN service.
             intermediate-ca  (:intermediate-ca response-vpn-api)
             acl              (if customer?
                                {:owners   ["group/nuvla-admin"]
-                                :view-acl [user-id]
+                                :view-acl [user-id
+                                           (:id vpn-service)]
                                 :delete   [user-id]}
                                {:owners   ["group/nuvla-admin"]
-                                :view-acl ["group/nuvla-nuvlabox"]
+                                :view-acl ["group/nuvla-nuvlabox"
+                                           (:id vpn-service)]
                                 :delete   ["group/nuvla-nuvlabox"]})]
         [response-vpn-api
          (cond->
