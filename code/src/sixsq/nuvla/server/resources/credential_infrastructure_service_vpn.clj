@@ -54,15 +54,10 @@ VPN service.
       ;; call vpn api
       (let [response-vpn-api (vpn-utils/try-generate-credential vpn-endpoint user-id parent vpn-csr)
             intermediate-ca  (:intermediate-ca response-vpn-api)
-            acl              (if customer?
-                               {:owners   ["group/nuvla-admin"]
-                                :view-acl [user-id
-                                           (:id vpn-service)]
-                                :delete   [user-id]}
-                               {:owners   ["group/nuvla-admin"]
-                                :view-acl ["group/nuvla-nuvlabox"
-                                           (:id vpn-service)]
-                                :delete   ["group/nuvla-nuvlabox"]})]
+            acl              {:owners   ["group/nuvla-admin"]
+                              :view-acl [user-id
+                                         (:id vpn-service)]
+                              :delete   [user-id]}]
         [response-vpn-api
          (cond->
            {:resource-type         p/resource-type
