@@ -35,7 +35,7 @@ VPN service.
 ;;
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
-  [{:keys [subtype method parent vpn-csr acl]} request]
+  [{:keys [subtype method parent vpn-csr]} request]
   (let [user-id        (auth/current-user-id request)
         authn-info     (auth/current-authentication request)
         customer?      (= method tpl-customer/method)

@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (defn get-service
@@ -57,8 +58,8 @@
   (try
     (generate-credential vpn-endpoint user-id vpn_service_id csr)
     (catch Exception e
-      (throw
-        (r/ex-response (str "Error occured during communication with VPN. " e) 400)))))
+      (log/error (str e))
+      (logu/log-and-throw 500 "Exception during generation of credential on VPN!"))))
 
 
 (defn delete-credential
@@ -75,8 +76,8 @@
   (try
     (delete-credential vpn-endpoint cred-id)
     (catch Exception e
-      (throw
-        (r/ex-response (str "Error occured during communication with VPN. " e) 400)))))
+      (log/error (str e))
+      (logu/log-and-throw 500 "Exception during deletion of credential on VPN!"))))
 
 
 (defn check-service-subtype
@@ -97,7 +98,7 @@
   [is-id user-id]
   (when (credentials-already-exist? is-id user-id)
     (logu/log-and-throw-400
-      "Credential with following common-name already exist!")))
+      "Credential VPN already exist for your account on selected VPN infrastructure service!")))
 
 
 (defn check-vpn-endpoint
