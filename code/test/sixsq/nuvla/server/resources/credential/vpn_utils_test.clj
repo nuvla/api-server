@@ -212,7 +212,7 @@
               (request abs-uri
                        :request-method :delete)
               (ltu/body->edn)
-              (ltu/is-status 400)))
+              (ltu/is-status 500)))
 
         ;; credential wasn't deleted
         (-> session-test
