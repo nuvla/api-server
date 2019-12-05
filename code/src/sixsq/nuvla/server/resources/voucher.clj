@@ -149,8 +149,7 @@ voucher via the 'expire' operation.
 (defn distribute
   [voucher]
   (if (= (:state voucher) "NEW")
-    (assoc voucher :state "DISTRIBUTED"
-                   :activated (time/now-str))
+    (assoc voucher :state "DISTRIBUTED")
     (throw (r/ex-response "distribution is not allowed for this voucher" 400 (:id voucher)))))
 
 
