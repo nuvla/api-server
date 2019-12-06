@@ -66,7 +66,7 @@
              :json-schema/group "body"
              :json-schema/order 23
 
-             :json-schema/value-scope {:values  ["NEW", "ACTIVATED",
+             :json-schema/value-scope {:values  ["NEW", "DISTRIBUTED", "ACTIVATED",
                                                  "EXPIRED", "REDEEMED"]
                                        :default "NEW"})))
 
@@ -146,9 +146,29 @@
       (assoc :name "supplier"
              :json-schema/type "string"
 
-             :json-schema/description "name identifier for the supplier"
+             :json-schema/description "name identifier for the voucher supplier"
              :json-schema/group "body"
              :json-schema/order 31)))
+
+
+(s/def ::platform
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "platform"
+             :json-schema/type "string"
+
+             :json-schema/description "name identifier for the platform where the voucher is to be used"
+             :json-schema/group "body"
+             :json-schema/order 32)))
+
+
+(s/def ::distributor
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "distributor"
+             :json-schema/type "string"
+
+             :json-schema/description "name identifier for the voucher distributor"
+             :json-schema/group "body"
+             :json-schema/order 33)))
 ;;
 ;; -------
 ;;
@@ -161,8 +181,10 @@
                                ::code
                                ::state
                                ::target-audience
-                               ::supplier]
+                               ::platform]
                       :opt-un [::expiry
+                               ::supplier
+                               ::distributor
                                ::activated
                                ::service-info-url
                                ::user

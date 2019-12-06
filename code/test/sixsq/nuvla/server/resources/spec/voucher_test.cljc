@@ -27,7 +27,9 @@
                    :state            "NEW"
                    :target-audience  "scientists@university.com"
                    :service-info-url "https://url.com"
-                   :supplier         "cloud A"
+                   :supplier         "supplier A"
+                   :distributor      "distributor A"
+                   :platform         "cloud A"
                    :expiry           timestamp
                    :activated        timestamp
                    :redeemed         timestamp
