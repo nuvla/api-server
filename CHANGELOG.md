@@ -4,6 +4,10 @@
 
 ### Change
 
+## [4.2.7] - 2019-12-09
+
+### Change
+
   - Update to parent 6.7.2
   - Module - support for applicaiton of subtype kubernetes
   - NuvlaBox - update existing resources on commission
