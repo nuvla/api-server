@@ -4,6 +4,7 @@
 
 ### Change
 
+  - Module - support for applicaiton of subtype kubernetes
   - NuvlaBox - make NuvlaBox visible for vpn infrastructure when selected
   - Credential openvpn - change error message when duplicated credential
   - Update to parent 6.7.0
