@@ -2,13 +2,15 @@
   (:require
     [clj-http.client :as http]
     [clojure.data.json :as json]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn get-service
@@ -56,6 +58,7 @@
   (try
     (generate-credential vpn-endpoint user-id vpn_service_id csr)
     (catch Exception e
+      (log/error (str e))
       (logu/log-and-throw 500 "Exception during generation of credential on VPN!"))))
 
 
@@ -72,7 +75,8 @@
   [vpn-endpoint cred-id]
   (try
     (delete-credential vpn-endpoint cred-id)
-    (catch Exception _
+    (catch Exception e
+      (log/error (str e))
       (logu/log-and-throw 500 "Exception during deletion of credential on VPN!"))))
 
 

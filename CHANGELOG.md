@@ -4,9 +4,15 @@
 
 ### Change
 
+## [4.2.7] - 2019-12-09
+
+### Change
+
+  - Update to parent 6.7.2
+  - Module - support for applicaiton of subtype kubernetes
+  - NuvlaBox - update existing resources on commission
   - NuvlaBox - make NuvlaBox visible for vpn infrastructure when selected
   - Credential openvpn - change error message when duplicated credential
-  - Update to parent 6.7.0
   - Dockerfile update to ring 2.0.4
 
 ## [4.2.6] - 2019-11-13
