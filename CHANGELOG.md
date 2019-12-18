@@ -4,6 +4,8 @@
 
 ### Change
 
+  - Voucher - fix voucher schema add DISTRIBUTED state
+
 ## [4.2.7] - 2019-12-09
 
 ### Change

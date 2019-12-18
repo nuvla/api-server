@@ -57,7 +57,7 @@
 
 
 (s/def ::state
-  (-> (st/spec #{"NEW", "ACTIVATED",
+  (-> (st/spec #{"NEW", "ACTIVATED", "DISTRIBUTED",
                  "EXPIRED", "REDEEMED"})
       (assoc :name "state"
              :json-schema/type "string"
