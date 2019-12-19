@@ -46,6 +46,12 @@
 (s/def ::isg-href (s/and string? #(re-matches service-group-href-regex %)))
 
 
+(def credential-href-regex #"^credential/[0-9a-f-]+$")
+
+
+(s/def ::credential-href (s/and string? #(re-matches credential-href-regex %)))
+
+
 (s/def ::infrastructure-service-group
   (-> (st/spec ::isg-href)
       (assoc :name "infrastructure-service-group"
@@ -56,10 +62,21 @@
              :json-schema/order 43)))
 
 
+(s/def ::credential-api-key
+  (-> (st/spec ::credential-href)
+      (assoc :name "credential-api-key"
+             :json-schema/type "string"
+             :json-schema/display-name "NuvlaBox credential api key"
+             :json-schema/description "identifier of the associated credential api key resource"
+
+             :json-schema/order 44)))
+
+
 (def attributes {:req-un [::version
                           ::owner]
                  :opt-un [::nuvlabox-status
-                          ::infrastructure-service-group]})
+                          ::infrastructure-service-group
+                          ::credential-api-key]})
 
 
 (s/def ::schema

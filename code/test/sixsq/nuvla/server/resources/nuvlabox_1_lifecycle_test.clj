@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -53,9 +54,6 @@
 
 (def valid-nuvlabox {:created          timestamp
                      :updated          timestamp
-                     :acl              {:owners   ["group/nuvla-admin" nuvlabox-owner]
-                                        :view-acl ["user/jane"]
-                                        :manage   ["user/jane"]}
 
                      ;; This doesn't need to be specified as it will default to the
                      ;; latest version (which is currently 1). If new versions are added,
@@ -96,24 +94,25 @@
                            (ltu/location))
           nuvlabox-url (str p/service-context nuvlabox-id)
 
-          {:keys [id acl]} (-> session-owner
-                               (request nuvlabox-url)
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               (ltu/is-operation-present :edit)
-                               (ltu/is-operation-present :delete)
-                               (ltu/is-operation-present :activate)
-                               (ltu/is-operation-absent :commission)
-                               (ltu/is-operation-absent :decommission)
-                               (ltu/is-key-value :state "NEW")
-                               (ltu/body))]
+          {:keys [id acl owner]} (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :edit)
+                                     (ltu/is-operation-present :delete)
+                                     (ltu/is-operation-present :activate)
+                                     (ltu/is-operation-absent :commission)
+                                     (ltu/is-operation-absent :decommission)
+                                     (ltu/is-key-value :state "NEW")
+                                     (ltu/body))]
 
       ;; check generated ACL
-      (is (contains? (set (:owners acl)) nuvlabox-owner))
+      (is (contains? (set (:owners acl)) "group/nuvla-admin"))
       (is (contains? (set (:manage acl)) id))
-      (is (contains? (set (:edit-acl acl)) "group/nuvla-admin"))
+      (is (contains? (set (:edit-acl acl)) owner))
 
       ;; only name description acl are editable for normal user other changes are ignored
+      ;; FIXME update with test of change acl repercussion on other resources
       (let [new-name  "name NB changed"
             new-owner "user/beta"]
         (-> session-owner
@@ -122,12 +121,12 @@
                      :body (json/write-str
                              {:name  new-name
                               :state "change is ignored"
-                              :acl   (assoc acl :owners (conj (:owners acl) new-owner))}))
+                              :acl   (assoc acl :edit-acl (conj (:edit-acl acl) new-owner))}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :state "NEW")
             (ltu/is-key-value :name new-name)
-            (ltu/is-key-value :owners :acl (conj (:owners acl) new-owner))
+            (ltu/is-key-value :edit-acl :acl (conj (:edit-acl acl) new-owner))
             (ltu/body)))
 
       (-> session-owner
@@ -177,46 +176,33 @@
                              (ltu/is-key-value :state "NEW")
                              (ltu/get-op-url :activate))]
 
-        (let [{:keys [owner acl]} (-> session
-                                      (request nuvlabox-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/body))]
-
-          ;; checks of acl for created credential
-          (is (= [owner] (:owners acl)))
-          (is (contains? (set (:manage acl)) nuvlabox-id))
-          (is (contains? (set (:view-data acl)) nuvlabox-id))
-          (is (not (contains? (set (:view-acl acl)) nuvlabox-id)))
-          (is (not (contains? (set (:edit-meta acl)) nuvlabox-id)))
-          (is (not (contains? (set (:delete acl)) nuvlabox-id))))
-
         ;; anonymous should be able to activate the NuvlaBox
         ;; and receive an api key/secret pair to access Nuvla
-        (let [credential-url (-> session-anon
-                                 (request activate-url
-                                          :request-method :post)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-key-value (comp not str/blank?) :secret-key true)
-                                 (ltu/body)
-                                 :api-key
-                                 (ltu/href->url))
+        (let [credential-url      (-> session-anon
+                                      (request activate-url
+                                               :request-method :post)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                                      (ltu/body)
+                                      :api-key
+                                      (ltu/href->url))
 
-              {:keys [acl] :as credential-nuvlabox} (-> session-admin
-                                                        (request credential-url)
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 200)
-                                                        (ltu/is-key-value :parent nuvlabox-id)
-                                                        (ltu/body))
+              credential-nuvlabox (-> session-admin
+                                      (request credential-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :parent nuvlabox-id)
+                                      (ltu/body))
 
-              claims         (:claims credential-nuvlabox)
+              claims              (:claims credential-nuvlabox)
 
-              {:keys [owner]} (-> session-admin
-                                  (request nuvlabox-url)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/body))]
+              {:keys [infrastructure-service-group
+                      nuvlabox-status]} (-> session-admin
+                                            (request nuvlabox-url)
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            (ltu/body))]
 
           ;; check ACL and claims of generated credential.
           (is (= (:identity claims) nuvlabox-id))
@@ -225,46 +211,29 @@
                                           "group/nuvla-anon"
                                           "group/nuvla-nuvlabox"}))
 
-          ;; checks of acl for created credential
-          (is (= ["group/nuvla-admin"] (:owners acl)))
-          (is (contains? (set (:delete acl)) owner))
-          (is (contains? (set (:view-meta acl)) owner))
-          (is (not (contains? (set (:view-meta acl)) nuvlabox-id)))
-          (is (not (contains? (set (:view-data acl)) owner)))
+          ;; checks created api credential for NB visible for owner
+          (-> session-owner
+              (request credential-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete))
 
           ;; verify that an infrastructure-service-group has been created for this nuvlabox
-          (let [{:keys [acl]} (-> session-admin
-                                  (content-type "application/x-www-form-urlencoded")
-                                  (request isg-collection-uri
-                                           :request-method :put
-                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-count 1)
-                                  (ltu/entries)
-                                  first)]
-
-            (is (= ["group/nuvla-admin"] (:owners acl)))
-            (is (contains? (set (:view-meta acl)) owner))
-            (is (not (contains? (set (:edit-meta acl)) owner))))
+          (-> session-owner
+              (request (str p/service-context infrastructure-service-group))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete))
 
           ;; verify that an nuvlabox-status has been created for this nuvlabox
-          (let [{:keys [acl]} (-> session-admin
-                                  (content-type "application/x-www-form-urlencoded")
-                                  (request nb-status-collection-uri
-                                           :request-method :put
-                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-count 1)
-                                  (ltu/entries)
-                                  first)]
-
-            (is (= ["group/nuvla-admin"] (:owners acl)))
-            (is (contains? (set (:edit-meta acl)) nuvlabox-id))
-            (is (not (contains? (set (:edit-acl acl)) nuvlabox-id)))
-            (is (contains? (set (:view-acl acl)) owner))
-            (is (not (contains? (set (:edit-meta acl)) owner)))))
+          (-> session-owner
+              (request (str p/service-context nuvlabox-status))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete)))
 
         (let [decommission-url (-> session
                                    (request nuvlabox-url)
@@ -313,12 +282,12 @@
             (ltu/is-status 200))
 
         ;; DECOMMISSIONED state with correct actions
-        (-> session
+        (-> session-owner
             (request nuvlabox-url)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present :edit)
             (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :edit)
             (ltu/is-operation-absent :activate)
             (ltu/is-operation-absent :commission)
             (ltu/is-operation-absent :decommission)
@@ -446,10 +415,10 @@
             (is (= #{"swarm" "s3"} (set (map :subtype services))))
 
             (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
+              (is (= [nuvlabox-owner] (:view-acl acl))))
 
             (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
+              (let [creds (-> session-owner
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
@@ -457,10 +426,6 @@
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
                   (is (= 2 (count creds))))                 ;; only swarm token credentials
@@ -488,7 +453,7 @@
               (ltu/is-status 200))
 
           ;; check the services again
-          (let [services (-> session
+          (let [services (-> session-owner
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
@@ -498,32 +463,7 @@
                              (ltu/is-count 2)
                              (ltu/entries))]
 
-            (is (= #{"swarm" "s3"} (set (map :subtype services))))
-
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
-
-            (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
-                              (content-type "application/x-www-form-urlencoded")
-                              (request credential-collection-uri
-                                       :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'" (:id service))}))
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
-
-                (if (= "swarm" subtype)
-                  (is (= 3 (count creds))))                 ;; now both tokens and credential
-
-                (if (= "s3" subtype)
-                  (is (= 1 (count creds))))                 ;; only key/secret pair
-
-                )))
+            (is (= #{"swarm" "s3"} (set (map :subtype services)))))
 
           ;; third commissioning of the resource make sure no additional credentials created
           (-> session
@@ -542,7 +482,7 @@
               (ltu/is-status 200))
 
           ;; check the services again
-          (let [services (-> session
+          (let [services (-> session-owner
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
@@ -554,11 +494,8 @@
 
             (is (= #{"swarm" "s3"} (set (map :subtype services))))
 
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
-
             (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
+              (let [creds (-> session-owner
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
@@ -566,10 +503,6 @@
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
                   (is (= 3 (count creds))))                 ;; now both tokens and credential
@@ -715,8 +648,8 @@
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
                                     (ltu/is-key-value :state "NEW")
-                                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin"
-                                                                      infra-srvc-vpn-id])
+                                    (ltu/is-key-value :view-acl :acl [infra-srvc-vpn-id
+                                                                      "user/alpha"])
                                     (ltu/get-op-url :activate))]
 
       (-> session-admin
@@ -857,8 +790,8 @@
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
                                     (ltu/is-key-value :state "NEW")
-                                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin"
-                                                                      infra-srvc-vpn-id])
+                                    (ltu/is-key-value :view-acl :acl [infra-srvc-vpn-id
+                                                                      "user/alpha"])
                                     (ltu/get-op-url :activate))]
 
       (-> session-admin

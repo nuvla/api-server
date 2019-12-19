@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]))
 
 
 (defn short-nb-id
@@ -31,11 +32,10 @@
 
 
 (defn create-infrastructure-service-group
-  "Create an infrastructure service group for the NuvlaBox and populate with
-   the NuvlaBox services. Returns the possibly modified nuvlabox."
-  [{:keys [id owner name] :as nuvlabox}]
-  (let [isg-acl  {:owners   ["group/nuvla-admin"]
-                  :view-acl [owner]}
+  [{:keys [id acl name] :as nuvlabox}]
+  (let [isg-acl  (merge
+                   (select-keys acl [:view-acl :view-data :view-meta])
+                   {:owners ["group/nuvla-admin"]})
         skeleton {:name        (str (format-nb-name name (short-nb-id id)) " service group")
                   :description (str "services available on " (format-nb-name name id))
                   :parent      id
@@ -48,26 +48,49 @@
         (throw (r/ex-bad-request msg))))))
 
 
+(defn update-infrastructure-service-group
+  [isg-id {:keys [id acl name] :as nuvlabox}]
+  (let [isg-acl (merge
+                  (select-keys acl [:view-acl :view-data :view-meta])
+                  {:owners ["group/nuvla-admin"]})
+
+        body    {:name (str (format-nb-name name (short-nb-id id)) " service group")
+                 :acl  isg-acl}
+        {:keys [status body] :as resp} (isg/update-infrastructure-service-group isg-id body)]
+    (if (= 200 status)
+      nuvlabox
+      (let [msg (str "creating infrastructure-service-group resource failed:"
+                     status (:message body))]
+        (throw (r/ex-bad-request msg))))))
+
+
 (defn create-nuvlabox-status
-  "Create an infrastructure service group for the NuvlaBox and populate with
-   the NuvlaBox services. Returns the possibly modified nuvlabox."
-  [{:keys [id version owner] :as nuvlabox}]
-  (let [{:keys [status body] :as resp} (nb-status/create-nuvlabox-status version id owner)]
+  [{:keys [id version acl] :as nuvlabox}]
+  (let [{:keys [status body] :as resp} (nb-status/create-nuvlabox-status version id acl)]
     (if (= 201 status)
       (assoc nuvlabox :nuvlabox-status (:resource-id body))
       (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
         (throw (r/ex-bad-request msg))))))
 
 
+(defn update-nuvlabox-status
+  [status-id {:keys [id acl] :as nuvlabox}]
+  (let [{:keys [status body] :as resp} (nb-status/update-nuvlabox-status status-id id acl)]
+    (if (= 200 status)
+      nuvlabox
+      (let [msg (str "updating nuvlabox-status resource failed:" status (:message body))]
+        (throw (r/ex-bad-request msg))))))
+
+
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
-  [{:keys [id name owner] :as nuvlabox}]
+  [{:keys [id name acl] :as nuvlabox}]
   (let [identity  {:user-id id
                    :claims  #{id "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}}
 
-        cred-acl  {:owners    ["group/nuvla-admin"]
-                   :view-meta [owner]
-                   :delete    [owner]}
+        cred-acl  (merge
+                    (select-keys acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
 
         cred-tmpl {:name        (format-nb-name name (short-nb-id id))
                    :description (str/join " " ["Generated API Key for " (format-nb-name name id)])
@@ -81,23 +104,29 @@
         {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
         {:keys [resource-id secret-key]} body]
     (if (= 201 status)
-      {:api-key    resource-id
-       :secret-key secret-key}
+      [(assoc nuvlabox :credential-api-key resource-id)
+       {:api-key    resource-id
+        :secret-key secret-key}]
       (let [msg (str "creating credential api-secret resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
 
-(defn get-isg-id
-  "Finds the infrastructure-service-group that is associated with the given
-   nuvlabox-id."
-  [nuvlabox-id]
-  (let [filter  (format "parent='%s'" nuvlabox-id)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
-    (-> (crud/query-as-admin isg/resource-type options)
-        second
-        first
-        :id)))
+(defn update-nuvlabox-api-key
+  [cred-id {:keys [id name acl] :as nuvlabox}]
+  (let [acl  (merge
+               (select-keys acl [:view-acl :view-data :view-meta])
+               {:owners ["group/nuvla-admin"]})
+
+        body {:name        (format-nb-name name (short-nb-id cred-id))
+              :description (str/join " " ["Generated API Key for " (format-nb-name name id)])
+              :acl         acl}
+
+        {:keys [status body] :as resp} (credential/update-credential
+                                         cred-id body auth/internal-identity)]
+    (if (= 200 status)
+      nuvlabox
+      (let [msg (str "updating credential api-secret resource failed:" status (:message body))]
+        (r/ex-bad-request msg)))))
 
 
 (defn get-service-credential-id
@@ -133,9 +162,11 @@
 
 
 (defn create-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-owner isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
   (if endpoint
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        (str "Swarm "
                                                    (format-nb-name nuvlabox-name
@@ -162,9 +193,11 @@
 
 
 (defn update-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-owner isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
   (when-let [resource-id (get-swarm-service isg-id)]
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name infra-service/resource-type}
                    :body        (cond->
@@ -173,7 +206,6 @@
                                                                      (short-nb-id nuvlabox-id)))
                                    :description (str "Docker Swarm on "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
-                                   :parent      isg-id
                                    :acl         acl}
                                   endpoint (assoc :endpoint endpoint))
                    :nuvla/authn auth/internal-identity}
@@ -188,9 +220,11 @@
 
 
 (defn create-minio-service
-  [nuvlabox-id nuvlabox-name nuvlabox-owner isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
   (if endpoint
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        (format-nb-name nuvlabox-name
                                                               (short-nb-id nuvlabox-id))
@@ -214,9 +248,11 @@
 
 
 (defn update-minio-service
-  [nuvlabox-id nuvlabox-name nuvlabox-owner isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
   (when-let [resource-id (get-minio-service isg-id)]
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name infra-service/resource-type}
                    :body        (cond->
@@ -252,9 +288,11 @@
 
 
 (defn create-swarm-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-owner swarm-id key cert ca]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (if (and key cert ca)
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:resource-name credential/resource-type}
                    :body        {:name        (format-nb-name nuvlabox-name
                                                               (short-nb-id nuvlabox-id))
@@ -283,9 +321,11 @@
 
 
 (defn update-swarm-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-owner swarm-id key cert ca]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (when-let [resource-id (get-swarm-cred swarm-id)]
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->
@@ -293,7 +333,6 @@
                                                                 (short-nb-id nuvlabox-id))
                                    :description (str "Docker Swarm client credential linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
-                                   :parent      swarm-id
                                    :acl         acl}
                                   ca (assoc :ca ca)
                                   key (assoc :key key)
@@ -364,9 +403,11 @@
 
 
 (defn create-swarm-token
-  [nuvlabox-id nuvlabox-name nuvlabox-owner swarm-id scope token]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id scope token]
   (if (and scope token)
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:resource-name credential/resource-type}
                    :body        {:name        (format-nb-name nuvlabox-name
                                                               (short-nb-id nuvlabox-id))
@@ -391,9 +432,11 @@
 
 
 (defn update-swarm-token
-  [nuvlabox-id nuvlabox-name nuvlabox-owner swarm-id scope token]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id scope token]
   (when-let [resource-id (get-swarm-token swarm-id scope)]
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->
@@ -401,7 +444,6 @@
                                                                 (short-nb-id nuvlabox-id))
                                    :description (str "Docker Swarm token linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
-                                   :parent      swarm-id
                                    :acl         acl}
                                   scope (assoc :scope scope)
                                   token (assoc :token token))
@@ -431,9 +473,11 @@
 
 
 (defn create-minio-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-owner minio-id access-key secret-key]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl minio-id access-key secret-key]
   (if (and access-key secret-key)
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:resource-name credential/resource-type}
                    :body        {:name        (format-nb-name nuvlabox-name
                                                               (short-nb-id nuvlabox-id))
@@ -457,9 +501,11 @@
 
 
 (defn update-minio-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-owner minio-id access-key secret-key]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl minio-id access-key secret-key]
   (when-let [resource-id (get-minio-cred minio-id)]
-    (let [acl     {:owners [nuvlabox-owner]}
+    (let [acl     (merge
+                    (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                    {:owners ["group/nuvla-admin"]})
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->
@@ -467,7 +513,6 @@
                                                                 (short-nb-id nuvlabox-id))
                                    :description (str "Minio (S3) credential linked to "
                                                      (format-nb-name nuvlabox-name nuvlabox-id))
-                                   :parent      minio-id
                                    :acl         acl}
                                   access-key (assoc :access-key access-key)
                                   secret-key (assoc :secret-key secret-key))
@@ -484,7 +529,7 @@
 
 
 (defn commission
-  [{:keys [id name owner vpn-server-id] :as resource}
+  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
    {{:keys [swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -492,31 +537,31 @@
             minio-access-key minio-secret-key
             vpn-csr]} :body :as request}]
 
-  (when-let [isg-id (get-isg-id id)]
+  (when-let [isg-id infrastructure-service-group]
     (let [swarm-id (or
-                     (update-swarm-service id name owner isg-id swarm-endpoint)
-                     (create-swarm-service id name owner isg-id swarm-endpoint))
+                     (update-swarm-service id name acl isg-id swarm-endpoint)
+                     (create-swarm-service id name acl isg-id swarm-endpoint))
           minio-id (or
-                     (update-minio-service id name owner isg-id minio-endpoint)
-                     (create-minio-service id name owner isg-id minio-endpoint))]
+                     (update-minio-service id name acl isg-id minio-endpoint)
+                     (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when swarm-id
         (or
-          (update-swarm-cred id name owner swarm-id swarm-client-key
+          (update-swarm-cred id name acl swarm-id swarm-client-key
                              swarm-client-cert swarm-client-ca)
-          (create-swarm-cred id name owner swarm-id swarm-client-key
+          (create-swarm-cred id name acl swarm-id swarm-client-key
                              swarm-client-cert swarm-client-ca))
         (or
-          (update-swarm-token id name owner swarm-id "MANAGER" swarm-token-manager)
-          (create-swarm-token id name owner swarm-id "MANAGER" swarm-token-manager))
+          (update-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)
+          (create-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager))
         (or
-          (update-swarm-token id name owner swarm-id "WORKER" swarm-token-worker)
-          (create-swarm-token id name owner swarm-id "WORKER" swarm-token-worker)))
+          (update-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)
+          (create-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)))
 
       (when minio-id
         (or
-          (update-minio-cred id name owner minio-id minio-access-key minio-secret-key)
-          (create-minio-cred id name owner minio-id minio-access-key minio-secret-key)))
+          (update-minio-cred id name acl minio-id minio-access-key minio-secret-key)
+          (create-minio-cred id name acl minio-id minio-access-key minio-secret-key)))
 
       (when (and vpn-server-id vpn-csr)
         (let [user-id     (auth/current-user-id request)
@@ -526,3 +571,31 @@
             (delete-vpn-cred vpn-cred-id authn-info))
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
       )))
+
+
+(defn get-nuvlabox-peripherals-ids
+  [id]
+  (let [filter  (format "parent='%s'" id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (->> (crud/query-as-admin nb-peripheral/resource-type options)
+         second
+         (map :id))))
+
+
+(defn update-peripherals
+  [nuvlabox-id nuvlabox-acl]
+  (when-let [ids (get-nuvlabox-peripherals-ids nuvlabox-id)]
+    (let [acl (merge
+                (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                {:owners ["group/nuvla-admin"]})]
+      (doseq [id ids]
+        (let [request {:params      {:uuid          (u/id->uuid id)
+                                     :resource-name nb-peripheral/resource-type}
+                       :body        {:acl acl}
+                       :nuvla/authn auth/internal-identity}
+              {status :status} (crud/edit request)]
+          (if (= 200 status)
+            (log/info "nuvlabox peripheral" id "updated")
+            (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
+              (throw (ex-info msg (r/map-response msg 400 ""))))))))))

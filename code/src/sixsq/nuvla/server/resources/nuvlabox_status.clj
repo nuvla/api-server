@@ -15,7 +15,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -67,19 +68,20 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
    nuvlabox resource. This will create (as an administrator) an unknown
    state based on the given id and acl. The returned value is the standard
    'add' response for the request."
-  [schema-version nuvlabox-id nuvlabox-owner]
-  (let [status-acl              {:owners    ["group/nuvla-admin"]
-                                 :view-acl  [nuvlabox-owner]
-                                 :edit-data [nuvlabox-id]}
-        body                    {:resource-type resource-type
-                                 :parent        nuvlabox-id
-                                 :version       schema-version
-                                 :status        "UNKNOWN"
-                                 :acl           status-acl}
-        nuvlabox-status-request {:params      {:resource-name resource-type}
-                                 :nuvla/authn auth/internal-identity
-                                 :body        body}]
-    (add-impl nuvlabox-status-request)))
+  [schema-version nuvlabox-id nuvlabox-acl]
+  (let [status-acl (merge
+                     (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                     {:owners    ["group/nuvla-admin"]
+                      :edit-data [nuvlabox-id]})
+        body       {:resource-type resource-type
+                    :parent        nuvlabox-id
+                    :version       schema-version
+                    :status        "UNKNOWN"
+                    :acl           status-acl}
+        request    {:params      {:resource-name resource-type}
+                    :nuvla/authn auth/internal-identity
+                    :body        body}]
+    (add-impl request)))
 
 
 (defmulti pre-edit
@@ -118,6 +120,19 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
+
+
+(defn update-nuvlabox-status
+  [id nuvlabox-id nuvlabox-acl]
+  (let [acl     (merge
+                  (select-keys nuvlabox-acl [:view-acl :view-data :view-meta])
+                  {:owners    ["group/nuvla-admin"]
+                   :edit-data [nuvlabox-id]})
+        request {:params      {:uuid          (u/id->uuid id)
+                               :resource-name resource-type}
+                 :body        {:acl acl}
+                 :nuvla/authn auth/internal-identity}]
+    (edit-impl request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

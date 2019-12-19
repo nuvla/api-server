@@ -21,7 +21,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -86,21 +87,17 @@ particular NuvlaBox release.
 
 
 ;;
-;; ACL for the nuvlabox resource will always have the
-;; value provided in the nuvlabox "owner" field in the
-;; ACL "owners" field.  This value probably will, in most
-;; cases, be different than the identifier in the request.
-;;
 ;; The nuvlabox id (also used as a claim in the credential
 ;; given to the NuvlaBox) will have the "manage" right
 ;; initially.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [{:keys [id owner vpn-server-id] :as resource} request]
-  (let [acl (cond-> {:owners    [owner]
+  [{:keys [id vpn-server-id owner] :as resource} request]
+  (let [acl (cond-> {:owners    ["group/nuvla-admin"]
                      :manage    [id]
-                     :view-data [id]}
+                     :view-data [id]
+                     :edit-acl  [owner]}
                     vpn-server-id (assoc :view-acl [vpn-server-id]))]
     (assoc resource :acl acl)))
 
@@ -138,13 +135,46 @@ particular NuvlaBox release.
   (retrieve-impl request))
 
 
+(defn edit-subresources
+  [resource]
+  (let [{:keys [id name acl nuvlabox-status
+                infrastructure-service-group credential-api-key]
+         :as   nuvlabox} (acl-utils/normalize-acl-for-resource resource)]
+
+    (when nuvlabox-status
+      (utils/update-nuvlabox-status nuvlabox-status nuvlabox))
+
+    (when infrastructure-service-group
+
+      (utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
+
+      (let [swarm-id (utils/update-swarm-service id name acl infrastructure-service-group nil)]
+        (utils/update-swarm-cred id name acl swarm-id nil nil nil)
+        (utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
+        (utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+
+      (let [minio-id (utils/update-minio-service id name acl infrastructure-service-group nil)]
+        (utils/update-minio-cred id name acl minio-id nil nil)))
+
+    (when credential-api-key
+      (utils/update-nuvlabox-api-key credential-api-key nuvlabox))
+
+    (utils/update-peripherals id acl)))
+
+
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [{:keys [nuvla/authn body] :as request}]
-  (let [is-admin? (acl-resource/is-admin? authn)
+  [{:keys [nuvla/authn body params] :as request}]
+  (let [id        (str resource-type "/" (:uuid params))
+        is-admin? (acl-resource/is-admin? authn)
         new-body  (if is-admin? body (select-keys body [:acl :name :description]))]
+
+    (-> (db/retrieve id request)
+        (merge new-body)
+        (edit-subresources))
+
     (edit-impl (assoc request :body new-body))))
 
 
@@ -198,10 +228,11 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "activate"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [id                 (str resource-type "/" uuid)
-          nuvlabox           (db/retrieve id request)
-          nuvlabox-activated (activate nuvlabox)
-          api-secret-info    (utils/create-nuvlabox-api-key nuvlabox-activated)]
+    (let [id (str resource-type "/" uuid)
+          [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
+                                                   (activate)
+                                                   (utils/create-nuvlabox-api-key))]
+
 
       (db/edit nuvlabox-activated request)
 
@@ -290,18 +321,18 @@ particular NuvlaBox release.
 (defmethod decommission-async :default
   [{:keys [id acl] :as resource} request]
   (try
-    (let [updated-acl (assoc acl :owners ["group/nuvla-user"])
-          {{job-id     :resource-id
+    (let [{{job-id     :resource-id
             job-status :status} :body} (job/create-job id "decommission_nuvlabox"
-                                                       updated-acl
+                                                       acl
                                                        :priority 50)
-          job-msg     (str "decommissioning " id " with async " job-id)]
+          job-msg (str "decommissioning " id " with async " job-id)]
       (when (not= job-status 201)
-        (throw (r/ex-response "unable to create async job to decommission nuvlabox resources" 500 id)))
-      (event-utils/create-event id job-msg updated-acl)
+        (throw (r/ex-response
+                 "unable to create async job to decommission nuvlabox resources" 500 id)))
+      (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
-      (or (ex-data e) (throw e)))))
+      (or (ex-data e) (throw e))))) 0
 
 
 (defmethod crud/do-action [resource-type "decommission"]

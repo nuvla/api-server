@@ -228,6 +228,14 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                      (special-edit request))]
     (edit-impl (assoc request :body new-body))))
 
+(defn update-credential
+  [id body identity]
+  (let [request {:params      {:uuid          (u/id->uuid id)
+                               :resource-name resource-type}
+                 :nuvla/authn identity
+                 :body        body}]
+    (crud/edit request)))
+
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 (defmethod crud/retrieve resource-type
