@@ -7,7 +7,7 @@ a NuvlaBox.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-0 :as nb-0]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
@@ -34,7 +34,7 @@ a NuvlaBox.
 
 (defmethod nb/commission schema-version
   [resource request]
-  (nb-utils/commission resource request))
+  (wf-utils/commission resource request))
 
 
 ;;

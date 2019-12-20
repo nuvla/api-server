@@ -9,6 +9,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -16,13 +17,13 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]))
+    [clojure.set :as set]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -142,40 +143,54 @@ particular NuvlaBox release.
          :as   nuvlabox} (acl-utils/normalize-acl-for-resource resource)]
 
     (when nuvlabox-status
-      (utils/update-nuvlabox-status nuvlabox-status nuvlabox))
+      (wf-utils/update-nuvlabox-status nuvlabox-status nuvlabox))
 
     (when infrastructure-service-group
 
-      (utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
+      (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (utils/update-swarm-service id name acl infrastructure-service-group nil)]
-        (utils/update-swarm-cred id name acl swarm-id nil nil nil)
-        (utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
-        (utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil)]
+        (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
+        (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
+        (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
 
-      (let [minio-id (utils/update-minio-service id name acl infrastructure-service-group nil)]
-        (utils/update-minio-cred id name acl minio-id nil nil)))
+      (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
+        (wf-utils/update-minio-cred id name acl minio-id nil nil)))
 
     (when credential-api-key
-      (utils/update-nuvlabox-api-key credential-api-key nuvlabox))
+      (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
 
-    (utils/update-peripherals id acl)))
+    (wf-utils/update-peripherals id acl)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
+(defn restricted-body
+  [{:keys [id owner vpn-server-id] :as existing-resource} {:keys [acl name description] :as body}]
+  (cond-> existing-resource
+          name (assoc :name name)
+          description (assoc :description description)
+          acl (assoc
+                :acl (merge
+                       (select-keys acl [:view-meta :edit-data :edit-meta :delete])
+                       {:owners    ["group/nuvla-admin"]
+                        :edit-acl  (vec (set/union (:edit-acl acl) #{owner}))
+                        :view-acl  (vec (set/union (:view-acl acl) (when vpn-server-id
+                                                                     #{vpn-server-id})))
+                        :view-data (vec (set/union (:view-data acl) #{id}))
+                        :manage    (vec (set/union (:manage acl) #{id}))}))))
+
 
 (defmethod crud/edit resource-type
   [{:keys [nuvla/authn body params] :as request}]
-  (let [id        (str resource-type "/" (:uuid params))
-        is-admin? (acl-resource/is-admin? authn)
-        new-body  (if is-admin? body (select-keys body [:acl :name :description]))]
+  (let [id               (str resource-type "/" (:uuid params))
+        is-admin?        (acl-resource/is-admin? authn)
+        nuvlabox         (db/retrieve id request)
+        updated-nuvlabox (merge nuvlabox (if is-admin? body (restricted-body nuvlabox body)))]
 
-    (-> (db/retrieve id request)
-        (merge new-body)
-        (edit-subresources))
+    (edit-subresources updated-nuvlabox)
 
-    (edit-impl (assoc request :body new-body))))
+    (edit-impl (assoc request :body updated-nuvlabox))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
@@ -219,8 +234,8 @@ particular NuvlaBox release.
       (log/warn "activating nuvlabox:" id)
       (let [activated-nuvlabox (-> nuvlabox
                                    (assoc :state state-activated)
-                                   utils/create-nuvlabox-status
-                                   utils/create-infrastructure-service-group)]
+                                   wf-utils/create-nuvlabox-status
+                                   wf-utils/create-infrastructure-service-group)]
         activated-nuvlabox))
     (logu/log-and-throw-400 (str "invalid state for activation: " state))))
 
@@ -231,7 +246,7 @@ particular NuvlaBox release.
     (let [id (str resource-type "/" uuid)
           [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
                                                    (activate)
-                                                   (utils/create-nuvlabox-api-key))]
+                                                   (wf-utils/create-nuvlabox-api-key))]
 
 
       (db/edit nuvlabox-activated request)
