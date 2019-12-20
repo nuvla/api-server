@@ -587,6 +587,196 @@
             (ltu/is-status 200))))))
 
 
+(deftest create-activate-commission-share-lifecycle
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")
+        user-beta "user/beta"
+        session-beta  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))]
+
+    (let [nuvlabox-id  (-> session-owner
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-nuvlabox))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
+          nuvlabox-url (str p/service-context nuvlabox-id)
+
+          activate-url (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-operation-present :edit)
+                           (ltu/is-operation-present :delete)
+                           (ltu/is-operation-present :activate)
+                           (ltu/is-operation-absent :commission)
+                           (ltu/is-operation-absent :decommission)
+                           (ltu/is-key-value :state "NEW")
+                           (ltu/get-op-url :activate))]
+
+      ;; activate nuvlabox
+      (-> session-anon
+          (request activate-url
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value (comp not str/blank?) :secret-key true)
+          (ltu/body)
+          :api-key
+          (ltu/href->url))
+
+      (let [{isg-id :id} (-> session-owner
+                             (content-type "application/x-www-form-urlencoded")
+                             (request isg-collection-uri
+                                      :request-method :put
+                                      :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                             nuvlabox-id)}))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-count 1)
+                             (ltu/entries)
+                             first)
+
+            commission (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-operation-present :edit)
+                           (ltu/is-operation-absent :delete)
+                           (ltu/is-operation-absent :activate)
+                           (ltu/is-operation-present :commission)
+                           (ltu/is-operation-present :decommission)
+                           (ltu/is-key-value :state "ACTIVATED")
+                           (ltu/get-op-url :commission))]
+
+        ;; partial commissioning of the nuvlabox (no swarm credentials)
+        (-> session-owner
+            (request commission
+                     :request-method :post
+                     :body (json/write-str {:swarm-token-worker  "abc"
+                                            :swarm-token-manager "def"
+                                            :swarm-client-key    "key"
+                                            :swarm-client-cert   "cert"
+                                            :swarm-client-ca     "ca"
+                                            :swarm-endpoint      "https://swarm.example.com"
+                                            :minio-access-key    "access"
+                                            :minio-secret-key    "secret"
+                                            :minio-endpoint      "https://minio.example.com"}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; verify state of the resource
+        (-> session-owner
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present :edit)
+            (ltu/is-operation-absent :delete)
+            (ltu/is-operation-absent :activate)
+            (ltu/is-operation-present :commission)
+            (ltu/is-operation-present :decommission)
+            (ltu/is-key-value :state "COMMISSIONED"))
+
+        ;; check that services exist
+        (let [services (-> session-owner
+                           (content-type "application/x-www-form-urlencoded")
+                           (request infra-service-collection-uri
+                                    :request-method :put
+                                    :body (rc/form-encode {:filter (format
+                                                                     "parent='%s'" isg-id)}))
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-count 2)
+                           (ltu/entries))]
+
+          (is (= #{"swarm" "s3"} (set (map :subtype services))))
+
+          (doseq [{:keys [acl]} services]
+            (is (= [nuvlabox-owner] (:view-acl acl))))
+
+          (doseq [{:keys [subtype] :as service} services]
+            (let [creds (-> session-owner
+                            (content-type "application/x-www-form-urlencoded")
+                            (request credential-collection-uri
+                                     :request-method :put
+                                     :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                            (:id service))}))
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/entries))]
+
+              (if (= "swarm" subtype)
+                (is (= 3 (count creds))))                   ;; only swarm token credentials
+
+              (if (= "s3" subtype)
+                (is (= 1 (count creds))))                   ;; only key/secret pair
+
+              )))
+
+        (-> session-beta
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/dump)
+            (ltu/is-status 403))
+
+        ;; share nuvlabox with a user beta
+        (-> session-owner
+            (request nuvlabox-url
+                     :request-method :put
+                     :body (json/write-str {:acl {:edit-acl [user-beta]}}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-beta
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present :commission)
+            (ltu/is-operation-present :decommission))
+
+        ;; check that services exist are visible for invited user beta
+        (let [services (-> session-beta
+                           (content-type "application/x-www-form-urlencoded")
+                           (request infra-service-collection-uri
+                                    :request-method :put
+                                    :body (rc/form-encode {:filter (format
+                                                                     "parent='%s'" isg-id)}))
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-count 2)
+                           (ltu/entries))]
+
+          (is (= #{"swarm" "s3"} (set (map :subtype services))))
+
+          (doseq [{:keys [acl]} services]
+            (is (= [nuvlabox-owner user-beta] (:view-acl acl))))
+
+          (doseq [{:keys [subtype] :as service} services]
+            (let [creds (-> session-beta
+                            (content-type "application/x-www-form-urlencoded")
+                            (request credential-collection-uri
+                                     :request-method :put
+                                     :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                            (:id service))}))
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/entries))]
+
+              (if (= "swarm" subtype)
+                (is (= 3 (count creds))))                   ;; only swarm token credentials
+
+              (if (= "s3" subtype)
+                (is (= 1 (count creds))))                   ;; only key/secret pair
+
+              )))
+
+        ))))
+
+
 (deftest create-activate-commission-vpn-lifecycle
   (let [session       (-> (ltu/ring-app)
                           session
