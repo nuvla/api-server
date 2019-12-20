@@ -573,5 +573,4 @@
         (if (= 200 status)
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
-            (log/error resp)
             (throw (ex-info msg (r/map-response msg 400 "")))))))))

@@ -3,7 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -110,24 +109,6 @@
       (is (contains? (set (:owners acl)) "group/nuvla-admin"))
       (is (contains? (set (:manage acl)) id))
       (is (contains? (set (:edit-acl acl)) owner))
-
-      ;; only name description acl are editable for normal user other changes are ignored
-      ;; FIXME update with test of change acl repercussion on other resources
-      (let [new-name  "name NB changed"
-            new-owner "user/beta"]
-        (-> session-owner
-            (request nuvlabox-url
-                     :request-method :put
-                     :body (json/write-str
-                             {:name  new-name
-                              :state "change is ignored"
-                              :acl   (assoc acl :edit-acl (conj (:edit-acl acl) new-owner))}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :state "NEW")
-            (ltu/is-key-value :name new-name)
-            (ltu/is-key-value :edit-acl :acl (conj (:edit-acl acl) new-owner))
-            (ltu/body)))
 
       (-> session-owner
           (request nuvlabox-url
@@ -354,7 +335,8 @@
                                (content-type "application/x-www-form-urlencoded")
                                (request isg-collection-uri
                                         :request-method :put
-                                        :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
+                                        :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                               nuvlabox-id)}))
                                (ltu/body->edn)
                                (ltu/is-status 200)
                                (ltu/is-count 1)
@@ -406,7 +388,8 @@
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
-                                      :body (rc/form-encode {:filter (format "parent='%s'" isg-id)}))
+                                      :body (rc/form-encode {:filter (format
+                                                                       "parent='%s'" isg-id)}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/is-count 2)
@@ -422,7 +405,8 @@
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'" (:id service))}))
+                                       :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                              (:id service))}))
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]
@@ -457,7 +441,8 @@
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
-                                      :body (rc/form-encode {:filter (format "parent='%s'" isg-id)}))
+                                      :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                             isg-id)}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/is-count 2)
@@ -499,7 +484,8 @@
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'" (:id service))}))
+                                       :body (rc/form-encode {:filter (format "parent='%s'"
+                                                                              (:id service))}))
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]

@@ -22,8 +22,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.set :as set]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -174,11 +173,11 @@ particular NuvlaBox release.
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
                        {:owners    ["group/nuvla-admin"]
-                        :edit-acl  (vec (set/union (:edit-acl acl) #{owner}))
-                        :view-acl  (vec (set/union (:view-acl acl) (when vpn-server-id
-                                                                     #{vpn-server-id})))
-                        :view-data (vec (set/union (:view-data acl) #{id}))
-                        :manage    (vec (set/union (:manage acl) #{id}))}))))
+                        :edit-acl  (vec (distinct (concat (:edit-acl acl) [owner])))
+                        :view-acl  (vec (distinct (concat (:view-acl acl) (when vpn-server-id
+                                                                            [vpn-server-id]))))
+                        :view-data (vec (distinct (concat (:view-data acl) [id])))
+                        :manage    (vec (distinct (concat (:manage acl) [id])))}))))
 
 
 (defmethod crud/edit resource-type
