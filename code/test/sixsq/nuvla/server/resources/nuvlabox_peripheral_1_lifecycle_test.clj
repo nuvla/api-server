@@ -29,6 +29,8 @@
 
 (def nuvlabox-owner "user/alpha")
 
+(def user-beta "user/beta")
+
 
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
@@ -60,7 +62,7 @@
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))
         session-owner (header session authn-info-header (str nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 
@@ -72,17 +74,13 @@
                           (ltu/is-status 201)
                           (ltu/location))
 
-        valid-acl     {:owners    ["group/nuvla-admin" nuvlabox-id]
-                       :view-data [nuvlabox-owner]}
-
         session-nb    (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
     ;; anonymous users cannot create a nuvlabox-peripheral resource
     (-> session-anon
         (request base-uri
                  :request-method :post
-                 :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id
-                                                               :acl valid-acl)))
+                 :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id)))
         (ltu/body->edn)
         (ltu/is-status 403))
 
@@ -91,16 +89,17 @@
     (when-let [peripheral-url (-> session-nb
                                   (request base-uri
                                            :request-method :post
-                                           :body (json/write-str (assoc valid-peripheral :parent nuvlabox-id)))
+                                           :body (json/write-str (assoc valid-peripheral
+                                                                   :parent nuvlabox-id)))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
                                   (ltu/location-url))]
 
-      ;; other users can the peripheral when using the default ACL.
+      ;; other users can't see the peripheral
       (-> session-user
           (request peripheral-url)
           (ltu/body->edn)
-          (ltu/is-status 200))
+          (ltu/is-status 403))
 
       ;; owners can see the peripheral
       (-> session-owner
@@ -130,6 +129,23 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 403))
+
+      ;; share nuvlabox with user beta
+      (-> session-owner
+          (request (str p/service-context nuvlabox-id)
+                   :request-method :put
+                   :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
+                                                :view-acl [nuvlabox-owner user-beta]}}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; now user beta can also see the peripheral
+      (-> session-user
+          (request peripheral-url)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+
 
       ;; nuvlabox can delete the peripheral
       (-> session-nb

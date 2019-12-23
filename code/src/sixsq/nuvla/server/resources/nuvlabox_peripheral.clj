@@ -4,14 +4,14 @@ The nuvlabox-peripheral resource represents a peripheral attached to a
 nuvlabox.
 "
   (:require
-    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-peripheral :as nb-peripheral]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -51,9 +51,11 @@ nuvlabox.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (-> resource
-      (a/add-acl request)
-      (update-in [:acl :view-data] (comp vec conj) "group/nuvla-user")))
+  (when-let [nuvlabox-id (:parent resource)]
+    (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)]
+      (assoc resource :acl (utils/set-acl-nuvlabox-view-only
+                             nuvlabox-acl
+                             {:owners [nuvlabox-id]})))))
 
 
 ;;

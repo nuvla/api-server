@@ -142,6 +142,14 @@ resources. The resources are tied to an infrastructure via the
   (-> request dissoc-services edit-impl))
 
 
+(defn update-infrastructure-service-group
+  [id body]
+  (edit-impl {:params      {:uuid          (u/id->uuid id)
+                            :resource-name resource-type}
+              :nuvla/authn auth/internal-identity
+              :body        body}))
+
+
 (def delete-impl (std-crud/delete-fn resource-type))
 
 

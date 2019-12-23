@@ -83,5 +83,4 @@
                       :opt-un [::device-path
                                ::interface
                                ::vendor
-                               ::product
-                               ]}))
+                               ::product]}))

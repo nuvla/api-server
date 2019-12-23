@@ -8,9 +8,15 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration :as configuration]
+    [sixsq.nuvla.server.resources.configuration-template :as configuration-tpl]
+    [sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
     [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
+    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
+    [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-0 :as nb-0]
@@ -47,9 +53,6 @@
 
 (def valid-nuvlabox {:created          timestamp
                      :updated          timestamp
-                     :acl              {:owners   ["group/nuvla-admin" nuvlabox-owner]
-                                        :view-acl ["user/jane"]
-                                        :manage   ["user/jane"]}
 
                      ;; This is not the default version, so it must appear explicitly.
                      :version          0
@@ -71,45 +74,71 @@
                               (str nb/resource-type "-" nb-0/schema-version)))
 
 
-(deftest create-delete-lifecycle
+(deftest create-edit-delete-lifecycle
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
 
-    (doseq [session [session-admin session-owner]]
-      (let [nuvlabox-id  (-> session
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
-            nuvlabox-url (str p/service-context nuvlabox-id)
+    (let [nuvlabox-id  (-> session-owner
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-nuvlabox))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
+          nuvlabox-url (str p/service-context nuvlabox-id)
 
-            {:keys [id acl]} (-> session
-                                 (request nuvlabox-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-operation-present :edit)
-                                 (ltu/is-operation-present :delete)
-                                 (ltu/is-operation-present :activate)
-                                 (ltu/is-operation-absent :commission)
-                                 (ltu/is-operation-absent :decommission)
-                                 (ltu/is-key-value :state "NEW")
-                                 (ltu/body))]
+          {:keys [id acl owner]} (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :edit)
+                                     (ltu/is-operation-present :delete)
+                                     (ltu/is-operation-present :activate)
+                                     (ltu/is-operation-absent :commission)
+                                     (ltu/is-operation-absent :decommission)
+                                     (ltu/is-key-value :state "NEW")
+                                     (ltu/body))]
 
-        ;; check generated ACL
-        (is (contains? (set (:owners acl)) nuvlabox-owner))
-        (is (contains? (set (:manage acl)) id))
-        (is (contains? (set (:edit-acl acl)) "group/nuvla-admin"))
+      ;; check generated ACL
+      (is (contains? (set (:owners acl)) "group/nuvla-admin"))
+      (is (contains? (set (:manage acl)) id))
+      (is (contains? (set (:edit-acl acl)) owner))
 
-        (-> session
+      ;; only name description acl are editable for normal user other changes are ignored
+      ;; FIXME update with test of change acl repercussion on other resources
+      (let [new-name  "name NB changed"
+            new-owner "user/beta"]
+        (-> session-owner
             (request nuvlabox-url
-                     :request-method :delete)
-            (ltu/is-status 200))))))
+                     :request-method :put
+                     :body (json/write-str
+                             {:name  new-name
+                              :state "change is ignored"
+                              :acl   (assoc acl :edit-acl (conj (:edit-acl acl) new-owner))}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :state "NEW")
+            (ltu/is-key-value :name new-name)
+            (ltu/is-key-value :edit-acl :acl (conj (:edit-acl acl) new-owner))
+            (ltu/body)))
+
+      (-> session-owner
+          (request nuvlabox-url
+                   :request-method :delete)
+          (ltu/is-status 200)))
+
+    ;; create nuvlabox with inexistent vpn id will fail
+    (-> session-owner
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-nuvlabox
+                                         :vpn-server-id "infrastructure-service/fake")))
+        (ltu/body->edn)
+        (ltu/is-status 404))
+    ))
 
 
 (deftest create-activate-decommission-delete-lifecycle
@@ -143,46 +172,33 @@
                              (ltu/is-key-value :state "NEW")
                              (ltu/get-op-url :activate))]
 
-        (let [{:keys [owner acl]} (-> session
-                                      (request nuvlabox-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/body))]
-
-          ;; checks of acl for created credential
-          (is (= [owner] (:owners acl)))
-          (is (contains? (set (:manage acl)) nuvlabox-id))
-          (is (contains? (set (:view-data acl)) nuvlabox-id))
-          (is (not (contains? (set (:view-acl acl)) nuvlabox-id)))
-          (is (not (contains? (set (:edit-meta acl)) nuvlabox-id)))
-          (is (not (contains? (set (:delete acl)) nuvlabox-id))))
-
         ;; anonymous should be able to activate the NuvlaBox
         ;; and receive an api key/secret pair to access Nuvla
-        (let [credential-url (-> session-anon
-                                 (request activate-url
-                                          :request-method :post)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-key-value (comp not str/blank?) :secret-key true)
-                                 (ltu/body)
-                                 :api-key
-                                 (ltu/href->url))
+        (let [credential-url      (-> session-anon
+                                      (request activate-url
+                                               :request-method :post)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                                      (ltu/body)
+                                      :api-key
+                                      (ltu/href->url))
 
-              {:keys [acl] :as credential-nuvlabox} (-> session-admin
-                                                        (request credential-url)
-                                                        (ltu/body->edn)
-                                                        (ltu/is-status 200)
-                                                        (ltu/is-key-value :parent nuvlabox-id)
-                                                        (ltu/body))
+              credential-nuvlabox (-> session-admin
+                                      (request credential-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :parent nuvlabox-id)
+                                      (ltu/body))
 
-              claims         (:claims credential-nuvlabox)
+              claims              (:claims credential-nuvlabox)
 
-              {:keys [owner]} (-> session-admin
-                                  (request nuvlabox-url)
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/body))]
+              {:keys [infrastructure-service-group
+                      nuvlabox-status]} (-> session-admin
+                                            (request nuvlabox-url)
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            (ltu/body))]
 
           ;; check ACL and claims of generated credential.
           (is (= (:identity claims) nuvlabox-id))
@@ -191,46 +207,29 @@
                                           "group/nuvla-anon"
                                           "group/nuvla-nuvlabox"}))
 
-          ;; checks of acl for created credential
-          (is (= ["group/nuvla-admin"] (:owners acl)))
-          (is (contains? (set (:delete acl)) owner))
-          (is (contains? (set (:view-meta acl)) owner))
-          (is (not (contains? (set (:view-meta acl)) nuvlabox-id)))
-          (is (not (contains? (set (:view-data acl)) owner)))
+          ;; checks created api credential for NB visible for owner
+          (-> session-owner
+              (request credential-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete))
 
           ;; verify that an infrastructure-service-group has been created for this nuvlabox
-          (let [{:keys [acl]} (-> session-admin
-                                  (content-type "application/x-www-form-urlencoded")
-                                  (request isg-collection-uri
-                                           :request-method :put
-                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-count 1)
-                                  (ltu/entries)
-                                  first)]
-
-            (is (= ["group/nuvla-admin"] (:owners acl)))
-            (is (contains? (set (:view-meta acl)) owner))
-            (is (not (contains? (set (:edit-meta acl)) owner))))
+          (-> session-owner
+              (request (str p/service-context infrastructure-service-group))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete))
 
           ;; verify that an nuvlabox-status has been created for this nuvlabox
-          (let [{:keys [acl]} (-> session-admin
-                                  (content-type "application/x-www-form-urlencoded")
-                                  (request nb-status-collection-uri
-                                           :request-method :put
-                                           :body (rc/form-encode {:filter (format "parent='%s'" nuvlabox-id)}))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-count 1)
-                                  (ltu/entries)
-                                  first)]
-
-            (is (= ["group/nuvla-admin"] (:owners acl)))
-            (is (contains? (set (:edit-meta acl)) nuvlabox-id))
-            (is (not (contains? (set (:edit-acl acl)) nuvlabox-id)))
-            (is (contains? (set (:view-acl acl)) owner))
-            (is (not (contains? (set (:edit-meta acl)) owner)))))
+          (-> session-owner
+              (request (str p/service-context nuvlabox-status))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-absent :delete)))
 
         (let [decommission-url (-> session
                                    (request nuvlabox-url)
@@ -279,12 +278,12 @@
             (ltu/is-status 200))
 
         ;; DECOMMISSIONED state with correct actions
-        (-> session
+        (-> session-owner
             (request nuvlabox-url)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-operation-present :edit)
             (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :edit)
             (ltu/is-operation-absent :activate)
             (ltu/is-operation-absent :commission)
             (ltu/is-operation-absent :decommission)
@@ -412,10 +411,10 @@
             (is (= #{"swarm" "s3"} (set (map :subtype services))))
 
             (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
+              (is (= [nuvlabox-owner] (:view-acl acl))))
 
             (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
+              (let [creds (-> session-owner
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
@@ -423,10 +422,6 @@
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
                   (is (= 2 (count creds))))                 ;; only swarm token credentials
@@ -454,7 +449,7 @@
               (ltu/is-status 200))
 
           ;; check the services again
-          (let [services (-> session
+          (let [services (-> session-owner
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
@@ -464,32 +459,7 @@
                              (ltu/is-count 2)
                              (ltu/entries))]
 
-            (is (= #{"swarm" "s3"} (set (map :subtype services))))
-
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
-
-            (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
-                              (content-type "application/x-www-form-urlencoded")
-                              (request credential-collection-uri
-                                       :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'" (:id service))}))
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
-
-                (if (= "swarm" subtype)
-                  (is (= 3 (count creds))))                 ;; now both tokens and credential
-
-                (if (= "s3" subtype)
-                  (is (= 1 (count creds))))                 ;; only key/secret pair
-
-                )))
+            (is (= #{"swarm" "s3"} (set (map :subtype services)))))
 
           ;; third commissioning of the resource make sure no additional credentials created
           (-> session
@@ -508,7 +478,7 @@
               (ltu/is-status 200))
 
           ;; check the services again
-          (let [services (-> session
+          (let [services (-> session-owner
                              (content-type "application/x-www-form-urlencoded")
                              (request infra-service-collection-uri
                                       :request-method :put
@@ -520,11 +490,8 @@
 
             (is (= #{"swarm" "s3"} (set (map :subtype services))))
 
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:owners acl))))
-
             (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-admin
+              (let [creds (-> session-owner
                               (content-type "application/x-www-form-urlencoded")
                               (request credential-collection-uri
                                        :request-method :put
@@ -532,10 +499,6 @@
                               (ltu/body->edn)
                               (ltu/is-status 200)
                               (ltu/entries))]
-
-                ;; all creds must be owned by the NuvlaBox owner
-                (doseq [{:keys [acl]} creds]
-                  (is (= [nuvlabox-owner] (:owners acl))))
 
                 (if (= "swarm" subtype)
                   (is (= 3 (count creds))))                 ;; now both tokens and credential
@@ -632,6 +595,287 @@
                      :request-method :delete)
             (ltu/body->edn)
             (ltu/is-status 200))))))
+
+
+(deftest create-activate-commission-vpn-lifecycle
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+
+    (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
+                                                            infra-srvc-tpl-vpn/method)
+                                            :vpn-scope "nuvlabox"
+                                            :acl       {:owners   ["nuvla/admin"]
+                                                        :view-acl ["nuvla/user"
+                                                                   "nuvla/nuvlabox"]}}}
+          infra-srvc-vpn-id     (-> session-admin
+                                    (request (str p/service-context infra-service/resource-type)
+                                             :request-method :post
+                                             :body (json/write-str infra-srvc-vpn-create))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          conf-vpn-create       {:template
+                                 {:href                    (str configuration-tpl/resource-type "/"
+                                                                configuration-tpl-vpn/service)
+                                  :instance                "vpn"
+                                  :endpoint                "http://vpn.test"
+                                  :infrastructure-services [infra-srvc-vpn-id]}}
+
+          nuvlabox-id           (-> session-owner
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str
+                                                     (assoc valid-nuvlabox
+                                                       :vpn-server-id infra-srvc-vpn-id)))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          nuvlabox-url          (str p/service-context nuvlabox-id)
+
+          activate-url          (-> session-owner
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state "NEW")
+                                    (ltu/is-key-value :view-acl :acl [infra-srvc-vpn-id
+                                                                      "user/alpha"])
+                                    (ltu/get-op-url :activate))]
+
+      (-> session-admin
+          (request (str p/service-context configuration/resource-type)
+                   :request-method :post
+                   :body (json/write-str conf-vpn-create))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      ;; activate nuvlabox
+      (-> session-anon
+          (request activate-url
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [session-nuvlabox  (header session authn-info-header
+                                      (str nuvlabox-id
+                                           " group/nuvla-nuvlabox group/nuvla-anon"))
+            commission        (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/get-op-url :commission))
+            certificate-value "certificate-value"
+            common-name-value "foo"
+            inter-ca-values   ["inter-ca-values"]]
+
+
+        ;; commissioning of the resource
+        (with-redefs [vpn-utils/generate-credential (fn [_ _ _ _]
+                                                      {:certificate     certificate-value
+                                                       :common-name     common-name-value
+                                                       :intermediate-ca inter-ca-values})
+                      vpn-utils/delete-credential   (fn [_ _])]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post
+                       :body (json/write-str {:vpn-csr "foo"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [filter-str  (str "parent='" infra-srvc-vpn-id
+                                 "' and vpn-certificate-owner='" nuvlabox-id "'")
+                vpn-cred    (-> session-nuvlabox
+                                (content-type "application/x-www-form-urlencoded")
+                                (request credential-collection-uri
+                                         :request-method :put
+                                         :body (rc/form-encode
+                                                 {:filter filter-str}))
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-count 1)
+                                (ltu/entries)
+                                first)
+                vpn-cred-id (:id vpn-cred)]
+
+            (is (= common-name-value (:vpn-common-name vpn-cred)))
+
+            (-> session-nuvlabox
+                (request (str p/service-context vpn-cred-id)
+                         :request-method :get)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            ;; commison a second time will delete and recreate a new cred
+            (-> session-nuvlabox
+                (request commission
+                         :request-method :post
+                         :body (json/write-str {:vpn-csr "foo"}))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            ;; old vpn credential was deleted
+            (-> session-nuvlabox
+                (request (str p/service-context vpn-cred-id)
+                         :request-method :get)
+                (ltu/body->edn)
+                (ltu/is-status 404))
+
+            ;; a new vpn credential was recreated
+            (-> session-nuvlabox
+                (content-type "application/x-www-form-urlencoded")
+                (request credential-collection-uri
+                         :request-method :put
+                         :body (rc/form-encode
+                                 {:filter filter-str}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-count 1))))))))
+
+
+(deftest create-activate-commission-re-commision
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+
+    (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
+                                                            infra-srvc-tpl-vpn/method)
+                                            :vpn-scope "nuvlabox"
+                                            :acl       {:owners   ["nuvla/admin"]
+                                                        :view-acl ["nuvla/user"
+                                                                   "nuvla/nuvlabox"]}}}
+          infra-srvc-vpn-id     (-> session-admin
+                                    (request (str p/service-context infra-service/resource-type)
+                                             :request-method :post
+                                             :body (json/write-str infra-srvc-vpn-create))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          conf-vpn-create       {:template
+                                 {:href                    (str configuration-tpl/resource-type "/"
+                                                                configuration-tpl-vpn/service)
+                                  :instance                "vpn"
+                                  :endpoint                "http://vpn.test"
+                                  :infrastructure-services [infra-srvc-vpn-id]}}
+
+          nuvlabox-id           (-> session-owner
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str
+                                                     (assoc valid-nuvlabox
+                                                       :vpn-server-id infra-srvc-vpn-id)))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+
+          nuvlabox-url          (str p/service-context nuvlabox-id)
+
+          activate-url          (-> session-owner
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state "NEW")
+                                    (ltu/is-key-value :view-acl :acl [infra-srvc-vpn-id
+                                                                      "user/alpha"])
+                                    (ltu/get-op-url :activate))]
+
+      (-> session-admin
+          (request (str p/service-context configuration/resource-type)
+                   :request-method :post
+                   :body (json/write-str conf-vpn-create))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      ;; activate nuvlabox
+      (-> session-anon
+          (request activate-url
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (let [session-nuvlabox  (header session authn-info-header
+                                      (str nuvlabox-id
+                                           " group/nuvla-nuvlabox group/nuvla-anon"))
+            commission        (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/get-op-url :commission))
+            certificate-value "certificate-value"
+            common-name-value "foo"
+            inter-ca-values   ["inter-ca-values"]
+            infra-srvc-grp-id (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :response
+                                  :body
+                                  :infrastructure-service-group)]
+
+
+        ;; commissioning of the resource
+        (with-redefs [vpn-utils/generate-credential (fn [_ _ _ _]
+                                                      {:certificate     certificate-value
+                                                       :common-name     common-name-value
+                                                       :intermediate-ca inter-ca-values})
+                      vpn-utils/delete-credential   (fn [_ _])]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post
+                       :body (json/write-str {:swarm-endpoint "http://foo"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [srvc-endpoint (-> session-owner
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (request (str p/service-context infra-service/resource-type)
+                                           :request-method :put
+                                           :body (rc/form-encode {:filter (format "parent='%s'" infra-srvc-grp-id)}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :response
+                                  :body
+                                  :resources
+                                  first
+                                  :endpoint)]
+            (is (= srvc-endpoint "http://foo")))
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post
+                       :body (json/write-str {:swarm-endpoint "http://bar"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [srvc-endpoint (-> session-owner
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (request (str p/service-context infra-service/resource-type)
+                                           :request-method :put
+                                           :body (rc/form-encode
+                                                   {:filter (format "parent='%s'"
+                                                                    infra-srvc-grp-id)}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  :response
+                                  :body
+                                  :resources
+                                  first
+                                  :endpoint)]
+            (is (= srvc-endpoint "http://bar")))
+
+          )))))
 
 
 (deftest bad-methods

@@ -4,6 +4,9 @@
 
 ### Change
 
+  - NuvlaBox peripherals - fix acl on addition
+  - NuvlaBox - Update all subresources acl when NuvlaBox acl is updated
+    to allow to easily share it
   - Voucher - fix voucher schema add DISTRIBUTED state
 
 ## [4.2.7] - 2019-12-09
