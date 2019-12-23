@@ -185,7 +185,7 @@ particular NuvlaBox release.
   (let [id               (str resource-type "/" (:uuid params))
         is-admin?        (acl-resource/is-admin? authn)
         nuvlabox         (db/retrieve id request)
-        updated-nuvlabox (merge nuvlabox (if is-admin? body (restricted-body nuvlabox body)))]
+        updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
 
     (edit-subresources updated-nuvlabox)
 

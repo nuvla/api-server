@@ -653,7 +653,7 @@
                            (ltu/is-key-value :state "ACTIVATED")
                            (ltu/get-op-url :commission))]
 
-        ;; partial commissioning of the nuvlabox (no swarm credentials)
+        ;; commissioning of the nuvlabox (no swarm credentials)
         (-> session-owner
             (request commission
                      :request-method :post
@@ -720,7 +720,6 @@
         (-> session-beta
             (request nuvlabox-url)
             (ltu/body->edn)
-            (ltu/dump)
             (ltu/is-status 403))
 
         ;; share nuvlabox with a user beta
@@ -737,6 +736,15 @@
             (ltu/is-status 200)
             (ltu/is-operation-present :commission)
             (ltu/is-operation-present :decommission))
+
+        ;; user beta is not allowed to remove owner of the box from acl even if he can edit-acl
+        (-> session-beta
+            (request nuvlabox-url
+                     :request-method :put
+                     :body (json/write-str {:acl {:edit-acl [user-beta]}}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :edit-acl :acl [user-beta nuvlabox-owner]))
 
         ;; check that services exist are visible for invited user beta
         (let [services (-> session-beta
