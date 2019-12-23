@@ -137,8 +137,7 @@
                    :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
                                                 :view-acl [nuvlabox-owner user-beta]}}))
           (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/location))
+          (ltu/is-status 200))
 
       ;; now user beta can also see the peripheral
       (-> session-user
