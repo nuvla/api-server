@@ -74,6 +74,14 @@
              :json-schema/order 38)))
 
 
+(s/def ::port
+  (-> (st/spec ::core/port)
+    (assoc :name "port"
+           :json-schema/description "port number being used by the peripheral"
+
+           :json-schema/order 39)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -81,6 +89,7 @@
                                ::available
                                ::classes]
                       :opt-un [::device-path
+                               ::port
                                ::interface
                                ::vendor
                                ::product]}))

@@ -28,6 +28,7 @@
                  :available     true
                  :device-path   "/dev/bus/usb/001/001"
                  :interface     "USB"
+                 :port          1
                  :vendor        "SixSq"
                  :product       "HD Pro Webcam C920"
                  :classes       ["AUDIO" "VIDEO"]})
@@ -44,5 +45,5 @@
     (stu/is-invalid ::nb-peripheral-1/schema (dissoc peripheral attr)))
 
   ;; optional
-  (doseq [attr #{:device-path :interface :vendor :product}]
+  (doseq [attr #{:device-path :interface :vendor :port :product}]
     (stu/is-valid ::nb-peripheral-1/schema (dissoc peripheral attr))))
