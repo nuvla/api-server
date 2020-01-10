@@ -4,6 +4,11 @@
 
 ### Change
 
+## [4.2.8] - 2020-01-10
+
+### Change
+
+  - NuvlaBox peripherals - add port to schema
   - NuvlaBox peripherals - fix acl on addition
   - NuvlaBox - Update all subresources acl when NuvlaBox acl is updated
     to allow to easily share it
