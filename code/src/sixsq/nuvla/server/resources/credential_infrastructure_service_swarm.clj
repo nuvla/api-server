@@ -102,7 +102,7 @@ certificate authority's public certificate, 'ca', should also be provided.
   (try
     (let [id (str p/resource-type "/" uuid)]
       (if-let [user-id (auth/current-user-id request)]
-        (let [job-type "check_coe"
+        (let [job-type "credential_check_coe"
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id job-type
                                                            {:owners   ["group/nuvla-admin"]
