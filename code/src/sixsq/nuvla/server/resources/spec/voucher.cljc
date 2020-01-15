@@ -181,9 +181,9 @@
                                ::code
                                ::state
                                ::target-audience
+                               ::supplier
                                ::platform]
                       :opt-un [::expiry
-                               ::supplier
                                ::distributor
                                ::activated
                                ::service-info-url

@@ -44,7 +44,7 @@
                              :code            "vH72Hks209"
                              :state           "NEW"
                              :target-audience "scientists@university.com"
-                             ;:supplier        "cloud A"
+                             :supplier        "cloud A"
                              ;:distributor     "distributor A"
                              :platform        "cloud A"
 
