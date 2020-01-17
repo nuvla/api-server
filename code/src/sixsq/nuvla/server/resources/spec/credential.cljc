@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -22,6 +23,26 @@
 (s/def ::method ::ct/method)
 
 
+(s/def ::last-check (-> (st/spec ::core/timestamp)
+                        (assoc :name "last-check"
+                               :json-schema/type "date-time"
+                               :json-schema/description "latest resource check timestamp (UTC)"
+                               :json-schema/section "meta"
+
+                               :json-schema/server-managed true
+                               :json-schema/editable false)))
+
+
+(s/def ::status (-> (st/spec #{"VALID", "INVALID"})
+                    (assoc :name "status"
+                           :json-schema/type "string"
+                           :json-schema/description "status of credential at last-check date"
+
+                           :json-schema/value-scope {:values ["VALID", "INVALID"]})))
+
+
 (def credential-keys-spec (su/merge-keys-specs [common/common-attrs
                                                 {:req-un [::subtype
-                                                          ::method]}]))
+                                                          ::method]
+                                                 :opt-un [::last-check
+                                                          ::status]}]))

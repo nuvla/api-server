@@ -117,7 +117,7 @@
             (ltu/is-status 200)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-present :edit)
-            (ltu/is-operation-present :check-coe)))
+            (ltu/is-operation-present :check)))
 
       (let [credential (-> session-user
                            (request abs-uri)
@@ -136,12 +136,12 @@
           (is (= key key-value))
           (is (= parent parent-value)))
 
-        ;; ensure that the check-coe action works
-        (let [op-url        (ltu/get-op credential "check-coe")
-              check-coe-url (str p/service-context op-url)]
+        ;; ensure that the check action works
+        (let [op-url        (ltu/get-op credential "check")
+              check-url (str p/service-context op-url)]
 
           (-> session-user
-              (request check-coe-url
+              (request check-url
                        :request-method :post)
               (ltu/body->edn)
               (ltu/is-status 202))))

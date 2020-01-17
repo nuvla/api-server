@@ -34,5 +34,5 @@
       (stu/is-invalid ::cred-infra-service-swarm/schema (dissoc tpl k)))
 
     ;; optional keywords
-    (doseq [k #{}]
+    (doseq [k #{:last-check :status}]
       (stu/is-valid ::cred-infra-service-swarm/schema (dissoc tpl k)))))

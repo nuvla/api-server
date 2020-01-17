@@ -80,7 +80,7 @@ certificate authority's public certificate, 'ca', should also be provided.
         ops         (cond-> []
                             (a/can-edit? resource request) (conj (u/operation-map id :edit))
                             (a/can-delete? resource request) (conj (u/operation-map id :delete))
-                            can-manage? (conj (u/action-map id :check-coe)))]
+                            can-manage? (conj (u/action-map id :check)))]
     (if (seq ops)
       (assoc resource :operations ops)
       (dissoc resource :operations))))
@@ -102,7 +102,7 @@ certificate authority's public certificate, 'ca', should also be provided.
   (try
     (let [id (str p/resource-type "/" uuid)]
       (if-let [user-id (auth/current-user-id request)]
-        (let [job-type "credential_check_coe"
+        (let [job-type "credential_check"
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id job-type
                                                            {:owners   ["group/nuvla-admin"]
@@ -117,7 +117,7 @@ certificate authority's public certificate, 'ca', should also be provided.
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [p/resource-type "check-coe"]
+(defmethod crud/do-action [p/resource-type "check"]
   [{{uuid :uuid} :params :as request}]
   (let [id       (str p/resource-type "/" uuid)
         resource (crud/retrieve-by-id-as-admin id)]
