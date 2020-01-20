@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -17,10 +16,26 @@
                                    :json-schema/description "reference to credential resource")))
 
 
-(s/def ::subtype ::ct/subtype)
+;; All credential templates must indicate the subtype of credential to create.
+(s/def ::subtype
+  (-> (st/spec ::common/subtype)
+      (assoc :name "subtype"
+             :json-schema/description "subtype of credential"
+
+             :json-schema/order 0
+             :json-schema/hidden true)))
 
 
-(s/def ::method ::ct/method)
+;; A given credential may have more than one method for creating it.  All
+;; credential templates must provide a method name.
+(s/def ::method
+  (-> (st/spec ::core/identifier)
+      (assoc :name "method"
+             :json-schema/description "method for creating credential"
+
+             :json-schema/order 1
+             :json-schema/hidden true)))
+
 
 
 (s/def ::last-check (-> (st/spec ::core/timestamp)
