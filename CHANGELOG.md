@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  - Credential swarm - Add asynchronous operation to check COE
+
 ### Change
 
 ## [4.2.8] - 2020-01-10

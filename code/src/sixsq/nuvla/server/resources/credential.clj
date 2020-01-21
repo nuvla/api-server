@@ -11,7 +11,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -220,13 +221,17 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [subtype  (-> (str resource-type "/" uuid)
-                     (db/retrieve request)
-                     :subtype)
-        new-body (-> body
-                     (assoc :subtype subtype)
-                     (special-edit request))]
-    (edit-impl (assoc request :body new-body))))
+  (let [subtype (-> (str resource-type "/" uuid)
+                    (db/retrieve request)
+                    :subtype)]
+    (-> body
+        (assoc :subtype subtype)
+        (dissoc :last-check)
+        (cond-> (:status body) (assoc :last-check (time/now-str)))
+        (special-edit request)
+        (->> (assoc request :body)
+             (edit-impl)))))
+
 
 (defn update-credential
   [id body identity]
