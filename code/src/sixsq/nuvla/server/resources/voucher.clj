@@ -79,13 +79,13 @@ voucher via the 'expire' operation.
 ;;
 
 (defn voucher->uuid
-  [code platform]
-  (let [id (str/join ":" [code platform])]
+  [code supplier]
+  (let [id (str/join ":" [code supplier])]
     (u/from-data-uuid id)))
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [code platform] :as voucher} resource-name]
-  (->> (voucher->uuid code platform)
+  [{:keys [code supplier] :as voucher} resource-name]
+  (->> (voucher->uuid code supplier)
        (str resource-type "/")
        (assoc voucher :id)))
 
