@@ -3,7 +3,7 @@
 
   <groupId>sixsq.nuvla.server</groupId>
   <artifactId>server</artifactId>
-  <version>4.2.9</version>
+  <version>4.2.10-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>server</name>
   <url>http://sixsq.com/</url>
