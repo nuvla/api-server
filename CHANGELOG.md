@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-  - Credential swarm - Add asynchronous operation to check COE
+### Change
+
+## [4.2.9] - 2020-01-23
+
+  - Vouchers - make uniqueness depend on supplier instead of platform
+  - Credential swarm - Add asynchronous operation to check
 
 ### Change
 
