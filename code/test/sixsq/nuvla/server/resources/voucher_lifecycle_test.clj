@@ -43,10 +43,7 @@
                              :currency        "EUR"
                              :code            "vH72Hks209"
                              :state           "NEW"
-                             :target-audience "scientists@university.com"
                              :supplier        "cloud A"
-                             ;:distributor     "distributor A"
-                             :platform        "cloud A"
 
                              :acl             valid-acl-admin
                              }
@@ -139,7 +136,6 @@
             expire-url   (str p/service-context (ltu/get-op voucher-full "expire"))]
 
         (is (= "my-voucher" (:name voucher)))
-        (is (= "scientists@university.com" (:target-audience voucher)))
 
         ;; check activation acls - fail as anon
         (-> session-anon
@@ -221,7 +217,7 @@
             (ltu/is-status 400))
 
         ;; verify that an edit works
-        (let [updated (assoc voucher :target-audience "scientists@university.com")]
+        (let [updated (assoc voucher :name "new name")]
 
           (-> session-admin
               (request admin-abs-uri
@@ -237,7 +233,7 @@
                                  (ltu/is-status 200)
                                  (ltu/body))]
 
-            (is (= "scientists@university.com" (:target-audience updated-body))))))
+            )))
 
       ;; admin can delete the voucher
       (-> session-admin
