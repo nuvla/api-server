@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+  - NuvlaBox - add internal-data-gateway-endpoint attribute
+  - NuvlaBox status - add topic raw-sample attributes
+
 ### Change
 
 ## [4.2.9] - 2020-01-23
