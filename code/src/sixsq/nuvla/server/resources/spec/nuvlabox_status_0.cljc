@@ -51,6 +51,23 @@
 ;; resource information
 ;;
 
+(s/def ::topic
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "topic"
+           :json-schema/description "topic name within the NuvlaBox Data Gateway"
+
+           :json-schema/order 36)))
+
+
+(s/def ::raw-sample
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "raw sample"
+           :json-schema/description "raw message sample published to the NB Data Gateway topic"
+
+           :json-schema/order 37)))
+
+
+
 (s/def ::capacity
   (-> (st/spec pos-int?)
       (assoc :name "capacity"
@@ -70,7 +87,7 @@
 
 
 (s/def ::cpu
-  (-> (st/spec (su/only-keys :req-un [::capacity ::load]))
+  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample]))
       (assoc :name "cpu"
              :json-schema/type "map"
              :json-schema/display-name "CPU"
@@ -89,7 +106,7 @@
 
 
 (s/def ::ram
-  (-> (st/spec (su/only-keys :req-un [::capacity ::used]))
+  (-> (st/spec (su/only-keys :req-un [::capacity ::used] :opt-un [::topic ::raw-sample]))
       (assoc :name "ram"
              :json-schema/type "map"
              :json-schema/description "available and consumed RAM"
@@ -106,7 +123,7 @@
 
 
 (s/def ::disk-info
-  (-> (st/spec (su/only-keys :req-un [::device ::capacity ::used]))
+  (-> (st/spec (su/only-keys :req-un [::device ::capacity ::used] :opt-un [::topic ::raw-sample]))
       (assoc :name "disk-info"
              :json-schema/type "map"
              :json-schema/description "available and consumed disk space for device")))

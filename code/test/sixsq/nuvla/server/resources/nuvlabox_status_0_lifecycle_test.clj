@@ -46,11 +46,15 @@
                   :next-heartbeat timestamp
 
                   :resources      {:cpu   {:capacity 8
-                                           :load     4.5}
+                                           :load     4.5
+                                           :topic    "topic/name"}
                                    :ram   {:capacity 4096
-                                           :used     1000}
+                                           :used     1000
+                                           :raw-sample   "{\"one\": 1}"}
                                    :disks [{:device   "root"
                                             :capacity 20000
+                                            :topic    "topic/name"
+                                            :raw-sample   "{\"one\": 1}"
                                             :used     10000}
                                            {:device   "datastore"
                                             :capacity 20000
@@ -66,7 +70,8 @@
 
 
 (def resources-updated {:cpu   {:capacity 10
-                                :load     5.5}
+                                :load     5.5
+                                :raw-sample   "10.2"}
                         :ram   {:capacity 4096
                                 :used     2000}
                         :disks [{:device   "root"
@@ -85,25 +90,25 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists nb-status/resource-type
-                              (str nb-status/resource-type "-" nb-status-0/schema-version)))
+    (str nb-status/resource-type "-" nb-status-0/schema-version)))
 
 
 (deftest lifecycle
 
   (let [session       (-> (ltu/ring-app)
-                          session
-                          (content-type "application/json"))
+                        session
+                        (content-type "application/json"))
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 
         nuvlabox-id   (-> session-user
-                          (request nuvlabox-base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-nuvlabox))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
+                        (request nuvlabox-base-uri
+                          :request-method :post
+                          :body (json/write-str valid-nuvlabox))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
 
         valid-acl     {:owners    ["group/nuvla-admin"]
                        :edit-data [nuvlabox-id]}
@@ -113,81 +118,81 @@
     ;; non-admin users cannot create a nuvlabox-status resource
     (doseq [session [session-anon session-user]]
       (-> session
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc valid-state :parent nuvlabox-id
-                                                            :acl valid-acl)))
-          (ltu/body->edn)
-          (ltu/is-status 403)))
+        (request base-uri
+          :request-method :post
+          :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                   :acl valid-acl)))
+        (ltu/body->edn)
+        (ltu/is-status 403)))
 
     ;; admin users can create a nuvlabox-status resource
     (when-let [state-id (-> session-admin
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str (assoc valid-state :parent nuvlabox-id
-                                                                              :acl valid-acl)))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/body-resource-id))]
+                          (request base-uri
+                            :request-method :post
+                            :body (json/write-str (assoc valid-state :parent nuvlabox-id
+                                                                     :acl valid-acl)))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/body-resource-id))]
 
       (let [state-url (str p/service-context state-id)]
 
         ;; other users cannot see the state
         (-> session-user
-            (request state-url)
-            (ltu/body->edn)
-            (ltu/is-status 403))
+          (request state-url)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
         ;; nuvlabox user is able to update nuvlabox-status
         (-> session-nb
-            (request state-url
-                     :request-method :put
-                     :body (json/write-str {:resources resources-updated}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :resources resources-updated))
+          (request state-url
+            :request-method :put
+            :body (json/write-str {:resources resources-updated}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :resources resources-updated))
 
         ;; verify that the update was written to disk
         (-> session-nb
-            (request state-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :resources resources-updated))
+          (request state-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :resources resources-updated))
 
         (-> session-nb
-            (request state-url
-                     :request-method :put
-                     :body (json/write-str {:peripherals peripherals-updated}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :peripherals peripherals-updated))
+          (request state-url
+            :request-method :put
+            :body (json/write-str {:peripherals peripherals-updated}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :peripherals peripherals-updated))
 
         ;; verify that the update was written to disk
         (let [next-heartbeat (-> session-nb
-                                 (request state-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-key-value :resources resources-updated)
-                                 (ltu/is-key-value :peripherals peripherals-updated)
-                                 (ltu/body)
-                                 :next-heartbeat)]
+                               (request state-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/is-key-value :resources resources-updated)
+                               (ltu/is-key-value :peripherals peripherals-updated)
+                               (ltu/body)
+                               :next-heartbeat)]
 
           ;; verify that the next-heartbeat was overwritten with new value
           (is (not= timestamp next-heartbeat)))
 
         ;; nuvlabox identity cannot delete the state
         (-> session-nb
-            (request state-url
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 403))
+          (request state-url
+            :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
         ;; administrator can delete the state
         (-> session-admin
-            (request state-url
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))))
+          (request state-url
+            :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))))
 
 
     ;; verify that the internal create function also works
@@ -203,16 +208,16 @@
 
       ;; verify that the resource exists
       (-> session-nb
-          (request state-url)
-          (ltu/body->edn)
-          (ltu/is-status 200))
+        (request state-url)
+        (ltu/body->edn)
+        (ltu/is-status 200))
 
       ;; administrator can delete the state
       (-> session-admin
-          (request state-url
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200)))))
+        (request state-url
+          :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 200)))))
 
 
 (deftest bad-methods

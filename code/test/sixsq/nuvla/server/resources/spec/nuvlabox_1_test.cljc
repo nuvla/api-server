@@ -53,7 +53,8 @@
                :os-version                   "OS version"
                :hw-revision-code             "a020d3"
                :monitored                    true
-               :vpn-server-id                "infrastructure-service/uuid-1"})
+               :vpn-server-id                "infrastructure-service/uuid-1"
+               :internal-data-gateway-endpoint  "nb-data-gateway"})
 
 
 (deftest check-nuvlabox
