@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  - Voucher discipline - new resource
+  - Voucher - schema update
   - NuvlaBox - add internal-data-gateway-endpoint attribute
   - NuvlaBox status - add topic raw-sample attributes
 

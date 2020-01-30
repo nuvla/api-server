@@ -11,16 +11,16 @@
 
 
 (deftest check-voucher-discipline-schema
-  (let [timestamp "1964-08-25T10:00:00.00Z"
-        voucher-discipline   {:id               (str t/resource-type "/abcdef")
-                   :name             "my voucher-discipline"
-                   :description      "description of my voucher-discipline"
-                   :resource-type    t/resource-type
-                   :created          timestamp
-                   :updated          timestamp
-                   :acl              valid-acl
+  (let [timestamp          "1964-08-25T10:00:00.00Z"
+        voucher-discipline {:id            (str t/resource-type "/abcdef")
+                            :name          "my voucher-discipline"
+                            :description   "description of my voucher-discipline"
+                            :resource-type t/resource-type
+                            :created       timestamp
+                            :updated       timestamp
+                            :acl           valid-acl
 
-                   }]
+                            }]
 
     (stu/is-valid ::voucher-discipline/schema voucher-discipline)
 
