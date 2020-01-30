@@ -111,16 +111,6 @@
              :json-schema/order 27)))
 
 
-(s/def ::target-audience
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "target-audience"
-             :json-schema/type "string"
-
-             :json-schema/description "to whom the voucher is targeted"
-             :json-schema/group "body"
-             :json-schema/order 28)))
-
-
 (s/def ::batch
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "batch"
@@ -169,6 +159,78 @@
              :json-schema/description "name identifier for the voucher distributor"
              :json-schema/group "body"
              :json-schema/order 33)))
+
+
+(s/def ::discipline
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "discipline"
+             :json-schema/type "string"
+
+             :json-schema/description "name of the voucher discipline"
+             :json-schema/group "body"
+             :json-schema/order 34)))
+
+
+(s/def ::institute
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "institute"
+             :json-schema/type "string"
+
+             :json-schema/description "name of the institute using the voucher"
+             :json-schema/group "body"
+             :json-schema/order 35)))
+
+
+(s/def ::researcher-name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "researcher-name"
+             :json-schema/type "string"
+
+             :json-schema/description "name of the researcher using the voucher"
+             :json-schema/group "body"
+             :json-schema/order 36)))
+
+
+(s/def ::researcher-email
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "researcher-email"
+             :json-schema/type "string"
+
+             :json-schema/description "email of the researcher using the voucher"
+             :json-schema/group "body"
+             :json-schema/order 37)))
+
+
+(s/def ::country
+  (-> (st/spec #{
+                 "AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR", "AM",
+                 "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ",
+                 "BM", "BT", "BO", "BQ", "BA", "BW", "BV", "BR", "IO", "BN", "BG", "BF",
+                 "BI", "CV", "KH", "CM", "CA", "KY", "CF", "TD", "CL", "CN", "CX", "CC",
+                 "CO", "KM", "CG", "CD", "CK", "CR", "CI", "HR", "CU", "CW", "CY", "CZ",
+                 "DK", "DJ", "DM", "DO", "EC", "EG", "SV", "GQ", "ER", "EE", "SZ", "ET",
+                 "FK", "FO", "FJ", "FI", "FR", "GF", "PF", "TF", "GA", "GM", "GE", "DE",
+                 "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT", "GG", "GN", "GW", "GY",
+                 "HT", "HM", "VA", "HN", "HK", "HU", "IS", "IN", "ID", "IR", "IQ", "IE",
+                 "IM", "IL", "IT", "JM", "JP", "JE", "JO", "KZ", "KE", "KI", "KP", "KR",
+                 "KW", "KG", "LA", "LV", "LB", "LS", "LR", "LY", "LI", "LT", "LU", "MO",
+                 "MG", "MW", "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX",
+                 "FM", "MD", "MC", "MN", "ME", "MS", "MA", "MZ", "MM", "NA", "NR", "NP",
+                 "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MK", "MP", "NO", "OM",
+                 "PK", "PW", "PS", "PA", "PG", "PY", "PE", "PH", "PN", "PL", "PT", "PR",
+                 "QA", "RE", "RO", "RU", "RW", "BL", "SH", "KN", "LC", "MF", "PM", "VC",
+                 "WS", "SM", "ST", "SA", "SN", "RS", "SC", "SL", "SG", "SX", "SK", "SI",
+                 "SB", "SO", "ZA", "GS", "SS", "ES", "LK", "SD", "SR", "SJ", "SE", "CH",
+                 "SY", "TW", "TJ", "TZ", "TH", "TL", "TG", "TK", "TO", "TT", "TN", "TR",
+                 "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US", "UM", "UY", "UZ", "VU",
+                 "VE", "VN", "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
+                 })
+      (assoc :name "country"
+             :json-schema/type "string"
+
+             :json-schema/description "2-letter country code"
+             :json-schema/group "body"
+             :json-schema/order 38)))
 ;;
 ;; -------
 ;;
@@ -180,10 +242,14 @@
                                ::currency
                                ::code
                                ::state
-                               ::target-audience
-                               ::supplier
-                               ::platform]
+                               ::supplier]
                       :opt-un [::expiry
+                               ::discipline
+                               ::platform
+                               ::institute
+                               ::researcher-email
+                               ::researcher-name
+                               ::country
                                ::distributor
                                ::activated
                                ::service-info-url

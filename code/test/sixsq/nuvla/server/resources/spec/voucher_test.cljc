@@ -25,7 +25,11 @@
                    :currency         "EUR"
                    :code             "vH72Hks209"
                    :state            "NEW"
-                   :target-audience  "scientists@university.com"
+                   :researcher-email "scientists@university.com"
+                   :researcher-name  "john doe"
+                   :country          "PT"
+                   :discipline       "science"
+                   :institute        "university"
                    :service-info-url "https://url.com"
                    :supplier         "supplier A"
                    :distributor      "distributor A"
@@ -45,5 +49,6 @@
     (doseq [attr #{:id :resource-type :created :updated :acl}]
       (stu/is-invalid ::voucher/schema (dissoc voucher attr)))
 
-    (doseq [attr #{:name :description :user :activated :redeemed :expiry :wave :batch}]
+    (doseq [attr #{:name :description :user :activated :redeemed :expiry :wave :batch :country
+                   :discipline :researcher-email :researcher-name :institute}]
       (stu/is-valid ::voucher/schema (dissoc voucher attr)))))

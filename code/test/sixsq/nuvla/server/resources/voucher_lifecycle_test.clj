@@ -35,20 +35,17 @@
         session-admin       (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user        (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
-        valid-voucher-admin {:name            "my-voucher"
-                             :description     "my-voucher description"
+        valid-voucher-admin {:name        "my-voucher"
+                             :description "my-voucher description"
 
-                             :owner           "user/abcdef01-abcd-abcd-abcd-abcdef012345"
-                             :amount          50.0
-                             :currency        "EUR"
-                             :code            "vH72Hks209"
-                             :state           "NEW"
-                             :target-audience "scientists@university.com"
-                             :supplier        "cloud A"
-                             ;:distributor     "distributor A"
-                             :platform        "cloud A"
+                             :owner       "user/abcdef01-abcd-abcd-abcd-abcdef012345"
+                             :amount      50.0
+                             :currency    "EUR"
+                             :code        "vH72Hks209"
+                             :state       "NEW"
+                             :supplier    "cloud A"
 
-                             :acl             valid-acl-admin
+                             :acl         valid-acl-admin
                              }
 
         valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user :code "differentCode")]
@@ -124,22 +121,21 @@
           (ltu/is-count 2))
 
       ;; verify contents of admin voucher
-      (let [voucher-full (-> session-admin
-                             (request admin-abs-uri)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-operation-present :edit)
-                             (ltu/is-operation-present :delete)
-                             ;(ltu/is-operation-present :activate)
-                             (ltu/is-operation-present :distribute)
-                             (ltu/is-operation-present :expire))
-            voucher      (:body (:response voucher-full))
+      (let [voucher-full   (-> session-admin
+                               (request admin-abs-uri)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/is-operation-present :edit)
+                               (ltu/is-operation-present :delete)
+                               ;(ltu/is-operation-present :activate)
+                               (ltu/is-operation-present :distribute)
+                               (ltu/is-operation-present :expire))
+            voucher        (:body (:response voucher-full))
             ;activate-url (str p/service-context (ltu/get-op voucher-full "activate"))
             distribute-url (str p/service-context (ltu/get-op voucher-full "distribute"))
-            expire-url   (str p/service-context (ltu/get-op voucher-full "expire"))]
+            expire-url     (str p/service-context (ltu/get-op voucher-full "expire"))]
 
         (is (= "my-voucher" (:name voucher)))
-        (is (= "scientists@university.com" (:target-audience voucher)))
 
         ;; check activation acls - fail as anon
         (-> session-anon
@@ -168,7 +164,7 @@
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
                                   (ltu/is-operation-present :activate))
-              activate-url      (str p/service-context (ltu/get-op voucher-updated "activate"))]
+              activate-url    (str p/service-context (ltu/get-op voucher-updated "activate"))]
 
           ;; state is distributed but anon cannot activate, anon doesn't have can-view
           (-> session-anon
@@ -221,7 +217,7 @@
             (ltu/is-status 400))
 
         ;; verify that an edit works
-        (let [updated (assoc voucher :target-audience "scientists@university.com")]
+        (let [updated (assoc voucher :name "new name")]
 
           (-> session-admin
               (request admin-abs-uri
@@ -237,7 +233,7 @@
                                  (ltu/is-status 200)
                                  (ltu/body))]
 
-            (is (= "scientists@university.com" (:target-audience updated-body))))))
+            )))
 
       ;; admin can delete the voucher
       (-> session-admin
