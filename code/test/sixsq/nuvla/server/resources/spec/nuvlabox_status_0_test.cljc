@@ -28,11 +28,15 @@
             :current-time   timestamp
 
             :resources      {:cpu   {:capacity 8
-                                     :load     4.5}
+                                     :load     4.5
+                                     :topic    "topic/name"}
                              :ram   {:capacity 4096
-                                     :used     1000}
+                                     :used     1000
+                                     :raw-sample   "{\"one\": 1}"}
                              :disks [{:device   "root"
                                       :capacity 20000
+                                      :topic    "topic/name"
+                                      :raw-sample   "{\"one\": 1}"
                                       :used     10000}
                                      {:device   "datastore"
                                       :capacity 20000

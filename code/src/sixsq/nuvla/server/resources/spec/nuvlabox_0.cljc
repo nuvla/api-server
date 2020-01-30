@@ -199,7 +199,6 @@
              :json-schema/order 30)))
 
 
-
 (def infra-srvc-id-regex #"^infrastructure-service/[a-zA-Z0-9-]+$")
 
 (s/def ::vpn-server-id
@@ -209,6 +208,14 @@
              :json-schema/display-name "vpn server id"
              :json-schema/description "VPN infrastructure service id to connect"
              :json-schema/order 31)))
+
+
+(s/def ::internal-data-gateway-endpoint
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "internal-data-gateway-endpoint"
+             :json-schema/display-name "nuvlabox data gateway endpoint"
+             :json-schema/description "the endpoint users should connect to, from within the NuvlaBox, to subscribe to the data gateway"
+             :json-schema/order 32)))
 
 
 (s/def ::schema
@@ -235,5 +242,6 @@
                                ::os-version
                                ::hw-revision-code
                                ::monitored
-                               ::vpn-server-id]}))
+                               ::vpn-server-id
+                               ::internal-data-gateway-endpoint]}))
 
