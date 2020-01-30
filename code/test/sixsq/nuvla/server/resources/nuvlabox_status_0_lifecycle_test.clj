@@ -46,12 +46,16 @@
                   :next-heartbeat timestamp
 
                   :resources      {:cpu   {:capacity 8
-                                           :load     4.5}
-                                   :ram   {:capacity 4096
-                                           :used     1000}
-                                   :disks [{:device   "root"
-                                            :capacity 20000
-                                            :used     10000}
+                                           :load     4.5
+                                           :topic    "topic/name"}
+                                   :ram   {:capacity   4096
+                                           :used       1000
+                                           :raw-sample "{\"one\": 1}"}
+                                   :disks [{:device     "root"
+                                            :capacity   20000
+                                            :topic      "topic/name"
+                                            :raw-sample "{\"one\": 1}"
+                                            :used       10000}
                                            {:device   "datastore"
                                             :capacity 20000
                                             :used     10000}]}
@@ -65,8 +69,9 @@
                   :wifi-password  "some-secure-password"})
 
 
-(def resources-updated {:cpu   {:capacity 10
-                                :load     5.5}
+(def resources-updated {:cpu   {:capacity   10
+                                :load       5.5
+                                :raw-sample "10.2"}
                         :ram   {:capacity 4096
                                 :used     2000}
                         :disks [{:device   "root"
