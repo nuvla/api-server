@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  - NuvlaBox - make tags attribute editable for users
+  - NuvlaBox - make location attribute editable for users
   - Voucher discipline - new resource
   - Voucher - schema update
   - NuvlaBox - add internal-data-gateway-endpoint attribute

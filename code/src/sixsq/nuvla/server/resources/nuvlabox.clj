@@ -165,12 +165,13 @@ particular NuvlaBox release.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn restricted-body
-  [{:keys [id owner vpn-server-id location] :as existing-resource}
-   {:keys [acl name description] :as body}]
+  [{:keys [id owner vpn-server-id] :as existing-resource}
+   {:keys [acl name description location tags] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
+          tags (assoc :tags tags)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
