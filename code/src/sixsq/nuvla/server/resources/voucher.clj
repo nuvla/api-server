@@ -86,8 +86,74 @@ voucher via the 'expire' operation.
 (defmethod crud/new-identifier resource-type
   [{:keys [code supplier] :as voucher} resource-name]
   (->> (voucher->uuid code supplier)
-       (str resource-type "/")
-       (assoc voucher :id)))
+    (str resource-type "/")
+    (assoc voucher :id)))
+
+
+
+;;
+;; define country name based on 2-letter code
+;;
+
+
+(defn resolve-country-name
+  [country-code]
+  (let [country-map {:BD  "Bangladesh" :BE  "Belgium" :BF  "Burkina Faso" :BG  "Bulgaria" :BA  "Bosnia and Herzegovina"
+                     :BB  "Barbados" :WF  "Wallis and Futuna" :BL  "Saint Barthelemy" :BM  "Bermuda"
+                     :BN  "Brunei Darussalam" :BO  "Bolivia (Plurinational State of)" :BH  "Bahrain" :BI  "Burundi"
+                     :BJ  "Benin" :BT  "Bhutan" :JM  "Jamaica" :BV  "Bouvet Island" :BW  "Botswana" :WS  "Samoa"
+                     :BQ  "Bonaire, Sint Eustatius and Saba" :BR  "Brazil" :BS  "Bahamas" :JE  "Jersey" :BY  "Belarus"
+                     :BZ  "Belize" :RU  "Russian Federation" :RW  "Rwanda" :RS  "Serbia" :TL  "Timor-Leste"
+                     :RE  "Reunion" :TM  "Turkmenistan" :TJ  "Tajikistan" :RO  "Romania" :TK  "Tokela"
+                     :GW  "Guinea-Bissa" :GU  "Guam" :GT  "Guatemala" :GS  "South Georgia and the South Sandwich Islands"
+                     :GR  "Greece" :GQ  "Equatorial Guinea" :GP  "Guadeloupe" :JP  "Japan" :GY  "Guyana"
+                     :GG  "Guernsey" :GF  "French Guiana" :GE  "Georgia" :GD  "Grenada"
+                     :GB  "United Kingdom of Great Britain and Northern Ireland" :GA  "Gabon" :GN  "Guinea"
+                     :GM  "Gambia" :GL  "Greenland" :GI  "Gibraltar" :GH  "Ghana" :OM  "Oman" :TN  "Tunisia"
+                     :JO  "Jordan" :HR  "Croatia" :HT  "Haiti" :HU  "Hungary" :HK  "Hong Kong" :HN  "Honduras"
+                     :HM  "Heard Island and McDonald Islands" :VE  "Venezuela (Bolivarian Republic of)"
+                     :PR  "Puerto Rico" :PS  "Palestine, State of" :PW  "Pala" :PT  "Portugal"
+                     :KN  "Saint Kitts and Nevis" :PY  "Paraguay" :IQ  "Iraq" :PA  "Panama" :PF  "French Polynesia"
+                     :PG  "Papua New Guinea" :PE  "Per" :PK  "Pakistan" :PH  "Philippines" :PN  "Pitcairn"
+                     :PL  "Poland" :PM  "Saint Pierre and Miquelon" :ZM  "Zambia" :EH  "Western Sahara" :EE  "Estonia"
+                     :EG  "Egypt" :ZA  "South Africa" :EC  "Ecuador" :IT  "Italy" :VN  "Viet Nam" :SB  "Solomon Islands"
+                     :ET  "Ethiopia" :SO  "Somalia" :ZW  "Zimbabwe" :SA  "Saudi Arabia" :ES  "Spain" :ER  "Eritrea"
+                     :ME  "Montenegro" :MD  "Moldova, Republic of" :MG  "Madagascar" :MF  "Saint Martin (French part)"
+                     :MA  "Morocco" :MC  "Monaco" :UZ  "Uzbekistan" :MM  "Myanmar" :ML  "Mali" :MO  "Macao"
+                     :MN  "Mongolia" :MH  "Marshall Islands" :MK  "North Macedonia" :MU  "Mauritius" :MT  "Malta"
+                     :MW  "Malawi" :MV  "Maldives" :MQ  "Martinique" :MP  "Northern Mariana Islands" :MS  "Montserrat"
+                     :MR  "Mauritania" :IM  "Isle of Man" :UG  "Uganda" :TZ  "Tanzania, United Republic of"
+                     :MY  "Malaysia" :MX  "Mexico" :IL  "Israel" :FR  "France" :AW  "Aruba"
+                     :SH  "Saint Helena, Ascension and Tristan da Cunha" :SJ  "Svalbard and Jan Mayen" :FI  "Finland"
+                     :FJ  "Fiji" :FK  "Falkland Islands (Malvinas)" :FM  "Micronesia (Federated States of)"
+                     :FO  "Faroe Islands" :NI  "Nicaragua" :NL  "Netherlands" :NO  "Norway" :NA  "Namibia" :VU  "Vanuat"
+                     :NC  "New Caledonia" :NE  "Niger" :NF  "Norfolk Island" :NG  "Nigeria" :NZ  "New Zealand"
+                     :NP  "Nepal" :NR  "Naur" :NU  "Niue" :CK  "Cook Islands" :CI  "Cote d'Ivoire" :CH  "Switzerland"
+                     :CO  "Colombia" :CN  "China" :CM  "Cameroon" :CL  "Chile" :CC  "Cocos (Keeling) Islands"
+                     :CA  "Canada" :CG  "Congo" :CF  "Central African Republic" :CD  "Congo, Democratic Republic of the"
+                     :CZ  "Czechia" :CY  "Cyprus" :CX  "Christmas Island" :CR  "Costa Rica" :CW  "Curacao"
+                     :CV  "Cabo Verde" :CU  "Cuba" :SZ  "Eswatini" :SY  "Syrian Arab Republic"
+                     :SX  "Sint Maarten (Dutch part)" :KG  "Kyrgyzstan" :KE  "Kenya" :SS  "South Sudan" :SR  "Suriname"
+                     :KI  "Kiribati" :KH  "Cambodia" :SV  "El Salvador" :KM  "Comoros" :ST  "Sao Tome and Principe"
+                     :SK  "Slovakia" :KR  "Korea, Republic of" :SI  "Slovenia"
+                     :KP  "Korea (Democratic People's Republic of)" :KW  "Kuwait" :SN  "Senegal" :SM  "San Marino"
+                     :SL  "Sierra Leone" :SC  "Seychelles" :KZ  "Kazakhstan" :KY  "Cayman Islands" :SG  "Singapore"
+                     :SE  "Sweden" :SD  "Sudan" :DO  "Dominican Republic" :DM  "Dominica" :DJ  "Djibouti" :DK  "Denmark"
+                     :VG  "Virgin Islands (British)" :DE  "Germany" :YE  "Yemen" :DZ  "Algeria"
+                     :US  "United States of America" :UY  "Uruguay" :YT  "Mayotte"
+                     :UM  "United States Minor Outlying Islands" :LB  "Lebanon" :LC  "Saint Lucia"
+                     :LA  "Lao People's Democratic Republic" :TV  "Tuval" :TW  "Taiwan, Province of China"
+                     :TT  "Trinidad and Tobago" :TR  "Turkey" :LK  "Sri Lanka" :LI  "Liechtenstein" :LV  "Latvia"
+                     :TO  "Tonga" :LT  "Lithuania" :LU  "Luxembourg" :LR  "Liberia" :LS  "Lesotho" :TH  "Thailand"
+                     :TF  "French Southern Territories" :TG  "Togo" :TD  "Chad" :TC  "Turks and Caicos Islands"
+                     :LY  "Libya" :VA  "Holy See" :VC  "Saint Vincent and the Grenadines" :AE  "United Arab Emirates"
+                     :AD  "Andorra" :AG  "Antigua and Barbuda" :AF  "Afghanistan" :AI  "Anguilla"
+                     :VI  "Virgin Islands (U.S.)" :IS  "Iceland" :IR  "Iran (Islamic Republic of)" :AM  "Armenia"
+                     :AL  "Albania" :AO  "Angola" :AQ  "Antarctica" :AS  "American Samoa" :AR  "Argentina"
+                     :AU  "Australia" :AT  "Austria" :IO  "British Indian Ocean Territory" :IN  "India"
+                     :AX  "Aland Islands" :AZ  "Azerbaijan" :IE  "Ireland" :ID  "Indonesia" :UA  "Ukraine" :QA  "Qatar"
+                     :MZ  "Mozambique"}]
+    (get country-map (keyword country-code))))
 
 
 ;;
@@ -98,7 +164,9 @@ voucher via the 'expire' operation.
 
 (defmethod crud/add resource-type
   [request]
-  (add-impl request))
+  (let [country-name (resolve-country-name (:country (:body request)))
+        body         (assoc (:body request) :country-name country-name)]
+    (add-impl (assoc request :body body))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -114,7 +182,9 @@ voucher via the 'expire' operation.
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (let [country-name (resolve-country-name (:country (:body request)))
+        body         (assoc (:body request) :country-name country-name)]
+    (edit-impl (assoc request :body body))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -159,10 +229,10 @@ voucher via the 'expire' operation.
     (let [id      (str resource-type "/" uuid)]
       (try
         (-> id
-            (db/retrieve request)
-            (a/throw-cannot-manage request)
-            distribute
-            (db/edit request))
+          (db/retrieve request)
+          (a/throw-cannot-manage request)
+          distribute
+          (db/edit request))
         (catch Exception ei
           (ex-data ei))))
     (catch Exception ei
@@ -190,11 +260,11 @@ voucher via the 'expire' operation.
           new-acl (update (:acl voucher) :manage conj user-id)]
       (try
         (-> id
-            (db/retrieve request)
-            (a/throw-cannot-view-data request)
-            activate
-            (assoc :user user-id :acl new-acl)
-            (db/edit request))
+          (db/retrieve request)
+          (a/throw-cannot-view-data request)
+          activate
+          (assoc :user user-id :acl new-acl)
+          (db/edit request))
         (catch Exception ei
           (ex-data ei))))
     (catch Exception ei
@@ -219,10 +289,10 @@ voucher via the 'expire' operation.
     (let [id (str resource-type "/" uuid)]
       (try
         (-> id
-            (db/retrieve request)
-            (a/throw-cannot-manage request)
-            redeem
-            (db/edit request))
+          (db/retrieve request)
+          (a/throw-cannot-manage request)
+          redeem
+          (db/edit request))
         (catch Exception ei
           (ex-data ei))))
     (catch Exception ei
@@ -247,10 +317,10 @@ voucher via the 'expire' operation.
     (let [id (str resource-type "/" uuid)]
       (try
         (-> id
-            (db/retrieve request)
-            (a/throw-cannot-manage request)
-            expire
-            (db/edit request))
+          (db/retrieve request)
+          (a/throw-cannot-manage request)
+          expire
+          (db/edit request))
         (catch Exception ei
           (ex-data ei))))
     (catch Exception ei
@@ -270,7 +340,7 @@ voucher via the 'expire' operation.
         can-manage? (a/can-manage? resource request)
         can-view?   (a/can-view? resource request)]
     (cond-> (crud/set-standard-operations resource request)
-            (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
-            (and can-manage? (#{"NEW" "ACTIVATED" "REDEEMED"} state)) (update :operations conj expire-op)
-            (and can-manage? (#{"NEW"} state)) (update :operations conj distribute-op)
-            (and can-view? (#{"DISTRIBUTED"} state)) (update :operations conj activate-op))))
+      (and can-manage? (#{"ACTIVATED"} state)) (update :operations conj redeem-op)
+      (and can-manage? (#{"NEW" "ACTIVATED" "REDEEMED"} state)) (update :operations conj expire-op)
+      (and can-manage? (#{"NEW"} state)) (update :operations conj distribute-op)
+      (and can-view? (#{"DISTRIBUTED"} state)) (update :operations conj activate-op))))

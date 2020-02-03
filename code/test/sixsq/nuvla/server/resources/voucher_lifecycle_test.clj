@@ -44,6 +44,7 @@
                              :code        "vH72Hks209"
                              :state       "NEW"
                              :supplier    "cloud A"
+                             :country     "CH"
 
                              :acl         valid-acl-admin
                              }

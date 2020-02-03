@@ -28,6 +28,7 @@
                    :researcher-email "scientists@university.com"
                    :researcher-name  "john doe"
                    :country          "PT"
+                   :country-name     "Portugal"
                    :discipline       "science"
                    :institute        "university"
                    :service-info-url "https://url.com"
