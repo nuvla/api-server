@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  - Voucher - add country mappings
+  - Voucher - add correlation between voucher and voucher-discipline
   - NuvlaBox - make tags attribute editable for users
   - NuvlaBox - make location attribute editable for users
   - Voucher discipline - new resource
