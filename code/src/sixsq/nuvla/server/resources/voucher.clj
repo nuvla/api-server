@@ -162,42 +162,6 @@ voucher via the 'expire' operation.
 ;; Handle the voucher disciplines
 ;;
 
-
-;(def ^:private all-query-map {:params         {:resource-name resource-type}
-;                              :request-method :get
-;                              :nuvla/authn    auth/internal-identity})
-;
-;(defn extract-field-values
-;  "returns a set of the values of the field k (as a keyword) from the
-;   voucher-disciplines resources that match the query"
-;  [query-map k]
-;  (->> query-map
-;    crud/query
-;    :body
-;    :resources
-;    (map k)
-;    set))
-;
-;(defn all-disciplines
-;  []
-;  (extract-field-values all-query-map :name))
-;
-;(defn get-voucher-discipline
-;  "Extracts the voucher's discipline if there is one. Returns nil otherwise."
-;  [k]
-;  (some->> k
-;    name
-;    (re-matches #"(.+):.*")
-;    second))
-;
-;(defn valid-voucher-discipline?
-;  "If there is a discipline and it is NOT in the voucher-discipline set, return false.
-;   Otherwise return true."
-;  [valid-prefixes k]
-;  (if-let [prefix (get-voucher-discipline k)]
-;    (boolean (valid-prefixes prefix))
-;    true))
-
 (defn discipline-already-exists?
   "Checks if voucher discipline already exists in voucher-discipline set. If not, returns False"
   [discipline]
