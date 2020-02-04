@@ -222,7 +222,8 @@ voucher via the 'expire' operation.
     (let [country-name (resolve-country-name (:country (:body request)))
           body         (assoc (:body request) :country-name country-name)]
       (add-impl (assoc request :body body)))
-    (throw (r/ex-response "Discipline '%s' not registered in voucher-discipline set!" 400 (:discipline (:body request))))))
+    (throw (r/ex-response (format "Discipline '%s' not registered in voucher-discipline set!" (:discipline (:body request)))
+             400 (:discipline (:body request))))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -240,7 +241,8 @@ voucher via the 'expire' operation.
     (let [country-name (resolve-country-name (:country (:body request)))
           body         (assoc (:body request) :country-name country-name)]
       (edit-impl (assoc request :body body)))
-    (throw (r/ex-response "Discipline '%s' not registered in voucher-discipline set!" 400 (:discipline (:body request))))))
+    (throw (r/ex-response (format "Discipline '%s' not registered in voucher-discipline set!" (:discipline (:body request)))
+             400 (:discipline (:body request))))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
