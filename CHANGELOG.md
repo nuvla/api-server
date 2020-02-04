@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+  - NuvlaBox - set tags in commissioning
   - NuvlaBox - make tags attribute editable for users
   - NuvlaBox - make location attribute editable for users
   - Voucher discipline - new resource

@@ -148,7 +148,7 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil)]
+      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil nil)]
         (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))

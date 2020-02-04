@@ -144,7 +144,7 @@
 
 
 (defn create-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags]
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
@@ -155,9 +155,11 @@
                                                    (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl
-                                 :template    {:href     "infrastructure-service-template/generic"
-                                               :endpoint endpoint
-                                               :subtype  "swarm"}}
+                                 :template    (cond->
+                                                {:href     "infrastructure-service-template/generic"
+                                                 :endpoint endpoint
+                                                 :subtype  "swarm"}
+                                                tags (assoc :tags tags))}
                    :nuvla/authn auth/internal-identity}
           {{:keys [resource-id]} :body status :status} (crud/add request)]
 
@@ -173,7 +175,7 @@
 
 
 (defn update-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags]
   (when-let [resource-id (get-swarm-service isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:uuid          (u/id->uuid resource-id)
@@ -187,6 +189,7 @@
                                                      (utils/format-nb-name
                                                        nuvlabox-name nuvlabox-id))
                                    :acl         acl}
+                                  tags (assoc :tags tags)
                                   endpoint (assoc :endpoint endpoint))
                    :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
@@ -504,9 +507,24 @@
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
+(defn update-nuvlabox-tags
+  [id tags]
+  (let [body    {:tags tags}
+        request {:params      {:uuid          (u/id->uuid id)
+                               :resource-name "nuvlabox"}
+                 :nuvla/authn auth/internal-identity
+                 :body        {:tags tags}}
+        {:keys [status body] :as resp} (crud/edit request)
+        ]
+    (when-not (= 200 status)
+      (let [msg (str "updating nuvlabox tags failed:" status (:message body))]
+        (r/ex-bad-request msg)))))
+
+
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
-   {{:keys [swarm-endpoint
+   {{:keys [tags
+            swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
@@ -515,8 +533,8 @@
 
   (when-let [isg-id infrastructure-service-group]
     (let [swarm-id (or
-                     (update-swarm-service id name acl isg-id swarm-endpoint)
-                     (create-swarm-service id name acl isg-id swarm-endpoint))
+                     (update-swarm-service id name acl isg-id swarm-endpoint tags)
+                     (create-swarm-service id name acl isg-id swarm-endpoint tags))
           minio-id (or
                      (update-minio-service id name acl isg-id minio-endpoint)
                      (create-minio-service id name acl isg-id minio-endpoint))]
@@ -546,6 +564,9 @@
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
+
+      (when tags
+        (update-nuvlabox-tags id tags))
       )))
 
 
