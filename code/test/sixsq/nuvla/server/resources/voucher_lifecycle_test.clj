@@ -5,9 +5,11 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.voucher :as t]
+    [sixsq.nuvla.server.resources.voucher-discipline :as vd]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -16,6 +18,7 @@
 
 (def base-uri (str p/service-context t/resource-type))
 
+(def base-uri-voucher-discipline (str p/service-context vd/resource-type))
 
 (def valid-acl-admin {:owners    ["group/nuvla-admin"]
                       :view-data ["group/nuvla-user"]})
@@ -49,7 +52,11 @@
                              :acl         valid-acl-admin
                              }
 
-        valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user :code "differentCode")]
+        valid-voucher-user  (assoc valid-voucher-admin :acl valid-acl-user :code "differentCode")
+
+        valid-voucher-with-discipline   (assoc valid-voucher-admin :discipline "science" :code "scienceCode")
+
+        voucher-discipline  {:name    "science"}]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -76,6 +83,14 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
+    ;; admin create must fail if discipline does not exist
+    (-> session-admin
+      (request base-uri
+        :request-method :post
+        :body (json/write-str valid-voucher-with-discipline))
+      (ltu/body->edn)
+      (ltu/is-status 400))
+
     ;; check voucher creation
     (let [admin-uri     (-> session-admin
                             (request base-uri
@@ -87,6 +102,16 @@
 
           admin-abs-uri (str p/service-context admin-uri)
 
+          admin-vd-uri  (-> session-admin
+                            (request base-uri-voucher-discipline
+                              :request-method :post
+                              :body (json/write-str voucher-discipline))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          admin-vd-abs-uri (str p/service-context admin-vd-uri)
+
           user-uri      (-> session-user
                             (request base-uri
                                      :request-method :post
@@ -95,7 +120,18 @@
                             (ltu/is-status 201)
                             (ltu/location))
 
-          user-abs-uri  (str p/service-context user-uri)]
+          user-abs-uri  (str p/service-context user-uri)
+
+          ;; the voucher discipline already exists now
+          admin-voucher-with-discipline-uri     (-> session-admin
+                                                    (request base-uri
+                                                      :request-method :post
+                                                      :body (json/write-str valid-voucher-with-discipline))
+                                                    (ltu/body->edn)
+                                                    (ltu/is-status 201)
+                                                    (ltu/location))
+
+          admin-voucher-with-discipline-abs-uri (str p/service-context admin-voucher-with-discipline-uri)]
 
       ;; creating a new voucher with the same code and supplier must fail
       (-> session-user
@@ -105,13 +141,13 @@
           (ltu/body->edn)
           (ltu/is-status 409))
 
-      ;; admin should see 2 voucher resources
+      ;; admin should see 3 voucher resources
       (-> session-admin
           (request base-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-resource-uri t/collection-type)
-          (ltu/is-count 2))
+          (ltu/is-count 3))
 
       ;; user also sees 2 cause of acls
       (-> session-user
@@ -119,7 +155,7 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-resource-uri t/collection-type)
-          (ltu/is-count 2))
+          (ltu/is-count 3))
 
       ;; verify contents of admin voucher
       (let [voucher-full   (-> session-admin
@@ -218,7 +254,7 @@
             (ltu/is-status 400))
 
         ;; verify that an edit works
-        (let [updated (assoc voucher :name "new name")]
+        (let [updated (assoc voucher :name "new name" :discipline "science")]
 
           (-> session-admin
               (request admin-abs-uri
@@ -242,7 +278,12 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; user cannot delete the voucher
+      (-> session-admin
+        (request admin-voucher-with-discipline-abs-uri :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+      ;; user can delete the voucher
       (-> session-user
           (request user-abs-uri :request-method :delete)
           (ltu/body->edn)

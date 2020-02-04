@@ -18,12 +18,14 @@ voucher via the 'expire' operation.
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.voucher :as voucher]
+    [sixsq.nuvla.server.resources.voucher-discipline :as vd]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
@@ -157,6 +159,58 @@ voucher via the 'expire' operation.
 
 
 ;;
+;; Handle the voucher disciplines
+;;
+
+
+;(def ^:private all-query-map {:params         {:resource-name resource-type}
+;                              :request-method :get
+;                              :nuvla/authn    auth/internal-identity})
+;
+;(defn extract-field-values
+;  "returns a set of the values of the field k (as a keyword) from the
+;   voucher-disciplines resources that match the query"
+;  [query-map k]
+;  (->> query-map
+;    crud/query
+;    :body
+;    :resources
+;    (map k)
+;    set))
+;
+;(defn all-disciplines
+;  []
+;  (extract-field-values all-query-map :name))
+;
+;(defn get-voucher-discipline
+;  "Extracts the voucher's discipline if there is one. Returns nil otherwise."
+;  [k]
+;  (some->> k
+;    name
+;    (re-matches #"(.+):.*")
+;    second))
+;
+;(defn valid-voucher-discipline?
+;  "If there is a discipline and it is NOT in the voucher-discipline set, return false.
+;   Otherwise return true."
+;  [valid-prefixes k]
+;  (if-let [prefix (get-voucher-discipline k)]
+;    (boolean (valid-prefixes prefix))
+;    true))
+
+(defn discipline-already-exists?
+  "Checks if voucher discipline already exists in voucher-discipline set. If not, returns False"
+  [discipline]
+  (or
+    (nil? discipline)
+    (let [filter  (format "name='%s'" discipline)
+          options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}]
+      (-> (crud/query-as-admin vd/resource-type options)
+        first
+        :count
+        pos?))))
+
+;;
 ;; CRUD operations
 ;;
 
@@ -164,9 +218,12 @@ voucher via the 'expire' operation.
 
 (defmethod crud/add resource-type
   [request]
-  (let [country-name (resolve-country-name (:country (:body request)))
-        body         (assoc (:body request) :country-name country-name)]
-    (add-impl (assoc request :body body))))
+  (if (discipline-already-exists? (:discipline (:body request)))
+    (let [country-name (resolve-country-name (:country (:body request)))
+          body         (assoc (:body request) :country-name country-name)]
+      (add-impl (assoc request :body body)))
+    (throw (r/ex-response "Discipline not registered in voucher-discipline set!" 400 (:discipline (:body request))))))
+
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -182,9 +239,11 @@ voucher via the 'expire' operation.
 
 (defmethod crud/edit resource-type
   [request]
-  (let [country-name (resolve-country-name (:country (:body request)))
-        body         (assoc (:body request) :country-name country-name)]
-    (edit-impl (assoc request :body body))))
+  (if (discipline-already-exists? (:discipline (:body request)))
+    (let [country-name (resolve-country-name (:country (:body request)))
+          body         (assoc (:body request) :country-name country-name)]
+      (edit-impl (assoc request :body body)))
+    (throw (r/ex-response "Discipline not registered in voucher-discipline set!" 400 (:discipline (:body request))))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
