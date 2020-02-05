@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+  - NuvlaBox - set tags on commission operation
   - Voucher - add country mappings
   - Voucher - add correlation between voucher and voucher-discipline
   - NuvlaBox - make tags attribute editable for users

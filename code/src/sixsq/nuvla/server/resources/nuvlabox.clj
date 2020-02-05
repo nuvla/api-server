@@ -148,7 +148,7 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil)]
+      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil nil)]
         (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
@@ -277,16 +277,18 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "commission"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (let [nuvlabox (db/retrieve id request)]
+        (let [nuvlabox (db/retrieve id request)
+              tags     (some-> body :tags set)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
 
-          (db/edit (assoc nuvlabox :state state-commissioned) request)
+          (db/edit (cond-> (assoc nuvlabox :state state-commissioned)
+                           tags (assoc :tags tags)) request)
 
           (r/map-response "commission executed successfully" 200))
         (catch Exception e
