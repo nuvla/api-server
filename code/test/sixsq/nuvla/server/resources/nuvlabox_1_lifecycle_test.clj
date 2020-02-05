@@ -296,7 +296,8 @@
         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-        session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+        session-anon  (header session authn-info-header "unknown group/nuvla-anon")
+        tags          #{"tag-1", "tag-2"}]
 
     (doseq [session [session-admin session-owner]]
       (let [nuvlabox-id  (-> session
@@ -365,6 +366,7 @@
                                               ;:swarm-client-cert   "cert"
                                               ;:swarm-client-ca     "ca"
                                               :swarm-endpoint      "https://swarm.example.com"
+                                              :tags                tags
                                               :minio-access-key    "access"
                                               :minio-secret-key    "secret"
                                               :minio-endpoint      "https://minio.example.com"}))
@@ -381,7 +383,8 @@
               (ltu/is-operation-absent :activate)
               (ltu/is-operation-present :commission)
               (ltu/is-operation-present :decommission)
-              (ltu/is-key-value :state "COMMISSIONED"))
+              (ltu/is-key-value :state "COMMISSIONED")
+              (ltu/is-key-value set :tags tags))
 
           ;; check that services exist
           (let [services (-> session
@@ -396,6 +399,13 @@
                              (ltu/entries))]
 
             (is (= #{"swarm" "s3"} (set (map :subtype services))))
+
+            ;; tags is also applied to infra service swarm
+            (is (= tags (->> services
+                             (filter #(= (:subtype %) "swarm"))
+                             first
+                             :tags
+                             set)))
 
             (doseq [{:keys [acl]} services]
               (is (= [nuvlabox-owner] (:view-acl acl))))
@@ -594,7 +604,7 @@
 
         session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "unknown group/nuvla-anon")
-        user-beta "user/beta"
+        user-beta     "user/beta"
         session-beta  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))]
 
     (let [nuvlabox-id  (-> session-owner

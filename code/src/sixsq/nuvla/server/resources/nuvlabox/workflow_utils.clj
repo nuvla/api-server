@@ -507,20 +507,6 @@
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
-(defn update-nuvlabox-tags
-  [id tags]
-  (let [body    {:tags tags}
-        request {:params      {:uuid          (u/id->uuid id)
-                               :resource-name "nuvlabox"}
-                 :nuvla/authn auth/internal-identity
-                 :body        {:tags tags}}
-        {:keys [status body] :as resp} (crud/edit request)
-        ]
-    (when-not (= 200 status)
-      (let [msg (str "updating nuvlabox tags failed:" status (:message body))]
-        (r/ex-bad-request msg)))))
-
-
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
    {{:keys [tags
@@ -564,9 +550,6 @@
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
-
-      (when tags
-        (update-nuvlabox-tags id tags))
       )))
 
 
