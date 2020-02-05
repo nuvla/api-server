@@ -231,6 +231,17 @@
              :json-schema/description "2-letter country code"
              :json-schema/group "body"
              :json-schema/order 38)))
+
+
+(s/def ::country-name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "country name"
+           :json-schema/type "string"
+
+           :json-schema/description "country name"
+           :json-schema/group "body"
+           :json-schema/order 39)))
+
 ;;
 ;; -------
 ;;
@@ -250,6 +261,7 @@
                                ::researcher-email
                                ::researcher-name
                                ::country
+                               ::country-name
                                ::distributor
                                ::activated
                                ::service-info-url
