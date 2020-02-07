@@ -271,7 +271,9 @@
 (defn create-swarm-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (if (and key cert ca)
-    (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+    (let [acl     (-> nuvlabox-acl
+                      (utils/set-acl-nuvlabox-view-only)
+                      (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
           tmpl    (cond->
                     {:href "credential-template/infrastructure-service-swarm"
                      :cert cert
@@ -303,7 +305,9 @@
 (defn update-swarm-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (when-let [resource-id (get-swarm-cred swarm-id)]
-    (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+    (let [acl     (-> nuvlabox-acl
+                      (utils/set-acl-nuvlabox-view-only)
+                      (assoc :manage (:view-meta nuvlabox-acl)))
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->

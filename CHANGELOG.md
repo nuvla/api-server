@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+  - NuvlaBox - NuvlaBox viewers should have manage right to be 
+    able to check swarm credential
+
 ## [4.2.10] - 2020-02-07
 
 ### Added
