@@ -2,12 +2,19 @@
 
 ## Unreleased
 
+## [4.2.10] - 2020-02-07
+
+### Added
+
+  - Voucher discipline - new resource
+
+### Change
+
   - NuvlaBox - set tags on commission operation
   - Voucher - add country mappings
   - Voucher - add correlation between voucher and voucher-discipline
   - NuvlaBox - make tags attribute editable for users
   - NuvlaBox - make location attribute editable for users
-  - Voucher discipline - new resource
   - Voucher - schema update
   - NuvlaBox - add internal-data-gateway-endpoint attribute
   - NuvlaBox status - add topic raw-sample attributes
