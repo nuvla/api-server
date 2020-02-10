@@ -48,7 +48,8 @@
                                     :product-id  "product-id"
                                     :description "description"}]}
 
-            :wifi-password  "some-secure-password"})
+            :wifi-password  "some-secure-password"
+            :nuvlabox-api-endpoint  "https://1.2.3.4:1234"})
 
 
 (deftest check-nuvlabox-status
@@ -62,5 +63,5 @@
     (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

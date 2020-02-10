@@ -235,6 +235,14 @@
              :json-schema/order 35)))
 
 
+(s/def ::nuvlabox-api-endpoint
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "NuvlaBox API Endpoint"
+           :json-schema/description "Full endpoint for the NuvlaBox API"
+
+           :json-schema/order 36)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -244,4 +252,5 @@
                                ::comment
                                ::resources
                                ::peripherals
-                               ::wifi-password]}))
+                               ::wifi-password
+                               ::nuvlabox-api-endpoint]}))

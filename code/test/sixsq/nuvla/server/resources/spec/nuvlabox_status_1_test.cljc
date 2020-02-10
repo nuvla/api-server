@@ -38,7 +38,8 @@
                                       :capacity 20000
                                       :used     10000}]}
 
-            :wifi-password  "some-secure-password"})
+            :wifi-password  "some-secure-password"
+            :nuvlabox-api-endpoint  "https://4.3.2.1:4321"})
 
 
 (deftest check-nuvlabox-status
@@ -52,5 +53,5 @@
     (stu/is-invalid ::nb-status-1/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment :nuvlabox-api-endpoint}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))
