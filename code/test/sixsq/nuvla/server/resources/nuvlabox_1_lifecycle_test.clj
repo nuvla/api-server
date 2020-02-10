@@ -69,8 +69,7 @@
 
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
-                     :lan-cidr         "10.0.1.0/24"
-                     :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
+                     :lan-cidr         "10.0.1.0/24"})
 
 
 (deftest check-metadata

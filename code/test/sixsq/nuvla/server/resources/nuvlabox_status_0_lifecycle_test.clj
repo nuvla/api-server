@@ -66,7 +66,8 @@
                                           :product-id  "product-id"
                                           :description "description"}]}
 
-                  :wifi-password  "some-secure-password"})
+                  :wifi-password  "some-secure-password"
+                  :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
 
 
 (def resources-updated {:cpu   {:capacity   10
