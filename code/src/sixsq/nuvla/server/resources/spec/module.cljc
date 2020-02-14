@@ -118,6 +118,23 @@
              :json-schema/order 38)))
 
 
+(def ^:const infrastructure-service-id-regex
+  #"^infrastructure-service/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(defn infrastructure-service-id? [s] (re-matches infrastructure-service-id-regex s))
+
+(s/def ::infrastructure-service-id (s/and string? infrastructure-service-id?))
+
+(s/def ::private-registries
+  (-> (st/spec (s/coll-of ::infrastructure-service-id :min-count 1 :kind vector?))
+      (assoc :name "private-registries"
+             :json-schema/type "array"
+             :json-schema/indexed false
+
+             :json-schema/display-name "private registries"
+             :json-schema/description "list of used infrastructure service of subtype registry"
+             :json-schema/order 39)))
+
+
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
@@ -126,7 +143,8 @@
                                                       ::data-accept-content-types
                                                       ::data-access-protocols
                                                       ::versions
-                                                      ::content]}]))
+                                                      ::content
+                                                      ::private-registries]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))
