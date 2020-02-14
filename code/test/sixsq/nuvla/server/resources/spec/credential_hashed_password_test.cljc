@@ -11,7 +11,7 @@
    :view-acl ["user/jane"]})
 
 
-(deftest check-credential-service-docker
+(deftest check-credential-hashed-password
   (let [timestamp "1964-08-25T10:00:00.00Z"
         tpl       {:id            (str cred/resource-type "/uuid")
                    :resource-type cred/resource-type
@@ -19,8 +19,8 @@
                    :updated       timestamp
                    :acl           valid-acl
 
-                   :subtype       "swarm"
-                   :method        "swarm"
+                   :subtype       "hashed-password"
+                   :method        "generate-hashed-password"
 
                    :hash          "some-hash-of-a-password"}]
 
