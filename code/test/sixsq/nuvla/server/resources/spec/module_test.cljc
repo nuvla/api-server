@@ -28,9 +28,7 @@
                    :logo-url                  "https://example.org/logo"
 
                    :data-accept-content-types ["application/json" "application/x-something"]
-                   :data-access-protocols     ["http+s3" "posix+nfs"]
-                   :private-registries        ["infrastructure-service/uuid-1"
-                                               "infrastructure-service/uuid-2"]}]
+                   :data-access-protocols     ["http+s3" "posix+nfs"]}]
 
     (stu/is-valid ::module/schema root)
     (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
@@ -41,6 +39,5 @@
       (stu/is-invalid ::module/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols
-                :private-registries}]
+    (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols}]
       (stu/is-valid ::module/schema (dissoc root k)))))

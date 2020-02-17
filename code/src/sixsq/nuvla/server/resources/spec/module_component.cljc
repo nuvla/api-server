@@ -112,6 +112,7 @@
                                                                 ::container/restart-policy
                                                                 ::container/ports
                                                                 ::container/mounts
+                                                                ::container/private-registries
                                                                 ::urls
                                                                 ::container/environmental-variables
                                                                 ::output-parameters]}]))
