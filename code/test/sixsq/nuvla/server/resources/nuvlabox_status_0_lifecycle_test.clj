@@ -34,39 +34,39 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-state {:id             (str nb-status/resource-type "/uuid")
-                  :resource-type  nb-status/resource-type
-                  :created        timestamp
-                  :updated        timestamp
+(def valid-state {:id                    (str nb-status/resource-type "/uuid")
+                  :resource-type         nb-status/resource-type
+                  :created               timestamp
+                  :updated               timestamp
 
-                  :version        0
-                  :status         "OPERATIONAL"
-                  :comment        "some witty comment"
+                  :version               0
+                  :status                "OPERATIONAL"
+                  :comment               "some witty comment"
 
-                  :next-heartbeat timestamp
+                  :next-heartbeat        timestamp
 
-                  :resources      {:cpu   {:capacity 8
-                                           :load     4.5
-                                           :topic    "topic/name"}
-                                   :ram   {:capacity   4096
-                                           :used       1000
-                                           :raw-sample "{\"one\": 1}"}
-                                   :disks [{:device     "root"
-                                            :capacity   20000
-                                            :topic      "topic/name"
-                                            :raw-sample "{\"one\": 1}"
-                                            :used       10000}
-                                           {:device   "datastore"
-                                            :capacity 20000
-                                            :used     10000}]}
+                  :resources             {:cpu   {:capacity 8
+                                                  :load     4.5
+                                                  :topic    "topic/name"}
+                                          :ram   {:capacity   4096
+                                                  :used       1000
+                                                  :raw-sample "{\"one\": 1}"}
+                                          :disks [{:device     "root"
+                                                   :capacity   20000
+                                                   :topic      "topic/name"
+                                                   :raw-sample "{\"one\": 1}"
+                                                   :used       10000}
+                                                  {:device   "datastore"
+                                                   :capacity 20000
+                                                   :used     10000}]}
 
-                  :peripherals    {:usb [{:vendor-id   "vendor-id"
-                                          :device-id   "device-id"
-                                          :bus-id      "bus-id"
-                                          :product-id  "product-id"
-                                          :description "description"}]}
+                  :peripherals           {:usb [{:vendor-id   "vendor-id"
+                                                 :device-id   "device-id"
+                                                 :bus-id      "bus-id"
+                                                 :product-id  "product-id"
+                                                 :description "description"}]}
 
-                  :wifi-password  "some-secure-password"
+                  :wifi-password         "some-secure-password"
                   :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
 
 
