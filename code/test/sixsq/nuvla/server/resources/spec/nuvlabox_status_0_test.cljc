@@ -12,43 +12,44 @@
 (def timestamp "1964-08-25T10:00:00Z")
 
 
-(def state {:id             (str nbs/resource-type "/uuid")
-            :resource-type  nbs/resource-type
-            :created        timestamp
-            :updated        timestamp
+(def state {:id                    (str nbs/resource-type "/uuid")
+            :resource-type         nbs/resource-type
+            :created               timestamp
+            :updated               timestamp
 
-            :acl            valid-acl
+            :acl                   valid-acl
 
-            :version        0
-            :parent         "nuvlabox/uuid"
-            :status         "OPERATIONAL"
-            :comment        "some witty comment"
+            :version               0
+            :parent                "nuvlabox/uuid"
+            :status                "OPERATIONAL"
+            :comment               "some witty comment"
 
-            :next-heartbeat timestamp
-            :current-time   timestamp
+            :next-heartbeat        timestamp
+            :current-time          timestamp
 
-            :resources      {:cpu   {:capacity 8
-                                     :load     4.5
-                                     :topic    "topic/name"}
-                             :ram   {:capacity 4096
-                                     :used     1000
-                                     :raw-sample   "{\"one\": 1}"}
-                             :disks [{:device   "root"
-                                      :capacity 20000
-                                      :topic    "topic/name"
-                                      :raw-sample   "{\"one\": 1}"
-                                      :used     10000}
-                                     {:device   "datastore"
-                                      :capacity 20000
-                                      :used     10000}]}
+            :resources             {:cpu   {:capacity 8
+                                            :load     4.5
+                                            :topic    "topic/name"}
+                                    :ram   {:capacity   4096
+                                            :used       1000
+                                            :raw-sample "{\"one\": 1}"}
+                                    :disks [{:device     "root"
+                                             :capacity   20000
+                                             :topic      "topic/name"
+                                             :raw-sample "{\"one\": 1}"
+                                             :used       10000}
+                                            {:device   "datastore"
+                                             :capacity 20000
+                                             :used     10000}]}
 
-            :peripherals    {:usb [{:vendor-id   "vendor-id"
-                                    :device-id   "device-id"
-                                    :bus-id      "bus-id"
-                                    :product-id  "product-id"
-                                    :description "description"}]}
+            :peripherals           {:usb [{:vendor-id   "vendor-id"
+                                           :device-id   "device-id"
+                                           :bus-id      "bus-id"
+                                           :product-id  "product-id"
+                                           :description "description"}]}
 
-            :wifi-password  "some-secure-password"})
+            :wifi-password         "some-secure-password"
+            :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
 
 
 (deftest check-nuvlabox-status
@@ -62,5 +63,5 @@
     (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

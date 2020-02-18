@@ -34,29 +34,30 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-state {:id             (str nb-status/resource-type "/uuid")
-                  :resource-type  nb-status/resource-type
-                  :created        timestamp
-                  :updated        timestamp
+(def valid-state {:id                    (str nb-status/resource-type "/uuid")
+                  :resource-type         nb-status/resource-type
+                  :created               timestamp
+                  :updated               timestamp
 
-                  :version        1
-                  :status         "OPERATIONAL"
-                  :comment        "some witty comment"
+                  :version               1
+                  :status                "OPERATIONAL"
+                  :comment               "some witty comment"
 
-                  :next-heartbeat timestamp
+                  :next-heartbeat        timestamp
 
-                  :resources      {:cpu   {:capacity 8
-                                           :load     4.5}
-                                   :ram   {:capacity 4096
-                                           :used     1000}
-                                   :disks [{:device   "root"
-                                            :capacity 20000
-                                            :used     10000}
-                                           {:device   "datastore"
-                                            :capacity 20000
-                                            :used     10000}]}
+                  :resources             {:cpu   {:capacity 8
+                                                  :load     4.5}
+                                          :ram   {:capacity 4096
+                                                  :used     1000}
+                                          :disks [{:device   "root"
+                                                   :capacity 20000
+                                                   :used     10000}
+                                                  {:device   "datastore"
+                                                   :capacity 20000
+                                                   :used     10000}]}
 
-                  :wifi-password  "some-secure-password"})
+                  :wifi-password         "some-secure-password"
+                  :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
 
 
 (def resources-updated {:cpu   {:capacity 10
