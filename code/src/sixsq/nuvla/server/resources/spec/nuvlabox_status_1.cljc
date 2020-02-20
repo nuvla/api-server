@@ -20,4 +20,5 @@
                                ::nb-status-0/current-time
                                ::nb-status-0/comment
                                ::nb-status-0/resources
-                               ::nb-status-0/wifi-password]}))
+                               ::nb-status-0/wifi-password
+                               ::nb-status-0/nuvlabox-api-endpoint]}))
