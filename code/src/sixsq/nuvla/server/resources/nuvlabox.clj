@@ -394,8 +394,8 @@ particular NuvlaBox release.
           (event-utils/create-event id job-msg acl)
           (r/map-response job-msg 202 id job-id))
         (catch Exception e
-          (or (ex-data e) (throw e))))
-      (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state)))))
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
 
 
 (defmethod crud/do-action [resource-type "check-api"]
