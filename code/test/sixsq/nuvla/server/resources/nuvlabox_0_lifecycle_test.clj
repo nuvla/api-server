@@ -396,6 +396,7 @@
             (ltu/is-operation-present :commission)
             (ltu/is-operation-present :decommission)
             (ltu/is-operation-present :check-api)
+            (ltu/is-operation-present :reboot)
             (ltu/is-key-value :state "COMMISSIONED"))
 
           ;; check that services exist
@@ -433,6 +434,7 @@
                 )))
 
           ;; check custom operations
+          ;;
           (let [check-api (-> session
                             (request nuvlabox-url)
                             (ltu/body->edn)
@@ -443,12 +445,33 @@
                             (ltu/is-operation-present :commission)
                             (ltu/is-operation-present :decommission)
                             (ltu/is-operation-present :check-api)
+                            (ltu/is-operation-present :reboot)
                             (ltu/is-key-value :state "COMMISSIONED")
-                            (ltu/get-op-url :check-api))]
+                            (ltu/get-op-url :check-api))
+
+                reboot  (-> session
+                          (request nuvlabox-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-operation-present :edit)
+                          (ltu/is-operation-absent :delete)
+                          (ltu/is-operation-absent :activate)
+                          (ltu/is-operation-present :commission)
+                          (ltu/is-operation-present :decommission)
+                          (ltu/is-operation-present :check-api)
+                          (ltu/is-operation-present :reboot)
+                          (ltu/is-key-value :state "COMMISSIONED")
+                          (ltu/get-op-url :reboot))]
 
             ;; check-api action
             (-> session
               (request check-api)
+              (ltu/body->edn)
+              (ltu/is-status 202))
+
+            ;; reboot action
+            (-> session
+              (request reboot)
               (ltu/body->edn)
               (ltu/is-status 202)))
 

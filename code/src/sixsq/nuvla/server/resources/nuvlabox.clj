@@ -402,13 +402,47 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (try
-        (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (check-api))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (check-api)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
+
+;;
+;; Reboot action
+;;
+
+(defn reboot
+  [{:keys [id state acl] :as nuvlabox}]
+  (if (= state state-commissioned)
+    (do
+      (log/warn "Rebooting NuvlaBox:" id)
+      (try
+        (let [{{job-id     :resource-id
+                job-status :status} :body} (job/create-job id "reboot_nuvlabox"
+                                             acl
+                                             :priority 50)
+              job-msg (str "sending reboot request to NuvlaBox " id " with async " job-id)]
+          (when (not= job-status 201)
+            (throw (r/ex-response
+                     "unable to create async job to reboot nuvlabox" 500 id)))
+          (event-utils/create-event id job-msg acl)
+          (r/map-response job-msg 202 id job-id))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
+
+
+(defmethod crud/do-action [resource-type "reboot"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (reboot)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 ;;
 ;; Set operation
@@ -433,6 +467,7 @@ particular NuvlaBox release.
         commission-op   (u/action-map id :commission)
         decommission-op (u/action-map id :decommission)
         check-api-op    (u/action-map id :check-api)
+        reboot-op       (u/action-map id :reboot)
         ops             (cond-> []
                                 (a/can-edit? resource request) (conj edit-op)
                                 (and (a/can-delete? resource request)
@@ -448,7 +483,9 @@ particular NuvlaBox release.
                                      (not= state state-new)
                                      (not= state state-decommissioned)) (conj decommission-op)
                                 (and (a/can-manage? resource request)
-                                     (#{state-commissioned} state)) (conj check-api-op))]
+                                     (#{state-commissioned} state)) (conj check-api-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-commissioned} state)) (conj reboot-op))]
     (assoc resource :operations ops)))
 
 ;;
