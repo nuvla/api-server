@@ -56,7 +56,7 @@
                                     :json-schema/description "name of the compose file"
                                     :json-schema/order 24)))
 
-(s/def ::scope (-> (st/spec ::core/nonblank-string)
+(s/def ::scope (-> (st/spec string?)
                               (assoc :name "compose file scope"
                                      :json-schema/type "string"
                                      :json-schema/description "type of compose file (core, usb, modbus, etc.)"
