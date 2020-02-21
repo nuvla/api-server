@@ -36,10 +36,10 @@
 
 
 (deftest check-tags
-  (doseq [v #{["ok"], ["a", "b"], ["ok", "also-ok"]}]
+  (doseq [v #{[], ["ok"], ["a", "b"], ["ok", "also-ok"]}]
     (stu/is-valid ::common/tags v))
 
-  (doseq [v #{{}, {1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}, ["bad" "bad"]}]
+  (doseq [v #{{1 "bad"}, {"bad" 1}, [:bad "bad"], {"a" "ok"}, {"a" "ok" "b" "ok"}, ["bad" "bad"]}]
     (stu/is-invalid ::common/tags v)))
 
 

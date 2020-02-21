@@ -4,6 +4,7 @@
 
 ### changed
 
+  - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
 
 ## [4.2.11] - 2020-02-07
