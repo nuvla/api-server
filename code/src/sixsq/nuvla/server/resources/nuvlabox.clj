@@ -385,8 +385,8 @@ particular NuvlaBox release.
       (try
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "check_nuvlabox_api"
-                                             acl
-                                             :priority 50)
+                                                           acl
+                                                           :priority 50)
               job-msg (str "checking the API for NuvlaBox " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
@@ -403,8 +403,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (check-api)))
+          (a/throw-cannot-manage request)
+          (check-api)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -421,8 +421,8 @@ particular NuvlaBox release.
       (try
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "reboot_nuvlabox"
-                                             acl
-                                             :priority 50)
+                                                           acl
+                                                           :priority 50)
               job-msg (str "sending reboot request to NuvlaBox " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
@@ -439,8 +439,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (reboot)))
+          (a/throw-cannot-manage request)
+          (reboot)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
