@@ -61,6 +61,9 @@
                                               :description "beta-env variable"
                                               :required    true}]
 
+                   :private-registries      ["infrastructure-service/uuid-1"
+                                             "infrastructure-service/uuid-2"]
+
                    :output-parameters       [{:name        "alpha"
                                               :description "my-alpha"}
                                              {:name        "beta"
@@ -84,5 +87,6 @@
       (stu/is-invalid ::module-component/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :ports :urls :environmental-variables :output-parameters}]
+    (doseq [k #{:commit :ports :urls :environmental-variables :output-parameters
+                :private-registries}]
       (stu/is-valid ::module-component/schema (dissoc root k)))))

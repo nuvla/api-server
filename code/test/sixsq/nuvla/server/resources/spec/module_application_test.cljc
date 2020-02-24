@@ -37,6 +37,9 @@
                                               :description "beta-env variable"
                                               :required    true}]
 
+                   :private-registries      ["infrastructure-service/uuid-1"
+                                             "infrastructure-service/uuid-2"]
+
                    :files                   [{:file-name    "my-config.conf"
                                               :file-content "file content example"}
                                              {:file-name    "file_1"
@@ -52,7 +55,8 @@
       (stu/is-invalid ::module-application/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:commit :urls :output-parameters :environmental-variables :files}]
+    (doseq [k #{:commit :urls :output-parameters :environmental-variables :files
+                :private-registries}]
       (stu/is-valid ::module-application/schema (dissoc root k)))))
 
 

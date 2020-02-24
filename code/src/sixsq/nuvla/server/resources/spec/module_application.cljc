@@ -53,6 +53,7 @@
                                                ::module-component/urls
                                                ::module-component/output-parameters
                                                ::container/environmental-variables
+                                               ::container/private-registries
                                                ::files]}]))
 
 

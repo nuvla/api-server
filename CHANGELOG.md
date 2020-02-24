@@ -4,6 +4,8 @@
 
 ### changed
 
+
+  - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
 
