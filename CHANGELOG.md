@@ -2,8 +2,11 @@
 
 ## Unreleased
 
-### changed
+### Added
 
+  - NuvlaBox release - new resource
+
+### changed
 
   - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
