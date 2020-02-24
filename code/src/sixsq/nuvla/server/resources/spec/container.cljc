@@ -46,6 +46,23 @@
              :json-schema/description "image")))
 
 
+(def ^:const infrastructure-service-id-regex
+  #"^infrastructure-service/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
+(defn infrastructure-service-id? [s] (re-matches infrastructure-service-id-regex s))
+
+(s/def ::infrastructure-service-id (s/and string? infrastructure-service-id?))
+
+(s/def ::private-registries
+  (-> (st/spec (s/coll-of ::infrastructure-service-id :min-count 1 :kind vector?))
+      (assoc :name "private-registries"
+             :json-schema/type "array"
+             :json-schema/indexed false
+
+             :json-schema/display-name "private registries"
+             :json-schema/description "list of used infrastructure service of subtype registry"
+             :json-schema/order 39)))
+
+
 ;; ports spec
 
 (s/def ::protocol
