@@ -129,7 +129,7 @@
 
 
 (s/def ::tags
-  (-> (st/spec (s/coll-of string? :min-count 1 :type vector? :distinct true))
+  (-> (st/spec (s/coll-of string? :type vector? :distinct true))
       (assoc :name "tags"
              :json-schema/type "array"
              :json-schema/description "client defined tags of the resource"
