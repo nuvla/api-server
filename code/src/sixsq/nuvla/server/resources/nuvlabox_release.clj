@@ -19,7 +19,7 @@ and their respective artifacts
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]})
 
 
 ;;

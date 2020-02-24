@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.spec.nuvlabox-release-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
+    [sixsq.nuvla.server.resources.nuvlabox-release :as t]
     [sixsq.nuvla.server.resources.spec.nuvlabox-release :as nuvlabox-release]
-    [sixsq.nuvla.server.resources.nuvlabox-release :as t]))
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def valid-acl {:owners   ["group/nuvla-admin"]})
+(def valid-acl {:owners ["group/nuvla-admin"]})
 
 
 (deftest check-nuvlabox-release-schema
-  (let [timestamp          "1964-08-25T10:00:00.00Z"
+  (let [timestamp        "1964-08-25T10:00:00.00Z"
         nuvlabox-release {:id            (str t/resource-type "/abcdef")
                           :name          "my nuvlabox-release"
                           :description   "description of my nuvlabox-release"
@@ -23,8 +23,8 @@
                           :release-notes "added this \n changed that \r\n"
                           :url           "https://github.com/nuvlabox/deployment/releases/tag/1.0.0"
                           :pre-release   false
-                          :compose-files [{:file "version: '3.7'\n\nservices:"
-                                           :name "docker-compose.yml"
+                          :compose-files [{:file  "version: '3.7'\n\nservices:"
+                                           :name  "docker-compose.yml"
                                            :scope "core"}]
                           }]
 
