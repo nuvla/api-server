@@ -5,6 +5,7 @@
 ### Added
 
   - NuvlaBox release - new resource
+  - NuvlaBox periphal - two new optional attributes for the data gateway
 
 ### changed
 
