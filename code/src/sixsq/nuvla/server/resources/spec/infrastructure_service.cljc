@@ -90,6 +90,16 @@
              :json-schema/order 24
              :json-schema/hidden true)))
 
+
+(s/def ::swarm-enabled
+  (-> (st/spec boolean?)
+    (assoc :name "swarm-enabled"
+           :json-schema/display-name "swarm enabled"
+           :json-schema/description "flags if swarm mode is enabled or not"
+
+           :json-schema/order 25
+           :json-schema/hidden true)))
+
 ;;
 ;; -------
 ;;
@@ -102,4 +112,5 @@
                                ::state]
                       :opt-un [::endpoint
                                ::management-credential-id
-                               ::nodes]}))
+                               ::nodes
+                               ::swarm-enabled]}))

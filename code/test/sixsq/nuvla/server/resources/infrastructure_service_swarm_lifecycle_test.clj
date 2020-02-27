@@ -85,8 +85,7 @@
                              :template    {:href               (str infra-service-tpl/resource-type "/"
                                                                     infra-service-tpl-swarm/method)
                                            :parent             service-group-id
-                                           :service-credential {:href credential-id}
-                                           :swarm-enabled      true}}]
+                                           :service-credential {:href credential-id}}}]
 
     ;; anon create must fail
     (-> session-anon
@@ -121,6 +120,7 @@
           (is (= service-tags (:tags service)))
           (is (:subtype service))
           (is (nil? (:endpoint service)))
+          (is (nil? (:swarm-enabled service)))
           (is (= "STARTING" (:state service)))
           (is (= credential-id (:management-credential-id service))))
 

@@ -22,8 +22,7 @@
                    :method             tpl-swarm/method
                    :subtype            tpl-swarm/method
 
-                   :service-credential {:href "credential/my-cloud-credential"}
-                   :swarm-enabled      true}]
+                   :service-credential {:href "credential/my-cloud-credential"}}]
 
     (stu/is-valid ::spec-swarm/schema cfg)
 

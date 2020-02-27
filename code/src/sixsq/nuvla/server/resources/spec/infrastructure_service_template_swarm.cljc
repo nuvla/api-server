@@ -22,18 +22,8 @@ on a cloud infrastructure.
              :json-schema/hidden true)))
 
 
-(s/def ::swarm-enabled
-  (-> (st/spec boolean?)
-    (assoc :name "swarm-enabled"
-           :json-schema/display-name "swarm enabled"
-           :json-schema/description "flags if swarm mode is enabled or not"
-
-           :json-schema/order 23
-           :json-schema/hidden true)))
-
-
 (def service-template-keys-spec
-  {:req-un [::service-credential] :opt-un [::swarm-enabled]})
+  {:req-un [::service-credential]})
 
 
 ;; Defines the contents of the this service-template resource.

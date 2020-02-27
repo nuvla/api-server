@@ -24,7 +24,8 @@
                    :subtype       "docker"
                    :endpoint      "https://docker.example.org/api"
                    :nodes         [{:machine-name "testmachine" :machine-config-base64 "base64=="}]
-                   :state         "STARTED"}]
+                   :state         "STARTED"
+                   :swarm-enabled true}]
 
     (stu/is-valid ::infrastructure-service/schema service)
 
@@ -33,5 +34,5 @@
       (stu/is-invalid ::infrastructure-service/schema (dissoc service k)))
 
     ;;optional keywords
-    (doseq [k #{:endpoint}]
+    (doseq [k #{:endpoint :swarm-enabled}]
       (stu/is-valid ::infrastructure-service/schema (dissoc service k)))))
