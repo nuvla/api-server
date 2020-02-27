@@ -17,7 +17,10 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -160,6 +163,20 @@ existing `infrastructure-service-template` resource.
         id                 (-> response :body :resource-id)
         service            (assoc service :id id)]
 
+    (when (= (:subtype service) "swarm")
+      (try
+        (let [acl (:acl service)
+              {{job-id     :resource-id
+                job-status :status} :body} (job/create-job id "swarm_check"
+                                                           acl
+                                                           :priority 50)
+              job-msg (str "starting " id " with async " job-id)]
+          (when (not= job-status 201)
+            (throw (r/ex-response "unable to create async job to check if swarm mode is enabled" 500 id)))
+          (event-utils/create-event id job-msg acl)
+          (r/map-response job-msg 202 id job-id))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
     (post-add-hook service request)
     response))
 
