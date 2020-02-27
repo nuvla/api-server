@@ -58,7 +58,8 @@
                              :subtype  "docker"
                              :endpoint "https://docker.example.org/api"
                              :state    "STARTED"
-                             :swarm-enabled true}
+                             :swarm-enabled true
+                             :online   true}
 
         valid-create        {:name        service-name
                              :description service-desc
@@ -128,6 +129,7 @@
           (is (= service-tags (:tags service)))
           (is (:subtype service))
           (is (:swarm-enabled service))
+          (is (:online service))
           (is (:endpoint service))
           (is (= "STARTED" (:state service))))
 

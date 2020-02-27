@@ -100,6 +100,16 @@
            :json-schema/order 25
            :json-schema/hidden true)))
 
+
+(s/def ::online
+  (-> (st/spec boolean?)
+    (assoc :name "online"
+           :json-schema/display-name "online"
+           :json-schema/description "flags if the infrastructure in online or not"
+
+           :json-schema/order 26
+           :json-schema/hidden true)))
+
 ;;
 ;; -------
 ;;
@@ -113,4 +123,5 @@
                       :opt-un [::endpoint
                                ::management-credential-id
                                ::nodes
-                               ::swarm-enabled]}))
+                               ::swarm-enabled
+                               ::online]}))
