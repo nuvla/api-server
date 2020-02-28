@@ -3,6 +3,8 @@
 Provides the credentials necessary to access a Docker Registry service.
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
@@ -49,6 +51,30 @@ Provides the credentials necessary to access a Docker Registry service.
 (defmethod p/create-validate-subtype cred-tpl-registry/credential-subtype
   [resource]
   (create-validate-fn resource))
+
+
+;;
+;; operations
+;;
+
+
+(defn set-resource-ops
+  [{:keys [id] :as resource} request]
+  (let [can-manage? (a/can-manage? resource request)
+        ops         (cond-> []
+                            (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                            (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                            can-manage? (conj (u/action-map id :check)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
+      (dissoc resource :operations))))
+
+
+(defmethod p/set-credential-operations cred-tpl-registry/credential-subtype
+  [{:keys [resource-type] :as resource} request]
+  (if (u/is-collection? resource-type)
+    (crud/set-standard-collection-operations resource request)
+    (set-resource-ops resource request)))
 
 
 ;;

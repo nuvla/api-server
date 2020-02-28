@@ -119,25 +119,24 @@
             (ltu/is-operation-present :edit)
             (ltu/is-operation-present :check)))
 
+      ;; ensure credential contains correct information
       (let [credential (-> session-user
                            (request abs-uri)
                            (ltu/body->edn)
-                           (ltu/is-status 200))]
-
-        ;; ensure credential contains correct information
-        (let [{:keys [name description tags
-                      ca cert key
-                      parent]} (ltu/body credential)]
-          (is (= name name-attr))
-          (is (= description description-attr))
-          (is (= tags tags-attr))
-          (is (= ca ca-value))
-          (is (= cert cert-value))
-          (is (= key key-value))
-          (is (= parent parent-value)))
+                           (ltu/is-status 200))
+            {:keys [name description tags
+                    ca cert key
+                    parent]} (ltu/body credential)]
+        (is (= name name-attr))
+        (is (= description description-attr))
+        (is (= tags tags-attr))
+        (is (= ca ca-value))
+        (is (= cert cert-value))
+        (is (= key key-value))
+        (is (= parent parent-value))
 
         ;; ensure that the check action works
-        (let [op-url        (ltu/get-op credential "check")
+        (let [op-url    (ltu/get-op credential "check")
               check-url (str p/service-context op-url)]
 
           (-> session-user
@@ -151,5 +150,4 @@
           (request abs-uri
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200))
-      )))
+          (ltu/is-status 200)))))
