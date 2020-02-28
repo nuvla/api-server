@@ -200,7 +200,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
         acl {:owners   ["group/nuvla-admin"]
              :view-acl [user-id]}]
 
-    (when (= (:method body) :swarm-tpl/method)
+    (when (= (:method body) swarm-tpl/method)
       (try
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "credential_check"
