@@ -8,10 +8,15 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as swarm-tpl]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.time :as time]))
 
 
@@ -173,20 +178,43 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [authn-info (auth/current-authentication request)
+        user-id (auth/current-user-id request)
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
-            (assoc :resource-type create-type)
-            (update-in [:template] dissoc :subtype)         ;; forces use of template reference
-            (resolve-hrefs authn-info)
-            (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
-            crud/validate
-            :template
-            (tpl->credential request))]
-    (-> request
-        (assoc :id id :body (merge body desc-attrs))
-        add-impl
-        (update-in [:body] merge create-resp))))
+          (assoc :resource-type create-type)
+          (update-in [:template] dissoc :subtype)         ;; forces use of template reference
+          (resolve-hrefs authn-info)
+          (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
+          crud/validate
+          :template
+          (tpl->credential request))
+
+        response (-> request
+                   (assoc :id id :body (merge body desc-attrs))
+                   add-impl
+                   (update-in [:body] merge create-resp))
+
+        id    (:resource-id (:body response))
+
+        acl {:owners   ["group/nuvla-admin"]
+             :view-acl [user-id]}]
+
+    (when (= (:method body) :swarm-tpl/method)
+      (try
+        (let [{{job-id     :resource-id
+                job-status :status} :body} (job/create-job id "credential_check"
+                                             acl
+                                             :priority 50)
+              job-msg (str "checking credential " id " with async " job-id)]
+          (when (not= job-status 201)
+            (throw (r/ex-response
+                     "unable to create async job to check credential" 500 id)))
+          (event-utils/create-event id job-msg acl)
+          (r/map-response job-msg 202 id job-id))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    response))
 
 
 (defn create-credential
