@@ -8,13 +8,10 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.time :as time]))
 
 
@@ -189,20 +186,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     (-> request
         (assoc :id id :body (merge body desc-attrs))
         add-impl
-        (update-in [:body] merge create-resp))
-    (when (= (:subtype body) "swarm")
-      (try
-        (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job id "credential_check"
-                                             authn-info
-                                             :priority 50)
-              job-msg (str "starting " id " with async " job-id)]
-          (when (not= job-status 201)
-            (throw (r/ex-response "unable to create async job to check credential" 500 id)))
-          (event-utils/create-event id job-msg authn-info)
-          (r/map-response job-msg 202 id job-id))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
+        (update-in [:body] merge create-resp))))
 
 
 (defn create-credential

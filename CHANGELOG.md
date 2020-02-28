@@ -5,7 +5,8 @@
 ### Added
 
   - NuvlaBox release - new resource
-
+  - Infrastructure resource - added boolean attr for swarm-enabled and online
+   
 ### changed
 
   - Module component and application support private registries
