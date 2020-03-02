@@ -5,9 +5,11 @@
 ### Added
 
   - NuvlaBox release - new resource
+  - NuvlaBox periphal - two new optional attributes for the data gateway
 
 ### changed
 
+  - Credential - check registry credential
   - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint

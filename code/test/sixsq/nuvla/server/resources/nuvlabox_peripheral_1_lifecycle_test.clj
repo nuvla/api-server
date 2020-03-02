@@ -51,7 +51,9 @@
                        :port          1
                        :vendor        "SixSq"
                        :product       "HD Pro Webcam C920"
-                       :classes       ["AUDIO" "VIDEO"]})
+                       :classes       ["AUDIO" "VIDEO"]
+                       :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
+                       :local-data-gateway-endpoint "data-gateway/video/1"})
 
 
 (deftest check-metadata
