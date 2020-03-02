@@ -122,6 +122,37 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     (str "cannot transform credential-template document to template for subtype: '"
          (:subtype resource) "'")))
 
+;;
+;; actions
+;;
+
+(defn create-job
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (if-let [user-id (auth/current-user-id request)]
+        (let [job-type "credential_check"
+              {{job-id     :resource-id
+                job-status :status} :body} (job/create-job id job-type
+                                                           {:owners   ["group/nuvla-admin"]
+                                                            :view-acl [user-id]}
+                                                           :priority 50)
+              job-msg  (str "starting " id " with async " job-id)]
+          (when (not= job-status 201)
+            (throw (r/ex-response (format "unable to create async job to % log" job-type) 500 id)))
+          (r/map-response job-msg 202 id job-id))
+        (throw (r/ex-response "current authentication has no session identifier" 500 id))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "check"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id       (str resource-type "/" uuid)
+        resource (crud/retrieve-by-id-as-admin id)]
+    (a/throw-cannot-manage resource request)
+    (create-job request)))
+
 
 ;;
 ;; CRUD operations
@@ -178,42 +209,32 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [authn-info (auth/current-authentication request)
-        user-id (auth/current-user-id request)
+        user-id    (auth/current-user-id request)
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
-          (assoc :resource-type create-type)
-          (update-in [:template] dissoc :subtype)         ;; forces use of template reference
-          (resolve-hrefs authn-info)
-          (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
-          crud/validate
-          :template
-          (tpl->credential request))
+            (assoc :resource-type create-type)
+            (update-in [:template] dissoc :subtype)         ;; forces use of template reference
+            (resolve-hrefs authn-info)
+            (update-in [:template] merge desc-attrs)        ;; ensure desc attrs are validated
+            crud/validate
+            :template
+            (tpl->credential request))
 
-        response (-> request
-                   (assoc :id id :body (merge body desc-attrs))
-                   add-impl
-                   (update-in [:body] merge create-resp))
+        response   (-> request
+                       (assoc :id id :body (merge body desc-attrs))
+                       add-impl
+                       (update-in [:body] merge create-resp))
 
-        id    (:resource-id (:body response))
+        id         (:resource-id (:body response))
 
-        acl {:owners   ["group/nuvla-admin"]
-             :view-acl [user-id]}]
+        acl        {:owners   ["group/nuvla-admin"]
+                    :view-acl [user-id]}]
 
     (when (= (:method body) swarm-tpl/method)
-      (try
-        (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job id "credential_check"
-                                             acl
-                                             :priority 50)
-              job-msg (str "checking credential " id " with async " job-id)]
-          (when (not= job-status 201)
-            (throw (r/ex-response
-                     "unable to create async job to check credential" 500 id)))
-          (event-utils/create-event id job-msg acl)
-          (r/map-response job-msg 202 id job-id))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))
+      (create-job {:params      {:uuid          (u/id->uuid id)
+                                 :resource-name resource-type}
+                   :nuvla/authn auth/internal-identity}))
     response))
 
 
