@@ -97,12 +97,10 @@ component, or application.
 
 
 (defn create-compatibility-job
-  [id subtype user-id]
+  [id subtype acl]
   (when (= subtype "application")
     (try
-      (let [acl       {:owners   ["group/nuvla-admin"]
-                       :view-acl [user-id]}
-            {{job-id     :resource-id
+      (let [{{job-id     :resource-id
               job-status :status} :body} (job/create-job id "application_compatibility_check"
                                            acl
                                            :priority 50)
@@ -159,6 +157,8 @@ component, or application.
                                                                     commit (assoc :commit commit))]))
 
             user-id         (auth/current-user-id request)
+            job-acl             {:owners   ["group/nuvla-admin"]
+                                 :view-acl [user-id]}
 
             module          (db/add
                               resource-type
@@ -171,7 +171,7 @@ component, or application.
                                 crud/validate)
                               {})]
 
-        (create-compatibility-job (:resource-id (:body module)) subtype user-id)
+        (create-compatibility-job (:resource-id (:body module)) subtype job-acl)
         module))))
 
 
