@@ -21,6 +21,7 @@ component, or application.
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -97,8 +98,8 @@ component, or application.
 
 
 (defn create-compatibility-job
-  [id subtype acl]
-  (when (= subtype "application")
+  [id subtype acl content]
+  (when (and (= subtype "application") content)
     (try
       (let [{{job-id     :resource-id
               job-status :status} :body} (job/create-job id "application_compatibility_check"
@@ -169,9 +170,11 @@ component, or application.
                                 u/update-timestamps
                                 (crud/add-acl request)
                                 crud/validate)
-                              {})]
+                              {})
 
-        (create-compatibility-job (:resource-id (:body module)) subtype job-acl)
+            content-compose (:docker-compose (:content body))]
+
+        (create-compatibility-job (:resource-id (:body module)) subtype job-acl content-compose)
         module))))
 
 
@@ -256,9 +259,13 @@ component, or application.
                                 (assoc module-meta :versions versions
                                                    :subtype subtype))
 
-              module          (edit-impl (assoc request :body module-meta))]
+              module          (edit-impl (assoc request :body module-meta))
 
-          (create-compatibility-job (:id (:body module)) subtype (:acl (:body module)))
+              content-compose (:docker-compose (:content body))
+              id              (:id (:body module))]
+
+          (when id
+            (create-compatibility-job (:id (:body module)) subtype (:acl (:body module)) content-compose))
           module
           )))
     (catch Exception e
