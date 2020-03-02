@@ -257,7 +257,7 @@ component, or application.
 
               module          (edit-impl (assoc request :body module-meta))]
 
-          (create-compatibility-job (:resource-id (:body module)) subtype (:acl (:body module)))
+          (create-compatibility-job (:id (:body module)) subtype (:acl (:body module)))
           module
           )))
     (catch Exception e
