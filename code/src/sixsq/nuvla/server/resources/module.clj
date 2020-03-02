@@ -18,7 +18,7 @@ component, or application.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [clojure.pprint :refer [pprint]]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -114,7 +114,8 @@ component, or application.
         (r/map-response job-msg 202 id job-id))
       (catch Exception e
         ; do nothing. If the job is not created it is not reason to panic
-        {}))))
+        (log/error (str "cannot check module compatibility: '" id e "'"))
+        ))))
 
 
 (defmethod crud/add resource-type
