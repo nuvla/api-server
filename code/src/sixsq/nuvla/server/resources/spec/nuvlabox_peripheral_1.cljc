@@ -82,6 +82,22 @@
            :json-schema/order 39)))
 
 
+(s/def ::local-data-gateway-endpoint
+  (-> (st/spec ::core/url)
+    (assoc :name "local-data-gateway-endpoint"
+           :json-schema/description "nuvlabox internal data gateway endpoint to access this peripheral data"
+
+           :json-schema/order 40)))
+
+
+(s/def ::raw-data-sample
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "raw-data-sample"
+           :json-schema/description "raw random data sample collected from the peripheral"
+
+           :json-schema/order 41)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -92,4 +108,6 @@
                                ::port
                                ::interface
                                ::vendor
-                               ::product]}))
+                               ::product
+                               ::local-data-gateway-endpoint
+                               ::raw-data-sample]}))

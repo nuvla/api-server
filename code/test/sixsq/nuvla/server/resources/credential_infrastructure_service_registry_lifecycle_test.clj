@@ -54,8 +54,8 @@
         create-import-href    {:name        name-attr
                                :description description-attr
                                :tags        tags-attr
-                               :template    {:href       href
-                                             :parent     parent-value
+                               :template    {:href     href
+                                             :parent   parent-value
                                              :username username-value
                                              :password password-value}}]
 
@@ -115,23 +115,34 @@
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-operation-present :delete)
-            (ltu/is-operation-present :edit)))
+            (ltu/is-operation-present :edit)
+            (ltu/is-operation-present :check)))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags
+      (let [credential (-> session-user
+                           (request abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200))
+            {:keys [name description tags
                     username password
-                    parent]} (-> session-user
-                                 (request abs-uri)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/body))]
+                    parent]} (ltu/body credential)]
 
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
         (is (= username username-value))
         (is (= password password-value))
-        (is (= parent parent-value)))
+        (is (= parent parent-value))
+
+        ;; ensure that the check action works
+        (let [op-url    (ltu/get-op credential "check")
+              check-url (str p/service-context op-url)]
+
+          (-> session-user
+              (request check-url
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 202))))
 
       ;; delete the credential
       (-> session-user

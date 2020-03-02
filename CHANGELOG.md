@@ -5,10 +5,12 @@
 ### Added
 
   - NuvlaBox release - new resource
-  - Infrastructure resource - added boolean attr for swarm-enabled and online
-   
+
 ### changed
 
+  - Infrastructure resource - added boolean attr for swarm-enabled and online
+  - NuvlaBox periphal - two new optional attributes for the data gateway
+  - Credential - check registry credential
   - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
