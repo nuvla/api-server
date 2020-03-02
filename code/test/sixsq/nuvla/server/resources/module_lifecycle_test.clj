@@ -33,6 +33,8 @@
    :data-accept-content-types ["application/json" "application/x-something"]
    :data-access-protocols     ["http+s3" "posix+nfs"]
 
+   :compatibility             "swarm"
+
    :content                   content})
 
 
@@ -57,6 +59,8 @@
 
                        :data-accept-content-types ["application/json" "application/x-something"]
                        :data-access-protocols     ["http+s3" "posix+nfs"]
+
+                       :compatibility             "swarm"
 
                        :content                   valid-content}]
 

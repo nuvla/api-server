@@ -118,6 +118,20 @@
              :json-schema/order 38)))
 
 
+;;
+;; compute attributes: only valid for Docker modules atm
+;;
+
+(s/def ::compatibility
+  (-> (st/spec #{"swarm" "docker-compose"})
+    (assoc :name "compatibility"
+           :json-schema/type "string"
+           :json-schema/description "module compatibility"
+
+           :json-schema/fulltext true
+           :json-schema/order 35)))
+
+
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
@@ -126,7 +140,8 @@
                                                       ::data-accept-content-types
                                                       ::data-access-protocols
                                                       ::versions
-                                                      ::content]}]))
+                                                      ::content
+                                                      ::compatibility]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))
