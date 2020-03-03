@@ -5,6 +5,7 @@
 ### Added
 
   - NuvlaBox release - new resource
+  - Module - new attributes for app compatibility and supported options
 
 ### changed
 
