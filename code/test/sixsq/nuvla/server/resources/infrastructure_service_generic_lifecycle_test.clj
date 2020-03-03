@@ -57,7 +57,9 @@
         valid-service       {:parent   service-group-id
                              :subtype  "docker"
                              :endpoint "https://docker.example.org/api"
-                             :state    "STARTED"}
+                             :state    "STARTED"
+                             :swarm-enabled true
+                             :online   true}
 
         valid-create        {:name        service-name
                              :description service-desc
@@ -126,6 +128,8 @@
           (is (= service-desc (:description service)))
           (is (= service-tags (:tags service)))
           (is (:subtype service))
+          (is (:swarm-enabled service))
+          (is (:online service))
           (is (:endpoint service))
           (is (= "STARTED" (:state service))))
 

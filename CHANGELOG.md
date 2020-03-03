@@ -8,9 +8,13 @@
 
 ### changed
 
+  - Infrastructure resource - added boolean attr for swarm-enabled and online
+  - NuvlaBox periphal - two new optional attributes for the data gateway
+  - Credential - check registry credential
   - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
+  - Credential - for swarm, create credential check job on add
 
 ## [4.2.11] - 2020-02-07
 

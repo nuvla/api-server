@@ -15,7 +15,9 @@ services that are managed separately.
 
 (def service-template-keys-spec
   {:req-un [::infrastructure-service/endpoint]
-   :opt-un [::infrastructure-service/state]})
+   :opt-un [::infrastructure-service/state
+            ::infrastructure-service/swarm-enabled
+            ::infrastructure-service/online]})
 
 
 ;; Defines the contents of the this service-template resource.

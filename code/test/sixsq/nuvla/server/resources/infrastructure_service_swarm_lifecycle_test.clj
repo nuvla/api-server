@@ -120,6 +120,8 @@
           (is (= service-tags (:tags service)))
           (is (:subtype service))
           (is (nil? (:endpoint service)))
+          (is (nil? (:swarm-enabled service)))
+          (is (nil? (:online service)))
           (is (= "STARTING" (:state service)))
           (is (= credential-id (:management-credential-id service))))
 
