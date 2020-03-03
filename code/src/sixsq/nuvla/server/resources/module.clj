@@ -98,8 +98,8 @@ component, or application.
 
 
 (defn create-compatibility-job
-  [id subtype acl content]
-  (when (and (= subtype "application") content)
+  [id subtype acl]
+  (when (= subtype "application")
     (try
       (let [{{job-id     :resource-id
               job-status :status} :body} (job/create-job id "application_compatibility_check"
@@ -170,11 +170,9 @@ component, or application.
                                 u/update-timestamps
                                 (crud/add-acl request)
                                 crud/validate)
-                              {})
+                              {})]
 
-            content-compose (:docker-compose (:content body))]
-
-        (create-compatibility-job (:resource-id (:body module)) subtype job-acl content-compose)
+        (create-compatibility-job (:resource-id (:body module)) subtype job-acl)
         module))))
 
 
@@ -261,11 +259,10 @@ component, or application.
 
               module          (edit-impl (assoc request :body module-meta))
 
-              content-compose (:docker-compose (:content body))
               id              (:id (:body module))]
 
           (when id
-            (create-compatibility-job (:id (:body module)) subtype (:acl (:body module)) content-compose))
+            (create-compatibility-job (:id (:body module)) subtype (:acl (:body module))))
           module
           )))
     (catch Exception e
