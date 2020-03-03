@@ -13,6 +13,7 @@
   - Module component and application support private registries
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
+  - Credential - for swarm, create credential check job on add
 
 ## [4.2.11] - 2020-02-07
 
