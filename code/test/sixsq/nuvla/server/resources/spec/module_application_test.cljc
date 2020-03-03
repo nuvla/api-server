@@ -45,6 +45,8 @@
                                              {:file-name    "file_1"
                                               :file-content "file content example"}]
 
+                   :unsupported-options     []
+
                    :docker-compose          "version: \"3.3\"\nservices:\n  web:\n    ..."}]
 
     (stu/is-valid ::module-application/schema root)
@@ -56,7 +58,7 @@
 
     ;; optional attributes
     (doseq [k #{:commit :urls :output-parameters :environmental-variables :files
-                :private-registries}]
+                :private-registries :unsupported-options}]
       (stu/is-valid ::module-application/schema (dissoc root k)))))
 
 
