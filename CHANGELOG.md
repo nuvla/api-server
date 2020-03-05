@@ -8,6 +8,8 @@
 
 ### changed
 
+  - Deployment - add data-records-filter and deprecate data-records and 
+    data-objects attributes
   - Infrastructure resource - added boolean attr for swarm-enabled and online
   - NuvlaBox periphal - two new optional attributes for the data gateway
   - Credential - check registry credential

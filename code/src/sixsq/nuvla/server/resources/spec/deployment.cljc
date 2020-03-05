@@ -148,14 +148,28 @@
              :json-schema/order 32)))
 
 
+(s/def ::data-records-filter
+  (-> (st/spec string?)
+      (assoc :name "data-records-filter"
+             :json-schema/type "string"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/display-name "data records filter"
+             :json-schema/description "Filter used to fetch data-records to process"
+             :json-schema/order 33)))
+
+
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
-                                  ::data-objects
-                                  ::data-records
+                                  ::data-objects            ;;deprecated
+                                  ::data-records            ;;deprecated
+                                  ::data-records-filter
                                   ::registries-credentials]}]))
 
 
