@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.12] - 2020-03-06
+
 ### Added
 
   - NuvlaBox release - new resource
