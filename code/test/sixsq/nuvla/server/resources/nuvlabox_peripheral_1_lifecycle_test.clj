@@ -35,23 +35,23 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-peripheral {:id            (str nb-peripheral/resource-type "/uuid")
-                       :resource-type nb-peripheral/resource-type
-                       :name          "Webcam C920"
-                       :description   "Logitech, Inc. HD Pro Webcam C920"
-                       :created       timestamp
-                       :updated       timestamp
+(def valid-peripheral {:id                          (str nb-peripheral/resource-type "/uuid")
+                       :resource-type               nb-peripheral/resource-type
+                       :name                        "Webcam C920"
+                       :description                 "Logitech, Inc. HD Pro Webcam C920"
+                       :created                     timestamp
+                       :updated                     timestamp
 
-                       :version       1
+                       :version                     1
 
-                       :identifier    "046d:082d"
-                       :available     true
-                       :device-path   "/dev/bus/usb/001/001"
-                       :interface     "USB"
-                       :port          1
-                       :vendor        "SixSq"
-                       :product       "HD Pro Webcam C920"
-                       :classes       ["AUDIO" "VIDEO"]
+                       :identifier                  "046d:082d"
+                       :available                   true
+                       :device-path                 "/dev/bus/usb/001/001"
+                       :interface                   "USB"
+                       :port                        1
+                       :vendor                      "SixSq"
+                       :product                     "HD Pro Webcam C920"
+                       :classes                     ["AUDIO" "VIDEO"]
                        :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
                        :local-data-gateway-endpoint "data-gateway/video/1"
                        :data-gateway-enabled        false})
@@ -109,6 +109,8 @@
       (-> session-owner
           (request peripheral-url)
           (ltu/body->edn)
+          (ltu/is-operation-present :enable-stream)
+          (ltu/is-operation-absent :disable-stream)
           (ltu/is-status 200))
 
       ;; nuvlabox user is able to update nuvlabox-peripheral
@@ -118,6 +120,8 @@
                    :body (json/write-str {:interface "BLUETOOTH"}))
           (ltu/body->edn)
           (ltu/is-status 200)
+          (ltu/is-operation-absent :enable-stream)
+          (ltu/is-operation-absent :disable-stream)
           (ltu/is-key-value :interface "BLUETOOTH"))
 
       ;; verify that the update was written to disk
@@ -147,8 +151,60 @@
       (-> session-user
           (request peripheral-url)
           (ltu/body->edn)
-          (ltu/is-status 200))
+          (ltu/is-status 200)
+          (ltu/is-operation-present :enable-stream)
+          (ltu/is-operation-absent :disable-stream))
 
+      ;; stream operation tests
+      (let [enable-stream-op-url (-> session-owner
+                                     (request peripheral-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :enable-stream)
+                                     (ltu/is-operation-absent :disable-stream)
+                                     (ltu/get-op-url :enable-stream))]
+
+        (-> session-owner
+            (request enable-stream-op-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 202))
+
+        (-> session-nb
+            (request peripheral-url
+                     :request-method :put
+                     :body (json/write-str {:data-gateway-enabled true}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+
+        (-> session-owner
+            (request peripheral-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present :disable-stream)
+            (ltu/is-operation-absent :enable-stream))
+
+        (-> session-nb
+            (request peripheral-url
+                     :request-method :put
+                     :body (json/write-str {:classes []}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-owner
+            (request peripheral-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent :disable-stream)
+            (ltu/is-operation-absent :enable-stream))
+
+        (-> session-owner
+            (request enable-stream-op-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"NuvlaBox peripheral is not class video!")))
 
 
       ;; nuvlabox can delete the peripheral

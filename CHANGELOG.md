@@ -4,6 +4,8 @@
 
 ### changed
 
+  - NuvlaBox peripheral - enable/disable stream action for video class 
+    peripherals
   - Pagination - Change error message when first and last beyond 10'000
 
 ## [4.2.12] - 2020-03-06
