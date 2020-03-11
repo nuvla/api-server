@@ -53,7 +53,8 @@
                        :product       "HD Pro Webcam C920"
                        :classes       ["AUDIO" "VIDEO"]
                        :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
-                       :local-data-gateway-endpoint "data-gateway/video/1"})
+                       :local-data-gateway-endpoint "data-gateway/video/1"
+                       :data-gateway-enabled        false})
 
 
 (deftest check-metadata
