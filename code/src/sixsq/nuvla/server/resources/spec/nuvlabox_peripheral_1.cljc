@@ -81,6 +81,9 @@
 
            :json-schema/order 39)))
 
+;;
+;; data gateway attrs
+;;
 
 (s/def ::local-data-gateway-endpoint
   (-> (st/spec ::core/url)
@@ -98,6 +101,15 @@
            :json-schema/order 41)))
 
 
+(s/def ::data-gateway-enabled
+  (-> (st/spec boolean?)
+    (assoc :name "data-gateway-enabled"
+           :json-schema/type "boolean"
+           :json-schema/description "identifies whether the data gateway is enabled for this peripheral or not"
+
+           :json-schema/order 42)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -110,4 +122,5 @@
                                ::vendor
                                ::product
                                ::local-data-gateway-endpoint
-                               ::raw-data-sample]}))
+                               ::raw-data-sample
+                               ::data-gateway-enabled]}))

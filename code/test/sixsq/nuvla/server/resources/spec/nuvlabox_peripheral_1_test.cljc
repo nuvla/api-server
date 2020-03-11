@@ -33,7 +33,8 @@
                  :product       "HD Pro Webcam C920"
                  :classes       ["AUDIO" "VIDEO"]
                  :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
-                 :local-data-gateway-endpoint "data-gateway/video/1"  })
+                 :local-data-gateway-endpoint "data-gateway/video/1"
+                 :data-gateway-enabled        true})
 
 
 (deftest check-nuvlabox-peripheral
@@ -47,5 +48,6 @@
     (stu/is-invalid ::nb-peripheral-1/schema (dissoc peripheral attr)))
 
   ;; optional
-  (doseq [attr #{:device-path :interface :vendor :port :product :raw-data-sample :local-data-gateway-endpoint}]
+  (doseq [attr #{:device-path :interface :vendor :port :product :raw-data-sample :local-data-gateway-endpoint
+                 :data-gateway-enabled}]
     (stu/is-valid ::nb-peripheral-1/schema (dissoc peripheral attr))))
