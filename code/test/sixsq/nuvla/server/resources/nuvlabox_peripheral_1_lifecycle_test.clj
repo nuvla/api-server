@@ -54,7 +54,9 @@
                        :classes                     ["AUDIO" "VIDEO"]
                        :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
                        :local-data-gateway-endpoint "data-gateway/video/1"
-                       :data-gateway-enabled        false})
+                       :data-gateway-enabled        false
+                       :serial-number               "123456"
+                       :video-device                "/dev/video0"})
 
 
 (deftest check-metadata

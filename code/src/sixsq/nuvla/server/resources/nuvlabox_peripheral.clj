@@ -113,19 +113,19 @@ nuvlabox.
 ;; Set operation
 ;;
 
-(defn has-class-video?
-  [{:keys [classes] :as resource}]
-  (contains? (set (map str/lower-case classes)) "video"))
+(defn has-video-capability?
+  [resource]
+  (contains? resource :video-device))
 
 (defmethod crud/set-operations resource-type
   [{:keys [id data-gateway-enabled] :as resource} request]
   (let [enable-stream-op  (u/action-map id :enable-stream)
         disable-stream-op (u/action-map id :disable-stream)
         can-manage?       (a/can-manage? resource request)
-        class-video?      (has-class-video? resource)]
+        has-video?        (has-video-capability? resource)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage?
-                 class-video?) (update :operations conj (if data-gateway-enabled
+                 has-video?) (update :operations conj (if data-gateway-enabled
                                                           disable-stream-op
                                                           enable-stream-op)))))
 
@@ -165,11 +165,11 @@ nuvlabox.
     (logu/log-and-throw-400 "NuvlaBox peripheral data gateway already disabled!")))
 
 
-(defn throw-doesnt-have-class-video
+(defn throw-doesnt-have-video-capability
   [resource]
-  (if (has-class-video? resource)
+  (if (has-video-capability? resource)
     resource
-    (logu/log-and-throw-400 "NuvlaBox peripheral is not class video!")))
+    (logu/log-and-throw-400 "NuvlaBox peripheral does not have video capability!")))
 
 
 (defmethod crud/do-action [resource-type "enable-stream"]
@@ -178,7 +178,7 @@ nuvlabox.
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (throw-doesnt-have-class-video)
+          (throw-doesnt-have-video-capability)
           (throw-data-gateway-already-enabled)
           (create-job request "enable-stream")))
     (catch Exception e
@@ -192,7 +192,7 @@ nuvlabox.
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (throw-data-gateway-already-disabled)
-          (throw-doesnt-have-class-video)
+          (throw-doesnt-have-video-capability)
           (create-job request "disable-stream")))
     (catch Exception e
       (or (ex-data e) (throw e)))))
