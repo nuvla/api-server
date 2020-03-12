@@ -5,6 +5,7 @@
 ### changed
 
   - Pagination - Change error message when first and last beyond 10'000
+  - Voucher - only map country-name if country code exists
 
 ## [4.2.12] - 2020-03-06
 
