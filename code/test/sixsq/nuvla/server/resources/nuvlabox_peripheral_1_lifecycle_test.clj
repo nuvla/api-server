@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
+    [clojure.pprint :refer [pprint]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -188,9 +189,9 @@
             (ltu/is-operation-absent :enable-stream))
 
         (-> session-nb
-            (request peripheral-url
-                     :request-method :put
-                     :body (json/write-str {:classes []}))
+            (request (str peripheral-url "?select=video-device")
+                      :request-method :put
+              :body (json/write-str {}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -206,7 +207,7 @@
                      :request-method :post)
             (ltu/body->edn)
             (ltu/is-status 400)
-            (ltu/message-matches #"NuvlaBox peripheral is not class video!")))
+            (ltu/message-matches #"NuvlaBox peripheral does not have video capability!")))
 
 
       ;; nuvlabox can delete the peripheral
