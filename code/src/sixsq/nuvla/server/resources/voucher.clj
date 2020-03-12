@@ -187,7 +187,9 @@ voucher via the 'expire' operation.
   [request]
   (if (discipline-already-exists? (:discipline (:body request)))
     (let [country-name (resolve-country-name (:country (:body request)))
-          body         (assoc (:body request) :country-name country-name)]
+          body         (if (:country (:body request))
+                         (assoc (:body request) :country-name country-name)
+                         (:body request))]
       (add-impl (assoc request :body body)))
     (throw (r/ex-response (format "Discipline '%s' not registered in voucher-discipline set!" (:discipline (:body request)))
                           400 (:discipline (:body request))))))
