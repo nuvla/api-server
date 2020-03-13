@@ -1,8 +1,11 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-peripheral-1-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.pprint :refer [pprint]]
+    [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -35,26 +38,28 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-peripheral {:id            (str nb-peripheral/resource-type "/uuid")
-                       :resource-type nb-peripheral/resource-type
-                       :name          "Webcam C920"
-                       :description   "Logitech, Inc. HD Pro Webcam C920"
-                       :created       timestamp
-                       :updated       timestamp
+(def valid-peripheral {:id                          (str nb-peripheral/resource-type "/uuid")
+                       :resource-type               nb-peripheral/resource-type
+                       :name                        "Webcam C920"
+                       :description                 "Logitech, Inc. HD Pro Webcam C920"
+                       :created                     timestamp
+                       :updated                     timestamp
 
-                       :version       1
+                       :version                     1
 
-                       :identifier    "046d:082d"
-                       :available     true
-                       :device-path   "/dev/bus/usb/001/001"
-                       :interface     "USB"
-                       :port          1
-                       :vendor        "SixSq"
-                       :product       "HD Pro Webcam C920"
-                       :classes       ["AUDIO" "VIDEO"]
+                       :identifier                  "046d:082d"
+                       :available                   true
+                       :device-path                 "/dev/bus/usb/001/001"
+                       :interface                   "USB"
+                       :port                        1
+                       :vendor                      "SixSq"
+                       :product                     "HD Pro Webcam C920"
+                       :classes                     ["AUDIO" "VIDEO"]
                        :raw-data-sample             "{\"datapoint\": 1, \"value\": 2}"
                        :local-data-gateway-endpoint "data-gateway/video/1"
-                       :data-gateway-enabled        false})
+                       :data-gateway-enabled        false
+                       :serial-number               "123456"
+                       :video-device                "/dev/video0"})
 
 
 (deftest check-metadata
@@ -66,6 +71,7 @@
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
+        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))
         session-owner (header session authn-info-header (str nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
@@ -109,6 +115,8 @@
       (-> session-owner
           (request peripheral-url)
           (ltu/body->edn)
+          (ltu/is-operation-present :enable-stream)
+          (ltu/is-operation-absent :disable-stream)
           (ltu/is-status 200))
 
       ;; nuvlabox user is able to update nuvlabox-peripheral
@@ -118,6 +126,8 @@
                    :body (json/write-str {:interface "BLUETOOTH"}))
           (ltu/body->edn)
           (ltu/is-status 200)
+          (ltu/is-operation-absent :enable-stream)
+          (ltu/is-operation-absent :disable-stream)
           (ltu/is-key-value :interface "BLUETOOTH"))
 
       ;; verify that the update was written to disk
@@ -147,8 +157,60 @@
       (-> session-user
           (request peripheral-url)
           (ltu/body->edn)
-          (ltu/is-status 200))
+          (ltu/is-status 200)
+          (ltu/is-operation-present :enable-stream)
+          (ltu/is-operation-absent :disable-stream))
 
+      ;; stream operation tests
+      (let [enable-stream-op-url (-> session-owner
+                                     (request peripheral-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :enable-stream)
+                                     (ltu/is-operation-absent :disable-stream)
+                                     (ltu/get-op-url :enable-stream))]
+
+        (-> session-owner
+            (request enable-stream-op-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 202))
+
+        (-> session-nb
+            (request peripheral-url
+                     :request-method :put
+                     :body (json/write-str {:data-gateway-enabled true}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+
+        (-> session-owner
+            (request peripheral-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-present :disable-stream)
+            (ltu/is-operation-absent :enable-stream))
+
+        (-> session-nb
+            (request (str peripheral-url "?select=video-device")
+                     :request-method :put
+                     :body (json/write-str {}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-owner
+            (request peripheral-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent :disable-stream)
+            (ltu/is-operation-absent :enable-stream))
+
+        (-> session-owner
+            (request enable-stream-op-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"NuvlaBox peripheral does not have video capability!")))
 
 
       ;; nuvlabox can delete the peripheral
@@ -156,7 +218,61 @@
           (request peripheral-url
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)))))
+          (ltu/is-status 200)))
+
+
+    (when-let [peripheral-url (-> session-nb
+                                  (request base-uri
+                                           :request-method :post
+                                           :body (json/write-str (assoc valid-peripheral
+                                                                   :parent nuvlabox-id)))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location-url))]
+
+      ;; stream operation tests
+      (let [enable-stream-op-url (-> session-owner
+                                     (request peripheral-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :enable-stream)
+                                     (ltu/is-operation-absent :disable-stream)
+                                     (ltu/get-op-url :enable-stream))]
+
+        (-> session-owner
+            (request enable-stream-op-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 202)))
+
+      (-> session-admin
+          (request peripheral-url
+                   :request-method :put
+                   :body (json/write-str {:data-gateway-enabled true}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+
+      ;; nuvlabox can delete the peripheral
+      (-> session-admin
+          (request peripheral-url
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      (-> session-admin
+          (content-type "application/x-www-form-urlencoded")
+          (request (str p/service-context "job")
+                   :request-method :put
+                   :body (rc/form-encode {:filter
+                                          (str "target-resource/href='"
+                                               (str/replace peripheral-url
+                                                            p/service-context "")
+                                               "' and action='disable-stream'")}))
+          (ltu/body->edn)
+          (ltu/is-count 1)
+          (ltu/is-status 200)))
+    ))
 
 
 (deftest bad-methods
