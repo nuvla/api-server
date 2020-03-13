@@ -180,12 +180,12 @@ request.
 ;;
 
 (defn create-job
-  [target-resource action acl & {:keys [priority data]}]
+  [target-resource action acl & {:keys [priority affected-resources]}]
   (let [job-map        (cond-> {:action          action
                                 :target-resource {:href target-resource}
                                 :acl             acl}
                                priority (assoc :priority priority)
-                               data (assoc :data data))
+                               affected-resources (assoc :affected-resources affected-resources))
         create-request {:params      {:resource-name resource-type}
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]
