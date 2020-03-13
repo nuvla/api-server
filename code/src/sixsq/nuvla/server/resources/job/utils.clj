@@ -64,8 +64,10 @@
   (cond-> job
           status-message update-time-of-status-change
           (not progress) (assoc :progress 0)
-          (not-any? #(= target-resource %) affected-resources) (update :affected-resources
-                                                                       conj target-resource)))
+          (and target-resource
+               (not-any? #(= target-resource %) affected-resources)) (assoc :affected-resources
+                                                                      (conj affected-resources
+                                                                            target-resource))))
 
 
 (defn job-cond->edition
