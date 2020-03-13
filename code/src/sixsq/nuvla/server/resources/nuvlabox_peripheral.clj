@@ -4,7 +4,6 @@ The nuvlabox-peripheral resource represents a peripheral attached to a
 nuvlabox.
 "
   (:require
-    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -29,6 +28,77 @@ nuvlabox.
 (def collection-acl {:add   ["group/nuvla-user"]
                      :query ["group/nuvla-user"]})
 
+
+(defn has-video-capability?
+  [resource]
+  (contains? resource :video-device))
+
+
+(defn create-job
+  [resource {{uuid :uuid} :params :as request} action]
+  (try
+    (let [id (str resource-type "/" uuid)]
+
+      (let [user-id (auth/current-user-id request)
+            {{job-id     :resource-id
+              job-status :status} :body} (job/create-job id action
+                                                         {:owners   ["group/nuvla-admin"]
+                                                          :edit-acl [user-id]}
+                                                         :priority 50)
+            job-msg (str "starting " id " with async " job-id)]
+        (when (not= job-status 201)
+          (throw (r/ex-response
+                   (format "unable to create async job to %s" action) 500 id)))
+        (r/map-response job-msg 202 id job-id)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defn throw-data-gateway-already-enabled
+  [{:keys [data-gateway-enabled] :as resource}]
+  (if data-gateway-enabled
+    (logu/log-and-throw-400 "NuvlaBox peripheral data gateway already enabled!")
+    resource))
+
+
+(defn throw-data-gateway-already-disabled
+  [{:keys [data-gateway-enabled] :as resource}]
+  (if data-gateway-enabled
+    resource
+    (logu/log-and-throw-400 "NuvlaBox peripheral data gateway already disabled!")))
+
+
+(defn throw-doesnt-have-video-capability
+  [resource]
+  (if (has-video-capability? resource)
+    resource
+    (logu/log-and-throw-400 "NuvlaBox peripheral does not have video capability!")))
+
+
+(defmethod crud/do-action [resource-type "enable-stream"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (throw-doesnt-have-video-capability)
+          (throw-data-gateway-already-enabled)
+          (create-job request "enable-stream")))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "disable-stream"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (throw-data-gateway-already-disabled)
+          (throw-doesnt-have-video-capability)
+          (create-job request "disable-stream")))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 ;;
 ;; multimethods for validation
@@ -97,7 +167,15 @@ nuvlabox.
 
 
 (defmethod crud/delete resource-type
-  [request]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)
+          {:keys [data-gateway-enabled] :as resource} (db/retrieve id request)]
+
+      (when (and data-gateway-enabled (has-video-capability? resource))
+        (create-job resource request "disable-stream")))
+    (catch Exception e
+      (or (ex-data e) (throw e))))
   (delete-impl request))
 
 
@@ -113,9 +191,7 @@ nuvlabox.
 ;; Set operation
 ;;
 
-(defn has-video-capability?
-  [resource]
-  (contains? resource :video-device))
+
 
 (defmethod crud/set-operations resource-type
   [{:keys [id data-gateway-enabled] :as resource} request]
@@ -126,76 +202,8 @@ nuvlabox.
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage?
                  has-video?) (update :operations conj (if data-gateway-enabled
-                                                          disable-stream-op
-                                                          enable-stream-op)))))
-
-
-(defn create-job
-  [resource {{uuid :uuid} :params :as request} action]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (a/throw-cannot-manage resource request)
-
-      (let [user-id (auth/current-user-id request)
-            {{job-id     :resource-id
-              job-status :status} :body} (job/create-job id action
-                                                         {:owners   ["group/nuvla-admin"]
-                                                          :edit-acl [user-id]}
-                                                         :priority 50)
-            job-msg (str "starting " id " with async " job-id)]
-        (when (not= job-status 201)
-          (throw (r/ex-response
-                   (format "unable to create async job to %s" action) 500 id)))
-        (r/map-response job-msg 202 id job-id)))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-
-(defn throw-data-gateway-already-enabled
-  [{:keys [data-gateway-enabled] :as resource}]
-  (if data-gateway-enabled
-    (logu/log-and-throw-400 "NuvlaBox peripheral data gateway already enabled!")
-    resource))
-
-
-(defn throw-data-gateway-already-disabled
-  [{:keys [data-gateway-enabled] :as resource}]
-  (if data-gateway-enabled
-    resource
-    (logu/log-and-throw-400 "NuvlaBox peripheral data gateway already disabled!")))
-
-
-(defn throw-doesnt-have-video-capability
-  [resource]
-  (if (has-video-capability? resource)
-    resource
-    (logu/log-and-throw-400 "NuvlaBox peripheral does not have video capability!")))
-
-
-(defmethod crud/do-action [resource-type "enable-stream"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (throw-doesnt-have-video-capability)
-          (throw-data-gateway-already-enabled)
-          (create-job request "enable-stream")))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
-
-
-(defmethod crud/do-action [resource-type "disable-stream"]
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (throw-data-gateway-already-disabled)
-          (throw-doesnt-have-video-capability)
-          (create-job request "disable-stream")))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+                                                        disable-stream-op
+                                                        enable-stream-op)))))
 
 
 ;;
