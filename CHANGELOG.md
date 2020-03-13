@@ -4,6 +4,7 @@
 
 ### changed
 
+  - Deployment - When module doesn't exist return 400 instead of 500
   - Pagination - Change error message when first and last beyond 10'000
   - Voucher - only map country-name if country code exists
 

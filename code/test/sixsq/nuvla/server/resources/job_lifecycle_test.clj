@@ -64,13 +64,14 @@
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
-          abs-uri        (str p/service-context uri)
-          job            (-> session-user
-                             (request abs-uri)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-operation-present :stop)
-                             (ltu/is-key-value :state "QUEUED"))]
+          abs-uri        (str p/service-context uri)]
+
+      (-> session-user
+          (request abs-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-operation-present :stop)
+          (ltu/is-key-value :state "QUEUED"))
 
       (-> session-user
           (request "/api/job")

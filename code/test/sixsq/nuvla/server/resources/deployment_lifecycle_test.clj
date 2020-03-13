@@ -81,25 +81,26 @@
 
 (defn lifecycle-deployment
   [subtype valid-module-content]
-  (let [session-anon     (-> (ltu/ring-app)
-                             session
-                             (content-type "application/json"))
-        session-admin    (header session-anon authn-info-header
-                                 (str "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
-        session-user     (header session-anon authn-info-header
-                                 (str "user/jane group/nuvla-user group/nuvla-anon " session-id))
+  (let [session-anon       (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+        session-admin      (header session-anon authn-info-header
+                                   (str "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+        session-user       (header session-anon authn-info-header
+                                   (str "user/jane group/nuvla-user group/nuvla-anon " session-id))
 
         ;; setup a module that can be referenced from the deployment
-        module-id        (-> session-user
-                             (request module-base-uri
-                                      :request-method :post
-                                      :body (json/write-str
-                                              (valid-module subtype valid-module-content)))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+        module-id          (-> session-user
+                               (request module-base-uri
+                                        :request-method :post
+                                        :body (json/write-str
+                                                (valid-module subtype valid-module-content)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
 
-        valid-deployment {:module {:href module-id}}]
+        valid-deployment   {:module {:href module-id}}
+        invalid-deployment {:module {:href "module/doesnt-exist"}}]
 
     ;; admin/user query succeeds but is empty
     (doseq [session [session-admin session-user]]
@@ -358,7 +359,16 @@
                     (-> session-user
                         (request log-url)
                         (ltu/body->edn)
-                        (ltu/is-status 404))))))))))
+                        (ltu/is-status 404))))))))
+
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str invalid-deployment))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"cannot resolve module .*"))
+        ))
 
     (-> session-user
         (request (str p/service-context module-id)
