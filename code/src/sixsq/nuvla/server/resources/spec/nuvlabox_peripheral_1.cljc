@@ -110,6 +110,22 @@
            :json-schema/order 42)))
 
 
+(s/def ::serial-number
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "serial-number"
+           :json-schema/description "serial number of the peripheral device"
+
+           :json-schema/order 43)))
+
+
+(s/def ::video-device
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "video-device"
+           :json-schema/description "path to video device in the filesystem"
+
+           :json-schema/order 44)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -123,4 +139,6 @@
                                ::product
                                ::local-data-gateway-endpoint
                                ::raw-data-sample
-                               ::data-gateway-enabled]}))
+                               ::data-gateway-enabled
+                               ::serial-number
+                               ::video-device]}))

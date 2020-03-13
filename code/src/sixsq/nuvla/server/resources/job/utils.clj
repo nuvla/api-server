@@ -45,7 +45,7 @@
 
 (defn add-target-resource-in-affected-resources
   [{:keys [target-resource affected-resources] :as job}]
-  (assoc job :affected-resources (conj affected-resources target-resource)))
+  )
 
 
 (defn should_insert_target-resource-in-affected-resources?
@@ -60,11 +60,14 @@
 
 
 (defn job-cond->addition
-  [{:keys [progress status-message] :as job}]
+  [{:keys [target-resource affected-resources progress status-message] :as job}]
   (cond-> job
           status-message update-time-of-status-change
           (not progress) (assoc :progress 0)
-          (should_insert_target-resource-in-affected-resources? job) add-target-resource-in-affected-resources))
+          (and target-resource
+               (not-any? #(= target-resource %) affected-resources)) (assoc :affected-resources
+                                                                      (conj affected-resources
+                                                                            target-resource))))
 
 
 (defn job-cond->edition
