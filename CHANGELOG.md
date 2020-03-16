@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### changed
+
+  - NuvlaBox peripheral - enable/disable stream action for video class 
+    peripherals
+  - Pagination - Change error message when first and last beyond 10'000
+  - Voucher - only map country-name if country code exists
+
+## [4.2.12] - 2020-03-06
+
 ### Added
 
   - NuvlaBox release - new resource
@@ -9,6 +18,8 @@
 
 ### changed
 
+  - Deployment - add data-records-filter and deprecate data-records and 
+    data-objects attributes
   - Infrastructure resource - added boolean attr for swarm-enabled and online
   - NuvlaBox periphal - two new optional attributes for the data gateway
   - Credential - check registry credential

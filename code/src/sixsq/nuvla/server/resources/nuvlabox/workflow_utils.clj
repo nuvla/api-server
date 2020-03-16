@@ -314,7 +314,7 @@
                                   {:name        (utils/format-nb-name
                                                   nuvlabox-name
                                                   (utils/short-nb-id nuvlabox-id))
-                                   :description (str "Docker Swarm client credential linked to "
+                                   :description (str "NuvlaBox credential linked to "
                                                      (utils/format-nb-name
                                                        nuvlabox-name nuvlabox-id))
                                    :acl         acl}
@@ -573,9 +573,10 @@
     (doseq [id ids]
       (let [request {:params      {:uuid          (u/id->uuid id)
                                    :resource-name nb-peripheral/resource-type}
-                     :body        {:acl (utils/set-acl-nuvlabox-view-only
-                                          nuvlabox-acl
-                                          {:owners [nuvlabox-id]})}
+                     :body        {:acl (-> nuvlabox-acl
+                                            (utils/set-acl-nuvlabox-view-only
+                                              {:owners [nuvlabox-id]})
+                                            (assoc :manage (:view-acl nuvlabox-acl)))}
                      :nuvla/authn auth/internal-identity}
             {status :status :as resp} (crud/edit request)]
         (if (= 200 status)
