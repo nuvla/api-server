@@ -314,7 +314,7 @@
                                   {:name        (utils/format-nb-name
                                                   nuvlabox-name
                                                   (utils/short-nb-id nuvlabox-id))
-                                   :description (str "Docker Swarm client credential linked to "
+                                   :description (str "NuvlaBox credential linked to "
                                                      (utils/format-nb-name
                                                        nuvlabox-name nuvlabox-id))
                                    :acl         acl}
