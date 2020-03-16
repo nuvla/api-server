@@ -21,4 +21,6 @@
                        [1 -1] [0 0]                         ;; invalid last value
                        )
 
-  (is (thrown-with-msg? IllegalArgumentException #".*too large.*" (t/es-paging-params 1 (inc t/max-size)))))
+  (is (thrown-with-msg? IllegalArgumentException
+                        #"First and last must be less than or equal to 10'000.*"
+                        (t/es-paging-params 1 (inc t/max-size)))))

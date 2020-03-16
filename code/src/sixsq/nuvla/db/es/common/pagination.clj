@@ -17,4 +17,5 @@
     (if (<= (+ from size) max-size)
       [from size]
       (throw (IllegalArgumentException.
-               (str "size " size " too large; limit is " max-size))))))
+               (str "First and last must be less than or equal to 10'000. "
+                    "Use filter to limit the number of returned resources."))))))
