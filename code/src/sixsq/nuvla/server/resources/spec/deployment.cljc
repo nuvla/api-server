@@ -203,6 +203,24 @@
              :json-schema/description "list of used credentials for private registries"
              :json-schema/order 32)))
 
+;;
+;; deprecated items
+;;
+(s/def ::data-objects
+  (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
+      (assoc :json-schema/type "array"
+             :json-schema/description "Deprecated")))
+
+(s/def ::data-records
+  (-> (st/spec (s/coll-of ::data-record-id :min-count 1 :kind vector?))
+      (assoc :json-schema/type "array"
+             :json-schema/description "Deprecated")))
+
+(s/def ::data-records-filter
+  (-> (st/spec string?)
+      (assoc :json-schema/type "string"
+             :json-schema/description "Deprecated")))
+;;
 
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
@@ -210,6 +228,9 @@
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
+                                  ::data-objects ;; deprecated
+                                  ::data-records ;; deprecated
+                                  ::data-records-filter ;; deprecated
                                   ::data
                                   ::registries-credentials]}]))
 
