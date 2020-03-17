@@ -84,7 +84,7 @@
                                   (dissoc :versions :operations)
                                   (std-crud/resolve-hrefs authn-info true))]
           (assoc module-resolved :href href))
-        (throw (ex-info (str "cannot resolve module " href) body))))
+        (throw (r/ex-bad-request (str "cannot resolve module " href)))))
     (throw (r/ex-bad-request "deployment module is not defined"))))
 
 
