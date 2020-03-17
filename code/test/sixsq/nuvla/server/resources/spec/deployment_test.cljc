@@ -28,15 +28,16 @@
 
    :module                 {:href "module-component/my-module-component-uuid"}
 
-   :data-objects           ["data-object/uuid1" "data-object/uuid2"]
-   :data-records           {:data-record/uuid1 ["data-set/dataset1"
-                                                "data-set/dataset2"]
-                            :data-record/uuid2 nil
-                            :data-record/uuid3 ["data-set/dataset3"]}
-   :data-records-filter    (str "((timestamp>='2020-02-03T23:00:00Z' "
-                                "and timestamp<'2020-03-04T23:00:00Z')) "
-                                "and (infrastructure-service='infrastructure-service/xxx') "
-                                "and ((content-type='text/plain') or (content-type='text/xxx'))")
+   :data {:records {:records-ids ["data-record/1" "data-record/2"]
+                    :filters [{:filter "data records filter"
+                               :time-start "2020-02-03T23:00:00Z"
+                               :time-end "2020-02-03T23:01:00Z"
+                               :data-type "data-record"}]}
+          :objects {:objects-ids ["data-object/1" "data-object/2"]
+                    :filters [{:filter "data objects filter"
+                               :time-start "2020-02-03T23:00:00Z"
+                               :time-end "2020-02-03T23:01:00Z"
+                               :data-type "data-object"}]}}
    :registries-credentials ["credential/uuid1" "credential/uuid2"]})
 
 
@@ -45,14 +46,19 @@
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :badKey "badValue"))
   (stu/is-invalid ::ds/deployment (assoc valid-deployment :module "must-be-href"))
 
-  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-objects ["BAD_ID"]))
-  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data-records {"BAD_ID" nil}))
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data {"BAD_ID" nil}))
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data {:records []}))
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data {:objects {:objects-ids ["data-records/1"]}}))
+  ;; empty filter
+  (stu/is-invalid ::ds/deployment (assoc valid-deployment :data {:records {:filters [{:filter ""
+                                                                                      :time-start "2020-02-03T23:00:00Z"
+                                                                                      :time-end "2020-02-03T23:00:00Z"
+                                                                                      :data-type "data-record"}]}}))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state :module :api-endpoint}]
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:data-objects :data-records :api-credentials :credential-id :registries-credentials
-              :data-records-filter}]
+  (doseq [k #{:data :api-credentials :credential-id :registries-credentials}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

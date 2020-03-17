@@ -54,7 +54,7 @@
 
              :json-schema/display-name "API key"
              :json-schema/description "credential identifier of API key pair"
-             :json-schema/order 30)))
+             :json-schema/order 21)))
 
 
 (s/def ::api-secret
@@ -64,7 +64,7 @@
 
              :json-schema/display-name "API secret"
              :json-schema/description "secret of API key pair"
-             :json-schema/order 31
+             :json-schema/order 22
              :json-schema/sensitive true)))
 
 
@@ -76,7 +76,7 @@
 
              :json-schema/display-name "Nuvla credentials"
              :json-schema/description "Nuvla deployment API credentials"
-             :json-schema/order 20)))
+             :json-schema/order 23)))
 
 (s/def ::api-endpoint
   (-> (st/spec ::core/nonblank-string)
@@ -87,49 +87,105 @@
 
              :json-schema/display-name "Nuvla endpoint"
              :json-schema/description "Nuvla endpoint"
-             :json-schema/order 22)))
+             :json-schema/order 24)))
 
 
 (def ^:const data-object-id-regex #"^data-object/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn data-object-id? [s] (re-matches data-object-id-regex s))
-
 (s/def ::data-object-id (s/and string? data-object-id?))
-
-(s/def ::data-objects
-  (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
-      (assoc :name "data-objects"
-             :json-schema/type "array"
-             :json-schema/indexed false
-
-             :json-schema/display-name "data objects"
-             :json-schema/description "list of data object identifiers"
-             :json-schema/order 30)))
-
 
 (def ^:const data-record-id-regex #"^data-record/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn data-record-id? [s] (re-matches data-record-id-regex s))
-(defn data-record-id-keyword? [s] (-> s symbol str data-record-id?))
-
 (s/def ::data-record-id (s/and string? data-record-id?))
-(s/def ::data-record-id-keyword (s/and keyword? data-record-id-keyword?))
 
-(def ^:const data-set-id-regex #"^data-set/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-(defn data-set-id? [s] (re-matches data-set-id-regex s))
-(s/def ::data-set-id (s/and string? data-set-id?))
-
-(s/def ::data-set-ids (s/nilable (s/coll-of ::data-set-id :min-count 1 :kind vector?)))
-
-
-(s/def ::data-records
-  (-> (st/spec (s/map-of ::data-record-id-keyword ::data-set-ids :min-count 1))
-      (assoc :name "serviceOffers"
-             :json-schema/type "map"
+(s/def ::records-ids
+  (-> (st/spec (s/coll-of ::data-record-id))
+      (assoc :name "records ids"
+             :json-schema/type "array"
+             :json-schema/editable false
              :json-schema/indexed false
 
-             :json-schema/display-name "service offers"
-             :json-schema/description "data"
-             :json-schema/order 31)))
+             :json-schema/display-name "data record ids"
+             :json-schema/description "List of data record ids."
+             :json-schema/order 25)))
 
+(s/def ::objects-ids
+  (-> (st/spec (s/coll-of ::data-object-id))
+      (assoc :name "objects ids"
+             :json-schema/type "array"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/display-name "data object ids"
+             :json-schema/description "List of data object ids."
+             :json-schema/order 26)))
+
+(s/def ::filter
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "filter"
+             :json-schema/type "string"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/description "CIMI filter."
+             :json-schema/group "body"
+             :json-schema/order 27)))
+
+(s/def ::data-type
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "data type"
+             :json-schema/type "string"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/description "The data collection resource id, e.g. data-record."
+             :json-schema/group "body"
+             :json-schema/order 28)))
+
+(s/def ::time-start
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "time start"
+             :json-schema/type "date-time"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/description "Start time to apply to the data with the filter."
+             :json-schema/group "body"
+             :json-schema/order 29)))
+
+(s/def ::time-end
+  (-> (st/spec ::core/timestamp)
+      (assoc :name "time start"
+             :json-schema/type "date-time"
+             :json-schema/editable false
+             :json-schema/indexed false
+
+             :json-schema/description "End time to apply to the data with the filter."
+             :json-schema/group "body"
+             :json-schema/order 30)))
+
+(s/def ::data-filters
+  (-> (st/spec (su/only-keys :req-un [::filter ::time-start ::time-end ::data-type]))
+      (assoc :name "data filters"
+             :json-schema/type "map")))
+(s/def ::filters
+  (-> (st/spec (s/coll-of ::data-filters))
+      (assoc :name "filters"
+             :json-schema/type "array")))
+
+(s/def ::records
+  (-> (st/spec (su/only-keys :opt-un [::records-ids ::filters]))
+      (assoc :name "records"
+             :json-schema/type "map")))
+(s/def ::objects
+  (-> (st/spec (su/only-keys :opt-un [::objects-ids ::filters]))
+      (assoc :name "objects"
+             :json-schema/type "map")))
+
+(s/def ::data
+  (-> (st/spec (su/only-keys :opt-un [::records ::objects]))
+      (assoc :name "data"
+             :json-schema/type "map")))
 
 (def ^:const credential-id-regex
   #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
@@ -148,28 +204,13 @@
              :json-schema/order 32)))
 
 
-(s/def ::data-records-filter
-  (-> (st/spec string?)
-      (assoc :name "data-records-filter"
-             :json-schema/type "string"
-             :json-schema/editable false
-             :json-schema/indexed false
-
-             :json-schema/display-name "data records filter"
-             :json-schema/description "Filter used to fetch data-records to process"
-             :json-schema/order 33)))
-
-
-
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
-                                  ::data-objects            ;;deprecated
-                                  ::data-records            ;;deprecated
-                                  ::data-records-filter
+                                  ::data
                                   ::registries-credentials]}]))
 
 
