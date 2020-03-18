@@ -233,7 +233,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     (when (= (:method body) swarm-tpl/method)
       (create-job {:params      {:uuid          (u/id->uuid id)
                                  :resource-name resource-type}
-                   :nuvla/authn auth/internal-identity}))
+                   :nuvla/authn authn-info}))
     response))
 
 

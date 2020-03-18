@@ -5,6 +5,7 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -12,6 +13,8 @@ component, or application.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
@@ -93,6 +96,26 @@ component, or application.
     (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
+(defn create-compatibility-job
+  [id subtype acl]
+  (when (= subtype "application")
+    (try
+      (let [{{job-id     :resource-id
+              job-status :status} :body} (job/create-job id "application_compatibility_check"
+                                                         acl
+                                                         :priority 50)
+            job-msg (str "checking application compatibility " id " with async " job-id)]
+        (when (not= job-status 201)
+          (throw (r/ex-response
+                   "unable to create async job to check application compatibility" 500 id)))
+        (event-utils/create-event id job-msg acl)
+        (r/map-response job-msg 202 id job-id))
+      (catch Exception e
+        ; do nothing. If the job is not created it is not reason to panic
+        (log/error (str "cannot check module compatibility: '" id e "'"))
+        ))))
+
+
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
 
@@ -101,7 +124,8 @@ component, or application.
   (throw-colliding-path (:path body))
 
   (let [[{:keys [subtype] :as module-meta}
-         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs module-utils/split-resource)]
+         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
+                                                         module-utils/split-resource)]
 
     (if (= "project" subtype)
       (let [module-meta (module-utils/set-parent-path module-meta)]
@@ -129,20 +153,28 @@ component, or application.
 
             content-id      (-> response :body :resource-id)
             module-meta     (module-utils/set-parent-path
-                              (assoc module-meta :versions [(cond-> {:href   content-id
-                                                                     :author author}
-                                                                    commit (assoc :commit commit))]))]
+                              (assoc module-meta
+                                :versions [(cond-> {:href   content-id
+                                                    :author author}
+                                                   commit (assoc :commit commit))]))
 
-        (db/add
-          resource-type
-          (-> module-meta
-              u/strip-service-attrs
-              (crud/new-identifier resource-type)
-              (assoc :resource-type resource-type)
-              u/update-timestamps
-              (crud/add-acl request)
-              crud/validate)
-          {})))))
+            user-id         (auth/current-user-id request)
+            job-acl         {:owners   ["group/nuvla-admin"]
+                             :view-acl [user-id]}
+
+            module          (db/add
+                              resource-type
+                              (-> module-meta
+                                  u/strip-service-attrs
+                                  (crud/new-identifier resource-type)
+                                  (assoc :resource-type resource-type)
+                                  u/update-timestamps
+                                  (crud/add-acl request)
+                                  crud/validate)
+                              {})]
+
+        (create-compatibility-job (get-in module [:body :resource-id]) subtype job-acl)
+        module))))
 
 
 (defn split-uuid
@@ -224,9 +256,14 @@ component, or application.
                                                      commit (assoc :commit commit)))
               module-meta     (module-utils/set-parent-path
                                 (assoc module-meta :versions versions
-                                                   :subtype subtype))]
+                                                   :subtype subtype))
 
-          (edit-impl (assoc request :body module-meta)))))
+              {{:keys [id, acl]} :body :as module} (edit-impl (assoc request :body module-meta))]
+
+          (when id
+            (create-compatibility-job id subtype acl))
+          module
+          )))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

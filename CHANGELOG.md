@@ -18,6 +18,7 @@
 ### Added
 
   - NuvlaBox release - new resource
+  - Module - new attributes for app compatibility and supported options
 
 ### changed
 
@@ -30,6 +31,7 @@
   - NuvlaBox - new actions check-api and reboot on resource
   - NuvlaBox status - new attribute nuvlabox-api-endpoint
   - Credential - for swarm, create credential check job on add
+  - Module - on add and edit, check compatibility for Swarm apps
 
 ## [4.2.11] - 2020-02-07
 

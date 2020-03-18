@@ -44,6 +44,12 @@
              :json-schema/description "file to be used with configs and secrets")))
 
 
+(s/def ::unsupported-options
+  (-> (st/spec (s/coll-of string? :kind vector?))
+    (assoc :name "unsupported options"
+           :json-schema/type "array"
+           :json-schema/description "unsupported options in compose file")))
+
 
 (def module-application-keys-spec (su/merge-keys-specs
                                     [common/common-attrs
@@ -54,6 +60,7 @@
                                                ::module-component/output-parameters
                                                ::container/environmental-variables
                                                ::container/private-registries
+                                               ::unsupported-options
                                                ::files]}]))
 
 

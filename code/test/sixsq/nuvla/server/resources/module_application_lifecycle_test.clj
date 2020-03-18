@@ -31,6 +31,8 @@
                   :author         "someone"
                   :commit         "wip"
 
+                  :unsupported-options  ["devices"]
+
                   :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."})
 
 
