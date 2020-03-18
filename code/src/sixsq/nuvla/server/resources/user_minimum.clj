@@ -3,14 +3,14 @@
 Provides the functions necessary to create a `user` resource from minimal
 information."
   (:require
+    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-minimum :as spec-minimum]
     [sixsq.nuvla.server.resources.user :as p]
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
-    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]))
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
 
 
 ;;

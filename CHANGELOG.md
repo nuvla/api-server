@@ -4,6 +4,7 @@
 
 ### changed
 
+  - Deployment - Spec change replace data-records-filter by data map
   - User minimum - Create a validated email for external auth when
     available
   - Deployment - When module doesn't exist return 400 instead of 500
