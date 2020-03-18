@@ -154,25 +154,25 @@
 
           session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
 
-          user                 (-> session-created-user
-                                   (request (str p/service-context user-id))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (get-in [:response :body]))]
+          {user-acl  :acl
+           email-id  :email
+           user-name :name :as user} (-> session-created-user
+                                         (request (str p/service-context user-id))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)
+                                         (get-in [:response :body]))]
 
       ;; verify the ACL of the user
-      (let [user-acl (:acl user)]
-        (is (some #{"group/nuvla-admin"} (:owners user-acl)))
-        (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
-
-        ;; user should have all rights
-        (doseq [right [:view-meta :view-data :view-acl
-                       :edit-meta :edit-data :edit-acl
-                       :manage :delete]]
-          (is (some #{user-id} (right user-acl)))))
+      (is (some #{"group/nuvla-admin"} (:owners user-acl)))
+      (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
+      ;; user should have all rights
+      (doseq [right [:view-meta :view-data :view-acl
+                     :edit-meta :edit-data :edit-acl
+                     :manage :delete]]
+        (is (some #{user-id} (right user-acl))))
 
       ;; verify name attribute (should default to username)
-      (is (= "user/jane" (:name user)))
+      (is (= "user/jane" user-name))
 
       ; 1 identifier for the username is visible for the created user; find by identifier
       (-> session-created-user
@@ -183,6 +183,15 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count 1))
+
+
+      ;; email resource has been created and is visible for the user
+      (-> session-created-user
+          (content-type "application/x-www-form-urlencoded")
+          (request (str p/service-context email-id))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :validated true))
 
       ; 1 identifier for the email is visible for the created user; find by identifier
       (-> session-created-user
@@ -232,6 +241,13 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count 0))
+
+      ;; the email resource is gone also
+      (-> session-created-user
+          (content-type "application/x-www-form-urlencoded")
+          (request (str p/service-context email-id))
+          (ltu/body->edn)
+          (ltu/is-status 404))
 
       ;; the user resource is gone as well
       (-> session-created-user
