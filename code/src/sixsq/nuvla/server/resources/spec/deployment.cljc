@@ -228,9 +228,9 @@
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
-                                  ::data-objects ;; deprecated
-                                  ::data-records ;; deprecated
-                                  ::data-records-filter ;; deprecated
+                                  ::data-objects            ;; deprecated
+                                  ::data-records            ;; deprecated
+                                  ::data-records-filter     ;; deprecated
                                   ::data
                                   ::registries-credentials]}]))
 
