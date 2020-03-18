@@ -4,6 +4,8 @@
 
 ### changed
 
+  - User minimum - Create a validated email for external auth when
+    available
   - Deployment - When module doesn't exist return 400 instead of 500
   - NuvlaBox peripheral - enable/disable stream action for video class 
     peripherals

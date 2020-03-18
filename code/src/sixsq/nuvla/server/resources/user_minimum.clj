@@ -9,7 +9,8 @@ information."
     [sixsq.nuvla.server.resources.user :as p]
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]))
 
 
 ;;
@@ -46,7 +47,11 @@ information."
       (when username
         (user-utils/create-identifier user-id username))
       (when email
-        (user-utils/create-identifier user-id email)))
+        (user-utils/create-identifier user-id email)
+        (let [email-id (user-utils/create-email user-id email :validated true)]
+          (user-utils/update-user user-id {:id    user-id
+                                           :email email-id})
+          (email-utils/validate-email! email-id))))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

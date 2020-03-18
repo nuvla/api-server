@@ -44,10 +44,11 @@
 
 
 (defn create-email
-  [user-id email]
+  [user-id email & {:keys [validated], :or {validated false}}]
   (let [request {:params      {:resource-name email/resource-type}
-                 :body        {:parent  user-id
-                               :address email}
+                 :body        (cond-> {:parent  user-id
+                                       :address email}
+                                      validated (assoc :validated true))
                  :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
