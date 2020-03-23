@@ -115,10 +115,10 @@
                           (as-> m (if (utils/is-application? subtype)
                                     (do
                                       (ltu/is-key-value m :compatibility "docker-compose")
-                                      (ltu/is-operation-present m :check-docker-compose))
+                                      (ltu/is-operation-present m :validate-docker-compose))
                                     (do
                                       (ltu/is-key-value m :compatibility nil)
-                                      (ltu/is-operation-absent m :check-docker-compose))))
+                                      (ltu/is-operation-absent m :validate-docker-compose))))
                           (ltu/body)
                           :content)]
           (is (= valid-content (select-keys content (keys valid-content)))))

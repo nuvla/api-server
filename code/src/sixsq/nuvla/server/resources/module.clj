@@ -309,39 +309,39 @@ component, or application.
   (query-impl request))
 
 
-(defn create-check-docker-compose-job
+(defn create-validate-docker-compose-job
   [{:keys [id acl] :as resource}]
   (try
     (let [{{job-id     :resource-id
             job-status :status} :body} (job/create-job id "check-docker-compose"
                                                        acl
                                                        :priority 50)
-          job-msg (str "checking application docker-compose " id " with async " job-id)]
+          job-msg (str "validating application docker-compose " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response
-                 "unable to create async job to check application docker-compose" 500 id)))
+                 "unable to create async job to validate application docker-compose" 500 id)))
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [resource-type "check-docker-compose"]
+(defmethod crud/do-action [resource-type "validate-docker-compose"]
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)
         {:keys [subtype acl] :as resource} (crud/retrieve-by-id-as-admin id)]
     (a/throw-cannot-manage resource request)
     (if (utils/is-application? subtype)
-      (create-check-docker-compose-job resource)
+      (create-validate-docker-compose-job resource)
       (throw (r/ex-response "invalid subtype" 400)))))
 
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} request]
-  (let [check-docker-compose-op (u/action-map id :check-docker-compose)
+  (let [validate-docker-compose-op (u/action-map id :validate-docker-compose)
         check-op-present?       (and (a/can-manage? resource request)
                                      (utils/is-application? subtype))]
     (cond-> (crud/set-standard-operations resource request)
-            check-op-present? (update :operations conj check-docker-compose-op))))
+            check-op-present? (update :operations conj validate-docker-compose-op))))
 
 
 ;;
