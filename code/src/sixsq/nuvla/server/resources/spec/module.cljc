@@ -127,6 +127,8 @@
     (assoc :name "compatibility"
            :json-schema/type "string"
            :json-schema/description "module compatibility"
+           :json-schema/server-managed true
+           :json-schema/editable false
 
            :json-schema/fulltext true
            :json-schema/order 35)))

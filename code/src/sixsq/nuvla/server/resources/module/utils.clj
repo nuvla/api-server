@@ -1,6 +1,34 @@
 (ns sixsq.nuvla.server.resources.module.utils
   (:require
-    [clojure.string :as str]))
+    [clj-yaml.core :as yaml]
+    [clojure.set :as set]
+    [clojure.string :as str]
+    [sixsq.nuvla.server.util.log :as logu]))
+
+(def ^:const subtype-comp "component")
+
+(def ^:const subtype-app "application")
+
+(def ^:const subtype-app-k8s "application_kubernetes")
+
+(def ^:const subtype-project "project")
+
+
+(defn is-application?
+  [subtype]
+  (= subtype subtype-app))
+
+(defn is-application-k8s?
+  [subtype]
+  (= subtype subtype-app-k8s))
+
+(defn is-component?
+  [subtype]
+  (= subtype subtype-comp))
+
+(defn is-project?
+  [subtype]
+  (= subtype subtype-project))
 
 
 (defn split-resource
@@ -25,3 +53,43 @@
   (assoc resource :parent-path (get-parent-path path)))
 
 
+(def ^:const compose-specific-keys
+  #{"devices" "build" "cap_add" "cap_drop" "cgroup_parent" "container_name" "depends_on"
+    "external_links" "network_mode" "restart" "security_opt" "tmpfs" "userns_mode" "privileged"
+    "domainname" "ipc" "mac_address" "shm_size"})
+
+
+(def ^:const swarm-specific-keys #{"configs" "deploy"})
+
+
+(defn docker-compose-services-keys-set
+  [{:strs [services] :as docker-compose}]
+  (->> services
+       (map (fn [[_ service-content]] (when (map? service-content) (-> service-content keys set))))
+       (reduce set/union)))
+
+
+(defn list-swarm-unsupported-options
+  [services-keys-set]
+  (set/intersection services-keys-set compose-specific-keys))
+
+
+(defn some-services-has-swarm-options?
+  [services-keys-set]
+  (boolean (some swarm-specific-keys services-keys-set)))
+
+(defn parse-and-throw-when-not-parsable-docker-compose
+  [docker-compose]
+  (try
+    (yaml/parse-string docker-compose :keywords false)
+    (catch Exception _
+      (logu/log-and-throw-400 " NuvlaBox peripheral does not have video capability! "))))
+
+
+(defn get-compatibility-fields
+  [docker-compose]
+  (let [services-keys-set   (docker-compose-services-keys-set docker-compose)
+        compatibilty-flag   (if (some-services-has-swarm-options? services-keys-set)
+                              "swarm" "docker-compose")
+        unsupported-options (-> services-keys-set list-swarm-unsupported-options vec)]
+    [compatibilty-flag unsupported-options]))

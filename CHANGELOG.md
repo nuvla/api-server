@@ -4,6 +4,10 @@
 
 ### changed
 
+  - Module - subtype application support for check-docker-compose 
+    action
+  - Module - subtype application support for server managed attributes
+    for compatibility and unsupported-options
   - Deployment - Spec change replace data-records-filter by data map
   - User minimum - Create a validated email for external auth when
     available
