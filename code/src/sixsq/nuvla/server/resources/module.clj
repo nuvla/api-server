@@ -313,7 +313,7 @@ component, or application.
   [{:keys [id acl] :as resource}]
   (try
     (let [{{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "check-docker-compose"
+            job-status :status} :body} (job/create-job id "validate-docker-compose"
                                                        acl
                                                        :priority 50)
           job-msg (str "validating application docker-compose " id " with async " job-id)]
