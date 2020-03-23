@@ -118,10 +118,7 @@ component, or application.
       (let [content-url     (subtype->resource-url subtype)
 
             [compatibility
-             unsupported-options] (when (utils/is-application? subtype)
-                                    (-> docker-compose
-                                        utils/parse-and-throw-when-not-parsable-docker-compose
-                                        utils/get-compatibility-fields))
+             unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
 
             content-body    (-> module-content
                                 (dissoc :unsupported-options)
@@ -214,10 +211,7 @@ component, or application.
         (let [content-url     (subtype->resource-url subtype)
 
               [compatibility
-               unsupported-options] (when (utils/is-application? subtype)
-                                      (-> docker-compose
-                                          utils/parse-and-throw-when-not-parsable-docker-compose
-                                          utils/get-compatibility-fields))
+               unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
 
               content-body    (-> module-content
                                   (dissoc :unsupported-options)

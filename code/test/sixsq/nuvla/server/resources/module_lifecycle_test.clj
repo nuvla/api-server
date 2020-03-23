@@ -113,8 +113,12 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (as-> m (if (utils/is-application? subtype)
-                                    (ltu/is-operation-present m :check-docker-compose)
-                                    (ltu/is-operation-absent m :check-docker-compose)))
+                                    (do
+                                      (ltu/is-key-value m :compatibility "docker-compose")
+                                      (ltu/is-operation-present m :check-docker-compose))
+                                    (do
+                                      (ltu/is-key-value m :compatibility nil)
+                                      (ltu/is-operation-absent m :check-docker-compose))))
                           (ltu/body)
                           :content)]
           (is (= valid-content (select-keys content (keys valid-content)))))

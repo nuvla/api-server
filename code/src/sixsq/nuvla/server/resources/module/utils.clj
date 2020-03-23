@@ -83,7 +83,7 @@
   (try
     (yaml/parse-string docker-compose :keywords false)
     (catch Exception _
-      (logu/log-and-throw-400 " NuvlaBox peripheral does not have video capability! "))))
+      (logu/log-and-throw-400 "Server wasn't able to parse docker-compose yaml!"))))
 
 
 (defn get-compatibility-fields
@@ -93,3 +93,11 @@
                               "swarm" "docker-compose")
         unsupported-options (-> services-keys-set list-swarm-unsupported-options vec)]
     [compatibilty-flag unsupported-options]))
+
+
+(defn parse-get-compatibility-fields
+  [subtype docker-compose]
+  (when (is-application? subtype)
+    (-> docker-compose
+        parse-and-throw-when-not-parsable-docker-compose
+        get-compatibility-fields)))
