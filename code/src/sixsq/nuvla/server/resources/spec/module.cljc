@@ -133,6 +133,20 @@
            :json-schema/fulltext true
            :json-schema/order 35)))
 
+(s/def ::valid
+  (-> (st/spec boolean?)
+      (assoc :name "valid"
+             :json-schema "boolean"
+             :json-schema/description "content is valid"
+             :json-schema/order 36)))
+
+
+(s/def ::validation-message
+  (-> (st/spec string?)
+      (assoc :name "message"
+             :json-schema/type "string"
+             :json-schema/order 37)))
+
 
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
@@ -143,7 +157,9 @@
                                                       ::data-access-protocols
                                                       ::versions
                                                       ::content
-                                                      ::compatibility]}]))
+                                                      ::compatibility
+                                                      ::valid
+                                                      ::validation-message]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))

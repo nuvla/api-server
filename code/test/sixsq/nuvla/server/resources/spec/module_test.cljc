@@ -29,7 +29,9 @@
 
                    :data-accept-content-types ["application/json" "application/x-something"]
                    :data-access-protocols     ["http+s3" "posix+nfs"]
-                   :compatibility             "swarm"}]
+                   :compatibility             "swarm"
+                   :valid                     false
+                   :validation-message        "docker-compose error"}]
 
     (stu/is-valid ::module/schema root)
     (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
@@ -40,5 +42,6 @@
       (stu/is-invalid ::module/schema (dissoc root k)))
 
     ;; optional attributes
-    (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols :compatibility}]
+    (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols
+                :compatibility :valid :validation-message}]
       (stu/is-valid ::module/schema (dissoc root k)))))

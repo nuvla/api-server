@@ -4,6 +4,7 @@
 
 ### changed
 
+  - Module - new attributes valid and validation-message
   - Module - allow edit module metadata without updating module-content
     by ommitting the module-content in the body of the request. This 
     will also prevent creation of useless versions
