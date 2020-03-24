@@ -111,7 +111,7 @@ component, or application.
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
                                                                         utils/split-resource)
-        module-meta (dissoc module-meta :compatibility)]
+        module-meta (dissoc module-meta :compatibility :parent-path)]
 
     (if (utils/is-project? subtype)
       (db-add-module-meta module-meta request)
@@ -198,7 +198,7 @@ component, or application.
                                                                           utils/split-resource)
           {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
-                          (dissoc :compatibility)
+                          (dissoc :compatibility :parent-path)
                           (assoc :subtype subtype)
                           utils/set-parent-path)]
 

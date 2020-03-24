@@ -167,7 +167,7 @@
         (is (= 7 (-> session-admin
                      (request abs-uri
                               :request-method :put
-                              :body (json/write-str (dissoc valid-entry :content)))
+                              :body (json/write-str (dissoc valid-entry :content :path)))
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (ltu/body)

@@ -50,7 +50,7 @@
   "Updates the :parent-path key in the module resource to ensure that it is
    consistent with the value of :path."
   [{:keys [path] :as resource}]
-  (assoc resource :parent-path (get-parent-path path)))
+  (when path (assoc resource :parent-path (get-parent-path path))))
 
 
 (def ^:const compose-specific-keys
