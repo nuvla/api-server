@@ -89,9 +89,11 @@
 (defn get-compatibility-fields
   [docker-compose]
   (let [services-keys-set   (docker-compose-services-keys-set docker-compose)
-        compatibilty-flag   (if (some-services-has-swarm-options? services-keys-set)
-                              "swarm" "docker-compose")
-        unsupported-options (-> services-keys-set list-swarm-unsupported-options vec)]
+        unsupported-options (-> services-keys-set list-swarm-unsupported-options vec)
+        compatibilty-flag   (if (and (not (some-services-has-swarm-options? services-keys-set))
+                                     (seq unsupported-options))
+                              "docker-compose"
+                              "swarm")]
     [compatibilty-flag unsupported-options]))
 
 
