@@ -4,6 +4,9 @@
 
 ### changed
 
+  - Module - allow edit module metadata without updating module-content
+    by ommitting the module-content in the body of the request. This 
+    will also prevent creation of useless versions
   - Module - subtype application support for check-docker-compose 
     action
   - Module - subtype application support for server managed attributes

@@ -208,35 +208,38 @@ component, or application.
         (->> module-meta
              (assoc request :body)
              edit-impl)
-        (let [content-url     (subtype->resource-url subtype)
+        (let [content-url  (subtype->resource-url subtype)
 
               [compatibility
-               unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
+               unsupported-options] (when docker-compose
+                                      (utils/parse-get-compatibility-fields
+                                        subtype docker-compose))
 
-              content-body    (-> module-content
-                                  (dissoc :unsupported-options)
-                                  (merge {:resource-type content-url})
-                                  (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                           unsupported-options)))
+              content-body (some-> module-content
+                                   (dissoc :unsupported-options)
+                                   (merge {:resource-type content-url})
+                                   (cond-> (seq unsupported-options) (assoc :unsupported-options
+                                                                            unsupported-options)))
 
-              content-request {:params      {:resource-name content-url}
-                               :body        content-body
-                               :nuvla/authn auth/internal-identity}
+              content-id   (when content-body
+                             (-> {:params      {:resource-name content-url}
+                                  :body        content-body
+                                  :nuvla/authn auth/internal-identity}
+                                 crud/add
+                                 :body
+                                 :resource-id))
 
-              response        (crud/add content-request)
-
-              content-id      (-> response :body :resource-id)
-
-              versions        (conj versions (cond-> {:href   content-id
-                                                      :author author}
-                                                     commit (assoc :commit commit)))]
-
+              versions     (when content-id
+                             (conj versions
+                                   (cond-> {:href   content-id
+                                            :author author}
+                                           commit (assoc :commit commit))))]
           (edit-impl
             (assoc request
               :body
-              (-> module-meta
-                  (assoc :versions versions)
-                  (cond-> compatibility (assoc :compatibility compatibility))))))))
+              (cond-> module-meta
+                      versions (assoc :versions versions)
+                      compatibility (assoc :compatibility compatibility)))))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -338,8 +341,8 @@ component, or application.
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} request]
   (let [validate-docker-compose-op (u/action-map id :validate-docker-compose)
-        check-op-present?       (and (a/can-manage? resource request)
-                                     (utils/is-application? subtype))]
+        check-op-present?          (and (a/can-manage? resource request)
+                                        (utils/is-application? subtype))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op))))
 

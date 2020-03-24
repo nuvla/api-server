@@ -163,6 +163,17 @@
               (is (= (-> versions (nth n) :author) "someone"))
               (is (= (-> versions (nth n) :commit) "wip")))))
 
+        ;; edit module without putting the module-content should not create new version
+        (is (= 7 (-> session-admin
+                     (request abs-uri
+                              :request-method :put
+                              :body (json/write-str (dissoc valid-entry :content)))
+                     (ltu/body->edn)
+                     (ltu/is-status 200)
+                     (ltu/body)
+                     :versions
+                     count)))
+
         (doseq [i ["_0" "_1"]]
           (-> session-admin
               (request (str abs-uri i)
