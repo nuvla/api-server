@@ -65,9 +65,13 @@
 
 (defn docker-compose-services-keys-set
   [{:strs [services] :as docker-compose}]
-  (->> services
-       (map (fn [[_ service-content]] (when (map? service-content) (-> service-content keys set))))
-       (reduce set/union)))
+  (set
+    (when (coll? services)
+      (->> services
+           (map (fn [[_ service-content]]
+                  (when (map? service-content)
+                    (-> service-content keys set))))
+           (reduce set/union)))))
 
 
 (defn list-swarm-unsupported-options
