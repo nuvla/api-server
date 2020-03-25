@@ -75,7 +75,5 @@
   (are [expected arg] (= expected (t/parse-get-compatibility-fields t/subtype-app arg))
                       ["swarm" []] docker-compose-0-str
                       ["swarm" []] docker-compose-1-str
-                      ["docker-compose" ["build" "depends_on"]] docker-compose-2-str
-                      ["docker-compose" ["devices" "network_mode" "depends_on"
-                                         "container_name" "restart" "cap_add"]] docker-compose-3-str
-                      ))
+                      ["docker-compose" []] docker-compose-2-str
+                      ["docker-compose" []] docker-compose-3-str))
