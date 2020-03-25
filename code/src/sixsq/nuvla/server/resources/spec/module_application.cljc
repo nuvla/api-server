@@ -48,7 +48,9 @@
   (-> (st/spec (s/coll-of string? :kind vector?))
     (assoc :name "unsupported options"
            :json-schema/type "array"
-           :json-schema/description "unsupported options in compose file")))
+           :json-schema/description "unsupported options for swarm in compose file"
+           :json-schema/server-managed true
+           :json-schema/editable false)))
 
 
 (def module-application-keys-spec (su/merge-keys-specs

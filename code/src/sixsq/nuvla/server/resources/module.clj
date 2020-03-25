@@ -5,7 +5,6 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -13,11 +12,10 @@ component, or application.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
-    [sixsq.nuvla.server.resources.module.utils :as module-utils]
+    [sixsq.nuvla.server.resources.module.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -57,22 +55,14 @@ component, or application.
 ;; CRUD operations
 ;;
 
-(defn subtype->resource-name
-  [subtype]
-  (case subtype
-    "component" module-component/resource-type
-    "application" module-application/resource-type
-    "application_kubernetes" module-application/resource-type
-    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
-
-(defn subtype->resource-uri
+(defn subtype->resource-url
   [subtype]
-  (case subtype
-    "component" module-component/resource-type
-    "application" module-application/resource-type
-    "application_kubernetes" module-application/resource-type
-    (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
+  (cond
+    (utils/is-component? subtype) module-component/resource-type
+    (utils/is-application? subtype) module-application/resource-type
+    (utils/is-application-k8s? subtype) module-application/resource-type
+    :else (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
 (defn colliding-path?
@@ -96,24 +86,19 @@ component, or application.
     (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
-(defn create-compatibility-job
-  [id subtype acl]
-  (when (= subtype "application")
-    (try
-      (let [{{job-id     :resource-id
-              job-status :status} :body} (job/create-job id "application_compatibility_check"
-                                                         acl
-                                                         :priority 50)
-            job-msg (str "checking application compatibility " id " with async " job-id)]
-        (when (not= job-status 201)
-          (throw (r/ex-response
-                   "unable to create async job to check application compatibility" 500 id)))
-        (event-utils/create-event id job-msg acl)
-        (r/map-response job-msg 202 id job-id))
-      (catch Exception e
-        ; do nothing. If the job is not created it is not reason to panic
-        (log/error (str "cannot check module compatibility: '" id e "'"))
-        ))))
+(defn db-add-module-meta
+  [module-meta request]
+  (db/add
+    resource-type
+    (-> module-meta
+        utils/set-parent-path
+        u/strip-service-attrs
+        (crud/new-identifier resource-type)
+        (assoc :resource-type resource-type)
+        u/update-timestamps
+        (crud/add-acl request)
+        crud/validate)
+    {}))
 
 
 (defmethod crud/add resource-type
@@ -124,26 +109,22 @@ component, or application.
   (throw-colliding-path (:path body))
 
   (let [[{:keys [subtype] :as module-meta}
-         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
-                                                         module-utils/split-resource)]
+         {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
+                                                                        utils/split-resource)
+        module-meta (dissoc module-meta :compatibility :parent-path)]
 
-    (if (= "project" subtype)
-      (let [module-meta (module-utils/set-parent-path module-meta)]
+    (if (utils/is-project? subtype)
+      (db-add-module-meta module-meta request)
+      (let [content-url     (subtype->resource-url subtype)
 
-        (db/add                                             ; FIXME duplicated code
-          resource-type
-          (-> module-meta
-              u/strip-service-attrs
-              (crud/new-identifier resource-type)
-              (assoc :resource-type resource-type)
-              u/update-timestamps
-              (crud/add-acl request)
-              crud/validate)
-          {}))
-      (let [content-url     (subtype->resource-name subtype)
-            content-uri     (subtype->resource-uri subtype)
+            [compatibility
+             unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
 
-            content-body    (merge module-content {:resource-type content-uri})
+            content-body    (-> module-content
+                                (dissoc :unsupported-options)
+                                (merge {:resource-type content-url})
+                                (cond-> (seq unsupported-options) (assoc :unsupported-options
+                                                                         unsupported-options)))
 
             content-request {:params      {:resource-name content-url}
                              :body        content-body
@@ -151,30 +132,13 @@ component, or application.
 
             response        (crud/add content-request)
 
-            content-id      (-> response :body :resource-id)
-            module-meta     (module-utils/set-parent-path
-                              (assoc module-meta
-                                :versions [(cond-> {:href   content-id
-                                                    :author author}
-                                                   commit (assoc :commit commit))]))
-
-            user-id         (auth/current-user-id request)
-            job-acl         {:owners   ["group/nuvla-admin"]
-                             :view-acl [user-id]}
-
-            module          (db/add
-                              resource-type
-                              (-> module-meta
-                                  u/strip-service-attrs
-                                  (crud/new-identifier resource-type)
-                                  (assoc :resource-type resource-type)
-                                  u/update-timestamps
-                                  (crud/add-acl request)
-                                  crud/validate)
-                              {})]
-
-        (create-compatibility-job (get-in module [:body :resource-id]) subtype job-acl)
-        module))))
+            content-id      (-> response :body :resource-id)]
+        (-> module-meta
+            (assoc :versions [(cond-> {:href   content-id
+                                       :author author}
+                                      commit (assoc :commit commit))])
+            (cond-> compatibility (assoc :compatibility compatibility))
+            (db-add-module-meta request))))))
 
 
 (defn split-uuid
@@ -227,43 +191,55 @@ component, or application.
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
   (try
-    (let [id (str resource-type "/" (-> request :params :uuid))
-          [module-meta {:keys [author commit] :as module-content}]
-          (-> body u/strip-service-attrs module-utils/split-resource)
-          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)]
+    (let [id          (str resource-type "/" (-> request :params :uuid))
+          [module-meta
+           {:keys [author commit docker-compose] :as module-content}] (-> body
+                                                                          u/strip-service-attrs
+                                                                          utils/split-resource)
+          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)
+          module-meta (-> module-meta
+                          (dissoc :compatibility :parent-path)
+                          (assoc :subtype subtype)
+                          utils/set-parent-path)]
 
       (a/can-edit? {:acl acl} request)
 
-      (if (= "project" subtype)
-        (let [module-meta (module-utils/set-parent-path (assoc module-meta :subtype subtype))]
+      (if (utils/is-project? subtype)
+        (->> module-meta
+             (assoc request :body)
+             edit-impl)
+        (let [content-url  (subtype->resource-url subtype)
 
-          (edit-impl (assoc request :body module-meta)))
-        (let [content-url     (subtype->resource-name subtype)
-              content-uri     (subtype->resource-uri subtype)
+              [compatibility
+               unsupported-options] (when docker-compose
+                                      (utils/parse-get-compatibility-fields
+                                        subtype docker-compose))
 
-              content-body    (merge module-content {:resource-type content-uri})
+              content-body (some-> module-content
+                                   (dissoc :unsupported-options)
+                                   (merge {:resource-type content-url})
+                                   (cond-> (seq unsupported-options) (assoc :unsupported-options
+                                                                            unsupported-options)))
 
-              content-request {:params      {:resource-name content-url}
-                               :body        content-body
-                               :nuvla/authn auth/internal-identity}
+              content-id   (when content-body
+                             (-> {:params      {:resource-name content-url}
+                                  :body        content-body
+                                  :nuvla/authn auth/internal-identity}
+                                 crud/add
+                                 :body
+                                 :resource-id))
 
-              response        (crud/add content-request)
-
-              content-id      (-> response :body :resource-id)
-
-              versions        (conj versions (cond-> {:href   content-id
-                                                      :author author}
-                                                     commit (assoc :commit commit)))
-              module-meta     (module-utils/set-parent-path
-                                (assoc module-meta :versions versions
-                                                   :subtype subtype))
-
-              {{:keys [id, acl]} :body :as module} (edit-impl (assoc request :body module-meta))]
-
-          (when id
-            (create-compatibility-job id subtype acl))
-          module
-          )))
+              versions     (when content-id
+                             (conj versions
+                                   (cond-> {:href   content-id
+                                            :author author}
+                                           commit (assoc :commit commit))))]
+          (edit-impl
+            (assoc request
+              :body
+              (cond-> module-meta
+                      versions (assoc :versions versions)
+                      compatibility (assoc :compatibility compatibility)))))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -281,7 +257,7 @@ component, or application.
 (defn delete-content
   [content-id subtype]
   (let [delete-request {:params      {:uuid          (-> content-id u/parse-id second)
-                                      :resource-name (subtype->resource-name subtype)}
+                                      :resource-name (subtype->resource-url subtype)}
                         :body        {:id content-id}
                         :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
@@ -312,10 +288,8 @@ component, or application.
 (defmethod crud/delete resource-type
   [{{uuid-full :uuid} :params :as request}]
   (try
-
-    (let [module-meta (retrieve-edn request)
-
-          _           (a/throw-cannot-edit module-meta request)
+    (let [module-meta (-> (retrieve-edn request)
+                          (a/throw-cannot-edit request))
 
           [uuid version-index] (split-uuid uuid-full)
           request     (assoc-in request [:params :uuid] uuid)]
@@ -336,6 +310,41 @@ component, or application.
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
+
+
+(defn create-validate-docker-compose-job
+  [{:keys [id acl] :as resource}]
+  (try
+    (let [{{job-id     :resource-id
+            job-status :status} :body} (job/create-job id "validate-docker-compose"
+                                                       acl
+                                                       :priority 50)
+          job-msg (str "validating application docker-compose " id " with async " job-id)]
+      (when (not= job-status 201)
+        (throw (r/ex-response
+                 "unable to create async job to validate application docker-compose" 500 id)))
+      (r/map-response job-msg 202 id job-id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "validate-docker-compose"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)
+        {:keys [subtype acl] :as resource} (crud/retrieve-by-id-as-admin id)]
+    (a/throw-cannot-manage resource request)
+    (if (utils/is-application? subtype)
+      (create-validate-docker-compose-job resource)
+      (throw (r/ex-response "invalid subtype" 400)))))
+
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id subtype] :as resource} request]
+  (let [validate-docker-compose-op (u/action-map id :validate-docker-compose)
+        check-op-present?          (and (a/can-manage? resource request)
+                                        (utils/is-application? subtype))]
+    (cond-> (crud/set-standard-operations resource request)
+            check-op-present? (update :operations conj validate-docker-compose-op))))
 
 
 ;;

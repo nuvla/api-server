@@ -1,4 +1,4 @@
-(def parent-version "6.7.2")
+(def parent-version "6.7.3")
 (def nuvla-ring-version "2.0.2")
 
 (defproject sixsq.nuvla.server/api-jar "4.2.13-SNAPSHOT"
@@ -34,6 +34,7 @@
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
+   [clj-commons/clj-yaml]
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time]

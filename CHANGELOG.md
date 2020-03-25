@@ -4,6 +4,15 @@
 
 ### changed
 
+  - Module - path is no more mandatory when editing module
+  - Module - new attributes valid and validation-message
+  - Module - allow edit module metadata without updating module-content
+    by ommitting the module-content in the body of the request. This 
+    will also prevent creation of useless versions
+  - Module - subtype application support for check-docker-compose 
+    action
+  - Module - subtype application support for server managed attributes
+    for compatibility and unsupported-options
   - Deployment - Spec change replace data-records-filter by data map
   - User minimum - Create a validated email for external auth when
     available
