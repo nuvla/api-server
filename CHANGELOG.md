@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.13] - 2020-03-27
+
 ### changed
 
   - Module - path is no more mandatory when editing module
