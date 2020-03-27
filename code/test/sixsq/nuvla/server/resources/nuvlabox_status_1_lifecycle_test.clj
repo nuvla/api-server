@@ -54,10 +54,23 @@
                                                    :used     10000}
                                                   {:device   "datastore"
                                                    :capacity 20000
-                                                   :used     10000}]}
+                                                   :used     10000}]
+                                          :net-stats [{:interface "eth0"
+                                                       :bytes-received    5247943
+                                                       :bytes-transmitted 41213
+                                                       }
+                                                      {:interface "vpn"
+                                                       :bytes-received    2213
+                                                       :bytes-transmitted 55}]}
 
                   :wifi-password         "some-secure-password"
-                  :nuvlabox-api-endpoint "https://1.2.3.4:1234"})
+                  :nuvlabox-api-endpoint "https://1.2.3.4:1234"
+                  :operating-system      "Ubuntu"
+                  :architecture          "x86"
+                  :hostname              "localhost"
+                  :ip                    "127.0.0.1"
+                  :docker-server-version "19.0.3"
+                  :last-boot             "2020/02/18, 19:42:08"})
 
 
 (def resources-updated {:cpu   {:capacity 10

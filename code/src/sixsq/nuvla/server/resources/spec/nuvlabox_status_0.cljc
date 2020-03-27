@@ -86,6 +86,24 @@
              :json-schema/order 12)))
 
 
+(s/def ::bytes-transmitted
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "bytes-transmitted"
+           :json-schema/type "double"
+           :json-schema/description "number of bytes transmitted tx_bytes"
+
+           :json-schema/order 43)))
+
+
+(s/def ::bytes-received
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "bytes-received"
+           :json-schema/type "double"
+           :json-schema/description "number of bytes received rx_bytes"
+
+           :json-schema/order 43)))
+
+
 (s/def ::cpu
   (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample]))
       (assoc :name "cpu"
@@ -114,6 +132,32 @@
              :json-schema/order 23)))
 
 
+(s/def ::interface
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "interface"
+           :json-schema/description "network interface name"
+
+           :json-schema/order 44)))
+
+
+(s/def ::net-interface-stat
+  (-> (st/spec (su/only-keys :req-un [::interface ::bytes-received ::bytes-transmitted]))
+    (assoc :name "net-interface-stat"
+           :json-schema/type "array"
+           :json-schema/description "txBytes and rxBytes for each network interface"
+
+           :json-schema/order 45)))
+
+
+(s/def ::net-stats
+  (-> (st/spec (s/coll-of ::net-interface-stat :min-count 1 :kind vector?))
+    (assoc :name "network-interfaces"
+           :json-schema/type "array"
+           :json-schema/description "txBytes and rxBytes for each network interface"
+
+           :json-schema/order 46)))
+
+
 (s/def ::device
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "device"
@@ -139,13 +183,60 @@
 
 
 (s/def ::resources
-  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks]))
+  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats]))
       (assoc :name "resources"
              :json-schema/type "map"
              :json-schema/description "available and consumed resources"
 
              :json-schema/order 33)))
 
+
+(s/def ::operating-system
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "operating-system"
+           :json-schema/description "name of the host OS"
+
+           :json-schema/order 37)))
+
+
+(s/def ::architecture
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "architecture"
+           :json-schema/description "platform hw architecture"
+
+           :json-schema/order 38)))
+
+
+(s/def ::hostname
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "hostname"
+           :json-schema/description "device hostname"
+
+           :json-schema/order 39)))
+
+
+(s/def ::ip
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "ip"
+           :json-schema/description "device IP, as used by the NuvlaBox"
+
+           :json-schema/order 40)))
+
+
+(s/def ::docker-server-version
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "docker server version"
+           :json-schema/description "docker server version on the host"
+
+           :json-schema/order 41)))
+
+
+(s/def ::last-boot
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "last boot"
+           :json-schema/description "last boot time"
+
+           :json-schema/order 42)))
 ;;
 ;; peripherals
 ;;
@@ -251,6 +342,12 @@
                                ::current-time
                                ::comment
                                ::resources
+                               ::operating-system
+                               ::architecture
+                               ::hostname
+                               ::ip
+                               ::docker-server-version
+                               ::last-boot
                                ::peripherals
                                ::wifi-password
                                ::nuvlabox-api-endpoint]}))
