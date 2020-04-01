@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - New telemetry attributes for the NuvlaBox status
+
 ## [4.2.13] - 2020-03-27
 
 ### changed
