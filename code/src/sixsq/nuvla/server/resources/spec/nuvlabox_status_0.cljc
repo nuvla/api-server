@@ -232,7 +232,7 @@
 
 
 (s/def ::last-boot
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec ::core/timestamp)
     (assoc :name "last boot"
            :json-schema/description "last boot time"
 
