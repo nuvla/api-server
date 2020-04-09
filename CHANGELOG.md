@@ -6,6 +6,11 @@
 
   - New telemetry attributes for the NuvlaBox status
 
+### Changed
+
+  - User creation show clear conflict message when user-identifier 
+    already exist.
+
 ## [4.2.13] - 2020-03-27
 
 ### changed
