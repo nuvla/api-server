@@ -65,7 +65,7 @@
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (case status
       201 resource-id
-      409 (throw (r/ex-response (format "identifier (%s) is associated with an existing account" identifier) 409 identifier))
+      409 (throw (r/ex-response (format "Account with identifier \"%s\" already exist!" identifier) 409 identifier))
       (throw (ex-info (format "could not create identifier for '%s' -> '%s'" user-id identifier) body)))))
 
 
@@ -92,15 +92,16 @@
 
 (defn create-user-subresources
   [user-id email password username]
+
+  (when email
+    (create-identifier user-id email))
+
+  (when username
+    (create-identifier user-id username))
+
   (let [credential-id (when password (create-hashed-password user-id password))
         email-id      (when email (create-email user-id email))]
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)
-                                 email-id (assoc :email email-id)))
-
-    (when email
-      (create-identifier user-id email))
-
-    (when username
-      (create-identifier user-id username))))
+                                 email-id (assoc :email email-id)))))

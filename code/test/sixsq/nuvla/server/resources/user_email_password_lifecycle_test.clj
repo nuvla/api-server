@@ -189,6 +189,16 @@
                                         (ltu/body))]
             (is validated))
 
+          ;; user can't create a user with an existing identifier
+
+          (-> session-anon
+              (request base-uri
+                       :request-method :post
+                       :body (json/write-str href-create))
+              (ltu/body->edn)
+              (ltu/is-status 409)
+              (ltu/message-matches #"Account with identifier \".*\" already exist!"))
+
           ;; user can delete his account
           (-> session-created-user
               (request (str p/service-context user-id)
@@ -210,28 +220,10 @@
           (-> session-created-user
               (request (str p/service-context email-id))
               (ltu/body->edn)
-              (ltu/is-status 404)))
+              (ltu/is-status 404))
 
-        ;; ensure that user is not created and all child resources are cleaned up when
-        ;; trying to create a user with an existing identifier
-        (let [resp                 (-> session-anon
-                                       (request base-uri
-                                                :request-method :post
-                                                :body (json/write-str
-                                                        (assoc-in href-create
-                                                                  [:template :username] "jane@example.org")))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 409))
-              user-id              (ltu/body-resource-id resp)
-              session-created-user (header session authn-info-header
-                                           (str user-id " group/nuvla-user group/nuvla-anon"))
+          ;; ensure that user is not created and all child resources are cleaned up
 
-              {:keys [email]} (-> session-created-user
-                                  (request (str p/service-context user-id))
-                                  (ltu/body->edn)
-                                  (ltu/body))]
-
-          ; credential cleanup
           (-> session-admin
               (request (str p/service-context credential/resource-type))
               (ltu/body->edn)
@@ -252,7 +244,4 @@
               (ltu/is-status 200)
               (ltu/is-count 0))
 
-          (-> session-created-user
-              (request (str p/service-context email))
-              (ltu/body->edn)
-              (ltu/is-status 404)))))))
+          )))))
