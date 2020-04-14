@@ -2,12 +2,16 @@
 
 ## Unreleased
 
+## [4.2.14] - 2020-04-14
+
 ### Added
 
   - New telemetry attributes for the NuvlaBox status
 
 ### Changed
 
+  - Data-object - Fix regression in S3 because of missing
+    dependency Joda-time
   - User creation show clear conflict message when user-identifier 
     already exist.
 
