@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Added new generic attribute `additional-assets` to nuvlabox-peripheral resource schema
+
 ## [4.2.14] - 2020-04-14
 
 ### Added
