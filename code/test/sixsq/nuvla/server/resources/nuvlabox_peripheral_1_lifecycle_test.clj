@@ -59,7 +59,9 @@
                        :local-data-gateway-endpoint "data-gateway/video/1"
                        :data-gateway-enabled        false
                        :serial-number               "123456"
-                       :video-device                "/dev/video0"})
+                       :video-device                "/dev/video0"
+                       :additional-assets           {:devices     ["/dev/device1", "/dev/device2"]
+                                                     :libraries   ["/lib/a", "/lib/b"]}})
 
 
 (deftest check-metadata
