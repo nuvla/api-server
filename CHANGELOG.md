@@ -2,10 +2,12 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
   - Session - Implementation of switch action to allow user act as a
     group
+  - Added new generic attribute `additional-assets`
+    to nuvlabox-peripheral resource schema
 
 ## [4.2.14] - 2020-04-14
 

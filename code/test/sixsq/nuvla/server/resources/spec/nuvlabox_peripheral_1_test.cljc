@@ -36,7 +36,9 @@
                  :local-data-gateway-endpoint "data-gateway/video/1"
                  :data-gateway-enabled        true
                  :serial-number               "123456"
-                 :video-device                "/dev/video0"})
+                 :video-device                "/dev/video0"
+                 :additional-assets           {:devices     ["/dev/device1", "/dev/device2"]
+                                               :libraries   ["/lib/a", "/lib/b"]}})
 
 
 (deftest check-nuvlabox-peripheral
@@ -51,5 +53,5 @@
 
   ;; optional
   (doseq [attr #{:device-path :interface :vendor :port :product :raw-data-sample :local-data-gateway-endpoint
-                 :data-gateway-enabled :serial-number :video-device}]
+                 :data-gateway-enabled :serial-number :video-device :additional-assets}]
     (stu/is-valid ::nb-peripheral-1/schema (dissoc peripheral attr))))

@@ -126,6 +126,33 @@
            :json-schema/order 44)))
 
 
+(s/def ::devices
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "additional-devices"
+           :json-schema/type "array"
+           :json-schema/description "additional devices in the filesystem, related with the peripheral"
+
+           :json-schema/order 45)))
+
+
+(s/def ::libraries
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "libraries"
+           :json-schema/type "array"
+           :json-schema/description "additional libraries related with the peripheral"
+
+           :json-schema/order 46)))
+
+
+(s/def ::additional-assets
+  (-> (st/spec (su/only-keys :opt-un [::devices ::libraries]))
+    (assoc :name "additional-assets"
+           :json-schema/type "map"
+           :json-schema/description "additional assets that might be related with the peripheral"
+
+           :json-schema/order 47)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -134,6 +161,7 @@
                                ::classes]
                       :opt-un [::device-path
                                ::port
+                               ::additional-assets
                                ::interface
                                ::vendor
                                ::product
