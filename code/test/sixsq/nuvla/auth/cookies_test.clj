@@ -83,7 +83,8 @@
 (deftest check-collect-groups-for-user
   (with-redefs [db/query (constantly nil)]
     (let [result (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")]
-      (is (= #{"group/nuvla-user" "group/nuvla-anon"} (set (str/split result #"\s")))))))
+      (is (= #{"group/nuvla-user" "group/nuvla-anon"
+               "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"} (set (str/split result #"\s")))))))
 
 
 (deftest check-collect-groups-for-user-with-real-groups
@@ -138,5 +139,6 @@
 
       ;; check that the changes have been picked up
       (let [result (t/collect-groups-for-user user-id)]
-        (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"}
+        (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"
+                 user-id}
                (set (str/split result #"\s"))))))))

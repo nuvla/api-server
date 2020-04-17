@@ -35,7 +35,7 @@
     (let [user-id (first terms)
           claims  (seq (rest terms))
           session (first (keep is-session? (rest terms)))]
-      (cond-> {:claims #{user-id "group/nuvla-anon"}}
+      (cond-> {:claims (set [user-id "group/nuvla-anon"])}
               user-id (assoc :user-id user-id)
               claims (update :claims set/union (set claims))
               session (assoc :session session)))))

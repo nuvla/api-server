@@ -15,7 +15,8 @@
     [sixsq.nuvla.server.resources.session-api-key :as t]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.auth.cookies :as cookies]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
@@ -61,17 +62,21 @@
 
 (deftest check-create-claims
   (let [user-id    "user/root"
-        server     "nuv.la"
+        server     "nuvla.io"
         headers    {:nuvla-ssl-server-name server}
         claims     #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip  "127.0.0.1"]
     (is (= {:client-ip "127.0.0.1"
-            :claims    (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
+            :claims    (str "group/nuvla-admin group/nuvla-anon group/nuvla-user user/root " session-id)
             :user-id   "user/root"
-            :server    "nuv.la"
+            :server    "nuvla.io"
             :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
-           (t/create-cookie-info user-id claims headers session-id client-ip)))))
+           (cookies/create-cookie-info user-id
+                                       :claims claims
+                                       :headers headers
+                                       :session-id session-id
+                                       :client-ip client-ip)))))
 
 
 (deftest lifecycle
