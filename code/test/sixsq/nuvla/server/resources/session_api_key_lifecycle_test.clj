@@ -159,7 +159,7 @@
 
           ;; check cookie-info in cookie
           (is (= "user/abcdef01-abcd-abcd-abcd-abcdef012345" (:user-id cookie-info)))
-          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
+          (is (= (str/join " " ["group/nuvla-anon" "group/nuvla-user" uri]) (:claims cookie-info))) ;; uri is also session id
           (is (= uri (:session cookie-info)))               ;; uri is also session id
           (is (not (nil? (:exp cookie-info))))
 
