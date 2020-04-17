@@ -19,12 +19,13 @@
 (def session-a "session/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 
 
-(def cookie-id (serialize-cookie-value (cookies/create-cookie {:user-id "user/uname2"})))
+(def cookie-id (serialize-cookie-value (cookies/create-cookie {:user-id "user/uname2"
+                                                               :claims  "group/nuvla-user user/uname2"})))
 
 
 (def cookie-id-roles (serialize-cookie-value
                        (cookies/create-cookie {:user-id "user/uname2"
-                                               :claims  "group/nuvla-user group/alpha-role"
+                                               :claims  "group/nuvla-user group/alpha-role user/uname2"
                                                :session session-a})))
 
 
@@ -42,17 +43,20 @@
     (= expected (t/extract-header-authn-info {:headers {t/authn-info-header header}}))
     nil nil
     nil ""
-    {:user-id "user/uname"} "user/uname"
-    {:user-id "user/uname"} "  user/uname"
-    {:claims #{"group/r1"} :user-id "user/uname"} "user/uname group/r1"
-    {:claims #{"group/r1"} :user-id "user/uname"} "  user/uname group/r1"
-    {:claims #{"group/r1"} :user-id "user/uname"} "user/uname group/r1  "
-    {:claims #{"group/r1" "group/r2"} :user-id "user/uname"} "user/uname group/r1 group/r2"))
+    {:user-id "user/uname"
+     :claims  #{"group/nuvla-anon" "user/uname"}} "user/uname"
+    {:user-id "user/uname"
+     :claims  #{"group/nuvla-anon"
+                "user/uname"}} "  user/uname"
+    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "user/uname group/r1"
+    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "  user/uname group/r1"
+    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "user/uname group/r1  "
+    {:claims #{"group/nuvla-anon" "user/uname" "group/r1" "group/r2"} :user-id "user/uname"} "user/uname group/r1 group/r2"))
 
 
-(deftest check-claims->authn-info
-  (are [expected claims]
-    (= expected (t/cookie-info->authn-info claims))
+(deftest check-cookie-info->authn-info
+  (are [expected cookie-info]
+    (= expected (t/cookie-info->authn-info cookie-info))
     nil nil
     nil {}
     {:claims #{} :user-id "user"} {:user-id "user"}
@@ -63,7 +67,11 @@
                                                                           :session "session"}
     {:claims #{"role1", "role2", "session"}, :session "session", :user-id "user"} {:user-id "user",
                                                                                    :claims  "role1 role2",
-                                                                                   :session "session"}))
+                                                                                   :session "session"}
+    {:claims #{"role1", "role2", "session"}, :session "session", :user-id "role2"} {:user-id      "user",
+                                                                                    :claims       "role1 role2",
+                                                                                    :session      "session"
+                                                                                    :active-claim "role2"}))
 
 
 
@@ -85,7 +93,7 @@
                             {:claims  #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
                              :user-id "user/uname"} {:headers {t/authn-info-header "user/uname group/r1 group/r2"}}
 
-                            {:claims  #{"group/nuvla-anon", "user/uname2"}
+                            {:claims  #{"group/nuvla-anon", "user/uname2", "group/nuvla-user"}
                              :user-id "user/uname2"} {:cookies {t/authn-cookie cookie-id}}
 
                             {:claims  #{"group/nuvla-user", "group/alpha-role",

@@ -14,7 +14,13 @@
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.resources.group-template :as group-tpl]
+    [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.middleware.authn-info :as t]
+    [sixsq.nuvla.auth.utils :as auth]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -157,7 +163,8 @@
         (is (= jane-user-id (:user-id authn-info)))
         (is (= #{"group/nuvla-user"
                  "group/nuvla-anon"
-                 uri}
+                 uri
+                 jane-user-id}
                (-> authn-info
                    :claims
                    (str/split #"\s")
@@ -200,7 +207,8 @@
             (ltu/is-status 200)
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
-            (ltu/is-operation-absent :edit))
+            (ltu/is-operation-absent :edit)
+            (ltu/is-operation-absent :switch))
 
         ; check contents of session
         (let [{:keys [name description tags]} (-> session-user
@@ -273,4 +281,157 @@
           (ltu/is-status 403)))
 
     ))
+
+(deftest switch-account-test
+
+  (let [app                (ltu/ring-app)
+        session-json       (content-type (session app) "application/json")
+        session-anon       (header session-json authn-info-header "user/unknown group/nuvla-anon")
+        session-admin      (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+        href               (str st/resource-type "/password")
+
+        username           "user/bob"
+        plaintext-password "BobBob-0"
+        user-id            (create-user session-admin
+                                        :username username
+                                        :password plaintext-password
+                                        :activated? true
+                                        :email "bob@example.org")]
+
+
+    ;; anon with valid activated user can create session
+    (let [username           "user/bob"
+          plaintext-password "BobBob-0"
+
+          valid-create       {:template {:href     href
+                                         :username username
+                                         :password plaintext-password}}]
+
+      ; anonymous create must succeed
+      (let [session-1          (-> session-anon
+                                   (request base-uri
+                                            :request-method :post
+                                            :body (json/write-str valid-create))
+                                   (ltu/body->edn)
+                                   (ltu/is-set-cookie)
+                                   (ltu/is-status 201))
+            session-1-id       (ltu/body-resource-id session-1)
+
+            session-1-uri      (ltu/location session-1)
+            sesssion-1-abs-uri (str p/service-context session-1-uri)
+            handler            (authn-info/wrap-authn-info identity)
+            authn-session-1    (-> {:cookies (get-in session-1 [:response :cookies])}
+                                   handler
+                                   seq
+                                   flatten)
+            _                  (log/error "ICIIII" authn-session-1)
+
+            group-identifier   "alpha"
+            group-alpha        (str group/resource-type "/" group-identifier)
+            group-create       {:template {:href             (str group-tpl/resource-type "/generic")
+                                           :group-identifier group-identifier}}
+            group-url          (-> session-admin
+                                   (request (str p/service-context group/resource-type)
+                                            :request-method :post
+                                            :body (json/write-str group-create))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201)
+                                   (ltu/location-url))]
+
+        ; user without additional group should not have operation switch
+        (-> (apply request session-json (concat [sesssion-1-abs-uri] authn-session-1))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-id session-1-id)
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :edit)
+            (ltu/is-operation-absent :switch))
+
+        ;; add user to group/alpha
+        (-> session-admin
+            (request group-url
+                     :request-method :put
+                     :body (json/write-str {:users [user-id]}))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; check switch operation present
+        (let [session-2         (-> session-anon
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str valid-create))
+                                    (ltu/body->edn)
+                                    (ltu/is-set-cookie)
+                                    (ltu/is-status 201))
+              session-2-id      (ltu/body-resource-id session-2)
+
+              session-2-uri     (ltu/location session-2)
+              session-2-abs-uri (str p/service-context session-2-uri)
+
+              authn-session-2   (-> {:cookies (get-in session-2 [:response :cookies])}
+                                    handler
+                                    seq
+                                    flatten)
+
+              switch-op-url     (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/get-op-url :switch))]
+
+          (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-id session-2-id)
+              (ltu/is-operation-present :delete)
+              (ltu/is-operation-absent :edit)
+              (ltu/is-operation-present :switch))
+
+          ;; switch to group-beta should fail
+          (-> (apply request session-json
+                     (concat [switch-op-url :body (json/write-str {:claim "group/beta"})
+                              :request-method :post] authn-session-2))
+              (ltu/body->edn)
+              (ltu/is-status 403)
+              (ltu/message-matches #"Switch account cannot be done to requested claim:.*"))
+
+          ;; switch with old session fail because wasn't in group/alpha
+          (-> (apply request session-json
+                     (concat [switch-op-url :body (json/write-str {:claim group-alpha})
+                              :request-method :post] authn-session-1))
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          ;; switch to group-alpha
+          (let [cookie-switch (-> (apply request session-json
+                                         (concat [switch-op-url :body (json/write-str
+                                                                        {:claim group-alpha})
+                                                  :request-method :post] authn-session-2))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-set-cookie)
+                                  :response
+                                  :cookies)]
+            (is (= group-alpha
+                   (-> {:cookies cookie-switch}
+                       handler
+                       auth/current-authentication
+                       :user-id))))
+
+          (let [cookie-switch-back (-> (apply request session-json
+                                              (concat [switch-op-url :body (json/write-str
+                                                                             {:claim user-id})
+                                                       :request-method :post] authn-session-2))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-set-cookie)
+                                       :response
+                                       :cookies)]
+            (is (= user-id
+                   (-> {:cookies cookie-switch-back}
+                       handler
+                       auth/current-authentication
+                       :user-id)))))
+
+        ))))
 

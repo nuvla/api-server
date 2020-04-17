@@ -20,6 +20,11 @@
   (:user-id (current-authentication request)))
 
 
+(defn current-claims
+  [request]
+  (:claims (current-authentication request)))
+
+
 (defn current-session-id
   [request]
   (->> request

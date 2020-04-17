@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Session - Implementation of switch action to allow user act as a
+    group
+
 ## [4.2.14] - 2020-04-14
 
 ### Added

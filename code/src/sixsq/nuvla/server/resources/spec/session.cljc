@@ -43,7 +43,11 @@
 (s/def ::client-ip ::core/nonblank-string)
 
 
+(s/def ::active-claim (s/nilable ::core/nonblank-string))
+
+
 (s/def ::session
   (su/only-keys-maps common/common-attrs
                      {:req-un [::method ::template ::expiry]
-                      :opt-un [::identifier ::user ::roles ::server ::client-ip ::hints/redirect-url]}))
+                      :opt-un [::identifier ::user ::roles ::server ::client-ip ::hints/redirect-url
+                               ::active-claim]}))
