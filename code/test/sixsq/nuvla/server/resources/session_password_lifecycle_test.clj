@@ -15,7 +15,6 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.group :as group]
@@ -325,7 +324,6 @@
                                    handler
                                    seq
                                    flatten)
-            _                  (log/error "ICIIII" authn-session-1)
 
             group-identifier   "alpha"
             group-alpha        (str group/resource-type "/" group-identifier)

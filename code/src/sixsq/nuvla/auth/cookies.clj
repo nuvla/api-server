@@ -68,7 +68,7 @@
   [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
   (let [server (:nuvla-ssl-server-name headers)]
     (cond-> {:user-id user-id
-             :claims  (or (str/join " " (sort claims))
+             :claims  (or (some->> claims seq sort (str/join " "))
                           (collect-groups-for-user user-id))}
             roles-ext (update :claims #(str % " " (str/join " " roles-ext)))
             server (assoc :server server)
