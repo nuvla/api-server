@@ -90,7 +90,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as log-util]
     [clojure.string :as str]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.utils.timestamp :as ts]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -362,17 +363,22 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
-(defn update-cookie
-  [{{:keys [id user roles client-ip]} :body :as session}
+(defn update-cookie-session
+  [{:keys [id user roles client-ip] :as session}
    {headers :headers {:keys [claim]} :body :as request}]
-  (->> (cookies/create-cookie-info user
-                                   :session-id id
-                                   :claims roles
-                                   :active-claim claim
-                                   :headers headers
-                                   :client-ip client-ip)
-       (cookies/create-cookie)
-       (assoc-in session [:cookies authn-info/authn-cookie])))
+  (let [cookie-info (cookies/create-cookie-info user
+                                                :session-id id
+                                                :claims (authn-info/split-claims roles)
+                                                :active-claim claim
+                                                :headers headers
+                                                :client-ip client-ip)
+        cookie      (cookies/create-cookie cookie-info)
+        expires     (ts/rfc822->iso8601 (:expires cookie))
+        session     (assoc session :expiry expires)]
+    (-> request
+        (assoc :body session)
+        (edit-impl)
+        (assoc-in [:cookies authn-info/authn-cookie] cookie))))
 
 
 (defmethod crud/do-action [resource-type "switch"]
@@ -383,9 +389,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
           (throw-claim-not-authorized request)
           (a/throw-cannot-edit request)
           (assoc :active-claim claim)
-          (->> (assoc request :body))
-          (edit-impl)
-          (update-cookie request)))
+          (update-cookie-session request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

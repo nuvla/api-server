@@ -401,35 +401,47 @@
               (ltu/is-status 403))
 
           ;; switch to group-alpha
-          (let [cookie-switch (-> (apply request session-json
-                                         (concat [switch-op-url :body (json/write-str
-                                                                        {:claim group-alpha})
-                                                  :request-method :post] authn-session-2))
-                                  (ltu/body->edn)
-                                  (ltu/is-status 200)
-                                  (ltu/is-set-cookie)
-                                  :response
-                                  :cookies)]
+          (let [cookie-switch        (-> (apply request session-json
+                                                (concat [switch-op-url :body (json/write-str
+                                                                               {:claim group-alpha})
+                                                         :request-method :post] authn-session-2))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)
+                                         (ltu/is-set-cookie)
+                                         :response
+                                         :cookies)
+                authn-session-switch (-> {:cookies cookie-switch}
+                                         handler
+                                         seq
+                                         flatten)]
             (is (= group-alpha
                    (-> {:cookies cookie-switch}
                        handler
                        auth/current-authentication
-                       :user-id))))
+                       :user-id)))
 
-          (let [cookie-switch-back (-> (apply request session-json
-                                              (concat [switch-op-url :body (json/write-str
-                                                                             {:claim user-id})
-                                                       :request-method :post] authn-session-2))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 200)
-                                       (ltu/is-set-cookie)
-                                       :response
-                                       :cookies)]
-            (is (= user-id
-                   (-> {:cookies cookie-switch-back}
-                       handler
-                       auth/current-authentication
-                       :user-id)))))
+            (-> (apply request session-json (concat [session-2-abs-uri] authn-session-switch))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-id session-2-id)
+                (ltu/is-operation-present :delete)
+                (ltu/is-operation-absent :edit)
+                (ltu/is-operation-present :switch))
+
+            (let [cookie-switch-back (-> (apply request session-json
+                                                (concat [switch-op-url :body (json/write-str
+                                                                               {:claim user-id})
+                                                         :request-method :post] authn-session-switch))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)
+                                         (ltu/is-set-cookie)
+                                         :response
+                                         :cookies)]
+              (is (= user-id
+                     (-> {:cookies cookie-switch-back}
+                         handler
+                         auth/current-authentication
+                         :user-id))))))
 
         ))))
 
