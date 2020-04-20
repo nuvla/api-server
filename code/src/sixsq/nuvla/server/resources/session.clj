@@ -374,7 +374,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                                 :client-ip client-ip)
         cookie      (cookies/create-cookie cookie-info)
         expires     (ts/rfc822->iso8601 (:expires cookie))
-        session     (assoc session :expiry expires)]
+        session     (assoc session :expiry expires
+                                   :active-claim claim)]
     (-> request
         (assoc :body session)
         (edit-impl)
@@ -382,13 +383,12 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod crud/do-action [resource-type "switch"]
-  [{{uuid :uuid} :params {:keys [claim]} :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (throw-claim-not-authorized request)
           (a/throw-cannot-edit request)
-          (assoc :active-claim claim)
           (update-cookie-session request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
