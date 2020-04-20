@@ -25,7 +25,7 @@
 
 (def cookie-id-roles (serialize-cookie-value
                        (cookies/create-cookie {:user-id "user/uname2"
-                                               :claims  "group/nuvla-user group/alpha-role user/uname2"
+                                               :claims  (str "group/nuvla-user group/alpha-role user/uname2 " session-a)
                                                :session session-a})))
 
 
@@ -60,15 +60,15 @@
     nil nil
     nil {}
     {:claims #{} :user-id "user"} {:user-id "user"}
-    {:claims #{"session"}, :session "session", :user-id "user"} {:user-id "user", :session "session"}
+    {:claims #{}, :session "session", :user-id "user"} {:user-id "user", :session "session"}
     {:claims #{"role1"}, :user-id "user"} {:user-id "user", :claims "role1"}
     {:claims #{"role1", "role2"}, :user-id "user"} {:user-id "user", :claims "role1 role2"}
-    {:claims #{"role1", "session"}, :session "session", :user-id "user"} {:user-id "user", :claims "role1",
+    {:claims #{"role1"}, :session "session", :user-id "user"} {:user-id "user", :claims "role1",
                                                                           :session "session"}
-    {:claims #{"role1", "role2", "session"}, :session "session", :user-id "user"} {:user-id "user",
+    {:claims #{"role1", "role2"}, :session "session", :user-id "user"} {:user-id "user",
                                                                                    :claims  "role1 role2",
                                                                                    :session "session"}
-    {:claims #{"role1", "role2", "session"}, :session "session", :user-id "role2"} {:user-id      "user",
+    {:claims #{"role1", "role2"}, :session "session", :user-id "role2"} {:user-id      "user",
                                                                                     :claims       "role1 role2",
                                                                                     :session      "session"
                                                                                     :active-claim "role2"}))
