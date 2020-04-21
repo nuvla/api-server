@@ -15,6 +15,7 @@
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
@@ -427,6 +428,20 @@
                 (ltu/is-operation-present :delete)
                 (ltu/is-operation-absent :edit)
                 (ltu/is-operation-present :switch))
+
+            ;; try create NuvlaBox and check who is the owner
+            (let [nuvlabox-url (-> (apply request session-json
+                                          (concat [(str p/service-context nuvlabox/resource-type)
+                                                   :body (json/write-str {})
+                                                   :request-method :post] authn-session-switch))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 201)
+                                   (ltu/location-url))]
+
+              (-> (apply request session-json (concat [nuvlabox-url] authn-session-switch))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :owner group-alpha)))
 
             (let [cookie-switch-back (-> (apply request session-json
                                                 (concat [switch-op-url :body (json/write-str

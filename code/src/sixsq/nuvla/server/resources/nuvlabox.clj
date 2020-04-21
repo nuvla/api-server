@@ -114,14 +114,15 @@ particular NuvlaBox release.
      :or   {version          latest-version
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
+
   (let [authn-info (auth/current-authentication request)
         is-admin?  (acl-resource/is-admin? authn-info)]
     (when vpn-server-id
       (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
-    (let [user-id      (auth/current-user-id request)
-          nb-owner     (if is-admin? (or owner user-id) user-id)
+    (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
+                                     (auth/current-user-id request))
           new-nuvlabox (assoc body :version version
                                    :state state-new
                                    :refresh-interval refresh-interval
