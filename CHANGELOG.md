@@ -5,9 +5,13 @@
 ### Added
 
   - Session - Implementation of switch action to allow user act as a
-    group
+    group.
   - Added new generic attribute `additional-assets`
-    to nuvlabox-peripheral resource schema
+    to nuvlabox-peripheral resource schema.
+
+### Changed
+
+  - NuvlaBox - User isn't allowed anymore to set owner field.
 
 ## [4.2.14] - 2020-04-14
 

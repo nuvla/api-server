@@ -110,21 +110,22 @@ particular NuvlaBox release.
 
 
 (defmethod crud/add resource-type
-  [{{:keys [version refresh-interval vpn-server-id]
+  [{{:keys [version refresh-interval vpn-server-id owner]
      :or   {version          latest-version
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
+  (let [authn-info (auth/current-authentication request)
+        is-admin?  (acl-resource/is-admin? authn-info)]
+    (when vpn-server-id
+      (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
+        (vpn-utils/check-service-subtype vpn-service)))
 
-  (when vpn-server-id
-    (let [authn-info  (auth/current-authentication request)
-          vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
-      (vpn-utils/check-service-subtype vpn-service)))
+    (let [new-nuvlabox (assoc body :version version
+                                   :state state-new
+                                   :refresh-interval refresh-interval
+                                   :owner (if is-admin? owner (auth/current-user-id request)))]
 
-  (let [new-nuvlabox (assoc body :version version
-                                 :state state-new
-                                 :refresh-interval refresh-interval)]
-
-    (add-impl (assoc request :body new-nuvlabox))))
+      (add-impl (assoc request :body new-nuvlabox)))))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -184,9 +185,10 @@ particular NuvlaBox release.
 
 
 (defmethod crud/edit resource-type
-  [{:keys [nuvla/authn body params] :as request}]
+  [{:keys [body params] :as request}]
   (let [id               (str resource-type "/" (:uuid params))
-        is-admin?        (acl-resource/is-admin? authn)
+        authn-info       (auth/current-authentication request)
+        is-admin?        (acl-resource/is-admin? authn-info)
         nuvlabox         (db/retrieve id request)
         updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
 
