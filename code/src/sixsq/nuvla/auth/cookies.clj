@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.auth.cookies
   "utilities for embedding and extracting tokens in cookies"
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils.sign :as sg]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
-    [clojure.string :as str]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.group :as group]))

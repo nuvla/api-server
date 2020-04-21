@@ -79,9 +79,11 @@ status, a 'set-cookie' header, and a 'location' header with the created
 `session` resource.
 "
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
@@ -89,9 +91,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as log-util]
-    [clojure.string :as str]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.utils.timestamp :as ts]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

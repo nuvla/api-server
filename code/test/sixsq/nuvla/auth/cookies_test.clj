@@ -1,19 +1,19 @@
 (ns sixsq.nuvla.auth.cookies-test
   (:refer-clojure :exclude [update])
   (:require
+    [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as environ]
+    [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as t]
-    [peridot.core :refer [content-type header request session]]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.auth.env-fixture :as env-fixture]
-    [clojure.string :as str]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [clojure.data.json :as json]
+    [sixsq.nuvla.server.app.params :as p]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.group :as group]
-    [sixsq.nuvla.server.app.params :as p]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

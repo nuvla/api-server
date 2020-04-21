@@ -5,21 +5,21 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.middleware.authn-info :as t]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
-    [sixsq.nuvla.server.resources.group-template :as group-tpl]
-    [sixsq.nuvla.server.resources.group :as group]
-    [sixsq.nuvla.server.middleware.authn-info :as t]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

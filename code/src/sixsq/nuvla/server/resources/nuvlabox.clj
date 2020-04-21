@@ -120,10 +120,12 @@ particular NuvlaBox release.
       (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
-    (let [new-nuvlabox (assoc body :version version
+    (let [user-id      (auth/current-user-id request)
+          nb-owner     (if is-admin? (or owner user-id) user-id)
+          new-nuvlabox (assoc body :version version
                                    :state state-new
                                    :refresh-interval refresh-interval
-                                   :owner (if is-admin? owner (auth/current-user-id request)))]
+                                   :owner nb-owner)]
 
       (add-impl (assoc request :body new-nuvlabox)))))
 

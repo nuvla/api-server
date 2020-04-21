@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.middleware.authn-info
   (:require
+    [clojure.set :as set]
     [clojure.string :as str]
-    [sixsq.nuvla.auth.cookies :as cookies]
-    [clojure.set :as set]))
+    [sixsq.nuvla.auth.cookies :as cookies]))
 
 
 ;; NOTE: ring uses lower-cased values of header names!
