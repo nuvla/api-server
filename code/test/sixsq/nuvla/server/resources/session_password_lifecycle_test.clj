@@ -8,9 +8,8 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
-    [sixsq.nuvla.server.middleware.authn-info :as t]
+    [sixsq.nuvla.server.middleware.authn-info
+     :refer [authn-cookie authn-info-header wrap-authn-info]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
@@ -320,7 +319,7 @@
 
             session-1-uri      (ltu/location session-1)
             sesssion-1-abs-uri (str p/service-context session-1-uri)
-            handler            (authn-info/wrap-authn-info identity)
+            handler            (wrap-authn-info identity)
             authn-session-1    (-> {:cookies (get-in session-1 [:response :cookies])}
                                    handler
                                    seq
