@@ -4,8 +4,8 @@
 
 ### Added
 
-  - Session - Implementation of switch action to allow user act as a
-    group.
+  - Session - Implementation of claim action to allow user
+    to act as a group.
   - Added new generic attribute `additional-assets`
     to nuvlabox-peripheral resource schema.
 

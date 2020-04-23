@@ -207,7 +207,7 @@
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch))
+            (ltu/is-operation-absent :claim))
 
         ; check contents of session
         (let [{:keys [name description tags]} (-> session-user
@@ -281,7 +281,7 @@
 
     ))
 
-(deftest switch-account-test
+(deftest claim-account-test
 
   (let [app                (ltu/ring-app)
         session-json       (content-type (session app) "application/json")
@@ -337,14 +337,14 @@
                                    (ltu/is-status 201)
                                    (ltu/location-url))]
 
-        ; user without additional group should not have operation switch
+        ; user without additional group should not have operation claim
         (-> (apply request session-json (concat [sesssion-1-abs-uri] authn-session-1))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-id session-1-id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch))
+            (ltu/is-operation-absent :claim))
 
         ;; add user to group/alpha
         (-> session-admin
@@ -354,7 +354,7 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; check switch operation present
+        ;; check claim operation present
         (let [session-2         (-> session-anon
                                     (request base-uri
                                              :request-method :post
@@ -372,10 +372,10 @@
                                     seq
                                     flatten)
 
-              switch-op-url     (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
+              claim-op-url      (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url :switch))]
+                                    (ltu/get-op-url :claim))]
 
           (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
               (ltu/body->edn)
@@ -383,76 +383,76 @@
               (ltu/is-id session-2-id)
               (ltu/is-operation-present :delete)
               (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :switch))
+              (ltu/is-operation-present :claim))
 
-          ;; switch to group-beta should fail
+          ;; claiming group-beta should fail
           (-> (apply request session-json
-                     (concat [switch-op-url :body (json/write-str {:claim "group/beta"})
+                     (concat [claim-op-url :body (json/write-str {:claim "group/beta"})
                               :request-method :post] authn-session-2))
               (ltu/body->edn)
               (ltu/is-status 403)
               (ltu/message-matches #"Switch account cannot be done to requested claim:.*"))
 
-          ;; switch with old session fail because wasn't in group/alpha
+          ;; claim with old session fail because wasn't in group/alpha
           (-> (apply request session-json
-                     (concat [switch-op-url :body (json/write-str {:claim group-alpha})
+                     (concat [claim-op-url :body (json/write-str {:claim group-alpha})
                               :request-method :post] authn-session-1))
               (ltu/body->edn)
               (ltu/is-status 403))
 
-          ;; switch to group-alpha
-          (let [cookie-switch        (-> (apply request session-json
-                                                (concat [switch-op-url :body (json/write-str
-                                                                               {:claim group-alpha})
-                                                         :request-method :post] authn-session-2))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (ltu/is-set-cookie)
-                                         :response
-                                         :cookies)
-                authn-session-switch (-> {:cookies cookie-switch}
-                                         handler
-                                         seq
-                                         flatten)]
+          ;; claim group-alpha
+          (let [cookie-claim        (-> (apply request session-json
+                                               (concat [claim-op-url :body (json/write-str
+                                                                             {:claim group-alpha})
+                                                        :request-method :post] authn-session-2))
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-set-cookie)
+                                        :response
+                                        :cookies)
+                authn-session-claim (-> {:cookies cookie-claim}
+                                        handler
+                                        seq
+                                        flatten)]
             (is (= group-alpha
-                   (-> {:cookies cookie-switch}
+                   (-> {:cookies cookie-claim}
                        handler
                        auth/current-authentication
                        :user-id)))
 
-            (-> (apply request session-json (concat [session-2-abs-uri] authn-session-switch))
+            (-> (apply request session-json (concat [session-2-abs-uri] authn-session-claim))
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-id session-2-id)
                 (ltu/is-operation-present :delete)
                 (ltu/is-operation-absent :edit)
-                (ltu/is-operation-present :switch))
+                (ltu/is-operation-present :claim))
 
             ;; try create NuvlaBox and check who is the owner
             (let [nuvlabox-url (-> (apply request session-json
                                           (concat [(str p/service-context nuvlabox/resource-type)
                                                    :body (json/write-str {})
-                                                   :request-method :post] authn-session-switch))
+                                                   :request-method :post] authn-session-claim))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)
                                    (ltu/location-url))]
 
-              (-> (apply request session-json (concat [nuvlabox-url] authn-session-switch))
+              (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-key-value :owner group-alpha)))
 
-            (let [cookie-switch-back (-> (apply request session-json
-                                                (concat [switch-op-url :body (json/write-str
-                                                                               {:claim user-id})
-                                                         :request-method :post] authn-session-switch))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (ltu/is-set-cookie)
-                                         :response
-                                         :cookies)]
+            (let [cookie-claim-back (-> (apply request session-json
+                                               (concat [claim-op-url :body (json/write-str
+                                                                             {:claim user-id})
+                                                        :request-method :post] authn-session-claim))
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-set-cookie)
+                                        :response
+                                        :cookies)]
               (is (= user-id
-                     (-> {:cookies cookie-switch-back}
+                     (-> {:cookies cookie-claim-back}
                          handler
                          auth/current-authentication
                          :user-id))))))

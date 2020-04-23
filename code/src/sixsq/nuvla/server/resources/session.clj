@@ -162,15 +162,15 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (or acl (create-acl id))))
 
 
-(defn claim-switchable?
+(defn authorized-claim?
   [claim]
   (and (str/starts-with? claim "group/")
        (not (contains? #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} claim))))
 
 
-(defn can-switch?
+(defn can-claim?
   [request]
-  (boolean (some claim-switchable? (auth/current-claims request))))
+  (boolean (some authorized-claim? (auth/current-claims request))))
 
 
 (defn dispatch-conversion
@@ -189,7 +189,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
       [(u/operation-map id :add)])
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
-            (can-switch? request) (conj (u/action-map id :switch)))))
+            (can-claim? request) (conj (u/action-map id :claim)))))
 
 
 ;; Sets the operations for the given resources.  This is a
@@ -382,7 +382,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (assoc-in [:cookies authn-info/authn-cookie] cookie))))
 
 
-(defmethod crud/do-action [resource-type "switch"]
+(defmethod crud/do-action [resource-type "claim"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
