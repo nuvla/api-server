@@ -6,7 +6,6 @@
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
-    [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
@@ -40,20 +39,19 @@
             (if sub
               (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)
-                      claims          (cond-> (password/create-claims {:id matched-user-id})
-                                              session-id (assoc :session session-id)
-                                              session-id (update :claims #(str session-id " " %))
-                                              roles (update :claims #(str % " " (str/join " " roles))))
-                      cookie          (cookies/create-cookie claims)
+                      cookie-info     (cookies/create-cookie-info matched-user-id
+                                                                  :session-id session-id
+                                                                  :roles-ext roles)
+                      cookie          (cookies/create-cookie cookie-info)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:claims claims)
+                      claims-roles    (:claims cookie-info)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
-                  (log/debug "MITREid cookie token claims for" instance ":" (pr-str claims))
+                  (log/debug "MITREid cookie token claims for" instance ":" (pr-str cookie-info))
                   (if (not= status 200)
                     resp
                     (let [cookie-tuple [authn-info/authn-cookie cookie]]

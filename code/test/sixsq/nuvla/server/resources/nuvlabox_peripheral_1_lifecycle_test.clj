@@ -78,7 +78,7 @@
         session-owner (header session authn-info-header (str nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        nuvlabox-id   (-> session-user
+        nuvlabox-id   (-> session-owner
                           (request nuvlabox-base-uri
                                    :request-method :post
                                    :body (json/write-str valid-nuvlabox))

@@ -41,14 +41,6 @@ password.
 ;; transform template into session resource
 ;;
 
-(defn create-cookie-info [user headers session-id client-ip]
-  (let [server (:nuvla-ssl-server-name headers)]
-    (cond-> (auth-password/create-claims user)
-            server (assoc :server server)
-            session-id (assoc :session session-id)
-            session-id (update :claims #(str % " " session-id))
-            client-ip (assoc :client-ip client-ip))))
-
 
 
 (defn create-session-password
@@ -56,7 +48,10 @@ password.
   (if user
     (let [user-id     (:id user)
           session     (sutils/create-session username user-id {:href href} headers authn-method)
-          cookie-info (create-cookie-info user headers (:id session) (:client-ip session))
+          cookie-info (cookies/create-cookie-info user-id
+                                                  :session-id (:id session)
+                                                  :headers headers
+                                                  :client-ip (:client-ip session))
           cookie      (cookies/create-cookie cookie-info)
           expires     (ts/rfc822->iso8601 (:expires cookie))
           claims      (:claims cookie-info)

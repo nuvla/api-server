@@ -4,7 +4,14 @@
 
 ### Added
 
-  - Added new generic attribute `additional-assets` to nuvlabox-peripheral resource schema
+  - Session - Implementation of claim action to allow user
+    to act as a group.
+  - Added new generic attribute `additional-assets`
+    to nuvlabox-peripheral resource schema.
+
+### Changed
+
+  - NuvlaBox - User isn't allowed anymore to set owner field.
 
 ## [4.2.14] - 2020-04-14
 

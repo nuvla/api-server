@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
@@ -61,17 +62,21 @@
 
 (deftest check-create-claims
   (let [user-id    "user/root"
-        server     "nuv.la"
+        server     "nuvla.io"
         headers    {:nuvla-ssl-server-name server}
         claims     #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip  "127.0.0.1"]
     (is (= {:client-ip "127.0.0.1"
-            :claims    (str "group/nuvla-admin user/root group/nuvla-anon group/nuvla-user " session-id)
+            :claims    (str "group/nuvla-admin group/nuvla-anon group/nuvla-user user/root " session-id)
             :user-id   "user/root"
-            :server    "nuv.la"
+            :server    "nuvla.io"
             :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
-           (t/create-cookie-info user-id claims headers session-id client-ip)))))
+           (cookies/create-cookie-info user-id
+                                       :claims claims
+                                       :headers headers
+                                       :session-id session-id
+                                       :client-ip client-ip)))))
 
 
 (deftest lifecycle
@@ -154,7 +159,7 @@
 
           ;; check cookie-info in cookie
           (is (= "user/abcdef01-abcd-abcd-abcd-abcdef012345" (:user-id cookie-info)))
-          (is (= (str/join " " ["group/nuvla-user" "group/nuvla-anon" uri]) (:claims cookie-info))) ;; uri is also session id
+          (is (= (str/join " " ["group/nuvla-anon" "group/nuvla-user" uri]) (:claims cookie-info))) ;; uri is also session id
           (is (= uri (:session cookie-info)))               ;; uri is also session id
           (is (not (nil? (:exp cookie-info))))
 

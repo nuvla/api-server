@@ -60,7 +60,6 @@
                      ;; version number to test.
                      ;:version          1
 
-                     :owner            nuvlabox-owner
                      :organization     "ACME"
                      :os-version       "OS version"
                      :hw-revision-code "a020d3"
@@ -139,7 +138,8 @@
       (let [nuvlabox-id  (-> session
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
+                                      :body (json/write-str (assoc valid-nuvlabox
+                                                              :owner nuvlabox-owner)))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
@@ -303,7 +303,8 @@
       (let [nuvlabox-id  (-> session
                              (request base-uri
                                       :request-method :post
-                                      :body (json/write-str valid-nuvlabox))
+                                      :body (json/write-str (assoc valid-nuvlabox
+                                                              :owner nuvlabox-owner)))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))

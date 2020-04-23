@@ -76,22 +76,16 @@ an API key-secret pair.
        (key-utils/valid? secret digest)))
 
 
-(defn create-cookie-info [user-id claims headers session-id client-ip]
-  (let [server (:nuvla-ssl-server-name headers)]
-    (cond-> {:user-id user-id,
-             :claims  (str/join " " claims)}
-            server (assoc :server server)
-            session-id (assoc :session session-id)
-            session-id (update :claims #(str % " " session-id))
-            client-ip (assoc :client-ip client-ip))))
-
-
 (defmethod p/tpl->session authn-method
   [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
       (let [session     (sutils/create-session identity identity {:href href} headers authn-method)
-            cookie-info (create-cookie-info identity roles headers (:id session) (:client-ip session))
+            cookie-info (cookies/create-cookie-info identity
+                                                    :session-id (:id session)
+                                                    :client-ip (:client-ip session)
+                                                    :headers headers
+                                                    :claims roles)
             cookie      (cookies/create-cookie cookie-info)
             expires     (ts/rfc822->iso8601 (:expires cookie))
             claims      (:claims cookie-info)

@@ -79,16 +79,19 @@ status, a 'set-cookie' header, and a 'location' header with the created
 `session` resource.
 "
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.log :as log-util]))
+    [sixsq.nuvla.server.util.log :as log-util]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -133,7 +136,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defmethod create-validate-subtype :default
   [resource]
-  (throw (ex-info (str "unknown Session create type: " (dispatch-on-authn-method resource) resource) resource)))
+  (throw (ex-info (str "unknown Session create type: "
+                       (dispatch-on-authn-method resource) resource) resource)))
 
 
 (defmethod crud/validate create-type
@@ -158,6 +162,17 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (or acl (create-acl id))))
 
 
+(defn authorized-claim?
+  [claim]
+  (and (str/starts-with? claim "group/")
+       (not (contains? #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} claim))))
+
+
+(defn can-claim?
+  [request]
+  (boolean (some authorized-claim? (auth/current-claims request))))
+
+
 (defn dispatch-conversion
   "Dispatches on the Session authentication method for multimethods
    that take the resource and request as arguments."
@@ -172,8 +187,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (if (u/is-collection? resource-type)
     (when (a/can-add? resource request)
       [(u/operation-map id :add)])
-    (when (a/can-delete? resource request)
-      [(u/operation-map id :delete)])))
+    (cond-> []
+            (a/can-delete? resource request) (conj (u/operation-map id :delete))
+            (can-claim? request) (conj (u/action-map id :claim)))))
 
 
 ;; Sets the operations for the given resources.  This is a
@@ -247,13 +263,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [authn-info (auth/current-authentication request)
           body       (if (u/is-form? headers) (u/convert-form :template form-params) body)
           desc-attrs (u/select-desc-keys body)
-          [cookie-header {:keys [id] :as body}] (-> body
-                                                    (assoc :resource-type create-type)
-                                                    (std-crud/resolve-hrefs authn-info true)
-                                                    (update-in [:template] merge desc-attrs) ;; validate desc attrs
-                                                    (crud/validate)
-                                                    (:template)
-                                                    (tpl->session request))]
+          [cookie-header {:keys [id] :as body}]
+          (-> body
+              (assoc :resource-type create-type)
+              (std-crud/resolve-hrefs authn-info true)
+              (update-in [:template] merge desc-attrs)      ;; validate desc attrs
+              (crud/validate)
+              (:template)
+              (tpl->session request))]
       (-> request
           (assoc :id id :body (merge body desc-attrs))
           add-impl
@@ -328,6 +345,53 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (catch Exception e
       (or (ex-data e)
           (throw e)))))
+
+
+(defn throw-claim-not-authorized
+  [resource {{:keys [claim] :as body} :body :as request}]
+  (let [claims (auth/current-claims request)]
+    (if (and
+          (or (str/starts-with? claim "group/")
+              (str/starts-with? claim "user/"))
+          (not (#{"group/nuvla-anon" "group/nuvla-admin" "group/nuvla-user"} claim))
+          (contains? claims claim))
+      resource
+      (throw
+        (r/ex-response
+          (format "Switch account cannot be done to requested claim: %s!" claim) 403)))))
+
+
+(def edit-impl (std-crud/edit-fn resource-type))
+
+(defn update-cookie-session
+  [{:keys [id user roles client-ip] :as session}
+   {headers :headers {:keys [claim]} :body :as request}]
+  (let [cookie-info (cookies/create-cookie-info user
+                                                :session-id id
+                                                :claims (authn-info/split-claims roles)
+                                                :active-claim claim
+                                                :headers headers
+                                                :client-ip client-ip)
+        cookie      (cookies/create-cookie cookie-info)
+        expires     (ts/rfc822->iso8601 (:expires cookie))
+        session     (assoc session :expiry expires
+                                   :active-claim claim)]
+    (-> request
+        (assoc :body session)
+        (edit-impl)
+        (assoc-in [:cookies authn-info/authn-cookie] cookie))))
+
+
+(defmethod crud/do-action [resource-type "claim"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (throw-claim-not-authorized request)
+          (a/throw-cannot-edit request)
+          (update-cookie-session request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 ;;

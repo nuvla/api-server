@@ -1,9 +1,13 @@
 (ns sixsq.nuvla.auth.cookies
   "utilities for embedding and extracting tokens in cookies"
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils.sign :as sg]
-    [sixsq.nuvla.auth.utils.timestamp :as ts]))
+    [sixsq.nuvla.auth.utils.timestamp :as ts]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.group :as group]))
 
 
 (defn revoked-cookie
@@ -43,3 +47,32 @@
     (catch Exception e
       (log/warn "Error in extract-cookie-claims: " (str e))
       nil)))
+
+
+(defn collect-groups-for-user
+  [id]
+  (let [group-set (->> (crud/query-as-admin
+                         group/resource-type
+                         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
+                                        :select ["id"]}})
+                       second
+                       (map :id)
+                       (cons id)
+                       (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
+                       (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
+                       set)]
+    (str/join " " (sort group-set))))
+
+
+(defn create-cookie-info
+  [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
+  (let [server (:nuvla-ssl-server-name headers)]
+    (cond-> {:user-id user-id
+             :claims  (or (some->> claims seq sort (str/join " "))
+                          (collect-groups-for-user user-id))}
+            roles-ext (update :claims #(str % " " (str/join " " roles-ext)))
+            server (assoc :server server)
+            session-id (assoc :session session-id)
+            session-id (update :claims #(str % " " session-id))
+            client-ip (assoc :client-ip client-ip)
+            active-claim (assoc :active-claim active-claim))))

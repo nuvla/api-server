@@ -6,7 +6,6 @@
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.github :as auth-github]
-    [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
@@ -36,19 +35,18 @@
                   matched-user-id (uiu/user-identifier->user-id :github instance external-login)]
               (if matched-user-id
                 (let [{identifier :name} (ex/get-user matched-user-id)
-                      claims          (cond-> (password/create-claims {:id matched-user-id})
-                                              session-id (assoc :session session-id)
-                                              session-id (update :claims #(str session-id " " %)))
-                      cookie          (cookies/create-cookie claims)
+                      cookie-info     (cookies/create-cookie-info matched-user-id
+                                                                 :session-id session-id)
+                      cookie          (cookies/create-cookie cookie-info)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:claims claims)
+                      claims-roles    (:claims cookie-info)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
                                               claims-roles (assoc :roles claims-roles))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
-                  (log/debug "github cookie token claims for" instance ":" claims)
+                  (log/debug "github cookie token claims for" instance ":" cookie-info)
                   (if (not= status 200)
                     resp
                     (let [cookie-tuple [authn-info/authn-cookie cookie]]

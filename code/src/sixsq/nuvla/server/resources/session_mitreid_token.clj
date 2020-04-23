@@ -1,10 +1,8 @@
 (ns sixsq.nuvla.server.resources.session-mitreid-token
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
-    [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
@@ -59,14 +57,15 @@
           (if sub
             (if-let [matched-user-id (uiu/user-identifier->user-id :mitreid instance sub)]
               (let [{identifier :name} (ex/get-user matched-user-id)
-                    {:keys [id client-ip] :as session} (sutils/create-session nil matched-user-id {:href href} headers authn-method redirect-url)
-                    claims       (cond-> (password/create-claims {:id matched-user-id})
-                                         id (assoc :session id)
-                                         id (update :roles #(str id " " %))
-                                         roles (update :roles #(str % " " (str/join " " roles))))
-                    cookie       (cookies/create-cookie claims)
+                    {:keys [id client-ip] :as session} (sutils/create-session
+                                                         nil matched-user-id {:href href}
+                                                         headers authn-method redirect-url)
+                    cookie-info  (cookies/create-cookie-info matched-user-id
+                                                             :session-id id
+                                                             :roles-ext roles)
+                    cookie       (cookies/create-cookie cookie-info)
                     expires      (ts/rfc822->iso8601 (:expires cookie))
-                    claims-roles (:roles claims)
+                    claims-roles (:roles cookie-info)
                     session      (cond-> (assoc session :expiry expires
                                                         :identifier (or identifier matched-user-id))
                                          claims-roles (assoc :roles claims-roles))]
@@ -76,7 +75,7 @@
                   (when-not ((set client-ips) client-ip)
                     (oidc-utils/throw-invalid-address client-ip redirect-url)))
 
-                (log/debug "MITREid cookie token claims for" (u/id->uuid href) ":" (pr-str claims))
+                (log/debug "MITREid cookie token claims for" (u/id->uuid href) ":" (pr-str cookie-info))
                 (let [cookies {authn-info/authn-cookie cookie}]
                   (if redirect-url
                     [{:status 303, :headers {"Location" redirect-url}, :cookies cookies} session]
