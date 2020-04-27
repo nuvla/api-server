@@ -12,7 +12,9 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.user-lifecycle-test :as user-test]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

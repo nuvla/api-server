@@ -53,7 +53,9 @@
                                [org.clojure/clojure]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
-                               [io.netty/netty]]]]
+                               [io.netty/netty]]]
+
+   [com.stripe/stripe-java "19.4.0"]]
 
   :aot [sixsq.nuvla.server.app.main]
 
