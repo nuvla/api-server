@@ -1,38 +1,50 @@
 (ns sixsq.nuvla.server.resources.stripe.utils
-  (:require [clojure.tools.logging :as log]
-            [sixsq.nuvla.server.util.log :as logu])
+  (:require [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Subscription PaymentMethod Product)))
+    (com.stripe.model Customer Subscription PaymentMethod Product Plan)))
 
 
 (set! Stripe/apiKey "")
 
+
+(defmacro try-catch-exception
+  [& body]
+  `(try
+     ~@body
+     (catch StripeException e#
+       (logu/log-and-throw 500 (.getMessage e#)))))
+
+
 (defn create-customer
   [customer-params]
-  (try
-    (Customer/create customer-params)
-    (catch StripeException e
-      (logu/log-and-throw 500 (.getMessage e)))))
+  (try-catch-exception
+    (Customer/create customer-params)))
 
 
 (defn retrieve-customer
   [customer-id]
-  (try
-    (Customer/retrieve customer-id)
-    (catch StripeException e
-      (logu/log-and-throw 500 (.getMessage e)))))
+  (try-catch-exception
+    (Customer/retrieve customer-id)))
 
 
 (defn list-products
-  []
-  (Product/list {}))
+  [params]
+  (try-catch-exception
+    (Product/list params)))
+
+
+(defn list-plans
+  [params]
+  (try-catch-exception
+    (Plan/list params)))
 
 
 (defn get-customer-subscriptions
   [customer]
-  (.getSubscriptions customer))
+  (try-catch-exception
+    (.getSubscriptions customer)))
 
 
 (defn collection-iterator
@@ -42,26 +54,20 @@
 
 (defn delete-customer
   [customer]
-  (try
-    (.delete customer)
-    (catch StripeException e
-      (logu/log-and-throw 500 (.getMessage e)))))
+  (try-catch-exception
+    (.delete customer)))
 
 
 (defn create-subscription
   [subscription-params]
-  (try
-    (Subscription/create subscription-params)
-    (catch StripeException e
-      (logu/log-and-throw 500 (.getMessage e)))))
+  (try-catch-exception
+    (Subscription/create subscription-params)))
 
 
 (defn create-payment-method
   [payment-method-params]
-  (try
-    (PaymentMethod/create payment-method-params)
-    (catch StripeException e
-      (logu/log-and-throw 500 (.getMessage e)))))
+  (try-catch-exception
+    (PaymentMethod/create payment-method-params)))
 
 
 (defn get-id
@@ -96,3 +102,46 @@
   [obj]
   (.getName obj))
 
+(defn get-active
+  [obj]
+  (.getActive obj))
+
+(defn get-currency
+  [plan]
+  (.getCurrency plan))
+
+(defn get-interval
+  [plan]
+  (.getInterval plan))
+
+(defn get-usage-type
+  [plan]
+  (.getUsageType plan))
+
+(defn get-billing-scheme
+  [plan]
+  (.getBillingScheme plan))
+
+(defn get-amount
+  [plan]
+  (.getAmount plan))
+
+(defn get-aggregate-usage
+  [plan]
+  (.getAggregateUsage plan))
+
+(defn get-tiers-mode
+  [plan]
+  (.getTiersMode plan))
+
+(defn get-tiers
+  [plan]
+  (.getTiers plan))
+
+(defn get-unit-amount
+  [tier]
+  (.getUnitAmount tier))
+
+(defn get-up-to
+  [tier]
+  (.getUpTo tier))
