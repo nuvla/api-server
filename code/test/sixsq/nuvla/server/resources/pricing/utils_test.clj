@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.stripe.utils-test
   (:require
     [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.resources.stripe.utils :as t]))
+    [sixsq.nuvla.server.resources.stripe.stripe :as t]))
 
 (deftest crud-customer
   (let [payment-method-1    (t/create-payment-method {"type"            "sepa_debit"

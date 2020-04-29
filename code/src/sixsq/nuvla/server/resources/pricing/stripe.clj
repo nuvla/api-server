@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.stripe.utils
+(ns sixsq.nuvla.server.resources.pricing.stripe
   (:require [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.stripe Stripe)
