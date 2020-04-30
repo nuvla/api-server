@@ -5,6 +5,7 @@ a container orchestration engine.
 "
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -12,11 +13,12 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
-    [sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
+    [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
+    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -108,16 +110,15 @@ a container orchestration engine.
 
 
 (defmethod crud/add resource-type
-  [{:keys [body base-uri] :as request}]
+  [{:keys [base-uri] :as request}]
 
   (a/throw-cannot-add collection-acl request)
 
   (let [authn-info      (auth/current-authentication request)
-        deployment      (-> body
+        deployment      (-> request
+                            (dep-utils/create-deployment)
                             (assoc :resource-type resource-type)
                             (assoc :state "CREATED")
-                            (assoc :module
-                                   (deployment-utils/resolve-module (:module body) authn-info))
                             (assoc :api-endpoint (str/replace-first base-uri #"/api/" "")))
         ;; FIXME: Correct the value passed to the python API.
 
@@ -129,7 +130,7 @@ a container orchestration engine.
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
-    (deployment-utils/assoc-api-credentials deployment-id authn-info)
+    (dep-utils/assoc-api-credentials deployment-id authn-info)
 
     create-response))
 
@@ -156,10 +157,10 @@ a container orchestration engine.
     (let [deployment-id   (str resource-type "/" uuid)
           delete-response (-> deployment-id
                               (db/retrieve request)
-                              deployment-utils/verify-can-delete
+                              dep-utils/verify-can-delete
                               (a/throw-cannot-delete request)
                               (db/delete request))]
-      (deployment-utils/delete-all-child-resources deployment-id)
+      (dep-utils/delete-all-child-resources deployment-id)
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -197,8 +198,8 @@ a container orchestration engine.
             (and can-manage? (#{"STARTED" "UPDATING" "ERROR"} state))
             (update :operations conj create-log-op)
 
-            (not (deployment-utils/can-delete? resource))
-            (update :operations deployment-utils/remove-delete))))
+            (not (dep-utils/can-delete? resource))
+            (update :operations dep-utils/remove-delete))))
 
 
 (defn create-job

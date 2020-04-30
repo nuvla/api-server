@@ -11,6 +11,7 @@
 
 ### Changed
 
+  - Deployment - Allow creation of deployment from another one.
   - NuvlaBox - User isn't allowed anymore to set owner field.
 
 ## [4.2.14] - 2020-04-14

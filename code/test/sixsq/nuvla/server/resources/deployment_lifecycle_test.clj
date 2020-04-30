@@ -330,6 +330,20 @@
                         (ltu/body->edn)
                         (ltu/is-status 200))
 
+                    ;; verify user can create another deployment from existing one
+                    (let [deployment-url-from-dep (-> session-user
+                                                      (request base-uri
+                                                               :request-method :post
+                                                               :body (json/write-str {:deployment {:href deployment-id}}))
+                                                      (ltu/body->edn)
+                                                      (ltu/is-status 201)
+                                                      (ltu/location-url))]
+                      (-> session-user
+                          (request deployment-url-from-dep
+                                   :request-method :delete)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)))
+
                     ;; verify that the user can delete the deployment
                     (-> session-user
                         (request deployment-url
@@ -367,7 +381,7 @@
                      :body (json/write-str invalid-deployment))
             (ltu/body->edn)
             (ltu/is-status 400)
-            (ltu/message-matches #"cannot resolve module .*"))
+            (ltu/message-matches #"cannot resolve.*"))
         ))
 
     (-> session-user
