@@ -154,6 +154,8 @@
                                     (ltu/is-operation-present :edit)
                                     (ltu/is-operation-present :delete)
                                     (ltu/is-operation-present :start)
+                                    (ltu/is-operation-present :clone)
+                                    (ltu/is-operation-present :fetch-module)
                                     (ltu/is-key-value :state "CREATED"))
 
             start-url           (ltu/get-op-url deployment-response "start")
@@ -319,7 +321,9 @@
                         (request deployment-url)
                         (ltu/body->edn)
                         (ltu/is-status 200)
-                        (ltu/is-key-value :state "STOPPING"))
+                        (ltu/is-key-value :state "STOPPING")
+                        (ltu/is-operation-absent "fetch-module")
+                        (ltu/is-operation-absent "start"))
 
                     ;; the deployment would be set to "STOPPED" via the job
                     ;; for the tests, set this manually to continue with the workflow
@@ -330,9 +334,30 @@
                         (ltu/body->edn)
                         (ltu/is-status 200))
 
+                    ;; stopped deployment can be started again
+                    (-> session-user
+                        (request deployment-url)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-operation-present "start"))
+
                     ;; verify user can create another deployment from existing one
                     (let [deployment-url-from-dep (-> session-user
                                                       (request base-uri
+                                                               :request-method :post
+                                                               :body (json/write-str {:deployment {:href deployment-id}}))
+                                                      (ltu/body->edn)
+                                                      (ltu/is-status 201)
+                                                      (ltu/location-url))]
+                      (-> session-user
+                          (request deployment-url-from-dep
+                                   :request-method :delete)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)))
+
+                    ;; verify user can create another deployment from existing one by using clone action
+                    (let [deployment-url-from-dep (-> session-user
+                                                      (request (str deployment-url "/clone")
                                                                :request-method :post
                                                                :body (json/write-str {:deployment {:href deployment-id}}))
                                                       (ltu/body->edn)
@@ -476,6 +501,11 @@
 
                            :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
     (lifecycle-deployment "application" valid-application)))
+
+
+(deftest fetch-module-merge-test
+
+  )
 
 
 (deftest bad-methods

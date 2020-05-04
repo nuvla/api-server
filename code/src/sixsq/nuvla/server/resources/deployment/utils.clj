@@ -11,7 +11,10 @@
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]))
 
 
 (defn generate-api-key-secret
@@ -109,16 +112,105 @@
       :else (logu/log-and-throw-400 error-msg))))
 
 
+(defn create-job
+  [{:keys [id] :as resource} request action]
+  (a/throw-cannot-manage resource request)
+  (let [user-id (auth/current-user-id request)
+        {{job-id     :resource-id
+          job-status :status} :body} (job/create-job id (str action "_deployment")
+                                                     {:owners   ["group/nuvla-admin"]
+                                                      :edit-acl [user-id]}
+                                                     :priority 50)
+        job-msg (str action "ing " id " with async " job-id)]
+    (when (not= job-status 201)
+      (throw (r/ex-response
+               (format "unable to create async job to %s deployment" action) 500 id)))
+    (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+    (r/map-response job-msg 202 id job-id)))
+
+
 (defn can-delete?
   [{:keys [state] :as resource}]
   (#{"CREATED" "STOPPED" "ERROR"} state))
 
 
-(defn verify-can-delete
-  [{:keys [id state] :as resource}]
-  (if (can-delete? resource)
+(defn can-start?
+  [{:keys [state] :as resource}]
+  (contains? #{"CREATED" "STOPPED"} state))
+
+
+(defn can-stop?
+  [{:keys [state] :as resource}]
+  (contains? #{"STARTING" "UPDATING" "STARTED" "ERROR"} state))
+
+
+(defn can-update?
+  [{:keys [state] :as resource}]
+  (contains? #{"STARTED"} state))
+
+
+(defn can-create-log?
+  [{:keys [state] :as resource}]
+  (contains? #{"STARTED" "UPDATING" "ERROR"} state))
+
+(defn can-fetch-module?
+  [{:keys [state] :as resource}]
+  (contains? #{"CREATED" "STOPPED"} state))
+
+
+(defn create-log
+  [{:keys [id] :as resource} {:keys [body] :as request}]
+  (let [session-id (auth/current-session-id request)
+        opts       (select-keys body [:since :lines])
+        service    (:service body)]
+    (deployment-log/create-log id session-id service opts)))
+
+
+(defn merge-module-element
+  [key-fn current-val-fn current resolved]
+  (let [coll->map           (fn [val-fn coll] (into {} (map (juxt key-fn val-fn) coll)))
+        resolved-params-map (coll->map identity resolved)
+        valid-params-set    (set (map key-fn resolved))
+        current-params-map  (->> current
+                                 (filter (fn [entry] (valid-params-set (key-fn entry))))
+                                 (coll->map current-val-fn))]
+    (vals (merge-with merge resolved-params-map current-params-map))))
+
+(defn merge-module
+  [{current-content :module-content :as current-module}
+   {resolved-content :module-content :as resolved-module}]
+  (let [params (merge-module-element :name #(select-keys % [:value])
+                                     (:output-parameters current-content)
+                                     (:output-parameters resolved-content))
+        env    (merge-module-element :name #(select-keys % [:value])
+                                     (:environmental-variables current-content)
+                                     (:environmental-variables resolved-content))
+
+        files  (merge-module-element :file-name #(select-keys % [:file-content])
+                                     (:files current-content)
+                                     (:files resolved-content))]
+    (assoc resolved-module
+      :module-content
+      (cond-> (dissoc current-content :output-parameters
+                      :environmental-variables :files)
+              (seq params) (assoc :output-parameters params)
+              (seq env) (assoc :environmental-variables env)
+              (seq files) (assoc :files files)))))
+
+(defn fetch-module
+  [{:keys [module] :as resource} request]
+  (let [authn-info (auth/current-authentication request)
+        href       (:href module)]
+    (->> (resolve-module href authn-info)
+         (merge-module module)
+         (assoc resource :module))))
+
+
+(defn throw-can-not-do-action
+  [{:keys [id state] :as resource} pred action]
+  (if (pred resource)
     resource
-    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) 409 id))))
+    (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
 
 
 (defn remove-delete
