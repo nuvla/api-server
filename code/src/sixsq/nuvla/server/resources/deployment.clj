@@ -181,7 +181,6 @@ a container orchestration engine.
         stop-op         (u/action-map id :stop)
         update-op       (u/action-map id :update)
         create-log-op   (u/action-map id :create-log)
-        ;restart-op    (u/action-map id :restart)
         clone-op        (u/action-map id :clone)
         fetch-module-op (u/action-map id :fetch-module)
         can-manage?     (a/can-manage? resource request)
@@ -197,9 +196,6 @@ a container orchestration engine.
 
             (and can-manage? (dep-utils/can-create-log? resource))
             (update :operations conj create-log-op)
-
-            ;(and can-manage? (#{"STARTED" "ERROR" "STOPPED"} state))
-            ;(update :operations conj restart-op)
 
             (and can-manage? can-clone?)
             (update :operations conj clone-op)
@@ -223,13 +219,12 @@ a container orchestration engine.
   (try
     (let [id             (str resource-type "/" uuid)
           deployment     (crud/retrieve-by-id-as-admin id)
-          start-response (-> deployment
+          new-deployment (-> deployment
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
-                             (edit-deployment request #(assoc % :state "STARTING"))
-                             (dep-utils/create-job request "start"))]
+                             (edit-deployment request #(assoc % :state "STARTING")))]
       (when (= (:state deployment) "STOPPED")
         (dep-utils/delete-child-resources "deployment-parameter" id))
-      start-response)
+      (dep-utils/create-job new-deployment request "start"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -244,19 +239,6 @@ a container orchestration engine.
         (dep-utils/create-job request "stop"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
-;(defmethod crud/do-action [resource-type "restart"]
-;  [{{uuid :uuid} :params new-deployment :body :as request}]
-;  (try
-;    (-> (str resource-type "/" uuid)
-;        (crud/retrieve-by-id-as-admin)
-;        (edit-deployment request #(merge % (-> new-deployment
-;                                               (dissoc [:id :api-credentials
-;                                                        :api-endpoint :parent :acl])
-;                                               (assoc :state "STOPPING"))))
-;        (dep-utils/create-job request "restart"))
-;    (catch Exception e
-;      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type "create-log"]

@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -10,11 +11,10 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret

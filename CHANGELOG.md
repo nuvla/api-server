@@ -11,6 +11,8 @@
 
 ### Changed
 
+  - Deployment - Stopped deployment can fetch last version of used module.
+  - Deployment - Allow restart of deployment in stopped state
   - Deployment - Allow creation of deployment from another one.
   - NuvlaBox - User isn't allowed anymore to set owner field.
 
