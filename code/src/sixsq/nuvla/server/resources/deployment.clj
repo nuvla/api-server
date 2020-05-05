@@ -73,6 +73,14 @@ a container orchestration engine.
                :description    "clone the deployment"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+
+              {:name           "fetch-module"
+               :uri            "fetch-module"
+               :description    "fetch the deployment module href and merge it"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 

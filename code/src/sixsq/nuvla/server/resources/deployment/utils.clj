@@ -203,6 +203,7 @@
         href       (:href module)]
     (->> (resolve-module href authn-info)
          (merge-module module)
+         :module
          (assoc resource :module))))
 
 
