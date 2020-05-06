@@ -85,10 +85,10 @@
         request {:params params, :nuvla/authn authn-info}
         {:keys [body status] :as response} (crud/retrieve request)]
     (if (= status 200)
-      {:module (-> body
-                   (dissoc :versions :operations)
-                   (std-crud/resolve-hrefs authn-info true)
-                   (assoc :href href))}
+      (-> body
+          (dissoc :versions :operations)
+          (std-crud/resolve-hrefs authn-info true)
+          (assoc :href href))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
 (defn resolve-deployment [href authn-info]
@@ -107,7 +107,7 @@
                        (get-in body [:deployment :href]))
         error-msg  "Request body is missing a module or a deployment href map to create from!"]
     (cond
-      (str/starts-with? href "module/") (resolve-module href authn-info)
+      (str/starts-with? href "module/") {:module (resolve-module href authn-info)}
       (str/starts-with? href "deployment/") (resolve-deployment href authn-info)
       :else (logu/log-and-throw-400 error-msg))))
 
@@ -177,8 +177,8 @@
     (vals (merge-with merge resolved-params-map current-params-map))))
 
 (defn merge-module
-  [{current-content :module-content :as current-module}
-   {resolved-content :module-content :as resolved-module}]
+  [{current-content :content :as current-module}
+   {resolved-content :content :as resolved-module}]
   (let [params (merge-module-element :name #(select-keys % [:value])
                                      (:output-parameters current-content)
                                      (:output-parameters resolved-content))
@@ -190,9 +190,8 @@
                                      (:files current-content)
                                      (:files resolved-content))]
     (assoc resolved-module
-      :module-content
-      (cond-> (dissoc current-content :output-parameters
-                      :environmental-variables :files)
+      :content
+      (cond-> (dissoc current-content :output-parameters :environmental-variables :files)
               (seq params) (assoc :output-parameters params)
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files)))))
@@ -203,7 +202,6 @@
         href       (:href module)]
     (->> (resolve-module href authn-info)
          (merge-module module)
-         :module
          (assoc resource :module))))
 
 

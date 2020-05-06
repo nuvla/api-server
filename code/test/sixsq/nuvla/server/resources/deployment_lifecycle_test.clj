@@ -180,13 +180,31 @@
             (is (:description credential))
             (is (= deployment-id (:parent credential)))
 
+            (let [module (-> session-user
+                             (request (str "/api/" module-id))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             :response :body)]
 
-            ;; try fetch-module
+              (-> session-user
+                 (request (str "/api/" module-id)
+                          :request-method :put
+                          :body (json/write-str (assoc-in module [:content :environmental-variables]
+                                                          [{:name "ALPHA_ENV", :value "NOK"}
+                                                           {:name "NEW", :value "new"}
+                                                           {:name "BETA_ENV",
+                                                            :description "beta-env variable",
+                                                            :required true}]
+                                                          )))
+                 (ltu/body->edn)
+                 (ltu/is-status 200)))
+
+            ;; try call fetch-module
             (-> session-user
                 (request fetch-module-url
                          :request-method :post)
-                (ltu/body->edn)
-                (ltu/is-status 200))
+                (ltu/is-status 200)
+                (ltu/body->edn))
 
             ;; attempt to start the deployment and check the start job was created
             (let [job-url (-> session-user
@@ -509,11 +527,6 @@
 
                            :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
     (lifecycle-deployment "application" valid-application)))
-
-
-(deftest fetch-module-merge-test
-
-  )
 
 
 (deftest bad-methods
