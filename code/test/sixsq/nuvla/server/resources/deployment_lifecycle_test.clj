@@ -160,6 +160,8 @@
 
             start-url           (ltu/get-op-url deployment-response "start")
 
+            fetch-module-url    (ltu/get-op-url deployment-response "fetch-module")
+
             deployment          (ltu/body deployment-response)]
 
         ;; verify that api key/secret pair was created
@@ -179,6 +181,12 @@
             (is (= deployment-id (:parent credential)))
 
 
+            ;; try fetch-module
+            (-> session-user
+                (request fetch-module-url
+                         :request-method :post)
+                (ltu/body->edn)
+                (ltu/is-status 200))
 
             ;; attempt to start the deployment and check the start job was created
             (let [job-url (-> session-user

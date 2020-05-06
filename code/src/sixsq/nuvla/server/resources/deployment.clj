@@ -219,8 +219,7 @@ a container orchestration engine.
   [resource request edit-fn]
   (-> resource
       (edit-fn)
-      (db/edit request)
-      :body))
+      (db/edit request)))
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
@@ -229,7 +228,8 @@ a container orchestration engine.
           deployment     (crud/retrieve-by-id-as-admin id)
           new-deployment (-> deployment
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
-                             (edit-deployment request #(assoc % :state "STARTING")))]
+                             (edit-deployment request #(assoc % :state "STARTING"))
+                             :body)]
       (when (= (:state deployment) "STOPPED")
         (dep-utils/delete-child-resources "deployment-parameter" id))
       (dep-utils/create-job new-deployment request "start"))
@@ -244,6 +244,7 @@ a container orchestration engine.
         (crud/retrieve-by-id-as-admin)
         (dep-utils/throw-can-not-do-action dep-utils/can-stop? "stop")
         (edit-deployment request #(assoc % :state "STOPPING"))
+        :body
         (dep-utils/create-job request "stop"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -291,6 +292,7 @@ a container orchestration engine.
     (-> (str resource-type "/" uuid)
         (crud/retrieve-by-id-as-admin)
         (edit-deployment request #(assoc % :state "UPDATING"))
+        :body
         (dep-utils/create-job request "update"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
