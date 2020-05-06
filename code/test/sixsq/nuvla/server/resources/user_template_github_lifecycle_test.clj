@@ -272,7 +272,7 @@
                       (request (str url "?code=GOOD")
                                :request-method :get)
                       (ltu/body->edn)
-                      (ltu/message-matches #".*account already exists.*")
+                      (ltu/message-matches #".*an account with the same email already exists.*")
                       (ltu/is-status status))))))
 
 

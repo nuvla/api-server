@@ -11,6 +11,7 @@
 
 ### Changed
 
+  - External authentication - change error message when an account already exist.
   - NuvlaBox - User isn't allowed anymore to set owner field.
 
 ## [4.2.14] - 2020-04-14
