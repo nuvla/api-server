@@ -191,7 +191,7 @@
                                      (:files resolved-content))]
     (assoc resolved-module
       :content
-      (cond-> (dissoc current-content :output-parameters :environmental-variables :files)
+      (cond-> (dissoc resolved-content :output-parameters :environmental-variables :files)
               (seq params) (assoc :output-parameters params)
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files)))))
