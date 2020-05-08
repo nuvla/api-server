@@ -91,8 +91,7 @@
       (-> module-body
           (dissoc :versions :operations)
           (std-crud/resolve-hrefs authn-info true)
-          (assoc :href href)
-          (assoc :versions (:versions module-body)))
+          (assoc :href href))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
 
