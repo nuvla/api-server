@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -76,40 +75,46 @@
    deployment-log resources associated with the deployment. Exceptions are
    logged but otherwise ignored."
   [deployment-id]
-  (doseq [resource-name #{credential/resource-type "deployment-parameter" deployment-log/resource-type}]
+  (doseq [resource-name #{credential/resource-type "deployment-parameter"
+                          deployment-log/resource-type}]
     (delete-child-resources resource-name deployment-id)))
 
 
-(defn resolve-module [href authn-info]
-  (let [params  (u/id->request-params href)
-        request {:params params, :nuvla/authn authn-info}
-        {:keys [body status] :as response} (crud/retrieve request)]
-    (if (= status 200)
-      (-> body
+(defn resolve-module [request]
+  (let [authn-info     (auth/current-authentication request)
+        href           (get-in request [:body :module :href])
+        params         (u/id->request-params href)
+        module-request {:params params, :nuvla/authn authn-info}
+        response       (crud/retrieve module-request)
+        module-body    (:body response)]
+    (if (= (:status response) 200)
+      (-> module-body
           (dissoc :versions :operations)
           (std-crud/resolve-hrefs authn-info true)
-          (assoc :href href))
+          (assoc :href href)
+          (assoc :versions (:versions module-body)))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
-(defn resolve-deployment [href authn-info]
-  (let [params  (u/id->request-params href)
-        request {:params params, :nuvla/authn authn-info}
-        {:keys [body status] :as response} (crud/retrieve request)]
-    (if (= status 200)
-      (select-keys body [:module :data :name :description :tags])
+
+(defn resolve-deployment [request]
+  (let [authn-info         (auth/current-authentication request)
+        href               (get-in request [:body :deployment :href])
+        params             (u/id->request-params href)
+        request-deployment {:params params, :nuvla/authn authn-info}
+        response           (crud/retrieve request-deployment)]
+    (if (= (:status response) 200)
+      (-> response
+          :body
+          (select-keys [:module :data :name :description :tags]))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
 
 (defn create-deployment
   [{:keys [body] :as request}]
-  (let [authn-info (auth/current-authentication request)
-        href       (or (get-in body [:module :href])
-                       (get-in body [:deployment :href]))
-        error-msg  "Request body is missing a module or a deployment href map to create from!"]
-    (cond
-      (str/starts-with? href "module/") {:module (resolve-module href authn-info)}
-      (str/starts-with? href "deployment/") (resolve-deployment href authn-info)
-      :else (logu/log-and-throw-400 error-msg))))
+  (cond
+    (get-in body [:body :module :href]) {:module (resolve-module request)}
+    (get-in body [:body :deployment :href]) (resolve-deployment request)
+    :else (logu/log-and-throw-400 "Request body is missing a module or a deployment href map!")))
 
 
 (defn create-job
@@ -196,13 +201,12 @@
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files)))))
 
+
 (defn fetch-module
   [{:keys [module] :as resource} request]
-  (let [authn-info (auth/current-authentication request)
-        href       (:href module)]
-    (->> (resolve-module href authn-info)
-         (merge-module module)
-         (assoc resource :module))))
+  (->> (resolve-module request)
+       (merge-module module)
+       (assoc resource :module)))
 
 
 (defn throw-can-not-do-action
