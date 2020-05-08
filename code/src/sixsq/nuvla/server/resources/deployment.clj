@@ -11,14 +11,11 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
-    [sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
+    [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -69,14 +66,22 @@ a container orchestration engine.
                :description    "update the deployment image"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "clone"
+               :uri            "clone"
+               :description    "clone the deployment"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+
+              {:name           "fetch-module"
+               :uri            "fetch-module"
+               :description    "fetch the deployment module href and merge it"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
-
-
-(def start-job-action-name "start_deployment")
-
-(def stop-job-action-name "stop_deployment")
-
-(def update-job-action-name "update_deployment")
 
 
 ;;
@@ -106,18 +111,14 @@ a container orchestration engine.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
-
-(defmethod crud/add resource-type
-  [{:keys [body base-uri] :as request}]
-
+(defn create-deployment
+  [{:keys [base-uri] :as request}]
   (a/throw-cannot-add collection-acl request)
-
   (let [authn-info      (auth/current-authentication request)
-        deployment      (-> body
+        deployment      (-> request
+                            (dep-utils/create-deployment)
                             (assoc :resource-type resource-type)
                             (assoc :state "CREATED")
-                            (assoc :module
-                                   (deployment-utils/resolve-module (:module body) authn-info))
                             (assoc :api-endpoint (str/replace-first base-uri #"/api/" "")))
         ;; FIXME: Correct the value passed to the python API.
 
@@ -129,9 +130,13 @@ a container orchestration engine.
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
-    (deployment-utils/assoc-api-credentials deployment-id authn-info)
+    (dep-utils/assoc-api-credentials deployment-id authn-info)
 
     create-response))
+
+(defmethod crud/add resource-type
+  [request]
+  (create-deployment request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -156,10 +161,10 @@ a container orchestration engine.
     (let [deployment-id   (str resource-type "/" uuid)
           delete-response (-> deployment-id
                               (db/retrieve request)
-                              deployment-utils/verify-can-delete
+                              (dep-utils/throw-can-not-do-action dep-utils/can-delete? "delete")
                               (a/throw-cannot-delete request)
                               (db/delete request))]
-      (deployment-utils/delete-all-child-resources deployment-id)
+      (dep-utils/delete-all-child-resources deployment-id)
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -179,83 +184,118 @@ a container orchestration engine.
 
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id state] :as resource} request]
-  (let [start-op      (u/action-map id :start)
-        stop-op       (u/action-map id :stop)
-        update-op     (u/action-map id :update)
-        create-log-op (u/action-map id :create-log)
-        can-manage?   (a/can-manage? resource request)]
+  [{:keys [id] :as resource} request]
+  (let [start-op        (u/action-map id :start)
+        stop-op         (u/action-map id :stop)
+        update-op       (u/action-map id :update)
+        create-log-op   (u/action-map id :create-log)
+        clone-op        (u/action-map id :clone)
+        fetch-module-op (u/action-map id :fetch-module)
+        can-manage?     (a/can-manage? resource request)
+        can-clone?      (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
-            (and can-manage? (#{"CREATED"} state)) (update :operations conj start-op)
+            (and can-manage? (dep-utils/can-start? resource)) (update :operations conj start-op)
 
-            (and can-manage? (#{"STARTING" "UPDATING" "STARTED" "ERROR"} state))
+            (and can-manage? (dep-utils/can-stop? resource))
             (update :operations conj stop-op)
 
-            (and can-manage? (#{"STARTED"} state)) (update :operations conj update-op)
+            (and can-manage? (dep-utils/can-update? resource)) (update :operations conj update-op)
 
-            (and can-manage? (#{"STARTED" "UPDATING" "ERROR"} state))
+            (and can-manage? (dep-utils/can-create-log? resource))
             (update :operations conj create-log-op)
 
-            (not (deployment-utils/can-delete? resource))
-            (update :operations deployment-utils/remove-delete))))
+            (and can-manage? can-clone?)
+            (update :operations conj clone-op)
+
+            (and can-manage? (dep-utils/can-fetch-module? resource))
+            (update :operations conj fetch-module-op)
+
+            (not (dep-utils/can-delete? resource))
+            (update :operations dep-utils/remove-delete))))
 
 
-(defn create-job
-  [action new-state {{uuid :uuid} :params :as request}]
+(defn edit-deployment
+  [resource request edit-fn]
+  (-> resource
+      (edit-fn)
+      (db/edit request)))
+
+(defmethod crud/do-action [resource-type "start"]
+  [{{uuid :uuid} :params :as request}]
   (try
-    (let [id       (str resource-type "/" uuid)
-          resource (crud/retrieve-by-id-as-admin id)]
-      (a/throw-cannot-manage resource request)
-
-      (let [user-id (auth/current-user-id request)
-            {{job-id     :resource-id
-              job-status :status} :body} (job/create-job id (str action "_deployment")
-                                                         {:owners   ["group/nuvla-admin"]
-                                                          :edit-acl [user-id]}
-                                                         :priority 50)
-            job-msg (str "starting " id " with async " job-id)]
-        (when (not= job-status 201)
-          (throw (r/ex-response
-                   (format "unable to create async job to %s deployment" action) 500 id)))
-        (-> id
-            (db/retrieve request)
-            (a/throw-cannot-edit request)
-            (assoc :state new-state)
-            (db/edit request))
-        (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
-        (r/map-response job-msg 202 id job-id)))
+    (let [id             (str resource-type "/" uuid)
+          deployment     (crud/retrieve-by-id-as-admin id)
+          new-deployment (-> deployment
+                             (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
+                             (edit-deployment request #(assoc % :state "STARTING"))
+                             :body)]
+      (when (= (:state deployment) "STOPPED")
+        (dep-utils/delete-child-resources "deployment-parameter" id))
+      (dep-utils/create-job new-deployment request "start"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [resource-type "start"]
-  [request]
-  (create-job "start" "STARTING" request))
-
-
 (defmethod crud/do-action [resource-type "stop"]
-  [request]
-  (create-job "stop" "STOPPING" request))
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (dep-utils/throw-can-not-do-action dep-utils/can-stop? "stop")
+        (edit-deployment request #(assoc % :state "STOPPING"))
+        :body
+        (dep-utils/create-job request "stop"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type "create-log"]
-  [{{uuid :uuid} :params {:keys [service] :as body} :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (try
-    (let [id       (str resource-type "/" uuid)
-          resource (crud/retrieve-by-id-as-admin id)]
-      (a/throw-cannot-manage resource request)
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        (dep-utils/throw-can-not-do-action dep-utils/can-create-log? "create-log")
+        (dep-utils/create-log request))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
-      (let [session-id (auth/current-session-id request)
-            opts       (select-keys body #{:since :lines})]
-        (deployment-log/create-log id session-id service opts)))
+
+(defmethod crud/do-action [resource-type "fetch-module"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        (dep-utils/throw-can-not-do-action dep-utils/can-fetch-module? "fetch-module")
+        (dep-utils/fetch-module request)
+        (edit-deployment request identity))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "clone"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (crud/retrieve-by-id-as-admin id)
+          (a/throw-cannot-view-data request))
+      (create-deployment (assoc-in request [:body :deployment :href] id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
 (defn update-deployment-impl
-  [request]
-  (create-job "update" "UPDATING" request))
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (edit-deployment request #(assoc % :state "UPDATING"))
+        :body
+        (dep-utils/create-job request "update"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "update"]
   [request]
