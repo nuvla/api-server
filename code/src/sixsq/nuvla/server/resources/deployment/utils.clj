@@ -112,8 +112,8 @@
 (defn create-deployment
   [{:keys [body] :as request}]
   (cond
-    (get-in body [:body :module :href]) {:module (resolve-module request)}
-    (get-in body [:body :deployment :href]) (resolve-deployment request)
+    (get-in body [:module :href]) {:module (resolve-module request)}
+    (get-in body [:deployment :href]) (resolve-deployment request)
     :else (logu/log-and-throw-400 "Request body is missing a module or a deployment href map!")))
 
 
@@ -204,7 +204,8 @@
 
 (defn fetch-module
   [{:keys [module] :as resource} request]
-  (->> (resolve-module request)
+  (->> (assoc request :body resource)
+       (resolve-module)
        (merge-module module)
        (assoc resource :module)))
 
