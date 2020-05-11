@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [4.2.15] - 2020-05-11
+
 ### Added
 
   - Session - Implementation of claim action to allow user
