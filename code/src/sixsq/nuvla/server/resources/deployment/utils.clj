@@ -111,7 +111,7 @@
 (defn create-deployment
   [{:keys [body] :as request}]
   (cond
-    (get-in body [:module :href]) {:module (resolve-module request)}
+    (get-in body [:module :href]) (assoc body :module (resolve-module request))
     (get-in body [:deployment :href]) (resolve-deployment request)
     :else (logu/log-and-throw-400 "Request body is missing a module or a deployment href map!")))
 

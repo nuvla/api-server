@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [4.2.16] - 2020-05-12
+
+### Changed
+
+  - Deployment - fix regression in deployment created from module
+
 ## [4.2.15] - 2020-05-11
 
 ### Added
