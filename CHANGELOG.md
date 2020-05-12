@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## [4.2.16] - 2020-05-12
+
+### Changed
+
+  - Deployment - fix regression in deployment created from module
+
+## [4.2.15] - 2020-05-11
+
 ### Added
 
   - Session - Implementation of claim action to allow user
@@ -11,6 +19,10 @@
 
 ### Changed
 
+  - Deployment - Stopped deployment can fetch last version of used module.
+  - Deployment - Allow restart of deployment in stopped state
+  - Deployment - Allow creation of deployment from another one.
+  - External authentication - change error message when an account already exist.
   - NuvlaBox - User isn't allowed anymore to set owner field.
 
 ## [4.2.14] - 2020-04-14

@@ -110,6 +110,9 @@
 (def can-view? (partial has-rights? #{::view-meta ::view-data ::view-acl}))
 
 
+(def can-view-data? (partial has-rights? #{::view-data}))
+
+
 (def can-bulk-delete? (partial has-rights? #{::bulk-delete}))
 
 

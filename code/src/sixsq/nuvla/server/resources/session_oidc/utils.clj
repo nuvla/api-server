@@ -94,8 +94,8 @@
   (logu/log-error-and-throw-with-redirect 400 (str "account is inactive (" username ")") redirect-url))
 
 
-(defn throw-user-exists [username redirect-url]
-  (logu/log-error-and-throw-with-redirect 400 (str "account already exists (" username ")") redirect-url))
+(defn throw-user-exists [redirect-url]
+  (logu/log-error-and-throw-with-redirect 400 "an account with the same email already exists. Have you already registered with email/password?" redirect-url))
 
 
 (defn throw-invalid-address [ip redirect-url]
