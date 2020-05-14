@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Nuvlabox status - fix bug in spec causing stacktrace during update of
+    ES mapping
+
 ## [4.2.16] - 2020-05-12
 
 ### Changed
