@@ -143,7 +143,7 @@
 (s/def ::net-interface-stat
   (-> (st/spec (su/only-keys :req-un [::interface ::bytes-received ::bytes-transmitted]))
     (assoc :name "net-interface-stat"
-           :json-schema/type "array"
+           :json-schema/type "map"
            :json-schema/description "txBytes and rxBytes for each network interface"
 
            :json-schema/order 45)))
