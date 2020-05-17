@@ -113,7 +113,15 @@
 ;          (request customer-1)
 ;          (ltu/body->edn)
 ;          (ltu/is-status 200)
-;          (ltu/dump)))
+;          (ltu/dump))
+;
+;      (-> session-user
+;          (request base-uri
+;                   :request-method :put)
+;          (ltu/body->edn)
+;          (ltu/is-status 200)
+;          (ltu/is-count 1))
+;      )
 ;
 ;    )
 ;
