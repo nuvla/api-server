@@ -81,6 +81,7 @@
                               (request admin-uri)
                               (ltu/body->edn)
                               (ltu/is-status 200)
+                              (ltu/dump)
                               (ltu/is-operation-present :delete)
                               (ltu/is-operation-present :regenerate)
                               (ltu/get-op-url :regenerate))]

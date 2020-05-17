@@ -1,7 +1,7 @@
-(ns sixsq.nuvla.server.resources.stripe.utils-test
+(ns sixsq.nuvla.server.resources.pricing.utils-test
   (:require
     [clojure.test :refer [deftest is]]
-    [sixsq.nuvla.server.resources.stripe.stripe :as t]))
+    [sixsq.nuvla.server.resources.pricing.stripe :as t]))
 
 (deftest crud-customer
   (let [payment-method-1    (t/create-payment-method {"type"            "sepa_debit"
@@ -21,8 +21,8 @@
             (t/get-id)))
 
     (println (t/create-subscription {"customer" cust-1-id
-                                     "items"    [{"plan" "plan_H6HzWWNrR2LwBV"}
-                                                 {"plan" "plan_H6H7CaMnnMMGPP"}]}))
+                                     "items"    [{"plan" "plan_HGQ9iUgnz2ho8e"}
+                                                 {"plan" "plan_HGQN0A2ARmEPlB"}]}))
 
     ;; delete test
     (is (= true (t/get-deleted (t/delete-customer cust-1))))

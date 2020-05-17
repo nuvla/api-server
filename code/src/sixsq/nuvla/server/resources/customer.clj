@@ -13,7 +13,10 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.resources.pricing :as pricing]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [clojure.set :as set]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -88,6 +91,25 @@ Customer mapping to external banking system."
                            "invoice_settings" {"default_payment_method" pm-id})))))
 
 
+(defn throw-plan-invalid
+  [{{:keys [plan-id plan-item-ids] :as body} :body :as request}]
+  (when plan-id
+    (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)
+          plan      (some->> catalogue
+                             :plans
+                             (some #(when (= (:plan-id %) plan-id) %)))]
+      (if plan
+        (let [{:keys [required-items optional-items]} plan
+              required-items-set      (set required-items)
+              all-defined-items       (set/union required-items-set (set optional-items))
+              plan-item-ids-set       (set plan-item-ids)
+              contain-extra-items?    (not (set/superset? all-defined-items plan-item-ids-set))
+              missing-required-items? (not-every? plan-item-ids-set required-items-set)]
+          (when (or contain-extra-items? missing-required-items?)
+            (logu/log-and-throw-400 (format "Plan-item-ids not valid for plan %s!" plan-id))))
+        (logu/log-and-throw-400 (format "Plan-id %s not found!" plan-id))))))
+
+
 (defn throw-customer-exist
   [request]
   (let [id          (-> request
@@ -111,18 +133,22 @@ Customer mapping to external banking system."
 
 
 (defmethod crud/add resource-type
-  [{{:keys [plan-ids] :as body} :body :as request}]
+  [{{:keys [plan-id plan-item-ids] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (throw-customer-exist request)
   (throw-admin-can-not-be-customer request)
+  (throw-plan-invalid request)
+
   (let [s-customer (create-customer request)]
-    (when (seq plan-ids)
+    (when plan-id
       (s/create-subscription {"customer" (s/get-id s-customer)
-                              "items"    (map (fn [plan-id] {"plan" plan-id}) plan-ids)}))
+                              "items"    (map (fn [plan-id] {"plan" plan-id})
+                                              (cons plan-id plan-item-ids))}))
     (-> request
         (assoc :body {:parent      (auth/current-user-id request)
                       :customer-id (s/get-id s-customer)})
         add-impl)))
+
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
@@ -153,6 +179,38 @@ Customer mapping to external banking system."
     (->> subscription-info
          (assoc customer :subscription)
          (assoc response :body))))
+
+
+;(defmethod crud/set-operations resource-type
+;  [{:keys [id] :as resource} request]
+;  (let [create-subscription-op (u/action-map id :create-subscription)
+;        stop-op                (u/action-map id :stop)
+;        update-op              (u/action-map id :update)
+;        create-log-op          (u/action-map id :create-log)
+;        clone-op               (u/action-map id :clone)
+;        fetch-module-op        (u/action-map id :fetch-module)
+;        can-manage?            (a/can-manage? resource request)
+;        can-clone?             (a/can-view-data? resource request)]
+;    (cond-> (crud/set-standard-operations resource request)
+;
+;            (and can-manage? (dep-utils/can-start? resource)) (update :operations conj start-op)
+;
+;            (and can-manage? (dep-utils/can-stop? resource))
+;            (update :operations conj stop-op)
+;
+;            (and can-manage? (dep-utils/can-update? resource)) (update :operations conj update-op)
+;
+;            (and can-manage? (dep-utils/can-create-log? resource))
+;            (update :operations conj create-log-op)
+;
+;            (and can-manage? can-clone?)
+;            (update :operations conj clone-op)
+;
+;            (and can-manage? (dep-utils/can-fetch-module? resource))
+;            (update :operations conj fetch-module-op)
+;
+;            (not (dep-utils/can-delete? resource))
+;            (update :operations dep-utils/remove-delete))))
 
 
 ;;

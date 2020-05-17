@@ -19,6 +19,9 @@ These resources describe pricing catalogue.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
+(def ^:const resource-id (str resource-type "/catalogue"))
+
+
 (def collection-acl {:query ["group/nuvla-anon"]
                      :add   ["group/nuvla-admin"]})
 
@@ -64,7 +67,7 @@ These resources describe pricing catalogue.
 
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
-  (assoc resource :id (str resource-type "/catalogue")))
+  (assoc resource :id resource-id))
 
 
 ;;

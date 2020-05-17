@@ -6,6 +6,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.customer :as t]
     [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]
@@ -29,7 +30,11 @@
 (def test-identifier "some-user-identifer")
 
 
-(def valid-entry {:plan-ids ["plan_H6HxHyWtp7SaGY"]})
+(def valid-entry {:plan-id       "plan_HGQ9iUgnz2ho8e"
+                  :plan-item-ids ["plan_HGQIIWmhYmi45G"
+                                  "plan_HGQN0A2ARmEPlB"
+                                  "plan_HGQAXewpgs9NeW"
+                                  "plan_HGQqB0p8h86Ija"]})
 
 
 (deftest check-metadata
@@ -43,6 +48,14 @@
         session-admin (header session-anon authn-info-header
                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))]
+
+    ;; admin create pricing catalogue
+    (-> session-admin
+        (request (str p/service-context pricing/resource-type)
+                 :request-method :post
+                 :body (json/write-str {}))
+        (ltu/body->edn)
+        (ltu/is-status 201))
 
     ;; create: NOK for anon
     (-> session-anon
@@ -60,6 +73,33 @@
         (ltu/body->edn)
         (ltu/is-status 400)
         (ltu/message-matches #"Admin can't create customer!"))
+
+    ;; creation should list all required-items
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (update valid-entry :plan-item-ids pop)))
+        (ltu/body->edn)
+        (ltu/is-status 400)
+        (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
+
+    ;; creation should list all required-items
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (update valid-entry :plan-item-ids conj "plan-item-extra")))
+        (ltu/body->edn)
+        (ltu/is-status 400)
+        (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
+
+    ;; undefined plan
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc valid-entry :plan-id  "plan-not-exit")))
+        (ltu/body->edn)
+        (ltu/is-status 400)
+        (ltu/message-matches #"Plan-id .* not found!"))
 
     (let [customer-1 (-> session-user
                          (request base-uri
@@ -172,8 +212,11 @@
 
 
 (deftest bad-methods
-    (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
-      (ltu/verify-405-status [[base-uri :options]
-                              [base-uri :delete]
-                              [resource-uri :options]
-                              [resource-uri :post]])))
+  (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
+    (ltu/verify-405-status [[base-uri :options]
+                            [base-uri :delete]
+                            [resource-uri :options]
+                            [resource-uri :post]])))
+
+
+

@@ -10,7 +10,10 @@ default values.
     [sixsq.nuvla.server.resources.configuration :as p]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as tpl-nuvla]
-    [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]))
+    [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const service "nuvla")
@@ -35,7 +38,14 @@ default values.
 
   (let [create-template {:resource-type p/create-type
                          :template      {:href tpl-instance-url}}]
-    (std-crud/add-if-absent config-instance-url p/resource-type create-template)))
+    (std-crud/add-if-absent config-instance-url p/resource-type create-template)
+    (try
+      (when-let [stripe-api-key (-> config-instance-url
+                                    crud/retrieve-by-id-as-admin
+                                    :stripe-api-key)]
+        (stripe/set-api-key! stripe-api-key))
+      (catch Exception e
+        (log/error (str "Exception when loading Stripe api-key: " e))))))
 
 
 ;;
