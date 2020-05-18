@@ -13,7 +13,8 @@ default values.
     [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const service "nuvla")
@@ -23,6 +24,16 @@ default values.
 
 
 (def ^:const tpl-instance-url (str ct/resource-type "/" tpl-nuvla/service))
+
+
+(def ^:dynamic *stripe-api-key*)
+
+
+(defn throw-stripe-not-configured
+  []
+  (when-not *stripe-api-key*
+    (let [error-msg "server configuration for stripe is missing"]
+      (throw (ex-info error-msg (r/map-response error-msg 500))))))
 
 
 ;;
@@ -43,7 +54,8 @@ default values.
       (when-let [stripe-api-key (-> config-instance-url
                                     crud/retrieve-by-id-as-admin
                                     :stripe-api-key)]
-        (stripe/set-api-key! stripe-api-key))
+        (stripe/set-api-key! stripe-api-key)
+        (alter-var-root #'*stripe-api-key* (constantly stripe-api-key)))
       (catch Exception e
         (log/error (str "Exception when loading Stripe api-key: " e))))))
 

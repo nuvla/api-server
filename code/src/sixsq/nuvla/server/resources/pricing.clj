@@ -10,7 +10,8 @@ These resources describe pricing catalogue.
     [sixsq.nuvla.server.resources.spec.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.utils :as pu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.auth.acl-resource :as a]))
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -78,6 +79,7 @@ These resources describe pricing catalogue.
 
 (defmethod crud/add resource-type
   [request]
+  (config-nuvla/throw-stripe-not-configured)
   (-> request
       (assoc :body (pu/build-nuvla-catalogue))
       (add-impl)))
@@ -88,6 +90,7 @@ These resources describe pricing catalogue.
 
 (defmethod crud/retrieve resource-type
   [request]
+  (config-nuvla/throw-stripe-not-configured)
   (retrieve-impl request))
 
 
@@ -96,6 +99,7 @@ These resources describe pricing catalogue.
 
 (defmethod crud/query resource-type
   [request]
+  (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -117,6 +121,7 @@ These resources describe pricing catalogue.
 
 (defmethod crud/do-action [resource-type "regenerate"]
   [request]
+  (config-nuvla/throw-stripe-not-configured)
   (-> request
       (assoc :body (pu/build-nuvla-catalogue))
       (edit-impl)))

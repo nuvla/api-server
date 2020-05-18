@@ -50,6 +50,12 @@
     (stu/is-valid ::spec-email-password/schema-create (assoc-in create-tpl [:template :href] "user-template/abc"))
     (stu/is-invalid ::spec-email-password/schema-create (assoc-in create-tpl [:template :href] "bad-reference/abc"))
 
+    ;; check the create template schema with plan-id
+    (stu/is-valid ::spec-email-password/schema-create (assoc-in create-tpl [:template :plan-id] "plan_HGQ9iUgnz2ho8e"))
+    (stu/is-valid ::spec-email-password/schema-create (assoc-in create-tpl [:template :plan-item-ids] ["plan_HGQIIWmhYmi45G"
+                                                                                                       "plan_HGQN0A2ARmEPlB"]))
+
+
     ;; mandatory attributes
     (doseq [attr #{:resource-type :template}]
       (stu/is-invalid ::spec-email-password/schema-create (dissoc create-tpl attr)))

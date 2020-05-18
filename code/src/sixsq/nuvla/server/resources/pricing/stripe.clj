@@ -5,9 +5,15 @@
     (com.stripe.exception StripeException)
     (com.stripe.model Customer Subscription PaymentMethod Product Plan)))
 
+
 (defn set-api-key!
   [api-key]
   (set! Stripe/apiKey api-key))
+
+
+(defn get-api-key
+  []
+  Stripe/apiKey)
 
 
 (defmacro try-catch-exception

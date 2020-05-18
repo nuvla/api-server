@@ -113,6 +113,7 @@
 ;          (request customer-1)
 ;          (ltu/body->edn)
 ;          (ltu/is-status 200)
+;          (ltu/is-operation-absent :create-subscription)
 ;          (ltu/dump))
 ;
 ;      (-> session-user

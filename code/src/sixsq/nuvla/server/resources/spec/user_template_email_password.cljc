@@ -24,6 +24,31 @@
              :json-schema/order 21)))
 
 
+(s/def ::plan-id
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "plan-id"
+             :json-schema/display-name "plan id"
+             :json-schema/description "subscription plan id"
+
+             :json-schema/order 22)))
+
+(s/def ::plan-item-id
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "plan-item-id"
+             :json-schema/display-name "plan item id"
+             :json-schema/description "subscription plan item id")))
+
+
+(s/def ::plan-item-ids
+  (-> (st/spec (s/coll-of ::plan-item-id))
+      (assoc :name "plan-item-ids"
+             :json-schema/type "array"
+             :json-schema/display-name "plan item ids"
+             :json-schema/description "List of subscription plan item ids."
+
+             :json-schema/order 23)))
+
+
 (s/def ::password
   (-> (st/spec string?)
       (assoc :name "password"
@@ -62,7 +87,9 @@
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ps/template-keys-spec
                                   user-template-email-password-keys-req
-                                  user-template-email-password-keys-href))
+                                  user-template-email-password-keys-href
+                                  {:opt-un [::plan-id
+                                            ::plan-item-ids]}))
       (assoc :name "template"
              :json-schema/type "map")))
 
