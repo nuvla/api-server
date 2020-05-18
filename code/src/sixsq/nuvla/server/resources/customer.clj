@@ -17,7 +17,8 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [clojure.set :as set]
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.db.filter.parser :as parser]))
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -61,6 +62,12 @@ Customer mapping to external banking system."
        u/parse-id
        (str/join "-")
        (str resource-type "/")))
+
+(defn request->resource-id
+  [request]
+  (-> request
+      auth/current-user-id
+      user-id->resource-id))
 
 ;; resource identifier a UUID generated from the email address
 (defmethod crud/new-identifier resource-type
@@ -113,9 +120,7 @@ Customer mapping to external banking system."
 
 (defn throw-customer-exist
   [request]
-  (let [id          (-> request
-                        auth/current-user-id
-                        user-id->resource-id)
+  (let [id          (request->resource-id request)
         customer-id (try
                       (-> id
                           crud/retrieve-by-id-as-admin
@@ -133,18 +138,21 @@ Customer mapping to external banking system."
     (logu/log-and-throw-400 "Admin can't create customer!")))
 
 
+(defn create-subscription
+  [{{:keys [plan-id plan-item-ids] :as body} :body :as request} s-customer]
+  (s/create-subscription {"customer" (s/get-id s-customer)
+                          "items"    (map (fn [plan-id] {"plan" plan-id})
+                                          (cons plan-id plan-item-ids))}))
+
+
 (defmethod crud/add resource-type
-  [{{:keys [plan-id plan-item-ids] :as body} :body :as request}]
+  [{{:keys [plan-id] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (throw-customer-exist request)
   (throw-admin-can-not-be-customer request)
   (throw-plan-invalid request)
-
   (let [s-customer (create-customer request)]
-    (when plan-id
-      (s/create-subscription {"customer" (s/get-id s-customer)
-                              "items"    (map (fn [plan-id] {"plan" plan-id})
-                                              (cons plan-id plan-item-ids))}))
+    (when plan-id (create-subscription request s-customer))
     (-> request
         (assoc :body {:parent      (auth/current-user-id request)
                       :customer-id (s/get-id s-customer)})
@@ -207,36 +215,46 @@ Customer mapping to external banking system."
   (query-impl request))
 
 
-;(defmethod crud/set-operations resource-type
-;  [{:keys [id] :as resource} request]
-;  (let [create-subscription-op (u/action-map id :create-subscription)
-;        stop-op                (u/action-map id :stop)
-;        update-op              (u/action-map id :update)
-;        create-log-op          (u/action-map id :create-log)
-;        clone-op               (u/action-map id :clone)
-;        fetch-module-op        (u/action-map id :fetch-module)
-;        can-manage?            (a/can-manage? resource request)
-;        can-clone?             (a/can-view-data? resource request)]
-;    (cond-> (crud/set-standard-operations resource request)
-;
-;            (and can-manage? (dep-utils/can-start? resource)) (update :operations conj start-op)
-;
-;            (and can-manage? (dep-utils/can-stop? resource))
-;            (update :operations conj stop-op)
-;
-;            (and can-manage? (dep-utils/can-update? resource)) (update :operations conj update-op)
-;
-;            (and can-manage? (dep-utils/can-create-log? resource))
-;            (update :operations conj create-log-op)
-;
-;            (and can-manage? can-clone?)
-;            (update :operations conj clone-op)
-;
-;            (and can-manage? (dep-utils/can-fetch-module? resource))
-;            (update :operations conj fetch-module-op)
-;
-;            (not (dep-utils/can-delete? resource))
-;            (update :operations dep-utils/remove-delete))))
+(def ^:const create-subscription-action "create-subscription")
+
+(defn can-do-action?
+  [action {:keys [id] :as resource} request]
+  (let [subscription (:subscription resource)
+        can-manage?  (a/can-manage? resource request)]
+    (case action
+      create-subscription-action (and can-manage? (nil? subscription))
+      false)))
+
+
+(defn throw-can-not-do-action
+  [action {:keys [id] :as resource} request]
+  (if (can-do-action? action resource request)
+    resource
+    (throw (r/ex-response (format "action not available for %s!" action id) 409 id))))
+
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id] :as resource} request]
+  (let [create-subscription-op (u/action-map id create-subscription-action)]
+    (cond-> (crud/set-standard-operations resource request)
+
+            (can-do-action? create-subscription-action resource request)
+            (update :operations conj create-subscription-op)
+            )))
+
+(defmethod crud/do-action [resource-type create-subscription-action]
+  [{{:keys [plan-id] :as body} :body :as request}]
+  (let [{:keys [id customer-id] :as resource} (crud/retrieve-by-id-as-admin
+                                                (request->resource-id request))]
+    (throw-can-not-do-action create-subscription-action resource request)
+    (when (not plan-id)
+      (throw (r/ex-response
+               (format "plan-id is mandatory for %s on %s!" create-subscription-action id) 409 id)))
+    (try
+      (let [s-customer (s/retrieve-customer customer-id)]
+        (create-subscription request s-customer))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 ;;
@@ -292,3 +310,9 @@ Customer mapping to external banking system."
 ;; search for id=user-id
 ;;
 ;; return 1 or 0 document
+;;
+
+;; ==== Move add to user operation create-customer
+;; when user is signed-up but not customer. Create customer (payment-method optional)
+;; when new user create user and customer. (payment-method optional)
+;; delete user what about customer and subscription
