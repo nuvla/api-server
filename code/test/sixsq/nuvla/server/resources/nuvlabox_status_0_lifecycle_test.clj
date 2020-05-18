@@ -80,7 +80,8 @@
                   :hostname              "localhost"
                   :ip                    "127.0.0.1"
                   :docker-server-version "19.0.3"
-                  :last-boot             timestamp})
+                  :last-boot             timestamp
+                  :inferred-location     [46.2044 6.1432 373.]})
 
 
 (def resources-updated {:cpu   {:capacity   10

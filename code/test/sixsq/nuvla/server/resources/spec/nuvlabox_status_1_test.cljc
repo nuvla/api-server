@@ -52,7 +52,8 @@
             :hostname              "localhost"
             :ip                    "127.0.0.1"
             :docker-server-version "19.0.3"
-            :last-boot             "2020-02-18T19:42:08Z"})
+            :last-boot             "2020-02-18T19:42:08Z"
+            :inferred-location     [46.2044 6.1432 373.]})
 
 
 (deftest check-nuvlabox-status
@@ -66,5 +67,6 @@
     (stu/is-invalid ::nb-status-1/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment :nuvlabox-api-endpoint}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment :nuvlabox-api-endpoint
+                 :inferred-location}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))

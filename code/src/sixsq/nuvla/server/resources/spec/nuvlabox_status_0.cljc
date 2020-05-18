@@ -334,6 +334,20 @@
              :json-schema/order 36)))
 
 
+;;
+;; self inferred location
+;;
+
+(s/def ::inferred-location
+  (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
+    (assoc :name "inferred-location"
+           :json-schema/type "geo-point"
+           :json-schema/display-name "location"
+           :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
+
+           :json-schema/order 47)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -350,4 +364,5 @@
                                ::last-boot
                                ::peripherals
                                ::wifi-password
-                               ::nuvlabox-api-endpoint]}))
+                               ::nuvlabox-api-endpoint
+                               ::inferred-location]}))
