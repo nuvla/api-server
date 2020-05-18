@@ -16,7 +16,8 @@ Customer mapping to external banking system."
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
+    [sixsq.nuvla.server.resources.pricing :as pricing]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -86,9 +87,9 @@ Customer mapping to external banking system."
   (a/throw-cannot-add collection-acl request)
   (utils/throw-customer-exist (request->resource-id request))
   (utils/throw-admin-can-not-be-customer request)
-  (utils/throw-plan-invalid request)
   (let [s-customer (utils/create-customer request)]
-    (when plan-id (utils/create-subscription request s-customer))
+    (when plan-id
+      (utils/create-subscription request s-customer))
     (-> request
         (assoc :body {:parent      (auth/current-user-id request)
                       :customer-id (s/get-id s-customer)})

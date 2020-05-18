@@ -41,17 +41,18 @@
 
 (defn stripe-product-plan->charge
   [stripe-product-plan]
-  (let [amount          (amount->unit-float (s/get-amount stripe-product-plan))
-        aggregate-usage (s/get-aggregate-usage stripe-product-plan)
-        tiers-mode      (s/get-tiers-mode stripe-product-plan)
-        tiers           (some->> stripe-product-plan
-                                 (s/get-tiers)
-                                 seq
-                                 (map-indexed
-                                   (fn [i tier]
-                                     {:order  i
-                                      :amount (amount->unit-float (s/get-unit-amount tier))
-                                      :up-to  (s/get-up-to tier)})))]
+  (let [amount            (amount->unit-float (s/get-amount stripe-product-plan))
+        aggregate-usage   (s/get-aggregate-usage stripe-product-plan)
+        tiers-mode        (s/get-tiers-mode stripe-product-plan)
+        tiers             (some->> stripe-product-plan
+                                   (s/get-tiers)
+                                   seq
+                                   (map-indexed
+                                     (fn [i tier]
+                                       {:order  i
+                                        :amount (amount->unit-float (s/get-unit-amount tier))
+                                        :up-to  (s/get-up-to tier)})))
+        trial-period-days (s/get-trial-period-days stripe-product-plan)]
     (cond-> {:currency       (s/get-currency stripe-product-plan)
              :interval       (s/get-interval stripe-product-plan)
              :usage-type     (s/get-usage-type stripe-product-plan)
@@ -59,7 +60,8 @@
             amount (assoc :amount amount)
             aggregate-usage (assoc :aggregate-usage aggregate-usage)
             tiers-mode (assoc :tiers-mode tiers-mode)
-            tiers (assoc :tiers tiers))))
+            tiers (assoc :tiers tiers)
+            trial-period-days (assoc :trial-period-days trial-period-days))))
 
 
 (defn transform-plan-items

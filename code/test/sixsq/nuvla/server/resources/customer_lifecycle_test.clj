@@ -32,7 +32,7 @@
 ;
 ;(def valid-entry {:plan-id       "plan_HGQ9iUgnz2ho8e"
 ;                  :plan-item-ids ["plan_HGQIIWmhYmi45G"
-;                                  "plan_HGQN0A2ARmEPlB"
+;                                  "plan_HIrgmGboUlLqG9"
 ;                                  "plan_HGQAXewpgs9NeW"
 ;                                  "plan_HGQqB0p8h86Ija"]})
 ;

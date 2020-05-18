@@ -33,12 +33,11 @@
 
 
 (defn throw-plan-invalid
-  [{{:keys [plan-id plan-item-ids] :as body} :body :as request}]
+  [{{:keys [plan-id plan-item-ids] :as body} :body :as request} catalogue]
   (when plan-id
-    (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)
-          plan      (some->> catalogue
-                             :plans
-                             (some #(when (= (:plan-id %) plan-id) %)))]
+    (let [plan (some->> catalogue
+                        :plans
+                        (some #(when (= (:plan-id %) plan-id) %)))]
       (if plan
         (let [{:keys [required-items optional-items]} plan
               required-items-set      (set required-items)
@@ -72,9 +71,13 @@
 
 (defn create-subscription
   [{{:keys [plan-id plan-item-ids] :as body} :body :as request} s-customer]
-  (s/create-subscription {"customer" (s/get-id s-customer)
-                          "items"    (map (fn [plan-id] {"plan" plan-id})
-                                          (cons plan-id plan-item-ids))}))
+  (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)]
+    (throw-plan-invalid request catalogue)
+    (s/create-subscription {"customer"        (s/get-id s-customer)
+                            "items"           (map (fn [plan-id] {"plan" plan-id})
+                                                   (cons plan-id plan-item-ids))
+                            "trial_from_plan" true})))
+
 
 (defn valid-subscription
   [subscription]

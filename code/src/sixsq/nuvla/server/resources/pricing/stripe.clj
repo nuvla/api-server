@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.pricing.stripe
-  (:require [sixsq.nuvla.server.util.log :as logu])
+  (:require [sixsq.nuvla.server.util.log :as logu]
+            [clojure.tools.logging :as log])
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
@@ -128,6 +129,10 @@
 (defn get-billing-scheme
   [plan]
   (.getBillingScheme plan))
+
+(defn get-trial-period-days
+  [plan]
+  (.getTrialPeriodDays plan))
 
 (defn get-amount
   [plan]

@@ -90,6 +90,12 @@
              :json-schema/type "array")))
 
 
+(s/def ::trial-period-days
+  (-> (st/spec (s/and number? #(>= % 0)))
+      (assoc :name "trial-period-days"
+             :json-schema/type "double")))
+
+
 (s/def ::charge
   (-> (st/spec (su/only-keys
                  :req-un [::currency
@@ -99,7 +105,8 @@
                  :opt-un [::amount
                           ::tiers
                           ::aggregate-usage
-                          ::tiers-mode]))
+                          ::tiers-mode
+                          ::trial-period-days]))
       (assoc :name "charge"
              :json-schema/type "map")))
 

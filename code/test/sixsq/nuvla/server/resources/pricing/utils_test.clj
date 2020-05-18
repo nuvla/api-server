@@ -22,7 +22,7 @@
 ;
 ;    (println (t/create-subscription {"customer" cust-1-id
 ;                                     "items"    [{"plan" "plan_HGQ9iUgnz2ho8e"}
-;                                                 {"plan" "plan_HGQN0A2ARmEPlB"}]}))
+;                                                 {"plan" "plan_HIrgmGboUlLqG9"}]}))
 ;
 ;    ;; delete test
 ;    (is (= true (t/get-deleted (t/delete-customer cust-1))))
