@@ -88,7 +88,7 @@
   (-> (st/spec (su/only-keys-maps ps/template-keys-spec
                                   user-template-email-password-keys-req
                                   user-template-email-password-keys-href
-                                  {:opt-un [::plan-id
+                                  {:opt-un [::plan-id       ;;FIXME WIP
                                             ::plan-item-ids]}))
       (assoc :name "template"
              :json-schema/type "map")))

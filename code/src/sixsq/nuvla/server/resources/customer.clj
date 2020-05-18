@@ -168,6 +168,15 @@ Customer mapping to external banking system."
         (or (ex-data e) (throw e))))))
 
 
+
+(def delete-impl (std-crud/delete-fn resource-type))
+
+
+(defmethod crud/delete resource-type
+  [request]
+  (delete-impl request))
+
+
 ;;
 ;; initialization
 ;;
