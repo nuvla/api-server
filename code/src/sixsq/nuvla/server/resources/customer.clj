@@ -15,7 +15,8 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -124,14 +125,7 @@ Customer mapping to external banking system."
        (assoc-in request [:cimi-params :filter])))
 
 
-(defn query-wrapper
-  "wraps the standard query function to always include a filter based on the user-id"
-  [query-fn]
-  (fn [request]
-    (query-fn (add-session-filter request))))
-
-
-(def query-impl (query-wrapper (std-crud/query-fn resource-type collection-acl collection-type)))
+(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
 (defmethod crud/query resource-type
