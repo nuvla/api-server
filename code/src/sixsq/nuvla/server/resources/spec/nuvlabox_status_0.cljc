@@ -342,7 +342,7 @@
   (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
     (assoc :name "inferred-location"
            :json-schema/type "geo-point"
-           :json-schema/display-name "location"
+           :json-schema/display-name "inferred-location"
            :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
 
            :json-schema/order 47)))
