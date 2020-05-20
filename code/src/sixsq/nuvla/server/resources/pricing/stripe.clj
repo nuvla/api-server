@@ -4,7 +4,7 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Subscription PaymentMethod Product Plan)))
+    (com.stripe.model Customer Subscription PaymentMethod Product Plan SetupIntent)))
 
 
 (defn set-api-key!
@@ -72,6 +72,12 @@
     (Subscription/create subscription-params)))
 
 
+(defn create-setup-intent
+  [setup-intent-params]
+  (try-catch-exception
+    (SetupIntent/create setup-intent-params)))
+
+
 (defn create-payment-method
   [payment-method-params]
   (try-catch-exception
@@ -101,6 +107,14 @@
 (defn get-current-period-start
   [obj]
   (.getCurrentPeriodStart obj))
+
+(defn get-trial-start
+  [obj]
+  (.getTrialStart obj))
+
+(defn get-trial-end
+  [obj]
+  (.getTrialEnd obj))
 
 (defn get-metadata
   [obj]

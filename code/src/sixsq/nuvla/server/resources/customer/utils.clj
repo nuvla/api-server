@@ -14,6 +14,7 @@
 
 
 (def ^:const create-subscription-action "create-subscription")
+(def ^:const create-setup-intent-action "create-setup-intent")
 
 (defn create-customer
   [request]
@@ -79,6 +80,11 @@
                             "trial_from_plan" true})))
 
 
+(defn create-setup-intent
+  [request s-customer]
+  (s/create-setup-intent {"customer"        (s/get-id s-customer)}))
+
+
 (defn valid-subscription
   [subscription]
   ;; subscription not in incomplete_expired or canceled status
@@ -100,6 +106,7 @@
         can-manage?  (a/can-manage? resource request)]
     (condp = action
       create-subscription-action (and can-manage? (nil? subscription))
+      create-setup-intent-action can-manage?
       :else false)))
 
 

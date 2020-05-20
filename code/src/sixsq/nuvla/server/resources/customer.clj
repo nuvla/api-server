@@ -105,11 +105,16 @@ Customer mapping to external banking system."
   (let [{customer :body :as response} (retrieve-impl request)
         s-customer        (s/retrieve-customer (:customer-id customer))
         s-subscription    (utils/get-current-subscription s-customer)
+        _                 (log/error s-customer)
+        _                 (log/error s-subscription)
         subscription-info (when s-subscription
-                            {:status               (s/get-status s-subscription)
-                             :start-date           (s/get-start-date s-subscription)
-                             :current-period-start (s/get-current-period-start s-subscription)
-                             :current-period-end   (s/get-current-period-end s-subscription)})
+                            (cond-> {:status               (s/get-status s-subscription)
+                                     :start-date           (s/get-start-date s-subscription)
+                                     :current-period-start (s/get-current-period-start s-subscription)
+                                     :current-period-end   (s/get-current-period-end s-subscription)
+                                     :trial-end            (s/get-trial-end s-subscription)
+                                     :trial-start          (s/get-trial-start s-subscription)}
+                                    ))
         resource          (-> customer
                               (assoc :subscription subscription-info)
                               (crud/set-operations request))]
@@ -137,11 +142,15 @@ Customer mapping to external banking system."
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [create-subscription-op (u/action-map id utils/create-subscription-action)]
+  (let [create-subscription-op (u/action-map id utils/create-subscription-action)
+        create-setup-intent-op (u/action-map id utils/create-setup-intent-action)]
     (cond-> (crud/set-standard-operations resource request)
 
             (utils/can-do-action? resource request utils/create-subscription-action)
             (update :operations conj create-subscription-op)
+
+            (utils/can-do-action? resource request utils/create-setup-intent-action)
+            (update :operations conj create-setup-intent-op)
 
             )))
 
@@ -159,6 +168,23 @@ Customer mapping to external banking system."
     (try
       (let [s-customer (s/retrieve-customer customer-id)]
         (utils/create-subscription request s-customer))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+
+(defmethod crud/do-action [resource-type utils/create-setup-intent-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [customer-id] :as resource} (-> request
+                                               (request->resource-id)
+                                               (crud/retrieve-by-id-as-admin)
+                                               (utils/throw-can-not-do-action
+                                                 request
+                                                 utils/create-setup-intent-action))]
+    (try
+      (let [s-customer (s/retrieve-customer customer-id)]
+        (utils/create-setup-intent request s-customer))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

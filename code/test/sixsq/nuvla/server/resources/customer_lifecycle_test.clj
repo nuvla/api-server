@@ -114,6 +114,7 @@
 ;          (ltu/body->edn)
 ;          (ltu/is-status 200)
 ;          (ltu/is-operation-absent :create-subscription)
+;          (ltu/is-operation-present :create-setup-intent)
 ;          (ltu/dump))
 ;
 ;      (-> session-user
