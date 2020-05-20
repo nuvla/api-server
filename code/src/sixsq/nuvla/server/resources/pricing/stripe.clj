@@ -171,3 +171,8 @@
 (defn get-up-to
   [tier]
   (.getUpTo tier))
+
+
+(defn get-client-secret
+  [obj]
+  (.getClientSecret obj))

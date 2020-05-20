@@ -80,9 +80,24 @@
                             "trial_from_plan" true})))
 
 
+(defn s-subscription->map
+  [s-subscription]
+  (cond-> {:status               (s/get-status s-subscription)
+           :start-date           (s/get-start-date s-subscription)
+           :current-period-start (s/get-current-period-start s-subscription)
+           :current-period-end   (s/get-current-period-end s-subscription)
+           :trial-end            (s/get-trial-end s-subscription)
+           :trial-start          (s/get-trial-start s-subscription)}))
+
+
+(defn s-setup-intent->map
+  [s-setup-intent]
+  (cond-> {:client-secret (s/get-client-secret s-setup-intent)}))
+
+
 (defn create-setup-intent
   [request s-customer]
-  (s/create-setup-intent {"customer"        (s/get-id s-customer)}))
+  (s/create-setup-intent {"customer" (s/get-id s-customer)}))
 
 
 (defn valid-subscription

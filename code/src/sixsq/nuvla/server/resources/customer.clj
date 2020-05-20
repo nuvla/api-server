@@ -17,7 +17,8 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
-    [sixsq.nuvla.server.resources.pricing :as pricing]))
+    [sixsq.nuvla.server.resources.pricing :as pricing]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -107,14 +108,7 @@ Customer mapping to external banking system."
         s-subscription    (utils/get-current-subscription s-customer)
         _                 (log/error s-customer)
         _                 (log/error s-subscription)
-        subscription-info (when s-subscription
-                            (cond-> {:status               (s/get-status s-subscription)
-                                     :start-date           (s/get-start-date s-subscription)
-                                     :current-period-start (s/get-current-period-start s-subscription)
-                                     :current-period-end   (s/get-current-period-end s-subscription)
-                                     :trial-end            (s/get-trial-end s-subscription)
-                                     :trial-start          (s/get-trial-start s-subscription)}
-                                    ))
+        subscription-info (some-> s-subscription utils/s-subscription->map)
         resource          (-> customer
                               (assoc :subscription subscription-info)
                               (crud/set-operations request))]
@@ -166,8 +160,11 @@ Customer mapping to external banking system."
                                                  utils/create-subscription-action)
                                                (utils/throw-plan-id-mandatory request))]
     (try
-      (let [s-customer (s/retrieve-customer customer-id)]
-        (utils/create-subscription request s-customer))
+      (some->> customer-id
+               s/retrieve-customer
+               (utils/create-subscription request)
+               utils/s-subscription->map
+               r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -176,15 +173,18 @@ Customer mapping to external banking system."
 (defmethod crud/do-action [resource-type utils/create-setup-intent-action]
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [customer-id] :as resource} (-> request
-                                               (request->resource-id)
-                                               (crud/retrieve-by-id-as-admin)
-                                               (utils/throw-can-not-do-action
-                                                 request
-                                                 utils/create-setup-intent-action))]
+  (let [{:keys [id customer-id] :as resource} (-> request
+                                                  (request->resource-id)
+                                                  (crud/retrieve-by-id-as-admin)
+                                                  (utils/throw-can-not-do-action
+                                                    request
+                                                    utils/create-setup-intent-action))]
     (try
-      (let [s-customer (s/retrieve-customer customer-id)]
-        (utils/create-setup-intent request s-customer))
+      (some->> customer-id
+               s/retrieve-customer
+               (utils/create-setup-intent request)
+               utils/s-setup-intent->map
+               r/json-response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

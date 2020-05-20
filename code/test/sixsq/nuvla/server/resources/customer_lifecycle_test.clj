@@ -96,7 +96,7 @@
 ;    (-> session-user
 ;        (request base-uri
 ;                 :request-method :post
-;                 :body (json/write-str (assoc valid-entry :plan-id  "plan-not-exit")))
+;                 :body (json/write-str (assoc valid-entry :plan-id "plan-not-exit")))
 ;        (ltu/body->edn)
 ;        (ltu/is-status 400)
 ;        (ltu/message-matches #"Plan-id .* not found!"))
@@ -109,19 +109,26 @@
 ;                         (ltu/is-status 201)
 ;                         (ltu/location-url))]
 ;
-;      (-> session-user
-;          (request customer-1)
-;          (ltu/body->edn)
-;          (ltu/is-status 200)
-;          (ltu/is-operation-absent :create-subscription)
-;          (ltu/is-operation-present :create-setup-intent)
-;          (ltu/dump))
+;      (let [customer-response (-> session-user
+;                                  (request customer-1)
+;                                  (ltu/body->edn)
+;                                  (ltu/is-status 200)
+;                                  (ltu/is-operation-absent :create-subscription)
+;                                  (ltu/is-operation-present :create-setup-intent))
+;            create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)]
+;
+;        (-> session-user
+;            (request create-setup-intent)
+;            (ltu/body->edn)
+;            (ltu/is-status 200)
+;            (ltu/is-key-value some? :client-secret true)))
 ;
 ;      (-> session-user
 ;          (request base-uri
 ;                   :request-method :put)
 ;          (ltu/body->edn)
 ;          (ltu/is-status 200)
+;          (ltu/dump)
 ;          (ltu/is-count 1))
 ;      )
 ;
