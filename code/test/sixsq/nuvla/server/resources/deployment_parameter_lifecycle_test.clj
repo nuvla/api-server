@@ -105,7 +105,7 @@
       (-> session-jane
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry))
+                   :body (json/write-str valid-entry-user))
           (ltu/body->edn)
           (ltu/is-status 201))
 
