@@ -26,12 +26,22 @@
 (def parameter-name "param1")
 
 
+(def parameter-name-user "param.user")
+
+
 (def valid-entry
   {:name    parameter-name
    :parent  parent-id
    :node-id node-id
    :acl     {:owners   ["group/nuvla-admin"]
              :edit-acl ["user/jane"]}})
+
+
+(def valid-entry-user
+  {:name    parameter-name-user
+   :parent  parent-id
+   :node-id node-id
+   :acl     {:owners   ["user/jane"]}})
 
 
 (def expected-dp-id (str "deployment-parameter/" (t/parameter->uuid parent-id node-id parameter-name)))
@@ -65,7 +75,7 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-absent :add)
+        (ltu/is-operation-present :add)
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
 
