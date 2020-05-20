@@ -91,12 +91,13 @@
 
           test-uri      (str p/service-context id-test)]
 
+      ; user can also create
       (-> session-jane
           (request base-uri
                    :request-method :post
                    :body (json/write-str valid-entry))
           (ltu/body->edn)
-          (ltu/is-status 403))
+          (ltu/is-status 201))
 
       (is (= location-test test-uri))
 
