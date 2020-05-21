@@ -15,6 +15,7 @@
 
 (def ^:const create-subscription-action "create-subscription")
 (def ^:const create-setup-intent-action "create-setup-intent")
+(def ^:const detach-payment-method-action "detach-payment-method")
 
 (defn create-customer
   [request]
@@ -90,6 +91,22 @@
            :trial-start          (s/get-trial-start s-subscription)}))
 
 
+(defn s-payment-method-card->map
+  [s-payment-method]
+  (let [card (s/get-card s-payment-method)]
+    {:payment-method (s/get-id s-payment-method)
+     :brand          (s/get-brand card)
+     :last4          (s/get-last4 card)
+     :exp-month      (s/get-exp-month card)
+     :exp-year       (s/get-exp-year card)}))
+
+
+(defn s-payment-method-sepa->map
+  [s-payment-method]
+  (let [sepa-debit (s/get-sepa-debit s-payment-method)]
+    {:last4 (s/get-last4 sepa-debit)}))
+
+
 (defn s-setup-intent->map
   [s-setup-intent]
   (cond-> {:client-secret (s/get-client-secret s-setup-intent)}))
@@ -115,6 +132,31 @@
        (some valid-subscription)))
 
 
+(defn list-payment-methods
+  [s-customer]
+  (let [id            (s/get-id s-customer)
+        cards         (->> {"customer" id
+                            "type"     "card"}
+                           (s/list-payment-methods)
+                           (s/collection-iterator)
+                           (map s-payment-method-card->map))
+        bank-accounts (->> {"customer" id
+                            "type"     "sepa_debit"}
+                           (s/list-payment-methods)
+                           (s/collection-iterator)
+                           (map s-payment-method-sepa->map))]
+    {:cards         cards
+     :bank-accounts bank-accounts}))
+
+
+
+(defn get-default-payment-method
+  [s-customer]
+  (-> s-customer
+      s/get-invoice-settings
+      s/get-default-payment-method))
+
+
 (defn can-do-action?
   [resource request action]
   (let [subscription (:subscription resource)
@@ -122,6 +164,7 @@
     (condp = action
       create-subscription-action (and can-manage? (nil? subscription))
       create-setup-intent-action can-manage?
+      detach-payment-method-action can-manage?
       :else false)))
 
 
@@ -130,6 +173,11 @@
   (if (can-do-action? resource request action)
     resource
     (throw (r/ex-response (format "action not available for %s!" action id) 409 id))))
+
+
+(defn throw-payment-method-not-attached
+  [{:keys [id] :as resource}]
+  )
 
 
 (defn throw-plan-id-mandatory

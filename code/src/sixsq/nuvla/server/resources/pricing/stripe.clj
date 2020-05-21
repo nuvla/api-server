@@ -49,6 +49,12 @@
     (Plan/list params)))
 
 
+(defn list-payment-methods
+  [params]
+  (try-catch-exception
+    (PaymentMethod/list params)))
+
+
 (defn get-customer-subscriptions
   [customer]
   (try-catch-exception
@@ -78,11 +84,16 @@
     (SetupIntent/create setup-intent-params)))
 
 
-(defn create-payment-method
-  [payment-method-params]
+(defn retrieve-payment-method
+  [payment-method-id]
   (try-catch-exception
-    (PaymentMethod/create payment-method-params)))
+    (PaymentMethod/retrieve payment-method-id)))
 
+
+(defn detach-payment-method
+  [s-payment-method]
+  (try-catch-exception
+    (.detach s-payment-method)))
 
 (defn get-id
   [obj]
@@ -172,7 +183,38 @@
   [tier]
   (.getUpTo tier))
 
-
 (defn get-client-secret
   [obj]
   (.getClientSecret obj))
+
+(defn get-card
+  [obj]
+  (.getCard obj))
+
+(defn get-sepa-debit
+  [obj]
+  (.getSepaDebit obj))
+
+(defn get-brand
+  [obj]
+  (.getBrand obj))
+
+(defn get-last4
+  [obj]
+  (.getLast4 obj))
+
+(defn get-exp-month
+  [obj]
+  (.getExpMonth obj))
+
+(defn get-exp-year
+  [obj]
+  (.getExpYear obj))
+
+(defn get-invoice-settings
+  [obj]
+  (.getInvoiceSettings obj))
+
+(defn get-default-payment-method
+  [obj]
+  (.getDefaultPaymentMethod obj))

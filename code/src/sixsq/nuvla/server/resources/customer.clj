@@ -15,9 +15,6 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
-    [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -100,19 +97,26 @@ Customer mapping to external banking system."
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
 
+(defn load-dynamic-attributes
+  [{:keys [customer-id] :as resource} request]
+  (let [s-customer      (s/retrieve-customer customer-id)
+        s-subscription  (utils/get-current-subscription s-customer)
+        subscription    (some-> s-subscription utils/s-subscription->map)
+        payment-methods (utils/list-payment-methods s-customer)
+        default-pm      (utils/get-default-payment-method s-customer)] ;; re set-ops after resource is complete
+    (-> resource
+        (assoc :subscription subscription
+               :payment-methods payment-methods
+               :default-payment-method default-pm)
+        (crud/set-operations request))))
+
+
 (defmethod crud/retrieve resource-type
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{customer :body :as response} (retrieve-impl request)
-        s-customer        (s/retrieve-customer (:customer-id customer))
-        s-subscription    (utils/get-current-subscription s-customer)
-        _                 (log/error s-customer)
-        _                 (log/error s-subscription)
-        subscription-info (some-> s-subscription utils/s-subscription->map)
-        resource          (-> customer
-                              (assoc :subscription subscription-info)
-                              (crud/set-operations request))]
-    (assoc response :body resource)))
+  (-> request
+      retrieve-impl
+      (update :body load-dynamic-attributes request)))
 
 
 (defn add-session-filter
@@ -136,8 +140,9 @@ Customer mapping to external banking system."
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [create-subscription-op (u/action-map id utils/create-subscription-action)
-        create-setup-intent-op (u/action-map id utils/create-setup-intent-action)]
+  (let [create-subscription-op   (u/action-map id utils/create-subscription-action)
+        create-setup-intent-op   (u/action-map id utils/create-setup-intent-action)
+        detach-payment-method-op (u/action-map id utils/detach-payment-method-action)]
     (cond-> (crud/set-standard-operations resource request)
 
             (utils/can-do-action? resource request utils/create-subscription-action)
@@ -145,6 +150,9 @@ Customer mapping to external banking system."
 
             (utils/can-do-action? resource request utils/create-setup-intent-action)
             (update :operations conj create-setup-intent-op)
+
+            (utils/can-do-action? resource request utils/detach-payment-method-action)
+            (update :operations conj detach-payment-method-op)
 
             )))
 
@@ -155,6 +163,7 @@ Customer mapping to external banking system."
   (let [{:keys [customer-id] :as resource} (-> request
                                                (request->resource-id)
                                                (crud/retrieve-by-id-as-admin)
+                                               (load-dynamic-attributes request)
                                                (utils/throw-can-not-do-action
                                                  request
                                                  utils/create-subscription-action)
@@ -169,16 +178,15 @@ Customer mapping to external banking system."
         (or (ex-data e) (throw e))))))
 
 
-
 (defmethod crud/do-action [resource-type utils/create-setup-intent-action]
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id customer-id] :as resource} (-> request
-                                                  (request->resource-id)
-                                                  (crud/retrieve-by-id-as-admin)
-                                                  (utils/throw-can-not-do-action
-                                                    request
-                                                    utils/create-setup-intent-action))]
+  (let [{:keys [customer-id] :as resource} (-> request
+                                               (request->resource-id)
+                                               (crud/retrieve-by-id-as-admin)
+                                               (utils/throw-can-not-do-action
+                                                 request
+                                                 utils/create-setup-intent-action))]
     (try
       (some->> customer-id
                s/retrieve-customer
@@ -188,6 +196,23 @@ Customer mapping to external banking system."
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+
+(defmethod crud/do-action [resource-type utils/detach-payment-method-action]
+  [{{:keys [payment-method]} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [id] :as resource} (-> request
+                                      (request->resource-id)
+                                      (crud/retrieve-by-id-as-admin)
+                                      (utils/throw-can-not-do-action
+                                        request
+                                        utils/detach-payment-method-action))]
+    (try
+      (some-> payment-method
+              s/retrieve-payment-method
+              s/detach-payment-method)
+      (r/map-response (format "%s successfully detached" payment-method) 200 id)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
