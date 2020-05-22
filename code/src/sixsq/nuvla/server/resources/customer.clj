@@ -119,16 +119,6 @@ Customer mapping to external banking system."
       (update :body load-dynamic-attributes request)))
 
 
-(defn add-session-filter
-  [request]
-  (->> request
-       auth/current-user-id
-       user-id->resource-id
-       (format "id='%s'")
-       (parser/parse-cimi-filter)
-       (assoc-in request [:cimi-params :filter])))
-
-
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
 
 
@@ -211,6 +201,24 @@ Customer mapping to external banking system."
               s/retrieve-payment-method
               s/detach-payment-method)
       (r/map-response (format "%s successfully detached" payment-method) 200 id)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type utils/detach-payment-method-action]
+  [{{:keys [payment-method]} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [id customer-id] :as resource} (-> request
+                                                  (request->resource-id)
+                                                  (crud/retrieve-by-id-as-admin)
+                                                  (utils/throw-can-not-do-action
+                                                    request
+                                                    utils/set-default-payment-method-action))]
+    (try
+      (-> customer-id
+          s/retrieve-customer
+          (s/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
+      (r/map-response (format "%s successfully set as default" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

@@ -37,6 +37,12 @@
     (Customer/retrieve customer-id)))
 
 
+(defn update-customer
+  [customer params]
+  (try-catch-exception
+    (.update customer params)))
+
+
 (defn list-products
   [params]
   (try-catch-exception

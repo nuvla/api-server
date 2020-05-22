@@ -16,6 +16,8 @@
 (def ^:const create-subscription-action "create-subscription")
 (def ^:const create-setup-intent-action "create-setup-intent")
 (def ^:const detach-payment-method-action "detach-payment-method")
+(def ^:const set-default-payment-method-action "set-default-payment-method")
+
 
 (defn create-customer
   [request]
@@ -149,7 +151,6 @@
      :bank-accounts bank-accounts}))
 
 
-
 (defn get-default-payment-method
   [s-customer]
   (-> s-customer
@@ -165,6 +166,7 @@
       create-subscription-action (and can-manage? (nil? subscription))
       create-setup-intent-action can-manage?
       detach-payment-method-action can-manage?
+      set-default-payment-method-action can-manage?
       :else false)))
 
 
@@ -173,11 +175,6 @@
   (if (can-do-action? resource request action)
     resource
     (throw (r/ex-response (format "action not available for %s!" action id) 409 id))))
-
-
-(defn throw-payment-method-not-attached
-  [{:keys [id] :as resource}]
-  )
 
 
 (defn throw-plan-id-mandatory
