@@ -114,7 +114,7 @@
 ;                                  (ltu/body->edn)
 ;                                  (ltu/is-status 200)
 ;                                  (ltu/dump)
-;                                  (ltu/is-operation-absent :create-subscription)
+;                                  (ltu/is-operation-present :create-subscription)
 ;                                  (ltu/is-operation-present :create-setup-intent))
 ;            create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)]
 ;

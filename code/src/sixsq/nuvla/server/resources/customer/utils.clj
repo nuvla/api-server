@@ -13,10 +13,52 @@
     [sixsq.nuvla.server.util.time :as time]))
 
 
+(def ^:const get-subscription-action "get-subscription")
 (def ^:const create-subscription-action "create-subscription")
 (def ^:const create-setup-intent-action "create-setup-intent")
-(def ^:const detach-payment-method-action "detach-payment-method")
+(def ^:const list-payment-methods-action "list-payment-methods")
 (def ^:const set-default-payment-method-action "set-default-payment-method")
+(def ^:const detach-payment-method-action "detach-payment-method")
+
+(defn s-subscription->map
+  [s-subscription]
+  (cond-> {:status               (s/get-status s-subscription)
+           :start-date           (some-> (s/get-start-date s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :current-period-start (some-> (s/get-current-period-start s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :current-period-end   (some-> (s/get-current-period-end s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :trial-start          (some-> (s/get-trial-start s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :trial-end            (some-> (s/get-trial-end s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)}))
+
+
+(defn s-payment-method-card->map
+  [s-payment-method]
+  (let [card (s/get-card s-payment-method)]
+    {:payment-method (s/get-id s-payment-method)
+     :brand          (s/get-brand card)
+     :last4          (s/get-last4 card)
+     :exp-month      (s/get-exp-month card)
+     :exp-year       (s/get-exp-year card)}))
+
+
+(defn s-payment-method-sepa->map
+  [s-payment-method]
+  (let [sepa-debit (s/get-sepa-debit s-payment-method)]
+    {:last4 (s/get-last4 sepa-debit)}))
+
+
+(defn s-setup-intent->map
+  [s-setup-intent]
+  {:client-secret (s/get-client-secret s-setup-intent)})
 
 
 (defn create-customer
@@ -77,56 +119,19 @@
   [{{:keys [plan-id plan-item-ids] :as body} :body :as request} s-customer]
   (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)]
     (throw-plan-invalid request catalogue)
-    (s/create-subscription {"customer"        (s/get-id s-customer)
-                            "items"           (map (fn [plan-id] {"plan" plan-id})
-                                                   (cons plan-id plan-item-ids))
-                            "trial_from_plan" true})))
-
-
-(defn s-subscription->map
-  [s-subscription]
-  (cond-> {:status               (s/get-status s-subscription)
-           :start-date           (some-> (s/get-start-date s-subscription)
-                                         time/date-from-unix-timestamp
-                                         time/to-str)
-           :current-period-start (some-> (s/get-current-period-start s-subscription)
-                                         time/date-from-unix-timestamp
-                                         time/to-str)
-           :current-period-end   (some-> (s/get-current-period-end s-subscription)
-                                         time/date-from-unix-timestamp
-                                         time/to-str)
-           :trial-start          (some-> (s/get-trial-start s-subscription)
-                                         time/date-from-unix-timestamp
-                                         time/to-str)
-           :trial-end            (some-> (s/get-trial-end s-subscription)
-                                         time/date-from-unix-timestamp
-                                         time/to-str)}))
-
-
-(defn s-payment-method-card->map
-  [s-payment-method]
-  (let [card (s/get-card s-payment-method)]
-    {:payment-method (s/get-id s-payment-method)
-     :brand          (s/get-brand card)
-     :last4          (s/get-last4 card)
-     :exp-month      (s/get-exp-month card)
-     :exp-year       (s/get-exp-year card)}))
-
-
-(defn s-payment-method-sepa->map
-  [s-payment-method]
-  (let [sepa-debit (s/get-sepa-debit s-payment-method)]
-    {:last4 (s/get-last4 sepa-debit)}))
-
-
-(defn s-setup-intent->map
-  [s-setup-intent]
-  (cond-> {:client-secret (s/get-client-secret s-setup-intent)}))
+    (-> {"customer"        (s/get-id s-customer)
+         "items"           (map (fn [plan-id] {"plan" plan-id})
+                                (cons plan-id plan-item-ids))
+         "trial_from_plan" true}
+        s/create-subscription
+        s-subscription->map)))
 
 
 (defn create-setup-intent
-  [request s-customer]
-  (s/create-setup-intent {"customer" (s/get-id s-customer)}))
+  [s-customer]
+  (-> {"customer" (s/get-id s-customer)}
+      s/create-setup-intent
+      s-setup-intent->map))
 
 
 (defn valid-subscription
@@ -144,6 +149,13 @@
        (some valid-subscription)))
 
 
+(defn get-default-payment-method
+  [s-customer]
+  (-> s-customer
+      s/get-invoice-settings
+      s/get-default-payment-method))
+
+
 (defn list-payment-methods
   [s-customer]
   (let [id            (s/get-id s-customer)
@@ -157,21 +169,16 @@
                            (s/list-payment-methods)
                            (s/collection-iterator)
                            (map s-payment-method-sepa->map))]
-    {:cards         cards
-     :bank-accounts bank-accounts}))
-
-
-(defn get-default-payment-method
-  [s-customer]
-  (-> s-customer
-      s/get-invoice-settings
-      s/get-default-payment-method))
+    {:cards                  cards
+     :bank-accounts          bank-accounts
+     :default-payment-method (get-default-payment-method s-customer)}))
 
 
 (defn can-do-action?
   [resource request action]
   (let [subscription (:subscription resource)
         can-manage?  (a/can-manage? resource request)]
+    (a/can-manage? resource request)
     (condp = action
       create-subscription-action (and can-manage? (nil? subscription))
       create-setup-intent-action can-manage?
@@ -180,9 +187,9 @@
       :else false)))
 
 
-(defn throw-can-not-do-action
+(defn throw-can-not-manage
   [{:keys [id] :as resource} request action]
-  (if (can-do-action? resource request action)
+  (if (a/can-manage? resource request)
     resource
     (throw (r/ex-response (format "action not available for %s!" action id) 409 id))))
 
@@ -194,3 +201,11 @@
     (throw (r/ex-response
              (format "plan-id is mandatory for %s on %s!" create-subscription-action id) 409 id))))
 
+
+(defn throw-subscription-already-exist
+  [{:keys [id customer-id] :as resource} request]
+  (let [s-customer (s/retrieve-customer customer-id)]
+    (if (get-current-subscription s-customer)
+      (throw (r/ex-response
+               (format "subscription already created!" create-subscription-action id) 409 id))
+      (assoc resource :customer s-customer))))

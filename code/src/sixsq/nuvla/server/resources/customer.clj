@@ -13,7 +13,6 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.resources.pricing.stripe :as s]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -97,26 +96,10 @@ Customer mapping to external banking system."
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
 
-(defn load-dynamic-attributes
-  [{:keys [customer-id] :as resource} request]
-  (let [s-customer      (s/retrieve-customer customer-id)
-        s-subscription  (utils/get-current-subscription s-customer)
-        subscription    (some-> s-subscription utils/s-subscription->map)
-        payment-methods (utils/list-payment-methods s-customer)
-        default-pm      (utils/get-default-payment-method s-customer)] ;; re set-ops after resource is complete
-    (-> resource
-        (assoc :subscription subscription
-               :payment-methods payment-methods
-               :default-payment-method default-pm)
-        (crud/set-operations request))))
-
-
 (defmethod crud/retrieve resource-type
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (-> request
-      retrieve-impl
-      (update :body load-dynamic-attributes request)))
+  (retrieve-impl request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
@@ -130,61 +113,87 @@ Customer mapping to external banking system."
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [create-subscription-op   (u/action-map id utils/create-subscription-action)
-        create-setup-intent-op   (u/action-map id utils/create-setup-intent-action)
-        detach-payment-method-op (u/action-map id utils/detach-payment-method-action)]
+  (let [can-manage?                   (a/can-manage? resource request)
+        get-subscription-op           (u/action-map id utils/get-subscription-action)
+        create-subscription-op        (u/action-map id utils/create-subscription-action)
+        create-setup-intent-op        (u/action-map id utils/create-setup-intent-action)
+        list-payment-methods-op       (u/action-map id utils/list-payment-methods-action)
+        detach-payment-method-op      (u/action-map id utils/detach-payment-method-action)
+        set-default-payment-method-op (u/action-map id utils/set-default-payment-method-action)]
     (cond-> (crud/set-standard-operations resource request)
 
-            (utils/can-do-action? resource request utils/create-subscription-action)
-            (update :operations conj create-subscription-op)
+            can-manage? (update :operations concat [get-subscription-op
+                                                    create-subscription-op
+                                                    create-setup-intent-op
+                                                    list-payment-methods-op
+                                                    set-default-payment-method-op
+                                                    detach-payment-method-op]))))
 
-            (utils/can-do-action? resource request utils/create-setup-intent-action)
-            (update :operations conj create-setup-intent-op)
 
-            (utils/can-do-action? resource request utils/detach-payment-method-action)
-            (update :operations conj detach-payment-method-op)
-
-            )))
+(defmethod crud/do-action [resource-type utils/get-subscription-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (some-> request
+            (request->resource-id)
+            (crud/retrieve-by-id-as-admin)
+            (a/throw-cannot-manage request)
+            :customer-id
+            s/retrieve-customer
+            utils/get-current-subscription
+            utils/s-subscription->map
+            r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type utils/create-subscription-action]
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [customer-id] :as resource} (-> request
-                                               (request->resource-id)
-                                               (crud/retrieve-by-id-as-admin)
-                                               (load-dynamic-attributes request)
-                                               (utils/throw-can-not-do-action
-                                                 request
-                                                 utils/create-subscription-action)
-                                               (utils/throw-plan-id-mandatory request))]
-    (try
-      (some->> customer-id
-               s/retrieve-customer
-               (utils/create-subscription request)
-               utils/s-subscription->map
-               r/json-response)
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        (utils/throw-plan-id-mandatory request)
+        (utils/throw-subscription-already-exist request)
+        :customer
+        (utils/create-subscription request)
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type utils/create-setup-intent-action]
   [request]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [customer-id] :as resource} (-> request
-                                               (request->resource-id)
-                                               (crud/retrieve-by-id-as-admin)
-                                               (utils/throw-can-not-do-action
-                                                 request
-                                                 utils/create-setup-intent-action))]
-    (try
-      (some->> customer-id
-               s/retrieve-customer
-               (utils/create-setup-intent request)
-               utils/s-setup-intent->map
-               r/json-response)
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        :customer-id
+        s/retrieve-customer
+        utils/create-setup-intent
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type utils/list-payment-methods-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        :customer-id
+        s/retrieve-customer
+        (utils/list-payment-methods)
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type utils/detach-payment-method-action]
@@ -193,9 +202,7 @@ Customer mapping to external banking system."
   (let [{:keys [id] :as resource} (-> request
                                       (request->resource-id)
                                       (crud/retrieve-by-id-as-admin)
-                                      (utils/throw-can-not-do-action
-                                        request
-                                        utils/detach-payment-method-action))]
+                                      (a/throw-cannot-manage request))]
     (try
       (some-> payment-method
               s/retrieve-payment-method
@@ -211,9 +218,7 @@ Customer mapping to external banking system."
   (let [{:keys [id customer-id] :as resource} (-> request
                                                   (request->resource-id)
                                                   (crud/retrieve-by-id-as-admin)
-                                                  (utils/throw-can-not-do-action
-                                                    request
-                                                    utils/set-default-payment-method-action))]
+                                                  (a/throw-cannot-manage request))]
     (try
       (-> customer-id
           s/retrieve-customer
