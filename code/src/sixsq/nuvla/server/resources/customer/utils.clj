@@ -9,8 +9,8 @@
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [clojure.set :as set]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const create-subscription-action "create-subscription")
@@ -86,11 +86,21 @@
 (defn s-subscription->map
   [s-subscription]
   (cond-> {:status               (s/get-status s-subscription)
-           :start-date           (s/get-start-date s-subscription)
-           :current-period-start (s/get-current-period-start s-subscription)
-           :current-period-end   (s/get-current-period-end s-subscription)
-           :trial-end            (s/get-trial-end s-subscription)
-           :trial-start          (s/get-trial-start s-subscription)}))
+           :start-date           (some-> (s/get-start-date s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :current-period-start (some-> (s/get-current-period-start s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :current-period-end   (some-> (s/get-current-period-end s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :trial-start          (some-> (s/get-trial-start s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)
+           :trial-end            (some-> (s/get-trial-end s-subscription)
+                                         time/date-from-unix-timestamp
+                                         time/to-str)}))
 
 
 (defn s-payment-method-card->map

@@ -205,7 +205,7 @@ Customer mapping to external banking system."
         (or (ex-data e) (throw e))))))
 
 
-(defmethod crud/do-action [resource-type utils/detach-payment-method-action]
+(defmethod crud/do-action [resource-type utils/set-default-payment-method-action]
   [{{:keys [payment-method]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (let [{:keys [id customer-id] :as resource} (-> request
