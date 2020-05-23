@@ -53,7 +53,8 @@
 (defn s-payment-method-sepa->map
   [s-payment-method]
   (let [sepa-debit (s/get-sepa-debit s-payment-method)]
-    {:last4 (s/get-last4 sepa-debit)}))
+    {:payment-method (s/get-id s-payment-method)
+     :last4          (s/get-last4 sepa-debit)}))
 
 
 (defn s-setup-intent->map
