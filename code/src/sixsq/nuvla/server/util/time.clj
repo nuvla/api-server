@@ -90,3 +90,9 @@
   (-> start-date
       date-from-str
       (t/time-between (now) unit)))
+
+(defn unix-timestamp->str
+  [^String timestamp]
+  (-> timestamp
+      date-from-unix-timestamp
+      to-str))

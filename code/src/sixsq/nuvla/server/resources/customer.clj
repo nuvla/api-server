@@ -84,12 +84,13 @@ Customer mapping to external banking system."
   (a/throw-cannot-add collection-acl request)
   (utils/throw-customer-exist (request->resource-id request))
   (utils/throw-admin-can-not-be-customer request)
-  (let [s-customer (utils/create-customer request)]
+  (let [s-customer  (utils/create-customer request)
+        customer-id (s/get-id s-customer)]
     (when plan-id
-      (utils/create-subscription request s-customer))
+      (utils/create-subscription request customer-id))
     (-> request
         (assoc :body {:parent      (auth/current-user-id request)
-                      :customer-id (s/get-id s-customer)})
+                      :customer-id customer-id})
         add-impl)))
 
 
@@ -119,7 +120,9 @@ Customer mapping to external banking system."
         create-setup-intent-op        (u/action-map id utils/create-setup-intent-action)
         list-payment-methods-op       (u/action-map id utils/list-payment-methods-action)
         detach-payment-method-op      (u/action-map id utils/detach-payment-method-action)
-        set-default-payment-method-op (u/action-map id utils/set-default-payment-method-action)]
+        set-default-payment-method-op (u/action-map id utils/set-default-payment-method-action)
+        upcoming-invoice-op           (u/action-map id utils/upcoming-invoice-action)
+        list-invoices-op              (u/action-map id utils/list-invoices-action)]
     (cond-> (crud/set-standard-operations resource request)
 
             can-manage? (update :operations concat [get-subscription-op
@@ -127,7 +130,9 @@ Customer mapping to external banking system."
                                                     create-setup-intent-op
                                                     list-payment-methods-op
                                                     set-default-payment-method-op
-                                                    detach-payment-method-op]))))
+                                                    detach-payment-method-op
+                                                    upcoming-invoice-op
+                                                    list-invoices-op]))))
 
 
 (defmethod crud/do-action [resource-type utils/get-subscription-action]
@@ -157,7 +162,7 @@ Customer mapping to external banking system."
         (a/throw-cannot-manage request)
         (utils/throw-plan-id-mandatory request)
         (utils/throw-subscription-already-exist request)
-        :customer
+        :customer-id
         (utils/create-subscription request)
         r/json-response)
     (catch Exception e
@@ -173,7 +178,6 @@ Customer mapping to external banking system."
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         :customer-id
-        s/retrieve-customer
         utils/create-setup-intent
         r/json-response)
     (catch Exception e
@@ -226,6 +230,35 @@ Customer mapping to external banking system."
       (r/map-response (format "%s successfully set as default" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type utils/upcoming-invoice-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        :customer-id
+        (utils/get-upcoming-invoice)
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type utils/list-invoices-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        :customer-id
+        (utils/get-upcoming-invoice)
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))

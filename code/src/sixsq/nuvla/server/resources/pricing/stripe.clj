@@ -4,7 +4,8 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Subscription PaymentMethod Product Plan SetupIntent)))
+    (com.stripe.model Customer Subscription PaymentMethod Product
+                      Plan SetupIntent Invoice)))
 
 
 (defn set-api-key!
@@ -23,6 +24,11 @@
      ~@body
      (catch StripeException e#
        (logu/log-and-throw 500 (.getMessage e#)))))
+
+
+(defn price->unit-float
+  [price]
+  (some-> price (/ 100) float))
 
 
 (defn create-customer
@@ -90,6 +96,18 @@
     (SetupIntent/create setup-intent-params)))
 
 
+(defn get-upcoming-invoice
+  [invoice-params]
+  (try-catch-exception
+    (Invoice/upcoming invoice-params)))
+
+
+(defn list-invoices
+  [params]
+  (try-catch-exception
+    (Invoice/list params)))
+
+
 (defn retrieve-payment-method
   [payment-method-id]
   (try-catch-exception
@@ -146,8 +164,8 @@
   (.getActive obj))
 
 (defn get-currency
-  [plan]
-  (.getCurrency plan))
+  [obj]
+  (.getCurrency obj))
 
 (defn get-interval
   [plan]
@@ -166,8 +184,8 @@
   (.getTrialPeriodDays plan))
 
 (defn get-amount
-  [plan]
-  (.getAmount plan))
+  [obj]
+  (.getAmount obj))
 
 (defn get-aggregate-usage
   [plan]
@@ -224,3 +242,51 @@
 (defn get-default-payment-method
   [obj]
   (.getDefaultPaymentMethod obj))
+
+(defn get-lines
+  [obj]
+  (.getLines obj))
+
+(defn get-description
+  [obj]
+  (.getDescription obj))
+
+(defn get-quantity
+  [obj]
+  (.getQuantity obj))
+
+(defn get-period
+  [obj]
+  (.getPeriod obj))
+
+(defn get-start
+  [obj]
+  (.getStart obj))
+
+(defn get-end
+  [obj]
+  (.getEnd obj))
+
+(defn get-created
+  [obj]
+  (.getCreated obj))
+
+(defn get-due-date
+  [obj]
+  (.getDueDate obj))
+
+(defn get-invoice-pdf
+  [obj]
+  (.getInvoicePdf obj))
+
+(defn get-paid
+  [obj]
+  (.getPaid obj))
+
+(defn get-total
+  [obj]
+  (.getTotal obj))
+
+(defn get-data
+  [obj]
+  (.getData obj))

@@ -35,13 +35,10 @@
   (->> (get-nuvla-products)
        (group-by #(get (s/get-metadata %) META_KEY_NUVLA))))
 
-(defn amount->unit-float
-  [amount]
-  (some-> amount (/ 100) float))
 
 (defn stripe-product-plan->charge
   [stripe-product-plan]
-  (let [amount            (amount->unit-float (s/get-amount stripe-product-plan))
+  (let [amount            (s/price->unit-float (s/get-amount stripe-product-plan))
         aggregate-usage   (s/get-aggregate-usage stripe-product-plan)
         tiers-mode        (s/get-tiers-mode stripe-product-plan)
         tiers             (some->> stripe-product-plan
@@ -50,7 +47,7 @@
                                    (map-indexed
                                      (fn [i tier]
                                        {:order  i
-                                        :amount (amount->unit-float (s/get-unit-amount tier))
+                                        :amount (s/price->unit-float (s/get-unit-amount tier))
                                         :up-to  (s/get-up-to tier)})))
         trial-period-days (s/get-trial-period-days stripe-product-plan)]
     (cond-> {:currency       (s/get-currency stripe-product-plan)
