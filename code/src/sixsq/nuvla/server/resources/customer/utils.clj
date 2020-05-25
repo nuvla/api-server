@@ -74,7 +74,9 @@
 
 (defn s-invoice->map
   [s-invoice extend]
-  (cond-> {:created     (some-> (s/get-created s-invoice)
+  (cond-> {:id          (s/get-id s-invoice)
+           :number      (s/get-number s-invoice)
+           :created     (some-> (s/get-created s-invoice)
                                 time/unix-timestamp->str)
            :currency    (s/get-currency s-invoice)
            :due-date    (s/get-due-date s-invoice)

@@ -255,7 +255,7 @@ Customer mapping to external banking system."
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         :customer-id
-        (utils/get-upcoming-invoice)
+        (utils/list-invoices)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))

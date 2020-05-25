@@ -290,3 +290,8 @@
 (defn get-data
   [obj]
   (.getData obj))
+
+
+(defn get-number
+  [obj]
+  (.getNumber obj))
