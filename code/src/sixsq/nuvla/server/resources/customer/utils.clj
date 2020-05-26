@@ -2,15 +2,17 @@
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.pricing.stripe :as s]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [clojure.set :as set]
     [sixsq.nuvla.server.util.response :as r]
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [expound.alpha :as expound]))
 
 
 (def ^:const get-subscription-action "get-subscription")
@@ -24,91 +26,74 @@
 
 (defn s-subscription->map
   [s-subscription]
-  (cond-> {:status               (s/get-status s-subscription)
-           :start-date           (some-> (s/get-start-date s-subscription)
+  (cond-> {:status               (stripe/get-status s-subscription)
+           :start-date           (some-> (stripe/get-start-date s-subscription)
                                          time/unix-timestamp->str)
-           :current-period-start (some-> (s/get-current-period-start s-subscription)
+           :current-period-start (some-> (stripe/get-current-period-start s-subscription)
                                          time/unix-timestamp->str)
-           :current-period-end   (some-> (s/get-current-period-end s-subscription)
+           :current-period-end   (some-> (stripe/get-current-period-end s-subscription)
                                          time/unix-timestamp->str)
-           :trial-start          (some-> (s/get-trial-start s-subscription)
+           :trial-start          (some-> (stripe/get-trial-start s-subscription)
                                          time/unix-timestamp->str)
-           :trial-end            (some-> (s/get-trial-end s-subscription)
+           :trial-end            (some-> (stripe/get-trial-end s-subscription)
                                          time/unix-timestamp->str)}))
 
 
 (defn s-payment-method-card->map
   [s-payment-method]
-  (let [card (s/get-card s-payment-method)]
-    {:payment-method (s/get-id s-payment-method)
-     :brand          (s/get-brand card)
-     :last4          (s/get-last4 card)
-     :exp-month      (s/get-exp-month card)
-     :exp-year       (s/get-exp-year card)}))
+  (let [card (stripe/get-card s-payment-method)]
+    {:payment-method (stripe/get-id s-payment-method)
+     :brand          (stripe/get-brand card)
+     :last4          (stripe/get-last4 card)
+     :exp-month      (stripe/get-exp-month card)
+     :exp-year       (stripe/get-exp-year card)}))
 
 
 (defn s-payment-method-sepa->map
   [s-payment-method]
-  (let [sepa-debit (s/get-sepa-debit s-payment-method)]
-    {:payment-method (s/get-id s-payment-method)
-     :last4          (s/get-last4 sepa-debit)}))
+  (let [sepa-debit (stripe/get-sepa-debit s-payment-method)]
+    {:payment-method (stripe/get-id s-payment-method)
+     :last4          (stripe/get-last4 sepa-debit)}))
 
 
 (defn s-setup-intent->map
   [s-setup-intent]
-  {:client-secret (s/get-client-secret s-setup-intent)})
+  {:client-secret (stripe/get-client-secret s-setup-intent)})
 
 
 (defn s-invoice-line-item->map
   [s-invoice-line-item]
-  {:amount      (s/price->unit-float (s/get-amount s-invoice-line-item))
-   :currency    (s/get-currency s-invoice-line-item)
-   :description (s/get-description s-invoice-line-item)
-   :period      (let [p (s/get-period s-invoice-line-item)]
-                  {:start (some-> (s/get-start p)
+  {:amount      (stripe/price->unit-float (stripe/get-amount s-invoice-line-item))
+   :currency    (stripe/get-currency s-invoice-line-item)
+   :description (stripe/get-description s-invoice-line-item)
+   :period      (let [p (stripe/get-period s-invoice-line-item)]
+                  {:start (some-> (stripe/get-start p)
                                   time/unix-timestamp->str)
 
-                   :end   (some-> (s/get-end p)
+                   :end   (some-> (stripe/get-end p)
                                   time/unix-timestamp->str)})
-   :quantity    (s/get-quantity s-invoice-line-item)})
+   :quantity    (stripe/get-quantity s-invoice-line-item)})
 
 (defn s-invoice->map
   [s-invoice extend]
-  (cond-> {:id          (s/get-id s-invoice)
-           :number      (s/get-number s-invoice)
-           :created     (some-> (s/get-created s-invoice)
+  (cond-> {:id          (stripe/get-id s-invoice)
+           :number      (stripe/get-number s-invoice)
+           :created     (some-> (stripe/get-created s-invoice)
                                 time/unix-timestamp->str)
-           :currency    (s/get-currency s-invoice)
-           :due-date    (s/get-due-date s-invoice)
-           :invoice-pdf (s/get-invoice-pdf s-invoice)
-           :paid        (s/get-paid s-invoice)
-           :status      (s/get-status s-invoice)
-           :total       (s/price->unit-float (s/get-total s-invoice))}
+           :currency    (stripe/get-currency s-invoice)
+           :due-date    (stripe/get-due-date s-invoice)
+           :invoice-pdf (stripe/get-invoice-pdf s-invoice)
+           :paid        (stripe/get-paid s-invoice)
+           :status      (stripe/get-status s-invoice)
+           :total       (stripe/price->unit-float (stripe/get-total s-invoice))}
           extend (assoc :lines (->> s-invoice
-                                    s/get-lines
-                                    s/collection-iterator
+                                    stripe/get-lines
+                                    stripe/collection-iterator
                                     (map s-invoice-line-item->map)))))
 
 
-(defn create-customer
-  [request]
-  (let [user-id (auth/current-user-id request)
-        email   (try (some-> user-id
-                             crud/retrieve-by-id-as-admin
-                             :email
-                             crud/retrieve-by-id-as-admin
-                             :address)
-                     (catch Exception _))
-        pm-id   (get-in request [:body :payment-method-id])]
-    (s/create-customer
-      (cond-> {}
-              email (assoc "email" email)
-              pm-id (assoc "payment_method" pm-id
-                           "invoice_settings" {"default_payment_method" pm-id})))))
-
-
 (defn throw-plan-invalid
-  [{{:keys [plan-id plan-item-ids] :as body} :body :as request} catalogue]
+  [{:keys [plan-id plan-item-ids] :as body} catalogue]
   (when plan-id
     (let [plan (some->> catalogue
                         :plans
@@ -144,28 +129,63 @@
     (logu/log-and-throw-400 "Admin can't create customer!")))
 
 
+(defn throw-invalid-body-fn
+  [spec]
+  (let [ok?     (partial s/valid? spec)
+        explain (partial expound/expound-str spec)]
+    (fn [{body :body :as request}]
+      (if-not (ok? body)
+        (logu/log-and-throw-400 (str "resource does not satisfy defined schema:\n" (explain body)))
+        request))))
+
+
 (defn create-subscription
-  [{{:keys [plan-id plan-item-ids] :as body} :body :as request} customer-id]
+  [{:keys [plan-id plan-item-ids] :as body} customer-id]
   (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)]
-    (throw-plan-invalid request catalogue)
+    (throw-plan-invalid body catalogue)
     (-> {"customer"        customer-id
          "items"           (map (fn [plan-id] {"plan" plan-id})
                                 (cons plan-id plan-item-ids))
          "trial_from_plan" true}
-        s/create-subscription
+        stripe/create-subscription
         s-subscription->map)))
+
+
+(defn create-customer
+  [{{:keys [fullname subscription address] pm-id :payment-method :as body} :body :as request}]
+  (let [user-id     (auth/current-user-id request)
+        {:keys [street-address city postal-code country]} address
+        email       (try (some-> user-id
+                                 crud/retrieve-by-id-as-admin
+                                 :email
+                                 crud/retrieve-by-id-as-admin
+                                 :address)
+                         (catch Exception _))
+        s-customer  (stripe/create-customer
+                      (cond-> {"name"    fullname
+                               "address" {"line1"       street-address
+                                          "city"        city
+                                          "postal_code" postal-code
+                                          "country"     country}}
+                              email (assoc "email" email)
+                              pm-id (assoc "payment_method" pm-id
+                                           "invoice_settings" {"default_payment_method" pm-id})))
+        customer-id (stripe/get-id s-customer)]
+    (when subscription
+      (create-subscription subscription customer-id))
+    customer-id))
 
 
 (defn create-setup-intent
   [customer-id]
   (-> {"customer" customer-id}
-      s/create-setup-intent
+      stripe/create-setup-intent
       s-setup-intent->map))
 
 (defn get-upcoming-invoice
   [customer-id]
   (-> {"customer" customer-id}
-      s/get-upcoming-invoice
+      stripe/get-upcoming-invoice
       (s-invoice->map true)))
 
 
@@ -173,13 +193,13 @@
   [customer-id]
   (let [paid (->> {"customer" customer-id
                    "status"   "paid"}
-                  s/list-invoices
-                  s/get-data
+                  stripe/list-invoices
+                  stripe/get-data
                   (map #(s-invoice->map % false)))
         open (->> {"customer" customer-id
                    "status"   "open"}
-                  s/list-invoices
-                  s/get-data
+                  stripe/list-invoices
+                  stripe/get-data
                   (map #(s-invoice->map % false)))]
     (concat open paid)))
 
@@ -187,37 +207,37 @@
 (defn valid-subscription
   [subscription]
   ;; subscription not in incomplete_expired or canceled status
-  (when (#{"active" "incomplete" "trialing" "past_due" "unpaid"} (s/get-status subscription))
+  (when (#{"active" "incomplete" "trialing" "past_due" "unpaid"} (stripe/get-status subscription))
     subscription))
 
 
 (defn get-current-subscription
   [s-customer]
   (->> s-customer
-       (s/get-customer-subscriptions)
-       (s/collection-iterator)
+       (stripe/get-customer-subscriptions)
+       (stripe/collection-iterator)
        (some valid-subscription)))
 
 
 (defn get-default-payment-method
   [s-customer]
   (-> s-customer
-      s/get-invoice-settings
-      s/get-default-payment-method))
+      stripe/get-invoice-settings
+      stripe/get-default-payment-method))
 
 
 (defn list-payment-methods
   [s-customer]
-  (let [id            (s/get-id s-customer)
+  (let [id            (stripe/get-id s-customer)
         cards         (->> {"customer" id
                             "type"     "card"}
-                           (s/list-payment-methods)
-                           (s/collection-iterator)
+                           (stripe/list-payment-methods)
+                           (stripe/collection-iterator)
                            (map s-payment-method-card->map))
         bank-accounts (->> {"customer" id
                             "type"     "sepa_debit"}
-                           (s/list-payment-methods)
-                           (s/collection-iterator)
+                           (stripe/list-payment-methods)
+                           (stripe/collection-iterator)
                            (map s-payment-method-sepa->map))]
     {:cards                  cards
      :bank-accounts          bank-accounts
@@ -254,7 +274,7 @@
 
 (defn throw-subscription-already-exist
   [{:keys [id customer-id] :as resource} request]
-  (let [s-customer (s/retrieve-customer customer-id)]
+  (let [s-customer (stripe/retrieve-customer customer-id)]
     (if (get-current-subscription s-customer)
       (throw (r/ex-response
                (format "subscription already created!" create-subscription-action id) 409 id))

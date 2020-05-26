@@ -43,8 +43,8 @@ password, and other given information."
 (defmethod p/post-user-add username-password/registration-method
   [{user-id :id :as resource} {:keys [body] :as request}]
   (try
-    (let [{{:keys [password username]} :template} body]
-      (user-utils/create-user-subresources user-id nil password username))
+    (let [{{:keys [password username customer]} :template} body]
+      (user-utils/create-user-subresources user-id nil password username customer))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

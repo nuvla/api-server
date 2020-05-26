@@ -9,12 +9,14 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.customer :as customer]
+    [sixsq.nuvla.server.resources.spec.customer-related :as customer-related]
     [sixsq.nuvla.server.resources.customer.utils :as utils]
-    [sixsq.nuvla.server.resources.pricing.stripe :as s]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -31,6 +33,9 @@ Customer mapping to external banking system."
 ;;
 
 (def validate-fn (u/create-spec-validation-fn ::customer/schema))
+
+
+(def validate-add-customer-req (utils/throw-invalid-body-fn ::customer-related/customer))
 
 
 (defmethod crud/validate resource-type
@@ -79,15 +84,13 @@ Customer mapping to external banking system."
 
 
 (defmethod crud/add resource-type
-  [{{:keys [plan-id] :as body} :body :as request}]
+  [request]
   (config-nuvla/throw-stripe-not-configured)
   (a/throw-cannot-add collection-acl request)
   (utils/throw-customer-exist (request->resource-id request))
   (utils/throw-admin-can-not-be-customer request)
-  (let [s-customer  (utils/create-customer request)
-        customer-id (s/get-id s-customer)]
-    (when plan-id
-      (utils/create-subscription request customer-id))
+  (validate-add-customer-req request)
+  (let [customer-id  (utils/create-customer request)]
     (-> request
         (assoc :body {:parent      (auth/current-user-id request)
                       :customer-id customer-id})
@@ -144,7 +147,7 @@ Customer mapping to external banking system."
             (crud/retrieve-by-id-as-admin)
             (a/throw-cannot-manage request)
             :customer-id
-            s/retrieve-customer
+            stripe/retrieve-customer
             utils/get-current-subscription
             utils/s-subscription->map
             r/json-response)
@@ -153,7 +156,7 @@ Customer mapping to external banking system."
 
 
 (defmethod crud/do-action [resource-type utils/create-subscription-action]
-  [request]
+  [{body :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (try
     (-> request
@@ -163,7 +166,7 @@ Customer mapping to external banking system."
         (utils/throw-plan-id-mandatory request)
         (utils/throw-subscription-already-exist request)
         :customer-id
-        (utils/create-subscription request)
+        (utils/create-subscription body)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -193,7 +196,7 @@ Customer mapping to external banking system."
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         :customer-id
-        s/retrieve-customer
+        stripe/retrieve-customer
         (utils/list-payment-methods)
         r/json-response)
     (catch Exception e
@@ -209,8 +212,8 @@ Customer mapping to external banking system."
                                       (a/throw-cannot-manage request))]
     (try
       (some-> payment-method
-              s/retrieve-payment-method
-              s/detach-payment-method)
+              stripe/retrieve-payment-method
+              stripe/detach-payment-method)
       (r/map-response (format "%s successfully detached" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -225,8 +228,8 @@ Customer mapping to external banking system."
                                                   (a/throw-cannot-manage request))]
     (try
       (-> customer-id
-          s/retrieve-customer
-          (s/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
+          stripe/retrieve-customer
+          (stripe/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
       (r/map-response (format "%s successfully set as default" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))

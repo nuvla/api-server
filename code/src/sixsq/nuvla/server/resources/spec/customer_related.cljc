@@ -92,7 +92,9 @@
 
 
 (s/def ::customer
-  (su/only-keys-maps {:req-un [::fullname
-                               ::address]
-                      :opt-un [::subscription
-                               ::payment-method]}))
+  (-> (st/spec (su/only-keys-maps {:req-un [::fullname
+                                            ::address]
+                                   :opt-un [::subscription
+                                            ::payment-method]}))
+      (assoc :name "customer"
+             :json-schema/type "map")))

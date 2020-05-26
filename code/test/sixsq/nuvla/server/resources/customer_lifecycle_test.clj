@@ -30,11 +30,16 @@
 ;(def test-identifier "some-user-identifer")
 ;
 ;
-;(def valid-entry {:plan-id       "plan_HGQ9iUgnz2ho8e"
-;                  :plan-item-ids ["plan_HGQIIWmhYmi45G"
-;                                  "plan_HIrgmGboUlLqG9"
-;                                  "plan_HGQAXewpgs9NeW"
-;                                  "plan_HGQqB0p8h86Ija"]})
+;(def valid-entry {:fullname     "toto"
+;                  :address      {:street-address "Av. quelque chose"
+;                                 :city           "Meyrin"
+;                                 :country        "CH"
+;                                 :postal-code    "1217"}
+;                  :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
+;                                 :plan-item-ids ["plan_HGQIIWmhYmi45G"
+;                                                 "plan_HIrgmGboUlLqG9"
+;                                                 "plan_HGQAXewpgs9NeW"
+;                                                 "plan_HGQqB0p8h86Ija"]}})
 ;
 ;
 ;(deftest check-metadata
@@ -78,7 +83,9 @@
 ;    (-> session-user
 ;        (request base-uri
 ;                 :request-method :post
-;                 :body (json/write-str (update valid-entry :plan-item-ids pop)))
+;                 :body (-> valid-entry
+;                           (update-in [:subscription :plan-item-ids] pop)
+;                           json/write-str))
 ;        (ltu/body->edn)
 ;        (ltu/is-status 400)
 ;        (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
@@ -87,7 +94,9 @@
 ;    (-> session-user
 ;        (request base-uri
 ;                 :request-method :post
-;                 :body (json/write-str (update valid-entry :plan-item-ids conj "plan-item-extra")))
+;                 :body (-> valid-entry
+;                           (update-in [:subscription :plan-item-ids] conj "plan_itemExtra")
+;                           json/write-str))
 ;        (ltu/body->edn)
 ;        (ltu/is-status 400)
 ;        (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
@@ -96,7 +105,9 @@
 ;    (-> session-user
 ;        (request base-uri
 ;                 :request-method :post
-;                 :body (json/write-str (assoc valid-entry :plan-id "plan-not-exit")))
+;                 :body (-> valid-entry
+;                           (assoc-in [:subscription :plan-id] "plan_notExist")
+;                           json/write-str))
 ;        (ltu/body->edn)
 ;        (ltu/is-status 400)
 ;        (ltu/message-matches #"Plan-id .* not found!"))
@@ -109,13 +120,13 @@
 ;                         (ltu/is-status 201)
 ;                         (ltu/location-url))]
 ;
-;      (let [customer-response (-> session-user
-;                                  (request customer-1)
-;                                  (ltu/body->edn)
-;                                  (ltu/is-status 200)
-;                                  (ltu/dump)
-;                                  (ltu/is-operation-present :create-subscription)
-;                                  (ltu/is-operation-present :create-setup-intent))
+;      (let [customer-response   (-> session-user
+;                                    (request customer-1)
+;                                    (ltu/body->edn)
+;                                    (ltu/is-status 200)
+;                                    (ltu/dump)
+;                                    (ltu/is-operation-present :create-subscription)
+;                                    (ltu/is-operation-present :create-setup-intent))
 ;            create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)]
 ;
 ;        (-> session-user

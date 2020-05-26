@@ -91,7 +91,7 @@
 
 
 (defn create-user-subresources
-  [user-id email password username]
+  [user-id email password username customer]
 
   (when email
     (create-identifier user-id email))
@@ -104,4 +104,9 @@
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)
-                                 email-id (assoc :email email-id)))))
+                                 email-id (assoc :email email-id))))
+
+  (when customer
+
+    )
+  )
