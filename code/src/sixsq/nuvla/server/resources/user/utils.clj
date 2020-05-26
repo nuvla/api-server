@@ -8,6 +8,7 @@
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
     [sixsq.nuvla.server.resources.email :as email]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -107,6 +108,4 @@
                                  email-id (assoc :email email-id))))
 
   (when customer
-
-    )
-  )
+    (customer/add-customer customer user-id)))

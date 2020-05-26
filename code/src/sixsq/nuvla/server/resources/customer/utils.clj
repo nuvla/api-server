@@ -133,10 +133,10 @@
   [spec]
   (let [ok?     (partial s/valid? spec)
         explain (partial expound/expound-str spec)]
-    (fn [{body :body :as request}]
-      (if-not (ok? body)
-        (logu/log-and-throw-400 (str "resource does not satisfy defined schema:\n" (explain body)))
-        request))))
+    (fn [customer]
+      (when-not (ok? customer)
+        (logu/log-and-throw-400
+          (str "resource does not satisfy defined schema:\n" (explain customer)))))))
 
 
 (defn create-subscription
@@ -152,9 +152,8 @@
 
 
 (defn create-customer
-  [{{:keys [fullname subscription address] pm-id :payment-method :as body} :body :as request}]
-  (let [user-id     (auth/current-user-id request)
-        {:keys [street-address city postal-code country]} address
+  [{:keys [fullname subscription address] pm-id :payment-method} user-id]
+  (let [{:keys [street-address city postal-code country]} address
         email       (try (some-> user-id
                                  crud/retrieve-by-id-as-admin
                                  :email
@@ -181,6 +180,7 @@
   (-> {"customer" customer-id}
       stripe/create-setup-intent
       s-setup-intent->map))
+
 
 (defn get-upcoming-invoice
   [customer-id]

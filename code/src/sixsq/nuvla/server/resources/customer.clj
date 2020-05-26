@@ -35,7 +35,7 @@ Customer mapping to external banking system."
 (def validate-fn (u/create-spec-validation-fn ::customer/schema))
 
 
-(def validate-add-customer-req (utils/throw-invalid-body-fn ::customer-related/customer))
+(def validate-customer-body (utils/throw-invalid-body-fn ::customer-related/customer))
 
 
 (defmethod crud/validate resource-type
@@ -47,11 +47,10 @@ Customer mapping to external banking system."
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (let [user-id (auth/current-user-id request)]
-    (assoc resource :acl {:owners   ["group/nuvla-admin"]
-                          :view-acl [user-id]
-                          :manage   [user-id]})))
+  [{:keys [parent] :as resource} request]
+  (assoc resource :acl {:owners   ["group/nuvla-admin"]
+                        :view-acl [parent]
+                        :manage   [parent]}))
 
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
@@ -65,12 +64,11 @@ Customer mapping to external banking system."
        (str resource-type "/")))
 
 (defn request->resource-id
-  [request]
-  (-> request
-      auth/current-user-id
-      user-id->resource-id))
+  [{{uuid :uuid} :params :as request}]
+  (str resource-type "/" uuid))
 
-;; resource identifier a UUID generated from the email address
+
+;; resource identifier a UUID generated from the user-id
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
   (assoc resource :id (-> resource :parent user-id->resource-id)))
@@ -83,18 +81,23 @@ Customer mapping to external banking system."
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
-(defmethod crud/add resource-type
-  [request]
+(defn add-customer
+  [{customer :body :as request} user-id]
   (config-nuvla/throw-stripe-not-configured)
-  (a/throw-cannot-add collection-acl request)
-  (utils/throw-customer-exist (request->resource-id request))
-  (utils/throw-admin-can-not-be-customer request)
-  (validate-add-customer-req request)
-  (let [customer-id  (utils/create-customer request)]
+  (utils/throw-customer-exist (user-id->resource-id user-id))
+  (validate-customer-body customer)
+  (let [customer-id (utils/create-customer customer user-id)]
     (-> request
-        (assoc :body {:parent      (auth/current-user-id request)
+        (assoc :body {:parent      user-id
                       :customer-id customer-id})
         add-impl)))
+
+
+(defmethod crud/add resource-type
+  [request]
+  (a/throw-cannot-add collection-acl request)
+  (utils/throw-admin-can-not-be-customer request)
+  (add-customer request (auth/current-user-id request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -249,6 +252,7 @@ Customer mapping to external banking system."
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+
 (defmethod crud/do-action [resource-type utils/list-invoices-action]
   [request]
   (config-nuvla/throw-stripe-not-configured)
@@ -266,7 +270,6 @@ Customer mapping to external banking system."
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
-
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
@@ -277,7 +280,6 @@ Customer mapping to external banking system."
 ;;
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::customer/schema))
-
 
 (defn initialize
   []
