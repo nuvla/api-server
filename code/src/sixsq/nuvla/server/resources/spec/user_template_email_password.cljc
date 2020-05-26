@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
+    [sixsq.nuvla.server.resources.spec.customer-related :as customer]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -24,31 +25,6 @@
              :json-schema/order 21)))
 
 
-(s/def ::plan-id
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "plan-id"
-             :json-schema/display-name "plan id"
-             :json-schema/description "subscription plan id"
-
-             :json-schema/order 22)))
-
-(s/def ::plan-item-id
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "plan-item-id"
-             :json-schema/display-name "plan item id"
-             :json-schema/description "subscription plan item id")))
-
-
-(s/def ::plan-item-ids
-  (-> (st/spec (s/coll-of ::plan-item-id))
-      (assoc :name "plan-item-ids"
-             :json-schema/type "array"
-             :json-schema/display-name "plan item ids"
-             :json-schema/description "List of subscription plan item ids."
-
-             :json-schema/order 23)))
-
-
 (s/def ::password
   (-> (st/spec string?)
       (assoc :name "password"
@@ -57,7 +33,6 @@
 
              :json-schema/order 22
              :json-schema/sensitive true)))
-
 
 ;; no good defaults for these keys, make them optional in template
 (def user-template-email-password-keys-opt
@@ -76,6 +51,9 @@
 (def user-template-email-password-keys-href
   {:opt-un [::ps/href]})
 
+(def customer-template-keys
+  {:opt-un [::customer/customer]})
+
 
 ;; Defines the contents of the password user-template resource itself.
 (s/def ::schema
@@ -88,8 +66,7 @@
   (-> (st/spec (su/only-keys-maps ps/template-keys-spec
                                   user-template-email-password-keys-req
                                   user-template-email-password-keys-href
-                                  {:opt-un [::plan-id       ;;FIXME WIP
-                                            ::plan-item-ids]}))
+                                  customer-template-keys))
       (assoc :name "template"
              :json-schema/type "map")))
 

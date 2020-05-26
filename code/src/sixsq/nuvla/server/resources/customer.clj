@@ -281,48 +281,6 @@ Customer mapping to external banking system."
   (std-crud/initialize resource-type ::customer/schema)
   (md/register resource-metadata))
 
-;; =====
-;; ADD
-;; =====
-;; DONE args
-;; DONE payment-method-id (optional)
-;; TODO selected-plan and optional products (optional)
-;; DONE user-id extract email to post to create-customer
-
-;; DONE when payment method set as default
-
-;; TODO when selected-plan create subscription (check selected plan and options validity)
-
-;; DONE save customer id in ES document and id=user-id
-
-;; =====
-;; Retrieve
-;; =====
-;; DONE retrieve customer document from ES
-;; DONE stripe retrieve customer
-;; get subscription status
-;; get subscription name
-;; get subscription options (support)
-;; -----
-;; set operations
-;; -----
-;; when no subscription (or status subscription not valid) create-subscripiton
-;; when subscription get-subscription
-;; when subscription update-subscription
-;; when subscription cancel-subscription
-;; when subscription upgrade-subscription
-;; when subscription downgrade-subscription (> Basic)
-;; attach payment method
-;; detach payment method
-;; set payment-method as default
-
-;; =====
-;; Query
-;; =====
-;; search for id=user-id
-;;
-;; return 1 or 0 document
-;;
 
 ;; ==== Move add to user operation create-customer
 ;; when stripe configured, user is signed-up but not customer. Create customer op available (payment-method optional)
