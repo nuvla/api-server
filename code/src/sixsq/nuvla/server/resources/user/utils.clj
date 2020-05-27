@@ -10,7 +10,8 @@
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-url "user")
@@ -70,6 +71,17 @@
       (throw (ex-info (format "could not create identifier for '%s' -> '%s'" user-id identifier) body)))))
 
 
+(defn create-customer
+  [user-id customer]
+  (let [request {:params      {:resource-name customer/resource-type}
+                 :body        (assoc customer :parent user-id)
+                 :nuvla/authn auth/internal-identity}
+        {{:keys [status resource-id] :as body} :body} (crud/add request)]
+    (if (= status 201)
+      resource-id
+      (throw (ex-info (format "could not create customer for '%s'" user-id) body)))))
+
+
 (defn update-user
   [user-id user-body]
   (let [request {:params      {:resource-name resource-url
@@ -108,4 +120,4 @@
                                  email-id (assoc :email email-id))))
 
   (when customer
-    (customer/add-customer customer user-id)))
+    (create-customer user-id customer)))

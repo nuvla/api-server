@@ -16,7 +16,8 @@ Customer mapping to external banking system."
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -81,23 +82,21 @@ Customer mapping to external banking system."
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
-(defn add-customer
-  [{customer :body :as request} user-id]
-  (config-nuvla/throw-stripe-not-configured)
-  (utils/throw-customer-exist (user-id->resource-id user-id))
-  (validate-customer-body customer)
-  (let [customer-id (utils/create-customer customer user-id)]
-    (-> request
-        (assoc :body {:parent      user-id
-                      :customer-id customer-id})
-        add-impl)))
-
-
 (defmethod crud/add resource-type
-  [request]
+  [{body :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (utils/throw-admin-can-not-be-customer request)
-  (add-customer request (auth/current-user-id request)))
+  (config-nuvla/throw-stripe-not-configured)
+  (let [auth-info (auth/current-authentication request)
+        user-id   (or
+                    (when (acl-resource/is-admin? auth-info) (:parent body))
+                    (auth/current-user-id request))]
+    (utils/throw-customer-exist (user-id->resource-id user-id))
+    (validate-customer-body (dissoc body :parent))
+    (-> request
+        (assoc :body {:parent      user-id
+                      :customer-id (utils/create-customer body user-id)})
+        add-impl)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

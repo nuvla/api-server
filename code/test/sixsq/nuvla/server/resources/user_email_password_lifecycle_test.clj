@@ -14,7 +14,9 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.customer :as customer]
+    [sixsq.nuvla.server.resources.pricing :as pricing]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -245,3 +247,66 @@
               (ltu/is-count 0))
 
           )))))
+
+
+(deftest lifecycle-with-customer
+  (let [session            (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+        session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
+
+        href               (str user-tpl/resource-type "/" email-password/registration-method)
+
+        plaintext-password "Plaintext-password-1"
+
+        customer           {:fullname     "toto"
+                            :address      {:street-address "Av. quelque chose"
+                                           :city           "Meyrin"
+                                           :country        "CH"
+                                           :postal-code    "1217"}
+                            :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
+                                           :plan-item-ids ["plan_HGQIIWmhYmi45G"
+                                                           "plan_HIrgmGboUlLqG9"
+                                                           "plan_HGQAXewpgs9NeW"
+                                                           "plan_HGQqB0p8h86Ija"]}}
+
+        tmpl               {:template {:href     href
+                                       :password plaintext-password
+                                       :email    "alex@example.org"
+                                       :customer customer}}]
+
+    (-> session-admin
+        (request (str p/service-context pricing/resource-type)
+                 :request-method :post
+                 :body (json/write-str {}))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
+
+    ;; create user
+    (let [resp         (-> session-anon
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str tmpl))
+                           (ltu/body->edn)
+                           (ltu/is-status 201))
+          user-id      (ltu/body-resource-id resp)
+          session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
+
+          {credential-id :credential-password,
+           email-id      :email :as user} (-> session-user
+                                              (request (str p/service-context user-id))
+                                              (ltu/body->edn)
+                                              (ltu/is-status 200)
+                                              (ltu/body))]
+
+      ; credential password is created and visible by the created user
+
+
+      ; 1 identifier is visible for the created user one for email (username was not provided)
+      (-> session-user
+          (request (str p/service-context customer/resource-type))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1)))))

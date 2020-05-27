@@ -123,9 +123,11 @@
 
 (defn throw-admin-can-not-be-customer
   [request]
-  (when (-> request
-            (auth/current-authentication)
-            (acl-resource/is-admin?))
+  (when
+    (and (nil? (get-in request [:body :parent]))
+      (-> request
+          (auth/current-authentication)
+          (acl-resource/is-admin?)))
     (logu/log-and-throw-400 "Admin can't create customer!")))
 
 
