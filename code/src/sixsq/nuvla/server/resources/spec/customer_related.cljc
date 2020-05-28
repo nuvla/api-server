@@ -21,6 +21,13 @@
              :json-schema/type "string")))
 
 
+(s/def ::coupon
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "coupon"
+             :json-schema/display-name "Coupon"
+             :json-schema/type "string")))
+
+
 (s/def ::street-address
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "street address"
@@ -95,6 +102,7 @@
   (-> (st/spec (su/only-keys-maps {:req-un [::fullname
                                             ::address]
                                    :opt-un [::subscription
-                                            ::payment-method]}))
+                                            ::payment-method
+                                            ::coupon]}))
       (assoc :name "customer"
              :json-schema/type "map")))

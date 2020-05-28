@@ -125,8 +125,18 @@
 ;                                    (ltu/body->edn)
 ;                                    (ltu/is-status 200)
 ;                                    (ltu/dump)
+;                                    (ltu/is-operation-present :customer-info)
+;                                    (ltu/is-operation-present :update-customer)
+;                                    (ltu/is-operation-present :get-subscription)
 ;                                    (ltu/is-operation-present :create-subscription)
-;                                    (ltu/is-operation-present :create-setup-intent))
+;                                    (ltu/is-operation-present :create-setup-intent)
+;                                    (ltu/is-operation-present :list-payment-methods)
+;                                    (ltu/is-operation-present :set-default-payment-method)
+;                                    (ltu/is-operation-present :detach-payment-method)
+;                                    (ltu/is-operation-present :upcoming-invoice)
+;                                    (ltu/is-operation-present :list-invoices)
+;                                    (ltu/is-operation-present :add-coupon)
+;                                    (ltu/is-operation-present :remove-coupon))
 ;            create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)]
 ;
 ;        (-> session-user

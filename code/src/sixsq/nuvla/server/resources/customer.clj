@@ -120,6 +120,8 @@ Customer mapping to external banking system."
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [can-manage?                   (a/can-manage? resource request)
+        customer-info-op              (u/action-map id utils/customer-info-action)
+        update-customer-op            (u/action-map id utils/update-customer-action)
         get-subscription-op           (u/action-map id utils/get-subscription-action)
         create-subscription-op        (u/action-map id utils/create-subscription-action)
         create-setup-intent-op        (u/action-map id utils/create-setup-intent-action)
@@ -127,17 +129,23 @@ Customer mapping to external banking system."
         detach-payment-method-op      (u/action-map id utils/detach-payment-method-action)
         set-default-payment-method-op (u/action-map id utils/set-default-payment-method-action)
         upcoming-invoice-op           (u/action-map id utils/upcoming-invoice-action)
-        list-invoices-op              (u/action-map id utils/list-invoices-action)]
+        list-invoices-op              (u/action-map id utils/list-invoices-action)
+        add-coupon-op                 (u/action-map id utils/add-coupon-action)
+        delete-coupon-op              (u/action-map id utils/delete-coupon-action)]
     (cond-> (crud/set-standard-operations resource request)
 
-            can-manage? (update :operations concat [get-subscription-op
+            can-manage? (update :operations concat [customer-info-op
+                                                    update-customer-op
+                                                    get-subscription-op
                                                     create-subscription-op
                                                     create-setup-intent-op
                                                     list-payment-methods-op
                                                     set-default-payment-method-op
                                                     detach-payment-method-op
                                                     upcoming-invoice-op
-                                                    list-invoices-op]))))
+                                                    list-invoices-op
+                                                    add-coupon-op
+                                                    delete-coupon-op]))))
 
 
 (defmethod crud/do-action [resource-type utils/get-subscription-action]
@@ -153,6 +161,47 @@ Customer mapping to external banking system."
             utils/get-current-subscription
             utils/s-subscription->map
             r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type utils/customer-info-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (-> request
+        (request->resource-id)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        :customer-id
+        stripe/retrieve-customer
+        utils/s-customer->customer-map
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type utils/update-customer-action]
+  [{{:keys [fullname address] :as body} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (validate-customer-body body)
+  (try
+    (let [{:keys [street-address city postal-code country]} address
+          {:keys [id customer-id] :as resource} (-> request
+                                                    (request->resource-id)
+                                                    (crud/retrieve-by-id-as-admin)
+                                                    (a/throw-cannot-manage request))]
+      (try
+        (-> customer-id
+            stripe/retrieve-customer
+            (stripe/update-customer {"name"    fullname
+                                     "address" {"line1"       street-address
+                                                "city"        city
+                                                "postal_code" postal-code
+                                                "country"     country}}))
+        (r/map-response (format "successfully updated") 200 id)
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -233,6 +282,54 @@ Customer mapping to external banking system."
           stripe/retrieve-customer
           (stripe/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
       (r/map-response (format "%s successfully set as default" payment-method) 200 id)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type utils/set-default-payment-method-action]
+  [{{:keys [payment-method]} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [id customer-id] :as resource} (-> request
+                                                  (request->resource-id)
+                                                  (crud/retrieve-by-id-as-admin)
+                                                  (a/throw-cannot-manage request))]
+    (try
+      (-> customer-id
+          stripe/retrieve-customer
+          (stripe/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
+      (r/map-response (format "%s successfully set as default" payment-method) 200 id)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type utils/add-coupon-action]
+  [{{:keys [coupon]} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [id customer-id] :as resource} (-> request
+                                                  (request->resource-id)
+                                                  (crud/retrieve-by-id-as-admin)
+                                                  (a/throw-cannot-manage request))]
+    (try
+      (-> customer-id
+          stripe/retrieve-customer
+          (stripe/update-customer {"coupon" coupon}))
+      (r/map-response (format "%s successfully added coupon " coupon) 200 id)
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type utils/delete-coupon-action]
+  [{{:keys [coupon]} :body :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (let [{:keys [id customer-id] :as resource} (-> request
+                                                  (request->resource-id)
+                                                  (crud/retrieve-by-id-as-admin)
+                                                  (a/throw-cannot-manage request))]
+    (try
+      (-> customer-id
+          stripe/retrieve-customer
+          stripe/delete-discount-customer)
+      (r/map-response (format "%s successfully added coupon " coupon) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

@@ -54,6 +54,7 @@
         customer     {:fullname       "toto"
                       :address        address
                       :subscription   subscription
+                      :coupon         "some-coupon-code"
                       :payment-method "pm_something"}]
 
     (stu/is-valid ::t/customer customer)
@@ -69,5 +70,5 @@
       (stu/is-invalid ::t/customer (dissoc customer attr)))
 
     ;optional
-    (doseq [attr #{:subscription :payment-method}]
+    (doseq [attr #{:subscription :payment-method :coupon}]
       (stu/is-valid ::t/customer (dissoc customer attr)))))

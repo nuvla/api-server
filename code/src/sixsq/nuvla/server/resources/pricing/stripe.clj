@@ -23,7 +23,7 @@
   `(try
      ~@body
      (catch StripeException e#
-       (logu/log-and-throw 500 (.getMessage e#)))))
+       (logu/log-and-throw 400 (.getMessage e#)))))
 
 
 (defn price->unit-float
@@ -41,6 +41,12 @@
   [customer-id]
   (try-catch-exception
     (Customer/retrieve customer-id)))
+
+
+(defn delete-discount-customer
+  [customer]
+  (try-catch-exception
+    (.deleteDiscount customer)))
 
 
 (defn update-customer
@@ -295,3 +301,62 @@
 (defn get-number
   [obj]
   (.getNumber obj))
+
+
+(defn get-address
+  [obj]
+  (.getAddress obj))
+
+
+(defn get-city
+  [obj]
+  (.getCity obj))
+
+
+(defn get-country
+  [obj]
+  (.getCountry obj))
+
+
+(defn get-line1
+  [obj]
+  (.getLine1 obj))
+
+
+(defn get-postal-code
+  [obj]
+  (.getPostalCode obj))
+
+
+(defn get-discount
+  [obj]
+  (.getDiscount obj))
+
+
+(defn get-coupon
+  [obj]
+  (.getCoupon obj))
+
+
+(defn get-amount-off
+  [obj]
+  (.getAmountOff obj))
+
+
+(defn get-duration
+  [obj]
+  (.getDuration obj))
+
+
+(defn get-duration-in-months
+  [obj]
+  (.getDurationInMonths obj))
+
+
+(defn get-percent-off
+  [obj]
+  (.getPercentOff obj))
+
+(defn get-valid
+  [obj]
+  (.getValid obj))

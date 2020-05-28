@@ -14,7 +14,8 @@
     [sixsq.nuvla.server.util.time :as time]
     [expound.alpha :as expound]))
 
-
+(def ^:const customer-info-action "customer-info")
+(def ^:const update-customer-action "update-customer")
 (def ^:const get-subscription-action "get-subscription")
 (def ^:const create-subscription-action "create-subscription")
 (def ^:const create-setup-intent-action "create-setup-intent")
@@ -23,6 +24,28 @@
 (def ^:const detach-payment-method-action "detach-payment-method")
 (def ^:const upcoming-invoice-action "upcoming-invoice")
 (def ^:const list-invoices-action "list-invoices")
+(def ^:const add-coupon-action "add-coupon")
+(def ^:const delete-coupon-action "remove-coupon")
+
+
+(defn s-customer->customer-map
+  [s-customer]
+  (let [s-address (stripe/get-address s-customer)
+        s-coupon  (some-> s-customer stripe/get-discount stripe/get-coupon)]
+    (cond-> {:fullname (stripe/get-name s-customer)
+             :address  {:street-address (stripe/get-line1 s-address)
+                        :city           (stripe/get-city s-address)
+                        :country        (stripe/get-country s-address)
+                        :postal-code    (stripe/get-postal-code s-address)}}
+            s-coupon (assoc :coupon {:id                 (stripe/get-id s-coupon)
+                                     :name               (stripe/get-name s-coupon)
+                                     :amount-off         (stripe/get-amount-off s-coupon)
+                                     :currency           (stripe/get-currency s-coupon)
+                                     :duration           (stripe/get-duration s-coupon)
+                                     :duration-in-months (stripe/get-duration-in-months s-coupon)
+                                     :percent-off        (stripe/get-percent-off s-coupon)
+                                     :valid              (stripe/get-valid s-coupon)}))))
+
 
 (defn s-subscription->map
   [s-subscription]
@@ -125,9 +148,9 @@
   [request]
   (when
     (and (nil? (get-in request [:body :parent]))
-      (-> request
-          (auth/current-authentication)
-          (acl-resource/is-admin?)))
+         (-> request
+             (auth/current-authentication)
+             (acl-resource/is-admin?)))
     (logu/log-and-throw-400 "Admin can't create customer!")))
 
 
@@ -154,7 +177,7 @@
 
 
 (defn create-customer
-  [{:keys [fullname subscription address] pm-id :payment-method} user-id]
+  [{:keys [fullname subscription address coupon] pm-id :payment-method} user-id]
   (let [{:keys [street-address city postal-code country]} address
         email       (try (some-> user-id
                                  crud/retrieve-by-id-as-admin
@@ -170,7 +193,8 @@
                                           "country"     country}}
                               email (assoc "email" email)
                               pm-id (assoc "payment_method" pm-id
-                                           "invoice_settings" {"default_payment_method" pm-id})))
+                                           "invoice_settings" {"default_payment_method" pm-id})
+                              coupon (assoc "coupon" coupon)))
         customer-id (stripe/get-id s-customer)]
     (when subscription
       (create-subscription subscription customer-id))
