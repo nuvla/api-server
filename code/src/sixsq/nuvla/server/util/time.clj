@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.util.time
   (:require [java-time :as t])
-  (:import (java.time OffsetDateTime Instant)))
+  (:import (java.time Instant OffsetDateTime)))
 
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))

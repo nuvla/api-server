@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.pricing.stripe
-  (:require [sixsq.nuvla.server.util.log :as logu]
-            [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Subscription PaymentMethod Product
-                      Plan SetupIntent Invoice)))
+    (com.stripe.model Customer Invoice PaymentMethod Plan
+                      Product SetupIntent Subscription)))
 
 
 (defn set-api-key!

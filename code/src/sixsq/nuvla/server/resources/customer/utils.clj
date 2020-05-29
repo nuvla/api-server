@@ -1,18 +1,18 @@
 (ns sixsq.nuvla.server.resources.customer.utils
   (:require
-    [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
+    [clojure.set :as set]
     [clojure.spec.alpha :as s]
+    [clojure.tools.logging :as log]
+    [expound.alpha :as expound]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
-    [sixsq.nuvla.server.resources.pricing :as pricing]
-    [clojure.set :as set]
     [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.util.time :as time]
-    [expound.alpha :as expound]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const customer-info-action "customer-info")
 (def ^:const update-customer-action "update-customer")

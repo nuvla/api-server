@@ -4,8 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]
-    [clojure.spec.alpha :as s]))
+    [spec-tools.core :as st]))
 
 (def ^:const plan-id-regex #"^plan_.*")
 

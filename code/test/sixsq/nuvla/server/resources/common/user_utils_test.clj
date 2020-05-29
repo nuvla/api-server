@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.common.user-utils-test
   (:require
+    [clojure.data.json :as json]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
-    [postal.core :as postal]
-    [clojure.data.json :as json]))
+    [sixsq.nuvla.server.resources.user-template-minimum :as minimum]))
 
 
 

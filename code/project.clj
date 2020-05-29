@@ -31,7 +31,7 @@
   [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex "0.7.4" :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-commons/clj-yaml]

@@ -7,16 +7,17 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.pricing :as pricing]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.customer :as customer]
-    [sixsq.nuvla.server.resources.pricing :as pricing]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -292,21 +293,28 @@
                            (ltu/body->edn)
                            (ltu/is-status 201))
           user-id      (ltu/body-resource-id resp)
-          session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
-
-          {credential-id :credential-password,
-           email-id      :email :as user} (-> session-user
-                                              (request (str p/service-context user-id))
-                                              (ltu/body->edn)
-                                              (ltu/is-status 200)
-                                              (ltu/body))]
+          session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
       ; credential password is created and visible by the created user
-
-
-      ; 1 identifier is visible for the created user one for email (username was not provided)
       (-> session-user
-          (request (str p/service-context customer/resource-type))
+          (request (str p/service-context user-id))
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-count 1)))))
+          (ltu/body))
+
+      (-> session-user
+          (request (str p/service-context user-id)
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ; 1 customer is visible for the created user
+      (doseq [{:keys [customer-id]} (-> session-user
+                                        (request (str p/service-context customer/resource-type))
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-count 1)
+                                        (ltu/entries))]
+        (-> customer-id
+            stripe/retrieve-customer
+            stripe/delete-customer)))))
