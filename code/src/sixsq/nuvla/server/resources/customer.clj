@@ -313,7 +313,7 @@ Customer mapping to external banking system."
       (-> customer-id
           stripe/retrieve-customer
           (stripe/update-customer {"coupon" coupon}))
-      (r/map-response (format "%s successfully added coupon " coupon) 200 id)
+      (r/map-response (format "%s successfully added coupon" coupon) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -329,7 +329,7 @@ Customer mapping to external banking system."
       (-> customer-id
           stripe/retrieve-customer
           stripe/delete-discount-customer)
-      (r/map-response (format "%s successfully added coupon " coupon) 200 id)
+      (r/map-response (format "%s successfully deleted coupon" coupon) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

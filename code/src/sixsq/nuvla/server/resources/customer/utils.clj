@@ -39,7 +39,9 @@
                         :postal-code    (stripe/get-postal-code s-address)}}
             s-coupon (assoc :coupon {:id                 (stripe/get-id s-coupon)
                                      :name               (stripe/get-name s-coupon)
-                                     :amount-off         (stripe/get-amount-off s-coupon)
+                                     :amount-off         (-> s-coupon
+                                                             stripe/get-amount-off
+                                                             stripe/price->unit-float)
                                      :currency           (stripe/get-currency s-coupon)
                                      :duration           (stripe/get-duration s-coupon)
                                      :duration-in-months (stripe/get-duration-in-months s-coupon)

@@ -136,7 +136,6 @@
                                     (request customer-1)
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/dump)
                                     (ltu/is-operation-present :customer-info)
                                     (ltu/is-operation-present :update-customer)
                                     (ltu/is-operation-present :get-subscription)
@@ -170,8 +169,8 @@
                                                  :request-method :put)
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
-                                        (ltu/dump)
-                                        (ltu/is-count 1))]
+                                        (ltu/is-count 1)
+                                        (ltu/entries))]
         (-> customer-id
             stripe/retrieve-customer
             stripe/delete-customer)))))
