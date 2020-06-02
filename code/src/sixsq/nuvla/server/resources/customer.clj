@@ -153,14 +153,15 @@ Customer mapping to external banking system."
   (config-nuvla/throw-stripe-not-configured)
   (try
     (r/json-response
-      (some-> request
-              (request->resource-id)
-              (crud/retrieve-by-id-as-admin)
-              (a/throw-cannot-manage request)
-              :customer-id
-              stripe/retrieve-customer
-              utils/get-current-subscription
-              utils/s-subscription->map))
+      (or (some-> request
+                  (request->resource-id)
+                  (crud/retrieve-by-id-as-admin)
+                  (a/throw-cannot-manage request)
+                  :customer-id
+                  stripe/retrieve-customer
+                  utils/get-current-subscription
+                  utils/s-subscription->map)
+          {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
