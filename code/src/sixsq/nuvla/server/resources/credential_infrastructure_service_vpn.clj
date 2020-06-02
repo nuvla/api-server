@@ -61,7 +61,7 @@ VPN service.
             :method                method
             :vpn-certificate       (:certificate response-vpn-api)
             :vpn-common-name       (:common-name response-vpn-api)
-            :vpn-certificate-owner (auth/current-user-id request)
+            :vpn-certificate-owner user-id
             :acl                   {:owners   ["group/nuvla-admin"]
                                     :view-acl [user-id, parent]
                                     :delete   [user-id]}

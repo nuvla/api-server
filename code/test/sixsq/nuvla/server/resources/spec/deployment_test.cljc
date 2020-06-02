@@ -38,7 +38,8 @@
                                                      :time-start "2020-02-03T23:00:00Z"
                                                      :time-end   "2020-02-03T23:01:00Z"
                                                      :data-type  "data-object"}]}}
-   :registries-credentials ["credential/uuid1" "credential/uuid2"]})
+   :registries-credentials ["credential/uuid1" "credential/uuid2"]
+   :owner                  "user/jane"})
 
 
 (deftest test-schema-check
@@ -60,5 +61,5 @@
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:data :api-credentials :credential-id :registries-credentials}]
+  (doseq [k #{:data :api-credentials :credential-id :registries-credentials :owner}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

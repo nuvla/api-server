@@ -156,13 +156,23 @@
                                     (ltu/is-operation-present :start)
                                     (ltu/is-operation-present :clone)
                                     (ltu/is-operation-present :fetch-module)
-                                    (ltu/is-key-value :state "CREATED"))
+                                    (ltu/is-key-value :state "CREATED")
+                                    (ltu/is-key-value :owner "user/jane"))
 
             start-url           (ltu/get-op-url deployment-response "start")
 
             fetch-module-url    (ltu/get-op-url deployment-response "fetch-module")
 
             deployment          (ltu/body deployment-response)]
+
+        ;; user can't change deployment owner
+        (-> session-user
+            (request deployment-url
+                     :request-method :put
+                     :body (json/write-str {:owner "user/tarzan"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :owner "user/jane"))
 
         ;; verify that api key/secret pair was created
         (is (:api-credentials deployment))

@@ -15,7 +15,8 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -112,14 +113,18 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [base-uri] :as request}]
+  [{:keys [base-uri] {:keys [owner]} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info      (auth/current-authentication request)
+        is-admin?       (acl-resource/is-admin? authn-info)
+        dep-owner       (if is-admin? (or owner "group/nuvla-admin")
+                                      (auth/current-user-id request))
         deployment      (-> request
                             (dep-utils/create-deployment)
-                            (assoc :resource-type resource-type)
-                            (assoc :state "CREATED")
-                            (assoc :api-endpoint (str/replace-first base-uri #"/api/" "")))
+                            (assoc :resource-type resource-type
+                                   :state "CREATED"
+                                   :api-endpoint (str/replace-first base-uri #"/api/" "")
+                                   :owner dep-owner))
         ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
@@ -151,8 +156,13 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{{:keys [owner acl]} :body :as request}]
+  (let [authn-info     (auth/current-authentication request)
+        is-user?       (not (acl-resource/is-admin? authn-info))]
+    (edit-impl
+      (cond-> request
+              is-user? (update :body dissoc :owner)
+              (and is-user? acl) (update-in [:body :acl :owners] conj owner)))))
 
 
 (defn delete-impl
