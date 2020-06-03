@@ -43,15 +43,17 @@ from the response! The secret cannot be recovered from the server later.**
 ;;
 (defmethod p/tpl->credential tpl/credential-subtype
   [{:keys [subtype method public-key private-key acl]} request]
-  (let [[pubkey pvtkey] (if public-key [public-key private-key] key-utils/generate-ssh-keypair)
+  (let [[pubkey pvtkey] (if public-key [public-key private-key] (key-utils/generate-ssh-keypair))
         resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method
                           :acl           acl
                           :public-key    pubkey}
-                        (and (string? private-key) (string? public-key)) (assoc :private-key private-key))]
-    [{:private-key pvtkey
-      :public-key pubkey} resource]))
+                        (and (string? private-key) (string? public-key)) (assoc :private-key private-key))
+        return  (cond-> {:public-key pubkey}
+                  (string? pvtkey) (assoc :private-key pvtkey))]
+    [return resource]))
+
 
 ;;
 ;; multimethods for validation
@@ -80,6 +82,7 @@ from the response! The secret cannot be recovered from the server later.**
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ssh-key/schema))
 
