@@ -9,7 +9,8 @@
 
 (s/def ::schema
   (su/only-keys-maps cred/credential-keys-spec
-                     ssh-key/credential-template-keys-spec))
+                     {:req-un [::ssh-key/public-key]
+                      :opt-un [::ssh-key/private-key]}))
 
 
 ;; multiple methods to create an ssh public key, so multiple schemas

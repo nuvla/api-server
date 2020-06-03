@@ -28,5 +28,5 @@
     (stu/is-valid ::ssh-key/schema tpl)
 
     ;; there are no mandatory keywords
-    (doseq [k #{:public-key :private-key}]
+    (doseq [k #{:private-key}]
       (stu/is-valid ::ssh-key/schema (dissoc tpl k)))))

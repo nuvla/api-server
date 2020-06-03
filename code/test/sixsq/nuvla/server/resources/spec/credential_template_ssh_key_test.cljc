@@ -30,5 +30,5 @@
     (stu/is-valid ::ssh-key-spec/schema tpl)
 
     ;; optional keys
-    (doseq [k #{:private-key}]
+    (doseq [k #{:public-key :private-key}]
       (stu/is-valid ::ssh-key-spec/schema (dissoc tpl k)))))

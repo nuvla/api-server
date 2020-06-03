@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - New credential type "ssh-key" 
+ 
 ### Changed
 
   - Nuvlabox status - fix bug in spec causing stacktrace during update of

@@ -42,14 +42,16 @@ from the response! The secret cannot be recovered from the server later.**
 ;; provides attributes about the key.
 ;;
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method acl]} request]
-  (let [[secret-key digest] (key-utils/generate)
+  [{:keys [subtype method public-key private-key acl]} request]
+  (let [[pubkey pvtkey] (if public-key [public-key private-key] key-utils/generate-ssh-keypair)
         resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method
-                          :acl           acl})]
-    [{:private-key secret-key
-      :public-key digest} resource]))
+                          :acl           acl
+                          :public-key    pubkey}
+                        (and (string? private-key) (string? public-key)) (assoc :private-key private-key))]
+    [{:private-key pvtkey
+      :public-key pubkey} resource]))
 
 ;;
 ;; multimethods for validation

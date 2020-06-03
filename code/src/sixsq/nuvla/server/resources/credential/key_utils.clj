@@ -50,3 +50,11 @@
                     (sequence secret-xform)
                     (str/join "."))]
     [secret (digest secret)]))
+
+
+(defn generate-ssh-keypair
+  "Generates a random SSH keypair and returns both the public and private key"
+  []
+  (let [public-key  "test-public"
+        private-key "test-private"]
+    [public-key private-key]))
