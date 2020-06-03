@@ -42,47 +42,47 @@ from the response! The secret cannot be recovered from the server later.**
 ;; provides attributes about the key.
 ;;
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method ttl acl]} request]
+  [{:keys [subtype method acl]} request]
   (let [[secret-key digest] (key-utils/generate)
         resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method
-                          :digest        digest
                           :acl           acl})]
-    [{:secret-key secret-key} resource]))
+    [{:private-key secret-key
+      :public-key digest} resource]))
 
 ;;
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::api-key/schema))
+(def validate-fn (u/create-spec-validation-fn ::ssh-key/schema))
 (defmethod p/validate-subtype tpl/credential-subtype
   [resource]
   (validate-fn resource))
 
-(def create-validate-fn (u/create-spec-validation-fn ::api-key/schema-create))
+(def create-validate-fn (u/create-spec-validation-fn ::ssh-key/schema-create))
 (defmethod p/create-validate-subtype tpl/credential-subtype
   [resource]
   (create-validate-fn resource))
 
 
-;;
-;; multimethod for edition
-;;
-(defmethod p/special-edit tpl/credential-subtype
-  [resource {:keys [nuvla/authn] :as request}]
-  (if (acl-resource/is-admin? authn)
-    resource
-    (dissoc resource :claims)))
+;;;
+;;; multimethod for edition
+;;;
+;(defmethod p/special-edit tpl/credential-subtype
+;  [resource {:keys [nuvla/authn] :as request}]
+;  (if (acl-resource/is-admin? authn)
+;    resource
+;    (dissoc resource :claims)))
 
 ;;
 ;; initialization: no schema for this parent resource
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::api-key/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ssh-key/schema))
 
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::api-key/schema)
+  (std-crud/initialize p/resource-type ::ssh-key/schema)
   (md/register resource-metadata))

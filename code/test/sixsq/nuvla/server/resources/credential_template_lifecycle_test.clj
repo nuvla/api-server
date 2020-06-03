@@ -8,6 +8,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
+    [sixsq.nuvla.server.resources.credential-template-ssh-key :as sshkey]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as srvc-aws]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
@@ -32,6 +33,7 @@
 
 (deftest check-retrieve-by-id
   (doseq [registration-method [akey/method
+                               sshkey/method
                                hashed-password/method
                                srvc-aws/method
                                srvc-azure/method
@@ -49,6 +51,7 @@
   (mdtu/check-metadata-exists ct/resource-type)
 
   (doseq [resource-url [akey/resource-url
+                        sshkey/resource-url
                         hashed-password/resource-url
                         srvc-aws/credential-subtype
                         srvc-azure/credential-subtype
@@ -80,6 +83,7 @@
         methods      (set (map :method entries))
         types        (set (map :subtype entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
+             (str ct/resource-type "/" sshkey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" srvc-minio/method)
              (str ct/resource-type "/" srvc-swarm/method)
@@ -92,6 +96,7 @@
              (str ct/resource-type "/" srvc-registry/method)}
            ids))
     (is (= #{akey/method
+             sshkey/method
              hashed-password/method
              srvc-minio/method
              srvc-registry/method
@@ -103,6 +108,7 @@
              srvc-vpn/method
              swarm-token/method} methods))
     (is (= #{akey/credential-subtype
+             sshkey/credential-subtype
              hashed-password/credential-subtype
              srvc-minio/credential-subtype
              srvc-registry/credential-subtype

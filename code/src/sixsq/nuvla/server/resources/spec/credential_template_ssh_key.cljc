@@ -27,8 +27,8 @@
 
 
 (def credential-template-keys-spec
-  {:opt-un [::public-key
-            ::private-key]})
+  {:req-un [::public-key]
+   :opt-un [::private-key]})
 
 (def credential-template-create-keys-spec
   {:opt-un [::public-key
