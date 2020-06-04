@@ -255,70 +255,80 @@
 (deftest lifecycle-with-customer
   (if-not (env/env :stripe-api-key)
     (log/error "Integration with customer is not tested because lack of stripe-api-key!")
-    (let [session            (-> (ltu/ring-app)
-                                session
-                                (content-type "application/json"))
-         session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-         session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
 
-         href               (str user-tpl/resource-type "/" email-password/registration-method)
+    (with-redefs [email-utils/extract-smtp-cfg
+                                      (fn [_] {:host "smtp@example.com"
+                                               :port 465
+                                               :ssl  true
+                                               :user "admin"
+                                               :pass "password"})
 
-         plaintext-password "Plaintext-password-1"
+                  postal/send-message (fn [_ {:keys [body]}]
+                                        {:code 0, :error :SUCCESS, :message "OK"})]
+      (let [session            (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+           session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+           session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
 
-         customer           {:fullname     "toto"
-                             :address      {:street-address "Av. quelque chose"
-                                            :city           "Meyrin"
-                                            :country        "CH"
-                                            :postal-code    "1217"}
-                             :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
-                                            :plan-item-ids ["plan_HGQIIWmhYmi45G"
-                                                            "plan_HIrgmGboUlLqG9"
-                                                            "plan_HGQAXewpgs9NeW"
-                                                            "plan_HGQqB0p8h86Ija"]}}
+           href               (str user-tpl/resource-type "/" email-password/registration-method)
 
-         tmpl               {:template {:href     href
-                                        :password plaintext-password
-                                        :email    "alex@example.org"
-                                        :customer customer}}]
+           plaintext-password "Plaintext-password-1"
 
-     (-> session-admin
-         (request (str p/service-context pricing/resource-type)
-                  :request-method :post
-                  :body (json/write-str {}))
-         (ltu/body->edn)
-         (ltu/is-status 201))
+           customer           {:fullname     "toto"
+                               :address      {:street-address "Av. quelque chose"
+                                              :city           "Meyrin"
+                                              :country        "CH"
+                                              :postal-code    "1217"}
+                               :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
+                                              :plan-item-ids ["plan_HGQIIWmhYmi45G"
+                                                              "plan_HIrgmGboUlLqG9"
+                                                              "plan_HGQAXewpgs9NeW"
+                                                              "plan_HGQqB0p8h86Ija"]}}
 
+           tmpl               {:template {:href     href
+                                          :password plaintext-password
+                                          :email    "alex@example.org"
+                                          :customer customer}}]
 
-     ;; create user
-     (let [resp         (-> session-anon
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str tmpl))
-                            (ltu/body->edn)
-                            (ltu/is-status 201))
-           user-id      (ltu/body-resource-id resp)
-           session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
-
-       ; credential password is created and visible by the created user
-       (-> session-user
-           (request (str p/service-context user-id))
+       (-> session-admin
+           (request (str p/service-context pricing/resource-type)
+                    :request-method :post
+                    :body (json/write-str {}))
            (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/body))
+           (ltu/is-status 201))
 
-       (-> session-user
-           (request (str p/service-context user-id)
-                    :request-method :delete)
-           (ltu/body->edn)
-           (ltu/is-status 200))
 
-       ; 1 customer is visible for the created user
-       (doseq [{:keys [customer-id]} (-> session-user
-                                         (request (str p/service-context customer/resource-type))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (ltu/is-count 1)
-                                         (ltu/entries))]
-         (-> customer-id
-             stripe/retrieve-customer
-             stripe/delete-customer))))))
+       ;; create user
+       (let [resp         (-> session-anon
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str tmpl))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
+             user-id      (ltu/body-resource-id resp)
+             session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
+
+         ; credential password is created and visible by the created user
+         (-> session-user
+             (request (str p/service-context user-id))
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/body))
+
+         (-> session-user
+             (request (str p/service-context user-id)
+                      :request-method :delete)
+             (ltu/body->edn)
+             (ltu/is-status 200))
+
+         ; 1 customer is visible for the created user
+         (doseq [{:keys [customer-id]} (-> session-user
+                                           (request (str p/service-context customer/resource-type))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-count 1)
+                                           (ltu/entries))]
+           (-> customer-id
+               stripe/retrieve-customer
+               stripe/delete-customer)))))))
