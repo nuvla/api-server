@@ -339,13 +339,14 @@ Customer mapping to external banking system."
   [request]
   (config-nuvla/throw-stripe-not-configured)
   (try
-    (-> request
-        (request->resource-id)
-        (crud/retrieve-by-id-as-admin)
-        (a/throw-cannot-manage request)
-        :customer-id
-        (utils/get-upcoming-invoice)
-        r/json-response)
+    (r/json-response
+      (or (-> request
+              (request->resource-id)
+              (crud/retrieve-by-id-as-admin)
+              (a/throw-cannot-manage request)
+              :customer-id
+              (utils/get-upcoming-invoice))
+          {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

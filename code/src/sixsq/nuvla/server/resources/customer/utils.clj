@@ -51,7 +51,8 @@
 
 (defn s-subscription->map
   [s-subscription]
-  (cond-> {:status               (stripe/get-status s-subscription)
+  (cond-> {:id                   (stripe/get-id s-subscription)
+           :status               (stripe/get-status s-subscription)
            :start-date           (some-> (stripe/get-start-date s-subscription)
                                          time/unix-timestamp->str)
            :current-period-start (some-> (stripe/get-current-period-start s-subscription)
@@ -212,9 +213,9 @@
 
 (defn get-upcoming-invoice
   [customer-id]
-  (-> {"customer" customer-id}
-      stripe/get-upcoming-invoice
-      (s-invoice->map true)))
+  (some-> {"customer" customer-id}
+          stripe/get-upcoming-invoice
+          (s-invoice->map true)))
 
 
 (defn list-invoices

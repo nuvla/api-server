@@ -23,7 +23,10 @@
   `(try
      ~@body
      (catch StripeException e#
-       (logu/log-and-throw 400 (.getMessage e#)))))
+       (if (#{"invoice_upcoming_none"} (.getCode e#))
+         nil
+         (logu/log-and-throw 400 (.getMessage e#))
+         ))))
 
 
 (defn price->unit-float

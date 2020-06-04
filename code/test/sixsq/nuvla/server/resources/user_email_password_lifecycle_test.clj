@@ -17,7 +17,9 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [environ.core :as env]
+    [clojure.tools.logging :as log]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -251,70 +253,72 @@
 
 
 (deftest lifecycle-with-customer
-  (let [session            (-> (ltu/ring-app)
-                               session
-                               (content-type "application/json"))
-        session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
+  (if-not (env/env :stripe-api-key)
+    (log/error "Integration with customer is not tested because lack of stripe-api-key!")
+    (let [session            (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
+         session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+         session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
 
-        href               (str user-tpl/resource-type "/" email-password/registration-method)
+         href               (str user-tpl/resource-type "/" email-password/registration-method)
 
-        plaintext-password "Plaintext-password-1"
+         plaintext-password "Plaintext-password-1"
 
-        customer           {:fullname     "toto"
-                            :address      {:street-address "Av. quelque chose"
-                                           :city           "Meyrin"
-                                           :country        "CH"
-                                           :postal-code    "1217"}
-                            :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
-                                           :plan-item-ids ["plan_HGQIIWmhYmi45G"
-                                                           "plan_HIrgmGboUlLqG9"
-                                                           "plan_HGQAXewpgs9NeW"
-                                                           "plan_HGQqB0p8h86Ija"]}}
+         customer           {:fullname     "toto"
+                             :address      {:street-address "Av. quelque chose"
+                                            :city           "Meyrin"
+                                            :country        "CH"
+                                            :postal-code    "1217"}
+                             :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
+                                            :plan-item-ids ["plan_HGQIIWmhYmi45G"
+                                                            "plan_HIrgmGboUlLqG9"
+                                                            "plan_HGQAXewpgs9NeW"
+                                                            "plan_HGQqB0p8h86Ija"]}}
 
-        tmpl               {:template {:href     href
-                                       :password plaintext-password
-                                       :email    "alex@example.org"
-                                       :customer customer}}]
+         tmpl               {:template {:href     href
+                                        :password plaintext-password
+                                        :email    "alex@example.org"
+                                        :customer customer}}]
 
-    (-> session-admin
-        (request (str p/service-context pricing/resource-type)
-                 :request-method :post
-                 :body (json/write-str {}))
-        (ltu/body->edn)
-        (ltu/is-status 201))
+     (-> session-admin
+         (request (str p/service-context pricing/resource-type)
+                  :request-method :post
+                  :body (json/write-str {}))
+         (ltu/body->edn)
+         (ltu/is-status 201))
 
 
-    ;; create user
-    (let [resp         (-> session-anon
-                           (request base-uri
-                                    :request-method :post
-                                    :body (json/write-str tmpl))
-                           (ltu/body->edn)
-                           (ltu/is-status 201))
-          user-id      (ltu/body-resource-id resp)
-          session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
+     ;; create user
+     (let [resp         (-> session-anon
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str tmpl))
+                            (ltu/body->edn)
+                            (ltu/is-status 201))
+           user-id      (ltu/body-resource-id resp)
+           session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
 
-      ; credential password is created and visible by the created user
-      (-> session-user
-          (request (str p/service-context user-id))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/body))
+       ; credential password is created and visible by the created user
+       (-> session-user
+           (request (str p/service-context user-id))
+           (ltu/body->edn)
+           (ltu/is-status 200)
+           (ltu/body))
 
-      (-> session-user
-          (request (str p/service-context user-id)
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
+       (-> session-user
+           (request (str p/service-context user-id)
+                    :request-method :delete)
+           (ltu/body->edn)
+           (ltu/is-status 200))
 
-      ; 1 customer is visible for the created user
-      (doseq [{:keys [customer-id]} (-> session-user
-                                        (request (str p/service-context customer/resource-type))
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-count 1)
-                                        (ltu/entries))]
-        (-> customer-id
-            stripe/retrieve-customer
-            stripe/delete-customer)))))
+       ; 1 customer is visible for the created user
+       (doseq [{:keys [customer-id]} (-> session-user
+                                         (request (str p/service-context customer/resource-type))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200)
+                                         (ltu/is-count 1)
+                                         (ltu/entries))]
+         (-> customer-id
+             stripe/retrieve-customer
+             stripe/delete-customer))))))
