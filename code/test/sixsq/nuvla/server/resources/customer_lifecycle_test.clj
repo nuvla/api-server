@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [clojure.tools.logging :as log]
+    [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -12,8 +13,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [environ.core :as env]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture

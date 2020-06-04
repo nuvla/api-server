@@ -11,6 +11,7 @@ VPN service.
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-vpn :as ciso]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-vpn :as ctiso]
@@ -45,6 +46,8 @@ VPN service.
     (vpn-utils/check-service-subtype vpn-service)
     (vpn-utils/check-scope vpn-service expected-scope)
     (vpn-utils/check-existing-credential parent user-id)
+    (when customer?
+      (customer/throw-user-hasnt-active-subscription request))
 
     (let [configuration-vpn (vpn-utils/get-configuration parent)
           vpn-endpoint      (:endpoint configuration-vpn)]

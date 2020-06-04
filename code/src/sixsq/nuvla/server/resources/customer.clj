@@ -7,6 +7,7 @@ Customer mapping to external banking system."
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -115,6 +116,31 @@ Customer mapping to external banking system."
   [request]
   (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
+
+(defn customer-has-active-subscription?
+  [user-id]
+  (boolean
+    (try
+      (some-> resource-type
+              (crud/query-as-admin {:cimi-params {:filter (parser/parse-cimi-filter
+                                                            (format "parent='%s'" user-id))}})
+              second
+              first
+              :customer-id
+              stripe/retrieve-customer
+              utils/get-current-subscription
+              :status
+              (#{"active" "trialing"}))
+      (catch Exception _))))
+
+
+(defn throw-user-hasnt-active-subscription
+  [request]
+  (let [user-id (auth/current-user-id request)]
+    (when (and config-nuvla/*stripe-api-key*
+               (str/starts-with? user-id "user/")
+               (not (customer-has-active-subscription? user-id)))
+      (throw (r/ex-response "An active subscription is required!" 402)))))
 
 
 (defmethod crud/set-operations resource-type

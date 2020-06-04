@@ -6,17 +6,18 @@ a container orchestration engine.
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -115,6 +116,7 @@ a container orchestration engine.
 (defn create-deployment
   [{:keys [base-uri] {:keys [owner]} :body :as request}]
   (a/throw-cannot-add collection-acl request)
+  (customer/throw-user-hasnt-active-subscription request)
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (acl-resource/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
