@@ -175,7 +175,7 @@
                  "items"           (map (fn [plan-id] {"plan" plan-id})
                                         (cons plan-id plan-item-ids))
                  "trial_from_plan" trial-from-plan?}
-                payment-method (assoc :default_payment_method payment-method))
+                payment-method (assoc "default_payment_method" payment-method))
         stripe/create-subscription
         s-subscription->map)))
 
