@@ -244,7 +244,7 @@ Customer mapping to external banking system."
         (utils/throw-plan-id-mandatory request)
         (utils/throw-subscription-already-exist request)
         :customer-id
-        (utils/create-subscription body)
+        (utils/create-subscription body false)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
