@@ -218,6 +218,14 @@
              :json-schema/order 32)))
 
 
+(s/def ::ssh-keys
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "ssh-keys"
+           :json-schema/display-name "NuvlaBox SSH keys"
+           :json-schema/description "list of SSH keys associated with the NuvlaBox"
+           :json-schema/order 33)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -243,5 +251,6 @@
                                ::hw-revision-code
                                ::monitored
                                ::vpn-server-id
-                               ::internal-data-gateway-endpoint]}))
+                               ::internal-data-gateway-endpoint
+                               ::ssh-keys]}))
 
