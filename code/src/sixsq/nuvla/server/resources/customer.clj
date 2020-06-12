@@ -3,7 +3,6 @@
 Customer mapping to external banking system."
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
@@ -129,6 +128,7 @@ Customer mapping to external banking system."
               :customer-id
               stripe/retrieve-customer
               utils/get-current-subscription
+              utils/s-subscription->map
               :status
               (#{"active" "trialing"}))
       (catch Exception _))))

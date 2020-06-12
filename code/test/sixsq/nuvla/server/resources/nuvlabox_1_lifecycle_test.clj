@@ -3,6 +3,8 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
+    [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -14,6 +16,7 @@
     [sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
@@ -22,6 +25,7 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -1085,19 +1089,54 @@
             ))))))
 
 (deftest create-without-active-subscription-lifecycle
-  (let [session       (-> (ltu/ring-app)
-                          session
-                          (content-type "application/json"))
+  (if-not (env/env :stripe-api-key)
+    (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
 
-        session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
+          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
 
-    (-> session-owner
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str valid-nuvlabox))
-        (ltu/body->edn)
-        (ltu/is-status 402)
-        (ltu/message-matches #"An active subscription is required!"))))
+      (-> session-owner
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-nuvlabox))
+          (ltu/body->edn)
+          (ltu/is-status 402)
+          (ltu/message-matches #"An active subscription is required!"))
+
+      (-> session-admin
+          (request (str p/service-context pricing/resource-type)
+                   :request-method :post
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      (-> session-owner
+          (request (str p/service-context customer/resource-type)
+                   :request-method :post
+                   :body (json/write-str {:fullname     "toto"
+                                          :address      {:street-address "Av. quelque chose"
+                                                         :city           "Meyrin"
+                                                         :country        "CH"
+                                                         :postal-code    "1217"}
+                                          :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
+                                                         :plan-item-ids ["plan_HGQIIWmhYmi45G"
+                                                                         "plan_HIrgmGboUlLqG9"
+                                                                         "plan_HGQAXewpgs9NeW"
+                                                                         "plan_HGQqB0p8h86Ija"]}}))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      (-> session-owner
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-nuvlabox))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
+      )))
 
 
 (deftest bad-methods
