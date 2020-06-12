@@ -26,7 +26,8 @@
     [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -1091,12 +1092,14 @@
 (deftest create-without-active-subscription-lifecycle
   (if-not (env/env :stripe-api-key)
     (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
+    (let [session           (-> (ltu/ring-app)
+                                session
+                                (content-type "application/json"))
 
-          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
+          session-admin     (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner     (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+
+          customer-base-uri (str p/service-context customer/resource-type)]
 
       (-> session-owner
           (request base-uri
@@ -1114,7 +1117,7 @@
           (ltu/is-status 201))
 
       (-> session-owner
-          (request (str p/service-context customer/resource-type)
+          (request customer-base-uri
                    :request-method :post
                    :body (json/write-str {:fullname     "toto"
                                           :address      {:street-address "Av. quelque chose"
@@ -1135,6 +1138,17 @@
                    :body (json/write-str valid-nuvlabox))
           (ltu/body->edn)
           (ltu/is-status 201))
+
+      (doseq [{:keys [customer-id]} (-> session-admin
+                                        (request customer-base-uri
+                                                 :request-method :put)
+                                        (ltu/body->edn)
+                                        (ltu/is-status 200)
+                                        (ltu/is-count 1)
+                                        (ltu/entries))]
+        (-> customer-id
+            stripe/retrieve-customer
+            stripe/delete-customer))
 
       )))
 

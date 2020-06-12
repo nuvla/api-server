@@ -158,13 +158,19 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [owner acl]} :body :as request}]
-  (let [authn-info     (auth/current-authentication request)
-        is-user?       (not (acl-resource/is-admin? authn-info))]
+  [{{:keys [acl]} :body {uuid :uuid} :params :as request}]
+  (let [authn-info (auth/current-authentication request)
+        is-user?   (not (acl-resource/is-admin? authn-info))
+        new-acl    (when (and is-user? acl)
+                     (if-let [current-owner (-> (str resource-type "/" uuid)
+                                                (db/retrieve request)
+                                                :owner)]
+                       (update acl :owners (-> acl :owners set conj current-owner))
+                       acl))]
     (edit-impl
       (cond-> request
               is-user? (update :body dissoc :owner)
-              (and is-user? acl) (update-in [:body :acl :owners] conj owner)))))
+              new-acl (assoc-in [:body :acl] new-acl)))))
 
 
 (defn delete-impl
