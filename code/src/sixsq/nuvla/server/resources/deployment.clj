@@ -165,7 +165,7 @@ a container orchestration engine.
                      (if-let [current-owner (-> (str resource-type "/" uuid)
                                                 (db/retrieve request)
                                                 :owner)]
-                       (assoc acl :owners (-> acl :owners set conj current-owner))
+                       (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
                        acl))]
     (edit-impl
       (cond-> request

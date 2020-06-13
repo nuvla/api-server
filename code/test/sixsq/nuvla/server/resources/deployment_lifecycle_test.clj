@@ -171,10 +171,12 @@
           (-> session-user
               (request deployment-url
                        :request-method :put
-                       :body (json/write-str {:owner "user/tarzan"}))
+                       :body (json/write-str {:owner "user/tarzan"
+                                              :acl   {:owners ["user/tarzan"]}}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :owner "user/jane"))
+              (ltu/is-key-value :owner "user/jane")
+              (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"]))
 
           ;; verify that api key/secret pair was created
           (is (:api-credentials deployment))
