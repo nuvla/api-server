@@ -227,6 +227,15 @@
              :json-schema/type "resource-id"
              :json-schema/description "id of principal (user or group) that owns the Deployment")))
 
+(s/def ::infrastructure-service (-> (st/spec ::common/id)
+                                    (assoc :name "infrastructure-service"
+                                           :json-schema/type "resource-id"
+                                           :json-schema/description "reference to parent infrastructure service"
+
+                                           :json-schema/section "meta"
+                                           :json-schema/editable false
+                                           :json-schema/server-managed true)))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -238,7 +247,8 @@
                                   ::data-records-filter     ;; deprecated
                                   ::data
                                   ::registries-credentials
-                                  ::owner]}]))
+                                  ::owner
+                                  ::infrastructure-service]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

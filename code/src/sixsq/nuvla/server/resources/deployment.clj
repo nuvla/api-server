@@ -12,6 +12,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
@@ -158,7 +159,7 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl]} :body {uuid :uuid} :params :as request}]
+  [{{:keys [acl parent]} :body {uuid :uuid} :params :as request}]
   (let [authn-info (auth/current-authentication request)
         is-user?   (not (acl-resource/is-admin? authn-info))
         new-acl    (when (and is-user? acl)
@@ -166,11 +167,14 @@ a container orchestration engine.
                                                 (db/retrieve request)
                                                 :owner)]
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
-                       acl))]
+                       acl))
+        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
+
     (edit-impl
       (cond-> request
-              is-user? (update :body dissoc :owner)
-              new-acl (assoc-in [:body :acl] new-acl)))))
+              is-user? (update :body dissoc :owner :infrastructure-service)
+              new-acl (assoc-in [:body :acl] new-acl)
+              infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
 
 
 (defn delete-impl
@@ -238,6 +242,7 @@ a container orchestration engine.
   (-> resource
       (edit-fn)
       (db/edit request)))
+
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]

@@ -26,8 +26,8 @@
     [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
