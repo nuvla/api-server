@@ -23,7 +23,7 @@ configuration option.
 
 
 (def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"]
+                     :add         ["group/nuvla-user"]
                      :bulk-delete ["group/nuvla-user"]})
 
 

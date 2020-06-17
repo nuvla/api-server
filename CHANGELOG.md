@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+  - Nuvlabox status - fix bug in spec causing stacktrace during update of
+    ES mapping
+  - Let users create deployment parameters
+
 ## [4.2.16] - 2020-05-12
 
 ### Changed
