@@ -71,6 +71,6 @@
         (ltu/is-status 404))))
 
 
-(deftest lifecycle-slipstream
+(deftest lifecycle-nuvla
   (check-existing-configuration ct-nuvla/service :support-email "admin@example.org")
   (test-utils/check-lifecycle ct-nuvla/service :support-email "admin@example.org" "admin@example.com"))
