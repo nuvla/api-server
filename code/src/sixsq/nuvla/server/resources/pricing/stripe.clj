@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.pricing.stripe
-  (:require [clojure.tools.logging :as log]
-            [sixsq.nuvla.server.util.log :as logu])
+  (:require
+    [sixsq.nuvla.server.util.log :as logu])
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
