@@ -2,7 +2,6 @@
   (:require
     [clojure.set :as set]
     [clojure.spec.alpha :as s]
-    [clojure.tools.logging :as log]
     [expound.alpha :as expound]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
@@ -12,7 +11,8 @@
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [clojure.tools.logging :as log]))
 
 (def ^:const customer-info-action "customer-info")
 (def ^:const update-customer-action "update-customer")
@@ -28,6 +28,19 @@
 (def ^:const delete-coupon-action "remove-coupon")
 
 
+(defn s-coupon->coupon-map
+  [s-coupon]
+  {:id                 (stripe/get-id s-coupon)
+   :name               (stripe/get-name s-coupon)
+   :amount-off         (-> s-coupon
+                           stripe/get-amount-off
+                           stripe/price->unit-float)
+   :currency           (stripe/get-currency s-coupon)
+   :duration           (stripe/get-duration s-coupon)
+   :duration-in-months (stripe/get-duration-in-months s-coupon)
+   :percent-off        (stripe/get-percent-off s-coupon)
+   :valid              (stripe/get-valid s-coupon)})
+
 (defn s-customer->customer-map
   [s-customer]
   (let [s-address (stripe/get-address s-customer)
@@ -37,16 +50,7 @@
                         :city           (stripe/get-city s-address)
                         :country        (stripe/get-country s-address)
                         :postal-code    (stripe/get-postal-code s-address)}}
-            s-coupon (assoc :coupon {:id                 (stripe/get-id s-coupon)
-                                     :name               (stripe/get-name s-coupon)
-                                     :amount-off         (-> s-coupon
-                                                             stripe/get-amount-off
-                                                             stripe/price->unit-float)
-                                     :currency           (stripe/get-currency s-coupon)
-                                     :duration           (stripe/get-duration s-coupon)
-                                     :duration-in-months (stripe/get-duration-in-months s-coupon)
-                                     :percent-off        (stripe/get-percent-off s-coupon)
-                                     :valid              (stripe/get-valid s-coupon)}))))
+            s-coupon (assoc :coupon (s-coupon->coupon-map s-coupon)))))
 
 
 (defn s-subscription->map
@@ -102,20 +106,23 @@
 
 (defn s-invoice->map
   [s-invoice extend]
-  (cond-> {:id          (stripe/get-id s-invoice)
-           :number      (stripe/get-number s-invoice)
-           :created     (some-> (stripe/get-created s-invoice)
-                                time/unix-timestamp->str)
-           :currency    (stripe/get-currency s-invoice)
-           :due-date    (stripe/get-due-date s-invoice)
-           :invoice-pdf (stripe/get-invoice-pdf s-invoice)
-           :paid        (stripe/get-paid s-invoice)
-           :status      (stripe/get-status s-invoice)
-           :total       (stripe/price->unit-float (stripe/get-total s-invoice))}
-          extend (assoc :lines (->> s-invoice
-                                    stripe/get-lines
-                                    stripe/collection-iterator
-                                    (map s-invoice-line-item->map)))))
+  (let [s-coupon (some-> s-invoice stripe/get-discount stripe/get-coupon)]
+    (cond-> {:id          (stripe/get-id s-invoice)
+             :number      (stripe/get-number s-invoice)
+             :created     (some-> (stripe/get-created s-invoice)
+                                  time/unix-timestamp->str)
+             :currency    (stripe/get-currency s-invoice)
+             :due-date    (stripe/get-due-date s-invoice)
+             :invoice-pdf (stripe/get-invoice-pdf s-invoice)
+             :paid        (stripe/get-paid s-invoice)
+             :status      (stripe/get-status s-invoice)
+             :subtotal    (stripe/price->unit-float (stripe/get-subtotal s-invoice))
+             :total       (stripe/price->unit-float (stripe/get-total s-invoice))}
+            s-coupon (assoc :discount {:coupon (s-coupon->coupon-map s-coupon)})
+            extend (assoc :lines (->> s-invoice
+                                      stripe/get-lines
+                                      stripe/collection-iterator
+                                      (map s-invoice-line-item->map))))))
 
 
 (defn throw-plan-invalid

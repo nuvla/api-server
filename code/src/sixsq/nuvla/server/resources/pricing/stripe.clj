@@ -296,6 +296,10 @@
   [obj]
   (.getTotal obj))
 
+(defn get-subtotal
+  [obj]
+  (.getSubtotal obj))
+
 (defn get-data
   [obj]
   (.getData obj))
