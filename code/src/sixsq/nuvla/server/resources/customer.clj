@@ -138,7 +138,6 @@ Customer mapping to external banking system."
   [request]
   (let [user-id (auth/current-user-id request)]
     (when (and config-nuvla/*stripe-api-key*
-               (str/starts-with? user-id "user/")
                (not (customer-has-active-subscription? user-id)))
       (throw (r/ex-response "An active subscription is required!" 402)))))
 

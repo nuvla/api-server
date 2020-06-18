@@ -19,7 +19,8 @@
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]))
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -429,18 +430,19 @@
                 (ltu/is-operation-present :claim))
 
             ;; try create NuvlaBox and check who is the owner
-            (let [nuvlabox-url (-> (apply request session-json
-                                          (concat [(str p/service-context nuvlabox/resource-type)
-                                                   :body (json/write-str {})
-                                                   :request-method :post] authn-session-claim))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+            (binding [config-nuvla/*stripe-api-key* nil]
+              (let [nuvlabox-url (-> (apply request session-json
+                                           (concat [(str p/service-context nuvlabox/resource-type)
+                                                    :body (json/write-str {})
+                                                    :request-method :post] authn-session-claim))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location-url))]
 
-              (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :owner group-alpha)))
+               (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
+                   (ltu/body->edn)
+                   (ltu/is-status 200)
+                   (ltu/is-key-value :owner group-alpha))))
 
             (let [cookie-claim-back (-> (apply request session-json
                                                (concat [claim-op-url :body (json/write-str

@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [clojure.string :as str]))
 
 (def ^:const customer-info-action "customer-info")
 (def ^:const update-customer-action "update-customer")
@@ -188,12 +189,14 @@
 (defn create-customer
   [{:keys [fullname subscription address coupon] pm-id :payment-method} user-id]
   (let [{:keys [street-address city postal-code country]} address
-        email       (try (some-> user-id
-                                 crud/retrieve-by-id-as-admin
-                                 :email
-                                 crud/retrieve-by-id-as-admin
-                                 :address)
-                         (catch Exception _))
+        email       (when (str/starts-with? user-id "user/")
+                      (try
+                        (some-> user-id
+                                crud/retrieve-by-id-as-admin
+                                :email
+                                crud/retrieve-by-id-as-admin
+                                :address)
+                        (catch Exception _)))
         s-customer  (stripe/create-customer
                       (cond-> {"name"    fullname
                                "address" {"line1"       street-address
