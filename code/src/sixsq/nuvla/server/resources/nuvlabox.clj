@@ -494,7 +494,8 @@ particular NuvlaBox release.
                             (db/retrieve ssh-cred-id request)
                             (wf-utils/create-ssh-key {:acl acl
                                                       :template {:href "credential-template/generate-ssh-key"}}))]
-      (-> credential
+      
+      (-> (db/retrieve (:id credential) request)
         (a/throw-cannot-view request))
       (-> nuvlabox
         (a/throw-cannot-manage request)

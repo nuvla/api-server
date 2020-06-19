@@ -499,7 +499,18 @@
                                   (ltu/is-operation-present :add-ssh-key)
                                   (ltu/is-operation-present :revoke-ssh-key)
                                   (ltu/is-key-value :state "COMMISSIONED")
-                                  (ltu/get-op-url :revoke-ssh-key))]
+                                  (ltu/get-op-url :revoke-ssh-key))
+
+                aux-ssh-cred  (-> session
+                                  (request credential-collection-uri
+                                            :request-method :post
+                                            :body (json/write-str
+                                                    {:template
+                                                     {:href "credential-template/generate-ssh-key"}}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/body)
+                                  :resource-id)]
 
             ;; check-api action
             (-> session
@@ -521,7 +532,9 @@
 
             ;; revoke-ssh-key action
             (-> session
-              (request revoke-ssh-key)
+              (request revoke-ssh-key
+                        :request-method :post
+                        :body (json/write-str {:credential aux-ssh-cred}))
               (ltu/body->edn)
               (ltu/is-status 202)))
 
