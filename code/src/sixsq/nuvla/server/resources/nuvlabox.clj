@@ -494,6 +494,8 @@ particular NuvlaBox release.
                             (db/retrieve ssh-cred-id request)
                             (wf-utils/create-ssh-key {:acl acl
                                                       :template {:href "credential-template/generate-ssh-key"}}))]
+      (-> credential
+        (a/throw-cannot-view request))
       (-> nuvlabox
         (a/throw-cannot-manage request)
         (add-ssh-key credential)))
@@ -511,7 +513,7 @@ particular NuvlaBox release.
   [{:keys [id state acl] :as nuvlabox} ssh-credential-id]
   (if (= state state-commissioned)
     (if (nil? ssh-credential-id)
-      (logu/log-and-throw-400 "SSH credential ID is missing.")
+      (logu/log-and-throw-400 "SSH credential ID is missing")
       (do
         (log/warn "Removing SSH key " ssh-credential-id " from NuvlaBox " id)
         (try
@@ -536,6 +538,8 @@ particular NuvlaBox release.
   (try
     (let [id              (str resource-type "/" uuid)
           ssh-cred-id     (:credential body)]
+      (-> (db/retrieve ssh-cred-id request)
+        (a/throw-cannot-view request))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
         (revoke-ssh-key ssh-cred-id)))

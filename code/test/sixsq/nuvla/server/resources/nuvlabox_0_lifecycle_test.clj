@@ -397,6 +397,8 @@
               (ltu/is-operation-present :decommission)
               (ltu/is-operation-present :check-api)
               (ltu/is-operation-present :reboot)
+              (ltu/is-operation-present :add-ssh-key)
+              (ltu/is-operation-present :revoke-ssh-key)
               (ltu/is-key-value :state "COMMISSIONED"))
 
           ;; check that services exist
@@ -446,6 +448,8 @@
                               (ltu/is-operation-present :decommission)
                               (ltu/is-operation-present :check-api)
                               (ltu/is-operation-present :reboot)
+                              (ltu/is-operation-present :add-ssh-key)
+                              (ltu/is-operation-present :revoke-ssh-key)
                               (ltu/is-key-value :state "COMMISSIONED")
                               (ltu/get-op-url :check-api))
 
@@ -460,8 +464,42 @@
                               (ltu/is-operation-present :decommission)
                               (ltu/is-operation-present :check-api)
                               (ltu/is-operation-present :reboot)
+                              (ltu/is-operation-present :add-ssh-key)
+                              (ltu/is-operation-present :revoke-ssh-key)
                               (ltu/is-key-value :state "COMMISSIONED")
-                              (ltu/get-op-url :reboot))]
+                              (ltu/get-op-url :reboot))
+
+                add-ssh-key   (-> session
+                                (request nuvlabox-url)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present :edit)
+                                (ltu/is-operation-absent :delete)
+                                (ltu/is-operation-absent :activate)
+                                (ltu/is-operation-present :commission)
+                                (ltu/is-operation-present :decommission)
+                                (ltu/is-operation-present :check-api)
+                                (ltu/is-operation-present :reboot)
+                                (ltu/is-operation-present :add-ssh-key)
+                                (ltu/is-operation-present :revoke-ssh-key)
+                                (ltu/is-key-value :state "COMMISSIONED")
+                                (ltu/get-op-url :add-ssh-key))
+
+                revoke-ssh-key  (-> session
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present :edit)
+                                  (ltu/is-operation-absent :delete)
+                                  (ltu/is-operation-absent :activate)
+                                  (ltu/is-operation-present :commission)
+                                  (ltu/is-operation-present :decommission)
+                                  (ltu/is-operation-present :check-api)
+                                  (ltu/is-operation-present :reboot)
+                                  (ltu/is-operation-present :add-ssh-key)
+                                  (ltu/is-operation-present :revoke-ssh-key)
+                                  (ltu/is-key-value :state "COMMISSIONED")
+                                  (ltu/get-op-url :revoke-ssh-key))]
 
             ;; check-api action
             (-> session
@@ -473,7 +511,19 @@
             (-> session
                 (request reboot)
                 (ltu/body->edn)
-                (ltu/is-status 202)))
+                (ltu/is-status 202))
+
+            ;; add-ssh-key action
+            (-> session
+              (request add-ssh-key)
+              (ltu/body->edn)
+              (ltu/is-status 202))
+
+            ;; revoke-ssh-key action
+            (-> session
+              (request revoke-ssh-key)
+              (ltu/body->edn)
+              (ltu/is-status 202)))
 
           ;; second commissioning of the resource (with swarm credentials)
           (-> session
