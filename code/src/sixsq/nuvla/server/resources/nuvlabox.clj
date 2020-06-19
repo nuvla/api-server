@@ -462,13 +462,17 @@ particular NuvlaBox release.
     (do
       (log/warn "Adding new SSH key for NuvlaBox:" id)
       (try
-        (let [cred-id      (:id ssh-credential)
+        (let [cred-id   (:id ssh-credential)
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
                                              acl
                                              :affected-resources [{:href cred-id}]
                                              :priority 50)
-              job-msg (str "asking NuvlaBox to add new SSH key " id " with async " job-id)]
+              job-msg   (if (:private-key ssh-credential)
+                          (:private-key ssh-credential)
+                          (str "asking NuvlaBox "
+                            id " to add existing SSH key "
+                            cred-id " with async " job-id))]
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to add SSH key to NuvlaBox" 500 id)))
