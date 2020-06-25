@@ -50,6 +50,20 @@
     (stu/is-valid ::spec-email-password/schema-create (assoc-in create-tpl [:template :href] "user-template/abc"))
     (stu/is-invalid ::spec-email-password/schema-create (assoc-in create-tpl [:template :href] "bad-reference/abc"))
 
+    ;; check the create template schema with a customer
+    (stu/is-valid ::spec-email-password/schema-create
+                  (assoc-in create-tpl [:template :customer]
+                            {:fullname       "toto"
+                             :address        {:street-address "Av. quelque chose"
+                                              :city           "Meyrin"
+                                              :country        "CH"
+                                              :postal-code    "1217"}
+                             :subscription   {:plan-id       "plan_something"
+                                              :plan-item-ids ["plan_1e332A"
+                                                              "plan_1e332B"]}
+                             :payment-method "pm_something"}))
+
+
     ;; mandatory attributes
     (doseq [attr #{:resource-type :template}]
       (stu/is-invalid ::spec-email-password/schema-create (dissoc create-tpl attr)))

@@ -7,9 +7,16 @@
   - New credential type "ssh-key"
   - New action "add-ssh-key" for NuvlaBox resource
   - New action "revoke-ssh-key" for NuvlaBox resource 
- 
+  - Customer resource
+  - Pricing resource
+  - Stripe wrapper library
+
 ### Changed
 
+  - Deployment, NuvlaBox, Credential subtype VPN return 402 HTTP code
+    when stripe configured and user doesn't have an active subscription
+  - Deployment - new owner and infrastructure service attribute
+  - Configuration nuvla got a new stripe-api-key attribute
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters

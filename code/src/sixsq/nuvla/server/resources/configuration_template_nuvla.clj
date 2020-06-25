@@ -28,6 +28,7 @@ notifications will not work.
    :smtp-port   465
    :smtp-ssl    true
    :smtp-debug  true
+
    })
 
 

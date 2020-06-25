@@ -60,7 +60,7 @@ using an email address.
                                (crud/retrieve-by-id-as-admin invited-by-user-id)
                                (catch Exception _
                                  invited-by-user-id))]
-      (user-utils/create-user-subresources id email nil nil)
+      (user-utils/create-user-subresources id email nil nil nil)
 
       (-> (create-user-email-callback base-uri id :data callback-data)
           (email-utils/send-invitation-email email invited-by)))

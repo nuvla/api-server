@@ -12,7 +12,6 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as swarm-tpl]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
@@ -225,10 +224,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                        add-impl
                        (update-in [:body] merge create-resp))
 
-        id         (:resource-id (:body response))
-
-        acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [user-id]}]
+        id         (:resource-id (:body response))]
 
     (when (= (:method body) swarm-tpl/method)
       (create-job {:params      {:uuid          (u/id->uuid id)

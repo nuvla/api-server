@@ -220,7 +220,21 @@
   (-> (st/spec string?)
       (assoc :json-schema/type "string"
              :json-schema/description "Deprecated")))
-;;
+
+(s/def ::owner
+  (-> (st/spec ::common/id)
+      (assoc :name "owner"
+             :json-schema/type "resource-id"
+             :json-schema/description "id of principal (user or group) that owns the Deployment")))
+
+(s/def ::infrastructure-service (-> (st/spec ::common/id)
+                                    (assoc :name "infrastructure-service"
+                                           :json-schema/type "resource-id"
+                                           :json-schema/description "reference to parent infrastructure service"
+
+                                           :json-schema/section "meta"
+                                           :json-schema/editable false
+                                           :json-schema/server-managed true)))
 
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
@@ -232,7 +246,9 @@
                                   ::data-records            ;; deprecated
                                   ::data-records-filter     ;; deprecated
                                   ::data
-                                  ::registries-credentials]}]))
+                                  ::registries-credentials
+                                  ::owner
+                                  ::infrastructure-service]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

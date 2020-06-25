@@ -3,6 +3,7 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as ctisoc]
@@ -21,6 +22,7 @@
 
 
 (deftest lifecycle
-  (vpn-utils-test/credential-vpn-lifecycle-test
-    ctisoc/method "customer" "user/jane" "user/jane group/nuvla-user group/nuvla-anon"
-    ctison/method))
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (vpn-utils-test/credential-vpn-lifecycle-test
+     ctisoc/method "customer" "user/jane" "user/jane group/nuvla-user group/nuvla-anon"
+     ctison/method)))

@@ -8,7 +8,6 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as ct]
     [sixsq.nuvla.server.resources.credential-template-api-key :as akey]
-    [sixsq.nuvla.server.resources.credential-template-ssh-key :as sshkey]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-amazonec2 :as srvc-aws]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
@@ -20,6 +19,7 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as srvc-vpn]
+    [sixsq.nuvla.server.resources.credential-template-ssh-key :as sshkey]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))

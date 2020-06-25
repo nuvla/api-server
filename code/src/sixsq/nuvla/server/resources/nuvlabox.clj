@@ -15,7 +15,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
-    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
@@ -121,6 +121,8 @@ particular NuvlaBox release.
     (when vpn-server-id
       (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
+
+    (customer/throw-user-hasnt-active-subscription request)
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
                                      (auth/current-user-id request))

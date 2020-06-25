@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info
      :refer [authn-cookie authn-info-header wrap-authn-info]]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
@@ -429,18 +430,19 @@
                 (ltu/is-operation-present :claim))
 
             ;; try create NuvlaBox and check who is the owner
-            (let [nuvlabox-url (-> (apply request session-json
-                                          (concat [(str p/service-context nuvlabox/resource-type)
-                                                   :body (json/write-str {})
-                                                   :request-method :post] authn-session-claim))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+            (binding [config-nuvla/*stripe-api-key* nil]
+              (let [nuvlabox-url (-> (apply request session-json
+                                           (concat [(str p/service-context nuvlabox/resource-type)
+                                                    :body (json/write-str {})
+                                                    :request-method :post] authn-session-claim))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location-url))]
 
-              (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :owner group-alpha)))
+               (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
+                   (ltu/body->edn)
+                   (ltu/is-status 200)
+                   (ltu/is-key-value :owner group-alpha))))
 
             (let [cookie-claim-back (-> (apply request session-json
                                                (concat [claim-op-url :body (json/write-str
