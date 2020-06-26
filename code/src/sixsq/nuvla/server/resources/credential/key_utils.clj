@@ -56,13 +56,6 @@
     [secret (digest secret)]))
 
 
-(defn key->string
-  [key]
-  (->> key
-       .getEncoded
-       (.encodeToString (Base64/getEncoder))))
-
-
 (defn private-key->string
   [priv-key]
   (let [sw (new StringWriter)]
@@ -89,7 +82,7 @@
     (str "ssh-rsa " (.encodeToString (Base64/getEncoder) (.toByteArray baos)))))
 
 
-(defn generate-key-pair
+(defn generate-ssh-keypair
   []
   (let [key-gen  (doto (KeyPairGenerator/getInstance "RSA")
                    (.initialize 3072))
