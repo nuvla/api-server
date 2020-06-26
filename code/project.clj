@@ -39,10 +39,12 @@
    [clj-stacktrace]
    [clojure.java-time]
    [com.amazonaws/aws-java-sdk-s3]
+   [com.stripe/stripe-java "19.4.0"]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
    [metosin/spec-tools]
+   [org.bouncycastle/bcpkix-jdk15on "1.62"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
@@ -54,8 +56,7 @@
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [io.netty/netty]]]
-
-   [com.stripe/stripe-java "19.4.0"]]
+   ]
 
   :aot [sixsq.nuvla.server.app.main]
 

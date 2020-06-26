@@ -74,7 +74,8 @@
 
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
-                     :lan-cidr         "10.0.1.0/24"})
+                     :lan-cidr         "10.0.1.0/24"
+                     :ssh-keys         ["credential/aaa-bbb-ccc"]})
 
 
 (deftest check-metadata

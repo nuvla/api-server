@@ -2,6 +2,7 @@
   (:require
     [clojure.set :as set]
     [clojure.spec.alpha :as s]
+    [clojure.string :as str]
     [expound.alpha :as expound]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
@@ -11,8 +12,7 @@
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 (def ^:const customer-info-action "customer-info")
 (def ^:const update-customer-action "update-customer")

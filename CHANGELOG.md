@@ -4,6 +4,9 @@
 
 ### Added
 
+  - New credential type "ssh-key"
+  - New action "add-ssh-key" for NuvlaBox resource
+  - New action "revoke-ssh-key" for NuvlaBox resource 
   - Customer resource
   - Pricing resource
   - Stripe wrapper library

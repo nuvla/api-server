@@ -94,6 +94,20 @@
         (r/ex-bad-request msg)))))
 
 
+(defn create-ssh-key
+  "Create SSH key to be associated with the NuvlaBox"
+  [ssh-cred-body]
+  (let [{:keys [status body] :as resp} (credential/create-credential ssh-cred-body auth/internal-identity)
+        {:keys [resource-id public-key private-key]} body]
+
+    (if (= 201 status)
+      {:id             resource-id
+       :public-key     public-key
+       :private-key    private-key}
+      (let [msg (str "creating credential ssh-key resource failed:" status (:message body))]
+        (r/ex-bad-request msg)))))
+
+
 (defn update-nuvlabox-api-key
   [cred-id {:keys [id name acl] :as nuvlabox}]
   (let [cred-acl (utils/set-acl-nuvlabox-view-only acl)
