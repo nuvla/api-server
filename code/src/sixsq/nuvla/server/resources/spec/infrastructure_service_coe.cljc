@@ -71,7 +71,6 @@
 
 
 ; Free map with CSP specific cluster parameters
-; TODO: check if need to create: coe_params_google, coe_params_amazonec2 etc.
 (s/def ::cluster-params
        (-> (st/spec (su/constrained-map keyword? any?))
            (assoc :name "cluster-params"
