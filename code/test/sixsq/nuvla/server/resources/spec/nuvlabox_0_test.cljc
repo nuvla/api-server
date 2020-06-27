@@ -51,7 +51,8 @@
                :lan-cidr                     "0.0.0.0/32"
                :os-version                   "OS version"
                :hw-revision-code             "a020d3"
-               :monitored                    true})
+               :monitored                    true
+               :ssh-keys                     []})
 
 
 (deftest check-nuvlabox
@@ -85,5 +86,6 @@
                  :lan-cidr
                  :os-version
                  :hw-revision-code
-                 :monitored}]
+                 :monitored
+                 :ssh-keys}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))

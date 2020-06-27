@@ -28,7 +28,9 @@
                    :smtp-ssl      true
                    :smtp-debug    true
 
-                   :support-email "admin@example.org"}]
+                   :support-email "admin@example.org"
+
+                   :stripe-api-key "sk_test_xxx"}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 
@@ -37,5 +39,6 @@
       (stu/is-invalid ::ct-nuvla/schema (dissoc cfg k)))
 
     ;; optional keys
-    (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug :support-email}]
+    (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
+                :support-email :stripe-api-key}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))

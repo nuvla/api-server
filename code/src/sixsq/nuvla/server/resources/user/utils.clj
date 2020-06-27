@@ -1,12 +1,14 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.response :as r]))
@@ -69,6 +71,17 @@
       (throw (ex-info (format "could not create identifier for '%s' -> '%s'" user-id identifier) body)))))
 
 
+(defn create-customer
+  [user-id customer]
+  (let [request {:params      {:resource-name customer/resource-type}
+                 :body        (assoc customer :parent user-id)
+                 :nuvla/authn auth/internal-identity}
+        {{:keys [status resource-id] :as body} :body} (crud/add request)]
+    (if (= status 201)
+      resource-id
+      (throw (ex-info (format "could not create customer for '%s'" user-id) body)))))
+
+
 (defn update-user
   [user-id user-body]
   (let [request {:params      {:resource-name resource-url
@@ -91,7 +104,7 @@
 
 
 (defn create-user-subresources
-  [user-id email password username]
+  [user-id email password username customer]
 
   (when email
     (create-identifier user-id email))
@@ -104,4 +117,7 @@
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)
-                                 email-id (assoc :email email-id)))))
+                                 email-id (assoc :email email-id))))
+
+  (when customer
+    (create-customer user-id customer)))
