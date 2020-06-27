@@ -51,8 +51,7 @@
                                :template    {:href                  href
                                              :azure-subscription-id "abc"
                                              :azure-client-secret   "def"
-                                             :azure-client-id       "ghi"
-                                             :parent                "infrastructure-service/service-1"}}]
+                                             :azure-client-id       "ghi"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

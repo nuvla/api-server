@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm
+(ns sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes
   "
-This credential-template creates a credential for a Docker Swarm service.
+This credential-template creates a credential for a Kubernetes service.
 These credentials include a certificate authority's public certificate ('ca'),
 the user's public certificate ('cert'), and the user's private key ('key').
 "
@@ -13,10 +13,10 @@ the user's public certificate ('cert'), and the user's private key ('key').
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def ^:const credential-subtype "infrastructure-service-swarm")
+(def ^:const credential-subtype "infrastructure-service-kubernetes")
 
 
-(def ^:const method "infrastructure-service-swarm")
+(def ^:const method "infrastructure-service-kubernetes")
 
 
 (def ^:const resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]

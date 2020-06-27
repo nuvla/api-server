@@ -49,13 +49,11 @@
                               {:name        name-attr
                                :description description-attr
                                :tags        tags-attr
-                               :template    {:href           href
-                                             :project-id     "my-project-id"
-                                             :private-key-id "abcde1234"
-                                             :private-key    "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-                                             :client-email   "1234-compute@developer.gserviceaccount.com"
-                                             :client-id      "98765"
-                                             :parent         "infrastructure-service/service-1"}}]
+                               :template    {:href            href
+                                             :google-username "username"
+                                             :client-id       "12345678901.apps.googleusercontent.com"
+                                             :client-secret   "secret"
+                                             :refresh-token   "refresh token"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -116,19 +114,23 @@
             (ltu/is-operation-present :edit)))
 
       ;; ensure credential contains correct information
-      (let [{:keys [name description tags
-                    project-id private-key-id private-key client-email client-id]} (-> session-user
-                                                                                       (request abs-uri)
-                                                                                       (ltu/body->edn)
-                                                                                       (ltu/is-status 200)
-                                                                                       (ltu/body))]
+      (let [{:keys [name
+                    description
+                    tags
+                    google-username
+                    refresh-token
+                    client-secret
+                    client-id]} (-> session-user
+                                    (request abs-uri)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/body))]
         (is (= name name-attr))
         (is (= description description-attr))
         (is (= tags tags-attr))
-        (is project-id)
-        (is private-key-id)
-        (is private-key)
-        (is client-email)
+        (is google-username)
+        (is refresh-token)
+        (is client-secret)
         (is client-id))
 
       ;; delete the credential

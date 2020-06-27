@@ -36,11 +36,12 @@ names correspond exactly to those required by `docker-machine`.
    :method            method
    :name              resource-name
    :description       "GCE service account credentials"
-   :project-id        "my-project-id"
-   :private-key-id    "abcde1234"
-   :private-key       "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-   :client-email      "1234-compute@developer.gserviceaccount.com"
-   :client-id         "98765"
+
+   :google-username   "some name"
+   :client-id         "12345678901.apps.googleusercontent.com"
+   :client-secret     "secret"
+   :refresh-token     "refresh token"
+
    :acl               resource-acl
    :resource-metadata "resource-metadata/credential-template-driver-gce"})
 

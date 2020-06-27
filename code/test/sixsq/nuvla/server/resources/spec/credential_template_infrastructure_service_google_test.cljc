@@ -20,12 +20,13 @@
                    :acl            valid-acl
                    :subtype        service/credential-subtype
                    :method         service/method
-                   :project-id     "my-project-id"
-                   :private-key-id "abcde1234"
-                   :private-key    "-----BEGIN PRIVATE KEY-----\\nMIIaA0n\\n-----END PRIVATE KEY-----\\n"
-                   :client-email   "1234-compute@developer.gserviceaccount.com"
-                   :client-id      "98765"
-                   :parent         "infrastructure-service/service-1"}]
+
+                   :google-username "sixsq"
+                   :client-id       "client id"
+                   :client-secret   "client secret"
+                   :refresh-token   "refesh token"
+
+                   :parent          "infrastructure-service/service-1"}]
 
     (stu/is-valid ::service-spec/schema tpl)
 

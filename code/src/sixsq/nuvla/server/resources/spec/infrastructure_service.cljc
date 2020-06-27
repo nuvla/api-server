@@ -55,42 +55,6 @@
                                        :default "CREATED"})))
 
 
-(s/def ::management-credential-id
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "management-credential-id"
-             :json-schema/display-name "management credential id"
-             :json-schema/description "id of the credential used to manage this service")))
-
-
-;;
-;; this is meant for COE services only
-;; TODO: move this to COE specific schemas
-;;
-(s/def ::machine-name ::core/nonblank-string)
-(s/def ::machine-config-base64 ::core/nonblank-string)
-
-(s/def ::node
-  (-> (st/spec (su/only-keys :req-un [::machine-name
-                                      ::machine-config-base64]))
-      (assoc :name "node"
-             :json-schema/type "map"
-             :json-schema/description "node within the swarm cluster"
-
-             :json-schema/editable false
-             :json-schema/order 23)))
-
-
-(s/def ::nodes
-  (-> (st/spec (s/coll-of ::node :min-count 1 :kind vector?))
-      (assoc :name "nodes"
-             :json-schema/type "array"
-             :json-schema/description "List of base64 encoded configurations for each Swarm machine"
-
-             :json-schema/editable false
-             :json-schema/order 24
-             :json-schema/hidden true)))
-
-
 (s/def ::swarm-enabled
   (-> (st/spec boolean?)
     (assoc :name "swarm-enabled"
@@ -114,14 +78,16 @@
 ;; -------
 ;;
 
+(def infra-service-keys-spec
+  (su/merge-keys-specs [common/common-attrs
+                        {:req-un [::common/parent ;; required for services
+                                  ::method
+                                  ::subtype
+                                  ::state]
+                         :opt-un [::endpoint
+                                  ::swarm-enabled
+                                  ::online]}]))
+
+
 (s/def ::schema
-  (su/only-keys-maps common/common-attrs
-                     {:req-un [::common/parent              ;; an id pointing to an infrastructure service group
-                               ::method
-                               ::subtype
-                               ::state]
-                      :opt-un [::endpoint
-                               ::management-credential-id
-                               ::nodes
-                               ::swarm-enabled
-                               ::online]}))
+       (su/only-keys-maps infra-service-keys-spec))

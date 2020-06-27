@@ -44,12 +44,12 @@
             ::azure-client-secret
             ::azure-client-id]})
 
-;; Defines the contents of the api-key CredentialTemplate resource itself.
+;; Defines the contents of the azure CredentialTemplate resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
                      credential-template-keys-spec))
 
-;; Defines the contents of the api-key template used in a create resource.
+;; Defines the contents of the azure template used in a create resource.
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ct/template-keys-spec
                                   credential-template-create-keys-spec))

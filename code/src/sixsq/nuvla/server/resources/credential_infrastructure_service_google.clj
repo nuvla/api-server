@@ -17,18 +17,21 @@ correspond exactly to those required by `docker-machine`.
 ;;
 
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method project-id private-key-id private-key
-           client-email client-id parent acl]} request]
-  (let [resource (cond-> {:resource-type  p/resource-type
-                          :subtype        subtype
-                          :method         method
-                          :project-id     project-id
-                          :private-key-id private-key-id
-                          :private-key    private-key
-                          :client-email   client-email
-                          :client-id      client-id
-                          :parent         parent}
-                         acl (assoc :acl acl))]
+  [{:keys [subtype
+           method
+           google-username
+           client-id
+           client-secret
+           refresh-token
+           acl]} request]
+  (let [resource (cond-> {:resource-type   p/resource-type
+                          :subtype         subtype
+                          :method          method
+                          :google-username google-username
+                          :client-id       client-id
+                          :client-secret   client-secret
+                          :refresh-token   refresh-token}
+                   acl    (assoc :acl acl))]
     [nil resource]))
 
 

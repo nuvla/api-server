@@ -50,8 +50,7 @@
                                :tags        tags-attr
                                :template    {:href                    href
                                              :exoscale-api-key        "abc"
-                                             :exoscale-api-secret-key "def"
-                                             :parent                  "infrastructure-service/service-1"}}]
+                                             :exoscale-api-secret-key "def"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

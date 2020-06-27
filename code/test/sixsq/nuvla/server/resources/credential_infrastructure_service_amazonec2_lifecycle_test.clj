@@ -50,8 +50,7 @@
                                :tags        tags-attr
                                :template    {:href                 href
                                              :amazonec2-access-key "abc"
-                                             :amazonec2-secret-key "def"
-                                             :parent               "infrastructure-service/service-1"}}]
+                                             :amazonec2-secret-key "def"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

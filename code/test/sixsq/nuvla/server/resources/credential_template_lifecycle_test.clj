@@ -14,9 +14,9 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry
-     :as srvc-registry]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as srvc-registry]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as srvc-vpn]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
@@ -83,6 +83,7 @@
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" srvc-minio/method)
              (str ct/resource-type "/" srvc-swarm/method)
+             (str ct/resource-type "/" srvc-kubernetes/method)
              (str ct/resource-type "/" srvc-aws/method)
              (str ct/resource-type "/" srvc-azure/method)
              (str ct/resource-type "/" srvc/method)
@@ -96,6 +97,7 @@
              srvc-minio/method
              srvc-registry/method
              srvc-swarm/method
+             srvc-kubernetes/method
              srvc-aws/method
              srvc-azure/method
              srvc/method
@@ -107,6 +109,7 @@
              srvc-minio/credential-subtype
              srvc-registry/credential-subtype
              srvc-swarm/credential-subtype
+             srvc-kubernetes/credential-subtype
              srvc-aws/credential-subtype
              srvc-azure/credential-subtype
              srvc/credential-subtype
