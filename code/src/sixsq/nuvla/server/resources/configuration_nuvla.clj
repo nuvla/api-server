@@ -27,7 +27,7 @@ default values.
 (def ^:const tpl-instance-url (str ct/resource-type "/" tpl-nuvla/service))
 
 
-(def ^:dynamic *stripe-api-key*)
+(def ^:dynamic *stripe-api-key* nil)
 
 
 (defn throw-stripe-not-configured
