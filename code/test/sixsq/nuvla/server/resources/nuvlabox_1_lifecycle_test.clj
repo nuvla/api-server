@@ -1125,11 +1125,11 @@
                                                          :city           "Meyrin"
                                                          :country        "CH"
                                                          :postal-code    "1217"}
-                                          :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
-                                                         :plan-item-ids ["plan_HGQIIWmhYmi45G"
-                                                                         "plan_HIrgmGboUlLqG9"
-                                                                         "plan_HGQAXewpgs9NeW"
-                                                                         "plan_HGQqB0p8h86Ija"]}}))
+                                          :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
+                                                         :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
+                                                                         "price_1GzOC6HG9PNMTNBOEb5819lm"
+                                                                         "price_1GzOdmHG9PNMTNBOCvJLV4pT"
+                                                                         "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}}))
           (ltu/body->edn)
           (ltu/is-status 201))
 

@@ -4,7 +4,7 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Invoice PaymentMethod Plan
+    (com.stripe.model Customer Invoice PaymentMethod Price
                       Product SetupIntent Subscription)))
 
 
@@ -64,10 +64,10 @@
     (Product/list params)))
 
 
-(defn list-plans
+(defn list-prices
   [params]
   (try-catch-exception
-    (Plan/list params)))
+    (Price/list params)))
 
 
 (defn list-payment-methods
@@ -177,44 +177,53 @@
   (.getCurrency obj))
 
 (defn get-interval
-  [plan]
-  (.getInterval plan))
+  [obj]
+  (.getInterval obj))
 
 (defn get-usage-type
-  [plan]
-  (.getUsageType plan))
+  [obj]
+  (.getUsageType obj))
 
 (defn get-billing-scheme
-  [plan]
-  (.getBillingScheme plan))
+  [obj]
+  (.getBillingScheme obj))
 
 (defn get-trial-period-days
-  [plan]
-  (.getTrialPeriodDays plan))
+  [obj]
+  (.getTrialPeriodDays obj))
 
 (defn get-amount
   [obj]
   (.getAmount obj))
 
-(defn get-aggregate-usage
-  [plan]
-  (.getAggregateUsage plan))
-
-(defn get-tiers-mode
-  [plan]
-  (.getTiersMode plan))
-
-(defn get-tiers
-  [plan]
-  (.getTiers plan))
 
 (defn get-unit-amount
-  [tier]
-  (.getUnitAmount tier))
+  [obj]
+  (.getUnitAmount obj))
+
+(defn get-recurring
+  [obj]
+  (.getRecurring obj))
+
+(defn get-aggregate-usage
+  [obj]
+  (.getAggregateUsage obj))
+
+(defn get-tiers-mode
+  [obj]
+  (.getTiersMode obj))
+
+(defn get-tiers
+  [obj]
+  (.getTiers obj))
+
+(defn get-unit-amount
+  [obj]
+  (.getUnitAmount obj))
 
 (defn get-up-to
-  [tier]
-  (.getUpTo tier))
+  [obj]
+  (.getUpTo obj))
 
 (defn get-client-secret
   [obj]

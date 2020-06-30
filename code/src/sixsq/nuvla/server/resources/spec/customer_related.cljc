@@ -55,10 +55,10 @@
              :json-schema/display-name "City")))
 
 
-(def plan-id-regex #"^plan_[a-zA-Z0-9]+$")
+(def price-id-regex #"^price_.+$")
 
 (s/def ::plan-id
-  (-> (st/spec (s/and string? #(re-matches plan-id-regex %)))
+  (-> (st/spec (s/and string? #(re-matches price-id-regex %)))
       (assoc :name "plan-id"
              :json-schema/display-name "plan id"
              :json-schema/description "subscription plan id"
@@ -66,7 +66,7 @@
 
 
 (s/def ::plan-item-id
-  (-> (st/spec (s/and string? #(re-matches plan-id-regex %)))
+  (-> (st/spec (s/and string? #(re-matches price-id-regex %)))
       (assoc :name "plan-item-id"
              :json-schema/display-name "plan item id"
              :json-schema/description "subscription plan item id"

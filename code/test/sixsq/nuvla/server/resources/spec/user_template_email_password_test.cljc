@@ -58,9 +58,9 @@
                                               :city           "Meyrin"
                                               :country        "CH"
                                               :postal-code    "1217"}
-                             :subscription   {:plan-id       "plan_something"
-                                              :plan-item-ids ["plan_1e332A"
-                                                              "plan_1e332B"]}
+                             :subscription   {:plan-id       "price_something"
+                                              :plan-item-ids ["price_1e332A"
+                                                              "price_1e332B"]}
                              :payment-method "pm_something"}))
 
 
