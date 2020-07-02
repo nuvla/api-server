@@ -6,12 +6,12 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(def ^:const plan-id-regex #"^plan_.*")
+(def ^:const price-id-regex #"^price_.+$")
 
-(defn plan-id? [s] (re-matches plan-id-regex s))
+(defn price-id? [s] (re-matches price-id-regex s))
 
 (s/def ::plan-id
-  (-> (st/spec (s/and string? plan-id?))
+  (-> (st/spec (s/and string? price-id?))
       (assoc :name "plan-id"
              :json-schema/type "string"
              :json-schema/description "identifier of plan id")))
@@ -21,7 +21,7 @@
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "name"
              :json-schema/type "string"
-             :json-schema/description "product plan name")))
+             :json-schema/description "product price name")))
 
 (s/def ::order
   (-> (st/spec nat-int?)

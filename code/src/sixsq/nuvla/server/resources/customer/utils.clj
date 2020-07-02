@@ -175,13 +175,13 @@
 
 
 (defn create-subscription
-  [customer-id {:keys [plan-id plan-item-ids] :as body} trial-from-plan?]
+  [customer-id {:keys [plan-id plan-item-ids] :as body} trial?]
   (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)]
     (throw-plan-invalid body catalogue)
-    (-> {"customer"        customer-id
-         "items"           (map (fn [plan-id] {"plan" plan-id})
-                                (cons plan-id plan-item-ids))
-         "trial_from_plan" trial-from-plan?}
+    (-> {"customer" customer-id
+         "items"    (map (fn [plan-id] {"price" plan-id})
+                         (cons plan-id plan-item-ids))}
+        (cond-> trial? (assoc "trial_period_days" 14))
         stripe/create-subscription
         s-subscription->map)))
 
