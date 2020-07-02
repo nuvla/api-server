@@ -13,6 +13,7 @@
 
 ### Changed
 
+  - Dependency - use temporary spandex 0.7.5-SNAPSHOT
   - Deployment, NuvlaBox, Credential subtype VPN return 402 HTTP code
     when stripe configured and user doesn't have an active subscription
   - Deployment - new owner and infrastructure service attribute

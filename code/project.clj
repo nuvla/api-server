@@ -31,7 +31,9 @@
   [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   ;; waiting for cc.qbits/spandex 0.7.5 to be release
+   ;; ES 7.7 need elasticsearch client version to be bumped
+   [org.clojars.0xbase12/spandex "0.7.5-SNAPSHOT" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-commons/clj-yaml]
