@@ -12,8 +12,8 @@ manage it.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-coe :as tpl-coe]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-coe :as infra-service-coe]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-coe :as tpl-coe]
     [sixsq.nuvla.server.util.response :as r]))
 
 

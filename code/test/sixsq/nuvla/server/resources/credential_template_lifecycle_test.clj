@@ -13,10 +13,10 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as srvc-registry]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as srvc-vpn]
     [sixsq.nuvla.server.resources.credential-template-ssh-key :as sshkey]

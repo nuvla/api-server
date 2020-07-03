@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.server.resources.pricing.utils
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.server.resources.pricing.stripe :as s]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.pricing.stripe :as s]))
 
 
 (defn is-product-metadata-in-values?
