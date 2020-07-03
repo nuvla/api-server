@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as service-tpl]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as cred-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -19,7 +19,7 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists (str credential/resource-type "-" service-tpl/resource-url)))
+  (mdtu/check-metadata-exists (str credential/resource-type "-" cred-tpl/credential-subtype)))
 
 
 (deftest lifecycle
@@ -40,8 +40,8 @@
 
         parent-value          "infrastructure-service/alpha"
 
-        href                  (str ct/resource-type "/" service-tpl/method)
-        template-url          (str p/service-context ct/resource-type "/" service-tpl/method)
+        href                  (str ct/resource-type "/" cred-tpl/method)
+        template-url          (str p/service-context ct/resource-type "/" cred-tpl/method)
 
         template              (-> session-admin
                                   (request template-url)

@@ -44,3 +44,10 @@ manage it.
   [resource]
   (dissoc resource :href :resource-metadata))
 
+;;
+;; Explicitely let to delete the vpn service resource even if the resource state
+;; doesn't permit this. See CAN_DELETE_STATES in infra-service.
+;;
+(defmethod infra-service/delete-hook method
+  [service request]
+  (infra-service/delete-impl request))

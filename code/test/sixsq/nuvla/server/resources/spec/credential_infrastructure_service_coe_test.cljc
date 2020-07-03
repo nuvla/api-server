@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm-test
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-coe-test
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-coe :as cred-infra-service-coe]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
@@ -25,14 +25,17 @@
 
                    :ca            "ca-public-certificate"
                    :cert          "client-public-certificate"
-                   :key           "client-private-certificate"}]
+                   :key           "client-private-certificate"
 
-    (stu/is-valid ::cred-infra-service-swarm/schema tpl)
+                   :status        "VALID"
+                   :last-check    timestamp}]
+
+    (stu/is-valid ::cred-infra-service-coe/schema tpl)
 
     ;; mandatory keywords
-    (doseq [k (-> tpl keys set)]
-      (stu/is-invalid ::cred-infra-service-swarm/schema (dissoc tpl k)))
+    (doseq [k (-> tpl (dissoc :status :last-check) keys set)]
+      (stu/is-invalid ::cred-infra-service-coe/schema (dissoc tpl k)))
 
     ;; optional keywords
     (doseq [k #{:last-check :status}]
-      (stu/is-valid ::cred-infra-service-swarm/schema (dissoc tpl k)))))
+      (stu/is-valid ::cred-infra-service-coe/schema (dissoc tpl k)))))

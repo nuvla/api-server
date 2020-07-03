@@ -10,6 +10,8 @@
   - Customer resource
   - Pricing resource
   - Stripe wrapper library
+  - Provisioning of Docker Swarm and Kubernetes on AWS, Azure, Google,
+    and Exoscale.
 
 ### Changed
 

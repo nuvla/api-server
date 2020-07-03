@@ -28,18 +28,16 @@
             ::amazonec2-secret-key]})
 
 
-(def credential-template-create-keys-spec
-  {:req-un [::amazonec2-access-key
-            ::amazonec2-secret-key]})
+(def credential-template-create-keys-spec credential-template-keys-spec)
 
 
-;; Defines the contents of the api-key CredentialTemplate resource itself.
+;; Defines the contents of the amazonec2 CredentialTemplate resource itself.
 (s/def ::schema
   (su/only-keys-maps ct/resource-keys-spec
                      credential-template-keys-spec))
 
 
-;; Defines the contents of the api-key template used in a create resource.
+;; Defines the contents of the amazonec2 cred template used in a create resource.
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ct/template-keys-spec
                                   credential-template-create-keys-spec))

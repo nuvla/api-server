@@ -10,7 +10,6 @@
 
 (s/def ::schema
   (su/only-keys-maps service/credential-template-keys-spec
-                     cred-infra-service/credential-service-keys-spec
                      cred/credential-keys-spec))
 
 

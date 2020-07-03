@@ -1,10 +1,12 @@
-(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm
+(ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-coe
+  "
+Spec for credentials of Container Orchestration Engine (COE).
+"
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
-    [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 

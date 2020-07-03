@@ -20,9 +20,11 @@
                    :acl                  valid-acl
                    :subtype              service/credential-subtype
                    :method               service/method
-                   :parent               "infrastructure-service/service-1"
+
                    :amazonec2-access-key "foo"
-                   :amazonec2-secret-key "bar"}]
+                   :amazonec2-secret-key "bar"
+
+                   :parent               "infrastructure-service/service-1"}]
 
     (stu/is-valid ::service-spec/schema tpl)
 
