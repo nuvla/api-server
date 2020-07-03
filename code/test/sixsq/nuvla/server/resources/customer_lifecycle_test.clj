@@ -37,11 +37,11 @@
                                  :city           "Meyrin"
                                  :country        "CH"
                                  :postal-code    "1217"}
-                  :subscription {:plan-id       "plan_HGQ9iUgnz2ho8e"
-                                 :plan-item-ids ["plan_HGQIIWmhYmi45G"
-                                                 "plan_HIrgmGboUlLqG9"
-                                                 "plan_HGQAXewpgs9NeW"
-                                                 "plan_HGQqB0p8h86Ija"]}})
+                  :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
+                                 :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
+                                                 "price_1GzOC6HG9PNMTNBOEb5819lm"
+                                                 "price_1GzOdmHG9PNMTNBOCvJLV4pT"
+                                                 "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}})
 
 
 (deftest check-metadata
@@ -52,130 +52,130 @@
   (if-not (env/env :stripe-api-key)
     (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
     (let [session-anon  (-> (session (ltu/ring-app))
-                           (content-type "application/json"))
-         session-admin (header session-anon authn-info-header
-                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-         session-user  (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))]
+                            (content-type "application/json"))
+          session-admin (header session-anon authn-info-header
+                                "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))]
 
-     ;; admin create pricing catalogue
-     (-> session-admin
-         (request (str p/service-context pricing/resource-type)
-                  :request-method :post
-                  :body (json/write-str {}))
-         (ltu/body->edn)
-         (ltu/is-status 201))
+      ;; admin create pricing catalogue
+      (-> session-admin
+          (request (str p/service-context pricing/resource-type)
+                   :request-method :post
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 201))
 
-     ;; create: NOK for anon
-     (-> session-anon
-         (request base-uri
-                  :request-method :post
-                  :body (json/write-str valid-entry))
-         (ltu/body->edn)
-         (ltu/is-status 403))
+      ;; create: NOK for anon
+      (-> session-anon
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-     ;; create: NOK for admin
-     (-> session-admin
-         (request base-uri
-                  :request-method :post
-                  :body (json/write-str valid-entry))
-         (ltu/body->edn)
-         (ltu/is-status 400)
-         (ltu/message-matches #"Admin can't create customer!"))
+      ;; create: NOK for admin
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Admin can't create customer!"))
 
-     ;; creation should list all required-items
-     (-> session-user
-         (request base-uri
-                  :request-method :post
-                  :body (-> valid-entry
-                            (update-in [:subscription :plan-item-ids] pop)
-                            json/write-str))
-         (ltu/body->edn)
-         (ltu/is-status 400)
-         (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
+      ;; creation should list all required-items
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (-> valid-entry
+                             (update-in [:subscription :plan-item-ids] pop)
+                             json/write-str))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
 
-     ;; creation should list all required-items
-     (-> session-user
-         (request base-uri
-                  :request-method :post
-                  :body (-> valid-entry
-                            (update-in [:subscription :plan-item-ids] conj "plan_itemExtra")
-                            json/write-str))
-         (ltu/body->edn)
-         (ltu/is-status 400)
-         (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
+      ;; creation should list all required-items
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (-> valid-entry
+                             (update-in [:subscription :plan-item-ids] conj "price_itemExtra")
+                             json/write-str))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Plan-item-ids not valid for plan.*"))
 
-     ;; undefined plan
-     (-> session-user
-         (request base-uri
-                  :request-method :post
-                  :body (-> valid-entry
-                            (assoc-in [:subscription :plan-id] "plan_notExist")
-                            json/write-str))
-         (ltu/body->edn)
-         (ltu/is-status 400)
-         (ltu/message-matches #"Plan-id .* not found!"))
+      ;; undefined plan
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (-> valid-entry
+                             (assoc-in [:subscription :plan-id] "price_notExist")
+                             json/write-str))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Plan-id .* not found!"))
 
-     ;; add with unknown coupon code fail
-     (-> session-user
-         (request base-uri
-                  :request-method :post
-                  :body (-> valid-entry
-                            (assoc :coupon "doesn't-exist")
-                            json/write-str))
-         (ltu/body->edn)
-         (ltu/is-status 400)
-         (ltu/message-matches #"No such coupon.*"))
+      ;; add with unknown coupon code fail
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (-> valid-entry
+                             (assoc :coupon "doesn't-exist")
+                             json/write-str))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"No such coupon.*"))
 
-     (let [customer-1 (-> session-user
-                          (request base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-entry))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location-url))]
+      (let [customer-1 (-> session-user
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-entry))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location-url))]
 
-       (let [customer-response   (-> session-user
-                                     (request customer-1)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :customer-info)
-                                     (ltu/is-operation-present :update-customer)
-                                     (ltu/is-operation-present :get-subscription)
-                                     (ltu/is-operation-present :create-subscription)
-                                     (ltu/is-operation-present :create-setup-intent)
-                                     (ltu/is-operation-present :list-payment-methods)
-                                     (ltu/is-operation-present :set-default-payment-method)
-                                     (ltu/is-operation-present :detach-payment-method)
-                                     (ltu/is-operation-present :upcoming-invoice)
-                                     (ltu/is-operation-present :list-invoices)
-                                     (ltu/is-operation-present :add-coupon)
-                                     (ltu/is-operation-present :remove-coupon))
-             create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)
-             add-coupon          (ltu/get-op-url customer-response :add-coupon)]
+        (let [customer-response   (-> session-user
+                                      (request customer-1)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present :customer-info)
+                                      (ltu/is-operation-present :update-customer)
+                                      (ltu/is-operation-present :get-subscription)
+                                      (ltu/is-operation-present :create-subscription)
+                                      (ltu/is-operation-present :create-setup-intent)
+                                      (ltu/is-operation-present :list-payment-methods)
+                                      (ltu/is-operation-present :set-default-payment-method)
+                                      (ltu/is-operation-present :detach-payment-method)
+                                      (ltu/is-operation-present :upcoming-invoice)
+                                      (ltu/is-operation-present :list-invoices)
+                                      (ltu/is-operation-present :add-coupon)
+                                      (ltu/is-operation-present :remove-coupon))
+              create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)
+              add-coupon          (ltu/get-op-url customer-response :add-coupon)]
 
-         (-> session-user
-             (request create-setup-intent)
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-key-value some? :client-secret true))
+          (-> session-user
+              (request create-setup-intent)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value some? :client-secret true))
 
-         (-> session-user
-             (request add-coupon
-                      :request-method :post
-                      :body (json/write-str {:coupon "doesn't-exist"}))
-             (ltu/body->edn)
-             (ltu/is-status 400)))
+          (-> session-user
+              (request add-coupon
+                       :request-method :post
+                       :body (json/write-str {:coupon "doesn't-exist"}))
+              (ltu/body->edn)
+              (ltu/is-status 400)))
 
-       (doseq [{:keys [customer-id]} (-> session-user
-                                         (request base-uri
-                                                  :request-method :put)
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (ltu/is-count 1)
-                                         (ltu/entries))]
-         (-> customer-id
-             stripe/retrieve-customer
-             stripe/delete-customer))))))
+        (doseq [{:keys [customer-id]} (-> session-user
+                                          (request base-uri
+                                                   :request-method :put)
+                                          (ltu/body->edn)
+                                          (ltu/is-status 200)
+                                          (ltu/is-count 1)
+                                          (ltu/entries))]
+          (-> customer-id
+              stripe/retrieve-customer
+              stripe/delete-customer))))))
 
 
 (deftest bad-methods

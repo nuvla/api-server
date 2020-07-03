@@ -24,9 +24,9 @@
 
 
 (deftest check-subscription
-  (let [subscription {:plan-id       "plan_something"
-                      :plan-item-ids ["plan_1e332A"
-                                      "plan_1e332B"]}]
+  (let [subscription {:plan-id       "price_something"
+                      :plan-item-ids ["price_1e332A"
+                                      "price_1e332B"]}]
 
     (stu/is-valid ::t/subscription subscription)
 
@@ -48,9 +48,9 @@
                       :city           "Meyrin"
                       :country        "CH"
                       :postal-code    "1217"}
-        subscription {:plan-id       "plan_something"
-                      :plan-item-ids ["plan_1e332A"
-                                      "plan_1e332B"]}
+        subscription {:plan-id       "price_something"
+                      :plan-item-ids ["price_1e332A"
+                                      "price_1e332B"]}
         customer     {:fullname       "toto"
                       :address        address
                       :subscription   subscription

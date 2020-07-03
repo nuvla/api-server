@@ -312,22 +312,6 @@ Customer mapping to external banking system."
         (or (ex-data e) (throw e))))))
 
 
-(defmethod crud/do-action [resource-type utils/set-default-payment-method-action]
-  [{{:keys [payment-method]} :body :as request}]
-  (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id customer-id] :as resource} (-> request
-                                                  (request->resource-id)
-                                                  (crud/retrieve-by-id-as-admin)
-                                                  (a/throw-cannot-manage request))]
-    (try
-      (-> customer-id
-          stripe/retrieve-customer
-          (stripe/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
-      (r/map-response (format "%s successfully set as default" payment-method) 200 id)
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
-
-
 (defmethod crud/do-action [resource-type utils/add-coupon-action]
   [{{:keys [coupon]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
