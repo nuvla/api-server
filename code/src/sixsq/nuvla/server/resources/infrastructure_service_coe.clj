@@ -69,7 +69,7 @@ manage it.
   (try
     (when-not (contains? service :management-credential)
       (throw (r/ex-response (format ":management-credential required to create COE %" (:subtype service))
-                            500 (:id service))))
+                            412 (:id service))))
     (let [id       (:id service)
           coe-type (:subtype service)
           user-id  (auth/current-user-id request)
