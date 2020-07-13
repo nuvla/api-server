@@ -119,13 +119,13 @@
 (defn create-job
   [{:keys [id] :as resource} request action]
   (a/throw-cannot-manage resource request)
-  (let [user-id (auth/current-user-id request)
+  (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job id (str action "_deployment")
                                                      {:owners   ["group/nuvla-admin"]
-                                                      :edit-acl [user-id]}
+                                                      :edit-acl [active-claim]}
                                                      :priority 50)
-        job-msg (str action "ing " id " with async " job-id)]
+        job-msg      (str action "ing " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment" action) 500 id)))

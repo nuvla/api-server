@@ -25,7 +25,8 @@
 
 (def cookie-id-roles (serialize-cookie-value
                        (cookies/create-cookie {:user-id "user/uname2"
-                                               :claims  (str "group/nuvla-user group/alpha-role user/uname2 " session-a)
+                                               :claims  (str "group/nuvla-user user/uname2 " session-a)
+                                               :groups  "group/alpha-role"
                                                :session session-a})))
 
 
@@ -43,15 +44,25 @@
     (= expected (t/extract-header-authn-info {:headers {t/authn-info-header header}}))
     nil nil
     nil ""
-    {:user-id "user/uname"
-     :claims  #{"group/nuvla-anon" "user/uname"}} "user/uname"
-    {:user-id "user/uname"
-     :claims  #{"group/nuvla-anon"
-                "user/uname"}} "  user/uname"
-    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "user/uname group/r1"
-    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "  user/uname group/r1"
-    {:claims #{"group/nuvla-anon" "user/uname" "group/r1"} :user-id "user/uname"} "user/uname group/r1  "
-    {:claims #{"group/nuvla-anon" "user/uname" "group/r1" "group/r2"} :user-id "user/uname"} "user/uname group/r1 group/r2"))
+    {:user-id      "user/uname"
+     :active-claim "user/uname"
+     :claims       #{"group/nuvla-anon" "user/uname"}} "user/uname"
+    {:user-id      "user/uname"
+     :active-claim "user/uname"
+     :claims       #{"group/nuvla-anon"
+                     "user/uname"}} "  user/uname"
+    {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
+     :user-id      "user/uname"
+     :active-claim "user/uname"} "user/uname group/r1"
+    {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
+     :user-id      "user/uname"
+     :active-claim "user/uname"} "  user/uname group/r1"
+    {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
+     :user-id      "user/uname"
+     :active-claim "user/uname"} "user/uname group/r1  "
+    {:claims       #{"group/nuvla-anon" "user/uname" "group/r1" "group/r2"}
+     :user-id      "user/uname"
+     :active-claim "user/uname"} "user/uname group/r1 group/r2"))
 
 
 (deftest check-cookie-info->authn-info
@@ -59,48 +70,87 @@
     (= expected (t/cookie-info->authn-info cookie-info))
     nil nil
     nil {}
-    {:claims #{} :user-id "user"} {:user-id "user"}
-    {:claims #{}, :session "session", :user-id "user"} {:user-id "user", :session "session"}
-    {:claims #{"role1"}, :user-id "user"} {:user-id "user", :claims "role1"}
-    {:claims #{"role1", "role2"}, :user-id "user"} {:user-id "user", :claims "role1 role2"}
-    {:claims #{"role1"}, :session "session", :user-id "user"} {:user-id "user", :claims "role1",
-                                                                          :session "session"}
-    {:claims #{"role1", "role2"}, :session "session", :user-id "user"} {:user-id "user",
-                                                                                   :claims  "role1 role2",
-                                                                                   :session "session"}
-    {:claims #{"role1", "role2"}, :session "session", :user-id "role2"} {:user-id      "user",
-                                                                                    :claims       "role1 role2",
-                                                                                    :session      "session"
-                                                                                    :active-claim "role2"}))
+    {:claims       #{}
+     :groups       #{}
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user"}
+    {:claims       #{}
+     :groups       #{}
+     :session      "session"
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user", :session "session"}
+    {:claims       #{"role1"}
+     :groups       #{}
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user", :claims "role1"}
+    {:claims       #{"role1", "role2"}
+     :groups       #{}
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user", :claims "role1 role2"}
+    {:claims       #{"role1"}
+     :groups       #{}
+     :session      "session"
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user", :claims "role1",
+                            :session "session"}
+    {:claims       #{"role1", "role2"}
+     :groups       #{}
+     :session      "session"
+     :user-id      "user"
+     :active-claim "user"} {:user-id "user"
+                            :claims  "role1 role2"
+                            :session "session"}
+    {:active-claim "role2"
+     :claims       #{"group/nuvla-anon"
+                     "group/nuvla-user"
+                     "user"}
+     :groups       #{"group/a"
+                     "group/b"}
+     :session      "session"
+     :user-id      "user"} {:user-id      "user",
+                            :claims       "group/nuvla-anon group/nuvla-user user",
+                            :groups       "group/a group/b",
+                            :session      "session"
+                            :active-claim "role2"}))
 
 
 
 (deftest check-handler
   (let [handler  (t/wrap-authn-info identity)
         anon-map {:claims #{"group/nuvla-anon"}}]
-    (are [expected request] (= expected (auth/current-authentication (handler request)))
-                            anon-map {}
-                            anon-map {:headers {"header-1" "value"}}
-                            anon-map {:headers {t/authn-info-header nil}}
-                            anon-map {:headers {t/authn-info-header ""}}
+    (are [expected request]
+      (= expected (auth/current-authentication (handler request)))
+      anon-map {}
+      anon-map {:headers {"header-1" "value"}}
+      anon-map {:headers {t/authn-info-header nil}}
+      anon-map {:headers {t/authn-info-header ""}}
 
-                            {:claims  #{"group/nuvla-anon", "user/uname"}
-                             :user-id "user/uname"} {:headers {t/authn-info-header "user/uname"}}
+      {:active-claim "user/uname"
+       :claims       #{"group/nuvla-anon", "user/uname"}
+       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname"}}
 
-                            {:claims  #{"group/r1", "group/nuvla-anon", "user/uname"}
-                             :user-id "user/uname"} {:headers {t/authn-info-header "user/uname group/r1"}}
+      {:active-claim "user/uname"
+       :claims       #{"group/r1", "group/nuvla-anon", "user/uname"}
+       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname group/r1"}}
 
-                            {:claims  #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
-                             :user-id "user/uname"} {:headers {t/authn-info-header "user/uname group/r1 group/r2"}}
+      {:active-claim "user/uname"
+       :claims       #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
+       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname group/r1 group/r2"}}
 
-                            {:claims  #{"group/nuvla-anon", "user/uname2", "group/nuvla-user"}
-                             :user-id "user/uname2"} {:cookies {t/authn-cookie cookie-id}}
+      {:active-claim "user/uname2"
+       :claims       #{"group/nuvla-anon", "user/uname2", "group/nuvla-user"}
+       :groups       #{}
+       :user-id      "user/uname2"} {:cookies {t/authn-cookie cookie-id}}
 
-                            {:claims  #{"group/nuvla-user", "group/alpha-role",
-                                        session-a, "group/nuvla-anon", "user/uname2"}
-                             :user-id "user/uname2"} {:cookies {t/authn-cookie cookie-id-roles}}
+      {:active-claim "user/uname2"
+       :claims       #{"group/nuvla-user", session-a,
+                       "group/nuvla-anon", "user/uname2"}
+       :groups       #{"group/alpha-role"}
+       :user-id      "user/uname2"} {:cookies {t/authn-cookie cookie-id-roles}}
 
-                            {:claims  #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
-                             :user-id "user/uname"} {:headers {t/authn-info-header "user/uname group/r1 group/r2"}
-                                                     :cookies {t/authn-cookie cookie-id-roles}})))
+      {:active-claim "user/uname"
+       :claims       #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
+       :user-id      "user/uname"}
+      {:headers {t/authn-info-header "user/uname group/r1 group/r2"}
+       :cookies {t/authn-cookie cookie-id-roles}})))
 

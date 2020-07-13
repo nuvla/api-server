@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -27,8 +26,9 @@
 
 (defn user-id-identity
   [user-id]
-  {:user-id user-id,
-   :claims  #{user-id "group/nuvla-user"}})
+  {:user-id      user-id
+   :active-claim user-id
+   :claims       #{user-id "group/nuvla-user"}})
 
 
 (defn create-hashed-password

@@ -187,11 +187,11 @@
 
 
 (defn create-customer
-  [{:keys [fullname subscription address coupon] pm-id :payment-method} user-id]
+  [{:keys [fullname subscription address coupon] pm-id :payment-method} active-claim]
   (let [{:keys [street-address city postal-code country]} address
-        email       (when (str/starts-with? user-id "user/")
+        email       (when (str/starts-with? active-claim "user/")
                       (try
-                        (some-> user-id
+                        (some-> active-claim
                                 crud/retrieve-by-id-as-admin
                                 :email
                                 crud/retrieve-by-id-as-admin

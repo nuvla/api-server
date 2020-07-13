@@ -14,8 +14,8 @@
 
 (defn- display-authn-info
   [{:keys [nuvla/authn] :as request}]
-  (let [{:keys [user-id claims]} authn]
-    (str "[" user-id " - " (str/join "," (sort claims)) "]")))
+  (let [{:keys [active-claim claims]} authn]
+    (str "[" active-claim " - " (str/join "," (sort claims)) "]")))
 
 
 (defn- display-elapsed-time-millis

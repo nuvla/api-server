@@ -37,15 +37,15 @@ nuvlabox.
 (defn create-job
   [{:keys [id parent]} request action]
   (try
-    (let [user-id (auth/current-user-id request)
+    (let [active-claim (auth/current-active-claim request)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id action
                                                        {:owners   ["group/nuvla-admin"]
-                                                        :edit-acl [user-id]}
+                                                        :edit-acl [active-claim]}
                                                        :priority 50
                                                        :affected-resources [{:href id}
                                                                             {:href parent}])
-          job-msg (str "starting " id " with async " job-id)]
+          job-msg      (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response
                  (format "unable to create async job to %s" action) 500 id)))

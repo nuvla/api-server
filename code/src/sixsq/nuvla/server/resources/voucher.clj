@@ -282,15 +282,15 @@ voucher via the 'expire' operation.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id      (str resource-type "/" uuid)
-          user-id (auth/current-user-id request)
+          active-claim (auth/current-active-claim request)
           voucher (db/retrieve id request)
-          new-acl (update (:acl voucher) :manage conj user-id)]
+          new-acl (update (:acl voucher) :manage conj active-claim)]
       (try
         (-> id
             (db/retrieve request)
             (a/throw-cannot-view-data request)
             activate
-            (assoc :user user-id :acl new-acl)
+            (assoc :user active-claim :acl new-acl)
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))

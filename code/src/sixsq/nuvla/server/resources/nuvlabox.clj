@@ -125,7 +125,7 @@ particular NuvlaBox release.
     (customer/throw-user-hasnt-active-subscription request)
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
-                                     (auth/current-user-id request))
+                                     (auth/current-active-claim request))
           new-nuvlabox (assoc body :version version
                                    :state state-new
                                    :refresh-interval refresh-interval

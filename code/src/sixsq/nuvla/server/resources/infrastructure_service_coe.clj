@@ -72,11 +72,11 @@ manage it.
                             412 (:id service))))
     (let [id       (:id service)
           coe-type (:subtype service)
-          user-id  (auth/current-user-id request)
+          active-claim  (auth/current-active-claim request)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "start_infrastructure_service_coe"
                                                        {:owners   ["group/nuvla-admin"]
-                                                        :view-acl [user-id]}
+                                                        :view-acl [active-claim]}
                                                        :priority 50)
           job-msg (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
@@ -113,7 +113,7 @@ manage it.
   "Starts the given job and updates the state of the resource."
   [service-id request job-name new-state]
   (try
-    (let [user-id (auth/current-user-id request)
+    (let [user-id (auth/current-active-claim request)
           {:keys [resource-id status]} (queue-mgt-job service-id user-id job-name)]
       (if (= 201 status)
         (let [job-msg (format "created job %s with id %s" job-name resource-id)]

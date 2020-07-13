@@ -121,7 +121,7 @@ a container orchestration engine.
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (acl-resource/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
-                                      (auth/current-user-id request))
+                                      (auth/current-active-claim request))
         deployment      (-> request
                             (dep-utils/create-deployment)
                             (assoc :resource-type resource-type
