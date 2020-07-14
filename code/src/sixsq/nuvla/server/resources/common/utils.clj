@@ -144,13 +144,15 @@
 (defn set-created-by
   "Sets the created by attribute."
   [data request]
-  (assoc data :created-by (auth/current-user-id request)))
+  (assoc data :created-by (or (auth/current-user-id request)
+                              "group/nuvla-anon")))
 
 
 (defn set-updated-by
   "Sets the updated by attribute."
   [data request]
-  (assoc data :updated-by (auth/current-user-id request)))
+  (assoc data :updated-by (or (auth/current-user-id request)
+                              "group/nuvla-anon")))
 
 
 (defn ttl->timestamp

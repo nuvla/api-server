@@ -153,7 +153,8 @@
              :json-schema/description "user id who created the resource"
              :json-schema/section "meta"
 
-             :json-schema/fulltext true
+             :json-schema/server-managed true
+             :json-schema/editable false
              :json-schema/order 11)))
 
 
@@ -163,7 +164,8 @@
              :json-schema/description "user id who updated the resource"
              :json-schema/section "meta"
 
-             :json-schema/fulltext true
+             :json-schema/server-managed true
+             :json-schema/editable false
              :json-schema/order 12)))
 
 
