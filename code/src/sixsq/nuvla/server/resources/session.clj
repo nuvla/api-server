@@ -245,6 +245,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (assoc :id id)
         (assoc :resource-type resource-type)
         u/update-timestamps
+        (u/set-created-by request)
         (crud/add-acl request)
         crud/validate)
     {}))

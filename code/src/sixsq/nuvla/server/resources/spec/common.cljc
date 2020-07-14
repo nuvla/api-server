@@ -147,6 +147,26 @@
                  (assoc :json-schema/order 0)))
 
 
+(s/def ::created-by
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "created by"
+             :json-schema/description "user id who created the resource"
+             :json-schema/section "meta"
+
+             :json-schema/fulltext true
+             :json-schema/order 11)))
+
+
+(s/def ::updated-by
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "updated by"
+             :json-schema/description "user id who updated the resource"
+             :json-schema/section "meta"
+
+             :json-schema/fulltext true
+             :json-schema/order 12)))
+
+
 (def ^:const common-attrs
   "clojure.spec/keys specification (as a map) for common CIMI attributes
    for regular resources"
@@ -160,7 +180,9 @@
             ::tags
             ::parent
             ::resource-metadata
-            ::operations]})
+            ::operations
+            ::created-by
+            ::updated-by]})
 
 
 (def ^:const create-attrs
@@ -177,7 +199,9 @@
             ::parent
             ::resource-metadata
             ::operations
-            ::acl]})
+            ::acl
+            ::created-by
+            ::updated-by]})
 
 
 (def ^:const template-attrs
@@ -194,4 +218,6 @@
             ::parent
             ::resource-metadata
             ::operations
-            ::acl]})
+            ::acl
+            ::created-by
+            ::updated-by]})

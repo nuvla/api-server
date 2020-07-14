@@ -37,7 +37,9 @@
             ::common/description
             ::common/tags
             ::common/resource-metadata
-            ::common/operations]})
+            ::common/operations
+            ::common/created-by
+            ::common/updated-by]})
 
 
 (s/def ::schema

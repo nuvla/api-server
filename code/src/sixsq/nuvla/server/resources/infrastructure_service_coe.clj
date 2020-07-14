@@ -85,6 +85,8 @@ manage it.
           (db/retrieve request)
           (a/throw-cannot-edit request)
           (assoc :state "STARTING")
+          (u/update-timestamps)
+          (u/set-updated-by request)
           (db/edit request))
       (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
       (r/map-response job-msg 202 id job-id))

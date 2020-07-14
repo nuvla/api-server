@@ -241,6 +241,8 @@ a container orchestration engine.
   [resource request edit-fn]
   (-> resource
       (edit-fn)
+      (u/update-timestamps)
+      (u/set-updated-by request)
       (db/edit request)))
 
 

@@ -148,5 +148,6 @@
 
             (is (= new-name (:name updated-session)))
             (is (not= (:updated original-session) (:updated updated-session)))
-            (is (= (dissoc correct-session :updated) (dissoc updated-session :updated)))))))))
+            (is (= (dissoc correct-session :updated)
+                   (dissoc updated-session :updated :updated-by)))))))))
 

@@ -108,7 +108,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
           merged                   (merge current-without-selected editable-body)]
       (-> merged
-          u/update-timestamps
+          (u/update-timestamps)
+          (u/set-updated-by request)
           pre-edit
           crud/validate
           (db/edit request)))

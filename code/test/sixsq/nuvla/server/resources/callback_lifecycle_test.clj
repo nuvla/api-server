@@ -100,7 +100,8 @@
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)
-               (ltu/strip-unwanted-attrs (assoc create-test-callback :state "WAITING"))))
+               (ltu/strip-unwanted-attrs (assoc create-test-callback :state "WAITING"
+                                                                     :created-by "user/super"))))
 
         ;; mark callback as failed
         (utils/callback-failed! id-test)

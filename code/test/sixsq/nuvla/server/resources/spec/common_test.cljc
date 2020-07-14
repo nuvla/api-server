@@ -73,6 +73,8 @@
                   :description "description"
                   :tags ["a"]
                   :operations [{:rel "add" :href "/add"}]
+                  :created-by    "user/alpha"
+                  :updated-by    "user/beta"
                   :acl acl)]
 
     (stu/is-valid ::common-attrs minimal)
@@ -84,5 +86,5 @@
     (doseq [k #{:id :resource-type :created :updated}]
       (stu/is-invalid ::common-attrs (dissoc minimal k)))
 
-    (doseq [k #{:name :description :tags}]
+    (doseq [k #{:name :description :tags :created-by :updated-by}]
       (stu/is-valid ::common-attrs (dissoc maximal k)))))

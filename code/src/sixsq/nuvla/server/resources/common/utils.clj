@@ -6,7 +6,8 @@
     [clojure.walk :as walk]
     [expound.alpha :as expound]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.time :as time])
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.auth.utils :as auth])
   (:import
     (java.security MessageDigest)
     (java.util UUID)))
@@ -138,6 +139,18 @@
   (let [updated (time/now-str)
         created (or (:created data) updated)]
     (assoc data :created created :updated updated)))
+
+
+(defn set-created-by
+  "Sets the created by attribute."
+  [data request]
+  (assoc data :created-by (auth/current-user-id request)))
+
+
+(defn set-updated-by
+  "Sets the updated by attribute."
+  [data request]
+  (assoc data :updated-by (auth/current-user-id request)))
 
 
 (defn ttl->timestamp

@@ -263,7 +263,7 @@
                            (ltu/is-status 200)
                            (ltu/body))]
 
-          (is (= (dissoc expected :updated) (dissoc reread :updated)))
+          (is (= (dissoc expected :updated) (dissoc reread :updated :updated-by)))
           (is (not= (:updated expected) (:updated reread))))
 
         ;; update the credential by changing the name attribute
@@ -289,7 +289,7 @@
                            (ltu/is-status 200)
                            (ltu/body))]
 
-          (is (= (dissoc expected :updated) (dissoc reread :updated)))
+          (is (= (dissoc expected :updated) (dissoc reread :updated :updated-by)))
           (is (not= (:updated expected) (:updated reread)))))
 
       ;; delete the credential
