@@ -5,9 +5,9 @@
     [clojure.string :as str]
     [clojure.walk :as walk]
     [expound.alpha :as expound]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.time :as time]
-    [sixsq.nuvla.auth.utils :as auth])
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest)
     (java.util UUID)))

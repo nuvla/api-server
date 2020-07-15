@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.auth.utils
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]))
+    [clojure.string :as str]))
 
 
 (def ^{:doc "Internal administrator identity for database queries."}

@@ -55,7 +55,8 @@ VPN service.
       (vpn-utils/check-vpn-endpoint parent vpn-endpoint)
 
       ;; call vpn api
-      (let [response-vpn-api (vpn-utils/try-generate-credential vpn-endpoint active-claim parent vpn-csr)
+      (let [response-vpn-api (vpn-utils/try-generate-credential
+                               vpn-endpoint active-claim parent vpn-csr)
             intermediate-ca  (:intermediate-ca response-vpn-api)]
         [response-vpn-api
          (cond->
