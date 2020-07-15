@@ -140,8 +140,7 @@
                                           :username username
                                           :password plaintext-password
                                           :activated? true
-                                          :email "jane@example.org")
-          ]
+                                          :email "jane@example.org")]
 
       ; anonymous create must succeed
       (let [resp       (-> session-anon
@@ -165,10 +164,10 @@
                  "group/nuvla-anon"
                  uri
                  jane-user-id}
-               (-> authn-info
-                   :claims
-                   (str/split #"\s")
-                   set)))
+               (some-> authn-info
+                       :claims
+                       (str/split #"\s")
+                       set)))
         (is (= uri (:session authn-info)))
         (is (not (nil? (:exp authn-info))))
 
@@ -376,7 +375,7 @@
               claim-op-url      (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url :claim))]
+                                    (ltu/get-op-url :switch-group))]
 
           (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
               (ltu/body->edn)
@@ -384,7 +383,7 @@
               (ltu/is-id session-2-id)
               (ltu/is-operation-present :delete)
               (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :claim))
+              (ltu/is-operation-present :switch-group))
 
           ;; claiming group-beta should fail
           (-> (apply request session-json
@@ -392,7 +391,7 @@
                               :request-method :post] authn-session-2))
               (ltu/body->edn)
               (ltu/is-status 403)
-              (ltu/message-matches #"Switch account cannot be done to requested claim:.*"))
+              (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
 
           ;; claim with old session fail because wasn't in group/alpha
           (-> (apply request session-json
@@ -415,11 +414,16 @@
                                         handler
                                         seq
                                         flatten)]
-            (is (= group-alpha
+            (is (= {:active-claim group-alpha
+                    :claims       #{"group/nuvla-anon"
+                                    "group/nuvla-user"
+                                    session-2-id
+                                    group-alpha}
+                    :groups       #{"group/alpha"}
+                    :user-id      user-id}
                    (-> {:cookies cookie-claim}
                        handler
-                       auth/current-authentication
-                       :user-id)))
+                       auth/current-authentication)))
 
             (-> (apply request session-json (concat [session-2-abs-uri] authn-session-claim))
                 (ltu/body->edn)
@@ -427,22 +431,27 @@
                 (ltu/is-id session-2-id)
                 (ltu/is-operation-present :delete)
                 (ltu/is-operation-absent :edit)
-                (ltu/is-operation-present :claim))
+                (ltu/is-operation-present :switch-group))
 
             ;; try create NuvlaBox and check who is the owner
             (binding [config-nuvla/*stripe-api-key* nil]
               (let [nuvlabox-url (-> (apply request session-json
-                                           (concat [(str p/service-context nuvlabox/resource-type)
-                                                    :body (json/write-str {})
-                                                    :request-method :post] authn-session-claim))
-                                    (ltu/body->edn)
-                                    (ltu/is-status 201)
-                                    (ltu/location-url))]
+                                            (concat [(str p/service-context nuvlabox/resource-type)
+                                                     :body (json/write-str {})
+                                                     :request-method :post] authn-session-claim))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201)
+                                     (ltu/location-url))]
 
-               (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                   (ltu/body->edn)
-                   (ltu/is-status 200)
-                   (ltu/is-key-value :owner group-alpha))))
+                (-> session-admin
+                    (request nuvlabox-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200))
+
+                (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :owner group-alpha))))
 
             (let [cookie-claim-back (-> (apply request session-json
                                                (concat [claim-op-url :body (json/write-str

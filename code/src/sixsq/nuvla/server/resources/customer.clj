@@ -57,9 +57,9 @@ Customer mapping to external banking system."
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-(defn user-id->resource-id
-  [user-id]
-  (->> user-id
+(defn active-claim->resource-id
+  [active-claim]
+  (->> active-claim
        u/parse-id
        (str/join "-")
        (str resource-type "/")))
@@ -72,7 +72,7 @@ Customer mapping to external banking system."
 ;; resource identifier a UUID generated from the user-id
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
-  (assoc resource :id (-> resource :parent user-id->resource-id)))
+  (assoc resource :id (-> resource :parent active-claim->resource-id)))
 
 
 ;;
@@ -88,14 +88,14 @@ Customer mapping to external banking system."
   (utils/throw-admin-can-not-be-customer request)
   (config-nuvla/throw-stripe-not-configured)
   (let [auth-info (auth/current-authentication request)
-        user-id   (or
+        active-claim   (or
                     (when (acl-resource/is-admin? auth-info) (:parent body))
-                    (auth/current-user-id request))]
-    (utils/throw-customer-exist (user-id->resource-id user-id))
+                    (auth/current-active-claim request))]
+    (utils/throw-customer-exist (active-claim->resource-id active-claim))
     (validate-customer-body (dissoc body :parent))
     (-> request
-        (assoc :body {:parent      user-id
-                      :customer-id (utils/create-customer body user-id)})
+        (assoc :body {:parent      active-claim
+                      :customer-id (utils/create-customer body active-claim)})
         add-impl)))
 
 
@@ -117,12 +117,12 @@ Customer mapping to external banking system."
   (query-impl request))
 
 (defn customer-has-active-subscription?
-  [user-id]
+  [active-claim]
   (boolean
     (try
       (some-> resource-type
               (crud/query-as-admin {:cimi-params {:filter (parser/parse-cimi-filter
-                                                            (format "parent='%s'" user-id))}})
+                                                            (format "parent='%s'" active-claim))}})
               second
               first
               :customer-id
@@ -136,9 +136,9 @@ Customer mapping to external banking system."
 
 (defn throw-user-hasnt-active-subscription
   [request]
-  (let [user-id (auth/current-user-id request)]
+  (let [active-claim (auth/current-active-claim request)]
     (when (and config-nuvla/*stripe-api-key*
-               (not (customer-has-active-subscription? user-id)))
+               (not (customer-has-active-subscription? active-claim)))
       (throw (r/ex-response "An active subscription is required!" 402)))))
 
 

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+  - New cimi common attributes to store user-id
+    (created-by, updated-by)
+
+### Changed
+
+  - Session - Switch group implementation replace
+    claim operation
+
 ## [5.0.0] - 2020-07-06
 
 ### Added

@@ -30,6 +30,7 @@
           (crud/new-identifier resource-name)
           (assoc :resource-type resource-uri)
           u/update-timestamps
+          (u/set-created-by request)
           (crud/add-acl request)
           crud/validate)
       {})))
@@ -67,6 +68,7 @@
             merged                   (merge current-without-selected editable-body)]
         (-> merged
             u/update-timestamps
+            (u/set-updated-by request)
             crud/validate
             (db/edit request)))
       (catch Exception e

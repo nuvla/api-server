@@ -69,8 +69,9 @@
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
   [{:keys [id name acl] :as nuvlabox}]
-  (let [identity  {:user-id id
-                   :claims  #{id "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}}
+  (let [identity  {:user-id      id
+                   :active-claim id
+                   :claims       #{id "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}}
 
         cred-acl  (utils/set-acl-nuvlabox-view-only acl)
 
@@ -101,9 +102,9 @@
         {:keys [resource-id public-key private-key]} body]
 
     (if (= 201 status)
-      {:id             resource-id
-       :public-key     public-key
-       :private-key    private-key}
+      {:id          resource-id
+       :public-key  public-key
+       :private-key private-key}
       (let [msg (str "creating credential ssh-key resource failed:" status (:message body))]
         (r/ex-bad-request msg)))))
 
@@ -350,9 +351,9 @@
 (defn get-vpn-cred
   "Searches for an existing vpn credential tied to the given nuvlabox.
    If found, the identifier is returned."
-  [vpn-server-id user-id]
+  [vpn-server-id active-claim]
   (let [filter  (str "subtype='" ctison/credential-subtype "' and parent='" vpn-server-id
-                     "' and vpn-certificate-owner='" user-id "'")
+                     "' and vpn-certificate-owner='" active-claim "'")
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
                                :select ["id"]}}]
     (-> (crud/query-as-admin credential/resource-type options)
@@ -562,9 +563,9 @@
           (create-minio-cred id name acl minio-id minio-access-key minio-secret-key)))
 
       (when (and vpn-server-id vpn-csr)
-        (let [user-id     (auth/current-user-id request)
-              vpn-cred-id (get-vpn-cred vpn-server-id user-id)
-              authn-info  (auth/current-authentication request)]
+        (let [active-claim (auth/current-active-claim request)
+              vpn-cred-id  (get-vpn-cred vpn-server-id active-claim)
+              authn-info   (auth/current-authentication request)]
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
           (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))

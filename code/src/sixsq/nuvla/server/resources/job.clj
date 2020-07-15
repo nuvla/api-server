@@ -81,6 +81,7 @@ request.
                            (assoc :id id)
                            (assoc :state ju/state-queued)
                            u/update-timestamps
+                           (u/set-created-by request)
                            ju/job-cond->addition
                            (crud/add-acl request)
                            (crud/validate))
@@ -116,6 +117,7 @@ request.
           merged                   (merge current-without-selected body)]
       (-> merged
           (u/update-timestamps)
+          (u/set-updated-by request)
           (ju/job-cond->edition)
           (crud/validate)
           (db/edit request)))
@@ -170,6 +172,8 @@ request.
         (db/retrieve request)
         (a/throw-cannot-edit request)
         (ju/stop)
+        (u/update-timestamps)
+        (u/set-updated-by request)
         (db/edit request))
     (catch Exception e
       (or (ex-data e) (throw e)))))

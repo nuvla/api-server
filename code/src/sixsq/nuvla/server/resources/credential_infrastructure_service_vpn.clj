@@ -37,7 +37,7 @@ VPN service.
 
 (defmethod p/tpl->credential tpl-customer/credential-subtype
   [{:keys [subtype method parent vpn-csr]} request]
-  (let [user-id        (auth/current-user-id request)
+  (let [active-claim        (auth/current-active-claim request)
         authn-info     (auth/current-authentication request)
         customer?      (= method tpl-customer/method)
         expected-scope (if customer? "customer" "nuvlabox")
@@ -45,7 +45,7 @@ VPN service.
 
     (vpn-utils/check-service-subtype vpn-service)
     (vpn-utils/check-scope vpn-service expected-scope)
-    (vpn-utils/check-existing-credential parent user-id)
+    (vpn-utils/check-existing-credential parent active-claim)
     (when customer?
       (customer/throw-user-hasnt-active-subscription request))
 
@@ -55,7 +55,8 @@ VPN service.
       (vpn-utils/check-vpn-endpoint parent vpn-endpoint)
 
       ;; call vpn api
-      (let [response-vpn-api (vpn-utils/try-generate-credential vpn-endpoint user-id parent vpn-csr)
+      (let [response-vpn-api (vpn-utils/try-generate-credential
+                               vpn-endpoint active-claim parent vpn-csr)
             intermediate-ca  (:intermediate-ca response-vpn-api)]
         [response-vpn-api
          (cond->
@@ -64,10 +65,10 @@ VPN service.
             :method                method
             :vpn-certificate       (:certificate response-vpn-api)
             :vpn-common-name       (:common-name response-vpn-api)
-            :vpn-certificate-owner user-id
+            :vpn-certificate-owner active-claim
             :acl                   {:owners   ["group/nuvla-admin"]
-                                    :view-acl [user-id, parent]
-                                    :delete   [user-id]}
+                                    :view-acl [active-claim, parent]
+                                    :delete   [active-claim]}
             :parent                parent}
            intermediate-ca (assoc :vpn-intermediate-ca intermediate-ca))]))))
 

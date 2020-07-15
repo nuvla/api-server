@@ -100,8 +100,8 @@ how the object can be accessed.
   [{:keys [acl] :as resource} request]
   (if acl
     resource
-    (let [user-id (auth/current-user-id request)]
-      (assoc resource :acl (create-acl user-id)))))
+    (let [active-claim (auth/current-active-claim request)]
+      (assoc resource :acl (create-acl active-claim)))))
 
 
 (defn standard-data-object-collection-operations
@@ -303,7 +303,11 @@ how the object can be accessed.
   (try
     (a/throw-cannot-edit resource request)
     (let [upload-uri (upload-fn resource request)]
-      (db/edit (assoc resource :state state-uploading) request)
+      (-> resource
+          (assoc :state state-uploading)
+          (u/update-timestamps)
+          (u/set-updated-by request)
+          (db/edit request))
       (r/json-response {:uri upload-uri}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -330,6 +334,8 @@ how the object can be accessed.
       (assoc :state state-ready)
       (s3/add-s3-bytes)
       (s3/add-s3-md5sum)
+      (u/update-timestamps)
+      (u/set-updated-by request)
       (db/edit request)))
 
 (defmethod crud/do-action [resource-type "ready"]

@@ -37,6 +37,9 @@
 (s/def ::roles ::core/nonblank-string)
 
 
+(s/def ::groups ::core/nonblank-string)
+
+
 (s/def ::server ::core/nonblank-string)
 
 
@@ -49,5 +52,11 @@
 (s/def ::session
   (su/only-keys-maps common/common-attrs
                      {:req-un [::method ::template ::expiry]
-                      :opt-un [::identifier ::user ::roles ::server ::client-ip ::hints/redirect-url
-                               ::active-claim]}))
+                      :opt-un [::identifier
+                               ::user
+                               ::roles
+                               ::server
+                               ::client-ip
+                               ::hints/redirect-url
+                               ::active-claim
+                               ::groups]}))

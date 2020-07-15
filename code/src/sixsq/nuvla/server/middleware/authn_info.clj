@@ -37,6 +37,7 @@
           session (first (keep is-session? (rest terms)))]
       (cond-> {:claims (set [user-id "group/nuvla-anon"])}
               user-id (assoc :user-id user-id)
+              user-id (assoc :active-claim user-id)
               claims (update :claims set/union (set claims))
               session (assoc :session session)))))
 
@@ -48,15 +49,14 @@
 
 
 (defn cookie-info->authn-info
-  "Returns a tuple with the user-id and list of claims based on the
-   provided cookie info map."
-  [{:keys [user-id active-claim claims session]}]
+  "Returns authn-nuvla map based on provided cookie info map."
+  [{:keys [user-id active-claim claims groups session]}]
   (when user-id
-    (let [claims (split-claims claims)]
-      (cond-> {}
-              user-id (assoc :user-id (or active-claim user-id))
-              claims (assoc :claims claims)
-              session (assoc :session session)))))
+    (cond-> {:claims (split-claims claims)
+             :groups (split-claims groups)}
+            user-id (assoc :user-id user-id)
+            (or active-claim user-id) (assoc :active-claim (or active-claim user-id))
+            session (assoc :session session))))
 
 
 (defn extract-cookie-authn-info

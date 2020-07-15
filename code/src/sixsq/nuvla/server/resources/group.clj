@@ -84,6 +84,7 @@ that start with 'nuvla-' are reserved for the server.
           (assoc :id id
                  :resource-type resource-type)
           u/update-timestamps
+          (u/set-created-by request)
           (crud/add-acl request)
           crud/validate)
       {})))
