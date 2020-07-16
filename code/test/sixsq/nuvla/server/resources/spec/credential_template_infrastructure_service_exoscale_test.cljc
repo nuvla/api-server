@@ -21,9 +21,11 @@
                    :acl                     valid-acl
                    :subtype                 service/credential-subtype
                    :method                  service/method
-                   :parent                  "infrastructure-service/service-1"
+
                    :exoscale-api-key        "foo"
-                   :exoscale-api-secret-key "bar"}]
+                   :exoscale-api-secret-key "bar"
+
+                   :parent                  "infrastructure-service/service-1"}]
 
     (is (s/valid? ::service-spec/schema tpl))
 

@@ -23,7 +23,6 @@
                    :method        "generic"
                    :subtype       "docker"
                    :endpoint      "https://docker.example.org/api"
-                   :nodes         [{:machine-name "testmachine" :machine-config-base64 "base64=="}]
                    :state         "STARTED"
                    :swarm-enabled true
                    :online        true}]

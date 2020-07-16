@@ -12,12 +12,16 @@ existing `infrastructure-service-template` resource.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -132,6 +136,22 @@ existing `infrastructure-service-template` resource.
 
 
 ;;
+;; multimethod for a COE delete hook
+;;
+
+;; dispatch on service method
+(defmulti delete-hook
+  (fn [service request]
+    (:method service)))
+
+;; do nothing by default
+(defmethod delete-hook :default
+  [service request]
+  (throw (r/ex-response
+          (format "Delete not implemented for %s of method %s" (:id service) (:method service))
+          500)))
+
+;;
 ;; CRUD operations
 ;;
 
@@ -159,7 +179,6 @@ existing `infrastructure-service-template` resource.
         response           (add-impl (assoc request :body service))
         id                 (-> response :body :resource-id)
         service            (assoc service :id id)]
-
     (post-add-hook service request)
     response))
 
@@ -183,9 +202,30 @@ existing `infrastructure-service-template` resource.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
+(def CANT_DELETE_ERR_CODE 412)
+(def CAN_DELETE_STATES #{"CREATED" "STOPPED"})
+
+(defn verify-can-delete
+  [{:keys [id state] :as resource}]
+  (if (CAN_DELETE_STATES state)
+    resource
+    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) CANT_DELETE_ERR_CODE id))))
+
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (let [service (-> (str resource-type "/" (-> request :params :uuid))
+                    (db/retrieve request))]
+    (try
+      (-> service
+          verify-can-delete
+          (a/throw-cannot-delete request)
+          (db/delete request))
+      (catch Exception e
+        (let [response (ex-data e)
+              status (:status response)]
+          (if (= CANT_DELETE_ERR_CODE status)
+            (delete-hook service request)
+            (throw e)))))))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

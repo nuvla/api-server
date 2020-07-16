@@ -12,7 +12,6 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as swarm-tpl]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
@@ -98,8 +97,8 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   [{:keys [acl] :as resource} request]
   (if acl
     resource
-    (let [user-id (auth/current-user-id request)]
-      (assoc resource :acl (create-acl user-id)))))
+    (let [active-claim (auth/current-active-claim request)]
+      (assoc resource :acl (create-acl active-claim)))))
 
 
 ;;
@@ -129,16 +128,16 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (if-let [user-id (auth/current-user-id request)]
+      (if-let [active-claim (auth/current-active-claim request)]
         (let [job-type "credential_check"
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id job-type
                                                            {:owners   ["group/nuvla-admin"]
-                                                            :view-acl [user-id]}
+                                                            :view-acl [active-claim]}
                                                            :priority 50)
               job-msg  (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
-            (throw (r/ex-response (format "unable to create async job to % log" job-type) 500 id)))
+            (throw (r/ex-response (format "unable to create async job to %s" job-type) 500 id)))
           (r/map-response job-msg 202 id job-id))
         (throw (r/ex-response "current authentication has no session identifier" 500 id))))
     (catch Exception e
@@ -208,7 +207,6 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
   (let [authn-info (auth/current-authentication request)
-        user-id    (auth/current-user-id request)
         desc-attrs (u/select-desc-keys body)
         [create-resp {:keys [id] :as body}]
         (-> body
@@ -225,10 +223,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                        add-impl
                        (update-in [:body] merge create-resp))
 
-        id         (:resource-id (:body response))
-
-        acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [user-id]}]
+        id         (:resource-id (:body response))]
 
     (when (= (:method body) swarm-tpl/method)
       (create-job {:params      {:uuid          (u/id->uuid id)

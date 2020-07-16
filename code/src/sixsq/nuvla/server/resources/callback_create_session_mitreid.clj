@@ -44,12 +44,14 @@
                                                                   :roles-ext roles)
                       cookie          (cookies/create-cookie cookie-info)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
-                      claims-roles    (:claims cookie-info)
+                      claims          (:claims cookie-info)
+                      groups          (:groups cookie-info)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
-                                              claims-roles (assoc :roles claims-roles))
+                                              claims (assoc :roles claims)
+                                              groups (assoc :groups groups))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
                   (log/debug "MITREid cookie token claims for" instance ":" (pr-str cookie-info))
                   (if (not= status 200)

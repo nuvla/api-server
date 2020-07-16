@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [clojure.walk :as walk]
     [expound.alpha :as expound]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
   (:import
@@ -138,6 +139,20 @@
   (let [updated (time/now-str)
         created (or (:created data) updated)]
     (assoc data :created created :updated updated)))
+
+
+(defn set-created-by
+  "Sets the created by attribute."
+  [data request]
+  (assoc data :created-by (or (auth/current-user-id request)
+                              "group/nuvla-anon")))
+
+
+(defn set-updated-by
+  "Sets the updated by attribute."
+  [data request]
+  (assoc data :updated-by (or (auth/current-user-id request)
+                              "group/nuvla-anon")))
 
 
 (defn ttl->timestamp

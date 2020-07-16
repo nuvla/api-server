@@ -155,7 +155,8 @@
                                   (ltu/body->edn)
                                   (ltu/body))]
 
-          (is (= (dissoc orig-template :name :updated) (dissoc reread-template :name :updated)))
+          (is (= (dissoc orig-template :name :updated)
+                 (dissoc reread-template :name :updated :updated-by)))
           (is (= "UPDATED_NAME" (:name reread-template)))
           (is (not= (:name orig-template) (:name reread-template)))
           (is (not= (:updated orig-template) (:updated reread-template)))))

@@ -1,7 +1,7 @@
 (def parent-version "6.7.3")
 (def nuvla-ring-version "2.0.2")
 
-(defproject sixsq.nuvla.server/api-jar "4.2.17-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "5.0.1-SNAPSHOT"
 
   :description "core api server"
 
@@ -31,7 +31,9 @@
   [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   ;; waiting for cc.qbits/spandex 0.7.5 to be release
+   ;; ES 7.7 need elasticsearch client version to be bumped
+   [org.clojars.0xbase12/spandex "0.7.5-SNAPSHOT" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-commons/clj-yaml]
@@ -39,10 +41,12 @@
    [clj-stacktrace]
    [clojure.java-time]
    [com.amazonaws/aws-java-sdk-s3]
+   [com.stripe/stripe-java "19.24.0"]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
    [metosin/spec-tools]
+   [org.bouncycastle/bcpkix-jdk15on "1.62"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
@@ -53,7 +57,8 @@
                                [org.clojure/clojure]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
-                               [io.netty/netty]]]]
+                               [io.netty/netty]]]
+   ]
 
   :aot [sixsq.nuvla.server.app.main]
 

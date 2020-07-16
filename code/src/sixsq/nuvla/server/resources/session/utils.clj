@@ -19,6 +19,7 @@
     (-> (db/retrieve id {})
         (merge body)
         u/update-timestamps
+        (u/set-updated-by request)
         crud/validate
         (db/edit request))
     (catch Exception e

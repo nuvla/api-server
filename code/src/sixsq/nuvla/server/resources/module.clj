@@ -96,6 +96,7 @@ component, or application.
         (crud/new-identifier resource-type)
         (assoc :resource-type resource-type)
         u/update-timestamps
+        (u/set-created-by request)
         (crud/add-acl request)
         crud/validate)
     {}))

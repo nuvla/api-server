@@ -1,15 +1,18 @@
-(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm
+(ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-coe
+  "
+Spec for credentials template of Container Orchestration Engine (COE).
+"
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-swarm :as cred-infra-service-swarm]
+    [sixsq.nuvla.server.resources.spec.credential-infrastructure-service-coe :as cred-infra-service-coe]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
-(def keys-spec {:req-un [::cred-infra-service-swarm/ca
-                         ::cred-infra-service-swarm/cert
-                         ::cred-infra-service-swarm/key]})
+(def keys-spec {:req-un [::cred-infra-service-coe/ca
+                         ::cred-infra-service-coe/cert
+                         ::cred-infra-service-coe/key]})
 
 
 ;; Defines the contents of the swarm credential template resource itself.

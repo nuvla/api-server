@@ -32,3 +32,11 @@ an endpoint.
   [{:keys [state] :as resource}]
   (cond-> (dissoc resource :href :resource-metadata)
           (nil? state) (assoc :state "STARTED")))
+
+;;
+;; Explicitely let to delete the generic service resource even if the resource state
+;; doesn't permit this. See CAN_DELETE_STATES in infra-service.
+;;
+(defmethod infra-service/delete-hook method
+  [service request]
+  (infra-service/delete-impl request))

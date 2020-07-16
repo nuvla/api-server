@@ -2,8 +2,36 @@
 
 ## Unreleased
 
+### Added
+
+  - New cimi common attributes to store user-id
+    (created-by, updated-by)
+
 ### Changed
 
+  - Session - Switch group implementation replace
+    claim operation
+
+## [5.0.0] - 2020-07-06
+
+### Added
+
+  - New credential type "ssh-key"
+  - New action "add-ssh-key" for NuvlaBox resource
+  - New action "revoke-ssh-key" for NuvlaBox resource 
+  - Customer resource
+  - Pricing resource
+  - Stripe wrapper library
+  - Provisioning of Docker Swarm and Kubernetes on AWS, Azure, Google,
+    and Exoscale.
+
+### Changed
+
+  - Dependency - use temporary spandex 0.7.5-SNAPSHOT
+  - Deployment, NuvlaBox, Credential subtype VPN return 402 HTTP code
+    when stripe configured and user doesn't have an active subscription
+  - Deployment - new owner and infrastructure service attribute
+  - Configuration nuvla got a new stripe-api-key attribute
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters

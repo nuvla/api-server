@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.util.time
   (:require [java-time :as t])
-  (:import (java.time OffsetDateTime)))
+  (:import (java.time Instant OffsetDateTime)))
 
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
@@ -79,8 +79,20 @@
         nil))))
 
 
+(defn date-from-unix-timestamp
+  [^Long timestamp]
+  (-> (Instant/ofEpochSecond timestamp)
+      (t/offset-date-time (t/zone-id "UTC"))))
+
+
 (defn time-between-date-now
   [^String start-date unit]
   (-> start-date
       date-from-str
       (t/time-between (now) unit)))
+
+(defn unix-timestamp->str
+  [^String timestamp]
+  (-> timestamp
+      date-from-unix-timestamp
+      to-str))

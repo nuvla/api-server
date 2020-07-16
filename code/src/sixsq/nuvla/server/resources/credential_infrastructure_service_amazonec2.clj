@@ -22,8 +22,7 @@ correspond exactly to those required by `docker-machine`.
                           :subtype              subtype
                           :method               method
                           :amazonec2-access-key amazonec2-access-key
-                          :amazonec2-secret-key amazonec2-secret-key
-                          :parent               parent}
+                          :amazonec2-secret-key amazonec2-secret-key}
                          acl (assoc :acl acl))]
     [nil resource]))
 

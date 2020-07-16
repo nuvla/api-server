@@ -162,15 +162,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (or acl (create-acl id))))
 
 
-(defn authorized-claim?
-  [claim]
-  (and (str/starts-with? claim "group/")
-       (not (contains? #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"} claim))))
-
-
-(defn can-claim?
+(defn can-switch-group?
   [request]
-  (boolean (some authorized-claim? (auth/current-claims request))))
+  (-> (auth/current-groups request) seq boolean))
 
 
 (defn dispatch-conversion
@@ -189,7 +183,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
       [(u/operation-map id :add)])
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
-            (can-claim? request) (conj (u/action-map id :claim)))))
+            (can-switch-group? request) (conj (u/action-map id :switch-group)))))
 
 
 ;; Sets the operations for the given resources.  This is a
@@ -251,6 +245,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (assoc :id id)
         (assoc :resource-type resource-type)
         u/update-timestamps
+        (u/set-created-by request)
         (crud/add-acl request)
         crud/validate)
     {}))
@@ -347,47 +342,51 @@ status, a 'set-cookie' header, and a 'location' header with the created
           (throw e)))))
 
 
-(defn throw-claim-not-authorized
+(defn throw-switch-group-not-authorized
   [resource {{:keys [claim] :as body} :body :as request}]
-  (let [claims (auth/current-claims request)]
-    (if (and
-          (or (str/starts-with? claim "group/")
-              (str/starts-with? claim "user/"))
-          (not (#{"group/nuvla-anon" "group/nuvla-admin" "group/nuvla-user"} claim))
-          (contains? claims claim))
+  (let [groups  (auth/current-groups request)
+        user-id (auth/current-user-id request)]
+    (if (or (= claim user-id)
+            (contains? groups claim))
       resource
       (throw
         (r/ex-response
-          (format "Switch account cannot be done to requested claim: %s!" claim) 403)))))
+          (format "Switch group cannot be done to requested group: %s!" claim) 403)))))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn update-cookie-session
-  [{:keys [id user roles client-ip] :as session}
+  [{:keys [id user roles active-claim client-ip] :as session}
    {headers :headers {:keys [claim]} :body :as request}]
-  (let [cookie-info (cookies/create-cookie-info user
-                                                :session-id id
-                                                :claims (authn-info/split-claims roles)
-                                                :active-claim claim
-                                                :headers headers
-                                                :client-ip client-ip)
-        cookie      (cookies/create-cookie cookie-info)
-        expires     (ts/rfc822->iso8601 (:expires cookie))
-        session     (assoc session :expiry expires
-                                   :active-claim claim)]
+  (let [updated-claims (-> roles
+                           authn-info/split-claims
+                           (disj (or active-claim user))
+                           (conj claim))
+        updated-roles  (->> updated-claims sort (str/join " "))
+        cookie-info    (cookies/create-cookie-info user
+                                                   :session-id id
+                                                   :claims updated-claims
+                                                   :active-claim claim
+                                                   :headers headers
+                                                   :client-ip client-ip)
+        cookie         (cookies/create-cookie cookie-info)
+        expires        (ts/rfc822->iso8601 (:expires cookie))
+        session        (assoc session :expiry expires
+                                      :active-claim claim
+                                      :roles updated-roles)]
     (-> request
         (assoc :body session)
         (edit-impl)
         (assoc-in [:cookies authn-info/authn-cookie] cookie))))
 
 
-(defmethod crud/do-action [resource-type "claim"]
+(defmethod crud/do-action [resource-type "switch-group"]
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-          (throw-claim-not-authorized request)
+          (throw-switch-group-not-authorized request)
           (a/throw-cannot-edit request)
           (update-cookie-session request)))
     (catch Exception e

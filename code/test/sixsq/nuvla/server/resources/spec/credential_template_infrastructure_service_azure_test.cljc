@@ -21,10 +21,12 @@
                    :acl                   valid-acl
                    :subtype               service/credential-subtype
                    :method                service/method
-                   :parent                "infrastructure-service/service-1"
+
                    :azure-client-id       "foo"
                    :azure-client-secret   "barsecret"
-                   :azure-subscription-id "bar"}]
+                   :azure-subscription-id "bar"
+
+                   :parent                "infrastructure-service/service-1"}]
 
     (is (s/valid? ::service-spec/schema tpl))
 

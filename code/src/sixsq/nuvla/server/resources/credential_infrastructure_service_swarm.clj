@@ -12,8 +12,7 @@ certificate authority's public certificate, 'ca', should also be provided.
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as tpl]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm
-     :as service-swarm]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-coe :as service-coe]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -21,12 +20,12 @@ certificate authority's public certificate, 'ca', should also be provided.
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service-swarm/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::service-coe/schema))
 
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service-swarm/schema)
+  (std-crud/initialize p/resource-type ::service-coe/schema)
   (md/register resource-metadata))
 
 
@@ -50,7 +49,7 @@ certificate authority's public certificate, 'ca', should also be provided.
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::service-swarm/schema))
+(def validate-fn (u/create-spec-validation-fn ::service-coe/schema))
 
 
 (defmethod p/validate-subtype tpl/credential-subtype
@@ -58,7 +57,7 @@ certificate authority's public certificate, 'ca', should also be provided.
   (validate-fn resource))
 
 
-(def create-validate-fn (u/create-spec-validation-fn ::service-swarm/schema-create))
+(def create-validate-fn (u/create-spec-validation-fn ::service-coe/schema-create))
 
 
 (defmethod p/create-validate-subtype tpl/credential-subtype

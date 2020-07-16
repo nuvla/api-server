@@ -143,7 +143,6 @@ this template define how the object can be accessed.
   (a/throw-cannot-query collection-acl request)
   (let [wrapper-fn        (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         ;; FIXME: At least the paging options should be supported.
-        options           (select-keys request [:user-id :claims :query-params :cimi-params])
         [count-before-pagination entries] ((juxt count vals) @templates)
         wrapped-entries   (wrapper-fn request entries)
         entries-and-count (assoc wrapped-entries :count count-before-pagination)]
