@@ -23,15 +23,6 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def valid-acl {:owners ["group/nuvla-admin"]})
-
-
-(def timestamp "1964-08-25T10:00:00.00Z")
-
-
-(def test-identifier "some-user-identifer")
-
-
 (def valid-entry {:fullname     "toto"
                   :address      {:street-address "Av. quelque chose"
                                  :city           "Meyrin"

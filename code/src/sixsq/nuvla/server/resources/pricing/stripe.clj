@@ -5,7 +5,8 @@
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
     (com.stripe.model Customer Invoice PaymentMethod Price
-                      Product SetupIntent Subscription)))
+                      Product SetupIntent Subscription)
+    (com.stripe.net OAuth)))
 
 
 (defn set-api-key!
@@ -127,6 +128,11 @@
   [s-payment-method]
   (try-catch-exception
     (.detach s-payment-method)))
+
+(defn oauth-token
+  [params]
+  (try-catch-exception
+    (OAuth/token params nil)))
 
 (defn get-id
   [obj]
@@ -373,6 +379,12 @@
   [obj]
   (.getPercentOff obj))
 
+
 (defn get-valid
   [obj]
   (.getValid obj))
+
+
+(defn get-stripe-user-id
+  [obj]
+  (.getStripeUserId obj))
