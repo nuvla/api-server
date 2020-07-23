@@ -4,31 +4,36 @@ Creates a new application vendor resource presumably after stripe connect
 registration has succeeded.
 "
   (:require
-    [sixsq.nuvla.server.resources.callback :as callback]
-    [sixsq.nuvla.server.resources.vendor :as vendor]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
+    [sixsq.nuvla.server.resources.callback :as callback]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.server.resources.vendor :as vendor]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "vendor-creation")
 
 
+(defn get-account-id
+  [code]
+  (stripe/get-stripe-user-id
+    (stripe/oauth-token {"grant_type" "authorization_code"
+                         "code"       code})))
+
 (defmethod callback/execute action-name
-  [{callback-id :id {:keys [redirect-url state]} :data :as callback-resource}
-   {{req-state :state code :code active-claim :active-claim} :params :as request}]
+  [{callback-id :id {:keys [redirect-url state active-claim]} :data :as callback-resource}
+   {{req-state :state code :code} :params :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (try
     (if (= state req-state)
-      (let [account-id      (stripe/get-stripe-user-id
-                              (stripe/oauth-token {"grant_type" "authorization_code"
-                                                   "code"       code}))
+      (let [account-id      (get-account-id code)
             add-vendor-resp (vendor/add-impl
                               {:params      {:resource-name vendor/resource-type}
                                :nuvla/authn auth/internal-identity
-                               :body        {:account-id account-id
+                               :body        {:parent     active-claim
+                                             :account-id account-id
                                              :acl        {:owners   ["group/nuvla-admin"]
                                                           :view-acl [active-claim]}}})]
         (if (= 201 (:status add-vendor-resp))

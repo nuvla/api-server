@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.spec.vendor-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.vendor :as t]
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.vendor :as vendor]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
+    [sixsq.nuvla.server.resources.vendor :as t]))
 
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
