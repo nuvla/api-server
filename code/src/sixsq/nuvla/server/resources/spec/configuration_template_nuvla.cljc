@@ -82,6 +82,15 @@
              :json-schema/order 27)))
 
 
+(s/def ::stripe-client-id
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "stripe-client-id"
+             :json-schema/display-name "stripe client id"
+             :json-schema/description "stripe client-id to create connected accounts"
+
+             :json-schema/order 28)))
+
+
 (def configuration-template-keys-spec
   {:opt-un [::smtp-username
             ::smtp-password
@@ -90,7 +99,8 @@
             ::smtp-ssl
             ::smtp-debug
             ::support-email
-            ::stripe-api-key]})
+            ::stripe-api-key
+            ::stripe-client-id]})
 
 
 ;; Defines the contents of the nuvla configuration-template resource itself.
