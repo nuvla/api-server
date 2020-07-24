@@ -9,6 +9,7 @@
 
 ### Changed
 
+  - Deps - Update cc.qbits/spandex 0.7.5
   - Session - Switch group implementation replace
     claim operation
 
