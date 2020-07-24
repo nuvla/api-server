@@ -5,8 +5,6 @@ marketplace.
 "
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
@@ -18,7 +16,8 @@ marketplace.
     [sixsq.nuvla.server.resources.spec.vendor :as vendor]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.walk :as walk]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -117,13 +116,14 @@ marketplace.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
-  [{:keys [body base-uri] :as request}]
+  [{:keys [headers body form-params] :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (a/throw-cannot-add collection-acl request)
   (let [active-claim (auth/current-active-claim request)]
     (throw-account-exist (active-claim->resource-id active-claim))
     (try
-      (let [redirect-url (:redirect-url body)
+      (let [body (if (u/is-form? headers) (walk/keywordize-keys form-params) body)
+            redirect-url (:redirect-url body)
             callback-url (create-callback active-claim redirect-url)
             oauth-url    (create-redirect-url config-nuvla/*stripe-client-id* callback-url)]
         {:status 303, :headers {"Location" oauth-url}})

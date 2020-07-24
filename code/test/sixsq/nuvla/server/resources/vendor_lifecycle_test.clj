@@ -14,7 +14,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.vendor :as t]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [ring.util.codec :as rc]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture
@@ -141,9 +142,10 @@
       (let [ui-redirect "https://ui-defined-redirect"]
         (with-redefs [callback-vendor/get-account-id (constantly account-id)]
           (let [callback-url (-> session-user
+                                 (content-type "application/x-www-form-urlencoded")
                                  (request base-uri
                                           :request-method :post
-                                          :body (json/write-str {:redirect-url ui-redirect}))
+                                          :body (rc/form-encode {:redirect-url ui-redirect}))
                                  (ltu/body->edn)
                                  (ltu/is-status 303)
                                  (ltu/location)
