@@ -75,11 +75,10 @@ marketplace.
 
 
 (defn create-callback
-  [base-uri state active-claim redirect-url]
+  [active-claim redirect-url]
   (let [callback-request {:params      {:resource-name callback/resource-type}
                           :body        {:action "vendor-creation"
-                                        :data   (cond-> {:state        state
-                                                         :active-claim active-claim}
+                                        :data   (cond-> {:active-claim active-claim}
                                                         redirect-url (assoc :redirect-url
                                                                             redirect-url))}
                           :nuvla/authn auth/internal-identity}
@@ -87,7 +86,7 @@ marketplace.
     (if (= 201 status)
       (if-let [callback-resource (crud/set-operations (crud/retrieve-by-id-as-admin resource-id) {})]
         (if-let [validate-op (u/get-op callback-resource "execute")]
-          (str base-uri validate-op)
+          validate-op
           (let [msg "callback does not have execute operation"]
             (throw (ex-info msg (r/map-response msg 500 resource-id)))))
         (let [msg "cannot retrieve  session callback"]
@@ -97,13 +96,12 @@ marketplace.
 
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
-  [client-id state callback-url]
-  (let [url-params-format "?response_type=code&client_id=%s&state=%s&redirect_uri=%s"]
+  [client-id callback-url]
+  (let [url-params-format "?response_type=code&client_id=%s&state=%s"]
     (str "https://connect.stripe.com/express/oauth/authorize"
          (format url-params-format
-                 (codec/url-encode client-id)
-                 (codec/url-encode state)
-                 (codec/url-encode callback-url)))))
+                 client-id
+                 callback-url))))
 
 
 (defn throw-account-exist
@@ -125,10 +123,9 @@ marketplace.
   (let [active-claim (auth/current-active-claim request)]
     (throw-account-exist (active-claim->resource-id active-claim))
     (try
-      (let [state        (u/random-uuid)
-            redirect-url (:redirect-url body)
-            callback-url (create-callback base-uri state active-claim redirect-url)
-            oauth-url    (create-redirect-url config-nuvla/*stripe-client-id* state callback-url)]
+      (let [redirect-url (:redirect-url body)
+            callback-url (create-callback active-claim redirect-url)
+            oauth-url    (create-redirect-url config-nuvla/*stripe-client-id* callback-url)]
         {:status 303, :headers {"Location" oauth-url}})
       (catch Exception e
         (or (ex-data e)

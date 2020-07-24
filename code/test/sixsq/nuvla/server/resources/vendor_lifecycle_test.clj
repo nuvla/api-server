@@ -56,49 +56,35 @@
                              (ltu/body->edn)
                              (ltu/is-status 303)
                              (ltu/location)
-                             (codec/url-decode)
-                             (->> (re-find #".*redirect_uri=(.*)/execute$"))
+                             (->> (re-find #".*state=(.*)/execute$"))
                              second)]
 
         (-> session-anon
-            (request callback-url)
+            (request (str p/service-context callback-url))
             (ltu/body->edn)
             (ltu/is-status 403))
 
         (-> session-anon
-            (request (str callback-url "/execute" (format "?state=%s&code=%s" "fake-state" "some-code"))
+            (request (str p/service-context "hook/stripe-oauth?state=doesnt-exist&code=some-code")
                      :request-method :post)
             (ltu/body->edn)
+            (ltu/is-status 400)
             (ltu/message-matches #"Incorrect state parameter!"))
 
         (-> session-anon
-            (request (str callback-url "/execute" (format "?state=%s&code=%s" "fake-state2" "some-code"))
+            (request (str p/service-context
+                          (format "hook/stripe-oauth?state=%s&code=some-code" callback-url))
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"Authorization code does not exist: .*"))
+
+
+        (-> session-anon
+            (request (str p/service-context callback-url "/execute" (format "?state=%s&code=%s" "fake-state2" "some-code"))
                      :request-method :post)
             (ltu/body->edn)
             (ltu/message-matches #"cannot re-execute callback")))
-
-      ;; check error cases linked to unknown authorization code
-      (let [callback-url (-> session-user
-                             (request base-uri
-                                      :request-method :post
-                                      :body (json/write-str {}))
-                             (ltu/body->edn)
-                             (ltu/is-status 303)
-                             (ltu/location)
-                             (codec/url-decode)
-                             (->> (re-find #".*redirect_uri=(.*)/execute$"))
-                             second)
-            state        (-> session-admin
-                             (request callback-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (get-in [:response :body :data :state]))]
-
-        (-> session-anon
-            (request (str callback-url "/execute" (format "?state=%s&code=%s" state "some-code"))
-                     :request-method :post)
-            (ltu/body->edn)
-            (ltu/message-matches #"Authorization code does not exist.*")))
 
 
       ;; check valid callback call without redirect
@@ -111,15 +97,10 @@
                                (ltu/is-status 303)
                                (ltu/location)
                                (codec/url-decode)
-                               (->> (re-find #".*redirect_uri=(.*)/execute$"))
+                               (->> (re-find #".*state=(.*)/execute$"))
                                second)
-              state        (-> session-admin
-                               (request callback-url)
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               (get-in [:response :body :data :state]))
               vendor-url   (-> session-anon
-                               (request (str callback-url "/execute" (format "?state=%s&code=%s" state "some-code"))
+                               (request (format "/api/hook/stripe-oauth?state=%s&code=%s" callback-url "some-code")
                                         :request-method :post)
                                (ltu/body->edn)
                                (ltu/is-status 201)
@@ -167,18 +148,13 @@
                                  (ltu/is-status 303)
                                  (ltu/location)
                                  (codec/url-decode)
-                                 (->> (re-find #".*redirect_uri=(.*)/execute$"))
-                                 second)
-                state        (-> session-admin
-                                 (request callback-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (get-in [:response :body :data :state]))]
+                                 (->> (re-find #".*state=(.*)/execute$"))
+                                 second)]
 
             (is (= ui-redirect
                    (-> session-anon
-                       (request (str callback-url "/execute"
-                                     (format "?state=%s&code=%s" state "some-code"))
+                       (request (str p/service-context callback-url "/execute"
+                                     (format "?state=%s&code=some-code" callback-url))
                                 :request-method :post)
                        (ltu/body->edn)
                        (ltu/is-status 303)

@@ -23,27 +23,24 @@ registration has succeeded.
                          "code"       code})))
 
 (defmethod callback/execute action-name
-  [{callback-id :id {:keys [redirect-url state active-claim]} :data :as callback-resource}
+  [{callback-id :id {:keys [redirect-url active-claim]} :data :as callback-resource}
    {{req-state :state code :code} :params :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (try
-    (if (= state req-state)
-      (let [account-id      (get-account-id code)
-            add-vendor-resp (vendor/add-impl
-                              {:params      {:resource-name vendor/resource-type}
-                               :nuvla/authn auth/internal-identity
-                               :body        {:parent     active-claim
-                                             :account-id account-id
-                                             :acl        {:owners   ["group/nuvla-admin"]
-                                                          :view-acl [active-claim]}}})]
-        (if (= 201 (:status add-vendor-resp))
-          (if redirect-url
-            {:status 303, :headers {"Location" redirect-url}}
-            add-vendor-resp)
-          (let [msg "cannot create  vendor"]
-            (throw (ex-info msg (r/map-response msg 500))))))
-      (let [msg "Incorrect state parameter!"]
-        (throw (ex-info msg (r/map-response msg 400)))))
+    (let [account-id      (get-account-id code)
+          add-vendor-resp (vendor/add-impl
+                            {:params      {:resource-name vendor/resource-type}
+                             :nuvla/authn auth/internal-identity
+                             :body        {:parent     active-claim
+                                           :account-id account-id
+                                           :acl        {:owners   ["group/nuvla-admin"]
+                                                        :view-acl [active-claim]}}})]
+      (if (= 201 (:status add-vendor-resp))
+        (if redirect-url
+          {:status 303, :headers {"Location" redirect-url}}
+          add-vendor-resp)
+        (let [msg "cannot create  vendor"]
+          (throw (ex-info msg (r/map-response msg 500))))))
     (catch Exception e
       (utils/callback-failed! callback-id)
       (or (ex-data e) (throw e)))))
