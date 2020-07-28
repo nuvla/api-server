@@ -5,7 +5,7 @@
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
     (com.stripe.model Customer Invoice PaymentMethod Price
-                      Product SetupIntent Subscription)
+                      Product SetupIntent Subscription LoginLink)
     (com.stripe.net OAuth)))
 
 
@@ -133,6 +133,12 @@
   [params]
   (try-catch-exception
     (OAuth/token params nil)))
+
+
+(defn login-link-create-on-account
+  [account-id]
+  (try-catch-exception
+    (LoginLink/createOnAccount account-id {} nil)))
 
 (defn get-id
   [obj]
@@ -388,3 +394,8 @@
 (defn get-stripe-user-id
   [obj]
   (.getStripeUserId obj))
+
+
+(defn get-url
+  [obj]
+  (.getUrl obj))

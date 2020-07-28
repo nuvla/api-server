@@ -34,7 +34,8 @@ registration has succeeded.
                              :body        {:parent     active-claim
                                            :account-id account-id
                                            :acl        {:owners   ["group/nuvla-admin"]
-                                                        :view-acl [active-claim]}}})]
+                                                        :view-acl [active-claim]
+                                                        :manage   [active-claim]}}})]
       (if (= 201 (:status add-vendor-resp))
         (if redirect-url
           {:status 303, :headers {"Location" redirect-url}}

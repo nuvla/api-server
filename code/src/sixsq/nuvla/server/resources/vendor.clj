@@ -17,7 +17,8 @@ marketplace.
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
-    [clojure.walk :as walk]))
+    [clojure.walk :as walk]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -93,6 +94,7 @@ marketplace.
       (let [msg "cannot create  session callback"]
         (throw (ex-info msg (r/map-response msg 500)))))))
 
+
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
   [client-id callback-url]
@@ -106,14 +108,15 @@ marketplace.
 (defn throw-account-exist
   [id]
   (let [account-id (try
-                      (-> id
-                          crud/retrieve-by-id-as-admin
-                          :account-id)
-                      (catch Exception _))]
+                     (-> id
+                         crud/retrieve-by-id-as-admin
+                         :account-id)
+                     (catch Exception _))]
     (when account-id
       (logu/log-and-throw-400 "Vendor already exist!"))))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
 
 (defmethod crud/add resource-type
   [{:keys [headers body form-params] :as request}]
@@ -122,7 +125,7 @@ marketplace.
   (let [active-claim (auth/current-active-claim request)]
     (throw-account-exist (active-claim->resource-id active-claim))
     (try
-      (let [body (if (u/is-form? headers) (walk/keywordize-keys form-params) body)
+      (let [body         (if (u/is-form? headers) (walk/keywordize-keys form-params) body)
             redirect-url (:redirect-url body)
             callback-url (create-callback active-claim redirect-url)
             oauth-url    (create-redirect-url config-nuvla/*stripe-client-id* callback-url)]
@@ -154,6 +157,38 @@ marketplace.
   [request]
   (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
+
+
+(def ^:const dashboard-action "dashboard")
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id] :as resource} request]
+  (let [can-manage?  (a/can-manage? resource request)
+        dashboard-op (u/action-map id dashboard-action)]
+    (cond-> (crud/set-standard-operations resource request)
+            can-manage? (update :operations conj dashboard-op))))
+
+
+(defn account-id->dashboard-url
+  [account-id]
+  (some-> account-id
+          stripe/login-link-create-on-account
+          stripe/get-url))
+
+
+(defmethod crud/do-action [resource-type dashboard-action]
+  [request]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (let [dashboard-url (some-> request
+                                (request->resource-id)
+                                (crud/retrieve-by-id-as-admin)
+                                (a/throw-cannot-manage request)
+                                :account-id
+                                account-id->dashboard-url)]
+      {:status 303, :headers {"Location" dashboard-url}})
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 ;;
 ;; initialization: common schema for all user creation methods

@@ -15,7 +15,8 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.vendor :as t]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [ring.util.codec :as rc]))
+    [ring.util.codec :as rc]
+    [sixsq.nuvla.server.resources.vendor :as vendor]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture
@@ -122,15 +123,16 @@
                      (ltu/is-status 200)
                      :response
                      :body
-                     (dissoc :created :updated :created-by))
-                 {:parent        @user-utils-test/user-id!,
-                  :account-id    account-id,
+                     (dissoc :created :updated :created-by :operations))
+                 {:parent        @user-utils-test/user-id!
+                  :account-id    account-id
                   :acl
-                                 {:view-acl  [@user-utils-test/user-id!,],
-                                  :view-meta [@user-utils-test/user-id!,],
-                                  :view-data [@user-utils-test/user-id!,],
-                                  :owners    ["group/nuvla-admin"]},
-                  :id            (str "vendor/" (str/replace @user-utils-test/user-id! "/" "-")),
+                                 {:manage    [@user-utils-test/user-id!]
+                                  :view-acl  [@user-utils-test/user-id!]
+                                  :view-meta [@user-utils-test/user-id!]
+                                  :view-data [@user-utils-test/user-id!]
+                                  :owners    ["group/nuvla-admin"]}
+                  :id            (str "vendor/" (str/replace @user-utils-test/user-id! "/" "-"))
                   :resource-type "vendor"}))
 
           (-> session-admin
@@ -139,28 +141,49 @@
               (ltu/is-status 200))))
 
 
-      (let [ui-redirect "https://ui-defined-redirect"]
-        (with-redefs [callback-vendor/get-account-id (constantly account-id)]
-          (let [callback-url (-> session-user
-                                 (content-type "application/x-www-form-urlencoded")
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (rc/form-encode {:redirect-url ui-redirect}))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 303)
-                                 (ltu/location)
-                                 (codec/url-decode)
-                                 (->> (re-find #".*state=(.*)/execute$"))
-                                 second)]
+      (with-redefs [callback-vendor/get-account-id (constantly account-id)]
+        (let [ui-redirect  "https://ui-defined-redirect"
+              callback-url (-> session-user
+                               (content-type "application/x-www-form-urlencoded")
+                               (request base-uri
+                                        :request-method :post
+                                        :body (rc/form-encode {:redirect-url ui-redirect}))
+                               (ltu/body->edn)
+                               (ltu/is-status 303)
+                               (ltu/location)
+                               (codec/url-decode)
+                               (->> (re-find #".*state=(.*)/execute$"))
+                               second)]
 
-            (is (= ui-redirect
-                   (-> session-anon
-                       (request (str p/service-context callback-url "/execute"
-                                     (format "?state=%s&code=some-code" callback-url))
-                                :request-method :post)
-                       (ltu/body->edn)
-                       (ltu/is-status 303)
-                       (ltu/location))))))))))
+          (is (= ui-redirect
+                 (-> session-anon
+                     (request (str p/service-context callback-url "/execute"
+                                   (format "?state=%s&code=some-code" callback-url))
+                              :request-method :post)
+                     (ltu/body->edn)
+                     (ltu/is-status 303)
+                     (ltu/location))))))
+
+      (let [vendor-url       (str p/service-context
+                                  (-> session-user
+                                      (request base-uri :request-method :put)
+                                      (ltu/body->edn)
+                                      (ltu/is-count 1)
+                                      (get-in [:response :body :resources])
+                                      first
+                                      :id))
+
+            vendor-dashboard (-> session-user
+                                 (request vendor-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-operation-present :dashboard)
+                                 (ltu/get-op-url :dashboard))]
+        (with-redefs [vendor/account-id->dashboard-url (constantly (str "https://stripe:" account-id))]
+          (-> session-user
+              (request vendor-dashboard)
+              (ltu/is-status 303)
+              (ltu/is-location-value (str "https://stripe:" account-id)))))
+      )))
 
 
 
