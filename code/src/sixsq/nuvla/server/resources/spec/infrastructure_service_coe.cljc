@@ -29,12 +29,23 @@
 (s/def ::manager (st/spec boolean?))
 (s/def ::node-config-base64 ::core/nonblank-string)
 (s/def ::kube-config ::core/nonblank-string)
+(s/def ::join-tokens
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :name "join-tokens"
+             :json-schema/name "join-tokens"
+             :json-schema/type "map"
+             :json-schema/description "COE cluster manager and worker join tokens"
+
+             :json-schema/editable false
+             :json-schema/indexed false
+             :json-schema/order 26)))
 
 (s/def ::node
   (-> (st/spec (su/only-keys :req-un [::node-name
                                       ::manager
                                       ::node-config-base64]
-                             :opt-un [::kube-config]))
+                             :opt-un [::kube-config
+                                      ::join-tokens]))
       (assoc :name "node"
              :json-schema/name "node"
              :json-schema/type "map"

@@ -9,6 +9,7 @@
 
 ### Changed
 
+  - Deps - Update cc.qbits/spandex 0.7.5
   - Session - Switch group implementation replace
     claim operation
   - Edit implementation for NuvlaBox Peripherals, to restart NuvlaBox data gateway streaming based on updated attributes
