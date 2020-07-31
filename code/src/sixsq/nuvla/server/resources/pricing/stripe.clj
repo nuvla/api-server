@@ -4,8 +4,8 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Invoice PaymentMethod Price
-                      Product SetupIntent Subscription LoginLink)
+    (com.stripe.model Customer Invoice PaymentMethod Price Product SetupIntent Subscription
+                      LoginLink Product Price)
     (com.stripe.net OAuth)))
 
 
@@ -139,6 +139,37 @@
   [account-id]
   (try-catch-exception
     (LoginLink/createOnAccount account-id {} nil)))
+
+
+(defn create-product
+  [product-params]
+  (try-catch-exception
+    (Product/create product-params)))
+
+
+(defn create-price
+  [price-params]
+  (try-catch-exception
+    (Price/create price-params)))
+
+(comment
+  (create-product {"name" "connect-test"})
+  (create-price {"product"        "prod_HjJlnUhmTwdU9k"
+                 "currency"       "eur"
+                 "billing_scheme" "per_unit"
+                 "unit_amount"    "1000"
+                 "recurring"      {"interval"        "month"
+                                   "aggregate_usage" "max"
+                                   "usage_type"      "metered"
+                                   "interval_count"  1}
+                 })
+
+  (create-subscription {"customer" "cus_HYmp6YRqq9iS7w"
+                        "items"    [{"price" "price_1H9rHTHG9PNMTNBOnej9Gq7f"}]
+                        "application_fee_percent" 10
+                        "transfer_data" {"destination" "acct_1H9qJIKTw0W0a1lN"}
+                        })
+  )
 
 (defn get-id
   [obj]
