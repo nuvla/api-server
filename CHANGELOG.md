@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.1.0] - 2020-07-31
+
 ### Added
 
   - New cimi common attributes to store user-id
