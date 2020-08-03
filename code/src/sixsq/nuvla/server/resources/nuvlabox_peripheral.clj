@@ -155,7 +155,16 @@ nuvlabox.
 
 
 (defmethod crud/edit resource-type
-  [request]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id       (str resource-type "/" uuid)
+          resource (db/retrieve id request)]
+      (when (and (has-video-capability? body) (:data-gateway-enabled resource))
+        (-> resource
+          (a/throw-cannot-manage request)
+          (create-job request "restart-stream"))))
+    (catch Exception e
+      (or (ex-data e) (throw e))))
   (edit-impl request))
 
 

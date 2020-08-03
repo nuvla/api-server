@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.1.0] - 2020-07-31
+
 ### Added
 
   - New cimi common attributes to store user-id
@@ -12,6 +14,8 @@
   - Deps - Update cc.qbits/spandex 0.7.5
   - Session - Switch group implementation replace
     claim operation
+  - Edit implementation for NuvlaBox Peripherals, to restart NuvlaBox
+    data gateway streaming based on updated attributes
 
 ## [5.0.0] - 2020-07-06
 
