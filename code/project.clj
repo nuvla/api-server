@@ -1,7 +1,7 @@
-(def parent-version "6.7.3")
+(def parent-version "6.7.4")
 (def nuvla-ring-version "2.0.2")
 
-(defproject sixsq.nuvla.server/api-jar "5.0.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "5.1.1-SNAPSHOT"
 
   :description "core api server"
 
@@ -31,9 +31,7 @@
   [[buddy/buddy-core]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   ;; waiting for cc.qbits/spandex 0.7.5 to be release
-   ;; ES 7.7 need elasticsearch client version to be bumped
-   [org.clojars.0xbase12/spandex "0.7.5-SNAPSHOT" :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex "0.7.5" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-commons/clj-yaml]
