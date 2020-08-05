@@ -158,7 +158,7 @@
            :json-schema/order 46)))
 
 (s/def ::bcm
-  (-> (st/spec (s/and number? #(not (neg? %))))
+  (-> (st/spec pos-int?)
     (assoc :name "bcm"
            :json-schema/description "BCM (Broadcom SOC channel) pin number"
 
@@ -179,14 +179,14 @@
            :json-schema/order 49)))
 
 (s/def ::voltage
-  (-> (st/spec ::core/nat-int?)
+  (-> (st/spec nat-int?)
     (assoc :name "voltage"
            :json-schema/description "Voltage level of the pin"
 
            :json-schema/order 50)))
 
 (s/def ::pin
-  (-> (st/spec (s/and number? #(not (neg? %))))
+  (-> (st/spec pos-int?)
     (assoc :name "pin"
            :json-schema/description "Physical pin number"
 
