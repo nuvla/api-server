@@ -158,7 +158,7 @@
            :json-schema/order 46)))
 
 (s/def ::bcm
-  (-> (st/spec ::core/pos-int?)
+  (-> (st/spec (s/and number? #(not (neg? %))))
     (assoc :name "bcm"
            :json-schema/description "BCM (Broadcom SOC channel) pin number"
 
@@ -186,15 +186,14 @@
            :json-schema/order 50)))
 
 (s/def ::pin
-  (-> (st/spec ::core/pos-int?)
+  (-> (st/spec (s/and number? #(not (neg? %))))
     (assoc :name "pin"
            :json-schema/description "Physical pin number"
 
            :json-schema/order 51)))
 
 (s/def ::gpio-object
-  (-> (st/spec (su/only-keys :req-un [::pin]
-                 :opt-un  [::bcm ::name ::mode ::voltage]))
+  (-> (st/spec (su/only-keys :req-un [::pin] :opt-un [::bcm ::name ::mode ::voltage]))
     (assoc :name "gpio-object"
            :json-schema/type "map"
            :json-schema/description "a GPIO pin and its inforatiom"
@@ -207,7 +206,7 @@
            :json-schema/type "array"
            :json-schema/description "list of GPIO pins and their information"
 
-           :json-schema/order 52)))
+           :json-schema/order 53)))
 
 (s/def ::device
   (-> (st/spec ::core/nonblank-string)
