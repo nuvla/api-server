@@ -81,7 +81,19 @@
                   :hostname              "localhost"
                   :ip                    "127.0.0.1"
                   :docker-server-version "19.0.3"
-                  :last-boot             timestamp})
+                  :last-boot             timestamp
+                  :gpio-pins             [
+                                          {
+                                           :name  "GPIO. 7"
+                                           :bcm   4
+                                           :mode  "IN"
+                                           :voltage 1
+                                           :pin   7
+                                           }
+                                          {
+                                           :pin   1
+                                           }
+                                          ]})
 
 
 (def resources-updated {:cpu   {:capacity   10

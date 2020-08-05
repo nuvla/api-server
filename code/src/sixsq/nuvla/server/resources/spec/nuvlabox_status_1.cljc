@@ -27,4 +27,5 @@
                                ::nb-status-0/docker-server-version
                                ::nb-status-0/last-boot
                                ::nb-status-0/wifi-password
-                               ::nb-status-0/nuvlabox-api-endpoint]}))
+                               ::nb-status-0/nuvlabox-api-endpoint
+                               ::nb-status-0/gpio-pins]}))
