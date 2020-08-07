@@ -158,7 +158,7 @@
            :json-schema/order 46)))
 
 (s/def ::bcm
-  (-> (st/spec pos-int?)
+  (-> (st/spec nat-int?)
     (assoc :name "bcm"
            :json-schema/description "BCM (Broadcom SOC channel) pin number"
 
