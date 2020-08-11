@@ -8,7 +8,8 @@
 
   - New cimi common attributes to store user-id
     (created-by, updated-by)
-  - New optional nuvlabox-status resource for GPIO telemetry
+  - New optional nuvlabox-status attribute for GPIO telemetry
+  - New optional nuvlabox-engine-version attribute in nuvlabox-status
 
 ### Changed
 
