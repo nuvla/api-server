@@ -208,6 +208,13 @@
 
            :json-schema/order 53)))
 
+(s/def ::nuvlabox-engine-version
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "nuvlabox-engine-version"
+           :json-schema/description "nuvlabox engine release"
+
+           :json-schema/order 54)))
+
 (s/def ::device
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "device"
@@ -401,4 +408,5 @@
                                ::peripherals
                                ::wifi-password
                                ::nuvlabox-api-endpoint
-                               ::gpio-pins]}))
+                               ::gpio-pins
+                               ::nuvlabox-engine-version]}))

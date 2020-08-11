@@ -83,7 +83,8 @@
                                           {
                                            :pin   1
                                            }
-                                          ]})
+                                          ]
+                  :nuvlabox-engine-version  "1.2.3"})
 
 
 (def resources-updated {:cpu   {:capacity 10
