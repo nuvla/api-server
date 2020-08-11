@@ -45,7 +45,8 @@
                                       ::manager
                                       ::node-config-base64]
                              :opt-un [::kube-config
-                                      ::join-tokens]))
+                                      ::join-tokens
+                                      ::node-ssh-base64]))
       (assoc :name "node"
              :json-schema/name "node"
              :json-schema/type "map"
