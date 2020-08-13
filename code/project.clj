@@ -29,6 +29,7 @@
 
   :dependencies
   [[buddy/buddy-core]
+   [spootnik/kinsky "0.1.23"]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex "0.7.5" :exclusions [org.clojure/clojure]]
@@ -81,5 +82,14 @@
               :env            {:nuvla-session-key "test-resources/session.key"
                                :nuvla-session-crt "test-resources/session.crt"}
               :aot            :all}
-   :dev      {:resource-paths ["test-resources"]}
-   })
+   :dev      {:resource-paths ["test-resources"]
+              :dependencies [
+                             ;; for kafka embedded
+                             [org.apache.kafka/kafka-clients "2.4.0"]
+                             [org.apache.kafka/kafka_2.12 "2.4.0"]
+                             [org.apache.zookeeper/zookeeper "3.5.6"
+                              :exclusions [io.netty/netty
+                                           jline
+                                           org.apache.yetus/audience-annotations
+                                           org.slf4j/slf4j-log4j12
+                                           log4j]]]}})

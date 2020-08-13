@@ -19,6 +19,7 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.middleware.redirect-cep :refer [redirect-cep]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as resources]
+    [sixsq.nuvla.server.util.kafka :as kafka]
     [sixsq.nuvla.server.util.zookeeper :as zku]))
 
 
@@ -86,6 +87,12 @@
     (zku/set-client! (zku/create-client))
     (catch Exception e
       (log/error "error creating zookeeper client:" (str e))
+      (throw e)))
+
+  (try
+    (kafka/set-producer! (kafka/create-producer))
+    (catch Exception e
+      (log/error "error creating kafka producer:" (str e))
       (throw e)))
 
   (try
