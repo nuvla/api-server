@@ -81,6 +81,7 @@ manage it.
       (if (= 201 status)
         (let [job-msg (format "created job %s with id %s" job-name job-id)]
           (edit-infra-service resource request #(assoc % :state new-state))
+          (infra-service/event-state-change resource (assoc-in request [:body :state] new-state))
           (event-utils/create-event resource-id job-msg (a/default-acl (auth/current-authentication request)))
           (r/map-response job-msg 202 resource-id job-id))
         (throw (r/ex-response (format "unable to create job %s" job-name) 500 resource-id))))
@@ -180,7 +181,9 @@ manage it.
           (u/update-timestamps)
           (u/set-updated-by request)
           (db/edit request))
-      (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+      (event-utils/create-event id "STARTING" (a/default-acl (auth/current-authentication request))
+                                :severity "low"
+                                :category "state")
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))

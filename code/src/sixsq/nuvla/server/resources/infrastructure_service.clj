@@ -17,11 +17,9 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -236,12 +234,29 @@ existing `infrastructure-service-template` resource.
   (retrieve-impl request))
 
 
+(defn event-state-change
+  [{current-state :state id :id} {{new-state :state} :body :as request}]
+  (if (and new-state (not (= current-state new-state)))
+           (event-utils/create-event id new-state
+                                     (a/default-acl (auth/current-authentication request))
+                                     :severity "low"
+                                     :category "state")))
+
+
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{{uuid :uuid} :params {new-state :state} :body :as request}]
+  (let [resource (if (boolean new-state) (db/retrieve (str resource-type "/" uuid) request))
+        ret (edit-impl request)]
+    (try
+      (if resource
+        (event-state-change resource request))
+       (catch Exception e
+         ;; TODO: log the exception
+         (println e)))
+    ret))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
