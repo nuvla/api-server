@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Customer - Consider past due status subscription
+    as active
+
 ## [5.1.0] - 2020-07-31
 
 ### Added

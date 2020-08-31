@@ -130,7 +130,7 @@ Customer mapping to external banking system."
               utils/get-current-subscription
               utils/s-subscription->map
               :status
-              (#{"active" "trialing"}))
+              (#{"active" "trialing" "past_due"}))          ;; TODO ui modal
       (catch Exception _))))
 
 
