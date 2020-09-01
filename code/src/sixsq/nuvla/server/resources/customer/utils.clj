@@ -154,6 +154,13 @@
       (logu/log-and-throw-400 "Customer exist already!"))))
 
 
+(defn throw-email-mandatory-for-group
+  [active-claim email]
+  (when (and (str/starts-with? active-claim "group/")
+             (str/blank? email))
+    (logu/log-and-throw-400 "Customer email is mandatory for group!")))
+
+
 (defn throw-admin-can-not-be-customer
   [request]
   (when
@@ -187,16 +194,17 @@
 
 
 (defn create-customer
-  [{:keys [fullname subscription address coupon] pm-id :payment-method} active-claim]
+  [{:keys [fullname subscription address coupon email] pm-id :payment-method} active-claim]
   (let [{:keys [street-address city postal-code country]} address
-        email       (when (str/starts-with? active-claim "user/")
-                      (try
-                        (some-> active-claim
-                                crud/retrieve-by-id-as-admin
-                                :email
-                                crud/retrieve-by-id-as-admin
-                                :address)
-                        (catch Exception _)))
+        email       (or email
+                        (when (str/starts-with? active-claim "user/")
+                          (try
+                            (some-> active-claim
+                                    crud/retrieve-by-id-as-admin
+                                    :email
+                                    crud/retrieve-by-id-as-admin
+                                    :address)
+                            (catch Exception _))))
         s-customer  (stripe/create-customer
                       (cond-> {"name"    fullname
                                "address" {"line1"       street-address
