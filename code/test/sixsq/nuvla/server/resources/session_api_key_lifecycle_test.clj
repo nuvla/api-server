@@ -105,7 +105,7 @@
             session-anon        (header session-json authn-info-header "user/unknown group/nuvla-anon")
             session-user        (header session-json authn-info-header "user/user group/nuvla-user group/nuvla-anon")
             session-admin       (header session-json authn-info-header
-                                        "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                        "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
             ;;
             ;; create the session template to use for these tests

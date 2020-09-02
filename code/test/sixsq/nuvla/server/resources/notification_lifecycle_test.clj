@@ -33,7 +33,7 @@
         user          "user/jane"
         session-user  (header session-anon authn-info-header (format "%s group/nuvla-user group/nuvla-anon" user))
         session-admin (header session-anon authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; admin can query; adding resources is allowed
     (-> session-admin

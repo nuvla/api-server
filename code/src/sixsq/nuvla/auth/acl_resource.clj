@@ -204,14 +204,10 @@
 (defn default-acl
   "Provides a default ACL based on the authentication information.
    The ACL will have the identity as the owner with no other ACL
-   rules.  The only exception is if the user is in the group/nuvla-admin,
-   then the owner will be group/nuvla-admin. If there is no identity
-   then returns nil."
+   rules.  If there is no identity then returns nil."
   [{:keys [active-claim] :as authn-info}]
   (when active-claim
-    (if (is-admin? authn-info)
-      {:owners ["group/nuvla-admin"]}
-      {:owners [active-claim]})))
+    {:owners [active-claim]}))
 
 
 (defn add-acl
