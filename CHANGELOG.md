@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Customer - Make email for group at creation time
+    mandatory
   - Customer - Consider past due status subscription
     as active
 
