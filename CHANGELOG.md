@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Switch group - allow switch to group/nuvla-admin
+    user super has to do a switch to do administative tasks
   - Customer - Make email for group at creation time
     mandatory
   - Customer - Consider past due status subscription

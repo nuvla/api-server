@@ -6,7 +6,7 @@
 (def ^{:doc "Internal administrator identity for database queries."}
   internal-identity
   {:user-id      "internal"
-   :active-claim "internal"
+   :active-claim "group/nuvla-admin"
    :claims       #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}})
 
 

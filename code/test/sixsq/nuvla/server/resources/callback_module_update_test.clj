@@ -48,7 +48,7 @@
 (deftest callback-module-update
   (let [session-anon        (-> (session (ltu/ring-app))
                                 (content-type "application/json"))
-        session-admin       (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin       (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
         module-resource     (-> session-user
