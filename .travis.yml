@@ -6,6 +6,7 @@ cache:
   directories:
   - "$HOME/.m2"
 install: skip
+script: skip
 deploy:
   provider: script
   script: cp .travis.settings.xml $HOME/.m2/settings.xml && mvn deploy
