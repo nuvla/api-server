@@ -374,7 +374,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         expires        (ts/rfc822->iso8601 (:expires cookie))
         session        (assoc session :expiry expires
                                       :active-claim claim
-                                      :groups (:groups cookie)
+                                      :groups (:groups cookie-info)
                                       :roles updated-roles)]
     (-> request
         (assoc :body session)
