@@ -1125,6 +1125,7 @@
                                                          :city           "Meyrin"
                                                          :country        "CH"
                                                          :postal-code    "1217"}
+                                          :email        "toto@example.com"
                                           :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
                                                          :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
                                                                          "price_1GzOC6HG9PNMTNBOEb5819lm"
