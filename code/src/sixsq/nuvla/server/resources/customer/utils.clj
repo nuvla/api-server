@@ -219,7 +219,11 @@
                               coupon (assoc "coupon" coupon)))
         customer-id (stripe/get-id s-customer)]
     (when subscription
-      (create-subscription customer-id subscription true))
+      (try
+        (create-subscription customer-id subscription true)
+        (catch Exception e
+          (stripe/delete-customer s-customer)
+          (throw e))))
     customer-id))
 
 
