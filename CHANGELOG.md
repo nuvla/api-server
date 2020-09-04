@@ -4,6 +4,10 @@
 
 ### Changed
 
+## [5.2.0] - 2020-09-04
+
+### Changed
+
   - New optional nuvlabox-status attribute for GPIO telemetry
   - New optional nuvlabox-engine-version attribute in nuvlabox-status
   - Customer - Susbscription send invoices by default
