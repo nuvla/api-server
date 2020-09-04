@@ -125,8 +125,8 @@ existing `infrastructure-service-template` resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [service request]
-            (:method service)))
+  (fn [service request]
+    (:method service)))
 
 
 ;; default post-add hook is a no-op
@@ -136,24 +136,69 @@ existing `infrastructure-service-template` resource.
 
 
 ;;
-;; multimethod for a COE delete hook
-;;
-
-;; dispatch on service method
-(defmulti delete-hook
-  (fn [service request]
-    (:method service)))
-
-;; do nothing by default
-(defmethod delete-hook :default
-  [service request]
-  (throw (r/ex-response
-          (format "Delete not implemented for %s of method %s" (:id service) (:method service))
-          500)))
-
-;;
 ;; CRUD operations
 ;;
+
+
+(defmulti set-crud-operations
+  (fn [resource request]
+    (:method resource)))
+
+
+(defmethod set-crud-operations :default
+  [resource request]
+  (crud/set-standard-operations resource request))
+
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (set-crud-operations resource request))
+
+
+(defmulti do-action-stop
+  (fn [resource request]
+    (:method resource)))
+
+
+(defmethod do-action-stop :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "stop"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-stop resource request)) )
+
+
+
+(defmulti do-action-start
+          (fn [resource request]
+            (:method resource)))
+
+
+(defmethod do-action-start :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "start"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-start resource request)) )
+
+
+(defmulti do-action-terminate
+          (fn [resource request]
+            (:method resource)))
+
+
+(defmethod do-action-terminate :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "terminate"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-terminate resource request)) )
 
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
@@ -202,30 +247,20 @@ existing `infrastructure-service-template` resource.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
-(def CANT_DELETE_ERR_CODE 412)
-(def CAN_DELETE_STATES #{"CREATED" "STOPPED"})
+(defmulti delete
+  (fn [resource request]
+    (:method resource)))
 
-(defn verify-can-delete
-  [{:keys [id state] :as resource}]
-  (if (CAN_DELETE_STATES state)
-    resource
-    (throw (r/ex-response (str "invalid state (" state ") for delete on " id) CANT_DELETE_ERR_CODE id))))
+
+(defmethod delete :default
+  [resource request]
+  (delete-impl request))
+
 
 (defmethod crud/delete resource-type
-  [request]
-  (let [service (-> (str resource-type "/" (-> request :params :uuid))
-                    (db/retrieve request))]
-    (try
-      (-> service
-          verify-can-delete
-          (a/throw-cannot-delete request)
-          (db/delete request))
-      (catch Exception e
-        (let [response (ex-data e)
-              status (:status response)]
-          (if (= CANT_DELETE_ERR_CODE status)
-            (delete-hook service request)
-            (throw e)))))))
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (db/retrieve (str resource-type "/" uuid) request)]
+    (delete resource request)))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

@@ -2,14 +2,24 @@
 
 ## Unreleased
 
+### Changed
+
+  - New optional nuvlabox-status attribute for GPIO telemetry
+  - New optional nuvlabox-engine-version attribute in nuvlabox-status
+  - Customer - Susbscription send invoices by default
+  - Switch group - allow switch to group/nuvla-admin
+    user super has to do a switch to do administative tasks
+  - Customer - Make email for group at creation time
+    mandatory
+  - Customer - Consider past due status subscription
+    as active
+
 ## [5.1.0] - 2020-07-31
 
 ### Added
 
   - New cimi common attributes to store user-id
     (created-by, updated-by)
-  - New optional nuvlabox-status attribute for GPIO telemetry
-  - New optional nuvlabox-engine-version attribute in nuvlabox-status
 
 ### Changed
 

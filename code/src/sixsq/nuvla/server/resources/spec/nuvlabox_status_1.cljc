@@ -28,5 +28,9 @@
                                ::nb-status-0/last-boot
                                ::nb-status-0/wifi-password
                                ::nb-status-0/nuvlabox-api-endpoint
+<<<<<<< HEAD
                                ::nb-status-0/gpio-pins
                                ::nb-status-0/nuvlabox-engine-version]}))
+=======
+                               ::nb-status-0/gpio-pins]}))
+>>>>>>> master

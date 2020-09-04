@@ -83,8 +83,12 @@
                                           {
                                            :pin   1
                                            }
+<<<<<<< HEAD
                                           ]
                   :nuvlabox-engine-version  "1.2.3"})
+=======
+                                          ]})
+>>>>>>> master
 
 
 (def resources-updated {:cpu   {:capacity 10
@@ -109,7 +113,7 @@
     (let [session       (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
          session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
          session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 

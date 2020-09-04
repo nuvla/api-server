@@ -74,8 +74,12 @@
                                     {
                                      :pin   1
                                      }
+<<<<<<< HEAD
                                     ]
             :nuvlabox-engine-version  "1.2.3"})
+=======
+                                    ]})
+>>>>>>> master
 
 
 (deftest check-nuvlabox-status
@@ -90,5 +94,9 @@
 
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
+<<<<<<< HEAD
                  :gpio-pins :nuvlabox-engine-version}]
+=======
+                 :gpio-pins}]
+>>>>>>> master
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

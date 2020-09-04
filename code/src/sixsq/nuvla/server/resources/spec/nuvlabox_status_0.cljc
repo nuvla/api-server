@@ -207,6 +207,7 @@
            :json-schema/description "list of GPIO pins and their information"
 
            :json-schema/order 53)))
+<<<<<<< HEAD
 
 (s/def ::nuvlabox-engine-version
   (-> (st/spec ::core/nonblank-string)
@@ -214,6 +215,8 @@
            :json-schema/description "nuvlabox engine release"
 
            :json-schema/order 54)))
+=======
+>>>>>>> master
 
 (s/def ::device
   (-> (st/spec ::core/nonblank-string)
@@ -408,5 +411,9 @@
                                ::peripherals
                                ::wifi-password
                                ::nuvlabox-api-endpoint
+<<<<<<< HEAD
                                ::gpio-pins
                                ::nuvlabox-engine-version]}))
+=======
+                               ::gpio-pins]}))
+>>>>>>> master

@@ -78,7 +78,7 @@
         session-json     (content-type (session app) "application/json")
         session-anon     (header session-json authn-info-header "user/unknown group/nuvla-anon")
         session-user     (header session-json authn-info-header "user group/nuvla-user")
-        session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href             (str st/resource-type "/password")
 
@@ -286,7 +286,7 @@
   (let [app                (ltu/ring-app)
         session-json       (content-type (session app) "application/json")
         session-anon       (header session-json authn-info-header "user/unknown group/nuvla-anon")
-        session-admin      (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin      (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href               (str st/resource-type "/password")
 

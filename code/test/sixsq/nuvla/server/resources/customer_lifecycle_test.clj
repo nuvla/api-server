@@ -51,11 +51,12 @@
 (deftest lifecycle
   (if-not (env/env :stripe-api-key)
     (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
-    (let [session-anon  (-> (session (ltu/ring-app))
-                            (content-type "application/json"))
-          session-admin (header session-anon authn-info-header
-                                "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user  (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))]
+    (let [session-anon    (-> (session (ltu/ring-app))
+                              (content-type "application/json"))
+          session-admin   (header session-anon authn-info-header
+                                  "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user    (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))
+          session-group-a (header session-anon authn-info-header "group/a group/nuvla-user group/nuvla-anon")]
 
       ;; admin create pricing catalogue
       (-> session-admin
@@ -125,6 +126,14 @@
           (ltu/body->edn)
           (ltu/is-status 400)
           (ltu/message-matches #"No such coupon.*"))
+
+      (-> session-group-a
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Customer email is mandatory for group!"))
 
       (let [customer-1 (-> session-user
                            (request base-uri
