@@ -157,6 +157,56 @@
 
            :json-schema/order 46)))
 
+(s/def ::bcm
+  (-> (st/spec nat-int?)
+    (assoc :name "bcm"
+           :json-schema/description "BCM (Broadcom SOC channel) pin number"
+
+           :json-schema/order 47)))
+
+(s/def ::name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "name"
+           :json-schema/description "Name of the pin (or underlying function)"
+
+           :json-schema/order 48)))
+
+(s/def ::mode
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "mode"
+           :json-schema/description "How the pin is being used. Usually is one of in/out/pwm/clock/up/down/tri/ALT#"
+
+           :json-schema/order 49)))
+
+(s/def ::voltage
+  (-> (st/spec nat-int?)
+    (assoc :name "voltage"
+           :json-schema/description "Voltage level of the pin"
+
+           :json-schema/order 50)))
+
+(s/def ::pin
+  (-> (st/spec pos-int?)
+    (assoc :name "pin"
+           :json-schema/description "Physical pin number"
+
+           :json-schema/order 51)))
+
+(s/def ::gpio-object
+  (-> (st/spec (su/only-keys :req-un [::pin] :opt-un [::bcm ::name ::mode ::voltage]))
+    (assoc :name "gpio-object"
+           :json-schema/type "map"
+           :json-schema/description "a GPIO pin and its inforatiom"
+
+           :json-schema/order 52)))
+
+(s/def ::gpio-pins
+  (-> (st/spec (s/coll-of ::gpio-object :min-count 1 :kind vector?))
+    (assoc :name "gpio-pins"
+           :json-schema/type "array"
+           :json-schema/description "list of GPIO pins and their information"
+
+           :json-schema/order 53)))
 
 (s/def ::device
   (-> (st/spec ::core/nonblank-string)
@@ -350,4 +400,5 @@
                                ::last-boot
                                ::peripherals
                                ::wifi-password
-                               ::nuvlabox-api-endpoint]}))
+                               ::nuvlabox-api-endpoint
+                               ::gpio-pins]}))
