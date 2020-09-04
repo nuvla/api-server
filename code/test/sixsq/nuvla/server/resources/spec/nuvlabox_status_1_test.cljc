@@ -53,23 +53,13 @@
             :ip                    "127.0.0.1"
             :docker-server-version "19.0.3"
             :last-boot             "2020-02-18T19:42:08Z"
-            :gpio-pins             [
-                                    {
-                                     :name  "GPIO. 7"
+            :gpio-pins             [{:name  "GPIO. 7"
                                      :bcm   4
                                      :mode  "IN"
                                      :voltage 1
-                                     :pin   7
-                                     }
-                                    {
-                                     :pin   1
-                                     }
-<<<<<<< HEAD
-                                    ]
+                                     :pin   7}
+                                    {:pin   1}]
             :nuvlabox-engine-version  "1.2.3"})
-=======
-                                    ]})
->>>>>>> master
 
 
 (deftest check-nuvlabox-status
@@ -83,10 +73,6 @@
     (stu/is-invalid ::nb-status-1/schema (dissoc state attr)))
 
   ;; optional
-<<<<<<< HEAD
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment :nuvlabox-api-endpoint :gpio-pins
                  :nuvlabox-engine-version}]
-=======
-  (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment :nuvlabox-api-endpoint :gpio-pins}]
->>>>>>> master
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))
