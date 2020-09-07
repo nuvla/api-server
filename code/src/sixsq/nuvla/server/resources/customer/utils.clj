@@ -154,6 +154,13 @@
       (logu/log-and-throw-400 "Customer exist already!"))))
 
 
+(defn throw-email-mandatory-for-group
+  [active-claim email]
+  (when (and (str/starts-with? active-claim "group/")
+             (str/blank? email))
+    (logu/log-and-throw-400 "Customer email is mandatory for group!")))
+
+
 (defn throw-admin-can-not-be-customer
   [request]
   (when
@@ -178,25 +185,28 @@
   [customer-id {:keys [plan-id plan-item-ids] :as body} trial?]
   (let [catalogue (crud/retrieve-by-id-as-admin pricing/resource-id)]
     (throw-plan-invalid body catalogue)
-    (-> {"customer" customer-id
-         "items"    (map (fn [plan-id] {"price" plan-id})
-                         (cons plan-id plan-item-ids))}
+    (-> {"customer"          customer-id
+         "items"             (map (fn [plan-id] {"price" plan-id})
+                                  (cons plan-id plan-item-ids))
+         "collection_method" "send_invoice"
+         "days_until_due"    14}
         (cond-> trial? (assoc "trial_period_days" 14))
         stripe/create-subscription
         s-subscription->map)))
 
 
 (defn create-customer
-  [{:keys [fullname subscription address coupon] pm-id :payment-method} active-claim]
+  [{:keys [fullname subscription address coupon email] pm-id :payment-method} active-claim]
   (let [{:keys [street-address city postal-code country]} address
-        email       (when (str/starts-with? active-claim "user/")
-                      (try
-                        (some-> active-claim
-                                crud/retrieve-by-id-as-admin
-                                :email
-                                crud/retrieve-by-id-as-admin
-                                :address)
-                        (catch Exception _)))
+        email       (or email
+                        (when (str/starts-with? active-claim "user/")
+                          (try
+                            (some-> active-claim
+                                    crud/retrieve-by-id-as-admin
+                                    :email
+                                    crud/retrieve-by-id-as-admin
+                                    :address)
+                            (catch Exception _))))
         s-customer  (stripe/create-customer
                       (cond-> {"name"    fullname
                                "address" {"line1"       street-address
@@ -209,7 +219,11 @@
                               coupon (assoc "coupon" coupon)))
         customer-id (stripe/get-id s-customer)]
     (when subscription
-      (create-subscription customer-id subscription true))
+      (try
+        (create-subscription customer-id subscription true)
+        (catch Exception e
+          (stripe/delete-customer s-customer)
+          (throw e))))
     customer-id))
 
 

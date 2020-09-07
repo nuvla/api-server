@@ -83,14 +83,15 @@ Customer mapping to external banking system."
 
 
 (defmethod crud/add resource-type
-  [{body :body :as request}]
+  [{{:keys [email] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (utils/throw-admin-can-not-be-customer request)
   (config-nuvla/throw-stripe-not-configured)
-  (let [auth-info (auth/current-authentication request)
-        active-claim   (or
-                    (when (acl-resource/is-admin? auth-info) (:parent body))
-                    (auth/current-active-claim request))]
+  (let [auth-info    (auth/current-authentication request)
+        active-claim (or
+                       (when (acl-resource/is-admin? auth-info) (:parent body))
+                       (auth/current-active-claim request))]
+    (utils/throw-email-mandatory-for-group active-claim email)
     (utils/throw-customer-exist (active-claim->resource-id active-claim))
     (validate-customer-body (dissoc body :parent))
     (-> request
@@ -130,7 +131,7 @@ Customer mapping to external banking system."
               utils/get-current-subscription
               utils/s-subscription->map
               :status
-              (#{"active" "trialing"}))
+              (#{"active" "trialing" "past_due"}))
       (catch Exception _))))
 
 

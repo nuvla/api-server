@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Changed
+
+## [5.2.0] - 2020-09-04
+
+### Changed
+
+  - New optional nuvlabox-status attribute for GPIO telemetry
+  - New optional nuvlabox-engine-version attribute in nuvlabox-status
+  - Customer - Susbscription send invoices by default
+  - Switch group - allow switch to group/nuvla-admin
+    user super has to do a switch to do administative tasks
+  - Customer - Make email for group at creation time
+    mandatory
+  - Customer - Consider past due status subscription
+    as active
+
 ## [5.1.0] - 2020-07-31
 
 ### Added

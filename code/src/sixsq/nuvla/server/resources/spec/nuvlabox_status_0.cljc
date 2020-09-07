@@ -88,20 +88,20 @@
 
 (s/def ::bytes-transmitted
   (-> (st/spec (s/and number? #(not (neg? %))))
-    (assoc :name "bytes-transmitted"
-           :json-schema/type "double"
-           :json-schema/description "number of bytes transmitted tx_bytes"
+      (assoc :name "bytes-transmitted"
+             :json-schema/type "double"
+             :json-schema/description "number of bytes transmitted tx_bytes"
 
-           :json-schema/order 43)))
+             :json-schema/order 43)))
 
 
 (s/def ::bytes-received
   (-> (st/spec (s/and number? #(not (neg? %))))
-    (assoc :name "bytes-received"
-           :json-schema/type "double"
-           :json-schema/description "number of bytes received rx_bytes"
+      (assoc :name "bytes-received"
+             :json-schema/type "double"
+             :json-schema/description "number of bytes received rx_bytes"
 
-           :json-schema/order 43)))
+             :json-schema/order 43)))
 
 
 (s/def ::cpu
@@ -134,28 +134,86 @@
 
 (s/def ::interface
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "interface"
-           :json-schema/description "network interface name"
+      (assoc :name "interface"
+             :json-schema/description "network interface name"
 
-           :json-schema/order 44)))
+             :json-schema/order 44)))
 
 
 (s/def ::net-interface-stat
   (-> (st/spec (su/only-keys :req-un [::interface ::bytes-received ::bytes-transmitted]))
-    (assoc :name "net-interface-stat"
-           :json-schema/type "map"
-           :json-schema/description "txBytes and rxBytes for each network interface"
+      (assoc :name "net-interface-stat"
+             :json-schema/type "map"
+             :json-schema/description "txBytes and rxBytes for each network interface"
 
-           :json-schema/order 45)))
+             :json-schema/order 45)))
 
 
 (s/def ::net-stats
   (-> (st/spec (s/coll-of ::net-interface-stat :min-count 1 :kind vector?))
-    (assoc :name "network-interfaces"
-           :json-schema/type "array"
-           :json-schema/description "txBytes and rxBytes for each network interface"
+      (assoc :name "network-interfaces"
+             :json-schema/type "array"
+             :json-schema/description "txBytes and rxBytes for each network interface"
 
-           :json-schema/order 46)))
+             :json-schema/order 46)))
+
+(s/def ::bcm
+  (-> (st/spec nat-int?)
+      (assoc :name "bcm"
+             :json-schema/description "BCM (Broadcom SOC channel) pin number"
+
+             :json-schema/order 47)))
+
+(s/def ::name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "name"
+             :json-schema/description "Name of the pin (or underlying function)"
+
+             :json-schema/order 48)))
+
+(s/def ::mode
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "mode"
+             :json-schema/description "How the pin is being used. Usually is one of in/out/pwm/clock/up/down/tri/ALT#"
+
+             :json-schema/order 49)))
+
+(s/def ::voltage
+  (-> (st/spec nat-int?)
+      (assoc :name "voltage"
+             :json-schema/description "Voltage level of the pin"
+
+             :json-schema/order 50)))
+
+(s/def ::pin
+  (-> (st/spec pos-int?)
+      (assoc :name "pin"
+             :json-schema/description "Physical pin number"
+
+             :json-schema/order 51)))
+
+(s/def ::gpio-object
+  (-> (st/spec (su/only-keys :req-un [::pin] :opt-un [::bcm ::name ::mode ::voltage]))
+      (assoc :name "gpio-object"
+             :json-schema/type "map"
+             :json-schema/description "a GPIO pin and its inforatiom"
+
+             :json-schema/order 52)))
+
+(s/def ::gpio-pins
+  (-> (st/spec (s/coll-of ::gpio-object :min-count 1 :kind vector?))
+      (assoc :name "gpio-pins"
+             :json-schema/type "array"
+             :json-schema/description "list of GPIO pins and their information"
+
+             :json-schema/order 53)))
+
+(s/def ::nuvlabox-engine-version
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "nuvlabox-engine-version"
+             :json-schema/description "nuvlabox engine release"
+
+             :json-schema/order 54)))
 
 
 (s/def ::device
@@ -193,50 +251,50 @@
 
 (s/def ::operating-system
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "operating-system"
-           :json-schema/description "name of the host OS"
+      (assoc :name "operating-system"
+             :json-schema/description "name of the host OS"
 
-           :json-schema/order 37)))
+             :json-schema/order 37)))
 
 
 (s/def ::architecture
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "architecture"
-           :json-schema/description "platform hw architecture"
+      (assoc :name "architecture"
+             :json-schema/description "platform hw architecture"
 
-           :json-schema/order 38)))
+             :json-schema/order 38)))
 
 
 (s/def ::hostname
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "hostname"
-           :json-schema/description "device hostname"
+      (assoc :name "hostname"
+             :json-schema/description "device hostname"
 
-           :json-schema/order 39)))
+             :json-schema/order 39)))
 
 
 (s/def ::ip
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "ip"
-           :json-schema/description "device IP, as used by the NuvlaBox"
+      (assoc :name "ip"
+             :json-schema/description "device IP, as used by the NuvlaBox"
 
-           :json-schema/order 40)))
+             :json-schema/order 40)))
 
 
 (s/def ::docker-server-version
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "docker server version"
-           :json-schema/description "docker server version on the host"
+      (assoc :name "docker server version"
+             :json-schema/description "docker server version on the host"
 
-           :json-schema/order 41)))
+             :json-schema/order 41)))
 
 
 (s/def ::last-boot
   (-> (st/spec ::core/timestamp)
-    (assoc :name "last boot"
-           :json-schema/description "last boot time"
+      (assoc :name "last boot"
+             :json-schema/description "last boot time"
 
-           :json-schema/order 42)))
+             :json-schema/order 42)))
 ;;
 ;; peripherals
 ;;
@@ -350,4 +408,7 @@
                                ::last-boot
                                ::peripherals
                                ::wifi-password
-                               ::nuvlabox-api-endpoint]}))
+                               ::nuvlabox-api-endpoint
+                               ::gpio-pins
+                               ::nuvlabox-engine-version
+                               ::gpio-pins]}))
