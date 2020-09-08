@@ -156,23 +156,40 @@
   (-> (st/spec (s/and string? product-id?))
       (assoc :name "product-id"
              :json-schema/type "string"
-             :json-schema/description "identifier of product id")))
+             :json-schema/description "identifier of product id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
 
 
 (s/def ::price-id
   (-> (st/spec (s/and string? pricing/price-id?))
       (assoc :name "price-id"
              :json-schema/type "string"
-             :json-schema/description "identifier of price id")))
+             :json-schema/description "identifier of price id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(def ^:const account-id-regex #"^acct_.+$")
+
+(defn account-id? [s] (re-matches account-id-regex s))
+
+(s/def ::account-id
+  (-> (st/spec (s/and string? account-id?))
+      (assoc :name "account-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of account id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
 
 
 (s/def ::price
   (-> (st/spec (su/only-keys
                  :req-un [::product-id
                           ::price-id
+                          ::account-id
                           ::pricing/currency
-                          ::pricing/amount]
-                 :opt-un []))
+                          ::pricing/amount]))
       (assoc :name "price"
              :json-schema/type "map"
              :json-schema/order 38)))

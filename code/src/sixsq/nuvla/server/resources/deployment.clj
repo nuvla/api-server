@@ -18,7 +18,9 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -111,6 +113,18 @@ a container orchestration engine.
 ;;
 ;; CRUD operations
 ;;
+
+
+(defn create-subscription
+  [active-claim {:keys [account-id price-id] :as price}]
+  (stripe/create-subscription
+    {"customer"                (customer/active-claim->customer-id active-claim)
+     "items"                   [{"price" price-id}]
+     "collection_method"       "send_invoice"
+     "days_until_due"          14
+     "application_fee_percent" 20
+     "transfer_data "          {"destination" account-id}}))
+
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -255,8 +269,11 @@ a container orchestration engine.
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
                              (edit-deployment request #(assoc % :state "STARTING"))
                              :body)]
-      (when (= (:state deployment) "STOPPED")
-        (dep-utils/delete-child-resources "deployment-parameter" id))
+      (if (= (:state deployment) "STOPPED")
+        (dep-utils/delete-child-resources "deployment-parameter" id)
+        (create-subscription
+          (auth/current-active-claim request)
+          (get-in deployment [:module :price])))
       (dep-utils/create-job new-deployment request "start"))
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -21,7 +21,8 @@ component, or application.
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.server.resources.vendor :as vendor]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -117,13 +118,28 @@ component, or application.
   {:product-id (stripe/get-product s-price)})
 
 
+(defn active-claim->account-id
+  [active-claim]
+  (let [filter  (format "parent='%s'" active-claim)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
+        account-id (-> (crud/query-as-admin vendor/resource-type options)
+                       second
+                       first
+                       :id)]
+    (or account-id
+        (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
+                                   active-claim "' ") 409)))))
+
+
 (defn set-price
-  [{{:keys [price-id amount currency] :as price} :price name :name path :path :as body}]
+  [{{:keys [price-id amount currency] :as price} :price name :name path :path :as body}
+   active-claim]
   (if price
     (let [product-id (some-> price-id
                              (stripe/retrieve-price)
                              s-price->price-map
                              :product-id)
+          account-id (active-claim->account-id active-claim)
           s-price    (stripe/create-price
                        (cond-> {"currency"    currency
                                 "unit_amount" (int (* amount 100))
@@ -134,6 +150,7 @@ component, or application.
                                (nil? product-id) (assoc "product_data" {"name" (or name path)})))]
       (assoc body :price {:price-id   (stripe/get-id s-price)
                           :product-id (stripe/get-product s-price)
+                          :account-id account-id
                           :amount     amount
                           :currency   currency}))
     body))
@@ -177,7 +194,7 @@ component, or application.
             (assoc :versions [(cond-> {:href   content-id
                                        :author author}
                                       commit (assoc :commit commit))])
-            (set-price)
+            (set-price (auth/current-active-claim request))
             (cond-> compatibility (assoc :compatibility compatibility))
             (db-add-module-meta request))))))
 

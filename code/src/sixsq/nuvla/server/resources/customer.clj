@@ -117,16 +117,23 @@ Customer mapping to external banking system."
   (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
 
+
+(defn active-claim->customer-id
+  [active-claim]
+  (some-> resource-type
+    (crud/query-as-admin {:cimi-params {:filter (parser/parse-cimi-filter
+                                                  (format "parent='%s'" active-claim))}})
+    second
+    first
+    :customer-id))
+
+
 (defn customer-has-active-subscription?
   [active-claim]
   (boolean
     (try
-      (some-> resource-type
-              (crud/query-as-admin {:cimi-params {:filter (parser/parse-cimi-filter
-                                                            (format "parent='%s'" active-claim))}})
-              second
-              first
-              :customer-id
+      (some-> active-claim
+              active-claim->customer-id
               stripe/retrieve-customer
               utils/get-current-subscription
               utils/s-subscription->map

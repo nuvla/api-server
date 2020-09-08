@@ -24,7 +24,7 @@ registration has succeeded.
 
 (defmethod callback/execute action-name
   [{callback-id :id {:keys [redirect-url active-claim]} :data :as callback-resource}
-   {{req-state :state code :code} :params :as request}]
+   {{code :code} :params :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (try
     (let [account-id      (get-account-id code)
