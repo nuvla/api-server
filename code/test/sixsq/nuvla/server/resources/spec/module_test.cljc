@@ -31,7 +31,11 @@
                    :data-access-protocols     ["http+s3" "posix+nfs"]
                    :compatibility             "swarm"
                    :valid                     false
-                   :validation-message        "docker-compose error"}]
+                   :validation-message        "docker-compose error"
+                   :price                     {:product-id "product_xyz"
+                                               :price-id   "price_xyz"
+                                               :amount     20.0
+                                               :currency   "EUR"}}]
 
     (stu/is-valid ::module/schema root)
     (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
@@ -43,5 +47,5 @@
 
     ;; optional attributes
     (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols
-                :compatibility :valid :validation-message}]
+                :compatibility :valid :validation-message :price}]
       (stu/is-valid ::module/schema (dissoc root k)))))

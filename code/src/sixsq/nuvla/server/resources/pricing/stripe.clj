@@ -152,24 +152,12 @@
   (try-catch-exception
     (Price/create price-params)))
 
-(comment
-  (create-product {"name" "connect-test"})
-  (create-price {"product"        "prod_HjJlnUhmTwdU9k"
-                 "currency"       "eur"
-                 "billing_scheme" "per_unit"
-                 "unit_amount"    "1000"
-                 "recurring"      {"interval"        "month"
-                                   "aggregate_usage" "max"
-                                   "usage_type"      "metered"
-                                   "interval_count"  1}
-                 })
 
-  (create-subscription {"customer" "cus_HYmp6YRqq9iS7w"
-                        "items"    [{"price" "price_1H9rHTHG9PNMTNBOnej9Gq7f"}]
-                        "application_fee_percent" 10
-                        "transfer_data" {"destination" "acct_1H9qJIKTw0W0a1lN"}
-                        })
-  )
+(defn retrieve-price
+  [price-id]
+  (try-catch-exception
+    (Price/retrieve price-id)))
+
 
 (defn get-id
   [obj]
@@ -430,3 +418,8 @@
 (defn get-url
   [obj]
   (.getUrl obj))
+
+
+(defn get-product
+  [obj]
+  (.getProduct obj))

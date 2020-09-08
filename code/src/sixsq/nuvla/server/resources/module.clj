@@ -19,7 +19,9 @@ component, or application.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -86,6 +88,14 @@ component, or application.
     (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
+(defn throw-price-error
+  [{:keys [subtype price]}]
+  (when price
+    (config-nuvla/throw-stripe-not-configured)
+    (when (utils/is-project? subtype)
+      (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400)))))
+
+
 (defn db-add-module-meta
   [module-meta request]
   (db/add
@@ -102,12 +112,41 @@ component, or application.
     {}))
 
 
+(defn s-price->price-map
+  [s-price]
+  {:product-id (stripe/get-product s-price)})
+
+
+(defn set-price
+  [{{:keys [price-id amount currency] :as price} :price name :name path :path :as body}]
+  (if price
+    (let [product-id (some-> price-id
+                             (stripe/retrieve-price)
+                             s-price->price-map
+                             :product-id)
+          s-price    (stripe/create-price
+                       (cond-> {"currency"    currency
+                                "unit_amount" (int (* amount 100))
+                                "recurring"   {"interval"        "month"
+                                               "aggregate_usage" "max"
+                                               "usage_type"      "metered"}}
+                               product-id (assoc "product" product-id)
+                               (nil? product-id) (assoc "product_data" {"name" (or name path)})))]
+      (assoc body :price {:price-id   (stripe/get-id s-price)
+                          :product-id (stripe/get-product s-price)
+                          :amount     amount
+                          :currency   currency}))
+    body))
+
+
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
 
   (a/throw-cannot-add collection-acl request)
 
   (throw-colliding-path (:path body))
+
+  (throw-price-error body)
 
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
@@ -138,6 +177,7 @@ component, or application.
             (assoc :versions [(cond-> {:href   content-id
                                        :author author}
                                       commit (assoc :commit commit))])
+            (set-price)
             (cond-> compatibility (assoc :compatibility compatibility))
             (db-add-module-meta request))))))
 

@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
+    [sixsq.nuvla.server.resources.spec.pricing :as pricing]
     [spec-tools.core :as st]))
 
 
@@ -147,6 +148,35 @@
              :json-schema/type "string"
              :json-schema/order 37)))
 
+(def ^:const product-id-regex #"^prod_.+$")
+
+(defn product-id? [s] (re-matches product-id-regex s))
+
+(s/def ::product-id
+  (-> (st/spec (s/and string? product-id?))
+      (assoc :name "product-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of product id")))
+
+
+(s/def ::price-id
+  (-> (st/spec (s/and string? pricing/price-id?))
+      (assoc :name "price-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of price id")))
+
+
+(s/def ::price
+  (-> (st/spec (su/only-keys
+                 :req-un [::product-id
+                          ::price-id
+                          ::pricing/currency
+                          ::pricing/amount]
+                 :opt-un []))
+      (assoc :name "price"
+             :json-schema/type "map"
+             :json-schema/order 38)))
+
 
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
@@ -159,7 +189,8 @@
                                                       ::content
                                                       ::compatibility
                                                       ::valid
-                                                      ::validation-message]}]))
+                                                      ::validation-message
+                                                      ::price]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))
