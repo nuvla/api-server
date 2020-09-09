@@ -40,7 +40,8 @@
                                                      :data-type  "data-object"}]}}
    :registries-credentials ["credential/uuid1" "credential/uuid2"]
    :owner                  "user/jane"
-   :infrastructure-service "infrastructure-service/something"})
+   :infrastructure-service "infrastructure-service/something"
+   :subscription-id        "sub_something"})
 
 
 (deftest test-schema-check
@@ -62,5 +63,6 @@
     (stu/is-invalid ::ds/deployment (dissoc valid-deployment k)))
 
   ;; optional attributes
-  (doseq [k #{:data :api-credentials :credential-id :registries-credentials :owner :infrastructure-service}]
+  (doseq [k #{:data :api-credentials :credential-id :registries-credentials :owner
+              :infrastructure-service :subscription-id}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

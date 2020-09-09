@@ -32,10 +32,11 @@
                    :compatibility             "swarm"
                    :valid                     false
                    :validation-message        "docker-compose error"
-                   :price                     {:product-id "product_xyz"
+                   :price                     {:product-id "prod_xyz"
                                                :price-id   "price_xyz"
                                                :amount     20.0
-                                               :currency   "EUR"}}]
+                                               :currency   "EUR"
+                                               :account-id "acct_xyz"}}]
 
     (stu/is-valid ::module/schema root)
     (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))

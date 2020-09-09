@@ -118,7 +118,9 @@ a container orchestration engine.
 (defn create-subscription
   [active-claim {:keys [account-id price-id] :as price}]
   (stripe/create-subscription
-    {"customer"                (customer/active-claim->customer-id active-claim)
+    {"customer"                (some-> active-claim
+                                       customer/active-claim->customer
+                                       :customer-id)
      "items"                   [{"price" price-id}]
      "collection_method"       "send_invoice"
      "days_until_due"          14
@@ -186,7 +188,7 @@ a container orchestration engine.
 
     (edit-impl
       (cond-> request
-              is-user? (update :body dissoc :owner :infrastructure-service)
+              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id)
               new-acl (assoc-in [:body :acl] new-acl)
               infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
 
@@ -265,15 +267,21 @@ a container orchestration engine.
   (try
     (let [id             (str resource-type "/" uuid)
           deployment     (crud/retrieve-by-id-as-admin id)
+          stopped?       (= (:state deployment) "STOPPED")
+          price          (get-in deployment [:module :price])
+          subs-id        (when (and (not stopped?) price)
+                           (create-subscription
+                             (auth/current-active-claim request)
+                             price))
           new-deployment (-> deployment
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
-                             (edit-deployment request #(assoc % :state "STARTING"))
+                             (edit-deployment
+                               request
+                               #(cond-> (assoc % :state "STARTING")
+                                        subs-id (assoc :subscription-id subs-id)))
                              :body)]
-      (if (= (:state deployment) "STOPPED")
-        (dep-utils/delete-child-resources "deployment-parameter" id)
-        (create-subscription
-          (auth/current-active-claim request)
-          (get-in deployment [:module :price])))
+      (when stopped?
+        (dep-utils/delete-child-resources "deployment-parameter" id))
       (dep-utils/create-job new-deployment request "start"))
     (catch Exception e
       (or (ex-data e) (throw e)))))

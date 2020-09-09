@@ -100,6 +100,12 @@
     (Subscription/create subscription-params)))
 
 
+(defn retrieve-subscription
+  [subscription-id]
+  (try-catch-exception
+    (Subscription/retrieve subscription-id)))
+
+
 (defn create-setup-intent
   [setup-intent-params]
   (try-catch-exception

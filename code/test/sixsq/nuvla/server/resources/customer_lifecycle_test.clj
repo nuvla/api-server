@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.string :as str]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture
@@ -149,7 +150,11 @@
                                       (ltu/is-operation-present :upcoming-invoice)
                                       (ltu/is-operation-present :list-invoices)
                                       (ltu/is-operation-present :add-coupon)
-                                      (ltu/is-operation-present :remove-coupon))
+                                      (ltu/is-operation-present :remove-coupon)
+                                      (ltu/is-key-value
+                                        #(str/starts-with? % "cus_") :customer-id true)
+                                      (ltu/is-key-value
+                                        #(str/starts-with? % "sub_") :subscription-id true))
               create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)
               add-coupon          (ltu/get-op-url customer-response :add-coupon)]
 

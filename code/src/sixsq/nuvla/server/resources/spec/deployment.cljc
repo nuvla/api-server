@@ -206,6 +206,7 @@
 ;;
 ;; deprecated items
 ;;
+
 (s/def ::data-objects
   (-> (st/spec (s/coll-of ::data-object-id :min-count 1 :kind vector?))
       (assoc :json-schema/type "array"
@@ -236,6 +237,20 @@
                                            :json-schema/editable false
                                            :json-schema/server-managed true)))
 
+
+(def ^:const subscription-id-regex #"^sub_.+$")
+
+(defn subscription-id? [s] (re-matches subscription-id-regex s))
+
+(s/def ::subscription-id
+  (-> (st/spec (s/and string? subscription-id?))
+      (assoc :name "subscription-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of subscription id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -248,7 +263,8 @@
                                   ::data
                                   ::registries-credentials
                                   ::owner
-                                  ::infrastructure-service]}]))
+                                  ::infrastructure-service
+                                  ::subscription-id]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))
