@@ -125,7 +125,7 @@ component, or application.
         account-id (-> (crud/query-as-admin vendor/resource-type options)
                        second
                        first
-                       :id)]
+                       :account-id)]
     (or account-id
         (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
                                    active-claim "' ") 409)))))
