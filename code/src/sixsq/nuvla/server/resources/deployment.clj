@@ -123,8 +123,8 @@ a container orchestration engine.
                                        :customer-id)
      "items"                   [{"price" price-id}]
      "collection_method"       "send_invoice"
-     "days_until_due"          14
-     "application_fee_percent" 20
+     "days_until_due"          14                           ;; fixme
+     "application_fee_percent" 20                           ;; fixme
      "transfer_data"           {"destination" account-id}}))
 
 
@@ -266,15 +266,15 @@ a container orchestration engine.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id             (str resource-type "/" uuid)
-          deployment     (crud/retrieve-by-id-as-admin id)
+          deployment     (-> (crud/retrieve-by-id-as-admin id)
+                             (dep-utils/throw-can-not-do-action dep-utils/can-start? "start"))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           subs-id        (when (and (not stopped?) price)
-                           (create-subscription
-                             (auth/current-active-claim request)
-                             price))
+                           (some-> (auth/current-active-claim request)
+                                   (create-subscription price)
+                                   (stripe/get-id)))
           new-deployment (-> deployment
-                             (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
                              (edit-deployment
                                request
                                #(cond-> (assoc % :state "STARTING")
