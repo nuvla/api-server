@@ -125,7 +125,7 @@ a container orchestration engine.
      "collection_method"       "send_invoice"
      "days_until_due"          14
      "application_fee_percent" 20
-     "transfer_data "          {"destination" account-id}}))
+     "transfer_data"           {"destination" account-id}}))
 
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
