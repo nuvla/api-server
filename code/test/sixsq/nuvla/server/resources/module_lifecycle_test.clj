@@ -273,8 +273,8 @@
                          :data-access-protocols     ["http+s3" "posix+nfs"]
 
                          :content                   valid-component
-                         :price                     {:cent-amount-hourly 10
-                                                     :currency           "EUR"}}]
+                         :price                     {:cent-amount-daily 10
+                                                     :currency          "EUR"}}]
 
     (let [uri     (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
                     (-> session-user

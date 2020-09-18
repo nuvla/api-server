@@ -132,7 +132,7 @@ component, or application.
 
 
 (defn set-price
-  [{{:keys [price-id cent-amount-hourly currency] :as price}
+  [{{:keys [price-id cent-amount-daily currency] :as price}
     :price name :name path :path :as body}
    active-claim]
   (if price
@@ -143,7 +143,7 @@ component, or application.
           account-id (active-claim->account-id active-claim)
           s-price    (stripe/create-price
                        (cond-> {"currency"    currency
-                                "unit_amount" cent-amount-hourly
+                                "unit_amount" cent-amount-daily
                                 "recurring"   {"interval"        "month"
                                                "aggregate_usage" "sum"
                                                "usage_type"      "metered"}}
@@ -154,7 +154,7 @@ component, or application.
       (assoc body :price {:price-id           (stripe/get-id s-price)
                           :product-id         (stripe/get-product s-price)
                           :account-id         account-id
-                          :cent-amount-hourly cent-amount-hourly
+                          :cent-amount-daily cent-amount-daily
                           :currency           currency}))
     body))
 

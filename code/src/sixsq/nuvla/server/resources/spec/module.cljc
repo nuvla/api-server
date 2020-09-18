@@ -125,14 +125,14 @@
 
 (s/def ::compatibility
   (-> (st/spec #{"swarm" "docker-compose"})
-    (assoc :name "compatibility"
-           :json-schema/type "string"
-           :json-schema/description "module compatibility"
-           :json-schema/server-managed true
-           :json-schema/editable false
+      (assoc :name "compatibility"
+             :json-schema/type "string"
+             :json-schema/description "module compatibility"
+             :json-schema/server-managed true
+             :json-schema/editable false
 
-           :json-schema/fulltext true
-           :json-schema/order 35)))
+             :json-schema/fulltext true
+             :json-schema/order 35)))
 
 (s/def ::valid
   (-> (st/spec boolean?)
@@ -183,11 +183,11 @@
              :json-schema/editable false)))
 
 
-(s/def ::cent-amount-hourly
+(s/def ::cent-amount-daily
   (-> (st/spec pos-int?)
-      (assoc :name "cent-amount-hourly"
+      (assoc :name "cent-amount-daily"
              :json-schema/type "integer"
-             :json-schema/description "cent amount by hour")))
+             :json-schema/description "cent amount by day")))
 
 
 (s/def ::price
@@ -196,7 +196,7 @@
                           ::price-id
                           ::account-id
                           ::pricing/currency
-                          ::cent-amount-hourly]))
+                          ::cent-amount-daily]))
       (assoc :name "price"
              :json-schema/type "map"
              :json-schema/order 38)))
