@@ -184,7 +184,7 @@
 
 
 (s/def ::cent-amount-hourly
-  (-> (st/spec nat-int?)
+  (-> (st/spec pos-int?)
       (assoc :name "cent-amount-hourly"
              :json-schema/type "integer"
              :json-schema/description "cent amount by hour")))
