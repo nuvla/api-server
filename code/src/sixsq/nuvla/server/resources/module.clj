@@ -120,8 +120,8 @@ component, or application.
 
 (defn active-claim->account-id
   [active-claim]
-  (let [filter  (format "parent='%s'" active-claim)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
+  (let [filter     (format "parent='%s'" active-claim)
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
         account-id (-> (crud/query-as-admin vendor/resource-type options)
                        second
                        first
@@ -132,7 +132,8 @@ component, or application.
 
 
 (defn set-price
-  [{{:keys [price-id amount currency] :as price} :price name :name path :path :as body}
+  [{{:keys [price-id cent-amount-hourly currency] :as price}
+    :price name :name path :path :as body}
    active-claim]
   (if price
     (let [product-id (some-> price-id
@@ -142,17 +143,19 @@ component, or application.
           account-id (active-claim->account-id active-claim)
           s-price    (stripe/create-price
                        (cond-> {"currency"    currency
-                                "unit_amount" (int (* amount 100))
+                                "unit_amount" cent-amount-hourly
                                 "recurring"   {"interval"        "month"
-                                               "aggregate_usage" "max"
+                                               "aggregate_usage" "sum"
                                                "usage_type"      "metered"}}
                                product-id (assoc "product" product-id)
-                               (nil? product-id) (assoc "product_data" {"name" (or name path)})))]
-      (assoc body :price {:price-id   (stripe/get-id s-price)
-                          :product-id (stripe/get-product s-price)
-                          :account-id account-id
-                          :amount     amount
-                          :currency   currency}))
+                               (nil? product-id) (assoc "product_data"
+                                                        {"name"       (or name path)
+                                                         "unit_label" "hour"})))]
+      (assoc body :price {:price-id           (stripe/get-id s-price)
+                          :product-id         (stripe/get-product s-price)
+                          :account-id         account-id
+                          :cent-amount-hourly cent-amount-hourly
+                          :currency           currency}))
     body))
 
 

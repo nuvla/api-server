@@ -123,8 +123,9 @@ a container orchestration engine.
                                        :customer-id)
      "items"                   [{"price" price-id}]
      "collection_method"       "send_invoice"
-     "days_until_due"          14                           ;; fixme
-     "application_fee_percent" 20                           ;; fixme
+     "days_until_due"          14
+     "application_fee_percent" 20
+     "trial_period_days"       1
      "transfer_data"           {"destination" account-id}}))
 
 

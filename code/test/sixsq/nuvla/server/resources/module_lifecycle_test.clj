@@ -273,16 +273,17 @@
                          :data-access-protocols     ["http+s3" "posix+nfs"]
 
                          :content                   valid-component
-                         :price                     {:amount   2.2
-                                                     :currency "EUR"}}]
+                         :price                     {:cent-amount-hourly 10
+                                                     :currency           "EUR"}}]
 
-    (let [uri     (-> session-user
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str valid-entry))
-                      (ltu/body->edn)
-                      (ltu/is-status 201)
-                      (ltu/location))
+    (let [uri     (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
+                    (-> session-user
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-entry))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location)))
 
           abs-uri (str p/service-context uri)]
 

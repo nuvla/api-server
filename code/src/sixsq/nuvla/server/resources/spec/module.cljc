@@ -183,13 +183,20 @@
              :json-schema/editable false)))
 
 
+(s/def ::cent-amount-hourly
+  (-> (st/spec nat-int?)
+      (assoc :name "cent-amount-hourly"
+             :json-schema/type "integer"
+             :json-schema/description "cent amount by hour")))
+
+
 (s/def ::price
   (-> (st/spec (su/only-keys
                  :req-un [::product-id
                           ::price-id
                           ::account-id
                           ::pricing/currency
-                          ::pricing/amount]))
+                          ::cent-amount-hourly]))
       (assoc :name "price"
              :json-schema/type "map"
              :json-schema/order 38)))
