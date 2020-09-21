@@ -16,10 +16,12 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -227,14 +229,15 @@ a container orchestration engine.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [start-op        (u/action-map id :start)
-        stop-op         (u/action-map id :stop)
-        update-op       (u/action-map id :update)
-        create-log-op   (u/action-map id :create-log)
-        clone-op        (u/action-map id :clone)
-        fetch-module-op (u/action-map id :fetch-module)
-        can-manage?     (a/can-manage? resource request)
-        can-clone?      (a/can-view-data? resource request)]
+  (let [start-op            (u/action-map id :start)
+        stop-op             (u/action-map id :stop)
+        update-op           (u/action-map id :update)
+        create-log-op       (u/action-map id :create-log)
+        clone-op            (u/action-map id :clone)
+        fetch-module-op     (u/action-map id :fetch-module)
+        upcoming-invoice-op (u/action-map id :upcoming-invoice)
+        can-manage?         (a/can-manage? resource request)
+        can-clone?          (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
             (and can-manage? (dep-utils/can-start? resource)) (update :operations conj start-op)
@@ -252,6 +255,8 @@ a container orchestration engine.
 
             (and can-manage? (dep-utils/can-fetch-module? resource))
             (update :operations conj fetch-module-op)
+
+            can-manage? (update :operations conj upcoming-invoice-op)
 
             (not (dep-utils/can-delete? resource))
             (update :operations dep-utils/remove-delete))))
@@ -354,6 +359,21 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "update"]
   [request]
   (update-deployment-impl request))
+
+
+(defmethod crud/do-action [resource-type "upcoming-invoice"]
+  [{{uuid :uuid} :params :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (r/json-response
+      (or (-> (str resource-type "/" uuid)
+              (crud/retrieve-by-id-as-admin)
+              (a/throw-cannot-manage request)
+              :subscription-id
+              (customer-utils/get-upcoming-invoice))
+          {}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 ;;

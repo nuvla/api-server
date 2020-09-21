@@ -384,7 +384,7 @@ Customer mapping to external banking system."
               (request->resource-id)
               (crud/retrieve-by-id-as-admin)
               (a/throw-cannot-manage request)
-              :customer-id
+              :subscription-id
               (utils/get-upcoming-invoice))
           {}))
     (catch Exception e
@@ -399,7 +399,7 @@ Customer mapping to external banking system."
         (request->resource-id)
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
-        :customer-id
+        :subscription-id
         (utils/list-invoices)
         r/json-response)
     (catch Exception e

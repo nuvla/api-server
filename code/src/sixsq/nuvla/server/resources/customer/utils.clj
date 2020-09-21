@@ -237,20 +237,20 @@
 
 
 (defn get-upcoming-invoice
-  [customer-id]
-  (some-> {"customer" customer-id}
+  [subscription-id]
+  (some-> {"subscription" subscription-id}
           stripe/get-upcoming-invoice
           (s-invoice->map true)))
 
 
 (defn list-invoices
-  [customer-id]
-  (let [paid (->> {"customer" customer-id
+  [subscription-id]
+  (let [paid (->> {"subscription" subscription-id
                    "status"   "paid"}
                   stripe/list-invoices
                   stripe/get-data
                   (map #(s-invoice->map % false)))
-        open (->> {"customer" customer-id
+        open (->> {"subscription" subscription-id
                    "status"   "open"}
                   stripe/list-invoices
                   stripe/get-data
