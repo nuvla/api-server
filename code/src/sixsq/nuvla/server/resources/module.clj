@@ -151,7 +151,7 @@ component, or application.
                                product-id (assoc "product" product-id)
                                (nil? product-id) (assoc "product_data"
                                                         {"name"       (or name path)
-                                                         "unit_label" "hour"})))]
+                                                         "unit_label" "day"})))]
       (assoc body :price {:price-id          (stripe/get-id s-price)
                           :product-id        (stripe/get-product s-price)
                           :account-id        account-id
