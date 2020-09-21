@@ -243,7 +243,7 @@
 
 ;; disabled to not create to much resources in Stripe test-account
 
-(deftest lifecycle-component-pricing
+#_(deftest lifecycle-component-pricing
   (let [session-anon    (-> (session (ltu/ring-app))
                             (content-type "application/json"))
         session-user    (header session-anon authn-info-header
