@@ -12,14 +12,13 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
 
 
@@ -176,22 +175,26 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl parent]} :body {uuid :uuid} :params :as request}]
+  [{{:keys [acl parent state]} :body {uuid :uuid} :params :as request}]
   (let [authn-info (auth/current-authentication request)
+        current    (db/retrieve (str resource-type "/" uuid) request)
         is-user?   (not (acl-resource/is-admin? authn-info))
         new-acl    (when (and is-user? acl)
-                     (if-let [current-owner (-> (str resource-type "/" uuid)
-                                                (db/retrieve request)
-                                                :owner)]
+                     (if-let [current-owner (:owner current)]
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
                        acl))
-        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
-
-    (edit-impl
-      (cond-> request
-              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id)
-              new-acl (assoc-in [:body :acl] new-acl)
-              infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
+        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)
+        stopped?   (= state "STOPPED")
+        subs-id    (when (and config-nuvla/*stripe-api-key* stopped?)
+                     (:susbscription-id current))
+        response   (edit-impl
+                     (cond-> request
+                             is-user? (update :body dissoc :owner :infrastructure-service
+                                              :subscription-id)
+                             new-acl (assoc-in [:body :acl] new-acl)
+                             infra-id (assoc-in [:body :infrastructure-service] infra-id)))]
+    (some-> subs-id stripe/retrieve-subscription (stripe/cancel-subscription {"invoice_now" true}))
+    response))
 
 
 (defn delete-impl
@@ -271,7 +274,7 @@ a container orchestration engine.
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start"))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
-          subs-id        (when (and (not stopped?) price)
+          subs-id        (when (and config-nuvla/*stripe-api-key* (not stopped?) price)
                            (some-> (auth/current-active-claim request)
                                    (create-subscription price)
                                    (stripe/get-id)))

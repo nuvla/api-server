@@ -105,6 +105,11 @@
   (try-catch-exception
     (Subscription/retrieve subscription-id)))
 
+(defn cancel-subscription
+  [s-subscription params]
+  (try-catch-exception
+    (.cancel s-subscription params)))
+
 
 (defn create-setup-intent
   [setup-intent-params]
