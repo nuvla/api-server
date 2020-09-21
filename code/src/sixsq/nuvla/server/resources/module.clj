@@ -151,11 +151,11 @@ component, or application.
                                (nil? product-id) (assoc "product_data"
                                                         {"name"       (or name path)
                                                          "unit_label" "hour"})))]
-      (assoc body :price {:price-id           (stripe/get-id s-price)
-                          :product-id         (stripe/get-product s-price)
-                          :account-id         account-id
+      (assoc body :price {:price-id          (stripe/get-id s-price)
+                          :product-id        (stripe/get-product s-price)
+                          :account-id        account-id
                           :cent-amount-daily cent-amount-daily
-                          :currency           currency}))
+                          :currency          currency}))
     body))
 
 
@@ -257,7 +257,7 @@ component, or application.
            {:keys [author commit docker-compose] :as module-content}] (-> body
                                                                           u/strip-service-attrs
                                                                           utils/split-resource)
-          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)
+          {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
                           (dissoc :compatibility :parent-path)
                           (assoc :subtype subtype)
@@ -269,36 +269,42 @@ component, or application.
         (->> module-meta
              (assoc request :body)
              edit-impl)
-        (let [content-url  (subtype->resource-url subtype)
+        (let [content-url    (subtype->resource-url subtype)
 
               [compatibility
                unsupported-options] (when docker-compose
                                       (utils/parse-get-compatibility-fields
                                         subtype docker-compose))
 
-              content-body (some-> module-content
-                                   (dissoc :unsupported-options)
-                                   (merge {:resource-type content-url})
-                                   (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                            unsupported-options)))
+              content-body   (some-> module-content
+                                     (dissoc :unsupported-options)
+                                     (merge {:resource-type content-url})
+                                     (cond-> (seq unsupported-options) (assoc :unsupported-options
+                                                                              unsupported-options)))
 
-              content-id   (when content-body
-                             (-> {:params      {:resource-name content-url}
-                                  :body        content-body
-                                  :nuvla/authn auth/internal-identity}
-                                 crud/add
-                                 :body
-                                 :resource-id))
+              content-id     (when content-body
+                               (-> {:params      {:resource-name content-url}
+                                    :body        content-body
+                                    :nuvla/authn auth/internal-identity}
+                                   crud/add
+                                   :body
+                                   :resource-id))
 
-              versions     (when content-id
-                             (conj versions
-                                   (cond-> {:href   content-id
-                                            :author author}
-                                           commit (assoc :commit commit))))]
+              versions       (when content-id
+                               (conj versions
+                                     (cond-> {:href   content-id
+                                              :author author}
+                                             commit (assoc :commit commit))))
+              price-changed? (and config-nuvla/*stripe-api-key*
+                                  (or (not= (:cent-amount-daily price)
+                                            (get-in module-meta [:price :cent-amount-daily]))
+                                      (not= (:currency price)
+                                            (get-in module-meta [:price :currency]))))]
           (edit-impl
             (assoc request
               :body
               (cond-> module-meta
+                      price-changed? (set-price (auth/current-active-claim request))
                       versions (assoc :versions versions)
                       compatibility (assoc :compatibility compatibility)))))))
     (catch Exception e
