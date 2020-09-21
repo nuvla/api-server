@@ -188,7 +188,7 @@ a container orchestration engine.
         infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)
         stopped?   (= state "STOPPED")
         subs-id    (when (and config-nuvla/*stripe-api-key* stopped?)
-                     (:susbscription-id current))
+                     (:subscription-id current))
         response   (edit-impl
                      (cond-> request
                              is-user? (update :body dissoc :owner :infrastructure-service
