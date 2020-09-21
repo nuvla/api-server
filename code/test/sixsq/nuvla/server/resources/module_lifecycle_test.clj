@@ -243,7 +243,7 @@
 
 ;; disabled to not create to much resources in Stripe test-account
 
-#_(deftest lifecycle-component-pricing
+(deftest lifecycle-component-pricing
   (let [session-anon    (-> (session (ltu/ring-app))
                             (content-type "application/json"))
         session-user    (header session-anon authn-info-header
@@ -276,23 +276,32 @@
                          :price                     {:cent-amount-daily 10
                                                      :currency          "EUR"}}]
 
-    (let [uri     (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
-                    (-> session-user
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-entry))
-                        (ltu/body->edn)
-                        (ltu/is-status 201)
-                        (ltu/location)))
+    (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
+      (let [uri      (-> session-user
+                         (request base-uri
+                                  :request-method :post
+                                  :body (json/write-str valid-entry))
+                         (ltu/body->edn)
+                         (ltu/is-status 201)
+                         (ltu/location))
 
-          abs-uri (str p/service-context uri)]
+            abs-uri  (str p/service-context uri)
+            price-id (-> session-user
+                         (request abs-uri :request-method :get)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/is-key-value #(str/starts-with? (:product-id %) "prod_") :price true)
+                         (ltu/is-key-value #(str/starts-with? (:price-id %) "price_") :price true)
+                         (get-in [:response :body :price :price-id]))]
 
-      (-> session-user
-          (request abs-uri :request-method :get)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value #(str/starts-with? (:product-id %) "prod_") :price true)
-          (ltu/is-key-value #(str/starts-with? (:price-id %) "price_") :price true)))))
+        (-> session-user
+            (request abs-uri :request-method :put
+                     :body (json/write-str (assoc-in valid-entry [:price :cent-amount-daily] 20)))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value #(and (str/starts-with? (:price-id %) "price_")
+                                    (not= (:price-id %) price-id)) :price true))
+        ))))
 
 
 (deftest bad-methods

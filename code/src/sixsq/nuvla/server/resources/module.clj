@@ -22,7 +22,8 @@ component, or application.
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.server.resources.vendor :as vendor]))
+    [sixsq.nuvla.server.resources.vendor :as vendor]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -304,7 +305,8 @@ component, or application.
             (assoc request
               :body
               (cond-> module-meta
-                      price-changed? (set-price (auth/current-active-claim request))
+                      price-changed? (-> (assoc :price (merge price (:price module-meta)))
+                                         (set-price (auth/current-active-claim request)))
                       versions (assoc :versions versions)
                       compatibility (assoc :compatibility compatibility)))))))
     (catch Exception e
