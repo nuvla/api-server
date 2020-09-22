@@ -281,7 +281,7 @@ a container orchestration engine.
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start"))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
-          subs-id        (when (and config-nuvla/*stripe-api-key* (not stopped?) price)
+          subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (create-subscription price)
                                    (stripe/get-id)))
