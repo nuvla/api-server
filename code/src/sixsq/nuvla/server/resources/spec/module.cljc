@@ -202,6 +202,16 @@
              :json-schema/order 38)))
 
 
+(s/def ::license
+  (-> (st/spec (su/only-keys
+                 :req-un [::common/name
+                          ::core/url]
+                 :opt-un [::common/description]))
+      (assoc :name "license"
+             :json-schema/type "map"
+             :json-schema/order 39)))
+
+
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
@@ -214,7 +224,8 @@
                                                       ::compatibility
                                                       ::valid
                                                       ::validation-message
-                                                      ::price]}]))
+                                                      ::price
+                                                      ::license]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))
