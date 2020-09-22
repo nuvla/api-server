@@ -186,8 +186,10 @@ a container orchestration engine.
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
                        acl))
         infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)
-        stopped?   (= state "STOPPED")
-        subs-id    (when (and config-nuvla/*stripe-api-key* stopped?)
+        stopping?  (and
+                     (= (:state current) "STOPPING")
+                     (= state "STOPPED"))
+        subs-id    (when (and config-nuvla/*stripe-api-key* stopping?)
                      (:subscription-id current))
         response   (edit-impl
                      (cond-> request
