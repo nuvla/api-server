@@ -5,7 +5,8 @@
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
     [sixsq.nuvla.server.util.spec :as su]
-    [spec-tools.core :as st]))
+    [spec-tools.core :as st]
+    [clojure.spec.alpha :as s]))
 
 
 (s/def ::parent (-> cred-spec/credential-id-spec
@@ -191,7 +192,7 @@
   #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
 (defn credential-id? [s] (re-matches credential-id-regex s))
 
-(s/def ::credential-id (s/and string? credential-id?))
+(s/def ::credential-id (s/nilable (s/and string? credential-id?)))
 
 (s/def ::registries-credentials
   (-> (st/spec (s/coll-of ::credential-id :min-count 1 :kind vector?))
