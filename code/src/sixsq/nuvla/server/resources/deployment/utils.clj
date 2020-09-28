@@ -224,14 +224,15 @@
   (if (seq registries-credentials)
     (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
                            (->> registries-credentials
-                                (map #(str "id='" (:id %) "'"))
+                                (map #(str "id='" % "'"))
                                 (str/join " or "))
                            ")")
-          res         (crud/query {:params      {:resource-name credential/resource-type}
-                                   :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                 :last   0}
-                                   :nuvla/authn (:nuvla/authn request)})]
-      (if (< (:count res) (count registries-credentials))
+          {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
+                                      :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                    :last   0}
+                                      :nuvla/authn (:nuvla/authn request)})]
+      (if (< (get body :count 0)
+             (count registries-credentials))
         (throw (r/ex-response (format "registries credentials for %s can't be accessed" id)
                               403 id))
         resource))
