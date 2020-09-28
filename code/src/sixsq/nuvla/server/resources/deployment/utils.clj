@@ -233,7 +233,7 @@
                                       :nuvla/authn (:nuvla/authn request)})]
       (if (< (get body :count 0)
              (count registries-credentials))
-        (throw (r/ex-response (format "registries credentials for %s can't be accessed" id)
+        (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
                               403 id))
         resource))
     resource))
