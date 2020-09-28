@@ -19,6 +19,98 @@ manage it.
 
 (def ^:const method "coe")
 
+
+;;
+;; Utils
+;;
+
+(defn throw-can-not-do-action
+  [{:keys [id state] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
+
+
+(defn can-start?
+  [{:keys [state] :as resource}]
+  (#{"STOPPED"} state))
+
+
+(defn can-stop?
+  [{:keys [state] :as resource}]
+  (contains? #{"STARTED"} state))
+
+
+(defn can-terminate?
+  [{:keys [state] :as resource}]
+  (contains? #{"STARTED" "STOPPED" "ERROR"} state))
+
+
+(defn can-delete?
+  [{:keys [state] :as resource}]
+  (#{"TERMINATED"} state))
+
+
+(defn queue-mgt-job
+  "Creates and queues the named service management job for the given service
+   id and user. Returns the `:body` of the job creation response."
+  [id user-id job-name]
+  (let [acl {:owners   ["group/nuvla-admin"]
+             :view-acl [user-id]}]
+    (:body (job/create-job id job-name acl :priority 50))))
+
+
+(defn edit-infra-service
+  [resource request edit-fn]
+  (-> resource
+      (edit-fn)
+      (u/update-timestamps)
+      (u/set-updated-by request)
+      (db/edit request)))
+
+
+(defn create-job
+  "Starts the given job and updates the state of the resource."
+  [resource request job-name new-state]
+  (try
+    (let [resource-id (:id resource)
+          {job-id :resource-id status :status} (queue-mgt-job
+                                                 resource-id
+                                                 (auth/current-active-claim request)
+                                                 job-name)]
+      (if (= 201 status)
+        (let [job-msg (format "created job %s with id %s" job-name job-id)]
+          (edit-infra-service resource request #(assoc % :state new-state))
+          (event-utils/create-event resource-id job-msg (a/default-acl (auth/current-authentication request)))
+          (r/map-response job-msg 202 resource-id job-id))
+        (throw (r/ex-response (format "unable to create job %s" job-name) 500 resource-id))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; CRUD operations
+;;
+
+(defn remove-delete
+  [operations]
+  (vec (remove #(= (name :delete) (:rel %)) operations)))
+
+
+(defmethod infra-service/set-crud-operations method
+  [{id :id :as resource} request]
+  (let [start-op (u/action-map id :start)
+        stop-op (u/action-map id :stop)
+        delete-op (u/action-map id :delete)
+        terminate-op (u/action-map id :terminate)
+        can-manage? (a/can-manage? resource request)]
+    (cond-> (crud/set-standard-resource-operations resource request)
+            (and can-manage? (not (can-delete? resource))) (update :operations remove-delete)
+            (and can-manage? (can-start? resource)) (update :operations conj start-op)
+            (and can-manage? (can-stop? resource)) (update :operations conj stop-op)
+            (and can-manage? (can-terminate? resource)) (update :operations conj terminate-op))))
+
+
 ;;
 ;; multimethods for validation based on COE subtypes
 ;;
@@ -74,7 +166,7 @@ manage it.
           coe-type (:subtype service)
           active-claim  (auth/current-active-claim request)
           {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id "start_infrastructure_service_coe"
+            job-status :status} :body} (job/create-job id "provision_infrastructure_service_coe"
                                                        {:owners   ["group/nuvla-admin"]
                                                         :view-acl [active-claim]}
                                                        :priority 50)
@@ -94,41 +186,42 @@ manage it.
       (or (ex-data e) (throw e)))))
 
 
-;; COE delete hook that deletes the cluster from cloud.
+;; Delete resource itself only if it's TERMINATED.
+(defmethod infra-service/delete "coe"
+  [resource request]
+  (throw-can-not-do-action resource can-delete? "delete")
+  (infra-service/delete-impl request))
 
-(defn queue-mgt-job
-  "Creates and queues the named service management job for the given service
-   id and user. Returns the `:body` of the job creation response."
-  [id user-id job-name]
-  (let [acl {:owners   ["group/nuvla-admin"]
-             :view-acl [user-id]}]
-    (:body (job/create-job id job-name acl :priority 50))))
 
-(defn update-job-state
-  [service-id state]
-  (-> (crud/retrieve-by-id-as-admin service-id)
-      (u/update-timestamps)
-      (assoc :state state)
-      #_(db/edit admin-opts)))
-
-(defn job-hook
-  "Starts the given job and updates the state of the resource."
-  [service-id request job-name new-state]
+;; Stop IS COE on CSP using job.
+(defmethod infra-service/do-action-stop method
+  [resource request]
   (try
-    (let [user-id (auth/current-active-claim request)
-          {:keys [resource-id status]} (queue-mgt-job service-id user-id job-name)]
-      (if (= 201 status)
-        (let [job-msg (format "created job %s with id %s" job-name resource-id)]
-          (update-job-state service-id new-state)
-          (event-utils/create-event service-id job-msg (a/default-acl (auth/current-authentication request)))
-          (r/map-response job-msg 202 service-id resource-id))
-        (throw (r/ex-response (format "unable to create job %s" job-name) 500 service-id))))
+    (-> resource
+        (throw-can-not-do-action can-stop? "stop")
+        (create-job request "stop_infrastructure_service_coe" "STOPPING"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-;; Terminate IS COE from CSP using job.
-(defmethod infra-service/delete-hook "coe"
-  [service request]
-  (job-hook (:id service) request "stop_infrastructure_service_coe" "STOPPING"))
 
+;; Start IS COE on CSP using job.
+(defmethod infra-service/do-action-start method
+  [resource request]
+  (try
+    (-> resource
+        (throw-can-not-do-action can-start? "start")
+        (create-job request "start_infrastructure_service_coe" "STARTING"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;; Terminate IS COE on CSP using job.
+(defmethod infra-service/do-action-terminate method
+  [resource request]
+  (try
+    (-> resource
+        (throw-can-not-do-action can-terminate? "terminate")
+        (create-job request "terminate_infrastructure_service_coe" "TERMINATING"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 

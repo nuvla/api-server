@@ -55,7 +55,8 @@
                       :address        address
                       :subscription   subscription
                       :coupon         "some-coupon-code"
-                      :payment-method "pm_something"}]
+                      :payment-method "pm_something"
+                      :email          "a@example.com"}]
 
     (stu/is-valid ::t/customer customer)
 
@@ -70,5 +71,5 @@
       (stu/is-invalid ::t/customer (dissoc customer attr)))
 
     ;optional
-    (doseq [attr #{:subscription :payment-method :coupon}]
+    (doseq [attr #{:subscription :payment-method :coupon :email}]
       (stu/is-valid ::t/customer (dissoc customer attr)))))

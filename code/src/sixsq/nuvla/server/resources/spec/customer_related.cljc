@@ -90,6 +90,10 @@
              :json-schema/type "map"
              :json-schema/description "address")))
 
+(s/def ::email
+  (-> (st/spec ::core/email)
+     (assoc :name "email")))
+
 
 (s/def ::subscription
   (-> (st/spec (su/only-keys-maps {:req-un [::plan-id
@@ -103,6 +107,7 @@
                                             ::address]
                                    :opt-un [::subscription
                                             ::payment-method
-                                            ::coupon]}))
+                                            ::coupon
+                                            ::email]}))
       (assoc :name "customer"
              :json-schema/type "map")))

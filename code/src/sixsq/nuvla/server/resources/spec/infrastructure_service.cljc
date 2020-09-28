@@ -39,6 +39,7 @@
                  "STOPPING", "STOPPED",
                  "PAUSING", "PAUSED",
                  "SUSPENDING", "SUSPENDED",
+                 "TERMINATING", "TERMINATED",
                  "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
@@ -51,6 +52,7 @@
                                                  "STOPPING", "STOPPED",
                                                  "PAUSING", "PAUSED",
                                                  "SUSPENDING", "SUSPENDED",
+                                                 "TERMINATING", "TERMINATED",
                                                  "ERROR"]
                                        :default "CREATED"})))
 
