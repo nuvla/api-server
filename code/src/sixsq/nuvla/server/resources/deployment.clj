@@ -278,7 +278,8 @@ a container orchestration engine.
   (try
     (let [id             (str resource-type "/" uuid)
           deployment     (-> (crud/retrieve-by-id-as-admin id)
-                             (dep-utils/throw-can-not-do-action dep-utils/can-start? "start"))
+                             (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
+                             (dep-utils/throw-can-not-access-registries-creds request))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           subs-id        (when (and config-nuvla/*stripe-api-key* price)

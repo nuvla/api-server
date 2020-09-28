@@ -14,7 +14,9 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]))
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [clojure.string :as str]))
 
 
 (defn generate-api-key-secret
@@ -215,6 +217,25 @@
   (if (pred resource)
     resource
     (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
+
+
+(defn throw-can-not-access-registries-creds
+  [{:keys [id registries-credentials] :as resource} request]
+  (if (seq registries-credentials)
+    (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
+                           (->> registries-credentials
+                                (map #(str "id='" (:id %) "'"))
+                                (str/join " or "))
+                           ")")
+          res         (crud/query {:params      {:resource-name credential/resource-type}
+                                   :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                 :last   0}
+                                   :nuvla/authn (:nuvla/authn request)})]
+      (if (< (:count res) (count registries-credentials))
+        (throw (r/ex-response (format "registries credentials for %s can't be accessed" id)
+                              403 id))
+        resource))
+    resource))
 
 
 (defn remove-delete
