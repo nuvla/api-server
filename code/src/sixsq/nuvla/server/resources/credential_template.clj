@@ -147,7 +147,6 @@ curl https://nuvla.io/api/credential-template
         entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         updated-entries         (remove nil? (map #(a/select-viewable-keys % request) entries))
         ;; FIXME: At least the paging options should be supported.
-        options                 (select-keys request [:user-id :claims :query-params :cimi-params])
         count-before-pagination (count updated-entries)
         wrapped-entries         (wrapper-fn request updated-entries)
         entries-and-count       (assoc wrapped-entries :count count-before-pagination)]

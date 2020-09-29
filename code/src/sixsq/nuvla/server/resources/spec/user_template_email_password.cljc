@@ -2,6 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.customer-related :as customer]
     [sixsq.nuvla.server.resources.spec.user-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -33,7 +34,6 @@
              :json-schema/order 22
              :json-schema/sensitive true)))
 
-
 ;; no good defaults for these keys, make them optional in template
 (def user-template-email-password-keys-opt
   {:opt-un [::username
@@ -51,6 +51,9 @@
 (def user-template-email-password-keys-href
   {:opt-un [::ps/href]})
 
+(def customer-template-keys
+  {:opt-un [::customer/customer]})
+
 
 ;; Defines the contents of the password user-template resource itself.
 (s/def ::schema
@@ -62,7 +65,8 @@
 (s/def ::template
   (-> (st/spec (su/only-keys-maps ps/template-keys-spec
                                   user-template-email-password-keys-req
-                                  user-template-email-password-keys-href))
+                                  user-template-email-password-keys-href
+                                  customer-template-keys))
       (assoc :name "template"
              :json-schema/type "map")))
 

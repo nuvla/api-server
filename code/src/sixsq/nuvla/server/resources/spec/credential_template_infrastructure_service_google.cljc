@@ -6,41 +6,22 @@
     [spec-tools.core :as st]))
 
 
-(s/def ::project-id
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "project_id"
-             :json-schema/type "string"
+(s/def ::google-username
+       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+           (assoc :name "google-username"
+                  :json-schema/type "string"
 
-             :json-schema/description "Google Compute project ID to use"
-             :json-schema/order 20)))
-
-
-(s/def ::private-key-id
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "private_key_id"
-             :json-schema/type "string"
-
-             :json-schema/description "ID of the private key"
-             :json-schema/order 21)))
+                  :json-schema/description "User name associated with the service account"
+                  :json-schema/order 20)))
 
 
-(s/def ::private-key
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "private_key"
-             :json-schema/type "string"
+(s/def ::google-project
+       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+           (assoc :name "google-project"
+                  :json-schema/type "string"
 
-             :json-schema/description "Private key content"
-             :json-schema/order 22
-             :json-schema/sensitive true)))
-
-
-(s/def ::client-email
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-      (assoc :name "client_email"
-             :json-schema/type "string"
-
-             :json-schema/description "Client email associated with the service account"
-             :json-schema/order 23)))
+                  :json-schema/description "User project to use for provisoining"
+                  :json-schema/order 21)))
 
 
 (s/def ::client-id
@@ -49,59 +30,35 @@
              :json-schema/type "string"
 
              :json-schema/description "Client ID associated with the service account"
-             :json-schema/order 24)))
+             :json-schema/order 22)))
 
 
-;(s/def ::auth-uri
-;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-;           (assoc :name "auth_uri"
-;                  :json-schema/type "string"
-;
-;                  :json-schema/description "Authentication URI"
-;                  :json-schema/order 25)))
+(s/def ::client-secret
+       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+           (assoc :name "client_secret"
+                  :json-schema/type "string"
 
-;
-;(s/def ::token-uri
-;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-;           (assoc :name "token_uri"
-;                  :json-schema/type "string"
-;
-;                  :json-schema/description "Token URI"
-;                  :json-schema/order 26)))
+                  :json-schema/description "Client secret associated with the service account"
+                  :json-schema/order 23)))
 
-;
-;(s/def ::auth-provider-x509-cert-url
-;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-;           (assoc :name "auth_provider_x509_cert_url"
-;                  :json-schema/type "string"
-;
-;                  :json-schema/description "Provider X509 certificates URL"
-;                  :json-schema/order 27)))
-;
-;
-;(s/def ::client-x509-cert-url
-;       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-;           (assoc :name "client_x509_cert_url"
-;                  :json-schema/type "string"
-;
-;                  :json-schema/description "Client X509 certificates URL"
-;                  :json-schema/order 27)))
 
+(s/def ::refresh-token
+       (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+           (assoc :name "refresh_token"
+                  :json-schema/type "string"
+
+                  :json-schema/description "Refresh token for the creds."
+                  :json-schema/order 24)))
 
 
 (def credential-template-keys-spec
-  {:req-un [::project-id
-            ::private-key-id
-            ::private-key
-            ::client-email
-            ::client-id]})
+  {:req-un [::google-username
+            ::client-id
+            ::client-secret
+            ::refresh-token]
+   :opt-un [::google-project]})
 
-(def credential-template-create-keys-spec
-  {:req-un [::project-id
-            ::private-key-id
-            ::private-key
-            ::client-email
-            ::client-id]})
+(def credential-template-create-keys-spec credential-template-keys-spec)
 
 ;; Defines the contents of the api-key CredentialTemplate resource itself.
 (s/def ::schema

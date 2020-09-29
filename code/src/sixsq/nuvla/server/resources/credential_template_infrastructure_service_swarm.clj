@@ -9,14 +9,11 @@ the user's public certificate ('cert'), and the user's private key ('key').
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-swarm :as ct-infra-service-swarm]
+    [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-coe :as ct-infra-service-coe]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const credential-subtype "infrastructure-service-swarm")
-
-
-(def ^:const resource-url credential-subtype)
 
 
 (def ^:const method "infrastructure-service-swarm")
@@ -44,7 +41,7 @@ the user's public certificate ('cert'), and the user's private key ('key').
 ;; multimethods for validation
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::ct-infra-service-swarm/schema))
+(def validate-fn (u/create-spec-validation-fn ::ct-infra-service-coe/schema))
 (defmethod p/validate-subtype method
   [resource]
   (validate-fn resource))
@@ -54,10 +51,10 @@ the user's public certificate ('cert'), and the user's private key ('key').
 ;; initialization: register this credential-template
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-coe/schema))
 
 
-(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-swarm/schema-create "create"))
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::ct-infra-service-coe/schema-create "create"))
 
 
 (defn initialize

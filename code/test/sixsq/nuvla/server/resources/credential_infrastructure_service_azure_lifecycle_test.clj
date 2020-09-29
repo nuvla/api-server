@@ -26,7 +26,7 @@
   (let [session               (-> (ltu/ring-app)
                                   session
                                   (content-type "application/json"))
-        session-admin         (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin         (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user          (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon          (header session authn-info-header "user/unknown group/nuvla-anon")
 
@@ -51,8 +51,7 @@
                                :template    {:href                  href
                                              :azure-subscription-id "abc"
                                              :azure-client-secret   "def"
-                                             :azure-client-id       "ghi"
-                                             :parent                "infrastructure-service/service-1"}}]
+                                             :azure-client-id       "ghi"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]

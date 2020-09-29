@@ -26,12 +26,22 @@
 (def parameter-name "param1")
 
 
+(def parameter-name-user "param.user")
+
+
 (def valid-entry
   {:name    parameter-name
    :parent  parent-id
    :node-id node-id
    :acl     {:owners   ["group/nuvla-admin"]
              :edit-acl ["user/jane"]}})
+
+
+(def valid-entry-user
+  {:name    parameter-name-user
+   :parent  parent-id
+   :node-id node-id
+   :acl     {:owners   ["user/jane"]}})
 
 
 (def expected-dp-id (str "deployment-parameter/" (t/parameter->uuid parent-id node-id parameter-name)))
@@ -45,7 +55,7 @@
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-jane  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
 
@@ -65,7 +75,7 @@
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
-        (ltu/is-operation-absent :add)
+        (ltu/is-operation-present :add)
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
 
@@ -91,12 +101,13 @@
 
           test-uri      (str p/service-context id-test)]
 
+      ; user can also create
       (-> session-jane
           (request base-uri
                    :request-method :post
-                   :body (json/write-str valid-entry))
+                   :body (json/write-str valid-entry-user))
           (ltu/body->edn)
-          (ltu/is-status 403))
+          (ltu/is-status 201))
 
       (is (= location-test test-uri))
 

@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info
      :refer [authn-cookie authn-info-header wrap-authn-info]]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
@@ -77,7 +78,7 @@
         session-json     (content-type (session app) "application/json")
         session-anon     (header session-json authn-info-header "user/unknown group/nuvla-anon")
         session-user     (header session-json authn-info-header "user group/nuvla-user")
-        session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href             (str st/resource-type "/password")
 
@@ -139,8 +140,7 @@
                                           :username username
                                           :password plaintext-password
                                           :activated? true
-                                          :email "jane@example.org")
-          ]
+                                          :email "jane@example.org")]
 
       ; anonymous create must succeed
       (let [resp       (-> session-anon
@@ -164,10 +164,10 @@
                  "group/nuvla-anon"
                  uri
                  jane-user-id}
-               (-> authn-info
-                   :claims
-                   (str/split #"\s")
-                   set)))
+               (some-> authn-info
+                       :claims
+                       (str/split #"\s")
+                       set)))
         (is (= uri (:session authn-info)))
         (is (not (nil? (:exp authn-info))))
 
@@ -286,7 +286,7 @@
   (let [app                (ltu/ring-app)
         session-json       (content-type (session app) "application/json")
         session-anon       (header session-json authn-info-header "user/unknown group/nuvla-anon")
-        session-admin      (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin      (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         href               (str st/resource-type "/password")
 
@@ -375,7 +375,7 @@
               claim-op-url      (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url :claim))]
+                                    (ltu/get-op-url :switch-group))]
 
           (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
               (ltu/body->edn)
@@ -383,7 +383,7 @@
               (ltu/is-id session-2-id)
               (ltu/is-operation-present :delete)
               (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :claim))
+              (ltu/is-operation-present :switch-group))
 
           ;; claiming group-beta should fail
           (-> (apply request session-json
@@ -391,7 +391,7 @@
                               :request-method :post] authn-session-2))
               (ltu/body->edn)
               (ltu/is-status 403)
-              (ltu/message-matches #"Switch account cannot be done to requested claim:.*"))
+              (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
 
           ;; claim with old session fail because wasn't in group/alpha
           (-> (apply request session-json
@@ -414,11 +414,16 @@
                                         handler
                                         seq
                                         flatten)]
-            (is (= group-alpha
+            (is (= {:active-claim group-alpha
+                    :claims       #{"group/nuvla-anon"
+                                    "group/nuvla-user"
+                                    session-2-id
+                                    group-alpha}
+                    :groups       #{"group/alpha"}
+                    :user-id      user-id}
                    (-> {:cookies cookie-claim}
                        handler
-                       auth/current-authentication
-                       :user-id)))
+                       auth/current-authentication)))
 
             (-> (apply request session-json (concat [session-2-abs-uri] authn-session-claim))
                 (ltu/body->edn)
@@ -426,21 +431,27 @@
                 (ltu/is-id session-2-id)
                 (ltu/is-operation-present :delete)
                 (ltu/is-operation-absent :edit)
-                (ltu/is-operation-present :claim))
+                (ltu/is-operation-present :switch-group))
 
             ;; try create NuvlaBox and check who is the owner
-            (let [nuvlabox-url (-> (apply request session-json
-                                          (concat [(str p/service-context nuvlabox/resource-type)
-                                                   :body (json/write-str {})
-                                                   :request-method :post] authn-session-claim))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+            (binding [config-nuvla/*stripe-api-key* nil]
+              (let [nuvlabox-url (-> (apply request session-json
+                                            (concat [(str p/service-context nuvlabox/resource-type)
+                                                     :body (json/write-str {})
+                                                     :request-method :post] authn-session-claim))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201)
+                                     (ltu/location-url))]
 
-              (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :owner group-alpha)))
+                (-> session-admin
+                    (request nuvlabox-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200))
+
+                (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :owner group-alpha))))
 
             (let [cookie-claim-back (-> (apply request session-json
                                                (concat [claim-op-url :body (json/write-str

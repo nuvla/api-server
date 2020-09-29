@@ -259,6 +259,8 @@ voucher via the 'expire' operation.
             (db/retrieve request)
             (a/throw-cannot-manage request)
             distribute
+            (u/update-timestamps)
+            (u/set-updated-by request)
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))
@@ -282,15 +284,17 @@ voucher via the 'expire' operation.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id      (str resource-type "/" uuid)
-          user-id (auth/current-user-id request)
+          active-claim (auth/current-active-claim request)
           voucher (db/retrieve id request)
-          new-acl (update (:acl voucher) :manage conj user-id)]
+          new-acl (update (:acl voucher) :manage conj active-claim)]
       (try
         (-> id
             (db/retrieve request)
             (a/throw-cannot-view-data request)
             activate
-            (assoc :user user-id :acl new-acl)
+            (assoc :user active-claim :acl new-acl)
+            (u/update-timestamps)
+            (u/set-updated-by request)
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))
@@ -319,6 +323,8 @@ voucher via the 'expire' operation.
             (db/retrieve request)
             (a/throw-cannot-manage request)
             redeem
+            (u/update-timestamps)
+            (u/set-updated-by request)
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))
@@ -347,6 +353,8 @@ voucher via the 'expire' operation.
             (db/retrieve request)
             (a/throw-cannot-manage request)
             expire
+            (u/update-timestamps)
+            (u/set-updated-by request)
             (db/edit request))
         (catch Exception ei
           (ex-data ei))))

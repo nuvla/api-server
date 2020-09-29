@@ -2,7 +2,6 @@
   (:require
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.util.spec :as su]))
 
 

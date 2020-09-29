@@ -12,12 +12,16 @@ existing `infrastructure-service-template` resource.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -121,8 +125,8 @@ existing `infrastructure-service-template` resource.
 ;;
 
 (defmulti post-add-hook
-          (fn [service request]
-            (:method service)))
+  (fn [service request]
+    (:method service)))
 
 
 ;; default post-add hook is a no-op
@@ -134,6 +138,67 @@ existing `infrastructure-service-template` resource.
 ;;
 ;; CRUD operations
 ;;
+
+
+(defmulti set-crud-operations
+  (fn [resource request]
+    (:method resource)))
+
+
+(defmethod set-crud-operations :default
+  [resource request]
+  (crud/set-standard-operations resource request))
+
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (set-crud-operations resource request))
+
+
+(defmulti do-action-stop
+  (fn [resource request]
+    (:method resource)))
+
+
+(defmethod do-action-stop :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "stop"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-stop resource request)) )
+
+
+
+(defmulti do-action-start
+          (fn [resource request]
+            (:method resource)))
+
+
+(defmethod do-action-start :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "start"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-start resource request)) )
+
+
+(defmulti do-action-terminate
+          (fn [resource request]
+            (:method resource)))
+
+
+(defmethod do-action-terminate :default
+  [_ _])
+
+
+(defmethod crud/do-action [resource-type "terminate"]
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
+    (do-action-terminate resource request)) )
 
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
@@ -159,7 +224,6 @@ existing `infrastructure-service-template` resource.
         response           (add-impl (assoc request :body service))
         id                 (-> response :body :resource-id)
         service            (assoc service :id id)]
-
     (post-add-hook service request)
     response))
 
@@ -183,9 +247,20 @@ existing `infrastructure-service-template` resource.
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
-(defmethod crud/delete resource-type
-  [request]
+(defmulti delete
+  (fn [resource request]
+    (:method resource)))
+
+
+(defmethod delete :default
+  [resource request]
   (delete-impl request))
+
+
+(defmethod crud/delete resource-type
+  [{{uuid :uuid} :params :as request}]
+  (let [resource (db/retrieve (str resource-type "/" uuid) request)]
+    (delete resource request)))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

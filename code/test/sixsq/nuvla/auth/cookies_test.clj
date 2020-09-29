@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [update])
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [environ.core :as environ]
     [peridot.core :refer [content-type header request session]]
@@ -82,9 +81,7 @@
 
 (deftest check-collect-groups-for-user
   (with-redefs [db/query (constantly nil)]
-    (let [result (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")]
-      (is (= #{"group/nuvla-user" "group/nuvla-anon"
-               "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"} (set (str/split result #"\s")))))))
+    (is (= #{} (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")))))
 
 
 (deftest check-collect-groups-for-user-with-real-groups
@@ -120,7 +117,8 @@
       (-> session-admin
           (request admin-group-uri
                    :request-method :put
-                   :body (json/write-str (assoc body :users (vec (distinct (concat existing-users users))))))
+                   :body (json/write-str
+                           (assoc body :users (vec (distinct (concat existing-users users))))))
           (ltu/body->edn)
           (ltu/is-status 200))
 
@@ -139,6 +137,5 @@
 
       ;; check that the changes have been picked up
       (let [result (t/collect-groups-for-user user-id)]
-        (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon" "group/test-group"
-                 user-id}
-               (set (str/split result #"\s"))))))))
+        (is (= #{"group/nuvla-admin" "group/test-group"}
+               result))))))

@@ -2,15 +2,65 @@
 
 ## Unreleased
 
-### Added
+### Changed
 
-  - inferred-location attribute to nuvlabox-status schema
+  - NuvlaBox status - Inferred-location attribute
+  - NuvlaBox status - New optional container-plugins attribute
+
+## [5.2.0] - 2020-09-04
 
 ### Changed
 
+  - New optional nuvlabox-status attribute for GPIO telemetry
+  - New optional nuvlabox-engine-version attribute in nuvlabox-status
+  - Customer - Susbscription send invoices by default
+  - Switch group - allow switch to group/nuvla-admin
+    user super has to do a switch to do administative tasks
+  - Customer - Make email for group at creation time
+    mandatory
+  - Customer - Consider past due status subscription
+    as active
+
+## [5.1.0] - 2020-07-31
+
+### Added
+
+  - New cimi common attributes to store user-id
+    (created-by, updated-by)
+
+### Changed
+
+  - Deps - Update cc.qbits/spandex 0.7.5
+  - Session - Switch group implementation replace
+    claim operation
+  - Edit implementation for NuvlaBox Peripherals, to restart NuvlaBox
+    data gateway streaming based on updated attributes
+
+## [5.0.0] - 2020-07-06
+
+### Added
+
+  - New credential type "ssh-key"
+  - New action "add-ssh-key" for NuvlaBox resource
+  - New action "revoke-ssh-key" for NuvlaBox resource 
+  - Customer resource
+  - Pricing resource
+  - Stripe wrapper library
+  - Provisioning of Docker Swarm and Kubernetes on AWS, Azure, Google,
+    and Exoscale.
+
+### Changed
+
+  - Dependency - use temporary spandex 0.7.5-SNAPSHOT
+  - Deployment, NuvlaBox, Credential subtype VPN return 402 HTTP code
+    when stripe configured and user doesn't have an active subscription
+  - Deployment - new owner and infrastructure service attribute
+  - Configuration nuvla got a new stripe-api-key attribute
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
-    
+  - Let users create deployment parameters
+
+
 ## [4.2.16] - 2020-05-12
 
 ### Changed

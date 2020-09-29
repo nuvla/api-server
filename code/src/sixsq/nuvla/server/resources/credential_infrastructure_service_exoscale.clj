@@ -22,8 +22,7 @@ correspond exactly to those required by `docker-machine`.
                           :subtype                 subtype
                           :method                  method
                           :exoscale-api-key        exoscale-api-key
-                          :exoscale-api-secret-key exoscale-api-secret-key
-                          :parent                  parent}
+                          :exoscale-api-secret-key exoscale-api-secret-key}
                          acl (assoc :acl acl))]
     [nil resource]))
 

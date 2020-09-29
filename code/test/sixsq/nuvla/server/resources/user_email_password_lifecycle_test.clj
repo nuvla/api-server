@@ -2,14 +2,19 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
+    [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.pricing :as pricing]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
@@ -35,7 +40,7 @@
         session         (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-        session-admin   (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user    (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon    (header session authn-info-header "user/unknown group/nuvla-anon")]
 
@@ -245,3 +250,85 @@
               (ltu/is-count 0))
 
           )))))
+
+
+(deftest lifecycle-with-customer
+  (if-not (env/env :stripe-api-key)
+    (log/error "Integration with customer is not tested because lack of stripe-api-key!")
+
+    (with-redefs [email-utils/extract-smtp-cfg
+                                      (fn [_] {:host "smtp@example.com"
+                                               :port 465
+                                               :ssl  true
+                                               :user "admin"
+                                               :pass "password"})
+
+                  postal/send-message (fn [_ {:keys [body]}]
+                                        {:code 0, :error :SUCCESS, :message "OK"})]
+      (let [session            (-> (ltu/ring-app)
+                                  session
+                                  (content-type "application/json"))
+           session-admin      (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+           session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
+
+           href               (str user-tpl/resource-type "/" email-password/registration-method)
+
+           plaintext-password "Plaintext-password-1"
+
+           customer           {:fullname     "toto"
+                               :address      {:street-address "Av. quelque chose"
+                                              :city           "Meyrin"
+                                              :country        "CH"
+                                              :postal-code    "1217"}
+                               :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
+                                              :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
+                                                              "price_1GzOC6HG9PNMTNBOEb5819lm"
+                                                              "price_1GzOdmHG9PNMTNBOCvJLV4pT"
+                                                              "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}}
+
+           tmpl               {:template {:href     href
+                                          :password plaintext-password
+                                          :email    "alex@example.org"
+                                          :customer customer}}]
+
+       (-> session-admin
+           (request (str p/service-context pricing/resource-type)
+                    :request-method :post
+                    :body (json/write-str {}))
+           (ltu/body->edn)
+           (ltu/is-status 201))
+
+
+       ;; create user
+       (let [resp         (-> session-anon
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str tmpl))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
+             user-id      (ltu/body-resource-id resp)
+             session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
+
+         ; credential password is created and visible by the created user
+         (-> session-user
+             (request (str p/service-context user-id))
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/body))
+
+         (-> session-user
+             (request (str p/service-context user-id)
+                      :request-method :delete)
+             (ltu/body->edn)
+             (ltu/is-status 200))
+
+         ; 1 customer is visible for the created user
+         (doseq [{:keys [customer-id]} (-> session-user
+                                           (request (str p/service-context customer/resource-type))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-count 1)
+                                           (ltu/entries))]
+           (-> customer-id
+               stripe/retrieve-customer
+               stripe/delete-customer)))))))

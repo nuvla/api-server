@@ -64,9 +64,9 @@ from the response! The secret cannot be recovered from the server later.**
   (vec (remove #(re-matches #"^session/.*" %) roles)))
 
 (defn extract-claims [request]
-  (let [{:keys [user-id claims]} (auth/current-authentication request)
+  (let [{:keys [active-claim claims]} (auth/current-authentication request)
         roles (strip-session-role claims)]
-    (cond-> {:identity user-id}
+    (cond-> {:identity active-claim}
             (seq roles) (assoc :roles (vec roles)))))
 
 (def valid-ttl? (every-pred int? pos?))

@@ -24,6 +24,7 @@
   {:request-method :get
    :uri            test-url
    :nuvla/authn    {:user-id user-id
+                    :active-claim user-id
                     :claims  claims}
    :query-string   query-string
    :body           "body-content"})

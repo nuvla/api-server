@@ -64,11 +64,11 @@
   (let [user-id    "user/root"
         server     "nuvla.io"
         headers    {:nuvla-ssl-server-name server}
-        claims     #{"user/root" "group/nuvla-admin" "group/nuvla-user" "group/nuvla-anon"}
+        claims     #{"user/root" "group/nuvla-user" "group/nuvla-anon"}
         session-id "session/72e9f3d8-805a-421b-b3df-86f1af294233"
         client-ip  "127.0.0.1"]
     (is (= {:client-ip "127.0.0.1"
-            :claims    (str "group/nuvla-admin group/nuvla-anon group/nuvla-user user/root " session-id)
+            :claims    (str "group/nuvla-anon group/nuvla-user user/root " session-id)
             :user-id   "user/root"
             :server    "nuvla.io"
             :session   "session/72e9f3d8-805a-421b-b3df-86f1af294233"}
@@ -105,7 +105,7 @@
             session-anon        (header session-json authn-info-header "user/unknown group/nuvla-anon")
             session-user        (header session-json authn-info-header "user/user group/nuvla-user group/nuvla-anon")
             session-admin       (header session-json authn-info-header
-                                        "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                        "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
             ;;
             ;; create the session template to use for these tests

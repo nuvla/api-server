@@ -16,7 +16,8 @@ nuvlabox.
     [sixsq.nuvla.server.resources.spec.nuvlabox-peripheral :as nb-peripheral]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.acl-resource :as acl-resource]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -37,15 +38,18 @@ nuvlabox.
 (defn create-job
   [{:keys [id parent]} request action]
   (try
-    (let [user-id (auth/current-user-id request)
+    (let [authn-info (auth/current-authentication request)
           {{job-id     :resource-id
-            job-status :status} :body} (job/create-job id action
-                                                       {:owners   ["group/nuvla-admin"]
-                                                        :edit-acl [user-id]}
-                                                       :priority 50
-                                                       :affected-resources [{:href id}
-                                                                            {:href parent}])
-          job-msg (str "starting " id " with async " job-id)]
+            job-status :status} :body} (job/create-job
+                                         id action
+                                         (if (acl-resource/is-admin? authn-info)
+                                           {:owners ["group/nuvla-admin"]}
+                                           {:owners   ["group/nuvla-admin"]
+                                            :edit-acl [(auth/current-active-claim request)]})
+                                         :priority 50
+                                         :affected-resources [{:href id}
+                                                              {:href parent}])
+          job-msg    (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response
                  (format "unable to create async job to %s" action) 500 id)))
@@ -128,11 +132,11 @@ nuvlabox.
 (defmethod crud/add-acl resource-type
   [resource request]
   (when-let [nuvlabox-id (:parent resource)]
-    (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)]
-      (assoc resource :acl
-                      (-> nuvlabox-acl
-                          (utils/set-acl-nuvlabox-view-only {:owners [nuvlabox-id]})
-                          (assoc :manage (:view-acl nuvlabox-acl)))))))
+    (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
+          view-acl (:view-acl nuvlabox-acl)]
+      (assoc resource
+        :acl (cond-> (utils/set-acl-nuvlabox-view-only nuvlabox-acl {:owners [nuvlabox-id]})
+                     (not-empty view-acl) (assoc :manage view-acl))))))
 
 
 ;;
@@ -151,7 +155,16 @@ nuvlabox.
 
 
 (defmethod crud/edit resource-type
-  [request]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id       (str resource-type "/" uuid)
+          resource (db/retrieve id request)]
+      (when (and (has-video-capability? body) (:data-gateway-enabled resource))
+        (-> resource
+          (a/throw-cannot-manage request)
+          (create-job request "restart-stream"))))
+    (catch Exception e
+      (or (ex-data e) (throw e))))
   (edit-impl request))
 
 

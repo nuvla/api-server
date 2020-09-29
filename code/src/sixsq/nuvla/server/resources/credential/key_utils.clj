@@ -1,7 +1,11 @@
 (ns sixsq.nuvla.server.resources.credential.key-utils
   (:require
     [buddy.hashers :as hashers]
-    [clojure.string :as str]))
+    [clojure.string :as str])
+  (:import (java.io ByteArrayOutputStream DataOutputStream StringWriter)
+           (java.security KeyPairGenerator)
+           (java.util Base64)
+           (org.bouncycastle.openssl.jcajce JcaPEMWriter)))
 
 
 ;;
@@ -50,3 +54,38 @@
                     (sequence secret-xform)
                     (str/join "."))]
     [secret (digest secret)]))
+
+
+(defn private-key->string
+  [priv-key]
+  (let [sw (new StringWriter)]
+    (doto (new JcaPEMWriter sw)
+      (.writeObject priv-key)
+      (.close))
+    (-> sw .getBuffer .toString)))
+
+
+(defn public-key->string
+  [pub-key]
+  (let [baos           (new ByteArrayOutputStream)
+        ssh-rsa-bytes  (.getBytes "ssh-rsa" "US-ASCII")
+        exponent-bytes (.toByteArray (.getPublicExponent pub-key))
+        modulus-bytes  (.toByteArray (.getModulus pub-key))]
+    (doto (new DataOutputStream baos)
+      (.writeInt (alength ssh-rsa-bytes))
+      (.write ssh-rsa-bytes)
+      (.writeInt (alength exponent-bytes))
+      (.write exponent-bytes)
+      (.writeInt (alength modulus-bytes))
+      (.write modulus-bytes)
+      (.close))
+    (str "ssh-rsa " (.encodeToString (Base64/getEncoder) (.toByteArray baos)))))
+
+
+(defn generate-ssh-keypair
+  []
+  (let [key-gen  (doto (KeyPairGenerator/getInstance "RSA")
+                   (.initialize 3072))
+        key-pair (.generateKeyPair key-gen)]
+    [(-> key-pair .getPublic public-key->string)
+     (-> key-pair .getPrivate private-key->string)]))

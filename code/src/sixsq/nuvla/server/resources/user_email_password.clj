@@ -53,9 +53,9 @@ address and password.
 (defmethod p/post-user-add email-password/registration-method
   [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
   (try
-    (let [{{:keys [email password username]} :template} body
+    (let [{{:keys [email password username customer]} :template} body
           callback-data {:redirect-url redirect-url}]
-      (user-utils/create-user-subresources id email password username)
+      (user-utils/create-user-subresources id email password username customer)
       (-> (create-user-email-callback base-uri id :data callback-data)
           (email-utils/send-validation-email email)))
     (catch Exception e

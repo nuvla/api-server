@@ -13,12 +13,13 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as srvc-azure]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-exoscale :as srvc]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry
-     :as srvc-registry]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as srvc-registry]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as srvc-vpn]
+    [sixsq.nuvla.server.resources.credential-template-ssh-key :as sshkey]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as swarm-token]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -32,6 +33,7 @@
 
 (deftest check-retrieve-by-id
   (doseq [registration-method [akey/method
+                               sshkey/method
                                hashed-password/method
                                srvc-aws/method
                                srvc-azure/method
@@ -49,6 +51,7 @@
   (mdtu/check-metadata-exists ct/resource-type)
 
   (doseq [resource-url [akey/resource-url
+                        sshkey/resource-url
                         hashed-password/resource-url
                         srvc-aws/credential-subtype
                         srvc-azure/credential-subtype
@@ -80,9 +83,11 @@
         methods      (set (map :method entries))
         types        (set (map :subtype entries))]
     (is (= #{(str ct/resource-type "/" akey/method)
+             (str ct/resource-type "/" sshkey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" srvc-minio/method)
              (str ct/resource-type "/" srvc-swarm/method)
+             (str ct/resource-type "/" srvc-kubernetes/method)
              (str ct/resource-type "/" srvc-aws/method)
              (str ct/resource-type "/" srvc-azure/method)
              (str ct/resource-type "/" srvc/method)
@@ -92,10 +97,12 @@
              (str ct/resource-type "/" srvc-registry/method)}
            ids))
     (is (= #{akey/method
+             sshkey/method
              hashed-password/method
              srvc-minio/method
              srvc-registry/method
              srvc-swarm/method
+             srvc-kubernetes/method
              srvc-aws/method
              srvc-azure/method
              srvc/method
@@ -103,10 +110,12 @@
              srvc-vpn/method
              swarm-token/method} methods))
     (is (= #{akey/credential-subtype
+             sshkey/credential-subtype
              hashed-password/credential-subtype
              srvc-minio/credential-subtype
              srvc-registry/credential-subtype
              srvc-swarm/credential-subtype
+             srvc-kubernetes/credential-subtype
              srvc-aws/credential-subtype
              srvc-azure/credential-subtype
              srvc/credential-subtype

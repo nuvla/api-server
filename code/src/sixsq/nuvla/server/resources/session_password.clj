@@ -55,8 +55,10 @@ password.
           cookie      (cookies/create-cookie cookie-info)
           expires     (ts/rfc822->iso8601 (:expires cookie))
           claims      (:claims cookie-info)
+          groups      (:groups cookie-info)
           session     (cond-> (assoc session :expiry expires)
-                              claims (assoc :roles claims))
+                              claims (assoc :roles claims)
+                              groups (assoc :groups groups))
           cookies     {authn-info/authn-cookie cookie}]
       (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
       [{:cookies cookies} session])

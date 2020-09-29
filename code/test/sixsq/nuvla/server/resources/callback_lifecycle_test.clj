@@ -27,7 +27,7 @@
                           session
                           (content-type "application/json"))
         session-admin (header session authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "group/nuvla-anon")]
 
@@ -100,7 +100,9 @@
             original-updated-timestamp (:updated reread-test-callback)]
 
         (is (= (ltu/strip-unwanted-attrs reread-test-callback)
-               (ltu/strip-unwanted-attrs (assoc create-test-callback :state "WAITING"))))
+               (ltu/strip-unwanted-attrs (assoc create-test-callback
+                                           :state "WAITING"
+                                           :created-by "group/nuvla-admin"))))
 
         ;; mark callback as failed
         (utils/callback-failed! id-test)

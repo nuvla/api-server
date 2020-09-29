@@ -114,7 +114,6 @@ creating a group and does not provide any useful defaults.
   (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type false false)
         entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options                 (select-keys request [:user-id :claims :query-params :cimi-params])
         count-before-pagination (count entries)
         wrapped-entries         (wrapper-fn request entries)
         entries-and-count       (assoc wrapped-entries :count count-before-pagination)]

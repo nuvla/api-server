@@ -54,7 +54,8 @@
                :hw-revision-code               "a020d3"
                :monitored                      true
                :vpn-server-id                  "infrastructure-service/uuid-1"
-               :internal-data-gateway-endpoint "nb-data-gateway"})
+               :internal-data-gateway-endpoint "nb-data-gateway"
+               :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]})
 
 
 (deftest check-nuvlabox
@@ -90,5 +91,6 @@
                  :os-version
                  :hw-revision-code
                  :monitored
-                 :infrastructure-service-id}]
+                 :infrastructure-service-id
+                 :ssh-keys}]
     (stu/is-valid ::nb-1/schema (dissoc valid-nb attr))))

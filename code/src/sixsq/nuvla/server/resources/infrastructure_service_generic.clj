@@ -32,3 +32,4 @@ an endpoint.
   [{:keys [state] :as resource}]
   (cond-> (dissoc resource :href :resource-metadata)
           (nil? state) (assoc :state "STARTED")))
+

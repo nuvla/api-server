@@ -43,4 +43,3 @@ manage it.
 (defmethod infra-service/tpl->service method
   [resource]
   (dissoc resource :href :resource-metadata))
-

@@ -4,6 +4,7 @@ Contains the functions necessary to create a user resource from an invitation
 using an email address.
 "
   (:require
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -51,16 +52,16 @@ using an email address.
 
 
 (defmethod p/post-user-add email-invitation/registration-method
-  [{:keys [id redirect-url] :as resource} {:keys [base-uri body nuvla/authn] :as request}]
+  [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
   (try
     (let [{{:keys [email]} :template} body
           callback-data      {:redirect-url redirect-url}
-          invited-by-user-id (:user-id authn)
+          invited-by-user-id (auth/current-active-claim request)
           invited-by         (try
                                (crud/retrieve-by-id-as-admin invited-by-user-id)
                                (catch Exception _
                                  invited-by-user-id))]
-      (user-utils/create-user-subresources id email nil nil)
+      (user-utils/create-user-subresources id email nil nil nil)
 
       (-> (create-user-email-callback base-uri id :data callback-data)
           (email-utils/send-invitation-email email invited-by)))

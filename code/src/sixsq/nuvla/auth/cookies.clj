@@ -51,25 +51,29 @@
 
 (defn collect-groups-for-user
   [id]
-  (let [group-set (->> (crud/query-as-admin
-                         group/resource-type
-                         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
-                                        :select ["id"]}})
-                       second
-                       (map :id)
-                       (cons id)
-                       (cons "group/nuvla-user")            ;; if there's an id, then the user is authenticated
-                       (cons "group/nuvla-anon")            ;; all users are in the nuvla-anon pseudo-group
-                       set)]
-    (str/join " " (sort group-set))))
+  (->> (crud/query-as-admin
+         group/resource-type
+         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
+                        :select ["id"]}})
+       second
+       (map :id)
+       set))
 
 
 (defn create-cookie-info
   [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
-  (let [server (:nuvla-ssl-server-name headers)]
+  (let [server               (:nuvla-ssl-server-name headers)
+        collected-groups-set (collect-groups-for-user user-id)
+        groups               (-> collected-groups-set
+                                 sort
+                                 seq)]
     (cond-> {:user-id user-id
              :claims  (or (some->> claims seq sort (str/join " "))
-                          (collect-groups-for-user user-id))}
+                          (->> [user-id "group/nuvla-user" "group/nuvla-anon"]
+                               (remove nil?)
+                               sort
+                               (str/join " ")))}
+            groups (assoc :groups (str/join " " groups))
             roles-ext (update :claims #(str % " " (str/join " " roles-ext)))
             server (assoc :server server)
             session-id (assoc :session session-id)

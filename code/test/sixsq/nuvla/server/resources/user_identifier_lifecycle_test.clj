@@ -47,7 +47,7 @@
   (let [session-anon   (-> (session (ltu/ring-app))
                            (content-type "application/json"))
         session-admin  (header session-anon authn-info-header
-                               "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                               "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-jane   (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
         session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
 

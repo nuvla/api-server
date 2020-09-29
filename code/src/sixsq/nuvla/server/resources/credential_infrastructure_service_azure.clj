@@ -23,8 +23,7 @@ correspond exactly to those required by `docker-machine`.
                           :method                method
                           :azure-subscription-id azure-subscription-id
                           :azure-client-secret   azure-client-secret
-                          :azure-client-id       azure-client-id
-                          :parent                parent}
+                          :azure-client-id       azure-client-id}
                          acl (assoc :acl acl))]
     [nil resource]))
 
