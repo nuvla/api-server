@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - New optional container-plugins attribute in nuvlabox-status
+
+
 ## [5.2.0] - 2020-09-04
 
 ### Changed
