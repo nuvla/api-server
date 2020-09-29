@@ -123,7 +123,6 @@ a container orchestration engine.
                                        customer/active-claim->customer
                                        :customer-id)
      "items"                   [{"price" price-id}]
-     "collection_method"       "send_invoice"
      "days_until_due"          14
      "application_fee_percent" 20
      "trial_period_days"       1
@@ -145,7 +144,8 @@ a container orchestration engine.
                             (assoc :resource-type resource-type
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                   :owner dep-owner))
+                                   :owner dep-owner)
+                            (dep-utils/throw-price-need-payment-method request))
         ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))

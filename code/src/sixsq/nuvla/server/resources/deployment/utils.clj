@@ -16,7 +16,9 @@
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [sixsq.nuvla.server.resources.customer :as customer]
+    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]))
 
 
 (defn generate-api-key-secret
@@ -236,6 +238,27 @@
         (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
                               403 id))
         resource))
+    resource))
+
+
+(defn count-payment-methods
+  [{:keys [cards bank-accounts]}]
+  (+ (count cards) (count bank-accounts)))
+
+
+(defn throw-price-need-payment-method
+  [{{:keys [price]} :module :as resource} request]
+  (if price
+    (let [count-pm              (-> request
+                                    auth/current-active-claim
+                                    customer/active-claim->customer
+                                    :customer-id
+                                    stripe/retrieve-customer
+                                    customer-utils/list-payment-methods
+                                    count-payment-methods)]
+      (if (pos? count-pm)
+        resource
+        (throw (r/ex-response "Payment method is required!" 402))))
     resource))
 
 
