@@ -123,7 +123,6 @@ a container orchestration engine.
                                        customer/active-claim->customer
                                        :customer-id)
      "items"                   [{"price" price-id}]
-     "days_until_due"          14
      "application_fee_percent" 20
      "trial_period_days"       1
      "transfer_data"           {"destination" account-id}}))
