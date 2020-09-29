@@ -392,6 +392,14 @@
              :json-schema/order 36)))
 
 
+(s/def ::docker-plugins
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "Docker Plugins"
+           :json-schema/description "List of enabled Docker Plugins on the NuvlaBox host"
+
+           :json-schema/order 55)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -411,4 +419,5 @@
                                ::nuvlabox-api-endpoint
                                ::gpio-pins
                                ::nuvlabox-engine-version
-                               ::gpio-pins]}))
+                               ::gpio-pins
+                               ::docker-plugins]}))
