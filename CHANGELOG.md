@@ -5,6 +5,7 @@
 ### Changed
 
   - New optional container-plugins attribute in nuvlabox-status
+  - Extend nuvlabox-peripheral schema to accept peripheral telemetry
 
 
 ## [5.2.0] - 2020-09-04
