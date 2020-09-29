@@ -5,7 +5,7 @@
 ### Changed
 
   - New optional container-plugins attribute in nuvlabox-status
-
+  - Add check-dct action on deployment
 
 ## [5.2.0] - 2020-09-04
 
