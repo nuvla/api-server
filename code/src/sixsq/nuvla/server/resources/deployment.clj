@@ -117,7 +117,7 @@ a container orchestration engine.
 
 
 (defn create-subscription
-  [active-claim {:keys [account-id price-id] :as price}]
+  [active-claim {:keys [account-id price-id] :as price} coupon]
   (stripe/create-subscription
     {"customer"                (some-> active-claim
                                        customer/active-claim->customer
@@ -125,6 +125,7 @@ a container orchestration engine.
      "items"                   [{"price" price-id}]
      "application_fee_percent" 20
      "trial_period_days"       1
+     "coupon"                  coupon
      "transfer_data"           {"destination" account-id}}))
 
 
@@ -281,9 +282,10 @@ a container orchestration engine.
                              (dep-utils/throw-can-not-access-registries-creds request))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
+          coupon         (:coupon deployment)
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
-                                   (create-subscription price)
+                                   (create-subscription price coupon)
                                    (stripe/get-id)))
           new-deployment (-> deployment
                              (edit-deployment

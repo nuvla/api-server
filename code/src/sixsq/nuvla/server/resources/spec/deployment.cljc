@@ -246,6 +246,13 @@
              :json-schema/editable false)))
 
 
+(s/def ::coupon
+  (-> (st/spec string?)
+      (assoc :name "coupon"
+             :json-schema/type "string"
+             :json-schema/description "coupon code")))
+
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -259,7 +266,8 @@
                                   ::registries-credentials
                                   ::owner
                                   ::infrastructure-service
-                                  ::subscription-id]}]))
+                                  ::subscription-id
+                                  ::coupon]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))
