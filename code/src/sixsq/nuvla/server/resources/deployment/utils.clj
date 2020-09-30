@@ -121,7 +121,7 @@
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id (str action "_deployment")
+          job-status :status} :body} (job/create-job id action
                                                      {:owners   ["group/nuvla-admin"]
                                                       :edit-acl [active-claim]}
                                                      :priority 50)

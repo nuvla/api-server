@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - New optional container-plugins attribute in nuvlabox-status
+  - Add check-dct action on deployment
   - NuvlaBox status - Inferred-location attribute
   - NuvlaBox status - New optional container-plugins attribute
 

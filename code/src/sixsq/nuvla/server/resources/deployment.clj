@@ -84,6 +84,13 @@ a container orchestration engine.
                :description    "fetch the deployment module href and merge it"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "check-dct"
+               :uri            "check-dct"
+               :description    "check if images are trusted"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -213,6 +220,7 @@ a container orchestration engine.
         create-log-op   (u/action-map id :create-log)
         clone-op        (u/action-map id :clone)
         fetch-module-op (u/action-map id :fetch-module)
+        check-dct-op    (u/action-map id :check-dct)
         can-manage?     (a/can-manage? resource request)
         can-clone?      (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
@@ -232,6 +240,9 @@ a container orchestration engine.
 
             (and can-manage? (dep-utils/can-fetch-module? resource))
             (update :operations conj fetch-module-op)
+
+            can-manage?
+            (update :operations conj check-dct-op)
 
             (not (dep-utils/can-delete? resource))
             (update :operations dep-utils/remove-delete))))
@@ -257,7 +268,7 @@ a container orchestration engine.
                              :body)]
       (when (= (:state deployment) "STOPPED")
         (dep-utils/delete-child-resources "deployment-parameter" id))
-      (dep-utils/create-job new-deployment request "start"))
+      (dep-utils/create-job new-deployment request "start_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -270,7 +281,7 @@ a container orchestration engine.
         (dep-utils/throw-can-not-do-action dep-utils/can-stop? "stop")
         (edit-deployment request #(assoc % :state "STOPPING"))
         :body
-        (dep-utils/create-job request "stop"))
+        (dep-utils/create-job request "stop_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -300,6 +311,17 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
+(defmethod crud/do-action [resource-type "check-dct"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        (dep-utils/create-job request "dct_check"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type "clone"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -318,7 +340,7 @@ a container orchestration engine.
         (crud/retrieve-by-id-as-admin)
         (edit-deployment request #(assoc % :state "UPDATING"))
         :body
-        (dep-utils/create-job request "update"))
+        (dep-utils/create-job request "update_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
