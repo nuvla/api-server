@@ -4,10 +4,11 @@
 
 ### Changed
 
-  - New optional container-plugins attribute in nuvlabox-status
-  - Add check-dct action on deployment
-  - NuvlaBox status - Inferred-location attribute
-  - NuvlaBox status - New optional container-plugins attribute
+  - Nuvlabox status - New optional container-plugins attribute
+  - Nuvlabox peripheral - schema accept peripheral telemetry
+  - Deployment - Add check-dct action on deployment
+  - Nuvlabox status - Inferred-location attribute
+  - Nuvlabox status - New optional container-plugins attribute
 
 ## [5.2.0] - 2020-09-04
 
