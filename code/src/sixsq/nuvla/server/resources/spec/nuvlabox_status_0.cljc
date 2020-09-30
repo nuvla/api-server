@@ -392,6 +392,19 @@
              :json-schema/order 36)))
 
 
+;;
+;; self inferred location
+;;
+
+(s/def ::inferred-location
+  (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
+    (assoc :name "inferred-location"
+           :json-schema/type "geo-point"
+           :json-schema/display-name "inferred-location"
+           :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
+
+           :json-schema/order 47)))
+
 (s/def ::docker-plugins
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
     (assoc :name "Docker Plugins"
@@ -417,7 +430,9 @@
                                ::peripherals
                                ::wifi-password
                                ::nuvlabox-api-endpoint
+                               ::inferred-location
                                ::gpio-pins
                                ::nuvlabox-engine-version
                                ::gpio-pins
                                ::docker-plugins]}))
+

@@ -82,6 +82,7 @@
                   :ip                      "127.0.0.1"
                   :docker-server-version   "19.0.3"
                   :last-boot               timestamp
+                  :inferred-location       [46.2044 6.1432 373.]
                   :gpio-pins               [{:name    "GPIO. 7"
                                              :bcm     4
                                              :mode    "IN"
