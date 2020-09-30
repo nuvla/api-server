@@ -4,9 +4,11 @@
 
 ### Changed
 
-  - New optional container-plugins attribute in nuvlabox-status
-  - Extend nuvlabox-peripheral schema to accept peripheral telemetry
-
+  - Nuvlabox status - New optional container-plugins attribute
+  - Nuvlabox peripheral - schema accept peripheral telemetry
+  - Deployment - Add check-dct action on deployment
+  - Nuvlabox status - Inferred-location attribute
+  - Nuvlabox status - New optional container-plugins attribute
 
 ## [5.2.0] - 2020-09-04
 
@@ -60,6 +62,7 @@
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters
+
 
 ## [4.2.16] - 2020-05-12
 

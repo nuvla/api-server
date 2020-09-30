@@ -158,12 +158,15 @@
                                       (ltu/is-operation-present :start)
                                       (ltu/is-operation-present :clone)
                                       (ltu/is-operation-present :fetch-module)
+                                      (ltu/is-operation-present :check-dct)
                                       (ltu/is-key-value :state "CREATED")
                                       (ltu/is-key-value :owner "user/jane"))
 
               start-url           (ltu/get-op-url deployment-response "start")
 
               fetch-module-url    (ltu/get-op-url deployment-response "fetch-module")
+
+              check-dct-url       (ltu/get-op-url deployment-response "check-dct")
 
               deployment          (ltu/body deployment-response)]
 
@@ -234,6 +237,21 @@
                     (ltu/is-status 200)
                     (ltu/is-key-value :state "QUEUED")
                     (ltu/is-key-value :action "start_deployment")))
+
+              ;; attempt to queue dct_check job
+              (let [job-url (-> session-user
+                                (request check-dct-url
+                                         :request-method :post)
+                                (ltu/body->edn)
+                                (ltu/is-status 202)
+                                (ltu/location-url))]
+                (-> session-user
+                    (request job-url
+                             :request-method :get)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :state "QUEUED")
+                    (ltu/is-key-value :action "dct_check")))
 
               ;; verify that the state has changed
               (let [deployment-response (-> session-user
