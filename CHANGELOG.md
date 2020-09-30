@@ -4,8 +4,8 @@
 
 ### Changed
 
-  - New optional container-plugins attribute in nuvlabox-status
-
+  - NuvlaBox status - Inferred-location attribute
+  - NuvlaBox status - New optional container-plugins attribute
 
 ## [5.2.0] - 2020-09-04
 
@@ -59,6 +59,7 @@
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters
+
 
 ## [4.2.16] - 2020-05-12
 
