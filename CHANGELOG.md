@@ -11,6 +11,7 @@
 
 ### Changed
 
+  - Credential - Remove subscription requirement for VPN
   - Customer - Save subscription id in customer resource
   - Deployment - New upcoming invoice operation
   - Deployment - Subscription creation
