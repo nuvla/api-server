@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.module-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
-    [sixsq.nuvla.server.resources.module.utils :as utils]
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.module.utils :as utils]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

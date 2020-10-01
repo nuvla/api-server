@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.customer-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [clojure.tools.logging :as log]
     [environ.core :as env]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture

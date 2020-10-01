@@ -62,7 +62,10 @@
                        :serial-number               "123456"
                        :video-device                "/dev/video0"
                        :additional-assets           {:devices     ["/dev/device1", "/dev/device2"]
-                                                     :libraries   ["/lib/a", "/lib/b"]}})
+                                                     :libraries   ["/lib/a", "/lib/b"]}
+                       :resources                   [{:unit "cuda cores"
+                                                      :capacity "100"
+                                                      :load 50}]})
 
 
 (deftest check-metadata

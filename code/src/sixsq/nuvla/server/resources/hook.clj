@@ -4,12 +4,12 @@ The `hook` resource is a non standard cimi resource that provides an access
 for events driven workflows.
 "
   (:require
+    [clojure.string :as str]
     [compojure.core :refer [ANY defroutes]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [clojure.string :as str]
     [sixsq.nuvla.server.util.response :as r]))
 
 ;;

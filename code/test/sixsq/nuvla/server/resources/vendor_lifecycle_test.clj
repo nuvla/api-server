@@ -7,6 +7,7 @@
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as codec]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback-vendor :as callback-vendor]
@@ -14,9 +15,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.vendor :as t]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [ring.util.codec :as rc]
-    [sixsq.nuvla.server.resources.vendor :as vendor]))
+    [sixsq.nuvla.server.resources.vendor :as vendor]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture

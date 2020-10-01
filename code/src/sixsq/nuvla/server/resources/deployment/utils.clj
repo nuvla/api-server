@@ -1,24 +1,24 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
+    [sixsq.nuvla.server.resources.customer :as customer]
+    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [clojure.string :as str]
-    [sixsq.nuvla.server.resources.customer :as customer]
-    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret
@@ -126,7 +126,7 @@
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id (str action "_deployment")
+          job-status :status} :body} (job/create-job id action
                                                      {:owners   ["group/nuvla-admin"]
                                                       :edit-acl [active-claim]}
                                                      :priority 50)

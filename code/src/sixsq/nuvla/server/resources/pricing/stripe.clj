@@ -4,8 +4,8 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Invoice PaymentMethod Price Product SetupIntent Subscription
-                      LoginLink Product Price)
+    (com.stripe.model Customer Invoice LoginLink PaymentMethod Price
+                      Product SetupIntent Subscription)
     (com.stripe.net OAuth)))
 
 

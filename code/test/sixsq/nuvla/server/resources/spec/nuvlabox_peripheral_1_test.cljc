@@ -38,7 +38,13 @@
                  :serial-number               "123456"
                  :video-device                "/dev/video0"
                  :additional-assets           {:devices     ["/dev/device1", "/dev/device2"]
-                                               :libraries   ["/lib/a", "/lib/b"]}})
+                                               :libraries   ["/lib/a", "/lib/b"]}
+                 :resources     [{:unit "cuda cores"
+                                  :capacity "100"
+                                  :load 50}
+                                 {:unit "memory"
+                                  :capacity "1024"
+                                  :load 20}]})
 
 
 (deftest check-nuvlabox-peripheral
@@ -53,5 +59,5 @@
 
   ;; optional
   (doseq [attr #{:device-path :interface :vendor :port :product :raw-data-sample :local-data-gateway-endpoint
-                 :data-gateway-enabled :serial-number :video-device :additional-assets}]
+                 :data-gateway-enabled :serial-number :video-device :additional-assets :resources}]
     (stu/is-valid ::nb-peripheral-1/schema (dissoc peripheral attr))))
