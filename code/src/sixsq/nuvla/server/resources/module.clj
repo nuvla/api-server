@@ -5,6 +5,7 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -12,12 +13,15 @@ component, or application.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
+    [sixsq.nuvla.server.resources.vendor :as vendor]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -86,6 +90,14 @@ component, or application.
     (throw (r/ex-response (str "path '" path "' already exist") 409))))
 
 
+(defn throw-price-error
+  [{:keys [subtype price]}]
+  (when price
+    (config-nuvla/throw-stripe-not-configured)
+    (when (utils/is-project? subtype)
+      (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400)))))
+
+
 (defn db-add-module-meta
   [module-meta request]
   (db/add
@@ -102,12 +114,60 @@ component, or application.
     {}))
 
 
+(defn s-price->price-map
+  [s-price]
+  {:product-id (stripe/get-product s-price)})
+
+
+(defn active-claim->account-id
+  [active-claim]
+  (let [filter     (format "parent='%s'" active-claim)
+        options    {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
+        account-id (-> (crud/query-as-admin vendor/resource-type options)
+                       second
+                       first
+                       :account-id)]
+    (or account-id
+        (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
+                                   active-claim "' ") 409)))))
+
+
+(defn set-price
+  [{{:keys [price-id cent-amount-daily currency] :as price}
+    :price name :name path :path :as body}
+   active-claim]
+  (if price
+    (let [product-id (some-> price-id
+                             (stripe/retrieve-price)
+                             s-price->price-map
+                             :product-id)
+          account-id (active-claim->account-id active-claim)
+          s-price    (stripe/create-price
+                       (cond-> {"currency"    currency
+                                "unit_amount" cent-amount-daily
+                                "recurring"   {"interval"        "month"
+                                               "aggregate_usage" "sum"
+                                               "usage_type"      "metered"}}
+                               product-id (assoc "product" product-id)
+                               (nil? product-id) (assoc "product_data"
+                                                        {"name"       (or name path)
+                                                         "unit_label" "day"})))]
+      (assoc body :price {:price-id          (stripe/get-id s-price)
+                          :product-id        (stripe/get-product s-price)
+                          :account-id        account-id
+                          :cent-amount-daily cent-amount-daily
+                          :currency          currency}))
+    body))
+
+
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
 
   (a/throw-cannot-add collection-acl request)
 
   (throw-colliding-path (:path body))
+
+  (throw-price-error body)
 
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
@@ -138,6 +198,7 @@ component, or application.
             (assoc :versions [(cond-> {:href   content-id
                                        :author author}
                                       commit (assoc :commit commit))])
+            (set-price (auth/current-active-claim request))
             (cond-> compatibility (assoc :compatibility compatibility))
             (db-add-module-meta request))))))
 
@@ -197,7 +258,7 @@ component, or application.
            {:keys [author commit docker-compose] :as module-content}] (-> body
                                                                           u/strip-service-attrs
                                                                           utils/split-resource)
-          {:keys [subtype versions acl]} (crud/retrieve-by-id-as-admin id)
+          {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
                           (dissoc :compatibility :parent-path)
                           (assoc :subtype subtype)
@@ -209,36 +270,43 @@ component, or application.
         (->> module-meta
              (assoc request :body)
              edit-impl)
-        (let [content-url  (subtype->resource-url subtype)
+        (let [content-url    (subtype->resource-url subtype)
 
               [compatibility
                unsupported-options] (when docker-compose
                                       (utils/parse-get-compatibility-fields
                                         subtype docker-compose))
 
-              content-body (some-> module-content
-                                   (dissoc :unsupported-options)
-                                   (merge {:resource-type content-url})
-                                   (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                            unsupported-options)))
+              content-body   (some-> module-content
+                                     (dissoc :unsupported-options)
+                                     (merge {:resource-type content-url})
+                                     (cond-> (seq unsupported-options) (assoc :unsupported-options
+                                                                              unsupported-options)))
 
-              content-id   (when content-body
-                             (-> {:params      {:resource-name content-url}
-                                  :body        content-body
-                                  :nuvla/authn auth/internal-identity}
-                                 crud/add
-                                 :body
-                                 :resource-id))
+              content-id     (when content-body
+                               (-> {:params      {:resource-name content-url}
+                                    :body        content-body
+                                    :nuvla/authn auth/internal-identity}
+                                   crud/add
+                                   :body
+                                   :resource-id))
 
-              versions     (when content-id
-                             (conj versions
-                                   (cond-> {:href   content-id
-                                            :author author}
-                                           commit (assoc :commit commit))))]
+              versions       (when content-id
+                               (conj versions
+                                     (cond-> {:href   content-id
+                                              :author author}
+                                             commit (assoc :commit commit))))
+              price-changed? (and config-nuvla/*stripe-api-key*
+                                  (or (not= (:cent-amount-daily price)
+                                            (get-in module-meta [:price :cent-amount-daily]))
+                                      (not= (:currency price)
+                                            (get-in module-meta [:price :currency]))))]
           (edit-impl
             (assoc request
               :body
               (cond-> module-meta
+                      price-changed? (-> (assoc :price (merge price (:price module-meta)))
+                                         (set-price (auth/current-active-claim request)))
                       versions (assoc :versions versions)
                       compatibility (assoc :compatibility compatibility)))))))
     (catch Exception e

@@ -198,33 +198,35 @@
 (defn create-customer
   [{:keys [fullname subscription address coupon email] pm-id :payment-method} active-claim]
   (let [{:keys [street-address city postal-code country]} address
-        email       (or email
-                        (when (str/starts-with? active-claim "user/")
+        email           (or email
+                            (when (str/starts-with? active-claim "user/")
+                              (try
+                                (some-> active-claim
+                                        crud/retrieve-by-id-as-admin
+                                        :email
+                                        crud/retrieve-by-id-as-admin
+                                        :address)
+                                (catch Exception _))))
+        s-customer      (stripe/create-customer
+                          (cond-> {"name"    fullname
+                                   "address" {"line1"       street-address
+                                              "city"        city
+                                              "postal_code" postal-code
+                                              "country"     country}}
+                                  email (assoc "email" email)
+                                  pm-id (assoc "payment_method" pm-id
+                                               "invoice_settings" {"default_payment_method" pm-id})
+                                  coupon (assoc "coupon" coupon)))
+        customer-id     (stripe/get-id s-customer)
+        subscription-id (when subscription
                           (try
-                            (some-> active-claim
-                                    crud/retrieve-by-id-as-admin
-                                    :email
-                                    crud/retrieve-by-id-as-admin
-                                    :address)
-                            (catch Exception _))))
-        s-customer  (stripe/create-customer
-                      (cond-> {"name"    fullname
-                               "address" {"line1"       street-address
-                                          "city"        city
-                                          "postal_code" postal-code
-                                          "country"     country}}
-                              email (assoc "email" email)
-                              pm-id (assoc "payment_method" pm-id
-                                           "invoice_settings" {"default_payment_method" pm-id})
-                              coupon (assoc "coupon" coupon)))
-        customer-id (stripe/get-id s-customer)]
-    (when subscription
-      (try
-        (create-subscription customer-id subscription true)
-        (catch Exception e
-          (stripe/delete-customer s-customer)
-          (throw e))))
-    customer-id))
+                            (-> customer-id
+                                (create-subscription subscription true)
+                                :id)
+                            (catch Exception e
+                              (stripe/delete-customer s-customer)
+                              (throw e))))]
+    [customer-id subscription-id]))
 
 
 (defn create-setup-intent
@@ -235,40 +237,25 @@
 
 
 (defn get-upcoming-invoice
-  [customer-id]
-  (some-> {"customer" customer-id}
+  [subscription-id]
+  (some-> {"subscription" subscription-id}
           stripe/get-upcoming-invoice
           (s-invoice->map true)))
 
 
 (defn list-invoices
-  [customer-id]
-  (let [paid (->> {"customer" customer-id
+  [subscription-id]
+  (let [paid (->> {"subscription" subscription-id
                    "status"   "paid"}
                   stripe/list-invoices
                   stripe/get-data
                   (map #(s-invoice->map % false)))
-        open (->> {"customer" customer-id
+        open (->> {"subscription" subscription-id
                    "status"   "open"}
                   stripe/list-invoices
                   stripe/get-data
                   (map #(s-invoice->map % false)))]
     (concat open paid)))
-
-
-(defn valid-subscription
-  [subscription]
-  ;; subscription not in incomplete_expired or canceled status
-  (when (#{"active" "incomplete" "trialing" "past_due" "unpaid"} (stripe/get-status subscription))
-    subscription))
-
-
-(defn get-current-subscription
-  [s-customer]
-  (->> s-customer
-       (stripe/get-customer-subscriptions)
-       (stripe/collection-iterator)
-       (some valid-subscription)))
 
 
 (defn get-default-payment-method
@@ -325,9 +312,8 @@
 
 
 (defn throw-subscription-already-exist
-  [{:keys [id customer-id] :as resource} request]
-  (let [s-customer (stripe/retrieve-customer customer-id)]
-    (if (get-current-subscription s-customer)
-      (throw (r/ex-response
-               (format "subscription already created!" create-subscription-action id) 409 id))
-      resource)))
+  [{:keys [id subscription-id] :as resource} request]
+  (if subscription-id
+    resource
+    (throw (r/ex-response
+             (format "subscription already created!" create-subscription-action id) 409 id))))

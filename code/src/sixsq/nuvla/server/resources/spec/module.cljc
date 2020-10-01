@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.pricing :as pricing]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -124,14 +125,14 @@
 
 (s/def ::compatibility
   (-> (st/spec #{"swarm" "docker-compose"})
-    (assoc :name "compatibility"
-           :json-schema/type "string"
-           :json-schema/description "module compatibility"
-           :json-schema/server-managed true
-           :json-schema/editable false
+      (assoc :name "compatibility"
+             :json-schema/type "string"
+             :json-schema/description "module compatibility"
+             :json-schema/server-managed true
+             :json-schema/editable false
 
-           :json-schema/fulltext true
-           :json-schema/order 35)))
+             :json-schema/fulltext true
+             :json-schema/order 35)))
 
 (s/def ::valid
   (-> (st/spec boolean?)
@@ -147,6 +148,69 @@
              :json-schema/type "string"
              :json-schema/order 37)))
 
+(def ^:const product-id-regex #"^prod_.+$")
+
+(defn product-id? [s] (re-matches product-id-regex s))
+
+(s/def ::product-id
+  (-> (st/spec (s/and string? product-id?))
+      (assoc :name "product-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of product id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(s/def ::price-id
+  (-> (st/spec (s/and string? pricing/price-id?))
+      (assoc :name "price-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of price id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(def ^:const account-id-regex #"^acct_.+$")
+
+(defn account-id? [s] (re-matches account-id-regex s))
+
+(s/def ::account-id
+  (-> (st/spec (s/and string? account-id?))
+      (assoc :name "account-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of account id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(s/def ::cent-amount-daily
+  (-> (st/spec pos-int?)
+      (assoc :name "cent-amount-daily"
+             :json-schema/type "integer"
+             :json-schema/description "cent amount by day")))
+
+
+(s/def ::price
+  (-> (st/spec (su/only-keys
+                 :req-un [::product-id
+                          ::price-id
+                          ::account-id
+                          ::pricing/currency
+                          ::cent-amount-daily]))
+      (assoc :name "price"
+             :json-schema/type "map"
+             :json-schema/order 38)))
+
+
+(s/def ::license
+  (-> (st/spec (su/only-keys
+                 :req-un [::common/name
+                          ::core/url]
+                 :opt-un [::common/description]))
+      (assoc :name "license"
+             :json-schema/type "map"
+             :json-schema/order 39)))
+
 
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
@@ -159,7 +223,9 @@
                                                       ::content
                                                       ::compatibility
                                                       ::valid
-                                                      ::validation-message]}]))
+                                                      ::validation-message
+                                                      ::price
+                                                      ::license]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))

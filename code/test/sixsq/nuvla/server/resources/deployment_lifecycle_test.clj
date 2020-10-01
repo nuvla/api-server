@@ -477,6 +477,21 @@
   (lifecycle-deployment "component" valid-component))
 
 
+(deftest lifecycle-application
+  (let [valid-application {:id             (str module-application/resource-type
+                                                "/module-application-uuid")
+                           :resource-type  module-application/resource-type
+                           :created        timestamp
+                           :updated        timestamp
+                           :acl            valid-acl
+
+                           :author         "someone"
+                           :commit         "wip"
+
+                           :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
+    (lifecycle-deployment "application" valid-application)))
+
+
 (deftest lifecycle-error
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session-anon     (-> (ltu/ring-app)
@@ -545,21 +560,6 @@
           (request (str p/service-context module-id)
                    :request-method :delete)
           (ltu/is-status 200)))))
-
-
-(deftest lifecycle-application
-  (let [valid-application {:id             (str module-application/resource-type
-                                                "/module-application-uuid")
-                           :resource-type  module-application/resource-type
-                           :created        timestamp
-                           :updated        timestamp
-                           :acl            valid-acl
-
-                           :author         "someone"
-                           :commit         "wip"
-
-                           :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."}]
-    (lifecycle-deployment "application" valid-application)))
 
 
 (deftest bad-methods

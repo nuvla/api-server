@@ -4,8 +4,9 @@
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
-    (com.stripe.model Customer Invoice PaymentMethod Price
-                      Product SetupIntent Subscription)))
+    (com.stripe.model Customer Invoice LoginLink PaymentMethod Price
+                      Product SetupIntent Subscription)
+    (com.stripe.net OAuth)))
 
 
 (defn set-api-key!
@@ -99,6 +100,17 @@
     (Subscription/create subscription-params)))
 
 
+(defn retrieve-subscription
+  [subscription-id]
+  (try-catch-exception
+    (Subscription/retrieve subscription-id)))
+
+(defn cancel-subscription
+  [s-subscription params]
+  (try-catch-exception
+    (.cancel s-subscription params)))
+
+
 (defn create-setup-intent
   [setup-intent-params]
   (try-catch-exception
@@ -127,6 +139,36 @@
   [s-payment-method]
   (try-catch-exception
     (.detach s-payment-method)))
+
+(defn oauth-token
+  [params]
+  (try-catch-exception
+    (OAuth/token params nil)))
+
+
+(defn login-link-create-on-account
+  [account-id]
+  (try-catch-exception
+    (LoginLink/createOnAccount account-id {} nil)))
+
+
+(defn create-product
+  [product-params]
+  (try-catch-exception
+    (Product/create product-params)))
+
+
+(defn create-price
+  [price-params]
+  (try-catch-exception
+    (Price/create price-params)))
+
+
+(defn retrieve-price
+  [price-id]
+  (try-catch-exception
+    (Price/retrieve price-id)))
+
 
 (defn get-id
   [obj]
@@ -373,6 +415,22 @@
   [obj]
   (.getPercentOff obj))
 
+
 (defn get-valid
   [obj]
   (.getValid obj))
+
+
+(defn get-stripe-user-id
+  [obj]
+  (.getStripeUserId obj))
+
+
+(defn get-url
+  [obj]
+  (.getUrl obj))
+
+
+(defn get-product
+  [obj]
+  (.getProduct obj))
