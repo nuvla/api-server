@@ -161,42 +161,39 @@ component, or application.
     body))
 
 (defn throw-cannot-access-registries-or-creds
-  [{:keys [body] :as request}]
-  (let [module-content     (get-in body [:module :content])
-        private-registries (some-> module-content :private-registries seq)
-        registries-creds   (some-> module-content :registries-credentials seq)]
-    (when
-      (and private-registries
-           (< (-> {:params      {:resource-name infra-service/resource-type}
-                   :cimi-params {:filter (parser/parse-cimi-filter
-                                           (str "subtype='registry' and ("
-                                                (->> private-registries
-                                                     (map #(str "id='" % "'"))
-                                                     (str/join " or "))
-                                                ")"))
-                                 :last   0}
-                   :nuvla/authn (:nuvla/authn request)}
-                  crud/query
-                  :body
-                  :count)
-              (count private-registries)))
-      (throw (r/ex-response "Private registries can't be resolved!" 403)))
-    (when
-      (and registries-creds
-           (< (-> {:params      {:resource-name credential/resource-type}
-                   :cimi-params {:filter (parser/parse-cimi-filter
-                                           (str "subtype='infrastructure-service-registry' and ("
-                                                (->> registries-creds
-                                                     (map #(str "id='" % "'"))
-                                                     (str/join " or "))
-                                                ")"))
-                                 :last   0}
-                   :nuvla/authn (:nuvla/authn request)}
-                  crud/query
-                  :body
-                  :count)
-              (count registries-creds)))
-      (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
+  [{{ {:keys [private-registries registries-credentials]} :content} :body :as request}]
+  (when
+    (and (seq private-registries)
+         (< (-> {:params      {:resource-name infra-service/resource-type}
+                 :cimi-params {:filter (parser/parse-cimi-filter
+                                         (str "subtype='registry' and ("
+                                              (->> private-registries
+                                                   (map #(str "id='" % "'"))
+                                                   (str/join " or "))
+                                              ")"))
+                               :last   0}
+                 :nuvla/authn (:nuvla/authn request)}
+                crud/query
+                :body
+                :count)
+            (count private-registries)))
+    (throw (r/ex-response "Private registries can't be resolved!" 403)))
+  (when
+    (and (seq registries-credentials)
+         (< (-> {:params      {:resource-name credential/resource-type}
+                 :cimi-params {:filter (parser/parse-cimi-filter
+                                         (str "subtype='infrastructure-service-registry' and ("
+                                              (->> registries-credentials
+                                                   (map #(str "id='" % "'"))
+                                                   (str/join " or "))
+                                              ")"))
+                               :last   0}
+                 :nuvla/authn (:nuvla/authn request)}
+                crud/query
+                :body
+                :count)
+            (count registries-credentials)))
+    (throw (r/ex-response "Registries credentials can't be resolved!" 403))))
 
 
 (defmethod crud/add resource-type
