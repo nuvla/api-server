@@ -2,10 +2,26 @@
 
 ## Unreleased
 
+### Added
+
+  - Hook - New non-standard cimi resource that provides an access
+    for events driven workflows
+  - Vendor - New resource allowing a user to create a Stripe 
+    Express account
+
 ### Changed
 
-  - New optional container-plugins attribute in nuvlabox-status
-
+  - Credential - Remove subscription requirement for VPN
+  - Customer - Save subscription id in customer resource
+  - Deployment - New upcoming invoice operation
+  - Deployment - Subscription creation
+  - Module - New licence and price attributes
+  - Configuration - Nuvla get new stripe-client-id attribute
+  - Nuvlabox status - New optional container-plugins attribute
+  - Nuvlabox peripheral - schema accept peripheral telemetry
+  - Deployment - Add check-dct action on deployment
+  - Nuvlabox status - Inferred-location attribute
+  - Nuvlabox status - New optional container-plugins attribute
 
 ## [5.2.0] - 2020-09-04
 
@@ -59,6 +75,7 @@
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters
+
 
 ## [4.2.16] - 2020-05-12
 

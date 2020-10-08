@@ -63,6 +63,7 @@
             :ip                      "127.0.0.1"
             :docker-server-version   "19.0.3"
             :last-boot               "2020-02-18T19:42:08Z"
+            :inferred-location       [46.2044 6.1432 373.]
             :gpio-pins               [{:name    "GPIO. 7"
                                        :bcm     4
                                        :mode    "IN"
@@ -85,5 +86,5 @@
 
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
-                 :gpio-pins :nuvlabox-engine-version :docker-plugins}]
+                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

@@ -29,6 +29,8 @@ default values.
 
 (def ^:dynamic *stripe-api-key* nil)
 
+(def ^:dynamic *stripe-client-id* nil)
+
 
 (defn throw-stripe-not-configured
   []
@@ -58,8 +60,13 @@ default values.
                                     (env/env :stripe-api-key))]
         (stripe/set-api-key! stripe-api-key)
         (alter-var-root #'*stripe-api-key* (constantly stripe-api-key)))
+      (when-let [stripe-client-id (or (-> config-instance-url
+                                          crud/retrieve-by-id-as-admin
+                                          :stripe-client-id)
+                                      (env/env :stripe-client-id))]
+        (alter-var-root #'*stripe-client-id* (constantly stripe-client-id)))
       (catch Exception e
-        (log/error (str "Exception when loading Stripe api-key: " e))))))
+        (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
 
 
 ;;

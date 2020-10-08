@@ -12,13 +12,16 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.customer :as customer]
+    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.deployment.utils :as dep-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -84,6 +87,13 @@ a container orchestration engine.
                :description    "fetch the deployment module href and merge it"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "check-dct"
+               :uri            "check-dct"
+               :description    "check if images are trusted"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -112,6 +122,20 @@ a container orchestration engine.
 ;; CRUD operations
 ;;
 
+
+(defn create-subscription
+  [active-claim {:keys [account-id price-id] :as price} coupon]
+  (stripe/create-subscription
+    {"customer"                (some-> active-claim
+                                       customer/active-claim->customer
+                                       :customer-id)
+     "items"                   [{"price" price-id}]
+     "application_fee_percent" 20
+     "trial_period_days"       1
+     "coupon"                  coupon
+     "transfer_data"           {"destination" account-id}}))
+
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
@@ -127,7 +151,8 @@ a container orchestration engine.
                             (assoc :resource-type resource-type
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                   :owner dep-owner))
+                                   :owner dep-owner)
+                            (dep-utils/throw-price-need-payment-method request))
         ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
@@ -159,22 +184,31 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl parent]} :body {uuid :uuid} :params :as request}]
+  [{{:keys [acl parent state]} :body {uuid :uuid} :params :as request}]
   (let [authn-info (auth/current-authentication request)
+        current    (db/retrieve (str resource-type "/" uuid) request)
         is-user?   (not (acl-resource/is-admin? authn-info))
         new-acl    (when (and is-user? acl)
-                     (if-let [current-owner (-> (str resource-type "/" uuid)
-                                                (db/retrieve request)
-                                                :owner)]
+                     (if-let [current-owner (:owner current)]
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
                        acl))
-        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
-
-    (edit-impl
-      (cond-> request
-              is-user? (update :body dissoc :owner :infrastructure-service)
-              new-acl (assoc-in [:body :acl] new-acl)
-              infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
+        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)
+        stopping?  (and
+                     (= (:state current) "STOPPING")
+                     (= state "STOPPED"))
+        subs-id    (when (and config-nuvla/*stripe-api-key* stopping?)
+                     (:subscription-id current))
+        response   (edit-impl
+                     (cond-> request
+                             is-user? (update :body dissoc :owner :infrastructure-service
+                                              :subscription-id)
+                             is-user? (update-in [:cimi-params :select] disj
+                                                 "owner" "infrastructure-service" "module/price"
+                                                 "module/license" "subscription-id")
+                             new-acl (assoc-in [:body :acl] new-acl)
+                             infra-id (assoc-in [:body :infrastructure-service] infra-id)))]
+    (some-> subs-id stripe/retrieve-subscription (stripe/cancel-subscription {"invoice_now" true}))
+    response))
 
 
 (defn delete-impl
@@ -207,14 +241,16 @@ a container orchestration engine.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [start-op        (u/action-map id :start)
-        stop-op         (u/action-map id :stop)
-        update-op       (u/action-map id :update)
-        create-log-op   (u/action-map id :create-log)
-        clone-op        (u/action-map id :clone)
-        fetch-module-op (u/action-map id :fetch-module)
-        can-manage?     (a/can-manage? resource request)
-        can-clone?      (a/can-view-data? resource request)]
+  (let [start-op            (u/action-map id :start)
+        stop-op             (u/action-map id :stop)
+        update-op           (u/action-map id :update)
+        create-log-op       (u/action-map id :create-log)
+        clone-op            (u/action-map id :clone)
+        fetch-module-op     (u/action-map id :fetch-module)
+        check-dct-op        (u/action-map id :check-dct)
+        upcoming-invoice-op (u/action-map id :upcoming-invoice)
+        can-manage?         (a/can-manage? resource request)
+        can-clone?          (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
             (and can-manage? (dep-utils/can-start? resource)) (update :operations conj start-op)
@@ -233,6 +269,10 @@ a container orchestration engine.
             (and can-manage? (dep-utils/can-fetch-module? resource))
             (update :operations conj fetch-module-op)
 
+            can-manage? (update :operations conj upcoming-invoice-op)
+
+            can-manage? (update :operations conj check-dct-op)
+
             (not (dep-utils/can-delete? resource))
             (update :operations dep-utils/remove-delete))))
 
@@ -250,14 +290,25 @@ a container orchestration engine.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id             (str resource-type "/" uuid)
-          deployment     (crud/retrieve-by-id-as-admin id)
-          new-deployment (-> deployment
+          deployment     (-> (crud/retrieve-by-id-as-admin id)
                              (dep-utils/throw-can-not-do-action dep-utils/can-start? "start")
-                             (edit-deployment request #(assoc % :state "STARTING"))
+                             (dep-utils/throw-can-not-access-registries-creds request))
+          stopped?       (= (:state deployment) "STOPPED")
+          price          (get-in deployment [:module :price])
+          coupon         (:coupon deployment)
+          subs-id        (when (and config-nuvla/*stripe-api-key* price)
+                           (some-> (auth/current-active-claim request)
+                                   (create-subscription price coupon)
+                                   (stripe/get-id)))
+          new-deployment (-> deployment
+                             (edit-deployment
+                               request
+                               #(cond-> (assoc % :state "STARTING")
+                                        subs-id (assoc :subscription-id subs-id)))
                              :body)]
-      (when (= (:state deployment) "STOPPED")
+      (when stopped?
         (dep-utils/delete-child-resources "deployment-parameter" id))
-      (dep-utils/create-job new-deployment request "start"))
+      (dep-utils/create-job new-deployment request "start_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -270,7 +321,7 @@ a container orchestration engine.
         (dep-utils/throw-can-not-do-action dep-utils/can-stop? "stop")
         (edit-deployment request #(assoc % :state "STOPPING"))
         :body
-        (dep-utils/create-job request "stop"))
+        (dep-utils/create-job request "stop_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -300,6 +351,17 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
+(defmethod crud/do-action [resource-type "check-dct"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (crud/retrieve-by-id-as-admin)
+        (a/throw-cannot-manage request)
+        (dep-utils/create-job request "dct_check"))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type "clone"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -318,13 +380,28 @@ a container orchestration engine.
         (crud/retrieve-by-id-as-admin)
         (edit-deployment request #(assoc % :state "UPDATING"))
         :body
-        (dep-utils/create-job request "update"))
+        (dep-utils/create-job request "update_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "update"]
   [request]
   (update-deployment-impl request))
+
+
+(defmethod crud/do-action [resource-type "upcoming-invoice"]
+  [{{uuid :uuid} :params :as request}]
+  (config-nuvla/throw-stripe-not-configured)
+  (try
+    (r/json-response
+      (or (-> (str resource-type "/" uuid)
+              (crud/retrieve-by-id-as-admin)
+              (a/throw-cannot-manage request)
+              :subscription-id
+              (customer-utils/get-upcoming-invoice))
+          {}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 ;;
