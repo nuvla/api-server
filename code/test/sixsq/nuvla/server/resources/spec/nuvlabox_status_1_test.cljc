@@ -61,7 +61,8 @@
                                        :pin     7}
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
-            :docker-plugins          []})
+            :docker-plugins          []
+            :vulnerabilities         []})
 
 
 (deftest check-nuvlabox-status
@@ -77,5 +78,5 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
-                 :docker-plugins}]
+                 :docker-plugins :vulnerabilities}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))
