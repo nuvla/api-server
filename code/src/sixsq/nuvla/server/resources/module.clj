@@ -161,7 +161,7 @@ component, or application.
     body))
 
 (defn throw-cannot-access-registries-or-creds
-  [{{ {:keys [private-registries registries-credentials]} :content} :body :as request}]
+  [{{{:keys [private-registries registries-credentials]} :content} :body :as request}]
   (when
     (and (seq private-registries)
          (< (-> {:params      {:resource-name infra-service/resource-type}
@@ -178,22 +178,21 @@ component, or application.
                 :count)
             (count private-registries)))
     (throw (r/ex-response "Private registries can't be resolved!" 403)))
-  (when
-    (and (seq registries-credentials)
-         (< (-> {:params      {:resource-name credential/resource-type}
-                 :cimi-params {:filter (parser/parse-cimi-filter
-                                         (str "subtype='infrastructure-service-registry' and ("
-                                              (->> registries-credentials
-                                                   (map #(str "id='" % "'"))
-                                                   (str/join " or "))
-                                              ")"))
-                               :last   0}
-                 :nuvla/authn (:nuvla/authn request)}
-                crud/query
-                :body
-                :count)
-            (count registries-credentials)))
-    (throw (r/ex-response "Registries credentials can't be resolved!" 403))))
+  (when-let [creds (->> registries-credentials (remove str/blank?) seq)]
+    (when (< (-> {:params      {:resource-name credential/resource-type}
+                  :cimi-params {:filter (parser/parse-cimi-filter
+                                          (str "subtype='infrastructure-service-registry' and ("
+                                               (->> creds
+                                                    (map #(str "id='" % "'"))
+                                                    (str/join " or "))
+                                               ")"))
+                                :last   0}
+                  :nuvla/authn (:nuvla/authn request)}
+                 crud/query
+                 :body
+                 :count)
+             (count creds))
+      (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
 
 
 (defmethod crud/add resource-type
