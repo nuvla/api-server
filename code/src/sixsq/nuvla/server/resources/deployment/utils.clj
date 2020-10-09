@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment.utils
   (:require
+    [clojure.set :as set]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -223,22 +224,26 @@
 
 (defn throw-can-not-access-registries-creds
   [{:keys [id registries-credentials] :as resource} request]
-  (if (seq registries-credentials)
-    (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
-                           (->> registries-credentials
-                                (map #(str "id='" % "'"))
-                                (str/join " or "))
-                           ")")
-          {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
-                                      :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                    :last   0}
-                                      :nuvla/authn (:nuvla/authn request)})]
-      (if (< (get body :count 0)
-             (count registries-credentials))
-        (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
-                              403 id))
-        resource))
-    resource))
+  (let [preselected-creds (-> resource
+                              (get-in [:module :content :registries-credentials] [])
+                              set)
+        creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
+    (if (seq creds-to-be-checked)
+     (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
+                            (->> creds-to-be-checked
+                                 (map #(str "id='" % "'"))
+                                 (str/join " or "))
+                            ")")
+           {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
+                                       :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                     :last   0}
+                                       :nuvla/authn (:nuvla/authn request)})]
+       (if (< (get body :count 0)
+              (count creds-to-be-checked))
+         (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
+                               403 id))
+         resource))
+     resource)))
 
 
 (defn count-payment-methods
