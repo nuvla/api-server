@@ -71,7 +71,13 @@
                                        :pin     7}
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
-            :docker-plugins          ["sixsq/img-authz-plugin:arm64"]})
+            :docker-plugins          ["sixsq/img-authz-plugin:arm64"]
+            :vulnerabilities         [{:vulnerability-id "CVE-X-Y-Z"
+                                       :vulnerability-description "test threat"
+                                       :product "OpenSSH"
+                                       :vulnerability-link "url"}
+                                      {:vulnerability-id "CVE-X-Y-Z2"
+                                       :product "Apache"}]})
 
 
 (deftest check-nuvlabox-status
@@ -86,5 +92,5 @@
 
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
-                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins}]
+                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

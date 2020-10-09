@@ -22,6 +22,7 @@
   - Deployment - Add check-dct action on deployment
   - Nuvlabox status - Inferred-location attribute
   - Nuvlabox status - New optional container-plugins attribute
+  - NuvlaBox status - New optional attribute for vulnerability scans
 
 ## [5.2.0] - 2020-09-04
 

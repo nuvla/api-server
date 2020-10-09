@@ -403,7 +403,7 @@
            :json-schema/display-name "inferred-location"
            :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
 
-           :json-schema/order 47)))
+           :json-schema/order 56)))
 
 (s/def ::docker-plugins
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
@@ -412,6 +412,52 @@
 
            :json-schema/order 55)))
 
+;;
+;; vulnerabilities
+;;
+
+(s/def ::vulnerability-id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "vulnerability-id"
+           :json-schema/description "unique ID for the vulnerability"
+
+           :json-schema/order 57)))
+
+(s/def ::vulnerability-description
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "vulnerability-description"
+           :json-schema/description "Detailed description of the vulnerability"
+
+           :json-schema/order 58)))
+
+(s/def ::product
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "product"
+           :json-schema/description "Specific product name corresponding to the vulnerability"
+
+           :json-schema/order 60)))
+
+(s/def ::vulnerability-link
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "vulnerability-link"
+           :json-schema/description "Link for online database with vulnerability info"
+
+           :json-schema/order 61)))
+
+(s/def ::vulnerability-info
+  (-> (st/spec (su/only-keys :req-un [::vulnerability-id ::product] :opt-un [::vulnerability-description
+                                                                             ::vulnerability-link]))
+    (assoc :name "vulnerability-info"
+           :json-schema/type "map"
+           :json-schema/description "complete vulnerability entry")))
+
+(s/def ::vulnerabilities
+  (-> (st/spec (s/coll-of ::vulnerability-info :kind vector?))
+    (assoc :name "vulnerabilities"
+           :json-schema/type "array"
+           :json-schema/description "list of vulnerabilities affecting the NuvlaBox"
+
+           :json-schema/order 59)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -434,5 +480,6 @@
                                ::gpio-pins
                                ::nuvlabox-engine-version
                                ::gpio-pins
-                               ::docker-plugins]}))
+                               ::docker-plugins
+                               ::vulnerabilities]}))
 
