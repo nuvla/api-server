@@ -29,24 +29,29 @@ is marked as validated."
       (or (ex-data e) (throw e)))))
 
 
+(defn activate-user-new-active
+  [{:keys [id state email] :as user}]
+  (when (#{"NEW" "ACTIVE"} state)
+    (email-utils/validate-email! email)
+    (log/info (str "email for " id " successfully validated"))
+    (activate-user! id)))
+
+
 (defmethod callback/execute action-name
   [{callback-id            :id
     {:keys [href]}         :target-resource
     {:keys [redirect-url]} :data :as callback-resource} request]
   (try
-    (let [{:keys [id state email] :as user} (crud/retrieve-by-id-as-admin href)]
-      (if (contains? #{"NEW" "ACTIVE"} state)
+    (let [{:keys [id] :as user} (crud/retrieve-by-id-as-admin href)]
+      (if (activate-user-new-active user)
         (let [msg (str "email for " id " successfully validated")]
-          (email-utils/validate-email! email)
-          (activate-user! id)
-          (log/info msg)
           (if redirect-url
             (merge (r/map-response msg 303 id)
                    {:headers {"Location" redirect-url}})
             (r/map-response msg 200 id)))
         (do
           (utils/callback-failed! callback-id)
-          (r/map-response (format "%s is not in the 'NEW' state" id) 400))))
+          (r/map-response (format "%s is not in the 'NEW' or 'ACTIVE' state" id) 400))))
     (catch Exception e
       (utils/callback-failed! callback-id)
       (or (ex-data e) (throw e)))))
