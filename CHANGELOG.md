@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+## [5.3.0] - 2020-10-09
+
 ### Added
 
   - Hook - New non-standard cimi resource that provides an access

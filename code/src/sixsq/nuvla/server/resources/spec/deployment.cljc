@@ -195,7 +195,7 @@
              :json-schema/indexed false
 
              :json-schema/display-name "registries credentials"
-             :json-schema/description "list of used credentials for private registries"
+             :json-schema/description "list of used credentials corresponding to private registries. Position is important and empty string value is allowed and mean not set."
              :json-schema/order 32)))
 
 ;;

@@ -5,7 +5,6 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -14,6 +13,8 @@ component, or application.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
@@ -159,6 +160,40 @@ component, or application.
                           :currency          currency}))
     body))
 
+(defn throw-cannot-access-registries-or-creds
+  [{{{:keys [private-registries registries-credentials]} :content} :body :as request}]
+  (when
+    (and (seq private-registries)
+         (< (-> {:params      {:resource-name infra-service/resource-type}
+                 :cimi-params {:filter (parser/parse-cimi-filter
+                                         (str "subtype='registry' and ("
+                                              (->> private-registries
+                                                   (map #(str "id='" % "'"))
+                                                   (str/join " or "))
+                                              ")"))
+                               :last   0}
+                 :nuvla/authn (:nuvla/authn request)}
+                crud/query
+                :body
+                :count)
+            (count private-registries)))
+    (throw (r/ex-response "Private registries can't be resolved!" 403)))
+  (when-let [creds (->> registries-credentials (remove str/blank?) seq)]
+    (when (< (-> {:params      {:resource-name credential/resource-type}
+                  :cimi-params {:filter (parser/parse-cimi-filter
+                                          (str "subtype='infrastructure-service-registry' and ("
+                                               (->> creds
+                                                    (map #(str "id='" % "'"))
+                                                    (str/join " or "))
+                                               ")"))
+                                :last   0}
+                  :nuvla/authn (:nuvla/authn request)}
+                 crud/query
+                 :body
+                 :count)
+             (count creds))
+      (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
+
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
@@ -166,6 +201,8 @@ component, or application.
   (a/throw-cannot-add collection-acl request)
 
   (throw-colliding-path (:path body))
+
+  (throw-cannot-access-registries-or-creds request)
 
   (throw-price-error body)
 
@@ -270,7 +307,8 @@ component, or application.
         (->> module-meta
              (assoc request :body)
              edit-impl)
-        (let [content-url    (subtype->resource-url subtype)
+        (let [_              (throw-cannot-access-registries-or-creds request)
+              content-url    (subtype->resource-url subtype)
 
               [compatibility
                unsupported-options] (when docker-compose
