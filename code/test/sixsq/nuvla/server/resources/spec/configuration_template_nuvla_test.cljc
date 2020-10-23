@@ -30,7 +30,8 @@
 
                    :support-email "admin@example.org"
 
-                   :stripe-api-key "sk_test_xxx"}]
+                   :stripe-api-key "sk_test_xxx"
+                   :external-vulnerabilities-db-repository  "https://github.com/nuvla/vuln-db"}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 
@@ -40,5 +41,5 @@
 
     ;; optional keys
     (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
-                :support-email :stripe-api-key}]
+                :support-email :stripe-api-key :external-vulnerabilities-db-repository}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))
