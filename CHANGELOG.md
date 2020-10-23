@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+  - Vulnerabilities - new resource to act as a database of vulnerabilities to be matched against NuvlaBox security scans
+  
 ### Changed
 
 ## [5.3.0] - 2020-10-09
