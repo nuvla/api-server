@@ -96,11 +96,11 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-invitation-email [callback-url address {:keys [name id] :as user}]
+(defn send-invitation-email [set-password-url address {:keys [name id] :as user}]
   (let [{:keys [smtp-username, conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
-        body (cond-> (invitation-email-body (or name id) address callback-url)
+        body (cond-> (invitation-email-body (or name id) address set-password-url)
                      conditions-url (str (conditions-acceptance conditions-url)))
 
         msg  {:from    (or smtp-username "administrator")
@@ -128,6 +128,27 @@
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
               :subject "reset password"
+              :body    body}]
+
+    (send-email nuvla-config msg)))
+
+(def password-set-email-body
+  (partial format
+           (str/join "\n"
+                     ["To set your password visit:"
+                      "\n    %s\n"
+                      "If you did not initiate this request, do NOT click on the link and report"
+                      "this to the service administrator."])))
+
+
+(defn send-password-set-email [set-password-url address]
+  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
+
+        body (password-set-email-body set-password-url)
+
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "set password"
               :body    body}]
 
     (send-email nuvla-config msg)))

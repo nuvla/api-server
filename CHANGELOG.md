@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - Session template - reset password template removed
+  - Reset password and user invitation workflow enhancement
+
 ## [5.3.0] - 2020-10-09
 
 ### Added

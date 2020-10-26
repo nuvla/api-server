@@ -2,16 +2,15 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.resources.user-lifecycle-test :as user-test]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -28,7 +27,7 @@
 
 
 (deftest lifecycle
-  (let [validation-link (atom nil)
+  (let [invitation-link (atom nil)
 
         template-url    (str p/service-context user-tpl/resource-type "/" email-invitation/registration-method)
 
@@ -49,7 +48,7 @@
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (second (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*" body))]
-                                          (reset! validation-link url))
+                                          (reset! invitation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [template          (-> session-admin
@@ -67,7 +66,8 @@
             href-create       {:description description-attr
                                :tags        tags-attr
                                :template    {:href  href
-                                             :email "jane@example.org"}}
+                                             :email "jane@example.org"
+                                             :redirect-url "http://redirect.example.org"}}
 
             invalid-create    (assoc-in href-create [:template :href] "user-template/unknown-template")
 
@@ -134,7 +134,12 @@
               {email-id :email :as user} (-> session-created-user
                                              (request (str p/service-context user-id))
                                              (ltu/body->edn)
-                                             (ltu/body))]
+                                             (ltu/body))
+
+              callback-url (->> @invitation-link
+                                codec/url-decode
+                                (re-matches #".*callback=(.*?)&.*")
+                                second)]
 
           ;; verify name attribute (should default to username if no :name)
           (is (= "jane@example.org" (:name user)))
@@ -152,21 +157,22 @@
               (request (str p/service-context email-id))
               (ltu/body->edn)
               (ltu/is-status 200))
-
           ;; check validation of resource
-          (is (not (nil? @validation-link)))
+          (is (not (nil? @invitation-link)))
 
           (-> session-admin
               (request (str p/service-context user-id))
               (ltu/body->edn)
               (ltu/is-status 200))
 
-          (is (re-matches #"^email.*successfully validated$" (-> session-anon
-                                                                 (request @validation-link)
-                                                                 (ltu/body->edn)
-                                                                 (ltu/is-status 200)
-                                                                 (ltu/body)
-                                                                 :message)))
+          (-> session-anon
+              (request callback-url
+                       :request-method :post
+                       :body (json/write-str {:new-password "VeryDifficult-1"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/message-matches
+                (re-pattern (format "set password for %s successfully executed" user-id))))
 
           (let [{:keys [state]} (-> session-created-user
                                     (request (str p/service-context user-id))
