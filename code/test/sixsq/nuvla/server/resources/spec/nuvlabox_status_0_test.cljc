@@ -75,9 +75,10 @@
             :vulnerabilities         [{:vulnerability-id "CVE-X-Y-Z"
                                        :vulnerability-description "test threat"
                                        :product "OpenSSH"
-                                       :vulnerability-link "url"}
+                                       :vulnerability-reference "url"}
                                       {:vulnerability-id "CVE-X-Y-Z2"
-                                       :product "Apache"}]})
+                                       :product "Apache"
+                                       :vulnerability-score 5.7}]})
 
 
 (deftest check-nuvlabox-status

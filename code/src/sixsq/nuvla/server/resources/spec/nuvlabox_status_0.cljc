@@ -437,16 +437,24 @@
 
            :json-schema/order 60)))
 
-(s/def ::vulnerability-link
+(s/def ::vulnerability-reference
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "vulnerability-link"
+    (assoc :name "vulnerability-reference"
            :json-schema/description "Link for online database with vulnerability info"
 
            :json-schema/order 61)))
 
+(s/def ::vulnerability-score
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "vulnerability-score"
+           :json-schema/description "CVSS score for the vulnerability"
+
+           :json-schema/order 62)))
+
 (s/def ::vulnerability-info
   (-> (st/spec (su/only-keys :req-un [::vulnerability-id ::product] :opt-un [::vulnerability-description
-                                                                             ::vulnerability-link]))
+                                                                             ::vulnerability-reference
+                                                                             ::vulnerability-score]))
     (assoc :name "vulnerability-info"
            :json-schema/type "map"
            :json-schema/description "complete vulnerability entry")))
