@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.email.utils
   (:require
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [postal.core :as postal]
     [selmer.parser :as tmpl]
@@ -11,7 +12,7 @@
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.util.response :as r]))
 
-(def base-html (slurp "resources/sixsq/nuvla/html-template/base.html"))
+(def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
 
 (def warning-initiate
   (str/join "\n"
