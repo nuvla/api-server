@@ -9,8 +9,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r])
-  (:import (java.io File)))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def base-html (slurp "resources/sixsq/nuvla/html-template/base.html"))
 
