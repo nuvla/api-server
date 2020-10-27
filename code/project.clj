@@ -45,6 +45,7 @@
    [instaparse]
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.62"]
+   [selmer "1.12.31"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
