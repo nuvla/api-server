@@ -2,14 +2,15 @@
   (:require
     [clojure.string :as str]
     [postal.core :as postal]
+    [selmer.parser :as tmpl]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [selmer.parser :as tmpl]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r])
+  (:import (java.io File)))
 
 (def base-html (slurp "resources/sixsq/nuvla/html-template/base.html"))
 
@@ -137,7 +138,7 @@
 
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
-              :subject "email invitation"
+              :subject "Invitation by email for Nuvla service"
               :body    body}]
 
     (send-email nuvla-config msg)))
@@ -171,7 +172,7 @@
 
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
-              :subject "set password"
+              :subject "Set password for Nuvla service"
               :body    body}]
 
     (send-email nuvla-config msg)))
