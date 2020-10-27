@@ -64,8 +64,7 @@
                 :button-url     set-password-url
                 :text-1         (str
                                   (format "You have been invited by \"%s\" to use Nuvla. " name)
-                                  (format "To accept the invitation, click the following button:"
-                                          set-password-url))
+                                  "To accept the invitation, click the following button:")
                 :conditions-url conditions-url})}])
 
 
