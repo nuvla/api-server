@@ -10,7 +10,6 @@ for events driven workflows.
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-validation]
     [sixsq.nuvla.server.resources.callback-user-password-set :as callback-pass-set]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]

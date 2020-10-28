@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]
@@ -47,7 +48,9 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (second (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*" body))]
+                                        (let [url (->> body second :content
+                                                       (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*")
+                                                       second)]
                                           (reset! invitation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
@@ -65,8 +68,8 @@
             no-href-create    {:template (ltu/strip-unwanted-attrs (assoc template :email "alice@example.org"))}
             href-create       {:description description-attr
                                :tags        tags-attr
-                               :template    {:href  href
-                                             :email "jane@example.org"
+                               :template    {:href         href
+                                             :email        "jane@example.org"
                                              :redirect-url "http://redirect.example.org"}}
 
             invalid-create    (assoc-in href-create [:template :href] "user-template/unknown-template")
@@ -136,10 +139,10 @@
                                              (ltu/body->edn)
                                              (ltu/body))
 
-              callback-url (->> @invitation-link
-                                codec/url-decode
-                                (re-matches #".*callback=(.*?)&.*")
-                                second)]
+              callback-url         (->> @invitation-link
+                                        codec/url-decode
+                                        (re-matches #".*callback=(.*?)&.*")
+                                        second)]
 
           ;; verify name attribute (should default to username if no :name)
           (is (= "jane@example.org" (:name user)))
