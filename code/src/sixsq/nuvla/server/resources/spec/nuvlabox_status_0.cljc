@@ -496,7 +496,7 @@
            :json-schema/order 66)))
 
 (s/def ::summary
-  (-> (st/spec (su/only-keys :req-un [::count ::affected-products] :opt-un [::last-modified
+  (-> (st/spec (su/only-keys :req-un [::total ::affected-products] :opt-un [::last-modified
                                                                             ::average-score]))
     (assoc :name "summary"
            :json-schema/type "map"
