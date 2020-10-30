@@ -31,7 +31,7 @@
                    :support-email "admin@example.org"
 
                    :stripe-api-key "sk_test_xxx"
-                   :external-vulnerabilities-db  "https://github.com/nuvla/vuln-db/blob/main/databases/all.simplified.json.gz?raw=true"}]
+                   :external-vulnerabilities-db  "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 

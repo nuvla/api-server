@@ -459,13 +459,56 @@
            :json-schema/type "map"
            :json-schema/description "complete vulnerability entry")))
 
-(s/def ::vulnerabilities
+(s/def ::items
   (-> (st/spec (s/coll-of ::vulnerability-info :kind vector?))
     (assoc :name "vulnerabilities"
            :json-schema/type "array"
            :json-schema/description "list of vulnerabilities affecting the NuvlaBox"
 
            :json-schema/order 59)))
+
+(s/def ::average-score
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "average-score"
+           :json-schema/description "Average CVSS score for all vulnerabilities"
+
+           :json-schema/order 63)))
+
+(s/def ::total
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "total"
+           :json-schema/description "Total count of vulnerabilities found"
+
+           :json-schema/order 64)))
+
+(s/def ::affected-products
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "affected-products"
+           :json-schema/description "Number of affected products in the detected vulnerabilities"
+
+           :json-schema/order 65)))
+
+(s/def ::last-modified
+  (-> (st/spec ::core/timestamp)
+    (assoc :name "last-modified"
+           :json-schema/description "Last time the vulnerability list has changed"
+
+           :json-schema/order 66)))
+
+(s/def ::summary
+  (-> (st/spec (su/only-keys :req-un [::count ::affected-products] :opt-un [::last-modified
+                                                                            ::average-score]))
+    (assoc :name "summary"
+           :json-schema/type "map"
+           :json-schema/description "Summary of the vulnerability scan")))
+
+(s/def ::vulnerabilities
+  (-> (st/spec (su/only-keys :req-un [::summary ::items]))
+    (assoc :name "vulnerabilities"
+           :json-schema/type "map"
+           :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
+
+           :json-schema/order 67)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
