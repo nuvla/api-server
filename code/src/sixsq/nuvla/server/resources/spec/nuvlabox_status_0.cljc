@@ -503,7 +503,7 @@
            :json-schema/description "Summary of the vulnerability scan")))
 
 (s/def ::vulnerabilities
-  (-> (st/spec (su/only-keys :req-un [::summary ::items]))
+  (-> (st/spec (su/only-keys :opt-un [::summary ::items]))
     (assoc :name "vulnerabilities"
            :json-schema/type "map"
            :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
