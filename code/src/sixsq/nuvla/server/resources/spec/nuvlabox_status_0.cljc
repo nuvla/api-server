@@ -488,16 +488,8 @@
 
            :json-schema/order 65)))
 
-(s/def ::last-modified
-  (-> (st/spec ::core/timestamp)
-    (assoc :name "last-modified"
-           :json-schema/description "Last time the vulnerability list has changed"
-
-           :json-schema/order 66)))
-
 (s/def ::summary
-  (-> (st/spec (su/only-keys :req-un [::total ::affected-products] :opt-un [::last-modified
-                                                                            ::average-score]))
+  (-> (st/spec (su/only-keys :req-un [::total ::affected-products] :opt-un [::average-score]))
     (assoc :name "summary"
            :json-schema/type "map"
            :json-schema/description "Summary of the vulnerability scan")))
@@ -508,7 +500,7 @@
            :json-schema/type "map"
            :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
 
-           :json-schema/order 67)))
+           :json-schema/order 66)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs

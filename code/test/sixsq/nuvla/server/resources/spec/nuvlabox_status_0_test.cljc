@@ -74,7 +74,6 @@
             :docker-plugins          ["sixsq/img-authz-plugin:arm64"]
             :vulnerabilities         {:summary {:total 1920
                                                 :affected-products  2
-                                                :last-modified  "2020-02-18T19:42:08Z"
                                                 :average-score  6.1}
                                       :items  [{:vulnerability-id "CVE-X-Y-Z"
                                                 :vulnerability-description "test threat"
