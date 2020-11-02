@@ -8,6 +8,14 @@
   
 ### Changed
 
+  - Customer - List invoices, due date format fix
+
+## [5.4.0] - 2020-10-28
+
+### Changed
+
+  - Configuration nuvla - new conditions-url attribute 
+  - Email utils - Send html instead of raw text
   - Session template - reset password template removed
   - Reset password and user invitation workflow enhancement
 

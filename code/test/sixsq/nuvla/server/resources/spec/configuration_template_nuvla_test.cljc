@@ -31,7 +31,9 @@
                    :support-email "admin@example.org"
 
                    :stripe-api-key "sk_test_xxx"
-                   :external-vulnerabilities-db  "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"}]
+                   :external-vulnerabilities-db  "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"
+
+                   :conditions-url "https://nuvla.io/terms/tos"}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 
@@ -41,5 +43,5 @@
 
     ;; optional keys
     (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
-                :support-email :stripe-api-key :external-vulnerabilities-db}]
+                :support-email :stripe-api-key :external-vulnerabilities-db :conditions-url}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))

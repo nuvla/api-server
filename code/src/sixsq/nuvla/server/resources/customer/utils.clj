@@ -112,7 +112,8 @@
              :created     (some-> (stripe/get-created s-invoice)
                                   time/unix-timestamp->str)
              :currency    (stripe/get-currency s-invoice)
-             :due-date    (stripe/get-due-date s-invoice)
+             :due-date    (some-> (stripe/get-due-date s-invoice)
+                                  time/unix-timestamp->str)
              :invoice-pdf (stripe/get-invoice-pdf s-invoice)
              :paid        (stripe/get-paid s-invoice)
              :status      (stripe/get-status s-invoice)
@@ -246,12 +247,12 @@
 (defn list-invoices
   [subscription-id]
   (let [paid (->> {"subscription" subscription-id
-                   "status"   "paid"}
+                   "status"       "paid"}
                   stripe/list-invoices
                   stripe/get-data
                   (map #(s-invoice->map % false)))
         open (->> {"subscription" subscription-id
-                   "status"   "open"}
+                   "status"       "open"}
                   stripe/list-invoices
                   stripe/get-data
                   (map #(s-invoice->map % false)))]

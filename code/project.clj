@@ -1,7 +1,7 @@
 (def parent-version "6.7.4")
 (def nuvla-ring-version "2.0.2")
 
-(defproject sixsq.nuvla.server/api-jar "5.3.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "5.4.1-SNAPSHOT"
 
   :description "core api server"
 
@@ -45,6 +45,7 @@
    [instaparse]
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.62"]
+   [selmer "1.12.31"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
