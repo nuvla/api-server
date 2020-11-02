@@ -482,9 +482,9 @@
            :json-schema/order 64)))
 
 (s/def ::affected-products
-  (-> (st/spec (s/and number? #(not (neg? %))))
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
     (assoc :name "affected-products"
-           :json-schema/description "Number of affected products in the detected vulnerabilities"
+           :json-schema/description "List of affected products in the detected vulnerabilities"
 
            :json-schema/order 65)))
 

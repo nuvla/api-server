@@ -73,7 +73,7 @@
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          ["sixsq/img-authz-plugin:arm64"]
             :vulnerabilities         {:summary {:total 1920
-                                                :affected-products  2
+                                                :affected-products  ["openssh", "go"]
                                                 :average-score  6.1}
                                       :items  [{:vulnerability-id "CVE-X-Y-Z"
                                                 :vulnerability-description "test threat"
