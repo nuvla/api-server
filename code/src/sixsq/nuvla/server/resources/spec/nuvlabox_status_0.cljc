@@ -398,19 +398,19 @@
 
 (s/def ::inferred-location
   (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
-    (assoc :name "inferred-location"
-           :json-schema/type "geo-point"
-           :json-schema/display-name "inferred-location"
-           :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
+      (assoc :name "inferred-location"
+             :json-schema/type "geo-point"
+             :json-schema/display-name "inferred-location"
+             :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
 
-           :json-schema/order 56)))
+             :json-schema/order 56)))
 
 (s/def ::docker-plugins
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
-    (assoc :name "Docker Plugins"
-           :json-schema/description "List of enabled Docker Plugins on the NuvlaBox host"
+      (assoc :name "Docker Plugins"
+             :json-schema/description "List of enabled Docker Plugins on the NuvlaBox host"
 
-           :json-schema/order 55)))
+             :json-schema/order 55)))
 
 ;;
 ;; vulnerabilities
@@ -418,89 +418,90 @@
 
 (s/def ::vulnerability-id
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "vulnerability-id"
-           :json-schema/description "unique ID for the vulnerability"
+      (assoc :name "vulnerability-id"
+             :json-schema/description "unique ID for the vulnerability"
 
-           :json-schema/order 57)))
+             :json-schema/order 57)))
 
 (s/def ::vulnerability-description
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "vulnerability-description"
-           :json-schema/description "Detailed description of the vulnerability"
+      (assoc :name "vulnerability-description"
+             :json-schema/description "Detailed description of the vulnerability"
 
-           :json-schema/order 58)))
+             :json-schema/order 58)))
 
 (s/def ::product
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "product"
-           :json-schema/description "Specific product name corresponding to the vulnerability"
+      (assoc :name "product"
+             :json-schema/description "Specific product name corresponding to the vulnerability"
 
-           :json-schema/order 60)))
+             :json-schema/order 60)))
 
 (s/def ::vulnerability-reference
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "vulnerability-reference"
-           :json-schema/description "Link for online database with vulnerability info"
+      (assoc :name "vulnerability-reference"
+             :json-schema/description "Link for online database with vulnerability info"
 
-           :json-schema/order 61)))
+             :json-schema/order 61)))
 
 (s/def ::vulnerability-score
   (-> (st/spec (s/and number? #(not (neg? %))))
-    (assoc :name "vulnerability-score"
-           :json-schema/description "CVSS score for the vulnerability"
+      (assoc :name "vulnerability-score"
+             :json-schema/description "CVSS score for the vulnerability"
 
-           :json-schema/order 62)))
+             :json-schema/order 62)))
 
 (s/def ::vulnerability-info
-  (-> (st/spec (su/only-keys :req-un [::vulnerability-id ::product] :opt-un [::vulnerability-description
-                                                                             ::vulnerability-reference
-                                                                             ::vulnerability-score]))
-    (assoc :name "vulnerability-info"
-           :json-schema/type "map"
-           :json-schema/description "complete vulnerability entry")))
+  (-> (st/spec (su/only-keys :req-un [::vulnerability-id ::product]
+                             :opt-un [::vulnerability-description
+                                      ::vulnerability-reference
+                                      ::vulnerability-score]))
+      (assoc :name "vulnerability-info"
+             :json-schema/type "map"
+             :json-schema/description "complete vulnerability entry")))
 
 (s/def ::items
   (-> (st/spec (s/coll-of ::vulnerability-info :kind vector?))
-    (assoc :name "vulnerabilities"
-           :json-schema/type "array"
-           :json-schema/description "list of vulnerabilities affecting the NuvlaBox"
+      (assoc :name "vulnerabilities"
+             :json-schema/type "array"
+             :json-schema/description "list of vulnerabilities affecting the NuvlaBox"
 
-           :json-schema/order 59)))
+             :json-schema/order 59)))
 
 (s/def ::average-score
   (-> (st/spec (s/and number? #(not (neg? %))))
-    (assoc :name "average-score"
-           :json-schema/description "Average CVSS score for all vulnerabilities"
+      (assoc :name "average-score"
+             :json-schema/description "Average CVSS score for all vulnerabilities"
 
-           :json-schema/order 63)))
+             :json-schema/order 63)))
 
 (s/def ::total
   (-> (st/spec (s/and number? #(not (neg? %))))
-    (assoc :name "total"
-           :json-schema/description "Total count of vulnerabilities found"
+      (assoc :name "total"
+             :json-schema/description "Total count of vulnerabilities found"
 
-           :json-schema/order 64)))
+             :json-schema/order 64)))
 
 (s/def ::affected-products
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
-    (assoc :name "affected-products"
-           :json-schema/description "List of affected products in the detected vulnerabilities"
+      (assoc :name "affected-products"
+             :json-schema/description "List of affected products in the detected vulnerabilities"
 
-           :json-schema/order 65)))
+             :json-schema/order 65)))
 
 (s/def ::summary
   (-> (st/spec (su/only-keys :req-un [::total ::affected-products] :opt-un [::average-score]))
-    (assoc :name "summary"
-           :json-schema/type "map"
-           :json-schema/description "Summary of the vulnerability scan")))
+      (assoc :name "summary"
+             :json-schema/type "map"
+             :json-schema/description "Summary of the vulnerability scan")))
 
 (s/def ::vulnerabilities
   (-> (st/spec (su/only-keys :opt-un [::summary ::items]))
-    (assoc :name "vulnerabilities"
-           :json-schema/type "map"
-           :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
+      (assoc :name "vulnerabilities"
+             :json-schema/type "map"
+             :json-schema/description "list of vulnerabilities affecting the NuvlaBox, plus summary"
 
-           :json-schema/order 66)))
+             :json-schema/order 66)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
