@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+  - Vulnerabilities - new resource to act as a database of vulnerabilities to be matched against NuvlaBox security scans
+  - Configuration - new Nuvla configuration attribute to specify the Git repository where to find the list of vulnerability databases
+  
 ### Changed
 
   - Customer - List invoices, due date format fix
