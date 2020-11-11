@@ -2,7 +2,22 @@
 
 ## Unreleased
 
+### Added
+  - Vulnerabilities - new resource to act as a database of vulnerabilities to be matched against NuvlaBox security scans
+  - Configuration - new Nuvla configuration attribute to specify the Git repository where to find the list of vulnerability databases
+  
 ### Changed
+
+  - Customer - List invoices, due date format fix
+
+## [5.4.0] - 2020-10-28
+
+### Changed
+
+  - Configuration nuvla - new conditions-url attribute 
+  - Email utils - Send html instead of raw text
+  - Session template - reset password template removed
+  - Reset password and user invitation workflow enhancement
 
 ## [5.3.0] - 2020-10-09
 

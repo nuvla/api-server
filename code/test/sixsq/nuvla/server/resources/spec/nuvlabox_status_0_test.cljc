@@ -72,12 +72,16 @@
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          ["sixsq/img-authz-plugin:arm64"]
-            :vulnerabilities         [{:vulnerability-id "CVE-X-Y-Z"
-                                       :vulnerability-description "test threat"
-                                       :product "OpenSSH"
-                                       :vulnerability-link "url"}
-                                      {:vulnerability-id "CVE-X-Y-Z2"
-                                       :product "Apache"}]})
+            :vulnerabilities         {:summary {:total 1920
+                                                :affected-products  ["openssh", "go"]
+                                                :average-score  6.1}
+                                      :items  [{:vulnerability-id "CVE-X-Y-Z"
+                                                :vulnerability-description "test threat"
+                                                :product "OpenSSH"
+                                                :vulnerability-reference "url"}
+                                               {:vulnerability-id "CVE-X-Y-Z2"
+                                                :product "Apache"
+                                                :vulnerability-score 5.7}]}})
 
 
 (deftest check-nuvlabox-status

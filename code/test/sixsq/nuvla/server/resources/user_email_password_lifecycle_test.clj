@@ -53,7 +53,9 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
+                                        (let [url (->> body second :content
+                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
+                                                       second)]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
@@ -263,7 +265,7 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  postal/send-message (fn [_ {:keys [body]}]
+                  postal/send-message (fn [_ _]
                                         {:code 0, :error :SUCCESS, :message "OK"})]
       (let [session            (-> (ltu/ring-app)
                                   session

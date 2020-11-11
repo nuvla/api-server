@@ -91,6 +91,23 @@
              :json-schema/order 28)))
 
 
+(s/def ::external-vulnerabilities-db
+  (-> (st/spec ::core/url)
+    (assoc :name "external-vulnerabilities-db"
+           :json-schema/display-name "external vulnerabilities db"
+           :json-schema/description "Link to external DB where to find the vulnerabilities database to be added to Nuvla"
+           :json-schema/order 29)))
+
+
+(s/def ::conditions-url
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "conditions-url"
+             :json-schema/display-name "Terms & conditions url"
+             :json-schema/description "Terms & conditions url"
+
+             :json-schema/order 30)))
+
+
 (def configuration-template-keys-spec
   {:opt-un [::smtp-username
             ::smtp-password
@@ -100,7 +117,9 @@
             ::smtp-debug
             ::support-email
             ::stripe-api-key
-            ::stripe-client-id]})
+            ::stripe-client-id
+            ::external-vulnerabilities-db
+            ::conditions-url]})
 
 
 ;; Defines the contents of the nuvla configuration-template resource itself.

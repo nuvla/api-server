@@ -62,7 +62,7 @@
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          []
-            :vulnerabilities         []})
+            :vulnerabilities         {}})
 
 
 (deftest check-nuvlabox-status
