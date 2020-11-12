@@ -10,8 +10,8 @@
                            :opt-un [::ssh-key/private-key]})
 
 (s/def ::schema
-  (su/only-keys-maps [ps/credential-keys-spec
-                      credential-keys-spec]))
+  (su/only-keys-maps ps/credential-keys-spec
+                     credential-keys-spec))
 
 
 ;; multiple methods to create an ssh public key, so multiple schemas
