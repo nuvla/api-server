@@ -11,7 +11,10 @@ may be added, for example, to configure external authentication.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.configuration :as configuration]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -21,6 +24,9 @@ may be added, for example, to configure external authentication.
 
 
 (def ^:const create-type (u/ns->create-type *ns*))
+
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::configuration/schema))
 
 
 (def collection-acl {:query ["group/nuvla-admin"]
@@ -143,4 +149,5 @@ may be added, for example, to configure external authentication.
 ;;
 (defn initialize
   []
-  (std-crud/initialize resource-type nil))
+  (std-crud/initialize resource-type nil)
+  (md/register resource-metadata))

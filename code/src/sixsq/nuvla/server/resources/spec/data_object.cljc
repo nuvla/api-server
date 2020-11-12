@@ -25,6 +25,7 @@
              :json-schema/type "string"
              :json-schema/description "data-object state"
 
+             :json-schema/value-scope {:values ["NEW", "UPLOADING", "READY"]}
              :json-schema/server-managed true
              :json-schema/editable false
              :json-schema/order 31)))

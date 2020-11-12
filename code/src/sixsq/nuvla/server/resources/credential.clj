@@ -11,9 +11,11 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as swarm-tpl]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.credential :as credential]
     [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 
@@ -34,13 +36,17 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
                              "group/nuvla-nuvlabox"]})
 
 
+(def resource-metadata (gen-md/generate-metadata ::ns ::credential/schema))
+
+
 ;;
 ;; initialization: no schema for this parent resource
 ;;
 
 (defn initialize
   []
-  (std-crud/initialize resource-type nil))
+  (std-crud/initialize resource-type nil)
+  (md/register resource-metadata))
 
 
 ;;
@@ -225,7 +231,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
         id         (:resource-id (:body response))]
 
-    (when (= (:method body) swarm-tpl/method)
+    (when (= (:method body) "infrastructure-service-swarm")
       (create-job {:params      {:uuid          (u/id->uuid id)
                                  :resource-name resource-type}
                    :nuvla/authn authn-info}))
@@ -292,7 +298,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 
 (defmethod crud/delete resource-type
-  [{{uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" uuid)
       (db/retrieve request)
       (a/throw-cannot-delete request)

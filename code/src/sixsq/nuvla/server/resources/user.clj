@@ -19,11 +19,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.group :as group]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -33,6 +35,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 
 (def ^:const create-type (u/ns->create-type *ns*))
+
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::user/schema))
 
 
 ;; creating a new user is a registration request, so anonymous users must
@@ -272,5 +277,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defn initialize
   []
   (std-crud/initialize resource-type ::user/schema)
+  (md/register resource-metadata)
   (when-let [super-password (env/env :nuvla-super-password)]
     (create-super-user super-password)))

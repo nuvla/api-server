@@ -187,6 +187,7 @@
   (-> (st/spec #{"none", "on-failure", "any"})
       (assoc :name "condition"
              :json-schema/type "string"
+             :json-schema/value-scope {:values  ["none", "on-failure", "any"]}
              :json-schema/description "restart condition (none, on-failure, any)")))
 
 

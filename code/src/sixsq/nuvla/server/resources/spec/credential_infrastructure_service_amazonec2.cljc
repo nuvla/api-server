@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-amazonec2
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-amazonec2 :as service]
@@ -10,7 +9,7 @@
 
 (s/def ::schema
   (su/only-keys-maps service/credential-template-keys-spec
-                     cred/credential-keys-spec))
+                     ps/credential-keys-spec))
 
 
 (s/def ::schema-create

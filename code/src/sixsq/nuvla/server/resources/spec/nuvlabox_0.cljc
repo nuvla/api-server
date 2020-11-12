@@ -9,14 +9,13 @@
 
 
 (s/def ::state
-  (-> (st/spec #{"NEW"
-                 "ACTIVATED"
-                 "COMMISSIONED"
-                 "DECOMMISSIONING" "DECOMMISSIONED"
-                 "ERROR"})
+  (-> (st/spec #{"NEW" "ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "DECOMMISSIONED" "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "state of NuvlaBox"
+
+             :json-schema/value-scope {:values  ["NEW" "ACTIVATED" "COMMISSIONED"
+                                                 "DECOMMISSIONING" "DECOMMISSIONED" "ERROR"]}
 
              :json-schema/order 10)))
 
@@ -220,10 +219,10 @@
 
 (s/def ::ssh-keys
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
-    (assoc :name "ssh-keys"
-           :json-schema/display-name "NuvlaBox SSH keys"
-           :json-schema/description "list of SSH keys associated with the NuvlaBox"
-           :json-schema/order 33)))
+      (assoc :name "ssh-keys"
+             :json-schema/display-name "NuvlaBox SSH keys"
+             :json-schema/description "list of SSH keys associated with the NuvlaBox"
+             :json-schema/order 33)))
 
 
 (s/def ::schema

@@ -13,6 +13,8 @@
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "job state"
+             :json-schema/value-scope {:values ["QUEUED" "RUNNING" "FAILED" "SUCCESS"
+                                                "STOPPING" "STOPPED"]}
 
              :json-schema/order 20)))
 

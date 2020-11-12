@@ -36,6 +36,7 @@
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "state of user's account"
+             :json-schema/value-scope {:values ["NEW" "ACTIVE" "SUSPENDED"]}
 
              :json-schema/server-managed true
              :json-schema/editable false

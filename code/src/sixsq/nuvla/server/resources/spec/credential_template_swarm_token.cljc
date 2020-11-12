@@ -12,6 +12,7 @@
       (assoc :name "scope"
              :json-schema/type "string"
              :json-schema/description "scope of the given Swarm token (MANAGER or WORKER)"
+             :json-schema/value-scope {:values ["MANAGER", "WORKER"]}
 
              :json-schema/order 30)))
 
