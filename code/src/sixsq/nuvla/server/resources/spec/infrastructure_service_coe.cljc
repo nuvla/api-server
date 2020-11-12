@@ -29,6 +29,7 @@
 (s/def ::node-name ::core/nonblank-string)
 (s/def ::manager (st/spec boolean?))
 (s/def ::node-config-base64 ::core/nonblank-string)
+(s/def ::node-ssh-base64 ::core/nonblank-string)
 (s/def ::kube-config ::core/nonblank-string)
 (s/def ::join-tokens
   (-> (st/spec (su/constrained-map keyword? any?))

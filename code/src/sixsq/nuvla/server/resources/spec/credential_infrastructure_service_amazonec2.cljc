@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.credential-infrastructure-service-amazonec2
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.credential :as cred]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-amazonec2 :as service]
     [sixsq.nuvla.server.util.spec :as su]))
