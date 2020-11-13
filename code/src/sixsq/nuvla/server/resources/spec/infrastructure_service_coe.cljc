@@ -3,7 +3,8 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.infrastructure-service :as infrastructure-service]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-tmpl]
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-tmpl-gen]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -28,6 +29,7 @@
 (s/def ::node-name ::core/nonblank-string)
 (s/def ::manager (st/spec boolean?))
 (s/def ::node-config-base64 ::core/nonblank-string)
+(s/def ::node-ssh-base64 ::core/nonblank-string)
 (s/def ::kube-config ::core/nonblank-string)
 (s/def ::join-tokens
   (-> (st/spec (su/constrained-map keyword? any?))
@@ -67,7 +69,7 @@
   (-> (st/spec (s/coll-of ::node :kind vector?))
       (assoc :name "nodes"
              :json-schema/name "nodes"
-             :json-schema/type "Array"
+             :json-schema/type "array"
              :json-schema/providerMandatory false
              :json-schema/consumerMandatory false
              :json-schema/mutable false
@@ -84,19 +86,30 @@
 
 ; Free map with CSP specific cluster parameters
 (s/def ::cluster-params
-       (-> (st/spec (su/constrained-map keyword? any?))
-           (assoc :name "cluster-params"
-                  :json-schema/name "cluster-params"
-                  :json-schema/type "map"
-                  :json-schema/description "parameters of COE cluster on CSP"
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :name "cluster-params"
+             :json-schema/name "cluster-params"
+             :json-schema/type "map"
+             :json-schema/description "parameters of COE cluster on CSP"
 
-                  :json-schema/editable true
-                  :json-schema/indexed false
-                  :json-schema/order 25)))
+             :json-schema/editable true
+             :json-schema/indexed false
+             :json-schema/order 25)))
 
+
+(def service-keys-spec {:opt-un [::management-credential
+                                 ::cluster-params
+                                 ::nodes]})
+
+(def service-service-keys-spec-coe
+  {:req-un [::infra-tmpl-gen/parent
+            ::infra-tmpl-gen/state]
+   :opt-un [::infra-tmpl-gen/endpoint
+            ::infra-tmpl-gen/swarm-enabled
+            ::infra-tmpl-gen/online]})
 
 (s/def ::schema
-  (su/only-keys-maps infrastructure-service/infra-service-keys-spec
-                     {:opt-un [::management-credential
-                               ::cluster-params
-                               ::nodes]}))
+  (su/only-keys-maps
+    service-keys-spec
+    service-service-keys-spec-coe
+    infra-tmpl/resource-keys-spec))

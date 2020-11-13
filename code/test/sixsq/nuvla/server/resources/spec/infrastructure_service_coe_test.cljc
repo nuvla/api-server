@@ -14,22 +14,22 @@
 (deftest check-service
   (doseq [coe-type ["swarm" "kubernetes"]]
     (let [timestamp "1964-08-25T10:00:00.00Z"
-          service   {:id            (str service-resource/resource-type "/uuid")
-                     :resource-type service-resource/resource-type
-                     :created       timestamp
-                     :updated       timestamp
-                     :acl           valid-acl
+          service   {:id                    (str service-resource/resource-type "/uuid")
+                     :resource-type         service-resource/resource-type
+                     :created               timestamp
+                     :updated               timestamp
+                     :acl                   valid-acl
 
-                     :parent        "infrastructure-service-group/abcdef"
+                     :parent                "infrastructure-service-group/abcdef"
 
-                     :method        "coe"
-                     :subtype       coe-type
-                     :endpoint      "https://docker.example.org/api"
-                     :nodes         [{:node-name "testmachine" :node-config-base64 "base64==" :manager true}]
+                     :method                "coe"
+                     :subtype               coe-type
+                     :endpoint              "https://docker.example.org/api"
+                     :nodes                 [{:node-name "testmachine" :node-config-base64 "base64==" :manager true}]
                      :management-credential "infrastructure-service/1-2-3-4-5"
-                     :state         "STARTED"
-                     :swarm-enabled true
-                     :online        true}]
+                     :state                 "STARTED"
+                     :swarm-enabled         true
+                     :online                true}]
 
       (stu/is-valid ::infrastructure-service-coe/schema service)
 

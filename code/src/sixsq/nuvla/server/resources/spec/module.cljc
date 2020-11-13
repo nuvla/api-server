@@ -43,6 +43,8 @@
       (assoc :name "subtype"
              :json-schema/type "string"
              :json-schema/description "module type"
+             :json-schema/value-scope {:values ["project" "component" "application"
+                                                "application_kubernetes"]}
 
              :json-schema/editable false
              :json-schema/fulltext true
@@ -130,6 +132,8 @@
              :json-schema/description "module compatibility"
              :json-schema/server-managed true
              :json-schema/editable false
+             :json-schema/value-scope {:values ["swarm" "docker-compose"]}
+
 
              :json-schema/fulltext true
              :json-schema/order 35)))

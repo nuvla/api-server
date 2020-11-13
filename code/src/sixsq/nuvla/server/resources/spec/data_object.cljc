@@ -3,7 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
+    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.data :as data]
     [spec-tools.core :as st]))
 
@@ -25,6 +25,7 @@
              :json-schema/type "string"
              :json-schema/description "data-object state"
 
+             :json-schema/value-scope {:values ["NEW", "UPLOADING", "READY"]}
              :json-schema/server-managed true
              :json-schema/editable false
              :json-schema/order 31)))

@@ -39,10 +39,12 @@ Spec for credentials of Container Orchestration Engine (COE).
              :json-schema/editable false
              :json-schema/sensitive true)))
 
+(def credential-keys-spec {:req-un [::ca
+                                    ::cert
+                                    ::key]})
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      cred-infra-service/credential-service-keys-spec
-                     {:req-un [::ca
-                               ::cert
-                               ::key]}))
+                     credential-keys-spec))
