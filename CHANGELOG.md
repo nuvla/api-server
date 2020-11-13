@@ -8,6 +8,8 @@
   
 ### Changed
 
+  - Resource-metadata - Add metadata for templated resources
+    and spec fixes and reorganisation
   - Customer - List invoices, due date format fix
 
 ## [5.4.0] - 2020-10-28
