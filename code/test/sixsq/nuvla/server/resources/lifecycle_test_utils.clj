@@ -27,6 +27,8 @@
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.util.kafka-embeded :as ke]
+    [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
   (:import
@@ -483,7 +485,42 @@
   []
   (set-ring-app-cache))
 
+(defmacro with-test-kafka
+  [& body]
+  `(let [z-dir# (ke/create-tmp-dir "zookeeper-data-dir")
+         k-dir# (ke/create-tmp-dir "kafka-log-dir")
+         kafka-host# "127.0.0.1"
+         kafka-port# 9093
+         zk-port# 22183]
+     (try
+        (log/info "starting kafka")
+        (with-open [k# (ke/start-embedded-kafka
+                        {::ke/host kafka-host#
+                         ::ke/kafka-port kafka-port#
+                         ::ke/zk-port zk-port#
+                         ::ke/zookeeper-data-dir (str z-dir#)
+                         ::ke/kafka-log-dir (str k-dir#)
+                         ::ke/broker-config {"auto.create.topics.enable" "true"}})]
+          ;; Create and set kafka producer.
+          (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host# kafka-port#)))
+          ~@body)
+        (catch Throwable t#
+          (throw t#))
+        (finally
+          (ke/delete-dir z-dir#)
+          (ke/delete-dir k-dir#)))))
 
+(defmacro with-test-es-client
+  "Creates an Elasticsearch test client, executes the body with the created
+   client bound to the Elasticsearch client binding, and then clean up the
+   allocated resources by closing both the client and the node."
+  [& body]
+  `(let [cache# (set-es-node-client-cache)
+         client# (second cache#)
+         sniffer# (nth cache# 2)]
+     (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
+     (esu/reset-index client# (str escu/default-index-prefix "*"))
+     ~@body))
 ;;
 ;; test fixture to ensure that all parts of the test server are started
 ;; (elasticsearch, zookeeper, ring application)
@@ -501,7 +538,8 @@
     (ring-app)
     (log/info "forced initialization of ring application")
     (dyn/initialize)                                        ;; must always reinitialize after database has been cleared
-    (f)))
+    (with-test-kafka
+      (f))))
 
 
 ;;

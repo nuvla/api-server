@@ -7,50 +7,74 @@
     [spec-tools.core :as st]))
 
 "
-Subscription to events from
-* all resources in a collection
-* a single resource
-* a list of resources of a certain type
+Subscription to a notification on events of certain category of a resource.
 
-State change subscription.
+TODO: update documentation.
 
-Example 1: any state change on any resource in collection 'infrastructure-service'
+Example:
+
 {
-:collection 'infrastructure-service'
-:type 'event'
-:category 'state'
-:rule '' ; empty or no rule means ANY state change and new resource creation.
-}
-
-Example 2: any resource in collection 'infrastructure-service' changing to STARTED or TERMINATED.
-{
-:collection 'infrastructure-service'
-:type 'event'
-:category 'state'
-:rule 'state=STARTED or state=TERMINATED' ; means change to those states
+	:type 'notification',
+	# what
+	:kind 'event',
+	:category 'state',
+	:resources 'deployment/01',
+	# how
+	:notification 'notification/02',
+	# ACL
+	:acl {
+	    :owners ['user/01']
+	    }
 }
 "
 
-
-(s/def ::collection
+(s/def ::type
   (-> (st/spec string?)
-      (assoc :name "collection"
+      (assoc :name "type"
              :json-schema/type "string"
-             :json-schema/description "collection of resources to subscribe to")))
+             :json-schema/description "type of the subscription"
+             :json-schema/order 20)))
 
+;; Subscription to what.
 
-(s/def ::resource-ids
-  (-> (st/spec (s/coll-of ::common/id :kind vector? :distinct true))
-      (assoc :name "resource ids"
-             :json-schema/type "array"
+(s/def ::kind
+  (-> (st/spec string?)
+      (assoc :name "kind"
+             :json-schema/type "string"
+             :json-schema/description "kind of the subscription"
+             :json-schema/order 20)))
+
+(s/def ::category
+  (-> (st/spec string?)
+      (assoc :name "category"
+             :json-schema/type "string"
+             :json-schema/description "category of the kind"
+             :json-schema/order 20)))
+
+(s/def ::resource
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "resource id"
+             :json-schema/type "resource-id"
              :json-schema/editable false
              :json-schema/indexed false
 
-             :json-schema/display-name "subscribed resource ids"
-             :json-schema/description "List of subscribed resource ids."
+             :json-schema/description "Subscribed resource id."
              :json-schema/order 25)))
 
-(s/def ::type ())
+;; What to do.
 
-(s/def ::rule ())
+(s/def ::notification
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "notification"
+             :json-schema/type "resource-id"
+             :json-schema/description "Notification ID."
+             :json-schema/order 20)))
+
+(s/def ::schema
+  (su/only-keys-maps common/common-attrs
+                     {:req-un [::type
+                               ::kind
+                               ::category
+                               ::resource
+                               ::notification]}))
 
