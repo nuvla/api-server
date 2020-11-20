@@ -3,7 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential :as cred-spec]
+    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -36,6 +36,7 @@
       (assoc :name "state"
              :json-schema/type "string"
              :json-schema/description "state of user's account"
+             :json-schema/value-scope {:values ["NEW" "ACTIVE" "SUSPENDED"]}
 
              :json-schema/server-managed true
              :json-schema/editable false

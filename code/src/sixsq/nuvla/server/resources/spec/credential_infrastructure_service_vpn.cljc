@@ -4,7 +4,6 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential-infrastructure-service :as cred-infra-service]
-    [sixsq.nuvla.server.resources.spec.credential-template]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -36,11 +35,12 @@
              :json-schema/display-name "vpn certificate owner"
              :json-schema/description "vpn certificate owner ID")))
 
+(def credential-keys-spec {:req-un [::vpn-certificate
+                                    ::vpn-common-name
+                                    ::vpn-certificate-owner]
+                           :opt-un [::vpn-intermediate-ca]})
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      cred-infra-service/credential-service-keys-spec
-                     {:req-un [::vpn-certificate
-                               ::vpn-common-name
-                               ::vpn-certificate-owner]
-                      :opt-un [::vpn-intermediate-ca]}))
+                     credential-keys-spec))

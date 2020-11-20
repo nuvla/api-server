@@ -27,6 +27,8 @@
              :json-schema/order 21
              :json-schema/indexed false)))
 
+(def service-keys-spec {:opt-un [::documentation
+                                 ::infrastructure-services]})
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs

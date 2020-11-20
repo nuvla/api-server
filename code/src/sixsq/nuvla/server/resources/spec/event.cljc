@@ -8,25 +8,21 @@
 
 
 (s/def ::category
-  (-> (st/spec #{"state"
-                 "alarm"
-                 "action"
-                 "system"})
+  (-> (st/spec #{"state" "alarm" "action" "system"})
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
+             :json-schema/value-scope {:values ["state", "alarm", "action", "system"]}
 
              :json-schema/order 30)))
 
 
 (s/def ::severity
-  (-> (st/spec #{"critical"
-                 "high"
-                 "medium"
-                 "low"})
+  (-> (st/spec #{"critical" "high" "medium" "low"})
       (assoc :name "severity"
              :json-schema/type "string"
              :json-schema/description "severity level of event"
+             :json-schema/value-scope {:values ["critical", "high", "medium", "low"]}
 
              :json-schema/order 31)))
 

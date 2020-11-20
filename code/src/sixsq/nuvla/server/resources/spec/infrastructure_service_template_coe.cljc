@@ -5,7 +5,6 @@ on a cloud infrastructure.
   "
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-coe :as infra-service-coe]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.util.spec :as su]

@@ -2,7 +2,7 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential :as cred]
+    [sixsq.nuvla.server.resources.spec.credential-template :as ps]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -23,5 +23,5 @@
 
 
 (s/def ::schema
-  (su/only-keys-maps cred/credential-keys-spec
+  (su/only-keys-maps ps/credential-keys-spec
                      credential-keys-spec))

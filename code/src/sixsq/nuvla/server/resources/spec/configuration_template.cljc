@@ -54,7 +54,8 @@
 ;;
 
 (def configuration-template-keys-spec {:req-un [::service]
-                                       :opt-un [::instance ::template]})
+                                       :opt-un [::instance
+                                                ::template]})
 
 (def resource-keys-spec
   (su/merge-keys-specs [common/common-attrs configuration-template-keys-spec]))

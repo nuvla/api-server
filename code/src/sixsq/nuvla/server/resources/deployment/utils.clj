@@ -209,10 +209,13 @@
 
 (defn fetch-module
   [{:keys [module] :as resource} request]
-  (->> (assoc request :body resource)
-       (resolve-module)
-       (merge-module module)
-       (assoc resource :module)))
+  (let [specific-version (get-in request [:body :module :href])]
+    (->> (cond-> resource
+                 specific-version (assoc-in [:module :href] specific-version))
+        (assoc request :body)
+        (resolve-module)
+        (merge-module module)
+        (assoc resource :module))))
 
 
 (defn throw-can-not-do-action

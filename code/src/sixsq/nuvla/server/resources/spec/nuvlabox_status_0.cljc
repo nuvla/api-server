@@ -35,6 +35,7 @@
       (assoc :name "status"
              :json-schema/type "string"
              :json-schema/description "current status of the NuvlaBox"
+             :json-schema/value-scope {:values ["OPERATIONAL" "DEGRADED" "UNKNOWN"]}
 
              :json-schema/order 33)))
 
