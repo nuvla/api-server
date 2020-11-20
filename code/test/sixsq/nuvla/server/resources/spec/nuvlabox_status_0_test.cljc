@@ -47,7 +47,9 @@
                                                    }
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
-                                                   :bytes-transmitted 55}]}
+                                                   :bytes-transmitted 55}]
+                                      :power-consumption  [["IN_current", "2.4", "A"]
+                                                           ["IN_voltage", "220", "V"]]}
 
             :peripherals             {:usb [{:vendor-id   "vendor-id"
                                              :device-id   "device-id"
@@ -96,5 +98,6 @@
 
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
-                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities}]
+                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities
+                 :power-consumption}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

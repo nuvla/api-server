@@ -43,7 +43,8 @@
                                                    }
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
-                                                   :bytes-transmitted 55}]}
+                                                   :bytes-transmitted 55}]
+                                      :power-consumption  [["IN_current", "2.4", "A"]]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
@@ -78,5 +79,5 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
-                 :docker-plugins :vulnerabilities}]
+                 :docker-plugins :vulnerabilities :power-consumption}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))

@@ -5,6 +5,7 @@
 ### Changed
 
 - Deployment - Allow to fetch specific version
+- NuvlaBox Status - Add attribute for energy telemetry
 
 ## [5.5.0] - 2020-11-16
 
