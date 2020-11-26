@@ -154,7 +154,6 @@
 
 (def get-swarm-service (partial get-service "swarm"))
 
-
 (def get-minio-service (partial get-service "s3"))
 
 
@@ -189,6 +188,37 @@
       nil)))
 
 
+(defn create-coe-service
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  (if endpoint
+    (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+          request {:params      {:resource-name infra-service/resource-type}
+                   :body        {:name        (str (str/capitalize subtype) " "
+                                                (utils/format-nb-name
+                                                  nuvlabox-name (utils/short-nb-id nuvlabox-id)))
+                                 :description (str (str/capitalize subtype) " cluster on "
+                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                                 :parent      isg-id
+                                 :acl         acl
+                                 :template    (cond->
+                                                {:href     "infrastructure-service-template/generic"
+                                                 :endpoint endpoint
+                                                 :subtype  subtype}
+                                                tags (assoc :tags tags))}
+                   :nuvla/authn auth/internal-identity}
+          {{:keys [resource-id]} :body status :status} (crud/add request)]
+
+      (if (= 201 status)
+        (do
+          (log/info subtype " service" resource-id "created")
+          resource-id)
+        (let [msg (str "cannot create " subtype " service for " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 ""))))))
+    (do
+      (log/info subtype " endpoint not specified; skipping creation of infrastructure-service")
+      nil)))
+
+
 (defn update-swarm-service
   [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags]
   (when-let [resource-id (get-swarm-service isg-id)]
@@ -214,6 +244,34 @@
           (log/info "swarm service" resource-id "updated")
           resource-id)
         (let [msg (str "cannot update swarm service for " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+
+
+(defn update-coe-service
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  (when-let [resource-id (get-service subtype isg-id)]
+    (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+          request {:params      {:uuid          (u/id->uuid resource-id)
+                                 :resource-name infra-service/resource-type}
+                   :body        (cond->
+                                  {:name        (str (str/capitalize subtype) " "
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name
+                                                    (utils/short-nb-id nuvlabox-id)))
+                                   :description (str (str/capitalize subtype) " cluster on "
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name nuvlabox-id))
+                                   :acl         acl}
+                                  tags (assoc :tags tags)
+                                  endpoint (assoc :endpoint endpoint))
+                   :nuvla/authn auth/internal-identity}
+          {status :status} (crud/edit request)]
+
+      (if (= 200 status)
+        (do
+          (log/info subtype "service" resource-id "updated")
+          resource-id)
+        (let [msg (str "cannot update " subtype " service for " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
@@ -283,6 +341,19 @@
         :id)))
 
 
+(defn get-coe-cred
+  "Searches for an existing credential tied to the given service.
+   If found, the identifier is returned."
+  [subtype is-id]
+  (let [filter  (format "subtype='%s' and parent='%s'" subtype is-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin credential/resource-type options)
+      second
+      first
+      :id)))
+
+
 (defn create-swarm-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (if (and key cert ca)
@@ -317,6 +388,40 @@
       nil)))
 
 
+(defn create-coe-cred
+  [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
+  (if (and key cert ca)
+    (let [acl     (-> nuvlabox-acl
+                    (utils/set-acl-nuvlabox-view-only)
+                    (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
+          tmpl    (cond->
+                    {:href (str "credential-template/" subtype)
+                     :cert cert
+                     :key  key}
+                    ca (assoc :ca ca))
+          request {:params      {:resource-name credential/resource-type}
+                   :body        {:name        (utils/format-nb-name nuvlabox-name
+                                                (utils/short-nb-id nuvlabox-id))
+                                 :description (str subtype " client credential linked to "
+                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                                 :parent      coe-id
+                                 :acl         acl
+                                 :template    tmpl}
+                   :nuvla/authn auth/internal-identity}
+          {{:keys [resource-id]} :body status :status} (crud/add request)]
+
+      (if (= 201 status)
+        (do
+          (log/info subtype " service credential" resource-id "created")
+          resource-id)
+        (let [msg (str "cannot create " subtype " service credential for "
+                    coe-id " linked to " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 ""))))))
+    (do
+      (log/info "skipping creation of " subtype " credential; key, cert, or ca is missing")
+      nil)))
+
+
 (defn update-swarm-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
   (when-let [resource-id (get-swarm-cred swarm-id)]
@@ -345,6 +450,37 @@
           resource-id)
         (let [msg (str "cannot update swarm service credential for "
                        swarm-id " linked to " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+
+
+(defn update-coe-cred
+  [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
+  (when-let [resource-id (get-coe-cred subtype coe-id)]
+    (let [acl     (-> nuvlabox-acl
+                    (utils/set-acl-nuvlabox-view-only)
+                    (assoc :manage (:view-meta nuvlabox-acl)))
+          request {:params      {:uuid          (u/id->uuid resource-id)
+                                 :resource-name credential/resource-type}
+                   :body        (cond->
+                                  {:name        (utils/format-nb-name
+                                                  nuvlabox-name
+                                                  (utils/short-nb-id nuvlabox-id))
+                                   :description (str "NuvlaBox credential linked to "
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name nuvlabox-id))
+                                   :acl         acl}
+                                  ca (assoc :ca ca)
+                                  key (assoc :key key)
+                                  cert (assoc :cert cert))
+                   :nuvla/authn auth/internal-identity}
+          {status :status} (crud/edit request)]
+
+      (if (= 200 status)
+        (do
+          (log/info subtype " service credential" resource-id "updated")
+          resource-id)
+        (let [msg (str "cannot update " subtype " service credential for "
+                    coe-id " linked to " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
@@ -534,12 +670,17 @@
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
             minio-access-key minio-secret-key
-            vpn-csr]} :body :as request}]
+            vpn-csr
+            kubernetes-endpoint
+            kubernetes-client-key kubernetes-client-cert kubernetes-client-ca]} :body :as request}]
 
   (when-let [isg-id infrastructure-service-group]
     (let [swarm-id (or
                      (update-swarm-service id name acl isg-id swarm-endpoint tags)
                      (create-swarm-service id name acl isg-id swarm-endpoint tags))
+          kubernetes-id (or
+                          (update-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes")
+                          (create-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes"))
           minio-id (or
                      (update-minio-service id name acl isg-id minio-endpoint)
                      (create-minio-service id name acl isg-id minio-endpoint))]
@@ -556,6 +697,13 @@
         (or
           (update-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)
           (create-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)))
+
+      (when kubernetes-id
+        (or
+          (update-coe-cred id name acl kubernetes-id kubernetes-client-key
+            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
+          (create-coe-cred id name acl kubernetes-id kubernetes-client-key
+            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")))
 
       (when minio-id
         (or
