@@ -454,7 +454,11 @@
                                                 :swarm-endpoint      "https://swarm.example.com"
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"}))
+                                                :minio-endpoint      "https://minio.example.com"
+                                                :kubernetes-client-key    "key"
+                                                :kubernetes-client-cert   "cert"
+                                                :kubernetes-client-ca     "ca"
+                                                :kubernetes-endpoint      "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
