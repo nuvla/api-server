@@ -361,7 +361,7 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
-(defmethod crud/do-action [resource-type "update"]
+(defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
   (try
     (let [current         (-> (str resource-type "/" uuid)
@@ -395,6 +395,11 @@ a container orchestration engine.
       (utils/create-job new request "update_deployment"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "update"]
+  [request]
+  (update-deployment-impl request))
 
 
 (defmethod crud/do-action [resource-type "upcoming-invoice"]
