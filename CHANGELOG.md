@@ -4,7 +4,8 @@
 
 ### Changed
 
-- Deployment - Allow to fetch specific version
+- Deployment - Update action get new module price and license
+- Deployment - Remove fetch action
 
 ## [5.5.0] - 2020-11-16
 

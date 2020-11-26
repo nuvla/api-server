@@ -156,7 +156,7 @@
 
 (defn can-update?
   [{:keys [state] :as resource}]
-  (contains? #{"STARTED"} state))
+  (contains? #{"STARTED" "ERROR"} state))
 
 
 (defn can-create-log?
@@ -174,48 +174,6 @@
         opts       (select-keys body [:since :lines])
         service    (:service body)]
     (deployment-log/create-log id session-id service opts)))
-
-
-(defn merge-module-element
-  [key-fn current-val-fn current resolved]
-  (let [coll->map           (fn [val-fn coll] (into {} (map (juxt key-fn val-fn) coll)))
-        resolved-params-map (coll->map identity resolved)
-        valid-params-set    (set (map key-fn resolved))
-        current-params-map  (->> current
-                                 (filter (fn [entry] (valid-params-set (key-fn entry))))
-                                 (coll->map current-val-fn))]
-    (vals (merge-with merge resolved-params-map current-params-map))))
-
-(defn merge-module
-  [{current-content :content :as current-module}
-   {resolved-content :content :as resolved-module}]
-  (let [params (merge-module-element :name #(select-keys % [:value])
-                                     (:output-parameters current-content)
-                                     (:output-parameters resolved-content))
-        env    (merge-module-element :name #(select-keys % [:value])
-                                     (:environmental-variables current-content)
-                                     (:environmental-variables resolved-content))
-
-        files  (merge-module-element :file-name #(select-keys % [:file-content])
-                                     (:files current-content)
-                                     (:files resolved-content))]
-    (assoc resolved-module
-      :content
-      (cond-> (dissoc resolved-content :output-parameters :environmental-variables :files)
-              (seq params) (assoc :output-parameters params)
-              (seq env) (assoc :environmental-variables env)
-              (seq files) (assoc :files files)))))
-
-
-(defn fetch-module
-  [{:keys [module] :as resource} request]
-  (let [specific-version (get-in request [:body :module :href])]
-    (->> (cond-> resource
-                 specific-version (assoc-in [:module :href] specific-version))
-        (assoc request :body)
-        (resolve-module)
-        (merge-module module)
-        (assoc resource :module))))
 
 
 (defn throw-can-not-do-action
