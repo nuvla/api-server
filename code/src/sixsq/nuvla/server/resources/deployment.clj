@@ -187,6 +187,7 @@ a container orchestration engine.
   [{{:keys [acl parent state module]} :body {uuid :uuid} :params :as request}]
   (let [authn-info (auth/current-authentication request)
         current    (db/retrieve (str resource-type "/" uuid) request)
+        fixed-attr (select-keys (:module current) [:href :price :license])
         is-user?   (not (acl-resource/is-admin? authn-info))
         new-acl    (when (and is-user? acl)
                      (if-let [current-owner (:owner current)]
@@ -202,7 +203,7 @@ a container orchestration engine.
                      (cond-> request
                              is-user? (update :body dissoc :owner :infrastructure-service
                                               :subscription-id :state)
-                             (and is-user? module) (update-in [:body :module] dissoc :href :price)
+                             (and is-user? module) (update-in [:body :module] merge fixed-attr)
                              is-user? (update-in [:cimi-params :select] disj
                                                  "owner" "infrastructure-service" "module/price"
                                                  "module/license" "subscription-id")
