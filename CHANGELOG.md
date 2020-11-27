@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
+
 ### Changed
 
 - Deployment - Allow to fetch specific version
