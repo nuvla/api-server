@@ -6,6 +6,7 @@ an endpoint.
   (:require
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
+    [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-service-tpl-generic]))
 
 
@@ -33,3 +34,10 @@ an endpoint.
   (cond-> (dissoc resource :href :resource-metadata)
           (nil? state) (assoc :state "STARTED")))
 
+
+(defmethod infra-service/post-add-hook method
+  [service request]
+  (try
+    (notif-utils/create-state-event-notification-subscription (:id service) request)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))

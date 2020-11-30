@@ -47,8 +47,7 @@
       (ltu/is-status 200)))
 
 
-(def COE_SUBTYPES #{"kubernetes"})
-;(def COE_SUBTYPES #{"swarm" "kubernetes"})
+(def COE_SUBTYPES #{"swarm" "kubernetes"})
 
 
 (deftest lifecycle

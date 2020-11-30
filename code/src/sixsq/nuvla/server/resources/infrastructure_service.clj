@@ -10,6 +10,7 @@ This is a templated resource. All creation requests must be done via an
 existing `infrastructure-service-template` resource.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -248,14 +249,14 @@ existing `infrastructure-service-template` resource.
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {new-state :state} :body :as request}]
-  (let [resource (if (boolean new-state) (db/retrieve (str resource-type "/" uuid) request))
+  (let [id (str resource-type "/" uuid)
+        resource (if (boolean new-state) (db/retrieve id request))
         ret (edit-impl request)]
     (try
       (if resource
         (event-state-change resource request))
-       (catch Exception e
-         ;; TODO: log the exception
-         (println e)))
+      (catch Exception e
+        (log/error (format "Failed creating event on state change of %s with %s" id e))))
     ret))
 
 
