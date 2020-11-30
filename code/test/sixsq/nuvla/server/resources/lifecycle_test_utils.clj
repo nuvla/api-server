@@ -4,7 +4,7 @@
     [clojure.java.io :as io]
     [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
-    [clojure.test :refer [is]]
+    [clojure.test :refer [is join-fixtures]]
     [clojure.tools.logging :as log]
     [compojure.core :as cc]
     [me.raynes.fs :as fs]
@@ -485,30 +485,33 @@
   []
   (set-ring-app-cache))
 
-(defmacro with-test-kafka
-  [& body]
-  `(let [z-dir# (ke/create-tmp-dir "zookeeper-data-dir")
-         k-dir# (ke/create-tmp-dir "kafka-log-dir")
-         kafka-host# "127.0.0.1"
-         kafka-port# 9093
-         zk-port# 22183]
+
+(def kafka-host "127.0.0.1")
+(def kafka-port 9093)
+(def kafka-zk-port 22183)
+
+
+(defn with-test-kafka-fixture
+  [f]
+  (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
+        k-dir (ke/create-tmp-dir "kafka-log-dir")]
      (try
         (log/info "starting kafka")
-        (with-open [k# (ke/start-embedded-kafka
-                        {::ke/host kafka-host#
-                         ::ke/kafka-port kafka-port#
-                         ::ke/zk-port zk-port#
-                         ::ke/zookeeper-data-dir (str z-dir#)
-                         ::ke/kafka-log-dir (str k-dir#)
+        (with-open [k (ke/start-embedded-kafka
+                        {::ke/host kafka-host
+                         ::ke/kafka-port kafka-port
+                         ::ke/zk-port kafka-zk-port
+                         ::ke/zookeeper-data-dir (str z-dir)
+                         ::ke/kafka-log-dir (str k-dir)
                          ::ke/broker-config {"auto.create.topics.enable" "true"}})]
           ;; Create and set kafka producer.
-          (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host# kafka-port#)))
-          ~@body)
-        (catch Throwable t#
-          (throw t#))
+          (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host kafka-port)))
+          (f))
+        (catch Throwable t
+          (throw t))
         (finally
-          (ke/delete-dir z-dir#)
-          (ke/delete-dir k-dir#)))))
+          (ke/delete-dir z-dir)
+          (ke/delete-dir k-dir)))))
 
 (defmacro with-test-es-client
   "Creates an Elasticsearch test client, executes the body with the created
@@ -538,9 +541,11 @@
     (ring-app)
     (log/info "forced initialization of ring application")
     (dyn/initialize)                                        ;; must always reinitialize after database has been cleared
-    (with-test-kafka
-      (f))))
+    (f)))
 
+
+(def with-test-server-kafka-fixture (join-fixtures [with-test-server-fixture
+                                                    with-test-kafka-fixture]))
 
 ;;
 ;; miscellaneous utilities

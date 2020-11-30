@@ -11,6 +11,7 @@ an application.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.event :as event]
+    [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -43,7 +44,9 @@ an application.
 
 (defmethod crud/add resource-type
   [request]
-  (add-impl request))
+  (let [resp (add-impl request)]
+    (ka-crud/publish-on-add resource-type resp)
+    resp))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

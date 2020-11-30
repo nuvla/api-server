@@ -1,35 +1,15 @@
 (ns sixsq.nuvla.server.util.kafka-test
   (:require
-    [clojure.test  :refer :all :as t]
+    [clojure.test :refer [deftest is use-fixtures]]
     [kinsky.client :as kc]
-    [sixsq.nuvla.server.util.kafka-embeded :as ke]
-    [sixsq.nuvla.server.util.kafka :as k]
-    [sixsq.nuvla.server.resources.common.utils :as cu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.util.kafka :as k]))
 
-(def host "localhost")
-(def kafka-port 9093)
-(def zk-port 2183)
-#_(def bootstrap-servers (format "%s:%s" host kafka-port))
-(def bootstrap-servers "192.168.64.2:31497")
 
-(t/use-fixtures
-  :once (fn [f]
-          (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
-                k-dir (ke/create-tmp-dir "kafka-log-dir")]
-            (try
-              (with-open [k (ke/start-embedded-kafka
-                              {::ke/host host
-                               ::ke/kafka-port kafka-port
-                               ::ke/zk-port zk-port
-                               ::ke/zookeeper-data-dir (str z-dir)
-                               ::ke/kafka-log-dir (str k-dir)
-                               ::ke/broker-config {"auto.create.topics.enable" "true"}})]
-                (f))
-              (catch Throwable t
-                (throw t))
-              (finally
-                (ke/delete-dir z-dir)
-                (ke/delete-dir k-dir))))))
+(def bootstrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
+
+
+(use-fixtures :once ltu/with-test-kafka-fixture)
 
 
 (deftest producer-lifecycle
@@ -41,40 +21,25 @@
   (is (nil? k/*producer*)))
 
 
-(deftest publish-influxdb
-  (k/set-producer! (k/create-producer bootstrap-servers))
-  (is (not (nil? k/*producer*)))
-  (let [t "events"
-        uuid (cu/random-uuid)
-        v (str (format "event,resource=deployment,user-id=%s,resource-id=deployment/%s" uuid uuid)
-            ",category=action,state=%s state_int=10 %s")
-        actions ["created" "started" "stopped" "deleted"]]
-    (doseq [a actions]
-      (let [msg (format v a (str (System/currentTimeMillis) "000000"))]
-        (println "publishing: " msg)
-        (k/publish t "event" msg))
-      (Thread/sleep 1000)))
-  (k/close-producer!))
-
 (deftest publish-consume
-  (k/set-producer! (k/create-producer bootstrap-servers))
+  (k/set-producer! (k/create-producer bootstrap-servers :vserializer kc/json-serializer))
   (is (not (nil? k/*producer*)))
-  (let [t "events"
-        v "foo:bar"]
+  (let [t (str "events-" (System/currentTimeMillis))
+        v {:foo "bar"}]
     (k/publish t "event" v)
     (let [consumer (kc/consumer {:bootstrap.servers bootstrap-servers
                                  :group.id "consumer-group-id"
                                  "enable.auto.commit" "false"
                                  "auto.offset.reset" "earliest"
                                  "isolation.level" "read_committed"}
-                                :string :string)]
+                                :string kc/json-deserializer)]
       (kc/subscribe! consumer t)
       (let [consumed (kc/poll! consumer 5000)]
-        (is (= 1 (:count consumed)))
+        (is (> (:count consumed) 0))
         (is (= v (-> consumed
                      :by-topic
                      (get t)
-                     first
+                     last
                      :value))))
       (is (= 0 (:count (kc/poll! consumer 5000))))
       (kc/stop! consumer)))
