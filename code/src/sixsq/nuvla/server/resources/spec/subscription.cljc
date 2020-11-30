@@ -9,18 +9,17 @@
 "
 Subscription to a notification on events of certain category of a resource.
 
-TODO: update documentation.
-
 Example:
 
 {
 	:type 'notification',
+  :status #{enabled, disabled}
 	# what
 	:kind 'event',
 	:category 'state',
 	:resources 'deployment/01',
 	# how
-	:notification 'notification/02',
+	:method 'notification/02',
 	# ACL
 	:acl {
 	    :owners ['user/01']
@@ -35,6 +34,14 @@ Example:
              :json-schema/description "type of the subscription"
              :json-schema/order 20)))
 
+
+(s/def ::status
+  (-> (st/spec #{"enabled" "disabled"})
+      (assoc :name "status"
+             :json-schema/type "string"
+             :json-schema/description "status of the subscription"
+             :json-schema/order 24)))
+
 ;; Subscription to what.
 
 (s/def ::kind
@@ -42,14 +49,16 @@ Example:
       (assoc :name "kind"
              :json-schema/type "string"
              :json-schema/description "kind of the subscription"
-             :json-schema/order 20)))
+             :json-schema/order 21)))
+
 
 (s/def ::category
   (-> (st/spec string?)
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of the kind"
-             :json-schema/order 20)))
+             :json-schema/order 22)))
+
 
 (s/def ::resource
   (-> (st/spec ::core/resource-href)
@@ -58,17 +67,18 @@ Example:
              :json-schema/editable false
              :json-schema/indexed false
 
-             :json-schema/description "Subscribed resource id."
-             :json-schema/order 25)))
+             :json-schema/description "Subscribed resource id"
+             :json-schema/order 23)))
 
 ;; What to do.
 
-(s/def ::notification
+(s/def ::method
   (-> (st/spec ::core/resource-href)
-      (assoc :name "notification"
+      (assoc :name "method"
              :json-schema/type "resource-id"
-             :json-schema/description "Notification ID."
-             :json-schema/order 20)))
+             :json-schema/description "Reference to action method"
+             :json-schema/order 25)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -76,5 +86,5 @@ Example:
                                ::kind
                                ::category
                                ::resource
-                               ::notification]}))
-
+                               ::status
+                               ::method]}))

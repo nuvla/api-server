@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.subscription
+(ns sixsq.nuvla.server.resources.subscription-config
   "
-Collection for holding subscriptions.
+Collection for holding subscriptions configurations.
 "
   (:require
     [clojure.tools.logging :as log]
@@ -10,7 +10,7 @@ Collection for holding subscriptions.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.subscription :as subs-schema]
+    [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
@@ -69,16 +69,7 @@ Collection for holding subscriptions.
 
 (defmethod crud/add resource-type
   [request]
-  (let [{:keys [name description]} (:body request)
-        name (if (not name)
-               resource-type
-               name)
-        request (assoc-in request [:body :name] name)
-        description (if (not description)
-                      name
-                      description)
-        request (assoc-in request [:body :description] description)
-        resp (add-impl request)]
+  (let [resp (add-impl request)]
     (ka-crud/publish-on-add resource-type resp :key "resource")
     resp))
 
@@ -96,23 +87,10 @@ Collection for holding subscriptions.
 
 (defmethod crud/edit resource-type
   [request]
-  (let [resp (edit-impl request)]
-    (ka-crud/publish-on-edit resource-type resp :key "resource")
-    resp))
+  (edit-impl request))
 
 
-(defn delete-impl
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [resource-id   (str resource-type "/" uuid)
-          resource (db/retrieve resource-id request)
-          delete-response (-> resource
-                              (a/throw-cannot-delete request)
-                              (db/delete request))]
-      (ka-crud/publish-tombstone resource-type (:resource resource))
-      delete-response)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+(def delete-impl (std-crud/delete-fn resource-type))
 
 (defmethod crud/delete resource-type
   [request]
@@ -126,3 +104,27 @@ Collection for holding subscriptions.
   [request]
   (query-impl request))
 
+
+;; Actions
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id] :as resource} request]
+  (let [toggle-state-all (u/action-map id :toggle-state-all)]
+    (cond-> (crud/set-standard-operations resource request)
+            (a/can-manage? resource request) (update-in [:operations] conj toggle-state-all))))
+
+
+;; Action to enable all subscription of a certain kind.
+
+(defmethod crud/do-action [resource-type "enable-all"]
+  [{{uuid :uuid} :params :as request}]
+  ; set :state of all current subscriptions to "enabled"
+  (log/warn "NotImplemented. Set state of subscriptions to enabled."))
+
+
+;; Action to disable all subscription of a certain kind.
+
+(defmethod crud/do-action [resource-type "disable-all"]
+  [{{uuid :uuid} :params :as request}]
+  ; set :state of all current subscriptions to "disabled"
+  (log/warn "NotImplemented. Set state of subscriptions to disabled."))

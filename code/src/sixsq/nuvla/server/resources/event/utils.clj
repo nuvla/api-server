@@ -7,7 +7,9 @@
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.kafka :as ka]))
 
-(def topic "events")
+
+(def topic event/resource-type)
+
 
 (defn create-event
   [resource-href message acl & {:keys [severity category]
@@ -26,10 +28,9 @@
                         :nuvla/authn auth/internal-identity}
         ret             (crud/add create-request)]
     (try
-        (log/info (format "Publishing async event: %s %s %s" topic category event-map))
+        (log/info (format "Kafka. Publishing async event: %s %s %s" topic category event-map))
         (ka/publish-async topic category event-map)
-        (log/info (format "Published async event: %s %s %s" topic category event-map))
       (catch Exception e
-        (log/error (format "Failed publishing to %s topic with key %s: %s" topic category e)))
+        (log/error (format "Kafka. Failed publishing to %s topic with key %s: %s" topic category e)))
         (finally
           ret))))
