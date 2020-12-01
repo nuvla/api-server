@@ -67,7 +67,8 @@
             :installation-parameters {:config-files   ["docker-compose.yml",
                                                        "docker-compose.usb.yaml"]
                                       :working-dir    "/home/user"
-                                      :project-name   "nuvlabox"}})
+                                      :project-name   "nuvlabox"
+                                      :environment    []}})
 
 
 (deftest check-nuvlabox-status

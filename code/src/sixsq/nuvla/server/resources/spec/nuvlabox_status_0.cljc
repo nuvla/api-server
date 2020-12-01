@@ -532,13 +532,20 @@
 
            :json-schema/order 70)))
 
+(s/def ::environment
+  (-> (s/coll-of ::core/nonblank-string :kind vector?)
+    (assoc :name "environment"
+           :json-schema/description "List of environment variables set at installation time"
+
+           :json-schema/order 71)))
+
 (s/def ::installation-parameters
-  (-> (st/spec (su/only-keys :opt-un [::working-dir ::config-files ::project-name]))
+  (-> (st/spec (su/only-keys :opt-un [::working-dir ::config-files ::project-name ::environment]))
     (assoc :name "installation-parameters"
            :json-schema/type "map"
            :json-schema/description "Parameters and configurations used for the NuvlaBox Engine installation"
 
-           :json-schema/order 71)))
+           :json-schema/order 72)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs

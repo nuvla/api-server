@@ -85,7 +85,8 @@
             :swarm-node-id           "xyz"
             :installation-parameters {:config-files   ["docker-compose.yml"]
                                       :working-dir    "/home/user"
-                                      :project-name   "nuvlabox"}})
+                                      :project-name   "nuvlabox"
+                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}})
 
 
 (deftest check-nuvlabox-status
