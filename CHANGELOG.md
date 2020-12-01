@@ -2,6 +2,68 @@
 
 ## Unreleased
 
+### Changed
+
+## [5.5.0] - 2020-11-16
+
+### Added
+
+  - Vulnerabilities - new resource to act as a database of vulnerabilities to be matched against NuvlaBox security scans
+  - Configuration - new Nuvla configuration attribute to specify the Git repository where to find the list of vulnerability databases
+  
+### Changed
+
+  - Resource-metadata - Add metadata for templated resources
+    and spec fixes and reorganisation
+  - Customer - List invoices, due date format fix
+
+## [5.4.0] - 2020-10-28
+
+### Changed
+
+  - Configuration nuvla - new conditions-url attribute 
+  - Email utils - Send html instead of raw text
+  - Session template - reset password template removed
+  - Reset password and user invitation workflow enhancement
+
+## [5.3.0] - 2020-10-09
+
+### Added
+
+  - Hook - New non-standard cimi resource that provides an access
+    for events driven workflows
+  - Vendor - New resource allowing a user to create a Stripe 
+    Express account
+
+### Changed
+
+  - Credential - Remove subscription requirement for VPN
+  - Customer - Save subscription id in customer resource
+  - Deployment - New upcoming invoice operation
+  - Deployment - Subscription creation
+  - Module - New licence and price attributes
+  - Configuration - Nuvla get new stripe-client-id attribute
+  - Nuvlabox status - New optional container-plugins attribute
+  - Nuvlabox peripheral - schema accept peripheral telemetry
+  - Deployment - Add check-dct action on deployment
+  - Nuvlabox status - Inferred-location attribute
+  - Nuvlabox status - New optional container-plugins attribute
+  - NuvlaBox status - New optional attribute for vulnerability scans
+
+## [5.2.0] - 2020-09-04
+
+### Changed
+
+  - New optional nuvlabox-status attribute for GPIO telemetry
+  - New optional nuvlabox-engine-version attribute in nuvlabox-status
+  - Customer - Susbscription send invoices by default
+  - Switch group - allow switch to group/nuvla-admin
+    user super has to do a switch to do administative tasks
+  - Customer - Make email for group at creation time
+    mandatory
+  - Customer - Consider past due status subscription
+    as active
+
 ## [5.1.0] - 2020-07-31
 
 ### Added
@@ -40,6 +102,7 @@
   - Nuvlabox status - fix bug in spec causing stacktrace during update of
     ES mapping
   - Let users create deployment parameters
+
 
 ## [4.2.16] - 2020-05-12
 

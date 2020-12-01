@@ -30,9 +30,9 @@
     (stu/is-valid ::infrastructure-service/schema service)
 
     ;; mandatory keywords
-    (doseq [k #{:id :resource-type :created :updated :acl :parent :method :subtype :state}]
+    (doseq [k #{:id :resource-type :created :updated :acl :method :subtype :endpoint}]
       (stu/is-invalid ::infrastructure-service/schema (dissoc service k)))
 
     ;;optional keywords
-    (doseq [k #{:endpoint :swarm-enabled :online}]
+    (doseq [k #{ :swarm-enabled :online :parent :state}]
       (stu/is-valid ::infrastructure-service/schema (dissoc service k)))))

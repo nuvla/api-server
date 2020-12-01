@@ -31,7 +31,14 @@
                    :data-access-protocols     ["http+s3" "posix+nfs"]
                    :compatibility             "swarm"
                    :valid                     false
-                   :validation-message        "docker-compose error"}]
+                   :validation-message        "docker-compose error"
+                   :price                     {:product-id        "prod_xyz"
+                                               :price-id          "price_xyz"
+                                               :cent-amount-daily 10
+                                               :currency          "EUR"
+                                               :account-id        "acct_xyz"}
+                   :license                   {:name "SixSq Licence"
+                                               :url  "https://sixsq.com/app-licence"}}]
 
     (stu/is-valid ::module/schema root)
     (stu/is-invalid ::module/schema (assoc root :bad-key "badValue"))
@@ -43,5 +50,5 @@
 
     ;; optional attributes
     (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols
-                :compatibility :valid :validation-message}]
+                :compatibility :valid :validation-message :price :license}]
       (stu/is-valid ::module/schema (dissoc root k)))))

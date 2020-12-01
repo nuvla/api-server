@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.customer-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [clojure.tools.logging :as log]
     [environ.core :as env]
@@ -23,15 +24,6 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def valid-acl {:owners ["group/nuvla-admin"]})
-
-
-(def timestamp "1964-08-25T10:00:00.00Z")
-
-
-(def test-identifier "some-user-identifer")
-
-
 (def valid-entry {:fullname     "toto"
                   :address      {:street-address "Av. quelque chose"
                                  :city           "Meyrin"
@@ -40,7 +32,6 @@
                   :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
                                  :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
                                                  "price_1GzOC6HG9PNMTNBOEb5819lm"
-                                                 "price_1GzOdmHG9PNMTNBOCvJLV4pT"
                                                  "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}})
 
 
@@ -51,11 +42,12 @@
 (deftest lifecycle
   (if-not (env/env :stripe-api-key)
     (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
-    (let [session-anon  (-> (session (ltu/ring-app))
-                            (content-type "application/json"))
-          session-admin (header session-anon authn-info-header
-                                "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user  (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))]
+    (let [session-anon    (-> (session (ltu/ring-app))
+                              (content-type "application/json"))
+          session-admin   (header session-anon authn-info-header
+                                  "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user    (header session-anon authn-info-header (str @user-utils-test/user-id! " group/nuvla-user group/nuvla-anon"))
+          session-group-a (header session-anon authn-info-header "group/a group/nuvla-user group/nuvla-anon")]
 
       ;; admin create pricing catalogue
       (-> session-admin
@@ -126,6 +118,14 @@
           (ltu/is-status 400)
           (ltu/message-matches #"No such coupon.*"))
 
+      (-> session-group-a
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Customer email is mandatory for group!"))
+
       (let [customer-1 (-> session-user
                            (request base-uri
                                     :request-method :post
@@ -149,7 +149,11 @@
                                       (ltu/is-operation-present :upcoming-invoice)
                                       (ltu/is-operation-present :list-invoices)
                                       (ltu/is-operation-present :add-coupon)
-                                      (ltu/is-operation-present :remove-coupon))
+                                      (ltu/is-operation-present :remove-coupon)
+                                      (ltu/is-key-value
+                                        #(str/starts-with? % "cus_") :customer-id true)
+                                      (ltu/is-key-value
+                                        #(str/starts-with? % "sub_") :subscription-id true))
               create-setup-intent (ltu/get-op-url customer-response :create-setup-intent)
               add-coupon          (ltu/get-op-url customer-response :add-coupon)]
 

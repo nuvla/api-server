@@ -40,7 +40,7 @@
         session         (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-        session-admin   (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user    (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
         session-anon    (header session authn-info-header "user/unknown group/nuvla-anon")]
 
@@ -53,7 +53,9 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
+                                        (let [url (->> body second :content
+                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
+                                                       second)]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
@@ -263,12 +265,12 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  postal/send-message (fn [_ {:keys [body]}]
+                  postal/send-message (fn [_ _]
                                         {:code 0, :error :SUCCESS, :message "OK"})]
       (let [session            (-> (ltu/ring-app)
                                   session
                                   (content-type "application/json"))
-           session-admin      (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+           session-admin      (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
            session-anon       (header session authn-info-header "user/unknown group/nuvla-anon")
 
            href               (str user-tpl/resource-type "/" email-password/registration-method)
@@ -283,7 +285,6 @@
                                :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
                                               :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
                                                               "price_1GzOC6HG9PNMTNBOEb5819lm"
-                                                              "price_1GzOdmHG9PNMTNBOCvJLV4pT"
                                                               "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}}
 
            tmpl               {:template {:href     href

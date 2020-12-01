@@ -32,7 +32,7 @@
 (def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
 
-(def ^:const admin-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+(def ^:const admin-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
 (def ^:const username-view "user/tarzan")
 

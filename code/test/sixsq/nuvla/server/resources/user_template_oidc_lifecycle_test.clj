@@ -73,7 +73,7 @@
                           session
                           (content-type "application/json")
                           (header authn-info/authn-info-header "unknown group/nuvla-anon"))
-        session-admin (header session-anon authn-info/authn-info-header "admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info/authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info/authn-info-header "user group/nuvla-user group/nuvla-anon")
 
         redirect-url  "https://example.com/webui"]

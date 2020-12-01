@@ -26,7 +26,21 @@
              :json-schema/order 20)))
 
 
+(def ^:const subscription-id-regex #"^sub_.+$")
+
+(defn subscription-id? [s] (re-matches subscription-id-regex s))
+
+(s/def ::subscription-id
+  (-> (st/spec (s/and string? subscription-id?))
+      (assoc :name "subscription-id"
+             :json-schema/type "string"
+             :json-schema/description "identifier of subscription id"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::parent
-                               ::customer-id]}))
+                               ::customer-id]
+                      :opt-un [::subscription-id]}))

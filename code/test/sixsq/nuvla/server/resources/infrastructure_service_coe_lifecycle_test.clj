@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.infrastructure-service-coe-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -56,7 +56,7 @@
                                   session
                                   (content-type "application/json"))
           session-admin       (header session-anon authn-info-header
-                                      "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                      "group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a service-group to act as parent for service

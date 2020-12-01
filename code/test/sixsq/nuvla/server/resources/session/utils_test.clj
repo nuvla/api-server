@@ -43,7 +43,9 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
+                                        (let [url (->> body second :content
+                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
+                                                       second)]
                                           (reset! validation-link url))
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
@@ -72,7 +74,7 @@
 
   (let [app              (ltu/ring-app)
         session-json     (content-type (session app) "application/json")
-        session-admin    (header session-json authn-info-header "user/admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-anon     (header session-json authn-info-header "user/unknown group/nuvla-anon")
         session-user     (header session-json authn-info-header "user group/nuvla-user")
 

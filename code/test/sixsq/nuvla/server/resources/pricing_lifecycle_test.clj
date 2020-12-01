@@ -29,7 +29,7 @@
     (let [session-anon  (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
       ;; admin/user query succeeds but is empty

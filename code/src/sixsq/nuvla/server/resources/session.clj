@@ -79,6 +79,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 `session` resource.
 "
   (:require
+    [clojure.pprint :as pprint]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
@@ -90,7 +91,10 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.log :as log-util]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -105,6 +109,10 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (def collection-acl {:query ["group/nuvla-anon"]
                      :add   ["group/nuvla-anon"]})
+
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::session/session))
+
 
 ;;
 ;; validate subclasses of sessions
@@ -374,6 +382,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
         expires        (ts/rfc822->iso8601 (:expires cookie))
         session        (assoc session :expiry expires
                                       :active-claim claim
+                                      :groups (:groups cookie-info)
                                       :roles updated-roles)]
     (-> request
         (assoc :body session)
@@ -399,4 +408,5 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defn initialize
   []
-  (std-crud/initialize resource-type nil))
+  (std-crud/initialize resource-type nil)
+  (md/register resource-metadata))

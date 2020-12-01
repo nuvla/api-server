@@ -139,7 +139,7 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
@@ -304,7 +304,7 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "unknown group/nuvla-anon")
@@ -813,7 +813,7 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
@@ -956,7 +956,7 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
@@ -1097,7 +1097,7 @@
                                 session
                                 (content-type "application/json"))
 
-          session-admin     (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin     (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-owner     (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
 
           customer-base-uri (str p/service-context customer/resource-type)]
@@ -1125,10 +1125,10 @@
                                                          :city           "Meyrin"
                                                          :country        "CH"
                                                          :postal-code    "1217"}
+                                          :email        "toto@example.com"
                                           :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
                                                          :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
                                                                          "price_1GzOC6HG9PNMTNBOEb5819lm"
-                                                                         "price_1GzOdmHG9PNMTNBOCvJLV4pT"
                                                                          "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}}))
           (ltu/body->edn)
           (ltu/is-status 201))

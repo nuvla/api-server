@@ -5,16 +5,20 @@
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.session-template :as session-tpl]
     [sixsq.nuvla.server.resources.spec.ui-hints :as hints]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (s/def ::method ::session-tpl/method)
 
 
 ;; reference to the session template that was used to create the session
-(s/def ::template (s/merge
-                    (s/keys :req-un [::session-tpl/href])
-                    (s/map-of #{:href} any?)))
+(s/def ::template (-> (st/spec
+                        (s/merge
+                          (s/keys :req-un [::session-tpl/href])
+                          (s/map-of #{:href} any?)))
+                      (assoc :name "template"
+                             :json-schema/type "map")))
 
 
 ;; expiration time of the cookie
@@ -46,7 +50,10 @@
 (s/def ::client-ip ::core/nonblank-string)
 
 
-(s/def ::active-claim (s/nilable ::core/nonblank-string))
+(s/def ::active-claim (-> (st/spec (s/nilable ::core/nonblank-string))
+                          (assoc :name "active-claim"
+                                 :json-schema/type "string"
+                                 :json-schema/description "current active claim")))
 
 
 (s/def ::session

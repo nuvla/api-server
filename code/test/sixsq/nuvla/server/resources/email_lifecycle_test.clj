@@ -32,7 +32,7 @@
                           session
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
-                              "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; verify resource metadata
@@ -141,7 +141,9 @@
 
                         ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                         postal/send-message (fn [_ {:keys [body]}]
-                                              (let [url (second (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*" body))]
+                                              (let [url (->> body second :content
+                                                             (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
+                                                             second)]
                                                 (reset! validation-link url))
                                               {:code 0, :error :SUCCESS, :message "OK"})]
 

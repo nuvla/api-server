@@ -20,7 +20,9 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-srvc-gen]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -44,7 +46,7 @@ existing `infrastructure-service-template` resource.
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::infra-service/schema)
+  (std-crud/initialize resource-type ::infra-srvc-gen/schema)
   (md/register resource-metadata))
 
 
@@ -52,7 +54,7 @@ existing `infrastructure-service-template` resource.
 ;; multimethods for validation and operations
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::infra-service/schema))
+(def validate-fn (u/create-spec-validation-fn ::infra-srvc-gen/schema))
 
 
 (defmulti validate-subtype :subtype)

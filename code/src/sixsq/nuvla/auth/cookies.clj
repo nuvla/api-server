@@ -65,13 +65,11 @@
   (let [server               (:nuvla-ssl-server-name headers)
         collected-groups-set (collect-groups-for-user user-id)
         groups               (-> collected-groups-set
-                                 (disj "group/nuvla-admin")
                                  sort
                                  seq)]
     (cond-> {:user-id user-id
              :claims  (or (some->> claims seq sort (str/join " "))
-                          (->> [user-id "group/nuvla-user" "group/nuvla-anon"
-                                (collected-groups-set "group/nuvla-admin")]
+                          (->> [user-id "group/nuvla-user" "group/nuvla-anon"]
                                (remove nil?)
                                sort
                                (str/join " ")))}

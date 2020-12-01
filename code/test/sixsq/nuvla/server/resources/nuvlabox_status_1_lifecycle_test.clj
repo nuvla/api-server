@@ -71,7 +71,15 @@
                   :hostname              "localhost"
                   :ip                    "127.0.0.1"
                   :docker-server-version "19.0.3"
-                  :last-boot             timestamp})
+                  :last-boot             timestamp
+                  :inferred-location     [46.2044 6.1432 373.]
+                  :gpio-pins             [{:name  "GPIO. 7"
+                                           :bcm   4
+                                           :mode  "IN"
+                                           :voltage 1
+                                           :pin   7}
+                                          {:pin   1}]
+                  :nuvlabox-engine-version  "1.2.3"})
 
 
 (def resources-updated {:cpu   {:capacity 10
@@ -96,7 +104,7 @@
     (let [session       (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-         session-admin (header session authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
          session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
          session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
 

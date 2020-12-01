@@ -7,6 +7,7 @@ Customer mapping to external banking system."
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -83,20 +84,31 @@ Customer mapping to external banking system."
 
 
 (defmethod crud/add resource-type
-  [{body :body :as request}]
+  [{{:keys [email] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (utils/throw-admin-can-not-be-customer request)
   (config-nuvla/throw-stripe-not-configured)
-  (let [auth-info (auth/current-authentication request)
-        active-claim   (or
-                    (when (acl-resource/is-admin? auth-info) (:parent body))
-                    (auth/current-active-claim request))]
+  (let [auth-info    (auth/current-authentication request)
+        active-claim (or
+                       (when (acl-resource/is-admin? auth-info) (:parent body))
+                       (auth/current-active-claim request))]
+    (utils/throw-email-mandatory-for-group active-claim email)
     (utils/throw-customer-exist (active-claim->resource-id active-claim))
     (validate-customer-body (dissoc body :parent))
-    (-> request
-        (assoc :body {:parent      active-claim
-                      :customer-id (utils/create-customer body active-claim)})
-        add-impl)))
+    (let [[customer-id subscription-id] (utils/create-customer body active-claim)]
+      (-> request
+          (assoc :body (cond-> {:parent      active-claim
+                                :customer-id customer-id}
+                               subscription-id (assoc :subscription-id subscription-id)))
+          add-impl))))
+
+
+(def edit-impl (std-crud/edit-fn resource-type))
+
+
+(defmethod crud/edit resource-type
+  [request]
+  (edit-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -116,21 +128,29 @@ Customer mapping to external banking system."
   (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
 
+
+(defn active-claim->customer
+  [active-claim]
+  (some-> resource-type
+          (crud/query-as-admin
+            {:cimi-params
+             {:filter (parser/parse-cimi-filter
+                        (format "parent='%s'" active-claim))}})
+          second
+          first))
+
+
 (defn customer-has-active-subscription?
   [active-claim]
   (boolean
     (try
-      (some-> resource-type
-              (crud/query-as-admin {:cimi-params {:filter (parser/parse-cimi-filter
-                                                            (format "parent='%s'" active-claim))}})
-              second
-              first
-              :customer-id
-              stripe/retrieve-customer
-              utils/get-current-subscription
+      (some-> active-claim
+              active-claim->customer
+              :subscription-id
+              stripe/retrieve-subscription
               utils/s-subscription->map
               :status
-              (#{"active" "trialing"}))
+              (#{"active" "trialing" "past_due"}))
       (catch Exception _))))
 
 
@@ -182,9 +202,8 @@ Customer mapping to external banking system."
                   (request->resource-id)
                   (crud/retrieve-by-id-as-admin)
                   (a/throw-cannot-manage request)
-                  :customer-id
-                  stripe/retrieve-customer
-                  utils/get-current-subscription
+                  :subscription-id
+                  stripe/retrieve-subscription
                   utils/s-subscription->map)
           {}))
     (catch Exception e
@@ -232,19 +251,31 @@ Customer mapping to external banking system."
       (or (ex-data e) (throw e)))))
 
 
+(defn update-customer
+  [customer-id k v]
+  (try
+    (-> (crud/retrieve-by-id-as-admin customer-id)
+        (u/update-timestamps)
+        (assoc k v)
+        (db/edit {:nuvla/authn auth/internal-identity}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type utils/create-subscription-action]
   [{body :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (try
-    (-> request
-        (request->resource-id)
-        (crud/retrieve-by-id-as-admin)
-        (a/throw-cannot-manage request)
-        (utils/throw-plan-id-mandatory request)
-        (utils/throw-subscription-already-exist request)
-        :customer-id
-        (utils/create-subscription body false)
-        r/json-response)
+    (let [customer-id  (-> request
+                           (request->resource-id)
+                           (crud/retrieve-by-id-as-admin)
+                           (a/throw-cannot-manage request)
+                           (utils/throw-plan-id-mandatory request)
+                           (utils/throw-subscription-already-exist request)
+                           :customer-id)
+          subscription (utils/create-subscription customer-id body false)]
+      (update-customer customer-id :subscription-id (:id subscription))
+      (r/json-response subscription))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -353,7 +384,7 @@ Customer mapping to external banking system."
               (request->resource-id)
               (crud/retrieve-by-id-as-admin)
               (a/throw-cannot-manage request)
-              :customer-id
+              :subscription-id
               (utils/get-upcoming-invoice))
           {}))
     (catch Exception e
@@ -368,7 +399,7 @@ Customer mapping to external banking system."
         (request->resource-id)
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
-        :customer-id
+        :subscription-id
         (utils/list-invoices)
         r/json-response)
     (catch Exception e

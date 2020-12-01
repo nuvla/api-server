@@ -42,6 +42,7 @@
   (-> (st/spec #{"EUR", "CHF", "USD"})
       (assoc :name "currency"
              :json-schema/type "string"
+             :json-schema/value-scope {:values ["EUR", "CHF", "USD"]}
 
              :json-schema/description "currency for the voucher amount"
              :json-schema/group "body"

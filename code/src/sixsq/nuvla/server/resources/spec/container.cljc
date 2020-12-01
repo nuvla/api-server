@@ -53,7 +53,7 @@
 (s/def ::infrastructure-service-id (s/and string? infrastructure-service-id?))
 
 (s/def ::private-registries
-  (-> (st/spec (s/coll-of ::infrastructure-service-id :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of ::infrastructure-service-id :min-count 1 :kind vector? :distinct true))
       (assoc :name "private-registries"
              :json-schema/type "array"
              :json-schema/indexed false
@@ -187,6 +187,7 @@
   (-> (st/spec #{"none", "on-failure", "any"})
       (assoc :name "condition"
              :json-schema/type "string"
+             :json-schema/value-scope {:values  ["none", "on-failure", "any"]}
              :json-schema/description "restart condition (none, on-failure, any)")))
 
 

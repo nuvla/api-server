@@ -153,6 +153,48 @@
            :json-schema/order 47)))
 
 
+(s/def ::unit
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "unit"
+           :json-schema/description "unit name for the specified resource (e.g. 'cuda cores', or 'memory'...)"
+
+           :json-schema/order 48)))
+
+
+(s/def ::capacity
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "capacity"
+           :json-schema/description "total capacity of the specified resource (usually a number, but string are also accepted)"
+
+           :json-schema/order 49)))
+
+
+(s/def ::load
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "load"
+           :json-schema/description "current load (as a percentage) of the specified resource"
+
+           :json-schema/order 50)))
+
+
+(s/def ::resource
+  (-> (st/spec (su/only-keys :req-un [::unit ::capacity] :opt-un [::load]))
+    (assoc :name "resource"
+           :json-schema/type "map"
+           :json-schema/description "single resource structure, with unit, capacity and optional load"
+
+           :json-schema/order 51)))
+
+
+(s/def ::resources
+  (-> (st/spec (s/coll-of ::resource :kind vector?))
+    (assoc :name "resources"
+           :json-schema/type "array"
+           :json-schema/description "list of resources"
+
+           :json-schema/order 52)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -169,4 +211,5 @@
                                ::raw-data-sample
                                ::data-gateway-enabled
                                ::serial-number
-                               ::video-device]}))
+                               ::video-device
+                               ::resources]}))
