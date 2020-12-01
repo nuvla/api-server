@@ -62,7 +62,12 @@
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          []
-            :vulnerabilities         {}})
+            :vulnerabilities         {}
+            :swarm-node-id           "xyz"
+            :installation-parameters {:config-files   ["docker-compose.yml",
+                                                       "docker-compose.usb.yaml"]
+                                      :working-dir    "/home/user"
+                                      :project-name   "nuvlabox"}})
 
 
 (deftest check-nuvlabox-status
@@ -78,5 +83,5 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
-                 :docker-plugins :vulnerabilities}]
+                 :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))

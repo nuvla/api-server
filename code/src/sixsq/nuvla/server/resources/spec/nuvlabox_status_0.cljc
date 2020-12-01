@@ -504,6 +504,42 @@
 
              :json-schema/order 66)))
 
+(s/def ::swarm-node-id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "swarm-node-id"
+           :json-schema/description "ID of the underlying Swarm node"
+
+           :json-schema/order 67)))
+
+(s/def ::project-name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "project-name"
+           :json-schema/description "Name of the project used during the NuvlaBox Engine installation"
+
+           :json-schema/order 68)))
+
+(s/def ::config-files
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "config-files"
+           :json-schema/description "List of files (compose files or manifests) used during the NuvlaBox Engine installation"
+
+           :json-schema/order 69)))
+
+(s/def ::working-dir
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "working-dir"
+           :json-schema/description "Directory on the host, from where the NuvlaBox Engine was installed"
+
+           :json-schema/order 70)))
+
+(s/def ::installation-parameters
+  (-> (st/spec (su/only-keys :opt-un [::working-dir ::config-files ::project-name]))
+    (assoc :name "installation-parameters"
+           :json-schema/type "map"
+           :json-schema/description "Parameters and configurations used for the NuvlaBox Engine installation"
+
+           :json-schema/order 71)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -526,5 +562,7 @@
                                ::nuvlabox-engine-version
                                ::gpio-pins
                                ::docker-plugins
-                               ::vulnerabilities]}))
+                               ::vulnerabilities
+                               ::swarm-node-id
+                               ::installation-parameters]}))
 
