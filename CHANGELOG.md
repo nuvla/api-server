@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
+
 ### Changed
 
 - Deployment - Update action get new module price and license
