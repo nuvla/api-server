@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
+
 ### Changed
 
 - Deployment - Allow to fetch specific version
