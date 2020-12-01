@@ -131,7 +131,7 @@
                                                      {:owners   ["group/nuvla-admin"]
                                                       :edit-acl [active-claim]}
                                                      :priority 50)
-        job-msg      (str action "ing " id " with async " job-id)]
+        job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment" action) 500 id)))
