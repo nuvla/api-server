@@ -510,6 +510,7 @@
         (catch Throwable t
           (throw t))
         (finally
+          (ka/close-producer!)
           (ke/delete-dir z-dir)
           (ke/delete-dir k-dir)))))
 
