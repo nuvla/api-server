@@ -4,13 +4,15 @@
 
 ### Changed
 
+- Deployment - Allow to fetch specific version
+
 ## [5.5.0] - 2020-11-16
 
 ### Added
-
   - Vulnerabilities - new resource to act as a database of vulnerabilities to be matched against NuvlaBox security scans
   - Configuration - new Nuvla configuration attribute to specify the Git repository where to find the list of vulnerability databases
-  
+  - NuvlaBox Peripheral - new attributes for handling network devices
+
 ### Changed
 
   - Resource-metadata - Add metadata for templated resources

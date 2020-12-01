@@ -223,6 +223,14 @@
                   (ltu/is-status 200)
                   (ltu/body->edn))
 
+              (-> session-user
+                  (request fetch-module-url
+                           :request-method :post
+                           :body (json/write-str {:module {:href "module/xxx"}}))
+                  (ltu/is-status 400)
+                  (ltu/body->edn)
+                  (ltu/message-matches #"cannot resolve module/xxx"))
+
               ;; attempt to start the deployment and check the start job was created
               (let [job-url (-> session-user
                                 (request start-url
