@@ -533,7 +533,7 @@
            :json-schema/order 70)))
 
 (s/def ::environment
-  (-> (s/coll-of ::core/nonblank-string :kind vector?)
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
     (assoc :name "environment"
            :json-schema/description "List of environment variables set at installation time"
 
