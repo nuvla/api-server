@@ -277,8 +277,15 @@ existing `infrastructure-service-template` resource.
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [resource (db/retrieve (str resource-type "/" uuid) request)]
-    (delete resource request)))
+  (let [id (str resource-type "/" uuid)
+        resource (db/retrieve id request)
+        delete-resp (delete resource request)]
+    (if (= 200 (:status delete-resp))
+      (event-utils/create-event id "DELETED"
+                                (a/default-acl (auth/current-authentication request))
+                                :severity "low"
+                                :category "state"))
+    delete-resp))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
