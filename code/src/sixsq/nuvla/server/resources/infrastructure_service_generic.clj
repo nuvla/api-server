@@ -4,7 +4,10 @@ A generic infrastructure service that is characterized by a service type and
 an endpoint.
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-service-tpl-generic]))
@@ -38,6 +41,13 @@ an endpoint.
 (defmethod infra-service/post-add-hook method
   [service request]
   (try
-    (notif-utils/create-state-event-notification-subscription (:id service) request)
+    (let [id (:id service)
+          category "state"]
+      (notif-utils/create-state-event-notification-subscription id request)
+      (event-utils/create-event id
+                                (get category service)
+                                (a/default-acl (auth/current-authentication request))
+                                :severity "low"
+                                :category category))
     (catch Exception e
       (or (ex-data e) (throw e)))))
