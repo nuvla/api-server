@@ -5,6 +5,7 @@
 ### Added
 
 - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
+- NuvlaBox - new action for updating the NuvlaBox Engine
 
 ### Changed
 
