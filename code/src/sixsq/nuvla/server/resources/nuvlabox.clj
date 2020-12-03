@@ -550,6 +550,49 @@ particular NuvlaBox release.
       (or (ex-data e) (throw e)))))
 
 
+
+;;
+;; Update NuvlaBox Engine action
+;;
+
+(defn update-nuvlabox
+  [{:keys [id state acl] :as nuvlabox} nb-release-id]
+  (if (= state state-commissioned)
+    (if (nil? nb-release-id)
+      (logu/log-and-throw-400 "Target NuvlaBox release is missing")
+      (do
+        (log/warn "Updating NuvlaBox " id)
+        (try
+          (let [{{job-id     :resource-id
+                  job-status :status} :body} (job/create-job id "nuvlabox_update"
+                                               acl
+                                               :affected-resources [{:href nb-release-id}]
+                                               :priority 50)
+                job-msg   (str "updating NuvlaBox " id " with target release " nb-release-id ", with async " job-id)]
+            (when (not= job-status 201)
+              (throw (r/ex-response
+                       "unable to create async job to update NuvlaBox" 500 id)))
+            (event-utils/create-event id job-msg acl)
+            (r/map-response job-msg 202 id job-id))
+          (catch Exception e
+            (or (ex-data e) (throw e))))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
+
+
+(defmethod crud/do-action [resource-type "update-nuvlabox"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id              (str resource-type "/" uuid)
+          nb-release-id   (:nuvlabox-release body)]
+      (-> (db/retrieve nb-release-id request)
+        (a/throw-cannot-view request))
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (update-nuvlabox nb-release-id)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 ;;
 ;; Set operation
 ;;
@@ -576,6 +619,7 @@ particular NuvlaBox release.
         reboot-op         (u/action-map id :reboot)
         add-ssh-key-op    (u/action-map id :add-ssh-key)
         revoke-ssh-key-op (u/action-map id :revoke-ssh-key)
+        update-nuvlabox-op (u/action-map id :update-nuvlabox)
         ops             (cond-> []
                                 (a/can-edit? resource request) (conj edit-op)
                                 (and (a/can-delete? resource request)
@@ -596,6 +640,8 @@ particular NuvlaBox release.
                                      (#{state-commissioned} state)) (conj add-ssh-key-op)
                                 (and (a/can-manage? resource request)
                                      (#{state-commissioned} state)) (conj revoke-ssh-key-op)
+                                (and (a/can-manage? resource request)
+                                     (#{state-commissioned} state)) (conj update-nuvlabox-op)
                                 (and (a/can-manage? resource request)
                                      (#{state-commissioned} state)) (conj reboot-op))]
     (assoc resource :operations ops)))
