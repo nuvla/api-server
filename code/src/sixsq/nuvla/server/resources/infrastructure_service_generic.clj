@@ -45,7 +45,7 @@ an endpoint.
           category "state"]
       (notif-utils/create-state-event-notification-subscription id request)
       (event-utils/create-event id
-                                (get category service)
+                                ((keyword category) service)
                                 (a/default-acl (auth/current-authentication request))
                                 :severity "low"
                                 :category category))
