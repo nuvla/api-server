@@ -1,11 +1,6 @@
 name: BUILD
 
-on:
-  workflow_dispatch:
-  push:
-  pull_request:
-    activity:
-      - assigned
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
 
