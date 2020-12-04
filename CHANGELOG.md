@@ -6,10 +6,12 @@
 
 - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
 - NuvlaBox - new action for updating the NuvlaBox Engine
+- NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
 
 ### Changed
 
-- Deployment - Allow to fetch specific version
+- Deployment - Update action get new module price and license
+- Deployment - Remove fetch action
 
 ## [5.5.0] - 2020-11-16
 

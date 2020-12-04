@@ -155,10 +155,13 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil nil)]
-        (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
+      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "swarm")]
+        (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+
+      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "kubernetes")]
+        (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
       (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
         (wf-utils/update-minio-cred id name acl minio-id nil nil)))

@@ -157,14 +157,11 @@
                                       (ltu/is-operation-present :delete)
                                       (ltu/is-operation-present :start)
                                       (ltu/is-operation-present :clone)
-                                      (ltu/is-operation-present :fetch-module)
                                       (ltu/is-operation-present :check-dct)
                                       (ltu/is-key-value :state "CREATED")
                                       (ltu/is-key-value :owner "user/jane"))
 
               start-url           (ltu/get-op-url deployment-response "start")
-
-              fetch-module-url    (ltu/get-op-url deployment-response "fetch-module")
 
               check-dct-url       (ltu/get-op-url deployment-response "check-dct")
 
@@ -216,21 +213,6 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)))
 
-              ;; try call fetch-module
-              (-> session-user
-                  (request fetch-module-url
-                           :request-method :post)
-                  (ltu/is-status 200)
-                  (ltu/body->edn))
-
-              (-> session-user
-                  (request fetch-module-url
-                           :request-method :post
-                           :body (json/write-str {:module {:href "module/xxx"}}))
-                  (ltu/is-status 400)
-                  (ltu/body->edn)
-                  (ltu/message-matches #"cannot resolve module/xxx"))
-
               ;; attempt to start the deployment and check the start job was created
               (let [job-url (-> session-user
                                 (request start-url
@@ -276,7 +258,7 @@
 
                 ;; the deployment would be set to "STARTED" via the job
                 ;; for the tests, set this manually to continue with the workflow
-                (-> session-user
+                (-> session-admin
                     (request deployment-url
                              :request-method :put
                              :body (json/write-str {:state "STARTED"}))
@@ -322,7 +304,7 @@
 
                     ;; on success, the deployment update job would set the deployment state to "STARTED"
                     ;; for the tests, set this manually to continue with the workflow
-                    (-> session-user
+                    (-> session-admin
                         (request deployment-url
                                  :request-method :put
                                  :body (json/write-str {:state "STARTED"}))
@@ -388,12 +370,11 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-key-value :state "STOPPING")
-                          (ltu/is-operation-absent "fetch-module")
                           (ltu/is-operation-absent "start"))
 
                       ;; the deployment would be set to "STOPPED" via the job
                       ;; for the tests, set this manually to continue with the workflow
-                      (-> session-user
+                      (-> session-admin
                           (request deployment-url
                                    :request-method :put
                                    :body (json/write-str {:state "STOPPED"}))
@@ -544,7 +525,7 @@
 
         ;; the deployment would be set to "ERROR" via a job
         ;; set this manually to continue with the workflow
-        (-> session-user
+        (-> session-admin
             (request deployment-url
                      :request-method :put
                      :body (json/write-str {:state "ERROR"}))
