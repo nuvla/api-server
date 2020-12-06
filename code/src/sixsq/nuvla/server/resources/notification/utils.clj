@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.notification.utils
   (:require
+    [clojure.tools.logging :as log]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
@@ -11,17 +12,20 @@
 
 (defn create-subscription
   [resource-id type kind category method authn-info]
-  (let [subscription {:type     type
-                      :kind     kind
-                      :category category
-                      :resource resource-id
-                      :status   "enabled"
-                      :method   method
-                      :acl      (a/default-acl authn-info)}
-        create-request {:params      {:resource-name subs/resource-type}
-                        :body        subscription
-                        :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
+  (try
+    (let [subscription {:type     type
+                        :kind     kind
+                        :category category
+                        :resource resource-id
+                        :status   "enabled"
+                        :method   method
+                        :acl      (a/default-acl authn-info)}
+          create-request {:params      {:resource-name subs/resource-type}
+                          :body        subscription
+                          :nuvla/authn auth/internal-identity}]
+      (crud/add create-request))
+     (catch Exception e
+       (log/error (format "Failed to create subscription: %s" e)))))
 
 
 (defn create-subscription-if-enabled

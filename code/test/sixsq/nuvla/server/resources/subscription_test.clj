@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is join-fixtures use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.subscription :as t]
@@ -22,10 +23,11 @@
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
+        subs-resource (str "infrastructure-service/" (str (UUID/randomUUID)))
         valid-subscription {:type     "notification"
                             :kind     "event"
                             :category "state"
-                            :resource (str "infrastructure-service/" (str (UUID/randomUUID)))
+                            :resource subs-resource
                             :status   "enabled"
                             :method   (str "notification-method/" (str (UUID/randomUUID)))
                             :acl      {:owners ["user/jane"]}}]
@@ -63,6 +65,16 @@
                        (ltu/location))
 
           user-abs-uri (str p/service-context user-uri)]
+
+      ;; subscription can be found by :resource
+      (-> session-user
+          (content-type "application/x-www-form-urlencoded")
+          (request base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter (format "resource='%s'" subs-resource)}))
+          (ltu/body->edn)
+          (ltu/is-count 1)
+          (ltu/is-status 200))
 
       (-> session-user
           (request base-uri)

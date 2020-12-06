@@ -3,8 +3,8 @@
 Collection for holding notification method configurations.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -94,17 +94,23 @@ Collection for holding notification method configurations.
 
 
 (defn throw-references-exist
-  [resource-id collections]
+  [resource-id collections request]
   (doseq [collection collections]
     (let [filter (format "method='%s'" resource-id)
-          options {:cimi-params {:filter (parser/parse-cimi-filter filter) :last 0}}
-          [meta _] (crud/query-as-admin collection options)]
-      (if (> (:count meta) 0)
+          authn-info (auth/current-authentication request)
+          req {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                             :last   0}
+               :params      {:resource-name collection}
+               :nuvla/authn authn-info}
+          count (-> (crud/query req)
+                    :body
+                    :count)]
+      (if (> count 0)
         (throw (ru/ex-conflict (format "References to %s exist in %s." resource-id collection)))))))
 
 (defn integrity-check
-  [resource-id collections]
-  (throw-references-exist resource-id collections)
+  [resource-id collections request]
+  (throw-references-exist resource-id collections request)
   resource-id)
 
 (def collections ["subscription"
@@ -115,7 +121,7 @@ Collection for holding notification method configurations.
   (try
     (let [resource-id (str resource-type "/" uuid)
           delete-response (-> resource-id
-                              (integrity-check collections)
+                              (integrity-check collections request)
                               (db/retrieve request)
                               (a/throw-cannot-delete request)
                               (db/delete request))]

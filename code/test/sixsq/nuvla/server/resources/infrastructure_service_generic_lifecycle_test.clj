@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.subscription-config :as subs-conf]
+    [sixsq.nuvla.server.resources.subscription :as subscr]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [ring.util.codec :as rc])
   (:import
@@ -146,7 +147,7 @@
 
 (def subs-base-uri (str p/service-context subs-conf/resource-type))
 
-(deftest subscription-created
+(deftest subscription-created-and-deleted
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
@@ -230,18 +231,25 @@
 
       ;; check subscription created
       (let [subs (-> session-user
-                     (request (str p/service-context "subscription"))
+                     (request (str p/service-context subscr/resource-type))
                      (ltu/body->edn)
                      (ltu/is-status 200)
                      (ltu/is-count 1)
                      (ltu/body)
                      :resources
-                     first)]
+                     first)
+            subs-id (:id subs)]
         (is (= uri (:resource subs)))
-        (is (= notification-method (:method subs))))
+        (is (= notification-method (:method subs)))
 
-      ;; can delete resource
-      (-> session-user
-          (request abs-uri :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200)))))
+        ;; can delete resource
+        (-> session-user
+            (request abs-uri :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; subscription is deleted after resource is deleted
+        (-> session-user
+            (request (str p/service-context subs-id))
+            (ltu/body->edn)
+            (ltu/is-status 404))))))

@@ -62,10 +62,9 @@ Example:
 
 (s/def ::resource
   (-> (st/spec ::core/resource-href)
-      (assoc :name "resource id"
+      (assoc :name "resource"
              :json-schema/type "resource-id"
              :json-schema/editable false
-             :json-schema/indexed false
 
              :json-schema/description "Subscribed resource id"
              :json-schema/order 23)))
