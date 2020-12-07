@@ -243,44 +243,44 @@
 
 (s/def ::metric-name
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "metric-name"
-           :json-schema/description "name of the metric"
+      (assoc :name "metric-name"
+             :json-schema/description "name of the metric"
 
-           :json-schema/order 67)))
+             :json-schema/order 67)))
 
 
 (s/def ::energy-consumption
-  (-> (st/spec (s/and number?))
-    (assoc :name "energy-consumption"
-           :json-schema/description "value of energy consumption for the metric"
+  (-> (st/spec number?)
+      (assoc :name "energy-consumption"
+             :json-schema/description "value of energy consumption for the metric"
 
-           :json-schema/order 68)))
+             :json-schema/order 68)))
 
 
 (s/def ::unit
   (-> (st/spec ::core/nonblank-string)
-    (assoc :name "unit"
-           :json-schema/description "metric value units"
+      (assoc :name "unit"
+             :json-schema/description "metric value units"
 
-           :json-schema/order 69)))
+             :json-schema/order 69)))
 
 
 (s/def ::power-consumption-metric
   (-> (st/spec (su/only-keys :req-un [::metric-name ::energy-consumption ::unit]))
-    (assoc :name "power-consumption-metric"
-           :json-schema/type "array"
-           :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"
+      (assoc :name "power-consumption-metric"
+             :json-schema/type "array"
+             :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"
 
-           :json-schema/order 70)))
+             :json-schema/order 70)))
 
 
 (s/def ::power-consumption
   (-> (st/spec (s/coll-of ::power-consumption-metric :kind vector?))
-    (assoc :name "power-consumption"
-           :json-schema/type "array"
-           :json-schema/description "list of power-consumption-metric resources"
+      (assoc :name "power-consumption"
+             :json-schema/type "array"
+             :json-schema/description "list of power-consumption-metric resources"
 
-           :json-schema/order 71)))
+             :json-schema/order 71)))
 
 
 (s/def ::resources
