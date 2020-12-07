@@ -6,6 +6,12 @@
 
 - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
 - NuvlaBox - new action for updating the NuvlaBox Engine
+
+## [5.6.0] - 2020-12-07
+
+### Added
+
+- BUILD - Support for Github actions
 - NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
 
 ### Changed
