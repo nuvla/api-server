@@ -136,7 +136,7 @@
 
          ;; the deployment would be set to "STARTED" via the job
          ;; for the tests, set this manually to continue with the workflow
-         (-> session-user
+         (-> session-admin
              (request deployment-url
                       :request-method :put
                       :body (json/write-str {:state "STARTED"}))
@@ -230,7 +230,7 @@
 
        ;; on success, the deployment update job would set the deployment state to "STARTED"
        ;; for the tests, set this manually to continue with the workflow
-       (-> session-user
+       (-> session-admin
            (request deployment-url
                     :request-method :put
                     :body (json/write-str {:state "STARTED"}))
@@ -238,7 +238,7 @@
            (ltu/is-status 200))
 
        ;; stop deployment so that we can delete it
-       (-> session-user
+       (-> session-admin
            (request deployment-url
                     :request-method :put
                     :body (json/write-str {:state "STOPPED"}))
