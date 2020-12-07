@@ -152,57 +152,54 @@
         :id)))
 
 
-(def get-swarm-service (partial get-service "swarm"))
-
-
 (def get-minio-service (partial get-service "s3"))
 
 
-(defn create-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags]
+(defn create-coe-service
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str "Swarm "
-                                                   (utils/format-nb-name
-                                                     nuvlabox-name (utils/short-nb-id nuvlabox-id)))
-                                 :description (str "Docker Swarm on "
-                                                   (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                   :body        {:name        (str (str/capitalize subtype) " "
+                                                (utils/format-nb-name
+                                                  nuvlabox-name (utils/short-nb-id nuvlabox-id)))
+                                 :description (str (str/capitalize subtype) " cluster on "
+                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl
                                  :template    (cond->
                                                 {:href     "infrastructure-service-template/generic"
                                                  :endpoint endpoint
-                                                 :subtype  "swarm"}
+                                                 :subtype  subtype}
                                                 tags (assoc :tags tags))}
                    :nuvla/authn auth/internal-identity}
           {{:keys [resource-id]} :body status :status} (crud/add request)]
 
       (if (= 201 status)
         (do
-          (log/info "swarm service" resource-id "created")
+          (log/info subtype " service" resource-id "created")
           resource-id)
-        (let [msg (str "cannot create swarm service for " nuvlabox-id)]
+        (let [msg (str "cannot create " subtype " service for " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))
     (do
-      (log/info "swarm endpoint not specified; skipping creation of infrastructure-service")
+      (log/info subtype " endpoint not specified; skipping creation of infrastructure-service")
       nil)))
 
 
-(defn update-swarm-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags]
-  (when-let [resource-id (get-swarm-service isg-id)]
+(defn update-coe-service
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  (when-let [resource-id (get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name infra-service/resource-type}
                    :body        (cond->
-                                  {:name        (str "Swarm "
-                                                     (utils/format-nb-name
-                                                       nuvlabox-name
-                                                       (utils/short-nb-id nuvlabox-id)))
-                                   :description (str "Docker Swarm on "
-                                                     (utils/format-nb-name
-                                                       nuvlabox-name nuvlabox-id))
+                                  {:name        (str (str/capitalize subtype) " "
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name
+                                                    (utils/short-nb-id nuvlabox-id)))
+                                   :description (str (str/capitalize subtype) " cluster on "
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   tags (assoc :tags tags)
                                   endpoint (assoc :endpoint endpoint))
@@ -211,9 +208,9 @@
 
       (if (= 200 status)
         (do
-          (log/info "swarm service" resource-id "updated")
+          (log/info subtype "service" resource-id "updated")
           resource-id)
-        (let [msg (str "cannot update swarm service for " nuvlabox-id)]
+        (let [msg (str "cannot update " subtype " service for " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
@@ -270,36 +267,36 @@
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
-(defn get-swarm-cred
-  "Searches for an existing swarm credential tied to the given service.
+(defn get-coe-cred
+  "Searches for an existing credential tied to the given service.
    If found, the identifier is returned."
-  [swarm-id]
-  (let [filter  (format "subtype='infrastructure-service-swarm' and parent='%s'" swarm-id)
+  [subtype is-id]
+  (let [filter  (format "subtype='%s' and parent='%s'" subtype is-id)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
                                :select ["id"]}}]
     (-> (crud/query-as-admin credential/resource-type options)
-        second
-        first
-        :id)))
+      second
+      first
+      :id)))
 
 
-(defn create-swarm-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
+(defn create-coe-cred
+  [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
   (if (and key cert ca)
     (let [acl     (-> nuvlabox-acl
-                      (utils/set-acl-nuvlabox-view-only)
-                      (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
+                    (utils/set-acl-nuvlabox-view-only)
+                    (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
           tmpl    (cond->
-                    {:href "credential-template/infrastructure-service-swarm"
+                    {:href (str "credential-template/" subtype)
                      :cert cert
                      :key  key}
                     ca (assoc :ca ca))
           request {:params      {:resource-name credential/resource-type}
                    :body        {:name        (utils/format-nb-name nuvlabox-name
-                                                                    (utils/short-nb-id nuvlabox-id))
-                                 :description (str "Docker Swarm client credential linked to "
-                                                   (utils/format-nb-name nuvlabox-name nuvlabox-id))
-                                 :parent      swarm-id
+                                                (utils/short-nb-id nuvlabox-id))
+                                 :description (str subtype " client credential linked to "
+                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                                 :parent      coe-id
                                  :acl         acl
                                  :template    tmpl}
                    :nuvla/authn auth/internal-identity}
@@ -307,22 +304,22 @@
 
       (if (= 201 status)
         (do
-          (log/info "swarm service credential" resource-id "created")
+          (log/info subtype " service credential" resource-id "created")
           resource-id)
-        (let [msg (str "cannot create swarm service credential for "
-                       swarm-id " linked to " nuvlabox-id)]
+        (let [msg (str "cannot create " subtype " service credential for "
+                    coe-id " linked to " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))
     (do
-      (log/info "skipping creation of swarm credential; key, cert, or ca is missing")
+      (log/info "skipping creation of " subtype " credential; key, cert, or ca is missing")
       nil)))
 
 
-(defn update-swarm-cred
-  [nuvlabox-id nuvlabox-name nuvlabox-acl swarm-id key cert ca]
-  (when-let [resource-id (get-swarm-cred swarm-id)]
+(defn update-coe-cred
+  [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
+  (when-let [resource-id (get-coe-cred subtype coe-id)]
     (let [acl     (-> nuvlabox-acl
-                      (utils/set-acl-nuvlabox-view-only)
-                      (assoc :manage (:view-meta nuvlabox-acl)))
+                    (utils/set-acl-nuvlabox-view-only)
+                    (assoc :manage (:view-meta nuvlabox-acl)))
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->
@@ -330,8 +327,8 @@
                                                   nuvlabox-name
                                                   (utils/short-nb-id nuvlabox-id))
                                    :description (str "NuvlaBox credential linked to "
-                                                     (utils/format-nb-name
-                                                       nuvlabox-name nuvlabox-id))
+                                                  (utils/format-nb-name
+                                                    nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   ca (assoc :ca ca)
                                   key (assoc :key key)
@@ -341,10 +338,10 @@
 
       (if (= 200 status)
         (do
-          (log/info "swarm service credential" resource-id "updated")
+          (log/info subtype " service credential" resource-id "updated")
           resource-id)
-        (let [msg (str "cannot update swarm service credential for "
-                       swarm-id " linked to " nuvlabox-id)]
+        (let [msg (str "cannot update " subtype " service credential for "
+                    coe-id " linked to " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
@@ -534,28 +531,40 @@
             swarm-client-key swarm-client-cert swarm-client-ca
             minio-endpoint
             minio-access-key minio-secret-key
-            vpn-csr]} :body :as request}]
+            vpn-csr
+            kubernetes-endpoint
+            kubernetes-client-key kubernetes-client-cert kubernetes-client-ca]} :body :as request}]
 
   (when-let [isg-id infrastructure-service-group]
     (let [swarm-id (or
-                     (update-swarm-service id name acl isg-id swarm-endpoint tags)
-                     (create-swarm-service id name acl isg-id swarm-endpoint tags))
+                     (update-coe-service id name acl isg-id swarm-endpoint tags "swarm")
+                     (create-coe-service id name acl isg-id swarm-endpoint tags "swarm"))
+          kubernetes-id (or
+                          (update-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes")
+                          (create-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes"))
           minio-id (or
                      (update-minio-service id name acl isg-id minio-endpoint)
                      (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when swarm-id
         (or
-          (update-swarm-cred id name acl swarm-id swarm-client-key
-                             swarm-client-cert swarm-client-ca)
-          (create-swarm-cred id name acl swarm-id swarm-client-key
-                             swarm-client-cert swarm-client-ca))
+          (update-coe-cred id name acl swarm-id swarm-client-key
+                             swarm-client-cert swarm-client-ca "infrastructure-service-swarm")
+          (create-coe-cred id name acl swarm-id swarm-client-key
+                             swarm-client-cert swarm-client-ca "infrastructure-service-swarm"))
         (or
           (update-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)
           (create-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager))
         (or
           (update-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)
           (create-swarm-token id name acl swarm-id "WORKER" swarm-token-worker)))
+
+      (when kubernetes-id
+        (or
+          (update-coe-cred id name acl kubernetes-id kubernetes-client-key
+            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
+          (create-coe-cred id name acl kubernetes-id kubernetes-client-key
+            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")))
 
       (when minio-id
         (or

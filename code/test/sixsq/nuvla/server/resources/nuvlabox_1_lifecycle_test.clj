@@ -454,7 +454,11 @@
                                                 :swarm-endpoint      "https://swarm.example.com"
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"}))
+                                                :minio-endpoint      "https://minio.example.com"
+                                                :kubernetes-client-key    "key"
+                                                :kubernetes-client-cert   "cert"
+                                                :kubernetes-client-ca     "ca"
+                                                :kubernetes-endpoint      "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -467,10 +471,10 @@
                                                                                isg-id)}))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/is-count 2)
+                               (ltu/is-count 3)
                                (ltu/entries))]
 
-              (is (= #{"swarm" "s3"} (set (map :subtype services)))))
+              (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services)))))
 
             ;; third commissioning of the resource make sure no additional credentials created
             (-> session
@@ -496,10 +500,10 @@
                                         :body (rc/form-encode {:filter (format "parent='%s'" isg-id)}))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/is-count 2)
+                               (ltu/is-count 3)
                                (ltu/entries))]
 
-              (is (= #{"swarm" "s3"} (set (map :subtype services))))
+              (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services))))
 
               (doseq [{:keys [subtype] :as service} services]
                 (let [creds (-> session-owner
@@ -518,6 +522,8 @@
                   (if (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
+                  (if (= "kubernetes" subtype)
+                    (is (= 1 (count creds))))
                   ))))
 
           (let [decommission-resp (-> session
@@ -688,7 +694,11 @@
                                               :swarm-endpoint      "https://swarm.example.com"
                                               :minio-access-key    "access"
                                               :minio-secret-key    "secret"
-                                              :minio-endpoint      "https://minio.example.com"}))
+                                              :minio-endpoint      "https://minio.example.com"
+                                              :kubernetes-client-key    "key"
+                                              :kubernetes-client-cert   "cert"
+                                              :kubernetes-client-ca     "ca"
+                                              :kubernetes-endpoint      "https://k8s.example.com"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -713,10 +723,10 @@
                                                                        "parent='%s'" isg-id)}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-count 2)
+                             (ltu/is-count 3)
                              (ltu/entries))]
 
-            (is (= #{"swarm" "s3"} (set (map :subtype services))))
+            (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services))))
 
             (doseq [{:keys [acl]} services]
               (is (= [nuvlabox-owner] (:view-acl acl))))
@@ -738,6 +748,8 @@
                 (if (= "s3" subtype)
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
+                (if (= "kubernetes" subtype)
+                  (is (= 1 (count creds))))
                 )))
 
           (-> session-beta
@@ -778,10 +790,10 @@
                                                                        "parent='%s'" isg-id)}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-count 2)
+                             (ltu/is-count 3)
                              (ltu/entries))]
 
-            (is (= #{"swarm" "s3"} (set (map :subtype services))))
+            (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services))))
 
             (doseq [{:keys [acl]} services]
               (is (= [nuvlabox-owner user-beta] (:view-acl acl))))
@@ -803,6 +815,8 @@
                 (if (= "s3" subtype)
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
+                (if (= "kubernetes" subtype)
+                  (is (= 1 (count creds))))
                 )))
 
           )))))

@@ -155,10 +155,13 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil nil)]
-        (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
+      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "swarm")]
+        (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+
+      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "kubernetes")]
+        (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
       (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
         (wf-utils/update-minio-cred id name acl minio-id nil nil)))
@@ -173,12 +176,13 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags] :as body}]
+   {:keys [acl name description location tags ssh-keys] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
           tags (assoc :tags tags)
+          ssh-keys (assoc :ssh-keys ssh-keys)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
