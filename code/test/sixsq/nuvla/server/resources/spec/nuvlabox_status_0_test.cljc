@@ -49,10 +49,10 @@
                                                    :bytes-received    2213
                                                    :bytes-transmitted 55}]
                                       :power-consumption  [{:metric-name "IN_current"
-                                                            :energy-consumption "2.4"
+                                                            :energy-consumption 2.4
                                                             :unit "A"}
                                                            {:metric-name "IN_voltage"
-                                                            :energy-consumption "220"
+                                                            :energy-consumption 220
                                                             :unit"V"}]}
 
             :peripherals             {:usb [{:vendor-id   "vendor-id"

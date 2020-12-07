@@ -44,9 +44,9 @@
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
                                                    :bytes-transmitted 55}]
-                                      :power-consumption  [[{:metric-name "IN_current"
-                                                             :energy-consumption "2.4"
-                                                             :unit "A"}]]}
+                                      :power-consumption  [{:metric-name "IN_current"
+                                                            :energy-consumption 2.4
+                                                            :unit "A"}]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
