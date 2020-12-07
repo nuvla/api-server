@@ -241,13 +241,37 @@
              :json-schema/order 24)))
 
 
-(s/def ::power-consumption-metric
-  (-> (st/spec (s/coll-of ::core/nonblank-string :max-count 3 :min-count 3 :kind vector?))
-    (assoc :name "power-consumption-metric"
-           :json-schema/type "array"
-           :json-schema/description "[metricName energyConsumption units] for a specifc power consumption metric"
+(s/def ::metric-name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "metric-name"
+           :json-schema/description "name of the metric"
 
            :json-schema/order 67)))
+
+
+(s/def ::energy-consumption
+  (-> (st/spec (s/and number?))
+    (assoc :name "energy-consumption"
+           :json-schema/description "value of energy consumption for the metric"
+
+           :json-schema/order 68)))
+
+
+(s/def ::unit
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "unit"
+           :json-schema/description "metric value units"
+
+           :json-schema/order 69)))
+
+
+(s/def ::power-consumption-metric
+  (-> (st/spec (su/only-keys :req-un [::metric-name ::energy-consumption ::unit]))
+    (assoc :name "power-consumption-metric"
+           :json-schema/type "array"
+           :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"
+
+           :json-schema/order 70)))
 
 
 (s/def ::power-consumption
@@ -256,7 +280,7 @@
            :json-schema/type "array"
            :json-schema/description "list of power-consumption-metric resources"
 
-           :json-schema/order 68)))
+           :json-schema/order 71)))
 
 
 (s/def ::resources
