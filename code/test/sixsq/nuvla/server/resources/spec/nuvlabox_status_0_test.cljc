@@ -48,8 +48,12 @@
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
                                                    :bytes-transmitted 55}]
-                                      :power-consumption  [["IN_current", "2.4", "A"]
-                                                           ["IN_voltage", "220", "V"]]}
+                                      :power-consumption  [{:metric-name "IN_current"
+                                                            :energy-consumption "2.4"
+                                                            :unit "A"}
+                                                           {:metric-name "IN_voltage"
+                                                            :energy-consumption "220"
+                                                            :unit"V"}]}
 
             :peripherals             {:usb [{:vendor-id   "vendor-id"
                                              :device-id   "device-id"
