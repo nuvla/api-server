@@ -25,7 +25,8 @@
                    :expiry             timestamp
                    :target-resource    {:href "abc/def"}
                    :affected-resources [{:href "abc/def"}]
-                   :execution-mode     "mixed"}]
+                   :execution-mode     "mixed"
+                   :version            1}]
 
     (stu/is-valid ::job/schema job)
 
@@ -38,6 +39,7 @@
 
     (stu/is-invalid ::job/schema (assoc job :progress 101))
     (stu/is-invalid ::job/schema (assoc job :state "XY"))
+    (stu/is-invalid ::job/schema (assoc job :execution-mode "none"))
     (stu/is-invalid ::job/schema (assoc job :parent-job "notjob/id"))
 
     ;; mandatory keywords
