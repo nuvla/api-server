@@ -147,11 +147,50 @@
              :json-schema/order 33)))
 
 
+(s/def ::execution-mode
+  (-> (st/spec #{"pull" "push" "mixed"})
+    (assoc :name "execution-mode"
+           :json-schema/type "string"
+           :json-schema/description "job execution mode"
+           :json-schema/value-scope {:values ["pull" "push" "mixed"]}
+
+           :json-schema/order 34)))
+
+
+(s/def ::output
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "output"
+           :json-schema/display-name "output message"
+           :json-schema/description "full output (including traceback) from the job execution"
+
+           :json-schema/order 35)))
+
+
+(s/def ::payload
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "payload"
+           :json-schema/display-name "job payload"
+           :json-schema/description "JSON-compliant string to be passed to the job, such as execution arguments"
+
+           :json-schema/order 36)))
+
+
+(s/def ::version
+  (-> (st/spec nat-int?)
+    (assoc :name "version"
+           :json-schema/type "integer"
+           :json-schema/description "schema version"
+
+           :json-schema/order 37)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::state
                                ::action
-                               ::progress]
+                               ::progress
+                               ::execution-mode
+                               ::version]
                       :opt-un [::target-resource
                                ::affected-resources
                                ::return-code
@@ -162,4 +201,6 @@
                                ::priority
                                ::started
                                ::duration
-                               ::expiry]}))
+                               ::expiry
+                               ::output
+                               ::payload]}))

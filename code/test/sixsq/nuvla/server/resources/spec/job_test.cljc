@@ -24,7 +24,8 @@
                    :duration           30
                    :expiry             timestamp
                    :target-resource    {:href "abc/def"}
-                   :affected-resources [{:href "abc/def"}]}]
+                   :affected-resources [{:href "abc/def"}]
+                   :execution-mode     "mixed"}]
 
     (stu/is-valid ::job/schema job)
 

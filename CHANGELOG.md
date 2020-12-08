@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Job - Add new attributes for supporting job execution in pull mode
+  
 ### Changed
 
   - NuvlaBox Status - Add attribute for energy telemetry
