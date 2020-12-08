@@ -474,16 +474,14 @@ particular NuvlaBox release.
                                              acl
                                              :affected-resources [{:href cred-id}]
                                              :priority 50)
-              job-msg   (if (:private-key ssh-credential)
-                          (:private-key ssh-credential)
-                          (str "asking NuvlaBox "
-                            id " to add existing SSH key "
-                            cred-id " with async " job-id))]
+                job-msg   (str "asking NuvlaBox "
+                             id " to add SSH key "
+                             cred-id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to add SSH key to NuvlaBox" 500 id)))
           (event-utils/create-event id job-msg acl)
-          (r/map-response job-msg 202 id job-id))
+          (r/map-response (or (:private-key ssh-credential) job-msg) 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))
     (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))

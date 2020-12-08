@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Nuvlabox - add generation ssh key fix (SixSq/tasklist#1921)
   - NuvlaBox Status - Add attribute for energy telemetry
 
 ## [5.6.0] - 2020-12-07
