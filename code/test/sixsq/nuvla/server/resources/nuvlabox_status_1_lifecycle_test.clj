@@ -79,7 +79,13 @@
                                            :voltage 1
                                            :pin   7}
                                           {:pin   1}]
-                  :nuvlabox-engine-version  "1.2.3"})
+                  :nuvlabox-engine-version  "1.2.3"
+                  :swarm-node-id           "xyz"
+                  :installation-parameters {:config-files   ["docker-compose.yml",
+                                                             "docker-compose.usb.yaml"]
+                                            :working-dir    "/home/user"
+                                            :project-name   "nuvlabox"
+                                            :environment    []}})
 
 
 (def resources-updated {:cpu   {:capacity 10

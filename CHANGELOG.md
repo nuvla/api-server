@@ -2,8 +2,10 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
+  - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
+  - NuvlaBox - new action for updating the NuvlaBox Engine
   - Nuvlabox - add generation ssh key fix (SixSq/tasklist#1921)
   - NuvlaBox Status - Add attribute for energy telemetry
 

@@ -87,7 +87,12 @@
                                                 :vulnerability-reference "url"}
                                                {:vulnerability-id "CVE-X-Y-Z2"
                                                 :product "Apache"
-                                                :vulnerability-score 5.7}]}})
+                                                :vulnerability-score 5.7}]}
+            :swarm-node-id           "xyz"
+            :installation-parameters {:config-files   ["docker-compose.yml"]
+                                      :working-dir    "/home/user"
+                                      :project-name   "nuvlabox"
+                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}})
 
 
 (deftest check-nuvlabox-status
@@ -103,5 +108,5 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
                  :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities
-                 :power-consumption}]
+                 :installation-parameters :swarm-node-id :power-consumption}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))
