@@ -1,6 +1,4 @@
-(ns sixsq.nuvla.server.resources.user.password
-  (:require
-    [sixsq.nuvla.server.resources.user :as p]))
+(ns sixsq.nuvla.server.resources.user.password)
 
 
 (defn create-user-map
@@ -8,7 +6,7 @@
    updates the resource-type."
   [{:keys [name description tags method username email] :as resource}]
   (let [name-attr (or name username email)]
-    (cond-> {:resource-type p/resource-type
+    (cond-> {:resource-type "user"
              :method        method
              :state         "NEW"}
             name-attr (assoc :name name-attr)

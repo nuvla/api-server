@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-mitreid :as ut-mitreid]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-mitreid :as user-template]))
 
 ;;
