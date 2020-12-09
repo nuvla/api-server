@@ -176,12 +176,13 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags] :as body}]
+   {:keys [acl name description location tags ssh-keys] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
           tags (assoc :tags tags)
+          ssh-keys (assoc :ssh-keys ssh-keys)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
@@ -470,19 +471,17 @@ particular NuvlaBox release.
         (let [cred-id (:id ssh-credential)
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
-                                                           acl
-                                                           :affected-resources [{:href cred-id}]
-                                                           :priority 50)
-              job-msg (if (:private-key ssh-credential)
-                        (:private-key ssh-credential)
-                        (str "asking NuvlaBox "
-                             id " to add existing SSH key "
-                             cred-id " with async " job-id))]
+                                             acl
+                                             :affected-resources [{:href cred-id}]
+                                             :priority 50)
+                job-msg   (str "asking NuvlaBox "
+                             id " to add SSH key "
+                             cred-id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to add SSH key to NuvlaBox" 500 id)))
           (event-utils/create-event id job-msg acl)
-          (r/map-response job-msg 202 id job-id))
+          (r/map-response (or (:private-key ssh-credential) job-msg) 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))
     (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))

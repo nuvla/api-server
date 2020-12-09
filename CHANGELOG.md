@@ -4,20 +4,22 @@
 
 ### Added
 
-- NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
-- NuvlaBox - new action for updating the NuvlaBox Engine
+  - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
+  - NuvlaBox - new action for updating the NuvlaBox Engine
+  - Nuvlabox - add generation ssh key fix (SixSq/tasklist#1921)
+  - NuvlaBox Status - Add attribute for energy telemetry
 
 ## [5.6.0] - 2020-12-07
 
 ### Added
 
-- BUILD - Support for Github actions
-- NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
+  - BUILD - Support for Github actions
+  - NuvlaBox - Add Kubernetes IS support to NuvlaBox commissioning
 
 ### Changed
 
-- Deployment - Update action get new module price and license
-- Deployment - Remove fetch action
+  - Deployment - Update action get new module price and license
+  - Deployment - Remove fetch action
 
 ## [5.5.0] - 2020-11-16
 
