@@ -259,7 +259,7 @@ existing `infrastructure-service-template` resource.
         resource (if (boolean new-state) (db/retrieve id request))
         ret (edit-impl request)]
     (try
-      (if resource
+      (if (and (= 200 (:status ret)) resource)
         (event-state-change resource request))
       (catch Exception e
         (log/error (format "Failed creating event on state change of %s with %s" id e))))
