@@ -155,10 +155,13 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-swarm-service id name acl infrastructure-service-group nil nil)]
-        (wf-utils/update-swarm-cred id name acl swarm-id nil nil nil)
+      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "swarm")]
+        (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+
+      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "kubernetes")]
+        (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
       (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
         (wf-utils/update-minio-cred id name acl minio-id nil nil)))
@@ -173,12 +176,13 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags] :as body}]
+   {:keys [acl name description location tags ssh-keys] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
           tags (assoc :tags tags)
+          ssh-keys (assoc :ssh-keys ssh-keys)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
@@ -464,22 +468,20 @@ particular NuvlaBox release.
     (do
       (log/warn "Adding new SSH key for NuvlaBox:" id)
       (try
-        (let [cred-id   (:id ssh-credential)
+        (let [cred-id (:id ssh-credential)
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
                                              acl
                                              :affected-resources [{:href cred-id}]
                                              :priority 50)
-              job-msg   (if (:private-key ssh-credential)
-                          (:private-key ssh-credential)
-                          (str "asking NuvlaBox "
-                            id " to add existing SSH key "
-                            cred-id " with async " job-id))]
+                job-msg   (str "asking NuvlaBox "
+                             id " to add SSH key "
+                             cred-id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to add SSH key to NuvlaBox" 500 id)))
           (event-utils/create-event id job-msg acl)
-          (r/map-response job-msg 202 id job-id))
+          (r/map-response (or (:private-key ssh-credential) job-msg) 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))
     (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
@@ -488,20 +490,20 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "add-ssh-key"]
   [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [id              (str resource-type "/" uuid)
-          ssh-cred-id     (:credential body)
-          nuvlabox        (db/retrieve id request)
-          acl             (:acl nuvlabox)
-          credential      (if ssh-cred-id
-                            (db/retrieve ssh-cred-id request)
-                            (wf-utils/create-ssh-key {:acl acl
-                                                      :template {:href "credential-template/generate-ssh-key"}}))]
-      
+    (let [id          (str resource-type "/" uuid)
+          ssh-cred-id (:credential body)
+          nuvlabox    (db/retrieve id request)
+          acl         (:acl nuvlabox)
+          credential  (if ssh-cred-id
+                        (db/retrieve ssh-cred-id request)
+                        (wf-utils/create-ssh-key {:acl      acl
+                                                  :template {:href "credential-template/generate-ssh-key"}}))]
+
       (-> (db/retrieve (:id credential) request)
-        (a/throw-cannot-view request))
+          (a/throw-cannot-view request))
       (-> nuvlabox
-        (a/throw-cannot-manage request)
-        (add-ssh-key credential)))
+          (a/throw-cannot-manage request)
+          (add-ssh-key credential)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -522,10 +524,10 @@ particular NuvlaBox release.
         (try
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job id "nuvlabox_revoke_ssh_key"
-                                               acl
-                                               :affected-resources [{:href ssh-credential-id}]
-                                               :priority 50)
-                job-msg   (str "removing SSH key " ssh-credential-id " from NuvlaBox " id " with async " job-id)]
+                                                             acl
+                                                             :affected-resources [{:href ssh-credential-id}]
+                                                             :priority 50)
+                job-msg (str "removing SSH key " ssh-credential-id " from NuvlaBox " id " with async " job-id)]
             (when (not= job-status 201)
               (throw (r/ex-response
                        "unable to create async job to remove SSH key from NuvlaBox" 500 id)))
@@ -539,13 +541,57 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "revoke-ssh-key"]
   [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [id              (str resource-type "/" uuid)
-          ssh-cred-id     (:credential body)]
+    (let [id          (str resource-type "/" uuid)
+          ssh-cred-id (:credential body)]
       (-> (db/retrieve ssh-cred-id request)
-        (a/throw-cannot-view request))
+          (a/throw-cannot-view request))
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (revoke-ssh-key ssh-cred-id)))
+          (a/throw-cannot-manage request)
+          (revoke-ssh-key ssh-cred-id)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+
+;;
+;; Update NuvlaBox Engine action
+;;
+
+(defn update-nuvlabox
+  [{:keys [id state acl] :as nuvlabox} nb-release-id]
+  (if (= state state-commissioned)
+    (if (nil? nb-release-id)
+      (logu/log-and-throw-400 "Target NuvlaBox release is missing")
+      (do
+        (log/warn "Updating NuvlaBox " id)
+        (try
+          (let [{{job-id     :resource-id
+                  job-status :status} :body} (job/create-job
+                                               id "nuvlabox_update"
+                                               acl
+                                               :affected-resources [{:href nb-release-id}]
+                                               :priority 50)
+                job-msg (str "updating NuvlaBox " id " with target release " nb-release-id
+                             ", with async " job-id)]
+            (when (not= job-status 201)
+              (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
+            (event-utils/create-event id job-msg acl)
+            (r/map-response job-msg 202 id job-id))
+          (catch Exception e
+            (or (ex-data e) (throw e))))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
+
+
+(defmethod crud/do-action [resource-type "update-nuvlabox"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id            (str resource-type "/" uuid)
+          nb-release-id (:nuvlabox-release body)]
+      (-> (db/retrieve nb-release-id request)
+          (a/throw-cannot-view request))
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (update-nuvlabox nb-release-id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -567,37 +613,40 @@ particular NuvlaBox release.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [edit-op           (u/operation-map id :edit)
-        delete-op         (u/operation-map id :delete)
-        activate-op       (u/action-map id :activate)
-        commission-op     (u/action-map id :commission)
-        decommission-op   (u/action-map id :decommission)
-        check-api-op      (u/action-map id :check-api)
-        reboot-op         (u/action-map id :reboot)
-        add-ssh-key-op    (u/action-map id :add-ssh-key)
-        revoke-ssh-key-op (u/action-map id :revoke-ssh-key)
-        ops             (cond-> []
-                                (a/can-edit? resource request) (conj edit-op)
-                                (and (a/can-delete? resource request)
-                                     (#{state-new
-                                        state-decommissioned
-                                        state-error} state)) (conj delete-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-new} state)) (conj activate-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-activated
-                                        state-commissioned} state)) (conj commission-op)
-                                (and (a/can-manage? resource request)
-                                     (not= state state-new)
-                                     (not= state state-decommissioned)) (conj decommission-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-commissioned} state)) (conj check-api-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-commissioned} state)) (conj add-ssh-key-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-commissioned} state)) (conj revoke-ssh-key-op)
-                                (and (a/can-manage? resource request)
-                                     (#{state-commissioned} state)) (conj reboot-op))]
+  (let [edit-op            (u/operation-map id :edit)
+        delete-op          (u/operation-map id :delete)
+        activate-op        (u/action-map id :activate)
+        commission-op      (u/action-map id :commission)
+        decommission-op    (u/action-map id :decommission)
+        check-api-op       (u/action-map id :check-api)
+        reboot-op          (u/action-map id :reboot)
+        add-ssh-key-op     (u/action-map id :add-ssh-key)
+        revoke-ssh-key-op  (u/action-map id :revoke-ssh-key)
+        update-nuvlabox-op (u/action-map id :update-nuvlabox)
+        ops                (cond-> []
+                                   (a/can-edit? resource request) (conj edit-op)
+                                   (and (a/can-delete? resource request)
+                                        (#{state-new
+                                           state-decommissioned
+                                           state-error} state)) (conj delete-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-new} state)) (conj activate-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-activated
+                                           state-commissioned} state)) (conj commission-op)
+                                   (and (a/can-manage? resource request)
+                                        (not= state state-new)
+                                        (not= state state-decommissioned)) (conj decommission-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)) (conj check-api-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)) (conj add-ssh-key-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)) (conj revoke-ssh-key-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)) (conj update-nuvlabox-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)) (conj reboot-op))]
     (assoc resource :operations ops)))
 
 ;;

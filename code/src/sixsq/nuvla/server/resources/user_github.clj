@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.github.utils :as gu]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-github :as ut-github]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-github :as user-template]))
 
 ;;

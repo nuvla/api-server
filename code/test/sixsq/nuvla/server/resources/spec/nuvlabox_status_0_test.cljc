@@ -47,7 +47,13 @@
                                                    }
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
-                                                   :bytes-transmitted 55}]}
+                                                   :bytes-transmitted 55}]
+                                      :power-consumption  [{:metric-name "IN_current"
+                                                            :energy-consumption 2.4
+                                                            :unit "A"}
+                                                           {:metric-name "IN_voltage"
+                                                            :energy-consumption 220
+                                                            :unit"V"}]}
 
             :peripherals             {:usb [{:vendor-id   "vendor-id"
                                              :device-id   "device-id"
@@ -81,7 +87,12 @@
                                                 :vulnerability-reference "url"}
                                                {:vulnerability-id "CVE-X-Y-Z2"
                                                 :product "Apache"
-                                                :vulnerability-score 5.7}]}})
+                                                :vulnerability-score 5.7}]}
+            :swarm-node-id           "xyz"
+            :installation-parameters {:config-files   ["docker-compose.yml"]
+                                      :working-dir    "/home/user"
+                                      :project-name   "nuvlabox"
+                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}})
 
 
 (deftest check-nuvlabox-status
@@ -96,5 +107,6 @@
 
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
-                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities}]
+                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities
+                 :installation-parameters :swarm-node-id :power-consumption}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

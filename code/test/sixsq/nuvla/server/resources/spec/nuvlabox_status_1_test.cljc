@@ -43,7 +43,10 @@
                                                    }
                                                   {:interface         "vpn"
                                                    :bytes-received    2213
-                                                   :bytes-transmitted 55}]}
+                                                   :bytes-transmitted 55}]
+                                      :power-consumption  [{:metric-name "IN_current"
+                                                            :energy-consumption 2.4
+                                                            :unit "A"}]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
@@ -62,7 +65,13 @@
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          []
-            :vulnerabilities         {}})
+            :vulnerabilities         {}
+            :swarm-node-id           "xyz"
+            :installation-parameters {:config-files   ["docker-compose.yml",
+                                                       "docker-compose.usb.yaml"]
+                                      :working-dir    "/home/user"
+                                      :project-name   "nuvlabox"
+                                      :environment    []}})
 
 
 (deftest check-nuvlabox-status
@@ -78,5 +87,6 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
-                 :docker-plugins :vulnerabilities}]
+                 :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
+                 :power-consumption}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))

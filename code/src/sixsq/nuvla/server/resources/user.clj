@@ -17,13 +17,16 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
+    [sixsq.nuvla.server.resources.credential-template-hashed-password :as cred-tmpl-pass]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
+    [sixsq.nuvla.server.resources.user-interface :as user-interface]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
+    [sixsq.nuvla.server.resources.user-username-password]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
@@ -62,22 +65,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;; different create (registration) requests may take different inputs
 ;;
 
-(defn dispatch-on-registration-method [resource]
-  (get-in resource [:template :method]))
-
-
-(defmulti create-validate-subtype dispatch-on-registration-method)
-
-
-(defmethod create-validate-subtype :default
-  [resource]
-  (let [method (dispatch-on-registration-method resource)]
-    (logu/log-and-throw-400 (format "invalid user registration method '%s'" method))))
-
 
 (defmethod crud/validate create-type
   [resource]
-  (create-validate-subtype resource))
+  (user-interface/create-validate-subtype resource))
 
 
 ;;
@@ -90,40 +81,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                         :view-meta ["group/nuvla-user"]
                         :edit-acl  [id]}))
 
-;;
-;; template processing
-;;
-
-(defn dispatch-conversion
-  [resource _]
-  (:method resource))
-
-;; transforms the user template into a user resource
-;;
-;; The concrete implementation of this method MUST return a two-element
-;; tuple containing a response fragment and the created user resource.
-;; The response fragment will be merged with the 'add-impl' function
-;; response and should be used to override the return status (e.g. to
-;; instead provide a redirect) and to set a cookie header.
-;;
-(defmulti tpl->user dispatch-conversion)
-
-; All concrete session types MUST provide an implementation of this
-;; multimethod. The default implementation will throw an 'internal
-;;; server error' exception.
-;;
-(defmethod tpl->user :default
-  [resource request]
-  [{:status 400, :message "missing or invalid user-template reference"} nil])
-
-
-;; handles any actions that must be taken after the user is added
-(defmulti post-user-add dispatch-conversion)
-
-;; default implementation is a no-op
-(defmethod post-user-add :default
-  [resource request]
-  nil)
 
 ;;
 ;; CRUD operations
@@ -158,13 +115,14 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                           (crud/validate)
                           (:template)
                           (merge-with-defaults)
-                          (tpl->user request))]
+                          (user-interface/tpl->user request))]
 
       (or frag
           (if user
             (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
               (when (and resource-id (= 201 status))
-                (post-user-add (assoc user :id resource-id, :redirect-url redirect-url) request))
+                (user-interface/post-user-add
+                  (assoc user :id resource-id, :redirect-url redirect-url) request))
               result))))
 
     (catch Exception e
@@ -253,6 +211,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (group/initialize)
   (username-password/initialize)
   (user-identifier/initialize)
+  (cred-tmpl-pass/initialize)
   (if (nil? (password/identifier->user-id "super"))
     (do
       (log/info "user 'super' does not exist; attempting to create it")

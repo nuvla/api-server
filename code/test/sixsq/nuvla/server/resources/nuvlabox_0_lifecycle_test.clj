@@ -21,6 +21,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-0 :as nb-0]
+    [sixsq.nuvla.server.resources.nuvlabox-release :as nuvlabox-release]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -39,6 +40,7 @@
 
 (def credential-collection-uri (str p/service-context credential/resource-type))
 
+(def nuvlabox-release-collection-uri (str p/service-context nuvlabox-release/resource-type))
 
 (def nb-status-collection-uri (str p/service-context nb-status/resource-type))
 
@@ -68,6 +70,29 @@
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"})
+
+
+(def valid-nb-rel {:release "1"
+                   :url "url"
+                   :pre-release false
+                   :release-date "2020-12-03T11:23:18Z"
+                   :compose-files [{:file "file"
+                                    :name "name"
+                                    :scope "scope"}]
+                   :acl {
+                         :view-data [
+                                     "group/nuvla-user"
+                                     ],
+                         :view-meta [
+                                     "group/nuvla-user"
+                                     ],
+                         :view-acl [
+                                    "group/nuvla-user"
+                                    ],
+                         :owners [
+                                  "group/nuvla-admin"
+                                  ]
+                         }})
 
 
 (deftest check-metadata
@@ -454,6 +479,7 @@
                                      (ltu/is-operation-present :reboot)
                                      (ltu/is-operation-present :add-ssh-key)
                                      (ltu/is-operation-present :revoke-ssh-key)
+                                     (ltu/is-operation-present :update-nuvlabox)
                                      (ltu/is-key-value :state "COMMISSIONED")
                                      (ltu/get-op-url :check-api))
 
@@ -470,6 +496,7 @@
                                      (ltu/is-operation-present :reboot)
                                      (ltu/is-operation-present :add-ssh-key)
                                      (ltu/is-operation-present :revoke-ssh-key)
+                                     (ltu/is-operation-present :update-nuvlabox)
                                      (ltu/is-key-value :state "COMMISSIONED")
                                      (ltu/get-op-url :reboot))
                   add-ssh-key    (-> session
@@ -485,6 +512,7 @@
                                      (ltu/is-operation-present :reboot)
                                      (ltu/is-operation-present :add-ssh-key)
                                      (ltu/is-operation-present :revoke-ssh-key)
+                                     (ltu/is-operation-present :update-nuvlabox)
                                      (ltu/is-key-value :state "COMMISSIONED")
                                      (ltu/get-op-url :add-ssh-key))
 
@@ -501,8 +529,26 @@
                                      (ltu/is-operation-present :reboot)
                                      (ltu/is-operation-present :add-ssh-key)
                                      (ltu/is-operation-present :revoke-ssh-key)
+                                     (ltu/is-operation-present :update-nuvlabox)
                                      (ltu/is-key-value :state "COMMISSIONED")
                                      (ltu/get-op-url :revoke-ssh-key))
+
+                  update-nuvlabox (-> session
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :edit)
+                                    (ltu/is-operation-absent :delete)
+                                    (ltu/is-operation-absent :activate)
+                                    (ltu/is-operation-present :commission)
+                                    (ltu/is-operation-present :decommission)
+                                    (ltu/is-operation-present :check-api)
+                                    (ltu/is-operation-present :reboot)
+                                    (ltu/is-operation-present :add-ssh-key)
+                                    (ltu/is-operation-present :revoke-ssh-key)
+                                    (ltu/is-operation-present :update-nuvlabox)
+                                    (ltu/is-key-value :state "COMMISSIONED")
+                                    (ltu/get-op-url :update-nuvlabox))
 
                   aux-ssh-cred   (-> session
                                      (request credential-collection-uri
@@ -510,6 +556,16 @@
                                               :body (json/write-str
                                                       {:template
                                                        {:href "credential-template/generate-ssh-key"}}))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 201)
+                                     (ltu/body)
+                                     :resource-id)
+
+                  nuvlabox-release (-> session-admin
+                                     (request nuvlabox-release-collection-uri
+                                       :request-method :post
+                                       :body (json/write-str
+                                               valid-nb-rel))
                                      (ltu/body->edn)
                                      (ltu/is-status 201)
                                      (ltu/body)
@@ -539,6 +595,14 @@
                            :request-method :post
                            :body (json/write-str {:credential aux-ssh-cred}))
                   (ltu/body->edn)
+                  (ltu/is-status 202))
+
+              ;; update-nuvlabox-action
+              (-> session
+                  (request update-nuvlabox
+                    :request-method :post
+                    :body (json/write-str {:nuvlabox-release nuvlabox-release}))
+                  (ltu/body->edn)
                   (ltu/is-status 202)))
 
             ;; second commissioning of the resource (with swarm credentials)
@@ -553,7 +617,11 @@
                                                 :swarm-endpoint      "https://swarm.example.com"
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"}))
+                                                :minio-endpoint      "https://minio.example.com"
+                                                :kubernetes-client-key    "key"
+                                                :kubernetes-client-cert   "cert"
+                                                :kubernetes-client-ca     "ca"
+                                                :kubernetes-endpoint      "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -565,10 +633,10 @@
                                         :body (rc/form-encode {:filter (format "parent='%s'" isg-id)}))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/is-count 2)
+                               (ltu/is-count 3)
                                (ltu/entries))]
 
-              (is (= #{"swarm" "s3"} (set (map :subtype services)))))
+              (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services)))))
 
             ;; third commissioning of the resource make sure no additional credentials created
             (-> session
@@ -595,10 +663,10 @@
                                                                                isg-id)}))
                                (ltu/body->edn)
                                (ltu/is-status 200)
-                               (ltu/is-count 2)
+                               (ltu/is-count 3)
                                (ltu/entries))]
 
-              (is (= #{"swarm" "s3"} (set (map :subtype services))))
+              (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services))))
 
               (doseq [{:keys [subtype] :as service} services]
                 (let [creds (-> session-owner
@@ -616,6 +684,9 @@
 
                   (if (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
+
+                  (if (= "kubernetes" subtype)
+                    (is (= 1 (count creds))))
 
                   ))))
 

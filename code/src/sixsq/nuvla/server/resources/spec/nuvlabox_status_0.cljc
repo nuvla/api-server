@@ -241,8 +241,50 @@
              :json-schema/order 24)))
 
 
+(s/def ::metric-name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "metric-name"
+             :json-schema/description "name of the metric"
+
+             :json-schema/order 67)))
+
+
+(s/def ::energy-consumption
+  (-> (st/spec number?)
+      (assoc :name "energy-consumption"
+             :json-schema/description "value of energy consumption for the metric"
+
+             :json-schema/order 68)))
+
+
+(s/def ::unit
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "unit"
+             :json-schema/description "metric value units"
+
+             :json-schema/order 69)))
+
+
+(s/def ::power-consumption-metric
+  (-> (st/spec (su/only-keys :req-un [::metric-name ::energy-consumption ::unit]))
+      (assoc :name "power-consumption-metric"
+             :json-schema/type "array"
+             :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"
+
+             :json-schema/order 70)))
+
+
+(s/def ::power-consumption
+  (-> (st/spec (s/coll-of ::power-consumption-metric :kind vector?))
+      (assoc :name "power-consumption"
+             :json-schema/type "array"
+             :json-schema/description "list of power-consumption-metric resources"
+
+             :json-schema/order 71)))
+
+
 (s/def ::resources
-  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats]))
+  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption]))
       (assoc :name "resources"
              :json-schema/type "map"
              :json-schema/description "available and consumed resources"
@@ -504,6 +546,49 @@
 
              :json-schema/order 66)))
 
+(s/def ::swarm-node-id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "swarm-node-id"
+           :json-schema/description "ID of the underlying Swarm node"
+
+           :json-schema/order 67)))
+
+(s/def ::project-name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "project-name"
+           :json-schema/description "Name of the project used during the NuvlaBox Engine installation"
+
+           :json-schema/order 68)))
+
+(s/def ::config-files
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "config-files"
+           :json-schema/description "List of files (compose files or manifests) used during the NuvlaBox Engine installation"
+
+           :json-schema/order 69)))
+
+(s/def ::working-dir
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "working-dir"
+           :json-schema/description "Directory on the host, from where the NuvlaBox Engine was installed"
+
+           :json-schema/order 70)))
+
+(s/def ::environment
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "environment"
+           :json-schema/description "List of environment variables set at installation time"
+
+           :json-schema/order 71)))
+
+(s/def ::installation-parameters
+  (-> (st/spec (su/only-keys :opt-un [::working-dir ::config-files ::project-name ::environment]))
+    (assoc :name "installation-parameters"
+           :json-schema/type "map"
+           :json-schema/description "Parameters and configurations used for the NuvlaBox Engine installation"
+
+           :json-schema/order 72)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -526,5 +611,7 @@
                                ::nuvlabox-engine-version
                                ::gpio-pins
                                ::docker-plugins
-                               ::vulnerabilities]}))
+                               ::vulnerabilities
+                               ::swarm-node-id
+                               ::installation-parameters]}))
 

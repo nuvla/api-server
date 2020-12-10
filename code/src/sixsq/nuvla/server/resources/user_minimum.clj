@@ -7,7 +7,7 @@ information."
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-minimum :as spec-minimum]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]))
