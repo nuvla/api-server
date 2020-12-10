@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-### Added
+## [5.7.0] - 2020-12-10
+
+### Changed
 
   - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
   - NuvlaBox - new action for updating the NuvlaBox Engine
