@@ -204,8 +204,8 @@
       (case status
         201 (log/infof "created %s resource" resource-id)
         409 (log/infof "%s resource already exists; new resource not created." resource-id)
-        (log/errorf "unexpected status code (%s) when creating %s resource:"
-                    (str status) resource-id)))
+        (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                    (str status) resource-id response)))
     (catch Exception e
       (log/errorf "error when creating %s resource: %s\n%s"
                   resource-id

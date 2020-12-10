@@ -6,7 +6,7 @@ password, and other given information."
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-username-password :as spec-username-password]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]))

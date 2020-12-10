@@ -11,7 +11,7 @@ using an email address.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.spec.user-template-email-invitation :as spec-email-invitation]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]))
