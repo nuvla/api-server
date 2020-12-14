@@ -286,19 +286,21 @@ a container orchestration engine.
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           coupon         (:coupon deployment)
+          execution-mode (:execution-mode deployment)
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (create-subscription price coupon)
                                    (stripe/get-id)))
+          state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (edit-deployment
                                request
-                               #(cond-> (assoc % :state "STARTING")
+                               #(cond-> (assoc % :state state)
                                         subs-id (assoc :subscription-id subs-id)))
                              :body)]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))
-      (utils/create-job new-deployment request "start_deployment"))
+      (utils/create-job new-deployment request "start_deployment" execution-mode))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -306,12 +308,14 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (-> (str resource-type "/" uuid)
-        (crud/retrieve-by-id-as-admin)
-        (utils/throw-can-not-do-action utils/can-stop? "stop")
-        (edit-deployment request #(assoc % :state "STOPPING"))
-        :body
-        (utils/create-job request "stop_deployment"))
+    (let [deployment     (-> (str resource-type "/" uuid)
+                             (crud/retrieve-by-id-as-admin)
+                             (utils/throw-can-not-do-action utils/can-stop? "stop"))
+          execution-mode (:execution-mode deployment)]
+      (-> deployment
+          (edit-deployment request #(assoc % :state "STOPPING"))
+          :body
+          (utils/create-job request "stop_deployment" execution-mode)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -334,7 +338,7 @@ a container orchestration engine.
     (-> (str resource-type "/" uuid)
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
-        (utils/create-job request "dct_check"))
+        (utils/create-job request "dct_check" "push"))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -381,7 +385,7 @@ a container orchestration engine.
                               :body)]
       (some-> current-subs-id stripe/retrieve-subscription
               (stripe/cancel-subscription {"invoice_now" true}))
-      (utils/create-job new request "update_deployment"))
+      (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

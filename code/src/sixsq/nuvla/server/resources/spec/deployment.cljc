@@ -28,6 +28,7 @@
                  "PAUSING", "PAUSED",
                  "SUSPENDING", "SUSPENDED",
                  "UPDATING", "UPDATED",
+                 "PENDING",
                  "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
@@ -253,6 +254,14 @@
              :json-schema/description "coupon code")))
 
 
+(s/def ::execution-mode
+  (-> (st/spec #{"pull" "push" "mixed"})
+      (assoc :name "execution-mode"
+             :json-schema/type "string"
+             :json-schema/description "job execution mode"
+             :json-schema/value-scope {:values ["pull" "push" "mixed"]})))
+
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -267,7 +276,8 @@
                                   ::owner
                                   ::infrastructure-service
                                   ::subscription-id
-                                  ::coupon]}]))
+                                  ::coupon
+                                  ::execution-mode]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

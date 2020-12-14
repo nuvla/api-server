@@ -446,19 +446,19 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker  "abc"
-                                                :swarm-token-manager "def"
-                                                :swarm-client-key    "key"
-                                                :swarm-client-cert   "cert"
-                                                :swarm-client-ca     "ca"
-                                                :swarm-endpoint      "https://swarm.example.com"
-                                                :minio-access-key    "access"
-                                                :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"
-                                                :kubernetes-client-key    "key"
-                                                :kubernetes-client-cert   "cert"
-                                                :kubernetes-client-ca     "ca"
-                                                :kubernetes-endpoint      "https://k8s.example.com"}))
+                         :body (json/write-str {:swarm-token-worker     "abc"
+                                                :swarm-token-manager    "def"
+                                                :swarm-client-key       "key"
+                                                :swarm-client-cert      "cert"
+                                                :swarm-client-ca        "ca"
+                                                :swarm-endpoint         "https://swarm.example.com"
+                                                :minio-access-key       "access"
+                                                :minio-secret-key       "secret"
+                                                :minio-endpoint         "https://minio.example.com"
+                                                :kubernetes-client-key  "key"
+                                                :kubernetes-client-cert "cert"
+                                                :kubernetes-client-ca   "ca"
+                                                :kubernetes-endpoint    "https://k8s.example.com"}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -686,19 +686,19 @@
           (-> session-owner
               (request commission
                        :request-method :post
-                       :body (json/write-str {:swarm-token-worker  "abc"
-                                              :swarm-token-manager "def"
-                                              :swarm-client-key    "key"
-                                              :swarm-client-cert   "cert"
-                                              :swarm-client-ca     "ca"
-                                              :swarm-endpoint      "https://swarm.example.com"
-                                              :minio-access-key    "access"
-                                              :minio-secret-key    "secret"
-                                              :minio-endpoint      "https://minio.example.com"
-                                              :kubernetes-client-key    "key"
-                                              :kubernetes-client-cert   "cert"
-                                              :kubernetes-client-ca     "ca"
-                                              :kubernetes-endpoint      "https://k8s.example.com"}))
+                       :body (json/write-str {:swarm-token-worker     "abc"
+                                              :swarm-token-manager    "def"
+                                              :swarm-client-key       "key"
+                                              :swarm-client-cert      "cert"
+                                              :swarm-client-ca        "ca"
+                                              :swarm-endpoint         "https://swarm.example.com"
+                                              :minio-access-key       "access"
+                                              :minio-secret-key       "secret"
+                                              :minio-endpoint         "https://minio.example.com"
+                                              :kubernetes-client-key  "key"
+                                              :kubernetes-client-cert "cert"
+                                              :kubernetes-client-ca   "ca"
+                                              :kubernetes-endpoint    "https://k8s.example.com"}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -1164,6 +1164,68 @@
         (-> customer-id
             stripe/retrieve-customer
             stripe/delete-customer))
+
+      )))
+
+
+(deftest execution-mode-action-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+
+          nuvlabox-id   (-> session-owner
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+          nuvlabox-url  (str p/service-context nuvlabox-id)]
+
+      (-> session-admin
+          (request nuvlabox-url
+                   :request-method :put
+                   :body (json/write-str {:state "COMMISSIONED"}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; push
+      (let [reboot-url (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :reboot))]
+        (let [job-url    (-> session-owner
+                             (request reboot-url :request-method :post)
+                             (ltu/body->edn)
+                             (ltu/is-status 202)
+                             (ltu/location-url))]
+         (-> session-admin
+             (request job-url)
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/is-key-value :execution-mode "push"))
+
+         (-> session-admin
+             (request job-url
+                      :request-method :put
+                      :body (json/write-str {:execution-mode "pull"}))
+             (ltu/body->edn)
+             (ltu/is-status 200)
+             (ltu/is-key-value :execution-mode "pull")
+             (ltu/is-key-value :acl {:edit-data ["user/alpha"],
+                                     :owners    ["group/nuvla-admin"],
+                                     :view-acl  ["user/alpha"],
+                                     :delete    ["user/alpha"],
+                                     :view-meta [nuvlabox-id "user/alpha"],
+                                     :edit-acl  ["user/alpha"],
+                                     :view-data [nuvlabox-id "user/alpha"],
+                                     :manage    [nuvlabox-id "user/alpha"],
+                                     :edit-meta ["user/alpha"]}))))
 
       )))
 

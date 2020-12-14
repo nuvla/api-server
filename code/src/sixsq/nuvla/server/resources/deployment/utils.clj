@@ -123,14 +123,15 @@
 
 
 (defn create-job
-  [{:keys [id] :as resource} request action]
+  [{:keys [id] :as resource} request action execution-mode]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job id action
                                                      {:owners   ["group/nuvla-admin"]
                                                       :edit-acl [active-claim]}
-                                                     :priority 50)
+                                                     :priority 50
+                                                     :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
@@ -185,26 +186,26 @@
 
 (defn throw-can-not-access-registries-creds
   [{:keys [id registries-credentials] :as resource} request]
-  (let [preselected-creds (-> resource
-                              (get-in [:module :content :registries-credentials] [])
-                              set)
+  (let [preselected-creds   (-> resource
+                                (get-in [:module :content :registries-credentials] [])
+                                set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
     (if (seq creds-to-be-checked)
-     (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
-                            (->> creds-to-be-checked
-                                 (map #(str "id='" % "'"))
-                                 (str/join " or "))
-                            ")")
-           {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
-                                       :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                     :last   0}
-                                       :nuvla/authn (:nuvla/authn request)})]
-       (if (< (get body :count 0)
-              (count creds-to-be-checked))
-         (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
-                               403 id))
-         resource))
-     resource)))
+      (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
+                             (->> creds-to-be-checked
+                                  (map #(str "id='" % "'"))
+                                  (str/join " or "))
+                             ")")
+            {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
+                                        :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                      :last   0}
+                                        :nuvla/authn (:nuvla/authn request)})]
+        (if (< (get body :count 0)
+               (count creds-to-be-checked))
+          (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
+                                403 id))
+          resource))
+      resource)))
 
 
 (defn count-payment-methods
@@ -215,13 +216,13 @@
 (defn throw-price-need-payment-method
   [{{:keys [price]} :module :as resource} request]
   (if price
-    (let [count-pm              (-> request
-                                    auth/current-active-claim
-                                    customer/active-claim->customer
-                                    :customer-id
-                                    stripe/retrieve-customer
-                                    customer-utils/list-payment-methods
-                                    count-payment-methods)]
+    (let [count-pm (-> request
+                       auth/current-active-claim
+                       customer/active-claim->customer
+                       :customer-id
+                       stripe/retrieve-customer
+                       customer-utils/list-payment-methods
+                       count-payment-methods)]
       (if (pos? count-pm)
         resource
         (throw (r/ex-response "Payment method is required!" 402))))
