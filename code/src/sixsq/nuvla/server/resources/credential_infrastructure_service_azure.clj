@@ -4,7 +4,6 @@ Provides `docker-machine` credentials for Azure. The attribute names
 correspond exactly to those required by `docker-machine`.
 "
   (:require
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-azure :as tpl]
@@ -52,5 +51,4 @@ correspond exactly to those required by `docker-machine`.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service/schema)
   (md/register resource-metadata))

@@ -5,7 +5,6 @@ either a manager or worker within the Swarm.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-swarm-token :as tpl-swarm-token]
@@ -24,7 +23,6 @@ either a manager or worker within the Swarm.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::swarm-token-spec/schema)
   (md/register resource-metadata))
 
 

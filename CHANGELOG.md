@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Credential - fix issue mapping creation and update at server startup time
+  - Nuvlabox status - fix spec 
+
 ## [5.7.0] - 2020-12-10
 
 ### Changed
