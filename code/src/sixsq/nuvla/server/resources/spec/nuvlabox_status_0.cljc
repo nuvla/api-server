@@ -268,7 +268,7 @@
 (s/def ::power-consumption-metric
   (-> (st/spec (su/only-keys :req-un [::metric-name ::energy-consumption ::unit]))
       (assoc :name "power-consumption-metric"
-             :json-schema/type "array"
+             :json-schema/type "map"
              :json-schema/description "{metric-name energy-consumption unit} for a specifc power consumption metric"
 
              :json-schema/order 70)))

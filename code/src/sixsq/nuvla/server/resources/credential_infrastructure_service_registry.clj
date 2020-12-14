@@ -5,7 +5,6 @@ Provides the credentials necessary to access a Docker Registry service.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry
@@ -86,5 +85,4 @@ Provides the credentials necessary to access a Docker Registry service.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::cred-registry/schema)
   (md/register resource-metadata))
