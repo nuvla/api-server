@@ -48,12 +48,12 @@
                                :json-schema/editable false)))
 
 
-(s/def ::status (-> (st/spec #{"VALID", "INVALID"})
+(s/def ::status (-> (st/spec #{"VALID", "INVALID", "UNKNOWN"})
                     (assoc :name "status"
                            :json-schema/type "string"
                            :json-schema/description "status of credential at last-check date"
 
-                           :json-schema/value-scope {:values ["VALID", "INVALID"]})))
+                           :json-schema/value-scope {:values ["VALID", "INVALID", "UNKNOWN"]})))
 
 
 (def credential-keys-spec (su/merge-keys-specs [common/common-attrs
