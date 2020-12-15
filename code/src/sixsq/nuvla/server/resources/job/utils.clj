@@ -43,11 +43,6 @@
   (contains? #{state-failed state-success} state))
 
 
-(defn add-target-resource-in-affected-resources
-  [{:keys [target-resource affected-resources] :as job}]
-  )
-
-
 (defn should_insert_target-resource-in-affected-resources?
   [{:keys [target-resource affected-resources] :as job}]
   (when target-resource

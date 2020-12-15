@@ -179,7 +179,7 @@
   (-> (st/spec nat-int?)
     (assoc :name "version"
            :json-schema/type "integer"
-           :json-schema/description "schema version"
+           :json-schema/description "Compatibility indicator which represent Job-engine major version"
 
            :json-schema/order 37)))
 

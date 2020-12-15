@@ -81,14 +81,6 @@ a container orchestration engine.
                :input-message  "application/json"
                :output-message "application/json"}
 
-
-              {:name           "fetch-module"
-               :uri            "fetch-module"
-               :description    "fetch the deployment module href and merge it"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"}
-
               {:name           "check-dct"
                :uri            "check-dct"
                :description    "check if images are trusted"
@@ -248,7 +240,6 @@ a container orchestration engine.
         update-op           (u/action-map id :update)
         create-log-op       (u/action-map id :create-log)
         clone-op            (u/action-map id :clone)
-        fetch-module-op     (u/action-map id :fetch-module)
         check-dct-op        (u/action-map id :check-dct)
         upcoming-invoice-op (u/action-map id :upcoming-invoice)
         can-manage?         (a/can-manage? resource request)
@@ -267,9 +258,6 @@ a container orchestration engine.
 
             (and can-manage? can-clone?)
             (update :operations conj clone-op)
-
-            (and can-manage? (utils/can-fetch-module? resource))
-            (update :operations conj fetch-module-op)
 
             can-manage? (update :operations conj upcoming-invoice-op)
 
