@@ -155,8 +155,6 @@ a container orchestration engine.
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
-    (utils/assoc-api-credentials deployment-id authn-info)
-
     create-response))
 
 (defmethod crud/add resource-type
@@ -286,7 +284,10 @@ a container orchestration engine.
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           coupon         (:coupon deployment)
+          acl            (:acl deployment)
           execution-mode (:execution-mode deployment)
+          data?          (some? (:data deployment))
+          no-api-keys?   (nil? (:api-credentials deployment))
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (create-subscription price coupon)
@@ -295,8 +296,15 @@ a container orchestration engine.
           new-deployment (-> deployment
                              (edit-deployment
                                request
-                               #(cond-> (assoc % :state state)
-                                        subs-id (assoc :subscription-id subs-id)))
+                               #(cond-> (assoc % :state state
+                                                 :acl (update acl :edit-acl conj id))
+                                        subs-id (assoc :subscription-id subs-id)
+                                        no-api-keys? (assoc :api-credentials
+                                                            (utils/generate-api-key-secret
+                                                              id
+                                                              (when data?
+                                                                (auth/current-authentication
+                                                                  request))))))
                              :body)]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))

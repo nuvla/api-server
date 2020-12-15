@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - Deployment parameters - Allow deployment token to update deployment parameters
+  - Deployment - Allow deployment token to update deployment
+  - Deployment - Reduce scope of api keys
   - Nuvlabox - Add infrastrure-services-coe
   - Job - Add new attributes for supporting job execution in pull mode
   - Credential - fix issue mapping creation and update at server startup time
@@ -16,7 +19,7 @@
   - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
   - NuvlaBox - new action for updating the NuvlaBox Engine
   - Nuvlabox - add generation ssh key fix (SixSq/tasklist#1921)
-  - NuvlaBox Status - Add attribute for energy telemetry
+  - NuvlaBox Status - Add attr  ibute for energy telemetry
 
 ## [5.6.0] - 2020-12-07
 

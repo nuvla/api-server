@@ -24,31 +24,25 @@
 
 (defn generate-api-key-secret
   [deployment-id authn-info]
-  (let [request-api-key {:params      {:resource-name credential/resource-type}
-                         :body        {:name        (str "API credential for " deployment-id)
-                                       :description (str "generated API credential for " deployment-id)
-                                       :parent      deployment-id
-                                       :template    {:href (str "credential-template/" cred-api-key/method)}}
-                         :nuvla/authn authn-info}
-        {{:keys [status resource-id secret-key]} :body :as response} (crud/add request-api-key)]
-    (when (= status 201)
+  (let [template {:name        (str "API credential for " deployment-id)
+                  :description (str "generated API credential for " deployment-id)
+                  :parent      deployment-id
+                  :template    {:href (str "credential-template/" cred-api-key/method)}}
+        {{:keys [status
+                 resource-id
+                 secret-key]} :body} (credential/create-credential
+                                       template
+                                       (or authn-info
+                                           {:user-id      deployment-id
+                                            :active-claim deployment-id
+                                            :claims       #{deployment-id
+                                                            "group/nuvla-user"
+                                                            "group/nuvla-anon"}}))]
+    (if (= status 201)
       {:api-key    resource-id
-       :api-secret secret-key})))
-
-
-(defn assoc-api-credentials
-  [deployment-id authn-info]
-  (try
-    (if-let [api-credentials (generate-api-key-secret deployment-id authn-info)]
-      (let [edit-request {:params      (u/id->request-params deployment-id)
-                          :body        {:api-credentials api-credentials}
-                          :nuvla/authn authn-info}
-            {:keys [status] :as response} (crud/edit edit-request)]
-        (when (not= status 200)
-          (log/error "could not add api key/secret to" deployment-id response)))
-      (log/error "could not create api key/secret for" deployment-id))
-    (catch Exception e
-      (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))
+       :api-secret secret-key}
+      (throw (r/ex-response (format "exception when creating api key/secret for "
+                                    deployment-id) 500 deployment-id)))))
 
 
 (defn delete-child-resources

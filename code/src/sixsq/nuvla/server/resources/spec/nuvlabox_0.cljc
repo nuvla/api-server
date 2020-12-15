@@ -232,6 +232,8 @@
       (assoc :name "infrastrure-services-coe"
              :json-schema/display-name "Infrastrure services COE"
              :json-schema/description "list of infrastructure services commissioned on the NuvlaBox"
+             :json-schema/section "meta"
+             :json-schema/server-managed true
              :json-schema/order 34)))
 
 (s/def ::schema
@@ -260,5 +262,6 @@
                                ::monitored
                                ::vpn-server-id
                                ::internal-data-gateway-endpoint
-                               ::ssh-keys]}))
+                               ::ssh-keys
+                               ::infrastrure-services-coe]}))
 

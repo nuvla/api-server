@@ -38,8 +38,10 @@ configuration option.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
-  (a/add-acl resource request))
+  [{:keys [id] :as resource} request]
+  (-> resource
+      (update-in [:acl :edit-acl] (conj id))
+      (a/add-acl request)))
 
 
 (def validate-fn (u/create-spec-validation-fn ::deployment-parameter/deployment-parameter))
