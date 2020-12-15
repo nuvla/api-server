@@ -296,15 +296,17 @@ a container orchestration engine.
           new-deployment (-> deployment
                              (edit-deployment
                                request
-                               #(cond-> (assoc % :state state
-                                                 :acl (update acl :edit-acl conj id))
-                                        subs-id (assoc :subscription-id subs-id)
-                                        no-api-keys? (assoc :api-credentials
-                                                            (utils/generate-api-key-secret
-                                                              id
-                                                              (when data?
-                                                                (auth/current-authentication
-                                                                  request))))))
+                               (fn [deployment]
+                                 (cond-> (assoc deployment
+                                           :state state
+                                           :acl (update acl :edit-acl #(conj (or % []) id)))
+                                         subs-id (assoc :subscription-id subs-id)
+                                         no-api-keys? (assoc :api-credentials
+                                                             (utils/generate-api-key-secret
+                                                               id
+                                                               (when data?
+                                                                 (auth/current-authentication
+                                                                   request)))))))
                              :body)]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))

@@ -40,7 +40,7 @@ configuration option.
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} request]
   (-> resource
-      (update-in [:acl :edit-acl] (conj id))
+      (update-in [:acl :edit-acl] #(conj (or % []) id))
       (a/add-acl request)))
 
 
