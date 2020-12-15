@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Nuvlabox - Add infrastrure-services-coe
   - Job - Add new attributes for supporting job execution in pull mode
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec

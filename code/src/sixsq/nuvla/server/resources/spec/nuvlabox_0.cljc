@@ -225,6 +225,15 @@
              :json-schema/order 33)))
 
 
+(s/def ::infrastrure-service (s/and string? #(re-matches infra-srvc-id-regex %)))
+
+(s/def ::infrastrure-services-coe
+  (-> (st/spec (s/coll-of ::infrastrure-service :kind vector?))
+      (assoc :name "infrastrure-services-coe"
+             :json-schema/display-name "Infrastrure services COE"
+             :json-schema/description "list of infrastructure services commissioned on the NuvlaBox"
+             :json-schema/order 34)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes

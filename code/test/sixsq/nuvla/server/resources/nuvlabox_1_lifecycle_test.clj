@@ -462,6 +462,12 @@
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
+            (-> session
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value count :infrastrure-services-coe 2))
+
             ;; check the services again
             (let [services (-> session-owner
                                (content-type "application/x-www-form-urlencoded")
