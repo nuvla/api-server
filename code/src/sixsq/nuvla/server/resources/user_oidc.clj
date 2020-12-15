@@ -5,7 +5,7 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.spec.user-template-oidc :as ut-oidc]
-    [sixsq.nuvla.server.resources.user :as p]
+    [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-oidc :as user-template]))
 
 

@@ -7,7 +7,6 @@ certificate authority's public certificate, 'ca', should also be provided.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as tpl]
@@ -25,7 +24,6 @@ certificate authority's public certificate, 'ca', should also be provided.
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::service-coe/schema)
   (md/register resource-metadata))
 
 

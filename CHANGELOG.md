@@ -8,6 +8,16 @@
   
 ### Changed
 
+  - Credential - fix issue mapping creation and update at server startup time
+  - Nuvlabox status - fix spec 
+
+## [5.7.0] - 2020-12-10
+
+### Changed
+
+  - NuvlaBox Status - new attributes for NuvlaBox Engine installation parameters
+  - NuvlaBox - new action for updating the NuvlaBox Engine
+  - Nuvlabox - add generation ssh key fix (SixSq/tasklist#1921)
   - NuvlaBox Status - Add attribute for energy telemetry
 
 ## [5.6.0] - 2020-12-07
