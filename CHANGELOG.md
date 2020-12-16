@@ -2,16 +2,22 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
   - Job - do not allow edit of target-resource and action
   - Deployment parameters - Allow deployment token to update deployment parameters
   - Deployment - Allow deployment token to update deployment
   - Deployment - Reduce scope of api keys
   - Nuvlabox - Add infrastrure-services-coe
-  - Job - Add new attributes for supporting job execution in pull mode
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec
+  - Job - Add new attributes for supporting job execution in pull mode
+  
+### Changed
+
+  - Credential - fix issue mapping creation and update at server startup time
+  - Nuvlabox status - fix spec 
+  - Credential - status can now also be UNKNOWN
 
 ## [5.7.0] - 2020-12-10
 
