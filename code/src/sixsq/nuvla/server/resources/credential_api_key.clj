@@ -50,7 +50,6 @@ from the response! The secret cannot be recovered from the server later.**
   (:require
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template-api-key :as tpl]
@@ -120,5 +119,4 @@ from the response! The secret cannot be recovered from the server later.**
 
 (defn initialize
   []
-  (std-crud/initialize p/resource-type ::api-key/schema)
   (md/register resource-metadata))
