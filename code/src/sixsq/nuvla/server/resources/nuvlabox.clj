@@ -145,7 +145,7 @@ particular NuvlaBox release.
 (defn edit-subresources
   [resource]
   (let [{:keys [id name acl nuvlabox-status
-                infrastructure-service-group credential-api-key]
+                infrastructure-service-group credential-api-key capabilities]
          :as   nuvlabox} (acl-utils/normalize-acl-for-resource resource)]
 
     (when nuvlabox-status
@@ -155,12 +155,12 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "swarm")]
+      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "swarm")]
         (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
 
-      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "kubernetes")]
+      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "kubernetes")]
         (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
       (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
@@ -176,13 +176,14 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags ssh-keys] :as body}]
+   {:keys [acl name description location tags ssh-keys capabilities] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
           tags (assoc :tags tags)
           ssh-keys (assoc :ssh-keys ssh-keys)
+          capabilities  (assoc :capabilities capabilities)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
@@ -294,13 +295,15 @@ particular NuvlaBox release.
     (let [id (str resource-type "/" uuid)]
       (try
         (let [nuvlabox (db/retrieve id request)
-              tags     (some-> body :tags set)]
+              tags     (some-> body :tags set)
+              capabilities     (some-> body :capabilities set)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
 
           (db/edit (cond-> (assoc nuvlabox :state state-commissioned)
-                           tags (assoc :tags tags)) request)
+                           tags (assoc :tags tags)
+                           capabilities (assoc :capabilities capabilities)) request)
 
           (r/map-response "commission executed successfully" 200))
         (catch Exception e

@@ -5,6 +5,7 @@
 ### Added
 
   - Job - Add new attributes for supporting job execution in pull mode
+  - NuvlaBox and Infrastructure Service - Add new capabilities attribute
   
 ### Changed
 

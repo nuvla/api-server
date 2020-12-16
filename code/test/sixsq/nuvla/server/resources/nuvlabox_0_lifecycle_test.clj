@@ -621,7 +621,9 @@
                                                 :kubernetes-client-key    "key"
                                                 :kubernetes-client-cert   "cert"
                                                 :kubernetes-client-ca     "ca"
-                                                :kubernetes-endpoint      "https://k8s.example.com"}))
+                                                :kubernetes-endpoint      "https://k8s.example.com"
+                                                :tags                ["label1", "label2"]
+                                                :capabilities        ["NUVLA_JOB_PULL"]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
