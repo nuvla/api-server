@@ -77,7 +77,7 @@ request.
 
 (defn add-impl [{{:keys [priority execution-mode version]
                   :or {priority 999 execution-mode "push"
-                       version latest-version} :as body} :body :as request}]
+                       version  latest-version} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [id       (u/new-resource-id resource-type)
         new-job  (-> body
@@ -122,7 +122,10 @@ request.
                                        (set)
                                        (u/strip-select-from-mandatory-attrs))
           current-without-selected (apply dissoc current dissoc-keys)
-          merged                   (merge current-without-selected body)]
+          merged                   (merge current-without-selected
+                                          (dissoc body
+                                                  :target-resource
+                                                  :action))]
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)

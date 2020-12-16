@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Job - do not allow edit of target-resource and action
   - Deployment parameters - Allow deployment token to update deployment parameters
   - Deployment - Allow deployment token to update deployment
   - Deployment - Reduce scope of api keys
