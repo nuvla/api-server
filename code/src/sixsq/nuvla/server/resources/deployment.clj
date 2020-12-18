@@ -114,19 +114,6 @@ a container orchestration engine.
 ;;
 
 
-(defn create-subscription
-  [active-claim {:keys [account-id price-id] :as price} coupon]
-  (stripe/create-subscription
-    {"customer"                (some-> active-claim
-                                       customer/active-claim->customer
-                                       :customer-id)
-     "items"                   [{"price" price-id}]
-     "application_fee_percent" 20
-     "trial_period_days"       1
-     "coupon"                  coupon
-     "transfer_data"           {"destination" account-id}}))
-
-
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
@@ -185,7 +172,8 @@ a container orchestration engine.
         infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
     (edit-impl
       (cond-> request
-              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id)
+              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id
+                               :nuvlabox)
               (and is-user? module) (update-in [:body :module] merge fixed-attr)
               is-user? (update-in [:cimi-params :select] disj
                                   "owner" "infrastructure-service" "module/price"
@@ -276,22 +264,39 @@ a container orchestration engine.
           price          (get-in deployment [:module :price])
           coupon         (:coupon deployment)
           acl            (:acl deployment)
-          execution-mode (:execution-mode deployment)
           data?          (some? (:data deployment))
           no-api-keys?   (nil? (:api-credentials deployment))
+          nb-id          (some-> deployment :infrastructure-service utils/infra-id->nb-id)
+          nuvlabox       (some-> nb-id crud/retrieve-by-id-as-admin)
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
-                                   (create-subscription price coupon)
+                                   (utils/create-subscription price coupon)
                                    (stripe/get-id)))
+          new-acl        (cond-> (update acl :edit-data (comp vec set conj) id)
+
+                                 (and (some? (:nuvlabox deployment))
+                                      (not= nb-id (:nuvlabox deployment)))
+                                 #(->> %
+                                       (map (fn [[_ v]]
+                                              (vec
+                                                (remove
+                                                  #{(:nuvlabox deployment)}
+                                                  v))))
+                                       (into {}))
+
+
+                                 nb-id (update :edit-acl (comp vec set conj) nb-id))
+          ;TODO choose from where to take execution-mode (:execution-mode deployment). mixte?
+          execution-mode (if ((-> nuvlabox :capabilities set) "NUVLA_JOB_PULL") "pull" "push")
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (edit-deployment
                                request
                                (fn [deployment]
-                                 (cond-> (assoc deployment
-                                           :state state
-                                           :acl (update acl :edit-data #(conj (or % []) id)))
+                                 (cond-> (assoc deployment :state state
+                                                           :acl new-acl)
                                          subs-id (assoc :subscription-id subs-id)
+                                         nb-id (assoc :nuvlabox nb-id)
                                          no-api-keys? (assoc :api-credentials
                                                              (utils/generate-api-key-secret
                                                                id
@@ -319,7 +324,7 @@ a container orchestration engine.
                              (utils/create-job request "stop_deployment" execution-mode))]
       (when config-nuvla/*stripe-api-key*
         (some-> deployment
-                :subscription-idsubs-id
+                :subscription-id
                 stripe/retrieve-subscription
                 (stripe/cancel-subscription {"invoice_now" true})))
       response)
@@ -378,7 +383,7 @@ a container orchestration engine.
           coupon          (:coupon current)
           new-subs-id     (when (and config-nuvla/*stripe-api-key* price)
                             (some-> (auth/current-active-claim request)
-                                    (create-subscription price coupon)
+                                    (utils/create-subscription price coupon)
                                     (stripe/get-id)))
           new             (-> current
                               (edit-deployment

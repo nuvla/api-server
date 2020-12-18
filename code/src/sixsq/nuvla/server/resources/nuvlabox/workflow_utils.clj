@@ -156,7 +156,7 @@
 
 
 (defn create-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
@@ -171,7 +171,8 @@
                                                 {:href     "infrastructure-service-template/generic"
                                                  :endpoint endpoint
                                                  :subtype  subtype}
-                                                tags (assoc :tags tags))}
+                                                tags (assoc :tags tags)
+                                                capabilities (assoc :capabilities capabilities))}
                    :nuvla/authn auth/internal-identity}
           {{:keys [resource-id]} :body status :status} (crud/add request)]
 
@@ -187,7 +188,7 @@
 
 
 (defn update-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
   (when-let [resource-id (get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:uuid          (u/id->uuid resource-id)
@@ -202,7 +203,8 @@
                                                        nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   tags (assoc :tags tags)
-                                  endpoint (assoc :endpoint endpoint))
+                                  endpoint (assoc :endpoint endpoint)
+                                  capabilities (assoc :capabilities capabilities))
                    :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
 
@@ -526,6 +528,7 @@
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
    {{:keys [tags
+            capabilities
             swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -537,13 +540,15 @@
 
   (when-let [isg-id infrastructure-service-group]
     (let [swarm-id      (or
-                          (update-coe-service id name acl isg-id swarm-endpoint tags "swarm")
-                          (create-coe-service id name acl isg-id swarm-endpoint tags "swarm"))
+                          (update-coe-service id name acl isg-id swarm-endpoint
+                                              tags capabilities "swarm")
+                          (create-coe-service id name acl isg-id swarm-endpoint
+                                              tags capabilities "swarm"))
           kubernetes-id (or
-                          (update-coe-service id name acl isg-id
-                                              kubernetes-endpoint tags "kubernetes")
-                          (create-coe-service id name acl isg-id
-                                              kubernetes-endpoint tags "kubernetes"))
+                          (update-coe-service id name acl isg-id kubernetes-endpoint
+                                              tags capabilities "kubernetes")
+                          (create-coe-service id name acl isg-id kubernetes-endpoint
+                                              tags capabilities "kubernetes"))
           minio-id      (or
                           (update-minio-service id name acl isg-id minio-endpoint)
                           (create-minio-service id name acl isg-id minio-endpoint))]

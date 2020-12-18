@@ -117,13 +117,15 @@
 
 
 (defn create-job
-  [{:keys [id] :as resource} request action execution-mode]
+  [{:keys [id nuvlabox] :as resource} request action execution-mode]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job id action
                                                      {:owners   ["group/nuvla-admin"]
-                                                      :edit-acl [active-claim]}
+                                                      :edit-acl (->> [active-claim nuvlabox]
+                                                                     (remove nil?)
+                                                                     (into []))}
                                                      :priority 50
                                                      :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
@@ -226,3 +228,28 @@
 (defn remove-delete
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
+
+
+(defn create-subscription
+  [active-claim {:keys [account-id price-id] :as price} coupon]
+  (stripe/create-subscription
+    {"customer"                (some-> active-claim
+                                       customer/active-claim->customer
+                                       :customer-id)
+     "items"                   [{"price" price-id}]
+     "application_fee_percent" 20
+     "trial_period_days"       1
+     "coupon"                  coupon
+     "transfer_data"           {"destination" account-id}}))
+
+
+(defn infra-id->nb-id
+  [infra-id]
+  (try
+    (let [parent-infra-group (some-> infra-id
+                                     crud/retrieve-by-id-as-admin
+                                     :parent
+                                     crud/retrieve-by-id-as-admin
+                                     :parent)]
+      (when (str/starts-with? parent-infra-group "nuvlabox/") parent-infra-group))
+    (catch Exception _)))

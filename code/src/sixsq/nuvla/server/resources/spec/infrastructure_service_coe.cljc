@@ -106,7 +106,8 @@
             ::infra-tmpl-gen/state]
    :opt-un [::infra-tmpl-gen/endpoint
             ::infra-tmpl-gen/swarm-enabled
-            ::infra-tmpl-gen/online]})
+            ::infra-tmpl-gen/online
+            ::infra-tmpl-gen/capabilities]})
 
 (s/def ::schema
   (su/only-keys-maps

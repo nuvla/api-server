@@ -29,7 +29,8 @@
                      :management-credential "infrastructure-service/1-2-3-4-5"
                      :state                 "STARTED"
                      :swarm-enabled         true
-                     :online                true}]
+                     :online                true
+                     :capabilities          ["SYS_ADMIN"]}]
 
       (stu/is-valid ::infrastructure-service-coe/schema service)
 
@@ -38,5 +39,5 @@
         (stu/is-invalid ::infrastructure-service-coe/schema (dissoc service k)))
 
       ;;optional keywords
-      (doseq [k #{:endpoint :swarm-enabled :online :management-credential :managed :nodes}]
+      (doseq [k #{:endpoint :swarm-enabled :online :management-credential :managed :nodes :capabilities}]
         (stu/is-valid ::infrastructure-service-coe/schema (dissoc service k))))))

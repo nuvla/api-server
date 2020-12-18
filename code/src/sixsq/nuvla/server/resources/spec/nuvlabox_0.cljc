@@ -225,6 +225,13 @@
              :json-schema/order 33)))
 
 
+(s/def ::capabilities
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "capabilities"
+           :json-schema/display-name "NuvlaBox capabilities"
+           :json-schema/description "list of NuvlaBox capabilities"
+           :json-schema/order 34)))
+
 (s/def ::infrastrure-service (s/and string? #(re-matches infra-srvc-id-regex %)))
 
 (s/def ::infrastrure-services-coe
@@ -234,7 +241,8 @@
              :json-schema/description "list of infrastructure services commissioned on the NuvlaBox"
              :json-schema/section "meta"
              :json-schema/server-managed true
-             :json-schema/order 34)))
+             :json-schema/order 35)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -263,5 +271,5 @@
                                ::vpn-server-id
                                ::internal-data-gateway-endpoint
                                ::ssh-keys
+                               ::capabilities
                                ::infrastrure-services-coe]}))
-

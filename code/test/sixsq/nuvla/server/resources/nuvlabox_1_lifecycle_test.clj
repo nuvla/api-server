@@ -75,7 +75,8 @@
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"
-                     :ssh-keys         ["credential/aaa-bbb-ccc"]})
+                     :ssh-keys         ["credential/aaa-bbb-ccc"]
+                     :capabilities     ["RANDOM"]})
 
 
 (deftest check-metadata
@@ -381,7 +382,8 @@
                                                 :tags                tags
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"}))
+                                                :minio-endpoint      "https://minio.example.com"
+                                                :capabilities        ["NUVLA_JOB_PULL"]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -494,7 +496,8 @@
                                                 :swarm-endpoint      "https://swarm.example.com"
                                                 :minio-access-key    "access"
                                                 :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"}))
+                                                :minio-endpoint      "https://minio.example.com"
+                                                :capabilities        []}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 

@@ -12,6 +12,7 @@
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec
   - Job - Add new attributes for supporting job execution in pull mode
+  - NuvlaBox and Infrastructure Service - Add new capabilities attribute
   
 ### Changed
 

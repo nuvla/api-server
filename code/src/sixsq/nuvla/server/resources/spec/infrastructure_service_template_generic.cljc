@@ -65,6 +65,16 @@ services that are managed separately.
              :json-schema/order 26
              :json-schema/hidden true)))
 
+
+(s/def ::capabilities
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "capabilities"
+           :json-schema/display-name "capabilities"
+           :json-schema/description "capabilities of the infrastructure service"
+
+           :json-schema/order 27)))
+
+
 (s/def ::parent
   (-> (st/spec ::common/parent)
       (assoc :json-schema/type "string")))
@@ -75,14 +85,16 @@ services that are managed separately.
             ::endpoint]
    :opt-un [::state
             ::swarm-enabled
-            ::online]})
+            ::online
+            ::capabilities]})
 
 
 (def service-template-keys-spec
   {:req-un [::endpoint]
    :opt-un [::state
             ::swarm-enabled
-            ::online]})
+            ::online
+            ::capabilities]})
 
 
 ;; Defines the contents of the this service-template resource.

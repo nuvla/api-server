@@ -234,6 +234,16 @@
                                            :json-schema/server-managed true)))
 
 
+(s/def ::nuvlabox (-> (st/spec ::common/id)
+                      (assoc :name "nuvlabox"
+                             :json-schema/type "resource-id"
+                             :json-schema/description "reference to parent nuvlabox"
+
+                             :json-schema/section "meta"
+                             :json-schema/editable false
+                             :json-schema/server-managed true)))
+
+
 (def ^:const subscription-id-regex #"^sub_.+$")
 
 (defn subscription-id? [s] (re-matches subscription-id-regex s))
@@ -275,6 +285,7 @@
                                   ::registries-credentials
                                   ::owner
                                   ::infrastructure-service
+                                  ::nuvlabox
                                   ::subscription-id
                                   ::coupon
                                   ::execution-mode]}]))
