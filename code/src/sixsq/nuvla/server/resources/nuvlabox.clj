@@ -291,20 +291,6 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "commission"]
   [{{uuid :uuid} :params body :body :as request}]
-<<<<<<< HEAD
-  (let [id (str resource-type "/" uuid)]
-    (try
-      (let [tags (some-> body :tags set)]
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            (commission request)
-            (assoc :state state-commissioned)
-            (cond-> tags (assoc :tags tags))
-            (db/edit request))
-        (r/map-response "commission executed successfully" 200))
-      (catch Exception e
-        (or (ex-data e) (throw e))))))
-=======
   (try
     (let [id (str resource-type "/" uuid)]
       (try
@@ -322,7 +308,6 @@ particular NuvlaBox release.
           (r/map-response "commission executed successfully" 200))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
->>>>>>> pull-mode
 
 
 ;;
