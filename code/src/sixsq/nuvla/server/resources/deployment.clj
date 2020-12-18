@@ -6,7 +6,6 @@ a container orchestration engine.
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -135,7 +134,7 @@ a container orchestration engine.
   (a/throw-cannot-add collection-acl request)
   (customer/throw-user-hasnt-active-subscription request)
   (let [authn-info      (auth/current-authentication request)
-        is-admin?       (acl-resource/is-admin? authn-info)
+        is-admin?       (a/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
                                       (auth/current-active-claim request))
         deployment      (-> request
@@ -178,7 +177,7 @@ a container orchestration engine.
   (let [authn-info (auth/current-authentication request)
         current    (db/retrieve (str resource-type "/" uuid) request)
         fixed-attr (select-keys (:module current) [:href :price :license])
-        is-user?   (not (acl-resource/is-admin? authn-info))
+        is-user?   (not (a/is-admin? authn-info))
         new-acl    (when (and is-user? acl)
                      (if-let [current-owner (:owner current)]
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
