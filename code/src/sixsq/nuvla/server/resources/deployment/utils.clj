@@ -146,7 +146,7 @@
 
 (defn can-stop?
   [{:keys [state] :as resource}]
-  (contains? #{"STARTING" "UPDATING" "STARTED" "ERROR"} state))
+  (contains? #{"PENDING" "STARTING" "UPDATING" "STARTED" "ERROR"} state))
 
 
 (defn can-update?

@@ -174,7 +174,7 @@ a container orchestration engine.
 
 
 (defmethod crud/edit resource-type
-  [{{:keys [acl parent state module]} :body {uuid :uuid} :params :as request}]
+  [{{:keys [acl parent module]} :body {uuid :uuid} :params :as request}]
   (let [authn-info (auth/current-authentication request)
         current    (db/retrieve (str resource-type "/" uuid) request)
         fixed-attr (select-keys (:module current) [:href :price :license])
@@ -183,24 +183,16 @@ a container orchestration engine.
                      (if-let [current-owner (:owner current)]
                        (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
                        acl))
-        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)
-        stopped?   (and
-                     (= (:state current) "STOPPING")
-                     (= state "STOPPED"))
-        subs-id    (when (and config-nuvla/*stripe-api-key* stopped?)
-                     (:subscription-id current))
-        response   (edit-impl
-                     (cond-> request
-                             is-user? (update :body dissoc :owner :infrastructure-service
-                                              :subscription-id :state)
-                             (and is-user? module) (update-in [:body :module] merge fixed-attr)
-                             is-user? (update-in [:cimi-params :select] disj
-                                                 "owner" "infrastructure-service" "module/price"
-                                                 "module/license" "subscription-id")
-                             new-acl (assoc-in [:body :acl] new-acl)
-                             infra-id (assoc-in [:body :infrastructure-service] infra-id)))]
-    (some-> subs-id stripe/retrieve-subscription (stripe/cancel-subscription {"invoice_now" true}))
-    response))
+        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
+    (edit-impl
+      (cond-> request
+              is-user? (update :body dissoc :owner :infrastructure-service :subscription-id)
+              (and is-user? module) (update-in [:body :module] merge fixed-attr)
+              is-user? (update-in [:cimi-params :select] disj
+                                  "owner" "infrastructure-service" "module/price"
+                                  "module/license" "subscription-id")
+              new-acl (assoc-in [:body :acl] new-acl)
+              infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
 
 
 (defn delete-impl
@@ -299,7 +291,7 @@ a container orchestration engine.
                                (fn [deployment]
                                  (cond-> (assoc deployment
                                            :state state
-                                           :acl (update acl :edit-acl #(conj (or % []) id)))
+                                           :acl (update acl :edit-data #(conj (or % []) id)))
                                          subs-id (assoc :subscription-id subs-id)
                                          no-api-keys? (assoc :api-credentials
                                                              (utils/generate-api-key-secret
@@ -321,11 +313,17 @@ a container orchestration engine.
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
                              (utils/throw-can-not-do-action utils/can-stop? "stop"))
-          execution-mode (:execution-mode deployment)]
-      (-> deployment
-          (edit-deployment request #(assoc % :state "STOPPING"))
-          :body
-          (utils/create-job request "stop_deployment" execution-mode)))
+          execution-mode (:execution-mode deployment)
+          response       (-> deployment
+                             (edit-deployment request #(assoc % :state "STOPPING"))
+                             :body
+                             (utils/create-job request "stop_deployment" execution-mode))]
+      (when config-nuvla/*stripe-api-key*
+        (some-> deployment
+                :subscription-idsubs-id
+                stripe/retrieve-subscription
+                (stripe/cancel-subscription {"invoice_now" true})))
+      response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
