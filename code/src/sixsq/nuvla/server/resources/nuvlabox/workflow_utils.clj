@@ -584,10 +584,7 @@
               authn-info   (auth/current-authentication request)]
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
-          (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
-      (let [infra-coe (remove nil? [swarm-id kubernetes-id])]
-        (cond-> resource
-                (seq infra-coe) (assoc :infrastrure-services-coe infra-coe))))))
+          (create-vpn-cred id name vpn-server-id vpn-csr authn-info))))))
 
 
 (defn get-nuvlabox-peripherals-ids
