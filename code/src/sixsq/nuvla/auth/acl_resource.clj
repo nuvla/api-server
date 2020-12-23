@@ -61,6 +61,7 @@
   [{:keys [claims] :as authn-info}]
   (contains? (set claims) "group/nuvla-admin"))
 
+
 (defn extract-right
   "Given the identity map, this extracts the associated right.
   If the right does not apply, then nil is returned."

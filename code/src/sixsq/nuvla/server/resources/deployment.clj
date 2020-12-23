@@ -246,12 +246,12 @@ a container orchestration engine.
 
 
 (defn edit-deployment
-  [resource request edit-fn]
+  [resource request]
   (-> resource
-      (edit-fn)
       (u/update-timestamps)
       (u/set-updated-by request)
-      (db/edit request)))
+      (db/edit request)
+      :body))
 
 
 (defmethod crud/do-action [resource-type "start"]
@@ -291,20 +291,16 @@ a container orchestration engine.
           execution-mode (if ((-> nuvlabox :capabilities set) "NUVLA_JOB_PULL") "pull" "push")
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
-                             (edit-deployment
-                               request
-                               (fn [deployment]
-                                 (cond-> (assoc deployment :state state
-                                                           :acl new-acl)
-                                         subs-id (assoc :subscription-id subs-id)
-                                         nb-id (assoc :nuvlabox nb-id)
-                                         no-api-keys? (assoc :api-credentials
-                                                             (utils/generate-api-key-secret
-                                                               id
-                                                               (when data?
-                                                                 (auth/current-authentication
-                                                                   request)))))))
-                             :body)]
+                             (assoc :state state :acl new-acl)
+                             (cond-> subs-id (assoc :subscription-id subs-id)
+                                     nb-id (assoc :nuvlabox nb-id)
+                                     no-api-keys? (assoc :api-credentials
+                                                         (utils/generate-api-key-secret
+                                                           id
+                                                           (when data?
+                                                             (auth/current-authentication
+                                                               request)))))
+                             (edit-deployment request))]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))
       (utils/create-job new-deployment request "start_deployment" execution-mode))
@@ -320,8 +316,8 @@ a container orchestration engine.
                              (utils/throw-can-not-do-action utils/can-stop? "stop"))
           execution-mode (:execution-mode deployment)
           response       (-> deployment
-                             (edit-deployment request #(assoc % :state "STOPPING"))
-                             :body
+                             (assoc :state "STOPPING")
+                             (edit-deployment request)
                              (utils/create-job request "stop_deployment" execution-mode))]
       (when config-nuvla/*stripe-api-key*
         (some-> deployment
@@ -387,15 +383,13 @@ a container orchestration engine.
                                     (utils/create-subscription price coupon)
                                     (stripe/get-id)))
           new             (-> current
-                              (edit-deployment
-                                request
-                                #(cond-> (assoc % :state "UPDATING")
-                                         name (assoc-in [:module :name] name)
-                                         description (assoc-in [:module :description] description)
-                                         price (assoc-in [:module :price] price)
-                                         license (assoc-in [:module :license] license)
-                                         new-subs-id (assoc :subscription-id new-subs-id)))
-                              :body)]
+                              (assoc :state "UPDATING")
+                              (cond-> name (assoc-in [:module :name] name)
+                                      description (assoc-in [:module :description] description)
+                                      price (assoc-in [:module :price] price)
+                                      license (assoc-in [:module :license] license)
+                                      new-subs-id (assoc :subscription-id new-subs-id))
+                              (edit-deployment request))]
       (some-> current-subs-id stripe/retrieve-subscription
               (stripe/cancel-subscription {"invoice_now" true}))
       (utils/create-job new request "update_deployment" (:execution-mode new)))

@@ -174,7 +174,7 @@ request.
   (let [stop-op        (u/action-map id :stop)
         get-context-op (u/action-map id :get-context)]
     (cond-> (crud/set-standard-operations resource request)
-            (a/can-edit? resource request) (update :operations conj stop-op)
+            (a/can-manage? resource request) (update :operations conj stop-op)
             (ju/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
@@ -183,11 +183,11 @@ request.
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (a/throw-cannot-edit request)
+        (a/throw-cannot-manage request)
         (ju/stop)
         (u/update-timestamps)
         (u/set-updated-by request)
-        (db/edit request))
+        (db/edit {:nuvla/authn auth/internal-identity}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

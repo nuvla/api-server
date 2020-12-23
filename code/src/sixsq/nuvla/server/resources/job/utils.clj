@@ -85,10 +85,11 @@
 
 
 (defn can-get-context?
-  [{:keys [target-resource] :as resource} request]
-  (let [{:keys [claims] :as authn-info} (auth/current-authentication request)]
+  [resource request]
+  (let [authn-info   (auth/current-authentication request)
+        active-claim (auth/current-active-claim request)]
     (or (and (a/can-manage? resource request)
-             (contains? (set claims) target-resource))
+             (str/starts-with? active-claim "nuvlabox/"))
         (a/is-admin? authn-info))))
 
 

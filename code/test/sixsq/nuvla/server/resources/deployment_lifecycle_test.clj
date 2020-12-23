@@ -163,9 +163,7 @@
 
               start-url           (ltu/get-op-url deployment-response "start")
 
-              check-dct-url       (ltu/get-op-url deployment-response "check-dct")
-
-              deployment          (ltu/body deployment-response)]
+              check-dct-url       (ltu/get-op-url deployment-response "check-dct")]
 
           ;; user can't change deployment owner
           (-> session-user
