@@ -186,12 +186,19 @@
                             (ltu/is-status 202)
                             (ltu/location-url))]
             (-> session-user
-                (request job-url
-                         :request-method :get)
+                (request job-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
                 (ltu/is-key-value :state "QUEUED")
-                (ltu/is-key-value :action "start_deployment")))
+                (ltu/is-key-value :action "start_deployment")
+                (ltu/is-operation-absent :get-context))
+
+
+            (-> session-admin
+                (request job-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :get-context)))
 
           (let [deployment (-> session-user
                                (request deployment-url

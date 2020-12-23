@@ -1,6 +1,11 @@
 (ns sixsq.nuvla.server.resources.job.utils
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.util.response :as ru]
+    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
@@ -60,9 +65,11 @@
           status-message update-time-of-status-change
           (not progress) (assoc :progress 0)
           (and target-resource
-               (not-any? #(= target-resource %) affected-resources)) (assoc :affected-resources
-                                                                      (conj affected-resources
-                                                                            target-resource))))
+               (not-any?
+                 #(= target-resource %)
+                 affected-resources)) (assoc :affected-resources
+                                             (conj affected-resources
+                                                   target-resource))))
 
 
 (defn job-cond->edition
@@ -75,3 +82,32 @@
             job-in-final-state? (assoc :progress 100)
             (and job-in-final-state?
                  started) (assoc :duration (time/time-between-date-now started :seconds)))))
+
+
+(defn can-get-context?
+  [{:keys [target-resource] :as resource} request]
+  (let [{:keys [claims] :as authn-info} (auth/current-authentication request)]
+    (or (and (a/can-manage? resource request)
+             (contains? (set claims) target-resource))
+        (a/is-admin? authn-info))))
+
+
+(defn throw-cannot-get-context
+  [resource request]
+  (if (can-get-context? resource request)
+    resource
+    (throw (ru/ex-unauthorized (:id resource)))))
+
+
+(defn get-context->response
+  [& resources]
+  (->> resources
+       (remove nil?)
+       (mapcat #(if (map? %) (vector %) %))
+       (map #(vector (:id %) (dissoc % :operations :acl)))
+       (into {})
+       r/json-response))
+
+
+(defmulti get-context (fn [{:keys [target-resource action] :as resource}]
+                        [(some-> target-resource :href (str/split #"/") first) action]))

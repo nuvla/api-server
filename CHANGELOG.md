@@ -16,6 +16,7 @@
   
 ### Changed
 
+  - Job - get-context support for deployment start
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec 
   - Credential - status can now also be UNKNOWN

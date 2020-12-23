@@ -16,6 +16,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
@@ -420,6 +421,22 @@ a container orchestration engine.
           {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+(defmethod job-utils/get-context ["deployment" "start_deployment"]
+  [{:keys [target-resource] :as resource}]
+  (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
+        credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
+        infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
+        registries-creds (some->> deployment :registries-credentials
+                                  (map crud/retrieve-by-id-as-admin))
+        registries-infra (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds)]
+    (job-utils/get-context->response
+      deployment
+      credential
+      infra
+      registries-creds
+      registries-infra)))
 
 
 ;;

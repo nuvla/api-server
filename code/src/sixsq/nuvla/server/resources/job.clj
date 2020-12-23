@@ -171,9 +171,11 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [stop-op (u/action-map id :stop)]
+  (let [stop-op        (u/action-map id :stop)
+        get-context-op (u/action-map id :get-context)]
     (cond-> (crud/set-standard-operations resource request)
-            (a/can-manage? resource request) (update-in [:operations] conj stop-op))))
+            (a/can-edit? resource request) (update :operations conj stop-op)
+            (ju/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]
@@ -186,6 +188,17 @@ request.
         (u/update-timestamps)
         (u/set-updated-by request)
         (db/edit request))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "get-context"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (db/retrieve request)
+        (ju/throw-cannot-get-context request)
+        (ju/get-context))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
