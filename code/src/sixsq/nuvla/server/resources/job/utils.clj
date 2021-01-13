@@ -112,3 +112,8 @@
 
 (defmulti get-context (fn [{:keys [target-resource action] :as resource}]
                         [(some-> target-resource :href (str/split #"/") first) action]))
+
+
+(defmethod get-context :default
+  [resource]
+  (get-context->response))
