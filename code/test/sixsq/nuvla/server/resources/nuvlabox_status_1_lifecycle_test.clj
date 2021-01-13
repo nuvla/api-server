@@ -147,17 +147,17 @@
                              (ltu/is-status 201)
                              (ltu/body-resource-id))]
 
-       (let [state-url (str p/service-context state-id)]
+       (let [status-url (str p/service-context state-id)]
 
          ;; other users cannot see the state
          (-> session-user
-             (request state-url)
+             (request status-url)
              (ltu/body->edn)
              (ltu/is-status 403))
 
          ;; nuvlabox user is able to update nuvlabox-status
          (-> session-nb
-             (request state-url
+             (request status-url
                       :request-method :put
                       :body (json/write-str {:resources resources-updated}))
              (ltu/body->edn)
@@ -166,21 +166,21 @@
 
          ;; verify that the update was written to disk
          (-> session-nb
-             (request state-url)
+             (request status-url)
              (ltu/body->edn)
              (ltu/is-status 200)
              (ltu/is-key-value :resources resources-updated))
 
          ;; nuvlabox identity cannot delete the state
          (-> session-nb
-             (request state-url
+             (request status-url
                       :request-method :delete)
              (ltu/body->edn)
              (ltu/is-status 403))
 
          ;; administrator can delete the state
          (-> session-admin
-             (request state-url
+             (request status-url
                       :request-method :delete)
              (ltu/body->edn)
              (ltu/is-status 200))))

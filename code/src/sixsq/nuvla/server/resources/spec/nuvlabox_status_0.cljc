@@ -589,6 +589,21 @@
 
            :json-schema/order 72)))
 
+
+(def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
+
+
+(s/def ::job-id (-> (st/spec (s/and string? #(re-matches job-regex %)))))
+
+
+(s/def ::jobs
+  (-> (st/spec (s/coll-of ::job-id :kind vector?))
+      (assoc :name "jobs"
+             :json-schema/description "List of jobs to be executed by NuvlaBox"
+
+             :json-schema/order 73)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -613,5 +628,6 @@
                                ::docker-plugins
                                ::vulnerabilities
                                ::swarm-node-id
-                               ::installation-parameters]}))
+                               ::installation-parameters
+                               ::jobs]}))
 

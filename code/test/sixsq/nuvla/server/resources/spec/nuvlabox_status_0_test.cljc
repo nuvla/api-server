@@ -27,33 +27,33 @@
             :next-heartbeat          timestamp
             :current-time            timestamp
 
-            :resources               {:cpu       {:capacity 8
-                                                  :load     4.5
-                                                  :topic    "topic/name"}
-                                      :ram       {:capacity   4096
-                                                  :used       1000
-                                                  :raw-sample "{\"one\": 1}"}
-                                      :disks     [{:device     "root"
-                                                   :capacity   20000
-                                                   :topic      "topic/name"
-                                                   :raw-sample "{\"one\": 1}"
-                                                   :used       10000}
-                                                  {:device   "datastore"
-                                                   :capacity 20000
-                                                   :used     10000}]
-                                      :net-stats [{:interface         "eth0"
-                                                   :bytes-received    5247943
-                                                   :bytes-transmitted 41213
-                                                   }
-                                                  {:interface         "vpn"
-                                                   :bytes-received    2213
-                                                   :bytes-transmitted 55}]
-                                      :power-consumption  [{:metric-name "IN_current"
-                                                            :energy-consumption 2.4
-                                                            :unit "A"}
-                                                           {:metric-name "IN_voltage"
-                                                            :energy-consumption 220
-                                                            :unit"V"}]}
+            :resources               {:cpu               {:capacity 8
+                                                          :load     4.5
+                                                          :topic    "topic/name"}
+                                      :ram               {:capacity   4096
+                                                          :used       1000
+                                                          :raw-sample "{\"one\": 1}"}
+                                      :disks             [{:device     "root"
+                                                           :capacity   20000
+                                                           :topic      "topic/name"
+                                                           :raw-sample "{\"one\": 1}"
+                                                           :used       10000}
+                                                          {:device   "datastore"
+                                                           :capacity 20000
+                                                           :used     10000}]
+                                      :net-stats         [{:interface         "eth0"
+                                                           :bytes-received    5247943
+                                                           :bytes-transmitted 41213
+                                                           }
+                                                          {:interface         "vpn"
+                                                           :bytes-received    2213
+                                                           :bytes-transmitted 55}]
+                                      :power-consumption [{:metric-name        "IN_current"
+                                                           :energy-consumption 2.4
+                                                           :unit               "A"}
+                                                          {:metric-name        "IN_voltage"
+                                                           :energy-consumption 220
+                                                           :unit               "V"}]}
 
             :peripherals             {:usb [{:vendor-id   "vendor-id"
                                              :device-id   "device-id"
@@ -78,21 +78,23 @@
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          ["sixsq/img-authz-plugin:arm64"]
-            :vulnerabilities         {:summary {:total 1920
-                                                :affected-products  ["openssh", "go"]
-                                                :average-score  6.1}
-                                      :items  [{:vulnerability-id "CVE-X-Y-Z"
-                                                :vulnerability-description "test threat"
-                                                :product "OpenSSH"
-                                                :vulnerability-reference "url"}
-                                               {:vulnerability-id "CVE-X-Y-Z2"
-                                                :product "Apache"
-                                                :vulnerability-score 5.7}]}
+            :vulnerabilities         {:summary {:total             1920
+                                                :affected-products ["openssh", "go"]
+                                                :average-score     6.1}
+                                      :items   [{:vulnerability-id          "CVE-X-Y-Z"
+                                                 :vulnerability-description "test threat"
+                                                 :product                   "OpenSSH"
+                                                 :vulnerability-reference   "url"}
+                                                {:vulnerability-id    "CVE-X-Y-Z2"
+                                                 :product             "Apache"
+                                                 :vulnerability-score 5.7}]}
             :swarm-node-id           "xyz"
-            :installation-parameters {:config-files   ["docker-compose.yml"]
-                                      :working-dir    "/home/user"
-                                      :project-name   "nuvlabox"
-                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}})
+            :installation-parameters {:config-files ["docker-compose.yml"]
+                                      :working-dir  "/home/user"
+                                      :project-name "nuvlabox"
+                                      :environment  ["NUVLABOX_UUID=xyz", "HOST=myhost"]}
+            :jobs                    ["job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                      "job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0d"]})
 
 
 (deftest check-nuvlabox-status
@@ -106,7 +108,8 @@
     (stu/is-invalid ::nb-status-0/schema (dissoc state attr)))
 
   ;; optional
-  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
-                 :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities
-                 :installation-parameters :swarm-node-id :power-consumption}]
+  (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment
+                 :nuvlabox-api-endpoint :inferred-location :gpio-pins :nuvlabox-engine-version
+                 :docker-plugins :vulnerabilities :installation-parameters :swarm-node-id
+                 :power-consumption :jobs}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))
