@@ -102,7 +102,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                 {:filter (str "execution-mode='pull' and "
                                               "state!='FAILED' and "
                                               "state!='SUCCESS' and state!='STOPPED'")})
-                      :select ["id"]}
+                      :select ["id"]
+                      :orderby [["created" :asc]]}
         :nuvla/authn {:user-id      nb-id
                       :active-claim nb-id
                       :claims       #{"group/nuvla-user" "group/nuvla-anon"}}}

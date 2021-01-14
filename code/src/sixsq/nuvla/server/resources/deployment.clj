@@ -288,7 +288,8 @@ a container orchestration engine.
 
                                  nb-id (update :edit-acl (comp vec set conj) nb-id))
           ;TODO choose from where to take execution-mode (:execution-mode deployment). mixte?
-          execution-mode (if ((-> nuvlabox :capabilities set) "NUVLA_JOB_PULL") "pull" "push")
+          ;execution-mode (if ((-> nuvlabox :capabilities set) "NUVLA_JOB_PULL") "pull" "push")
+          execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state :acl new-acl)
