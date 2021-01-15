@@ -72,27 +72,18 @@
                      :lan-cidr         "10.0.1.0/24"})
 
 
-(def valid-nb-rel {:release "1"
-                   :url "url"
-                   :pre-release false
-                   :release-date "2020-12-03T11:23:18Z"
-                   :compose-files [{:file "file"
-                                    :name "name"
+(def valid-nb-rel {:release       "1"
+                   :url           "url"
+                   :pre-release   false
+                   :release-date  "2020-12-03T11:23:18Z"
+                   :compose-files [{:file  "file"
+                                    :name  "name"
                                     :scope "scope"}]
-                   :acl {
-                         :view-data [
-                                     "group/nuvla-user"
-                                     ],
-                         :view-meta [
-                                     "group/nuvla-user"
-                                     ],
-                         :view-acl [
-                                    "group/nuvla-user"
-                                    ],
-                         :owners [
-                                  "group/nuvla-admin"
-                                  ]
-                         }})
+                   :acl           {:view-data ["group/nuvla-user"]
+                                   :view-meta ["group/nuvla-user"]
+                                   :view-acl  ["group/nuvla-user"]
+                                   :owners    ["group/nuvla-admin"]
+                                   }})
 
 
 (deftest check-metadata
@@ -466,110 +457,110 @@
 
             ;; check custom operations
             ;;
-            (let [check-api      (-> session
-                                     (request nuvlabox-url)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :edit)
-                                     (ltu/is-operation-absent :delete)
-                                     (ltu/is-operation-absent :activate)
-                                     (ltu/is-operation-present :commission)
-                                     (ltu/is-operation-present :decommission)
-                                     (ltu/is-operation-present :check-api)
-                                     (ltu/is-operation-present :reboot)
-                                     (ltu/is-operation-present :add-ssh-key)
-                                     (ltu/is-operation-present :revoke-ssh-key)
-                                     (ltu/is-operation-present :update-nuvlabox)
-                                     (ltu/is-key-value :state "COMMISSIONED")
-                                     (ltu/get-op-url :check-api))
+            (let [check-api        (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-present :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :check-api))
 
-                  reboot         (-> session
-                                     (request nuvlabox-url)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :edit)
-                                     (ltu/is-operation-absent :delete)
-                                     (ltu/is-operation-absent :activate)
-                                     (ltu/is-operation-present :commission)
-                                     (ltu/is-operation-present :decommission)
-                                     (ltu/is-operation-present :check-api)
-                                     (ltu/is-operation-present :reboot)
-                                     (ltu/is-operation-present :add-ssh-key)
-                                     (ltu/is-operation-present :revoke-ssh-key)
-                                     (ltu/is-operation-present :update-nuvlabox)
-                                     (ltu/is-key-value :state "COMMISSIONED")
-                                     (ltu/get-op-url :reboot))
-                  add-ssh-key    (-> session
-                                     (request nuvlabox-url)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :edit)
-                                     (ltu/is-operation-absent :delete)
-                                     (ltu/is-operation-absent :activate)
-                                     (ltu/is-operation-present :commission)
-                                     (ltu/is-operation-present :decommission)
-                                     (ltu/is-operation-present :check-api)
-                                     (ltu/is-operation-present :reboot)
-                                     (ltu/is-operation-present :add-ssh-key)
-                                     (ltu/is-operation-present :revoke-ssh-key)
-                                     (ltu/is-operation-present :update-nuvlabox)
-                                     (ltu/is-key-value :state "COMMISSIONED")
-                                     (ltu/get-op-url :add-ssh-key))
+                  reboot           (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-present :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :reboot))
+                  add-ssh-key      (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-present :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :add-ssh-key))
 
-                  revoke-ssh-key (-> session
-                                     (request nuvlabox-url)
-                                     (ltu/body->edn)
-                                     (ltu/is-status 200)
-                                     (ltu/is-operation-present :edit)
-                                     (ltu/is-operation-absent :delete)
-                                     (ltu/is-operation-absent :activate)
-                                     (ltu/is-operation-present :commission)
-                                     (ltu/is-operation-present :decommission)
-                                     (ltu/is-operation-present :check-api)
-                                     (ltu/is-operation-present :reboot)
-                                     (ltu/is-operation-present :add-ssh-key)
-                                     (ltu/is-operation-present :revoke-ssh-key)
-                                     (ltu/is-operation-present :update-nuvlabox)
-                                     (ltu/is-key-value :state "COMMISSIONED")
-                                     (ltu/get-op-url :revoke-ssh-key))
+                  revoke-ssh-key   (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-present :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :revoke-ssh-key))
 
-                  update-nuvlabox (-> session
-                                    (request nuvlabox-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-present :edit)
-                                    (ltu/is-operation-absent :delete)
-                                    (ltu/is-operation-absent :activate)
-                                    (ltu/is-operation-present :commission)
-                                    (ltu/is-operation-present :decommission)
-                                    (ltu/is-operation-present :check-api)
-                                    (ltu/is-operation-present :reboot)
-                                    (ltu/is-operation-present :add-ssh-key)
-                                    (ltu/is-operation-present :revoke-ssh-key)
-                                    (ltu/is-operation-present :update-nuvlabox)
-                                    (ltu/is-key-value :state "COMMISSIONED")
-                                    (ltu/get-op-url :update-nuvlabox))
+                  update-nuvlabox  (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-present :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :update-nuvlabox))
 
-                  aux-ssh-cred   (-> session
-                                     (request credential-collection-uri
-                                              :request-method :post
-                                              :body (json/write-str
-                                                      {:template
-                                                       {:href "credential-template/generate-ssh-key"}}))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201)
-                                     (ltu/body)
-                                     :resource-id)
+                  aux-ssh-cred     (-> session
+                                       (request credential-collection-uri
+                                                :request-method :post
+                                                :body (json/write-str
+                                                        {:template
+                                                         {:href "credential-template/generate-ssh-key"}}))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/body)
+                                       :resource-id)
 
                   nuvlabox-release (-> session-admin
-                                     (request nuvlabox-release-collection-uri
-                                       :request-method :post
-                                       :body (json/write-str
-                                               valid-nb-rel))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201)
-                                     (ltu/body)
-                                     :resource-id)]
+                                       (request nuvlabox-release-collection-uri
+                                                :request-method :post
+                                                :body (json/write-str
+                                                        valid-nb-rel))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/body)
+                                       :resource-id)]
 
               ;; check-api action
               (-> session
@@ -600,8 +591,8 @@
               ;; update-nuvlabox-action
               (-> session
                   (request update-nuvlabox
-                    :request-method :post
-                    :body (json/write-str {:nuvlabox-release nuvlabox-release}))
+                           :request-method :post
+                           :body (json/write-str {:nuvlabox-release nuvlabox-release}))
                   (ltu/body->edn)
                   (ltu/is-status 202)))
 
@@ -609,21 +600,21 @@
             (-> session
                 (request commission
                          :request-method :post
-                         :body (json/write-str {:swarm-token-worker  "abc"
-                                                :swarm-token-manager "def"
-                                                :swarm-client-key    "key"
-                                                :swarm-client-cert   "cert"
-                                                :swarm-client-ca     "ca"
-                                                :swarm-endpoint      "https://swarm.example.com"
-                                                :minio-access-key    "access"
-                                                :minio-secret-key    "secret"
-                                                :minio-endpoint      "https://minio.example.com"
-                                                :kubernetes-client-key    "key"
-                                                :kubernetes-client-cert   "cert"
-                                                :kubernetes-client-ca     "ca"
-                                                :kubernetes-endpoint      "https://k8s.example.com"
-                                                :tags                ["label1", "label2"]
-                                                :capabilities        ["NUVLA_JOB_PULL"]}))
+                         :body (json/write-str {:swarm-token-worker     "abc"
+                                                :swarm-token-manager    "def"
+                                                :swarm-client-key       "key"
+                                                :swarm-client-cert      "cert"
+                                                :swarm-client-ca        "ca"
+                                                :swarm-endpoint         "https://swarm.example.com"
+                                                :minio-access-key       "access"
+                                                :minio-secret-key       "secret"
+                                                :minio-endpoint         "https://minio.example.com"
+                                                :kubernetes-client-key  "key"
+                                                :kubernetes-client-cert "cert"
+                                                :kubernetes-client-ca   "ca"
+                                                :kubernetes-endpoint    "https://k8s.example.com"
+                                                :tags                   ["label1", "label2"]
+                                                :capabilities           ["NUVLA_JOB_PULL"]}))
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
@@ -779,6 +770,97 @@
                        :request-method :delete)
               (ltu/body->edn)
               (ltu/is-status 200)))))))
+
+
+(deftest create-activate-commission-get-context-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [session-nuvlabox (header session authn-info-header
+                                       (str nuvlabox-id
+                                            " group/nuvla-nuvlabox group/nuvla-anon"))
+              commission       (-> session-owner
+                                   (request nuvlabox-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/get-op-url :commission))]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [add-ssh-key     (-> session-owner
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/get-op-url :add-ssh-key))
+                job-url         (-> session-owner
+                                    (request add-ssh-key
+                                             :request-method :post)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    (ltu/location-url))
+
+                get-context-url (-> session-nuvlabox
+                                    (request job-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :get-context)
+                                    (ltu/get-op-url :get-context))
+
+                get-context-body (-> session-nuvlabox
+                                     (request get-context-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/body))]
+
+            (is (and (map? get-context-body)
+                     (str/starts-with? (namespace (ffirst get-context-body)) "credential")
+                     (str/starts-with? (:public-key (second (first get-context-body)))
+                                       "ssh-rsa AAAA")))
+
+            (-> session-admin
+                (request get-context-url)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-owner
+                (request get-context-url)
+                (ltu/body->edn)
+                (ltu/is-status 403)))
+
+          )))))
 
 
 (deftest create-activate-commission-vpn-lifecycle

@@ -1233,6 +1233,97 @@
       )))
 
 
+(deftest create-activate-commission-get-context-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [session-nuvlabox (header session authn-info-header
+                                       (str nuvlabox-id
+                                            " group/nuvla-nuvlabox group/nuvla-anon"))
+              commission       (-> session-owner
+                                   (request nuvlabox-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/get-op-url :commission))]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [add-ssh-key     (-> session-owner
+                                    (request nuvlabox-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/get-op-url :add-ssh-key))
+                job-url         (-> session-owner
+                                    (request add-ssh-key
+                                             :request-method :post)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    (ltu/location-url))
+
+                get-context-url (-> session-nuvlabox
+                                    (request job-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :get-context)
+                                    (ltu/get-op-url :get-context))
+
+                get-context-body (-> session-nuvlabox
+                                     (request get-context-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/body))]
+
+            (is (and (map? get-context-body)
+                     (str/starts-with? (namespace (ffirst get-context-body)) "credential")
+                     (str/starts-with? (:public-key (second (first get-context-body)))
+                                       "ssh-rsa AAAA")))
+
+            (-> session-admin
+                (request get-context-url)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-owner
+                (request get-context-url)
+                (ltu/body->edn)
+                (ltu/is-status 403)))
+
+          )))))
+
+
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
     (ltu/verify-405-status [[base-uri :options]

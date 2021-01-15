@@ -5,6 +5,7 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
@@ -18,6 +19,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
@@ -513,6 +515,19 @@ particular NuvlaBox release.
       (or (ex-data e) (throw e)))))
 
 
+(defn get-context-ssh-credential
+  [{:keys [affected-resources] :as job}]
+  (let [credential (some->> affected-resources
+                            (some (fn [{:keys [href]}]
+                                    (when (str/starts-with? href "credential/") href)))
+                            crud/retrieve-by-id-as-admin)]
+    (job-utils/get-context->response credential)))
+
+
+(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_add_ssh_key"]
+  [resource]
+  (get-context-ssh-credential resource))
+
 
 ;;
 ;; Revoke ssh-key action
@@ -559,6 +574,10 @@ particular NuvlaBox release.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+
+(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_revoke_ssh_key"]
+  [resource]
+  (get-context-ssh-credential resource))
 
 
 ;;
