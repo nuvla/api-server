@@ -26,8 +26,17 @@
 (s/def ::output-message ::core/mimetype)
 
 
-(s/def ::parameter (su/only-keys :req-un [::name]
-                                 :opt-un [::value-scope/value-scope]))
+(s/def ::type #{"boolean" "long" "integer" "number"
+                "double" "string" "map" "date-time" "geo-point"})
+
+
+(s/def ::parameter (su/only-keys :req-un [::name
+                                          ::type]
+                                 :opt-un [::value-scope/value-scope
+                                          ::child-types]))
+
+
+(s/def ::child-types (s/coll-of ::parameter :min-count 1 :type vector?))
 
 
 (s/def ::input-parameters
