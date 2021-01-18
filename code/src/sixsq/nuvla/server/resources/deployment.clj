@@ -59,11 +59,14 @@ a container orchestration engine.
                :input-message    "application/json"
                :output-message   "application/json"
 
-               :input-parameters [{:name "service"}
+               :input-parameters [{:name "service"
+                                   :type "string"}
 
-                                  {:name "since"}
+                                  {:name "since"
+                                   :type "date-time"}
 
                                   {:name        "lines"
+                                   :type        "integer"
                                    :value-scope {:minimum 1
                                                  :default 200}}]}
 
