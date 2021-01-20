@@ -35,5 +35,6 @@
                                ::nb-status-0/docker-plugins
                                ::nb-status-0/vulnerabilities
                                ::nb-status-0/swarm-node-id
-                               ::nb-status-0/installation-parameters]}))
+                               ::nb-status-0/installation-parameters
+                               ::nb-status-0/swarm-node-cert-expiry-date]}))
 

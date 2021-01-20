@@ -95,7 +95,8 @@
                                                              "docker-compose.usb.yaml"]
                                             :working-dir    "/home/user"
                                             :project-name   "nuvlabox"
-                                            :environment    []}})
+                                            :environment    []}
+                  :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
 
 
 (def resources-updated {:cpu   {:capacity   10

@@ -92,7 +92,8 @@
             :installation-parameters {:config-files   ["docker-compose.yml"]
                                       :working-dir    "/home/user"
                                       :project-name   "nuvlabox"
-                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}})
+                                      :environment    ["NUVLABOX_UUID=xyz", "HOST=myhost"]}
+            :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
 
 
 (deftest check-nuvlabox-status
@@ -108,5 +109,5 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment :nuvlabox-api-endpoint
                  :inferred-location :gpio-pins :nuvlabox-engine-version :docker-plugins :vulnerabilities
-                 :installation-parameters :swarm-node-id :power-consumption}]
+                 :installation-parameters :swarm-node-id :power-consumption :swarm-node-cert-expiry-date}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))
