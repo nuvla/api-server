@@ -72,7 +72,7 @@
                                       :working-dir    "/home/user"
                                       :project-name   "nuvlabox"
                                       :environment    []}
-            :swarm-ca-cert-expiry-date  "2020-02-18T19:42:08Z"})
+            :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
 
 
 (deftest check-nuvlabox-status
@@ -89,5 +89,5 @@
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
-                 :power-consumption :swarm-ca-cert-expiry-date}]
+                 :power-consumption :swarm-node-cert-expiry-date}]
     (stu/is-valid ::nb-status-1/schema (dissoc state attr))))

@@ -589,9 +589,9 @@
 
            :json-schema/order 72)))
 
-(s/def ::swarm-ca-cert-expiry-date
+(s/def ::swarm-node-cert-expiry-date
   (-> (st/spec ::core/timestamp)
-    (assoc :name "swarm-ca-cert-expiry-date"
+    (assoc :name "swarm-node-cert-expiry-date"
            :json-schema/description "Expiry date of the Docker Swarm CA certificates"
 
            :json-schema/order 73)))
@@ -621,5 +621,5 @@
                                ::vulnerabilities
                                ::swarm-node-id
                                ::installation-parameters
-                               ::swarm-ca-cert-expiry-date]}))
+                               ::swarm-node-cert-expiry-date]}))
 
