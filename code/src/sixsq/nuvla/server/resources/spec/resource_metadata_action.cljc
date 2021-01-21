@@ -4,7 +4,8 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.resource-metadata-value-scope :as value-scope]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 (s/def ::name ::core/token)
@@ -36,7 +37,10 @@
                                           ::child-types]))
 
 
-(s/def ::child-types (s/coll-of ::parameter :min-count 1 :type vector?))
+(s/def ::child-types (-> (st/spec (s/coll-of ::parameter :min-count 1 :type vector?))
+                         (assoc
+                           :json-schema/type "map"
+                           :json-schema/indexed false)))
 
 
 (s/def ::input-parameters
