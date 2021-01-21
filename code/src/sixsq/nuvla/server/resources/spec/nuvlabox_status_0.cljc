@@ -596,6 +596,17 @@
 
            :json-schema/order 73)))
 
+
+(s/def ::online
+  (-> (st/spec boolean?)
+      (assoc :name "online"
+             :json-schema/type "boolean"
+             :json-schema/description "flag to indicate if nuvlabox connected base on heartbeat"
+             :json-schema/server-managed true
+
+             :json-schema/order 74)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -621,5 +632,6 @@
                                ::vulnerabilities
                                ::swarm-node-id
                                ::installation-parameters
-                               ::swarm-node-cert-expiry-date]}))
+                               ::swarm-node-cert-expiry-date
+                               ::online]}))
 
