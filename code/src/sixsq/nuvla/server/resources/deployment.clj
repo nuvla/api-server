@@ -421,20 +421,37 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
-(defmethod job-utils/get-context ["deployment" "start_deployment"]
-  [{:keys [target-resource] :as resource}]
+(defn get-context
+  [{:keys [target-resource] :as resource} full]
   (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
         credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
         infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
-        registries-creds (some->> deployment :registries-credentials
-                                  (map crud/retrieve-by-id-as-admin))
-        registries-infra (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds)]
+        registries-creds (when full
+                           (some->> deployment :registries-credentials
+                                   (map crud/retrieve-by-id-as-admin)))
+        registries-infra (when full
+                           (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))]
     (job-utils/get-context->response
       deployment
       credential
       infra
       registries-creds
       registries-infra)))
+
+
+(defmethod job-utils/get-context ["deployment" "start_deployment"]
+  [resource]
+  (get-context resource true))
+
+
+(defmethod job-utils/get-context ["deployment" "update_deployment"]
+  [resource]
+  (get-context resource true))
+
+
+(defmethod job-utils/get-context ["deployment" "stop_deployment"]
+  [resource]
+  (get-context resource false))
 
 
 ;;
