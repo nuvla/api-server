@@ -4,6 +4,7 @@
 
 ### Added
 
+  - NuvlaBox Status - new attribute online
   - NuvlaBox Status - new attribute to report Docker Swarm certificates expiration date
 
 ### Changed
