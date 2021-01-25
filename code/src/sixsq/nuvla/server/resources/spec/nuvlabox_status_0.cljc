@@ -601,7 +601,7 @@
   (-> (st/spec boolean?)
       (assoc :name "online"
              :json-schema/type "boolean"
-             :json-schema/description "flag to indicate if nuvlabox connected base on heartbeat"
+             :json-schema/description "Indicate if the nuvlabox is connected to Nuvla service based on next-heartbeat attribute"
              :json-schema/server-managed true
 
              :json-schema/order 74)))
