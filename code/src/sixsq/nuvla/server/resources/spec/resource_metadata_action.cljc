@@ -34,7 +34,8 @@
 (s/def ::parameter (su/only-keys :req-un [::name
                                           ::type]
                                  :opt-un [::value-scope/value-scope
-                                          ::child-types]))
+                                          ::child-types
+                                          ::description]))
 
 
 (s/def ::child-types (-> (st/spec (s/coll-of ::parameter :min-count 1 :type vector?))

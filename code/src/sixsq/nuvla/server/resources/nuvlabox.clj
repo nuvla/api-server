@@ -115,7 +115,10 @@ particular NuvlaBox release.
                :input-parameters [{:name        "execution-mode"
                                    :type        "string"
                                    :value-scope {:values  ["push" "pull" "mixed"]
-                                                 :default "push"}}]}
+                                                 :default "push"}}
+                                  {:name        "credential"
+                                   :type        "string"
+                                   :description "credential id to be added"}]}
 
               {:name             "revoke-ssh-key"
                :uri              "revoke-ssh-key"
@@ -126,7 +129,11 @@ particular NuvlaBox release.
                :input-parameters [{:name        "execution-mode"
                                    :type        "string"
                                    :value-scope {:values  ["push" "pull" "mixed"]
-                                                 :default "push"}}]}
+                                                 :default "push"}}
+
+                                  {:name        "credential"
+                                   :type        "string"
+                                   :description "credential id to be added"}]}
 
               {:name             "update-nuvlabox"
                :uri              "update-nuvlabox"
