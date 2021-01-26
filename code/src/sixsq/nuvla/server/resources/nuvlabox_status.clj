@@ -17,7 +17,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.tools.logging :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -107,7 +108,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                       :orderby [["created" :asc]]}
         :nuvla/authn {:user-id      nb-id
                       :active-claim nb-id
-                      :claims       #{"group/nuvla-user" "group/nuvla-anon"}}}
+                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
        crud/query
        :body
        :resources

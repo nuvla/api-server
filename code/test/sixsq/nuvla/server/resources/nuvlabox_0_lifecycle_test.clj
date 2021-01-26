@@ -772,7 +772,7 @@
               (ltu/is-status 200)))))))
 
 
-(deftest create-activate-commission-get-context-lifecycle
+(deftest create-activate-commission-get-context-and-jobs-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
                             session
@@ -820,30 +820,48 @@
               (ltu/body->edn)
               (ltu/is-status 200))
 
-          (let [add-ssh-key     (-> session-owner
+          (let [nuvlabox-status (-> session-owner
                                     (request nuvlabox-url)
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    (ltu/get-op-url :add-ssh-key))
-                job-url         (-> session-owner
-                                    (request add-ssh-key
-                                             :request-method :post)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 202)
-                                    (ltu/location-url))
+                                    (ltu/body)
+                                    :nuvlabox-status)
+                add-ssh-key      (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/get-op-url :add-ssh-key))
+                job-url          (-> session-owner
+                                     (request add-ssh-key
+                                              :request-method :put
+                                              :body (json/write-str
+                                                      {:execution-mode "pull"}))
+                                     (ltu/body->edn)
+                                     (ltu/is-status 202)
+                                     (ltu/location-url))
 
-                get-context-url (-> session-nuvlabox
-                                    (request job-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-present :get-context)
-                                    (ltu/get-op-url :get-context))
+                get-context-url  (-> session-nuvlabox
+                                     (request job-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :get-context)
+                                     (ltu/get-op-url :get-context))
 
                 get-context-body (-> session-nuvlabox
                                      (request get-context-url)
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
                                      (ltu/body))]
+
+            ;; updated list of jobs is returned to the NB on edit of Nuvlabox status
+            (-> session-nuvlabox
+                (request (str p/service-context nuvlabox-status)
+                         :request-method :put
+                         :body (json/write-str {}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :jobs [(str/replace-first
+                                           job-url (re-pattern p/service-context) "")]))
 
             (is (and (map? get-context-body)
                      (str/starts-with? (namespace (ffirst get-context-body)) "credential")
@@ -859,7 +877,6 @@
                 (request get-context-url)
                 (ltu/body->edn)
                 (ltu/is-status 403)))
-
           )))))
 
 

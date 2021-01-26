@@ -185,7 +185,7 @@ particular NuvlaBox release.
           location (assoc :location location)
           tags (assoc :tags tags)
           ssh-keys (assoc :ssh-keys ssh-keys)
-          capabilities  (assoc :capabilities capabilities)
+          capabilities (assoc :capabilities capabilities)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
@@ -296,9 +296,9 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (let [nuvlabox (db/retrieve id request)
-              tags     (some-> body :tags set)
-              capabilities     (some-> body :capabilities set)]
+        (let [nuvlabox     (db/retrieve id request)
+              tags         (some-> body :tags set)
+              capabilities (some-> body :capabilities set)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
@@ -368,7 +368,7 @@ particular NuvlaBox release.
       (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
-      (or (ex-data e) (throw e))))) 0
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type "decommission"]
@@ -467,6 +467,10 @@ particular NuvlaBox release.
 ;; Add ssh-key action
 ;;
 
+(defn acl-nb-edit
+  [{:keys [id acl] :as nuvlabox}]
+  (update acl :edit-acl #(-> % (conj id) distinct vec)))
+
 
 (defn add-ssh-key
   [{:keys [id state acl] :as nuvlabox} ssh-credential execution-mode]
@@ -477,7 +481,7 @@ particular NuvlaBox release.
         (let [cred-id (:id ssh-credential)
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
-                                                           acl
+                                                           (acl-nb-edit nuvlabox)
                                                            :affected-resources [{:href cred-id}]
                                                            :priority 50
                                                            :execution-mode execution-mode)
@@ -503,8 +507,9 @@ particular NuvlaBox release.
           acl         (:acl nuvlabox)
           credential  (if ssh-cred-id
                         (db/retrieve ssh-cred-id request)
-                        (wf-utils/create-ssh-key {:acl      acl
-                                                  :template {:href "credential-template/generate-ssh-key"}}))]
+                        (wf-utils/create-ssh-key
+                          {:acl      acl
+                           :template {:href "credential-template/generate-ssh-key"}}))]
 
       (-> (db/retrieve (:id credential) request)
           (a/throw-cannot-view request))
@@ -545,7 +550,7 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_revoke_ssh_key"
-                                               acl
+                                               (acl-nb-edit nuvlabox)
                                                :affected-resources [{:href ssh-credential-id}]
                                                :priority 50
                                                :execution-mode execution-mode)
@@ -595,7 +600,7 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
-                                               acl
+                                               (acl-nb-edit nuvlabox)
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
                                                :execution-mode "pull")
