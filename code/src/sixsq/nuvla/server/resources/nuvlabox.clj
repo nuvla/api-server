@@ -67,6 +67,78 @@ particular NuvlaBox release.
 (def ^:const default-refresh-interval 90)
 
 
+(def actions [{:name           "activate"
+               :uri            "activate"
+               :description    "activate the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "commission"
+               :uri            "commission"
+               :description    "commission the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "decommission"
+               :uri            "decommission"
+               :description    "decommission the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "check-api"
+               :uri            "check-api"
+               :description    "check nuvlabox api"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name             "reboot"
+               :uri              "reboot"
+               :description      "reboot the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}]}
+
+              {:name             "add-ssh-key"
+               :uri              "add-ssh-key"
+               :description      "add an ssh key to the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}]}
+
+              {:name             "revoke-ssh-key"
+               :uri              "revoke-ssh-key"
+               :description      "revoke an ssh key to the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}]}
+
+              {:name             "update-nuvlabox"
+               :uri              "update-nuvlabox"
+               :description      "update nuvlabox engine"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name "nuvlabox-release"
+                                   :type "string"}]}
+              ])
+
+
 ;;
 ;; multimethods for validation
 ;;
