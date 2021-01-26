@@ -158,7 +158,7 @@
 
          ;; admin edition doesn't set online flag
          (-> session-admin
-             (request state-url
+             (request status-url
                       :request-method :put
                       :body (json/write-str {}))
              (ltu/body->edn)
@@ -177,7 +177,7 @@
 
          ;; admin edition can set online flag
          (-> session-admin
-             (request state-url
+             (request status-url
                       :request-method :put
                       :body (json/write-str {:online false}))
              (ltu/body->edn)
