@@ -4,6 +4,8 @@
 
 ### Added
 
+  - NuvlaBox Status - new attribute online
+  - NuvlaBox Status - new attribute to report Docker Swarm certificates expiration date
   - Job - do not allow edit of target-resource and action
   - Deployment parameters - Allow deployment token to update deployment parameters
   - Deployment - Allow deployment token to update deployment
@@ -13,7 +15,7 @@
   - Nuvlabox status - fix spec
   - Job - Add new attributes for supporting job execution in pull mode
   - NuvlaBox and Infrastructure Service - Add new capabilities attribute
-  
+
 ### Changed
 
   - Job - get-context support for deployment start

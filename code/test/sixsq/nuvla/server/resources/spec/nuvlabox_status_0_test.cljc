@@ -94,7 +94,9 @@
                                       :project-name "nuvlabox"
                                       :environment  ["NUVLABOX_UUID=xyz", "HOST=myhost"]}
             :jobs                    ["job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                      "job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0d"]})
+                                      "job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0d"]
+            :swarm-node-cert-expiry-date "2020-02-18T19:42:08Z"
+            :online                      true})
 
 
 (deftest check-nuvlabox-status
@@ -111,5 +113,6 @@
   (doseq [attr #{:next-heartbeat :current-time :resources :peripherals :wifi-password :comment
                  :nuvlabox-api-endpoint :inferred-location :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :installation-parameters :swarm-node-id
-                 :power-consumption :jobs}]
+                 :power-consumption :jobs :swarm-node-cert-expiry-date
+                 :online}]
     (stu/is-valid ::nb-status-0/schema (dissoc state attr))))

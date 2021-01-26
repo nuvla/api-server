@@ -95,7 +95,8 @@
                                                              "docker-compose.usb.yaml"]
                                             :working-dir    "/home/user"
                                             :project-name   "nuvlabox"
-                                            :environment    []}})
+                                            :environment    []}
+                  :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
 
 
 (def resources-updated {:cpu   {:capacity   10
@@ -172,6 +173,15 @@
               (ltu/body->edn)
               (ltu/is-status 403))
 
+          ;; admin edition doesn't set online flag
+          (-> session-admin
+              (request state-url
+                       :request-method :put
+                       :body (json/write-str {}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online nil))
+
           ;; nuvlabox user is able to update nuvlabox-status
           (-> session-nb
               (request state-url
@@ -179,7 +189,17 @@
                        :body (json/write-str {:resources resources-updated}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :resources resources-updated))
+              (ltu/is-key-value :resources resources-updated)
+              (ltu/is-key-value :online true))
+
+          ;; admin edition can set online flag
+          (-> session-admin
+              (request state-url
+                       :request-method :put
+                       :body (json/write-str {:online false}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :online false))
 
           ;; verify that the update was written to disk
           (-> session-nb
