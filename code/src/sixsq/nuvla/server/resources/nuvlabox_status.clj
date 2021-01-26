@@ -131,11 +131,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)
-<<<<<<< HEAD
           (assoc :jobs jobs)
-=======
           (status-utils/set-online request)
->>>>>>> master
           pre-edit
           crud/validate
           (db/edit request)))
