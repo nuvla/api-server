@@ -121,13 +121,13 @@
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id action
-                                                     {:owners   ["group/nuvla-admin"]
-                                                      :edit-acl (->> [active-claim nuvlabox]
-                                                                     (remove nil?)
-                                                                     (into []))}
-                                                     :priority 50
-                                                     :execution-mode execution-mode)
+          job-status :status} :body} (job/create-job
+                                       id action
+                                       (cond-> {:owners ["group/nuvla-admin"]}
+                                               active-claim (assoc :edit-acl [active-claim])
+                                               nuvlabox (assoc :edit-data [nuvlabox]))
+                                       :priority 50
+                                       :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response

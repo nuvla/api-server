@@ -546,10 +546,6 @@ particular NuvlaBox release.
 ;; Add ssh-key action
 ;;
 
-(defn acl-nb-edit
-  [{:keys [id acl] :as nuvlabox}]
-  (update acl :edit-acl #(-> % (conj id) distinct vec)))
-
 
 (defn add-ssh-key
   [{:keys [id state acl] :as nuvlabox} ssh-credential execution-mode]
@@ -559,11 +555,12 @@ particular NuvlaBox release.
       (try
         (let [cred-id (:id ssh-credential)
               {{job-id     :resource-id
-                job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
-                                                           (acl-nb-edit nuvlabox)
-                                                           :affected-resources [{:href cred-id}]
-                                                           :priority 50
-                                                           :execution-mode execution-mode)
+                job-status :status} :body} (job/create-job
+                                             id "nuvlabox_add_ssh_key"
+                                             (a/acl-append acl :edit-data id)
+                                             :affected-resources [{:href cred-id}]
+                                             :priority 50
+                                             :execution-mode execution-mode)
               job-msg (str "asking NuvlaBox "
                            id " to add SSH key "
                            cred-id " with async " job-id)]
@@ -629,7 +626,7 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_revoke_ssh_key"
-                                               (acl-nb-edit nuvlabox)
+                                               (a/acl-append acl :edit-data id)
                                                :affected-resources [{:href ssh-credential-id}]
                                                :priority 50
                                                :execution-mode execution-mode)
@@ -679,7 +676,7 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
-                                               (acl-nb-edit nuvlabox)
+                                               (a/acl-append acl :edit-data id)
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
                                                :execution-mode "pull")

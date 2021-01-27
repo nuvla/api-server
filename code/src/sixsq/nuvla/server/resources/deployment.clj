@@ -271,27 +271,17 @@ a container orchestration engine.
           data?          (some? (:data deployment))
           no-api-keys?   (nil? (:api-credentials deployment))
           nb-id          (some-> deployment :infrastructure-service utils/infra-id->nb-id)
-          nuvlabox       (some-> nb-id crud/retrieve-by-id-as-admin)
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (utils/create-subscription price coupon)
                                    (stripe/get-id)))
-          new-acl        (cond-> (update acl :edit-data (comp vec set conj) id)
-
-                                 (and (some? (:nuvlabox deployment))
-                                      (not= nb-id (:nuvlabox deployment)))
-                                 #(->> %
-                                       (map (fn [[_ v]]
-                                              (vec
-                                                (remove
-                                                  #{(:nuvlabox deployment)}
-                                                  v))))
-                                       (into {}))
-
-
-                                 nb-id (update :edit-acl (comp vec set conj) nb-id))
-          ;TODO choose from where to take execution-mode (:execution-mode deployment). mixte?
-          ;execution-mode (if ((-> nuvlabox :capabilities set) "NUVLA_JOB_PULL") "pull" "push")
+          new-acl        (-> acl
+                             (a/acl-append :edit-data id)
+                             (a/acl-append :edit-data nb-id)
+                             (cond->
+                               (and (some? (:nuvlabox deployment))
+                                    (not= nb-id (:nuvlabox deployment)))
+                               (a/acl-remove (:nuvlabox deployment))))
           execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
@@ -428,7 +418,7 @@ a container orchestration engine.
         infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
         registries-creds (when full
                            (some->> deployment :registries-credentials
-                                   (map crud/retrieve-by-id-as-admin)))
+                                    (map crud/retrieve-by-id-as-admin)))
         registries-infra (when full
                            (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))]
     (job-utils/get-context->response
