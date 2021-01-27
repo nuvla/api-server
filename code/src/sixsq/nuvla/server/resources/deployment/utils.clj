@@ -123,9 +123,10 @@
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
                                        id action
-                                       (cond-> {:owners ["group/nuvla-admin"]}
-                                               active-claim (assoc :edit-acl [active-claim])
-                                               nuvlabox (assoc :edit-data [nuvlabox]))
+                                       (-> {:owners ["group/nuvla-admin"]}
+                                           (a/acl-append :edit-acl active-claim)
+                                           (a/acl-append :edit-data nuvlabox)
+                                           (a/acl-append :manage nuvlabox))
                                        :priority 50
                                        :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]

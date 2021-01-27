@@ -557,7 +557,9 @@ particular NuvlaBox release.
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
                                              id "nuvlabox_add_ssh_key"
-                                             (a/acl-append acl :edit-data id)
+                                             (-> acl
+                                                 (a/acl-append :edit-data id)
+                                                 (a/acl-append :manage id))
                                              :affected-resources [{:href cred-id}]
                                              :priority 50
                                              :execution-mode execution-mode)
@@ -626,7 +628,9 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_revoke_ssh_key"
-                                               (a/acl-append acl :edit-data id)
+                                               (-> acl
+                                                   (a/acl-append :edit-data id)
+                                                   (a/acl-append :manage id))
                                                :affected-resources [{:href ssh-credential-id}]
                                                :priority 50
                                                :execution-mode execution-mode)
@@ -676,7 +680,9 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
-                                               (a/acl-append acl :edit-data id)
+                                               (-> acl
+                                                   (a/acl-append :edit-data id)
+                                                   (a/acl-append :manage id))
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
                                                :execution-mode "pull")
