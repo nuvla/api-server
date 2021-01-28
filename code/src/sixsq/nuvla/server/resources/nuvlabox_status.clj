@@ -6,16 +6,18 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -100,21 +102,26 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
                                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
                                         (a/throw-cannot-edit request))
-          rights                   (a/extract-rights (auth/current-authentication request) acl)
-          dissoc-keys              (-> (map keyword select)
-                                       set
-                                       u/strip-select-from-mandatory-attrs
-                                       (a/editable-keys rights))
+          rights (a/extract-rights (auth/current-authentication request) acl)
+          dissoc-keys (-> (map keyword select)
+                          set
+                          u/strip-select-from-mandatory-attrs
+                          (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
-          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-          merged                   (merge current-without-selected editable-body)]
-      (-> merged
-          (u/update-timestamps)
-          (u/set-updated-by request)
-          (status-utils/set-online request)
-          pre-edit
-          crud/validate
-          (db/edit request)))
+          editable-body (select-keys body (-> body keys (a/editable-keys rights)))
+          merged (merge current-without-selected editable-body)
+          ret (-> merged
+                  (u/update-timestamps)
+                  (u/set-updated-by request)
+                  (status-utils/set-online request)
+                  pre-edit
+                  crud/validate
+                  (db/edit request))]
+      (try
+        (ka-crud/publish-on-edit "es_nuvla-nuvlabox-status" ret)
+        (catch Exception e
+          (log/warn (format "Failed sending to Kafka: %s" e))))
+      ret)
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
