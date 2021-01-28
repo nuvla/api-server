@@ -276,9 +276,9 @@ a container orchestration engine.
                                    (utils/create-subscription price coupon)
                                    (stripe/get-id)))
           new-acl        (-> acl
+                             (a/acl-append :view-acl id)
                              (a/acl-append :edit-data id)
                              (a/acl-append :edit-data nb-id)
-                             (a/acl-append :view-acl nb-id)
                              (cond->
                                (and (some? (:nuvlabox deployment))
                                     (not= nb-id (:nuvlabox deployment)))
