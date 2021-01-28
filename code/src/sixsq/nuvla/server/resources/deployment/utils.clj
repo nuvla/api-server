@@ -126,8 +126,7 @@
                                        (-> {:owners ["group/nuvla-admin"]}
                                            (a/acl-append :edit-acl active-claim)
                                            (a/acl-append :edit-data nuvlabox)
-                                           (a/acl-append :manage nuvlabox)
-                                           (a/acl-append :view-acl nuvlabox))
+                                           (a/acl-append :manage nuvlabox))
                                        :priority 50
                                        :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]

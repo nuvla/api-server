@@ -278,6 +278,7 @@ a container orchestration engine.
           new-acl        (-> acl
                              (a/acl-append :edit-data id)
                              (a/acl-append :edit-data nb-id)
+                             (a/acl-append :view-acl nb-id)
                              (cond->
                                (and (some? (:nuvlabox deployment))
                                     (not= nb-id (:nuvlabox deployment)))
