@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+  - NuvlaBox Status - new attribute online
+  - NuvlaBox Status - new attribute to report Docker Swarm certificates expiration date
+
 ### Changed
 
   - Credential - fix issue mapping creation and update at server startup time
