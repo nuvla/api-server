@@ -23,13 +23,17 @@
         session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-        subs-resource (str "infrastructure-service/" (str (UUID/randomUUID)))
-        valid-subscription {:type     "notification"
-                            :kind     "event"
-                            :category "state"
-                            :resource subs-resource
-                            :status   "enabled"
-                            :method   (str "notification-method/" (str (UUID/randomUUID)))
+        subs-resource (str "nuvlabox-status/" (str (UUID/randomUUID)))
+        valid-subscription {:enabled true
+                            :category "notification"
+                            :method-id (str "notification-method/" (str (UUID/randomUUID)))
+                            :resource-kind "nuvlabox-state"
+                            :resource-filter "tags='foo'"
+                            :resource-id subs-resource
+                            :criteria {:kind "numeric"
+                                       :metric "load"
+                                       :value "75"
+                                       :condition ">"}
                             :acl      {:owners ["user/jane"]}}]
     (doseq [session [session-admin session-user]]
       (-> session
@@ -71,7 +75,7 @@
           (content-type "application/x-www-form-urlencoded")
           (request base-uri
                    :request-method :put
-                   :body (rc/form-encode {:filter (format "resource='%s'" subs-resource)}))
+                   :body (rc/form-encode {:filter (format "resource-id='%s'" subs-resource)}))
           (ltu/body->edn)
           (ltu/is-count 1)
           (ltu/is-status 200))
@@ -93,7 +97,7 @@
 
       ;; verify that an edit works
       (let [notif-id (str "notification-method/" (str (UUID/randomUUID)))
-            updated (assoc valid-subscription :method notif-id)]
+            updated (assoc valid-subscription :method-id notif-id)]
 
         (-> session-user
             (request user-abs-uri
@@ -109,7 +113,7 @@
                                (ltu/is-status 200)
                                (ltu/body))]
 
-          (is (= notif-id (:method updated-body)))))
+          (is (= notif-id (:method-id updated-body)))))
 
       (-> session-user
           (request user-abs-uri :request-method :delete)

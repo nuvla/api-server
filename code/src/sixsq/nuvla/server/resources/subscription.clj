@@ -20,8 +20,9 @@ Collection for holding subscriptions.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-delete ["group/nuvla-user"]})
 
 
 ;;
@@ -95,7 +96,7 @@ Collection for holding subscriptions.
 (defmethod crud/edit resource-type
   [request]
   (let [resp (edit-impl request)]
-    (ka-crud/publish-on-edit resource-type resp :key "resource")
+    (ka-crud/publish-on-edit resource-type resp :key "resource-id")
     resp))
 
 
@@ -107,7 +108,7 @@ Collection for holding subscriptions.
           delete-response (-> resource
                               (a/throw-cannot-delete request)
                               (db/delete request))]
-      (ka-crud/publish-tombstone resource-type (:resource resource))
+      (ka-crud/publish-tombstone resource-type (:resource-id resource))
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -115,6 +116,12 @@ Collection for holding subscriptions.
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
+
+
+(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
+(defmethod crud/bulk-delete resource-type
+  [request]
+  (bulk-delete-impl request))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

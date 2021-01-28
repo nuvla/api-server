@@ -7,55 +7,162 @@
     [spec-tools.core :as st]))
 
 "
-Configuration of subscriptions.
+Subscription to actions (defined by 'method-id') from trigger 'criteria'
+against resources of 'resource-kind' subject to filter 'resource-filter'.
+
+Example:
+
+{
+  ;; General
+  :id 'subscription/<uuid>'
+  :enabled #{true false}
+  :acl {:owners ['user/01']}
+
+  ;; Subscription category
+  :category #{notification, bill, etc.}
+
+  ;; Action method and schedule
+	:method-id 'notification-conf/<uuid>'
+	:schedule {} ; open map defining the scheduling policy
+
+	;; Component
+	:resource-kind #{nuvlabox-state|module|deployment|data-*|infrastructure-service|..}
+	:resource-filter \"tags='foo'\"
+
+	;; Criteria
+	:criteria {
+	  :kind #{metric, event}
+	  :metric <load|ram|disk|..>
+	  :condition #{<, >, =, !=}
+	  :value_% 1.2 ; float
+	  :window 60 ; in seconds
+	}
+}
 "
 
-(s/def ::type
-  (-> (st/spec #{"notification"})
-      (assoc :name "type"
-             :json-schema/type "string"
-             :json-schema/description "Type of the subscription"
-             :json-schema/order 20)))
-
-
-(s/def ::collection
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "collection"
-             :json-schema/type "string"
-             :json-schema/description "Collection of resources to subscribe to"
-             :json-schema/order 21)))
-
-
-(s/def ::category
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "category"
-             :json-schema/type "string"
-             :json-schema/description "Field of the document in the collection"
-             :json-schema/order 23)))
-
-
+;; General.
 (s/def ::enabled
   (-> (st/spec boolean?)
       (assoc :name "enabled"
-             :json-schema "boolean"
-             :json-schema/description "Configuration enabled or disabled."
+             :json-schema/type "string"
+             :json-schema/description "subscription enabled or disabled"
+             :json-schema/order 21)))
+
+
+;; Subscription category.
+(s/def ::category
+  (-> (st/spec #{"notification" "bill"})
+      (assoc :name "category"
+             :json-schema/type "string"
+             :json-schema/description "category of the subscription"
+             :json-schema/order 22)))
+
+
+;; Action method and schedule.
+(s/def ::method-id
+  (-> (st/spec ::core/resource-href)
+      (assoc :name "method-id"
+             :json-schema/type "resource-id"
+             :json-schema/editable false
+
+             :json-schema/description "Action method resource id"
+             :json-schema/order 23)))
+
+
+(s/def ::schedule
+  (-> (st/spec map?)
+      (assoc :name "schedule"
+             :json-schema/type "map"
+             :json-schema/description "rule for scheduling the action"
              :json-schema/order 24)))
 
 
-(s/def ::method
-  (-> (st/spec ::core/resource-href)
-      (assoc :name "method"
-             :json-schema/type "resource-id"
-             :json-schema/description "Reference to the default action method"
+;; Components to which the subscription is made.
+(s/def ::resource-kind
+  (-> (st/spec string?)
+      (assoc :name "resource-kind"
+             :json-schema/type "string"
+             :json-schema/description "resource collection"
              :json-schema/order 25)))
 
 
+(s/def ::resource-filter
+  (-> (st/spec string?)
+      (assoc :name "resource-filter"
+             :json-schema/type "resource-id"
+             :json-schema/description "Filter for resource in resource-kind"
+             :json-schema/order 26)))
+
+
+;; Triggering criteria via matching rules.
+(s/def ::kind
+  (-> (st/spec #{"boolean" "set" "numeric"})
+      (assoc :name "kind"
+             :json-schema/type "string"
+             :json-schema/description "kind of the criteria"
+             :json-schema/order 30)))
+
+
+(s/def ::metric
+  (-> (st/spec string?)
+      (assoc :name "metric"
+             :json-schema/type "string"
+             :json-schema/description "metric name"
+             :json-schema/order 31)))
+
+
+(s/def ::value
+  (-> (st/spec string?)
+      (assoc :name "value"
+             :json-schema/type "string"
+             :json-schema/description "value as string"
+             :json-schema/order 32)))
+
+
+(s/def ::value-type
+  (-> (st/spec #{"boolean" "string" "double" "integer"})
+      (assoc :name "value-type"
+             :json-schema/type "string"
+             :json-schema/description "value type hint"
+             :json-schema/order 33)))
+
+
+(s/def ::condition
+  (-> (st/spec string?)
+      (assoc :name "condition"
+             :json-schema/type "string"
+             :json-schema/description "condition of the trigger <=|!=|>|<|any|avg>"
+             :json-schema/order 34)))
+
+(s/def ::window
+  (-> (st/spec integer?)
+      (assoc :name "window"
+             :json-schema/type "integer"
+             :json-schema/description "time windows in seconds for the condition to hold"
+             :json-schema/order 35)))
+
+
+(s/def ::criteria
+  (-> (st/spec (su/only-keys-maps {:req-un [::kind
+                                            ::metric
+                                            ::value
+                                            ::condition]
+                                   :opt-un [::window
+                                            ::value-type]}))
+      (assoc :name "criteria"
+             :json-schema/type "map"
+             :json-schema/description "Triggering criteria via matching rules."
+             :json-schema/order 27)))
+
+
+(def attributes {:req-un [::enabled
+                          ::category
+                          ::method-id
+                          ::resource-kind
+                          ::resource-filter
+                          ::criteria]
+                 :opt-un [::schedule]})
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::type
-                               ::collection
-                               ::category
-                               ::enabled
-                               ::method]}))
-
-
+                     attributes))
