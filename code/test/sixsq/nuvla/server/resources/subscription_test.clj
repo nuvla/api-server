@@ -26,6 +26,7 @@
         subs-resource (str "nuvlabox-status/" (str (UUID/randomUUID)))
         valid-subscription {:enabled true
                             :category "notification"
+                            :parent (str "subscription-config/" (str (UUID/randomUUID)))
                             :method-id (str "notification-method/" (str (UUID/randomUUID)))
                             :resource-kind "nuvlabox-state"
                             :resource-filter "tags='foo'"
