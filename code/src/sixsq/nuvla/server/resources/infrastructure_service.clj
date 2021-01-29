@@ -11,10 +11,8 @@ existing `infrastructure-service-template` resource.
 "
   (:require
     [clojure.tools.logging :as log]
-    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -23,10 +21,8 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-srvc-gen]
-    [sixsq.nuvla.server.resources.subscription :as subscr]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.response :as ru]))
+    [sixsq.nuvla.server.resources.subscription :as subs]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -279,25 +275,6 @@ existing `infrastructure-service-template` resource.
   (delete-impl request))
 
 
-(defn delete-subscription
-  [resource-id request]
-  (let [filter (format "resource='%s'" resource-id)
-        authn-info (auth/current-authentication request)
-        res (crud/query {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                                       :select ["id"]}
-                         :params      {:resource-name subscr/resource-type}
-                         :nuvla/authn authn-info})
-        resources (-> res :body :resources)]
-    (if (> (count resources) 0)
-      (doseq [resource resources]
-        (let [id (:id resource)
-              res (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
-                                              :resource-name subscr/resource-type}
-                                :nuvla/authn auth/internal-identity})]
-          (if (not= (:status res) 200)
-            (log/warn (format "Failed to delete %s when deleting %s" id resource-id))))))))
-
-
 (defn post-delete-hooks
   [{{uuid :uuid} :params :as request} delete-resp]
   (let [id (str resource-type "/" uuid)]
@@ -306,7 +283,7 @@ existing `infrastructure-service-template` resource.
                                 (a/default-acl (auth/current-authentication request))
                                 :severity "low"
                                 :category "state")
-          (delete-subscription id request)))))
+          (subs/delete-individual-subscriptions id request)))))
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]

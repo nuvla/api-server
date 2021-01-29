@@ -3,7 +3,11 @@
 Collection for holding subscriptions.
 "
   (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -131,3 +135,21 @@ Collection for holding subscriptions.
   [request]
   (query-impl request))
 
+
+(defn delete-individual-subscriptions
+  [resource-id request]
+  (let [filter (format "resource-id='%s'" resource-id)
+        authn-info (auth/current-authentication request)
+        res (crud/query {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                                       :select ["id"]}
+                         :params      {:resource-name resource-type}
+                         :nuvla/authn authn-info})
+        resources (-> res :body :resources)]
+    (if (> (count resources) 0)
+      (doseq [resource resources]
+        (let [id (:id resource)
+              res (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
+                                              :resource-name resource-type}
+                                :nuvla/authn auth/internal-identity})]
+          (if (not= (:status res) 200)
+            (log/warn (format "Failed to delete %s when deleting %s" id resource-id))))))))

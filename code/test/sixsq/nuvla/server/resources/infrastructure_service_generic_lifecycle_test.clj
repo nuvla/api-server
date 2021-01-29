@@ -153,22 +153,6 @@
                          (content-type "application/json"))
         session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
 
-        notification-method (str "notification-method/" (str (UUID/randomUUID)))
-
-        valid-subscription-config {:type       "notification"
-                                   :collection "infrastructure-service"
-                                   :category   "state"
-                                   :enabled    true
-                                   :method     notification-method
-                                   :acl        {:owners ["user/jane"]}}
-        subs-conf-uri (-> session-user
-                          (request subs-base-uri
-                                   :request-method :post
-                                   :body (json/write-str valid-subscription-config))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
-
         valid-service-group {:name          "my-service-group"
                              :description   "my-description"
                              :documentation "http://my-documentation.org"}
@@ -230,7 +214,27 @@
         (is (= "STARTED" (:state service))))
 
       ;; check subscription created
-      (let [subs (-> session-user
+      (let [notification-method (str "notification-method/" (str (UUID/randomUUID)))
+
+            valid-subscription-config {:enabled         true
+                                       :category        "notification"
+                                       :method-id       notification-method
+                                       :resource-kind   "infrastructure-service"
+                                       :resource-filter "tags='alpha'"
+                                       :criteria        {:kind      "numeric"
+                                                         :metric    "load"
+                                                         :value     "75"
+                                                         :condition ">"}
+                                       :acl             {:owners ["user/jane"]}}
+           subs-conf-uri (-> session-user
+                              (request subs-base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-subscription-config))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location))
+
+            subs (-> session-user
                      (request (str p/service-context subscr/resource-type))
                      (ltu/body->edn)
                      (ltu/is-status 200)
@@ -239,8 +243,8 @@
                      :resources
                      first)
             subs-id (:id subs)]
-        (is (= uri (:resource subs)))
-        (is (= notification-method (:method subs)))
+        (is (= uri (:resource-id subs)))
+        (is (= notification-method (:method-id subs)))
 
         ;; can delete resource
         (-> session-user
