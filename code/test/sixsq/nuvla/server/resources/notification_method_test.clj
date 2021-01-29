@@ -16,8 +16,6 @@
 
 (def base-uri (str p/service-context t/resource-type))
 
-(def subscription-base-uri (str p/service-context subs/resource-type))
-
 (def valid-notif-conf {:method      "email"
                        :destination "jane@example.com"
                        :acl         {:owners ["user/jane"]}})
@@ -115,17 +113,20 @@
 
         notif-abs-uri (str p/service-context notif-uri)
 
-        ; create subscription referencing the notification method
-        subscription {:type      "notification"
-                      :status    "enabled"
-                      :kind      "event"
-                      :category  "state"
-                      :resource  (str "infrastructure-service/" (str (UUID/randomUUID)))
-                      :method    notif-uri
-                      :acl       {:owners ["user/jane"]}}
-
+        subscription {:enabled         true
+                      :category        "notification"
+                      :parent          (str "subscription-config/" (str (UUID/randomUUID)))
+                      :method-id       notif-uri
+                      :resource-kind   "nuvlabox-state"
+                      :resource-filter "tags='foo'"
+                      :resource-id     (str "nuvlabox-status/" (str (UUID/randomUUID)))
+                      :criteria        {:kind      "numeric"
+                                        :metric    "load"
+                                        :value     "75"
+                                        :condition ">"}
+                      :acl             {:owners ["user/jane"]}}
         subs-uri (-> session-user
-                     (request subscription-base-uri
+                     (request (str p/service-context subs/resource-type)
                               :request-method :post
                               :body (json/write-str subscription))
                      (ltu/body->edn)

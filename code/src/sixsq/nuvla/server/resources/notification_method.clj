@@ -96,7 +96,7 @@ Collection for holding notification method configurations.
 (defn throw-references-exist
   [resource-id collections request]
   (doseq [collection collections]
-    (let [filter (format "method='%s'" resource-id)
+    (let [filter (format "method-id='%s'" resource-id)
           authn-info (auth/current-authentication request)
           req {:cimi-params {:filter (parser/parse-cimi-filter filter)
                              :last   0}
