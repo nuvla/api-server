@@ -109,19 +109,14 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                           (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
           editable-body (select-keys body (-> body keys (a/editable-keys rights)))
-          merged (merge current-without-selected editable-body)
-          ret (-> merged
-                  (u/update-timestamps)
-                  (u/set-updated-by request)
-                  (status-utils/set-online request)
-                  pre-edit
-                  crud/validate
-                  (db/edit request))]
-      (try
-        (ka-crud/publish-on-edit "es_nuvla-nuvlabox-status" ret)
-        (catch Exception e
-          (log/warn (format "Failed sending to Kafka: %s" e))))
-      ret)
+          merged (merge current-without-selected editable-body)]
+      (-> merged
+          (u/update-timestamps)
+          (u/set-updated-by request)
+          (status-utils/set-online request)
+          pre-edit
+          crud/validate
+          (db/edit request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

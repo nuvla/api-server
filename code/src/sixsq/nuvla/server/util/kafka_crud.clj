@@ -35,4 +35,7 @@
 (defn publish-tombstone
   "Publish tombstone message for `key` to `topic`."
   [topic key]
-  (ka/publish-async topic key nil))
+  (try
+    (ka/publish-async topic key nil)
+    (catch Exception e
+      (log/warn "Failed publishing tombstone to Kafka: " (str e)))))
