@@ -9,6 +9,7 @@
 
 ### Changed
 
+  - Email template - Generate copyright year from current date
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec 
 
