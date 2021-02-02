@@ -377,14 +377,16 @@ particular NuvlaBox release.
       (try
         (let [nuvlabox     (db/retrieve id request)
               tags         (some-> body :tags set)
-              capabilities (some-> body :capabilities set)]
+              capabilities (some-> body :capabilities set)
+              ssh-keys     (some-> body :ssh-keys set)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
 
           (db/edit (cond-> (assoc nuvlabox :state state-commissioned)
                            tags (assoc :tags tags)
-                           capabilities (assoc :capabilities capabilities)) request)
+                           capabilities (assoc :capabilities capabilities)
+                           ssh-keys (assoc :ssh-keys ssh-keys)) request)
 
           (r/map-response "commission executed successfully" 200))
         (catch Exception e
