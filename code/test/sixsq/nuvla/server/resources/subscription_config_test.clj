@@ -16,7 +16,7 @@
     [java.util UUID]))
 
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 
@@ -200,7 +200,8 @@
           (ltu/body->edn)
           (ltu/is-status 201)))))
 
-(deftest create-with-individual-subscriptions
+
+(deftest create-with-individual-subscriptions-with-filter
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
@@ -210,12 +211,12 @@
         num-resources 3
         tag "FOO"
         _ (create-monitored-resources session-user acl num-resources tag)
-        count (-> session-user
-                  (request (str p/service-context infra-service/resource-type))
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/body)
-                  :count)
+        num-created (-> session-user
+                        (request (str p/service-context infra-service/resource-type))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body)
+                        :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
                                    :method-id       (str "notification-method/" (str (UUID/randomUUID)))
@@ -311,6 +312,139 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-count num-resources)
+                          (ltu/body)
+                          :resources)]
+        (doseq [res resources]
+          (is (= true (:enabled res)))))
+
+      ;; Delete subscription
+      (-> session-user
+          (request subs-conf-abs-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; check individual subscriptions are deleted
+      (-> session-user
+          (content-type "application/x-www-form-urlencoded")
+          (request subs-base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
+                                          :last   0}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0)))))
+
+
+(deftest create-with-individual-subscriptions-empty-filter
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+        acl {:owners ["user/jane"]}
+        _ (create-monitored-resources session-user acl 3 "FOO")
+        num-created (-> session-user
+                        (request (str p/service-context infra-service/resource-type))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body)
+                        :count)
+        valid-subscription-config {:enabled         true
+                                   :category        "notification"
+                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :resource-kind   infra-service/resource-type
+                                   :resource-filter ""
+                                   :criteria        {:kind      "numeric"
+                                                     :metric    "load"
+                                                     :value     "75"
+                                                     :condition ">"}
+                                   :acl             acl}]
+
+    ;; check creation of individual subscriptions
+    (let [subs-base-uri (str p/service-context sub/resource-type)
+          subs-before (-> session-user
+                          (request subs-base-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/body)
+                          :count)
+
+          subs-conf-uri (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-subscription-config))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          subs-conf-abs-uri (str p/service-context subs-conf-uri)
+
+          subs-after (-> session-user
+                         (request subs-base-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/body)
+                         :count)]
+      (is (= num-created (- subs-after subs-before)))
+
+      ;;
+      ;; disable subscription
+      (-> session-user
+          (request (str subs-conf-abs-uri "/" t/disable)
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; check subscription
+      (is (= false (-> session-user
+                       (request subs-conf-abs-uri)
+                       (ltu/body->edn)
+                       (ltu/body)
+                       :enabled)))
+
+      ;; check individual subscriptions
+      (let [filter (format "parent='%s'" subs-conf-uri)
+            resources (-> session-user
+                          (content-type "application/x-www-form-urlencoded")
+                          (request subs-base-uri
+                                   :request-method :put
+                                   :body (rc/form-encode {:filter filter
+                                                          :select ["enabled"]}))
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-count num-created)
+                          (ltu/body)
+                          :resources)]
+        (doseq [res resources]
+          (is (= false (:enabled res)))))
+
+      ;;
+      ;; enable subscription
+      (-> session-user
+          (request (str subs-conf-abs-uri "/" t/enable)
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; check subscription
+      (is (= true (-> session-user
+                      (request subs-conf-abs-uri)
+                      (ltu/body->edn)
+                      (ltu/body)
+                      :enabled)))
+
+      ;; check individual subscriptions
+      (let [filter (format "parent='%s'" subs-conf-uri)
+            resources (-> session-user
+                          (content-type "application/x-www-form-urlencoded")
+                          (request subs-base-uri
+                                   :request-method :put
+                                   :body (rc/form-encode {:filter filter
+                                                          :select ["enabled"]}))
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-count num-created)
                           (ltu/body)
                           :resources)]
         (doseq [res resources]

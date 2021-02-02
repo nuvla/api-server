@@ -82,7 +82,7 @@ Collection for holding subscriptions.
                       description)
         request (assoc-in request [:body :description] description)
         resp (add-impl request)]
-    (ka-crud/publish-on-add resource-type resp :key "resource")
+    (ka-crud/publish-on-add resource-type resp)
     resp))
 
 
@@ -100,7 +100,7 @@ Collection for holding subscriptions.
 (defmethod crud/edit resource-type
   [request]
   (let [resp (edit-impl request)]
-    (ka-crud/publish-on-edit resource-type resp :key "resource-id")
+    (ka-crud/publish-on-edit resource-type resp)
     resp))
 
 
