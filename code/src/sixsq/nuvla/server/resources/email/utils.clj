@@ -10,9 +10,16 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r])
+  (:import (java.util Date)))
 
 (def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
+
+(defn render-email
+  [values-map]
+  (tmpl/render
+    base-html
+    (assoc values-map :now (Date.))))
 
 (def warning-initiate
   (str/join "\n"
@@ -38,14 +45,12 @@
                        callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
-    :content (tmpl/render
-               base-html
-               {:title            "Nuvla email validation"
-                :button-text      "Validate"
-                :button-url       callback-url
-                :text-1           "To validate your email address click validate button."
-                :conditions-url   conditions-url
-                :warning-initiate true})}])
+    :content (render-email {:title            "Nuvla email validation"
+                            :button-text      "Validate"
+                            :button-url       callback-url
+                            :text-1           "To validate your email address click validate button."
+                            :conditions-url   conditions-url
+                            :warning-initiate true})}])
 
 
 (defn invitation-email-body
@@ -58,8 +63,7 @@
                                         "\n    %s\n"]) name set-password-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
-    :content (tmpl/render
-               base-html
+    :content (render-email
                {:title          "Nuvla invitation"
                 :button-text    "Accept invitation"
                 :button-url     set-password-url
@@ -154,8 +158,7 @@
                           warning-initiate])
                set-password-url)}
    {:type    "text/html; charset=utf-8"
-    :content (tmpl/render
-               base-html
+    :content (render-email
                {:title            "Nuvla set password"
                 :button-text      "Set new password"
                 :button-url       set-password-url

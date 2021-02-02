@@ -17,8 +17,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

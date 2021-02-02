@@ -1,9 +1,9 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils
   (:require
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.time :as time]
+    [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn get-next-heartbeat
