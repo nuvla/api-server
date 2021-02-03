@@ -198,16 +198,16 @@
                 (ltu/is-status 200)
                 (ltu/is-operation-present :get-context)))
 
-          (let [deployment (-> session-user
-                               (request deployment-url
-                                        :request-method :put
-                                        :body (json/write-str {:owner "user/tarzan"
-                                                               :acl   {:owners ["user/tarzan"]}}))
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               (ltu/is-key-value some? :api-credentials true)
-                               (ltu/body))
-                credential-id (-> deployment :api-credentials :api-key)
+          (let [deployment     (-> session-user
+                                   (request deployment-url
+                                            :request-method :put
+                                            :body (json/write-str {:owner "user/tarzan"
+                                                                   :acl   {:owners ["user/tarzan"]}}))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/is-key-value some? :api-credentials true)
+                                   (ltu/body))
+                credential-id  (-> deployment :api-credentials :api-key)
                 credential-url (str p/service-context credential-id)
                 credential     (-> session-admin
                                    (request credential-url)
@@ -341,22 +341,22 @@
                   ;; normally the start job would create the deployment parameters
                   ;; create one manually to verify later that it is removed with the
                   ;; deployment
-                  (let [dp-url (-> session-admin
-                                   (request (str p/service-context "deployment-parameter")
-                                            :request-method :post
-                                            :body (json/write-str
-                                                    {:parent  deployment-id
-                                                     :name    "test-parameter"
-                                                     :node-id "machine"
-                                                     :acl     {:owners   ["group/nuvla-admin"]
-                                                               :edit-acl ["user/jane"]}}))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+                  (let [dep-param-url (-> session-admin
+                                          (request (str p/service-context "deployment-parameter")
+                                                   :request-method :post
+                                                   :body (json/write-str
+                                                           {:parent  deployment-id
+                                                            :name    "test-parameter"
+                                                            :node-id "machine"
+                                                            :acl     {:owners   ["group/nuvla-admin"]
+                                                                      :edit-acl ["user/jane"]}}))
+                                          (ltu/body->edn)
+                                          (ltu/is-status 201)
+                                          (ltu/location-url))]
 
                     ;; verify that the deployment parameter was created
                     (-> session-user
-                        (request dp-url)
+                        (request dep-param-url)
                         (ltu/body->edn)
                         (ltu/is-status 200))
 
@@ -398,6 +398,36 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/is-operation-present "start"))
+
+
+                    ;; on edit changes on deployment acl are propagated to deployment parameters
+                    (let [deployment-acl (-> session-user
+                                             (request deployment-url)
+                                             (ltu/body->edn)
+                                             (ltu/is-status 200)
+                                             (ltu/body)
+                                             :acl)]
+                      (-> session-user
+                          (request dep-param-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value #(= deployment-acl %) :acl true))
+
+                      (-> session-user
+                          (request deployment-url
+                                   :request-method :put
+                                   :body (json/write-str
+                                           {:acl (update deployment-acl
+                                                         :view-data conj "user/shared")}))
+                          (ltu/body->edn)
+                          (ltu/is-status 200))
+
+                      (-> session-user
+                          (request dep-param-url)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value #(some #{"user/shared"} (:view-data %))
+                                            :acl "user/shared")))
 
                     ;; verify user can create another deployment from existing one
                     (let [deployment-url-from-dep (-> session-user
@@ -448,7 +478,7 @@
 
                     ;; verify that the deployment parameter has disappeared
                     (-> session-user
-                        (request dp-url)
+                        (request dep-param-url)
                         (ltu/body->edn)
                         (ltu/is-status 404))
 

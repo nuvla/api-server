@@ -165,15 +165,27 @@ a container orchestration engine.
 
 (defmethod crud/edit resource-type
   [{{:keys [acl parent module]} :body {uuid :uuid} :params :as request}]
-  (let [authn-info (auth/current-authentication request)
-        current    (db/retrieve (str resource-type "/" uuid) request)
-        fixed-attr (select-keys (:module current) [:href :price :license])
-        is-user?   (not (a/is-admin? authn-info))
-        new-acl    (when (and is-user? acl)
-                     (if-let [current-owner (:owner current)]
-                       (assoc acl :owners (-> acl :owners set (conj current-owner) vec))
-                       acl))
-        infra-id   (some-> parent (crud/retrieve-by-id {:nuvla/authn authn-info}) :parent)]
+  (let [id           (str resource-type "/" uuid)
+        current      (db/retrieve id request)
+        authn-info   (auth/current-authentication request)
+        infra-id     (some-> (or parent (:parent current))
+                             (crud/retrieve-by-id {:nuvla/authn authn-info})
+                             :parent)
+        nb-id        (utils/infra-id->nb-id infra-id)
+        fixed-attr   (select-keys (:module current) [:href :price :license])
+        is-user?     (not (a/is-admin? authn-info))
+        new-acl      (-> (or acl (:acl current))
+                         (a/acl-append :owners (:owner current))
+                         (a/acl-append :view-acl id)
+                         (a/acl-append :edit-data id)
+                         (a/acl-append :edit-data nb-id)
+                         (cond->
+                           (and (some? (:nuvlabox current))
+                                (not= nb-id (:nuvlabox current)))
+                           (a/acl-remove (:nuvlabox current))))
+        acl-updated? (not= new-acl (:acl current))]
+    (when acl-updated?
+      (utils/propagate-acl-to-dep-parameters id new-acl))
     (edit-impl
       (cond-> request
               is-user? (update :body dissoc :owner :infrastructure-service :subscription-id
@@ -183,7 +195,8 @@ a container orchestration engine.
                                   "owner" "infrastructure-service" "module/price"
                                   "module/license" "subscription-id")
               new-acl (assoc-in [:body :acl] new-acl)
-              infra-id (assoc-in [:body :infrastructure-service] infra-id)))))
+              infra-id (assoc-in [:body :infrastructure-service] infra-id)
+              nb-id (assoc-in [:body :nuvlabox] nb-id)))))
 
 
 (defn delete-impl
@@ -250,10 +263,11 @@ a container orchestration engine.
 
 (defn edit-deployment
   [resource request]
-  (-> resource
-      (u/update-timestamps)
-      (u/set-updated-by request)
-      (db/edit request)
+  (-> request
+      (assoc :request-method :put
+             :body resource
+             :nuvla/authn auth/internal-identity)
+      (crud/edit)
       :body))
 
 
@@ -267,28 +281,17 @@ a container orchestration engine.
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           coupon         (:coupon deployment)
-          acl            (:acl deployment)
           data?          (some? (:data deployment))
           no-api-keys?   (nil? (:api-credentials deployment))
-          nb-id          (some-> deployment :infrastructure-service utils/infra-id->nb-id)
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (utils/create-subscription price coupon)
                                    (stripe/get-id)))
-          new-acl        (-> acl
-                             (a/acl-append :view-acl id)
-                             (a/acl-append :edit-data id)
-                             (a/acl-append :edit-data nb-id)
-                             (cond->
-                               (and (some? (:nuvlabox deployment))
-                                    (not= nb-id (:nuvlabox deployment)))
-                               (a/acl-remove (:nuvlabox deployment))))
           execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
-                             (assoc :state state :acl new-acl)
+                             (assoc :state state)
                              (cond-> subs-id (assoc :subscription-id subs-id)
-                                     nb-id (assoc :nuvlabox nb-id)
                                      no-api-keys? (assoc :api-credentials
                                                          (utils/generate-api-key-secret
                                                            id

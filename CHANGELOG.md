@@ -18,6 +18,8 @@
 
 ### Changed
 
+  - Deployment parameter - On deployment acls change, acls are propagated to 
+    corresponding deployment parameters
   - Email template - Generate copyright year from current date
   - Credential - fix issue mapping creation and update at server startup time
   - Nuvlabox status - fix spec 

@@ -80,6 +80,30 @@
     (delete-child-resources resource-name deployment-id)))
 
 
+(defn propagate-acl-to-dep-parameters
+  [deployment-id acl]
+  (try
+    (let [query     {:params      {:resource-name "deployment-parameter"}
+                     :cimi-params {:filter (cimi-params-impl/cimi-filter
+                                             {:filter (str "parent='" deployment-id "'")})
+                                   :select ["id"]}
+                     :nuvla/authn auth/internal-identity}
+          child-ids (->> query crud/query :body :resources (map :id))]
+
+      (doseq [child-id child-ids]
+        (try
+          (let [[resource-name uuid] (u/parse-id child-id)
+                request {:params      {:resource-name resource-name
+                                       :uuid          uuid}
+                         :body        {:acl acl}
+                         :nuvla/authn auth/internal-identity}]
+            (crud/edit request))
+          (catch Exception e
+            (log/errorf "error propagating acl to %s for %s: %s" (:id child-id) deployment-id e)))))
+    (catch Exception _
+      (log/errorf "cannot propagate acl to deployment parameters related to %s" deployment-id))))
+
+
 (defn resolve-module [request]
   (let [authn-info     (auth/current-authentication request)
         href           (get-in request [:body :module :href])
