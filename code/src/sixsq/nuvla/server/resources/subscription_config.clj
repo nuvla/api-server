@@ -124,37 +124,47 @@ Collection for holding subscriptions configurations.
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
+
+(def edit-forbidden-attrs
+  [:resource-filter :resource-kind])
+
+
+(def edit-forbidden-attrs-subs
+  (concat edit-forbidden-attrs [:resource-id :resource-type :id :operations]))
+
+
 (defn edit-individual-subs
-  [{{uuid :uuid} :params :as request} doc]
+  [{body :body {uuid :uuid} :params :as request}]
   (let [authn (auth/current-authentication request)
         filter (format "parent='%s'" (str resource-type "/" uuid))
         req {:cimi-params {:filter (parser/parse-cimi-filter filter)}
              :params      {:resource-name subs/resource-type}
              :nuvla/authn authn}
         results (for [res (->> (crud/query req) :body :resources)]
-                  (let [r (crud/edit {:params      {:uuid          (second (str/split (:id res) #"/"))
+                  (let [new-body (merge res (apply dissoc body edit-forbidden-attrs-subs))
+                        r (crud/edit {:params      {:uuid          (second (str/split (:id res) #"/"))
                                                     :resource-name subs/resource-type}
-                                      :body        (merge res doc)
+                                      :body        new-body
                                       :nuvla/authn authn})]
                     (= 200 (:status r))))]
     (if (not (every? true? results))
       (throw (r/ex-bad-request "Failed to set state on subscriptions from subscription configuration."))
       results)))
 
+
 (defn edit-conf-and-subs
-  ([request]
-   (edit-conf-and-subs request {}))
-  ([request doc]
-  (let [new-req (update-in request [:body] merge doc)
-        response (edit-impl new-req)]
-    (edit-individual-subs request doc)
-    response)))
+  [request]
+  (let [new-body (apply dissoc (:body request) edit-forbidden-attrs)
+        req-updated (assoc request :body new-body)
+        response (edit-impl req-updated)]
+    (edit-individual-subs request)
+    response))
 
 
 (defn set-enabled
   "'enabled' boolean"
   [{{uuid :uuid} :params :as request} enabled]
-  (edit-conf-and-subs request {:enabled enabled}))
+  (edit-conf-and-subs (assoc request :body {:enabled enabled})))
 
 
 (defn disable-all
@@ -169,9 +179,9 @@ Collection for holding subscriptions configurations.
 
 (defn set-notif-method-id-all
   [request]
-  (edit-conf-and-subs request {:method-id (-> request
-                                              :body
-                                              :method-id)}))
+  (edit-conf-and-subs (assoc request :body {:method-id (-> request
+                                                           :body
+                                                           :method-id)})))
 
 (defmethod crud/edit resource-type
   [request]

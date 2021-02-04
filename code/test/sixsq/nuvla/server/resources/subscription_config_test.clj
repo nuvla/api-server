@@ -467,3 +467,153 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count 0)))))
+
+
+(deftest editing
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+        acl {:owners ["user/jane"]}
+        _ (create-monitored-resources session-user acl 3 "FOO")
+        num-created (-> session-user
+                        (request (str p/service-context infra-service/resource-type))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body)
+                        :count)
+        valid-subscription-config {:enabled         true
+                                   :category        "notification"
+                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :resource-kind   infra-service/resource-type
+                                   :resource-filter ""
+                                   :criteria        {:kind      "numeric"
+                                                     :metric    "load"
+                                                     :value     "75"
+                                                     :condition ">"}
+                                   :acl             acl}]
+
+    ;; check creation of individual subscriptions
+    (let [subs-base-uri (str p/service-context sub/resource-type)
+          subs-before (-> session-user
+                          (request subs-base-uri)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/body)
+                          :count)
+
+          subs-conf-uri (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-subscription-config))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+
+          subs-conf-abs-uri (str p/service-context subs-conf-uri)
+
+          subs-after (-> session-user
+                         (request subs-base-uri)
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/body)
+                         :count)]
+      (is (= num-created (- subs-after subs-before)))
+
+      ;;
+      ;; editing allowed fields updates fields on individual subscriptions as well
+      (let [current (-> session-user
+                        (request subs-conf-abs-uri)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body))
+            new-criteria {:kind      "numeric"
+                          :metric    "disk"
+                          :value     "85"
+                          :condition "<"}
+            to-update (merge current {:name        "new name"
+                                      :description "new description"
+                                      :criteria new-criteria})
+            updated (-> session-user
+                        (request subs-conf-abs-uri
+                                 :request-method :put
+                                 :body (json/write-str to-update))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body))]
+        (is (= "new name" (:name updated)))
+        (is (= "new description" (:description updated)))
+        (is (= new-criteria (:criteria updated)))
+
+        ;; check individual subscriptions
+        (let [resources (-> session-user
+                            (content-type "application/x-www-form-urlencoded")
+                            (request subs-base-uri
+                                     :request-method :put
+                                     :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)}))
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-count num-created)
+                            (ltu/body)
+                            :resources)]
+          (doseq [res resources]
+            (is (= "new name" (:name res)))
+            (is (= "new description" (:description res)))
+            (is (= new-criteria (:criteria res))))))
+
+      ;;
+      ;; editing NOT allowed fields does nothing
+      (let [current (-> session-user
+                        (request subs-conf-abs-uri)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body))
+            new-criteria {:kind      "numeric"
+                          :metric    "disk"
+                          :value     "85"
+                          :condition "<"}
+            to-update (merge current {:resource-filter "new filter"
+                                      :resource-kind   "new resource kind"})
+            updated (-> session-user
+                        (request subs-conf-abs-uri
+                                 :request-method :put
+                                 :body (json/write-str to-update))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body))]
+        (is (= "" (:resource-filter updated)))
+        (is (= infra-service/resource-type (:resource-kind updated)))
+
+        ;; check individual subscriptions
+        (let [resources (-> session-user
+                            (content-type "application/x-www-form-urlencoded")
+                            (request subs-base-uri
+                                     :request-method :put
+                                     :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)}))
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-count num-created)
+                            (ltu/body)
+                            :resources)]
+          (doseq [res resources]
+            (is (= "" (:resource-filter res)))
+            (is (= infra-service/resource-type (:resource-kind res))))))
+
+      ;; Delete subscription
+      (-> session-user
+          (request subs-conf-abs-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; check individual subscriptions are deleted
+      (-> session-user
+          (content-type "application/x-www-form-urlencoded")
+          (request subs-base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
+                                          :last   0}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0)))))
