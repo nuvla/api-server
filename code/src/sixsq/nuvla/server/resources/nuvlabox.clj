@@ -375,9 +375,9 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (let [tags         (some-> body :tags set)
-              capabilities (some-> body :capabilities set)
-              ssh-keys     (some-> body :ssh-keys set)
+        (let [tags         (some-> body :tags set vec)
+              capabilities (some-> body :capabilities set vec)
+              ssh-keys     (some-> body :ssh-keys set vec)
               nuvlabox     (-> (db/retrieve id request)
                                (assoc :state state-commissioned)
                                (cond-> tags (assoc :tags tags)
