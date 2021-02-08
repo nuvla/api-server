@@ -12,10 +12,16 @@
             :input-message    "application/json"
             :output-message   "text/plain"
             :input-parameters [{:name        "delay"
+                                :type        "integer"
                                 :value-scope {:minimum 1
                                               :maximum 200
                                               :units   "minutes"
-                                              :default 30}}]})
+                                              :default 30}}
+                               {:name        "resource"
+                                :type        "map"
+                                :child-types [{:name "href"
+                                               :type "string"}]
+                                :value-scope {:item {:href {:value "hello"}}}}]})
 
 
 (deftest check-action

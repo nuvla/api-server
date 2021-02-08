@@ -52,7 +52,8 @@
                :os-version                   "OS version"
                :hw-revision-code             "a020d3"
                :monitored                    true
-               :ssh-keys                     []})
+               :ssh-keys                     []
+               :capabilities                 []})
 
 
 (deftest check-nuvlabox
@@ -87,5 +88,6 @@
                  :os-version
                  :hw-revision-code
                  :monitored
-                 :ssh-keys}]
+                 :ssh-keys
+                 :capabilities}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))

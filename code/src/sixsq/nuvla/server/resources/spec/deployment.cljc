@@ -28,6 +28,7 @@
                  "PAUSING", "PAUSED",
                  "SUSPENDING", "SUSPENDED",
                  "UPDATING", "UPDATED",
+                 "PENDING",
                  "ERROR"})
       (assoc :name "state"
              :json-schema/type "string"
@@ -233,6 +234,16 @@
                                            :json-schema/server-managed true)))
 
 
+(s/def ::nuvlabox (-> (st/spec ::common/id)
+                      (assoc :name "nuvlabox"
+                             :json-schema/type "resource-id"
+                             :json-schema/description "reference to parent nuvlabox"
+
+                             :json-schema/section "meta"
+                             :json-schema/editable false
+                             :json-schema/server-managed true)))
+
+
 (def ^:const subscription-id-regex #"^sub_.+$")
 
 (defn subscription-id? [s] (re-matches subscription-id-regex s))
@@ -253,6 +264,14 @@
              :json-schema/description "coupon code")))
 
 
+(s/def ::execution-mode
+  (-> (st/spec #{"pull" "push" "mixed"})
+      (assoc :name "execution-mode"
+             :json-schema/type "string"
+             :json-schema/description "job execution mode"
+             :json-schema/value-scope {:values ["pull" "push" "mixed"]})))
+
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -266,8 +285,10 @@
                                   ::registries-credentials
                                   ::owner
                                   ::infrastructure-service
+                                  ::nuvlabox
                                   ::subscription-id
-                                  ::coupon]}]))
+                                  ::coupon
+                                  ::execution-mode]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

@@ -158,3 +158,23 @@
     (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
 
+(deftest acl-append
+  (let [acl {:owners ["user/a"]
+             :manage ["user/b"]}]
+    (are [expect right-kw user-id]
+      (= expect (a/acl-append acl right-kw user-id))
+      acl :edit-data nil
+      acl :manage "user/b"
+      {:owners    ["user/a"]
+       :edit-data ["user/b"]
+       :manage    ["user/b"]} :edit-data "user/b")))
+
+
+(deftest acl-remove
+  (let [acl {:owners    ["user/a"]
+             :edit-data ["user/b"]
+             :manage    ["user/b"]}]
+    (are [expect user-id]
+      (= expect (a/acl-remove acl user-id))
+      acl nil
+      {:owners    ["user/a"]} "user/b")))

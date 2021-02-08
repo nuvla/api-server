@@ -61,6 +61,7 @@
   [{:keys [claims] :as authn-info}]
   (contains? (set claims) "group/nuvla-admin"))
 
+
 (defn extract-right
   "Given the identity map, this extracts the associated right.
   If the right does not apply, then nil is returned."
@@ -215,3 +216,25 @@
    exist."
   [{:keys [acl] :as resource} request]
   (assoc resource :acl (or acl (default-acl (auth/current-authentication request)))))
+
+
+(defn acl-append
+  [acl right-kw user-id]
+  (if user-id
+    (update acl right-kw (comp vec set conj) user-id)
+    acl))
+
+
+(defn acl-append-resource
+  [resource right-kw user-id]
+  (update resource :acl acl-append right-kw user-id))
+
+
+(defn acl-remove
+  [acl user-id]
+  (if user-id
+    (->> acl
+         (map (fn [[right-kw user-ids]] [right-kw (vec (remove #{user-id} user-ids))]))
+         (filter (fn [[_ user-ids]] (pos? (count user-ids))))
+         (into {}))
+    acl))

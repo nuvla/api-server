@@ -24,31 +24,25 @@
 
 (defn generate-api-key-secret
   [deployment-id authn-info]
-  (let [request-api-key {:params      {:resource-name credential/resource-type}
-                         :body        {:name        (str "API credential for " deployment-id)
-                                       :description (str "generated API credential for " deployment-id)
-                                       :parent      deployment-id
-                                       :template    {:href (str "credential-template/" cred-api-key/method)}}
-                         :nuvla/authn authn-info}
-        {{:keys [status resource-id secret-key]} :body :as response} (crud/add request-api-key)]
-    (when (= status 201)
+  (let [template {:name        (str "API credential for " deployment-id)
+                  :description (str "generated API credential for " deployment-id)
+                  :parent      deployment-id
+                  :template    {:href (str "credential-template/" cred-api-key/method)}}
+        {{:keys [status
+                 resource-id
+                 secret-key]} :body} (credential/create-credential
+                                       template
+                                       (or authn-info
+                                           {:user-id      deployment-id
+                                            :active-claim deployment-id
+                                            :claims       #{deployment-id
+                                                            "group/nuvla-user"
+                                                            "group/nuvla-anon"}}))]
+    (if (= status 201)
       {:api-key    resource-id
-       :api-secret secret-key})))
-
-
-(defn assoc-api-credentials
-  [deployment-id authn-info]
-  (try
-    (if-let [api-credentials (generate-api-key-secret deployment-id authn-info)]
-      (let [edit-request {:params      (u/id->request-params deployment-id)
-                          :body        {:api-credentials api-credentials}
-                          :nuvla/authn authn-info}
-            {:keys [status] :as response} (crud/edit edit-request)]
-        (when (not= status 200)
-          (log/error "could not add api key/secret to" deployment-id response)))
-      (log/error "could not create api key/secret for" deployment-id))
-    (catch Exception e
-      (log/error (str "exception when creating api key/secret for " deployment-id ": " e)))))
+       :api-secret secret-key}
+      (throw (r/ex-response (format "exception when creating api key/secret for "
+                                    deployment-id) 500 deployment-id)))))
 
 
 (defn delete-child-resources
@@ -84,6 +78,30 @@
   (doseq [resource-name #{credential/resource-type "deployment-parameter"
                           deployment-log/resource-type}]
     (delete-child-resources resource-name deployment-id)))
+
+
+(defn propagate-acl-to-dep-parameters
+  [deployment-id acl]
+  (try
+    (let [query     {:params      {:resource-name "deployment-parameter"}
+                     :cimi-params {:filter (cimi-params-impl/cimi-filter
+                                             {:filter (str "parent='" deployment-id "'")})
+                                   :select ["id"]}
+                     :nuvla/authn auth/internal-identity}
+          child-ids (->> query crud/query :body :resources (map :id))]
+
+      (doseq [child-id child-ids]
+        (try
+          (let [[resource-name uuid] (u/parse-id child-id)
+                request {:params      {:resource-name resource-name
+                                       :uuid          uuid}
+                         :body        {:acl acl}
+                         :nuvla/authn auth/internal-identity}]
+            (crud/edit request))
+          (catch Exception e
+            (log/errorf "error propagating acl to %s for %s: %s" (:id child-id) deployment-id e)))))
+    (catch Exception _
+      (log/errorf "cannot propagate acl to deployment parameters related to %s" deployment-id))))
 
 
 (defn resolve-module [request]
@@ -123,14 +141,18 @@
 
 
 (defn create-job
-  [{:keys [id] :as resource} request action]
+  [{:keys [id nuvlabox] :as resource} request action execution-mode]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
-          job-status :status} :body} (job/create-job id action
-                                                     {:owners   ["group/nuvla-admin"]
-                                                      :edit-acl [active-claim]}
-                                                     :priority 50)
+          job-status :status} :body} (job/create-job
+                                       id action
+                                       (-> {:owners ["group/nuvla-admin"]}
+                                           (a/acl-append :edit-acl active-claim)
+                                           (a/acl-append :edit-data nuvlabox)
+                                           (a/acl-append :manage nuvlabox))
+                                       :priority 50
+                                       :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
@@ -151,7 +173,7 @@
 
 (defn can-stop?
   [{:keys [state] :as resource}]
-  (contains? #{"STARTING" "UPDATING" "STARTED" "ERROR"} state))
+  (contains? #{"PENDING" "STARTING" "UPDATING" "STARTED" "ERROR"} state))
 
 
 (defn can-update?
@@ -185,26 +207,26 @@
 
 (defn throw-can-not-access-registries-creds
   [{:keys [id registries-credentials] :as resource} request]
-  (let [preselected-creds (-> resource
-                              (get-in [:module :content :registries-credentials] [])
-                              set)
+  (let [preselected-creds   (-> resource
+                                (get-in [:module :content :registries-credentials] [])
+                                set)
         creds-to-be-checked (set/difference (set registries-credentials) preselected-creds)]
     (if (seq creds-to-be-checked)
-     (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
-                            (->> creds-to-be-checked
-                                 (map #(str "id='" % "'"))
-                                 (str/join " or "))
-                            ")")
-           {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
-                                       :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
-                                                     :last   0}
-                                       :nuvla/authn (:nuvla/authn request)})]
-       (if (< (get body :count 0)
-              (count creds-to-be-checked))
-         (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
-                               403 id))
-         resource))
-     resource)))
+      (let [filter-cred (str "subtype='infrastructure-service-registry' and ("
+                             (->> creds-to-be-checked
+                                  (map #(str "id='" % "'"))
+                                  (str/join " or "))
+                             ")")
+            {:keys [body]} (crud/query {:params      {:resource-name credential/resource-type}
+                                        :cimi-params {:filter (parser/parse-cimi-filter filter-cred)
+                                                      :last   0}
+                                        :nuvla/authn (:nuvla/authn request)})]
+        (if (< (get body :count 0)
+               (count creds-to-be-checked))
+          (throw (r/ex-response (format "some registries credentials for %s can't be accessed" id)
+                                403 id))
+          resource))
+      resource)))
 
 
 (defn count-payment-methods
@@ -215,13 +237,13 @@
 (defn throw-price-need-payment-method
   [{{:keys [price]} :module :as resource} request]
   (if price
-    (let [count-pm              (-> request
-                                    auth/current-active-claim
-                                    customer/active-claim->customer
-                                    :customer-id
-                                    stripe/retrieve-customer
-                                    customer-utils/list-payment-methods
-                                    count-payment-methods)]
+    (let [count-pm (-> request
+                       auth/current-active-claim
+                       customer/active-claim->customer
+                       :customer-id
+                       stripe/retrieve-customer
+                       customer-utils/list-payment-methods
+                       count-payment-methods)]
       (if (pos? count-pm)
         resource
         (throw (r/ex-response "Payment method is required!" 402))))
@@ -231,3 +253,28 @@
 (defn remove-delete
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
+
+
+(defn create-subscription
+  [active-claim {:keys [account-id price-id] :as price} coupon]
+  (stripe/create-subscription
+    {"customer"                (some-> active-claim
+                                       customer/active-claim->customer
+                                       :customer-id)
+     "items"                   [{"price" price-id}]
+     "application_fee_percent" 20
+     "trial_period_days"       1
+     "coupon"                  coupon
+     "transfer_data"           {"destination" account-id}}))
+
+
+(defn infra-id->nb-id
+  [infra-id]
+  (try
+    (let [parent-infra-group (some-> infra-id
+                                     crud/retrieve-by-id-as-admin
+                                     :parent
+                                     crud/retrieve-by-id-as-admin
+                                     :parent)]
+      (when (str/starts-with? parent-infra-group "nuvlabox/") parent-infra-group))
+    (catch Exception _)))

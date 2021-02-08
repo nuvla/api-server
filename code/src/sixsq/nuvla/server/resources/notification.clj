@@ -65,6 +65,7 @@ provide an explicit ACL that the describes the desired visibility.
                :input-message    "application/json"
                :output-message   "application/json"
                :input-parameters [{:name        defer-param-name
+                                   :type        "integer"
                                    :value-scope {:minimum 1
                                                  :units   "minutes"
                                                  :default delay-default}}]}])

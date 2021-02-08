@@ -5,6 +5,7 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.acl-resource :as acl-resource]
@@ -18,6 +19,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.utils :as job-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
@@ -63,6 +65,85 @@ particular NuvlaBox release.
 
 
 (def ^:const default-refresh-interval 90)
+
+
+(def actions [{:name           "activate"
+               :uri            "activate"
+               :description    "activate the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "commission"
+               :uri            "commission"
+               :description    "commission the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "decommission"
+               :uri            "decommission"
+               :description    "decommission the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "check-api"
+               :uri            "check-api"
+               :description    "check nuvlabox api"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name             "reboot"
+               :uri              "reboot"
+               :description      "reboot the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}]}
+
+              {:name             "add-ssh-key"
+               :uri              "add-ssh-key"
+               :description      "add an ssh key to the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}
+                                  {:name        "credential"
+                                   :type        "string"
+                                   :description "credential id to be added"}]}
+
+              {:name             "revoke-ssh-key"
+               :uri              "revoke-ssh-key"
+               :description      "revoke an ssh key to the nuvlabox"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name        "execution-mode"
+                                   :type        "string"
+                                   :value-scope {:values  ["push" "pull" "mixed"]
+                                                 :default "push"}}
+
+                                  {:name        "credential"
+                                   :type        "string"
+                                   :description "credential id to be added"}]}
+
+              {:name             "update-nuvlabox"
+               :uri              "update-nuvlabox"
+               :description      "update nuvlabox engine"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name "nuvlabox-release"
+                                   :type "string"}]}
+              ])
 
 
 ;;
@@ -145,7 +226,7 @@ particular NuvlaBox release.
 (defn edit-subresources
   [resource]
   (let [{:keys [id name acl nuvlabox-status
-                infrastructure-service-group credential-api-key]
+                infrastructure-service-group credential-api-key capabilities]
          :as   nuvlabox} (acl-utils/normalize-acl-for-resource resource)]
 
     (when nuvlabox-status
@@ -155,12 +236,12 @@ particular NuvlaBox release.
 
       (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "swarm")]
+      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "swarm")]
         (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
         (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
         (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
 
-      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil "kubernetes")]
+      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "kubernetes")]
         (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
       (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
@@ -176,13 +257,14 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags ssh-keys] :as body}]
+   {:keys [acl name description location tags ssh-keys capabilities] :as body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
           tags (assoc :tags tags)
           ssh-keys (assoc :ssh-keys ssh-keys)
+          capabilities (assoc :capabilities capabilities)
           acl (assoc
                 :acl (merge
                        (select-keys acl [:view-meta :edit-data :edit-meta :delete])
@@ -293,14 +375,20 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (let [nuvlabox (db/retrieve id request)
-              tags     (some-> body :tags set)]
+        (let [tags         (some-> body :tags set vec)
+              capabilities (some-> body :capabilities set vec)
+              ssh-keys     (some-> body :ssh-keys set vec)
+              nuvlabox     (-> (db/retrieve id request)
+                               (assoc :state state-commissioned)
+                               (cond-> tags (assoc :tags tags)
+                                       capabilities (assoc :capabilities capabilities)
+                                       ssh-keys (assoc :ssh-keys ssh-keys))
+                               crud/validate)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
 
-          (db/edit (cond-> (assoc nuvlabox :state state-commissioned)
-                           tags (assoc :tags tags)) request)
+          (db/edit nuvlabox request)
 
           (r/map-response "commission executed successfully" 200))
         (catch Exception e
@@ -363,7 +451,7 @@ particular NuvlaBox release.
       (event-utils/create-event id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
-      (or (ex-data e) (throw e))))) 0
+      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type "decommission"]
@@ -426,7 +514,7 @@ particular NuvlaBox release.
 ;;
 
 (defn reboot
-  [{:keys [id state acl] :as nuvlabox}]
+  [{:keys [id state acl] :as nuvlabox} execution-mode]
   (if (= state state-commissioned)
     (do
       (log/warn "Rebooting NuvlaBox:" id)
@@ -434,7 +522,8 @@ particular NuvlaBox release.
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "reboot_nuvlabox"
                                                            acl
-                                                           :priority 50)
+                                                           :priority 50
+                                                           :execution-mode execution-mode)
               job-msg (str "sending reboot request to NuvlaBox " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
@@ -447,12 +536,12 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "reboot"]
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (reboot)))
+          (reboot (:execution-mode body))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -463,20 +552,24 @@ particular NuvlaBox release.
 
 
 (defn add-ssh-key
-  [{:keys [id state acl] :as nuvlabox} ssh-credential]
+  [{:keys [id state acl] :as nuvlabox} ssh-credential execution-mode]
   (if (= state state-commissioned)
     (do
       (log/warn "Adding new SSH key for NuvlaBox:" id)
       (try
         (let [cred-id (:id ssh-credential)
               {{job-id     :resource-id
-                job-status :status} :body} (job/create-job id "nuvlabox_add_ssh_key"
-                                             acl
+                job-status :status} :body} (job/create-job
+                                             id "nuvlabox_add_ssh_key"
+                                             (-> acl
+                                                 (a/acl-append :edit-data id)
+                                                 (a/acl-append :manage id))
                                              :affected-resources [{:href cred-id}]
-                                             :priority 50)
-                job-msg   (str "asking NuvlaBox "
-                             id " to add SSH key "
-                             cred-id " with async " job-id)]
+                                             :priority 50
+                                             :execution-mode execution-mode)
+              job-msg (str "asking NuvlaBox "
+                           id " to add SSH key "
+                           cred-id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to add SSH key to NuvlaBox" 500 id)))
@@ -496,17 +589,31 @@ particular NuvlaBox release.
           acl         (:acl nuvlabox)
           credential  (if ssh-cred-id
                         (db/retrieve ssh-cred-id request)
-                        (wf-utils/create-ssh-key {:acl      acl
-                                                  :template {:href "credential-template/generate-ssh-key"}}))]
+                        (wf-utils/create-ssh-key
+                          {:acl      acl
+                           :template {:href "credential-template/generate-ssh-key"}}))]
 
       (-> (db/retrieve (:id credential) request)
           (a/throw-cannot-view request))
       (-> nuvlabox
           (a/throw-cannot-manage request)
-          (add-ssh-key credential)))
+          (add-ssh-key credential (:execution-mode body))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+
+(defn get-context-ssh-credential
+  [{:keys [affected-resources] :as job}]
+  (let [credential (some->> affected-resources
+                            (some (fn [{:keys [href]}]
+                                    (when (str/starts-with? href "credential/") href)))
+                            crud/retrieve-by-id-as-admin)]
+    (job-utils/get-context->response credential)))
+
+
+(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_add_ssh_key"]
+  [resource]
+  (get-context-ssh-credential resource))
 
 
 ;;
@@ -515,7 +622,7 @@ particular NuvlaBox release.
 
 
 (defn revoke-ssh-key
-  [{:keys [id state acl] :as nuvlabox} ssh-credential-id]
+  [{:keys [id state acl] :as nuvlabox} ssh-credential-id execution-mode]
   (if (= state state-commissioned)
     (if (nil? ssh-credential-id)
       (logu/log-and-throw-400 "SSH credential ID is missing")
@@ -523,11 +630,16 @@ particular NuvlaBox release.
         (log/warn "Removing SSH key " ssh-credential-id " from NuvlaBox " id)
         (try
           (let [{{job-id     :resource-id
-                  job-status :status} :body} (job/create-job id "nuvlabox_revoke_ssh_key"
-                                                             acl
-                                                             :affected-resources [{:href ssh-credential-id}]
-                                                             :priority 50)
-                job-msg (str "removing SSH key " ssh-credential-id " from NuvlaBox " id " with async " job-id)]
+                  job-status :status} :body} (job/create-job
+                                               id "nuvlabox_revoke_ssh_key"
+                                               (-> acl
+                                                   (a/acl-append :edit-data id)
+                                                   (a/acl-append :manage id))
+                                               :affected-resources [{:href ssh-credential-id}]
+                                               :priority 50
+                                               :execution-mode execution-mode)
+                job-msg (str "removing SSH key " ssh-credential-id
+                             " from NuvlaBox " id " with async " job-id)]
             (when (not= job-status 201)
               (throw (r/ex-response
                        "unable to create async job to remove SSH key from NuvlaBox" 500 id)))
@@ -547,10 +659,14 @@ particular NuvlaBox release.
           (a/throw-cannot-view request))
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (revoke-ssh-key ssh-cred-id)))
+          (revoke-ssh-key ssh-cred-id (:execution-mode body))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+
+(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_revoke_ssh_key"]
+  [resource]
+  (get-context-ssh-credential resource))
 
 
 ;;
@@ -568,9 +684,12 @@ particular NuvlaBox release.
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
-                                               acl
+                                               (-> acl
+                                                   (a/acl-append :edit-data id)
+                                                   (a/acl-append :manage id))
                                                :affected-resources [{:href nb-release-id}]
-                                               :priority 50)
+                                               :priority 50
+                                               :execution-mode "pull")
                 job-msg (str "updating NuvlaBox " id " with target release " nb-release-id
                              ", with async " job-id)]
             (when (not= job-status 201)
