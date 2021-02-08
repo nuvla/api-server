@@ -375,18 +375,20 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (try
-        (let [nuvlabox     (db/retrieve id request)
-              tags         (some-> body :tags set)
+        (let [tags         (some-> body :tags set)
               capabilities (some-> body :capabilities set)
-              ssh-keys     (some-> body :ssh-keys set)]
+              ssh-keys     (some-> body :ssh-keys set)
+              nuvlabox     (-> (db/retrieve id request)
+                               (assoc :state state-commissioned)
+                               (cond-> tags (assoc :tags tags)
+                                       capabilities (assoc :capabilities capabilities)
+                                       ssh-keys (assoc :ssh-keys ssh-keys))
+                               crud/validate)]
           (-> nuvlabox
               (a/throw-cannot-manage request)
               (commission request))
 
-          (db/edit (cond-> (assoc nuvlabox :state state-commissioned)
-                           tags (assoc :tags tags)
-                           capabilities (assoc :capabilities capabilities)
-                           ssh-keys (assoc :ssh-keys ssh-keys)) request)
+          (db/edit nuvlabox request)
 
           (r/map-response "commission executed successfully" 200))
         (catch Exception e
