@@ -94,8 +94,8 @@ request.
                      (crud/validate))
         response (db/add resource-type new-job {})]
     (when (#{"push" "mixed"} execution-mode)
-      (->> (ju/add-job-to-queue id priority)
-           (log/debugf "Added %s, zookeeper path %s." id)))
+      (let [zk-path (ju/add-job-to-queue id priority)]
+        (log/infof "Added %s, zookeeper path %s." id zk-path)))
     response))
 
 
