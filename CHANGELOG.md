@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.8.0] - 2021-02-09
+
 ### Added
 
   - NuvlaBox Status - new attribute online
