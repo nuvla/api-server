@@ -29,6 +29,9 @@ request.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
+(def ^:const latest-version 2)
+
+
 (def collection-acl {:query       ["group/nuvla-user"]
                      :add         ["group/nuvla-admin"]
                      :bulk-delete ["group/nuvla-admin"]})
@@ -72,7 +75,8 @@ request.
 ;; CRUD operations
 ;;
 
-(defn add-impl [{{:keys [priority] :or {priority 999} :as body} :body :as request}]
+(defn add-impl [{{:keys [priority execution-mode version]
+                  :or {priority 999 execution-mode "push" version latest-version} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [id             (u/new-resource-id resource-type)
         new-job        (-> body
@@ -80,6 +84,8 @@ request.
                            (assoc :resource-type resource-type)
                            (assoc :id id)
                            (assoc :state ju/state-queued)
+                           (assoc :execution-mode execution-mode)
+                           (assoc :version version)
                            u/update-timestamps
                            (u/set-created-by request)
                            ju/job-cond->addition

@@ -2,15 +2,34 @@
 
 ## Unreleased
 
+### Changed
+
+  - Job - Log zookeeper path at INFO level
+
+## [5.8.0] - 2021-02-09
+
 ### Added
 
   - NuvlaBox Status - new attribute online
   - NuvlaBox Status - new attribute to report Docker Swarm certificates expiration date
+  - Job - do not allow edit of target-resource and action
+  - Deployment parameters - Allow deployment token to update deployment parameters
+  - Deployment - Allow deployment token to update deployment
+  - Deployment - Reduce scope of api keys
+  - Nuvlabox - Add infrastrure-services-coe
+  - Credential - fix issue mapping creation and update at server startup time
+  - Nuvlabox status - fix spec
+  - Job - Add new attributes for supporting job execution in pull mode
+  - NuvlaBox and Infrastructure Service - Add new capabilities attribute
 
 ### Changed
 
+  - Deployment parameter - On deployment acls change, acls are propagated to
+    corresponding deployment parameters
+  - Email template - Generate copyright year from current date
   - Credential - fix issue mapping creation and update at server startup time
-  - Nuvlabox status - fix spec 
+  - Nuvlabox status - fix spec
+  - Credential - status can now also be UNKNOWN
 
 ## [5.7.0] - 2020-12-10
 
