@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Nuvlabox - Update nuvlabox set job execution-mode depending
+    on nuvlabox capabilities
   - Job - Log zookeeper path at INFO level
 
 ## [5.8.0] - 2021-02-09

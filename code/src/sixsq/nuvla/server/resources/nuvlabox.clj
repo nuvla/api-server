@@ -674,14 +674,16 @@ particular NuvlaBox release.
 ;;
 
 (defn update-nuvlabox
-  [{:keys [id state acl] :as nuvlabox} nb-release-id]
+  [{:keys [id state acl capabilities] :as nuvlabox} nb-release-id]
   (if (= state state-commissioned)
     (if (nil? nb-release-id)
       (logu/log-and-throw-400 "Target NuvlaBox release is missing")
       (do
         (log/warn "Updating NuvlaBox " id)
         (try
-          (let [{{job-id     :resource-id
+          (let [pull-support?  (contains? (set capabilities) "NUVLA_JOB_PULL")
+                execution-mode (if pull-support? "pull" "push")
+                {{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
                                                (-> acl
@@ -689,9 +691,9 @@ particular NuvlaBox release.
                                                    (a/acl-append :manage id))
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
-                                               :execution-mode "pull")
-                job-msg (str "updating NuvlaBox " id " with target release " nb-release-id
-                             ", with async " job-id)]
+                                               :execution-mode execution-mode)
+                job-msg        (str "updating NuvlaBox " id " with target release " nb-release-id
+                                    ", with async " job-id)]
             (when (not= job-status 201)
               (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
             (event-utils/create-event id job-msg acl)
