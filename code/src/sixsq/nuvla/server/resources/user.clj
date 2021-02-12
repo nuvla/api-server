@@ -208,6 +208,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defn create-super-user
   [password]
   ;; FIXME: nasty hack to ensure username-password user-template, user-identifier and group index are available
+  (credential/initialize)
   (group/initialize)
   (username-password/initialize)
   (user-identifier/initialize)
