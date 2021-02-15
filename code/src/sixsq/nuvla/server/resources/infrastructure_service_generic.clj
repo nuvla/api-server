@@ -41,7 +41,7 @@ an endpoint.
 (defmethod infra-service/post-add-hook method
   [service request]
   (try
-    (let [id (:id service)
+    (let [id       (:id service)
           category "state"]
       (notif-utils/create-state-event-notification-subscription id request)
       (event-utils/create-event id

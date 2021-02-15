@@ -11,8 +11,8 @@ manage it.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-coe :as infra-service-coe]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-coe :as tpl-coe]
     [sixsq.nuvla.server.util.response :as r]))
@@ -101,11 +101,11 @@ manage it.
 
 (defmethod infra-service/set-crud-operations method
   [{id :id :as resource} request]
-  (let [start-op (u/action-map id :start)
-        stop-op (u/action-map id :stop)
-        delete-op (u/action-map id :delete)
+  (let [start-op     (u/action-map id :start)
+        stop-op      (u/action-map id :stop)
+        delete-op    (u/action-map id :delete)
         terminate-op (u/action-map id :terminate)
-        can-manage? (a/can-manage? resource request)]
+        can-manage?  (a/can-manage? resource request)]
     (cond-> (crud/set-standard-resource-operations resource request)
             (and can-manage? (not (can-delete? resource))) (update :operations remove-delete)
             (and can-manage? (can-start? resource)) (update :operations conj start-op)
@@ -164,15 +164,15 @@ manage it.
     (when-not (contains? service :management-credential)
       (throw (r/ex-response (format ":management-credential required to create COE %" (:subtype service))
                             412 (:id service))))
-    (let [id       (:id service)
-          coe-type (:subtype service)
-          active-claim  (auth/current-active-claim request)
+    (let [id           (:id service)
+          coe-type     (:subtype service)
+          active-claim (auth/current-active-claim request)
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job id "provision_infrastructure_service_coe"
                                                        {:owners   ["group/nuvla-admin"]
                                                         :view-acl [active-claim]}
                                                        :priority 50)
-          job-msg (str "starting " id " with async " job-id)]
+          job-msg      (str "starting " id " with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response (str "unable to create async job to start infrastructure service " coe-type) 500 id)))
       (-> id

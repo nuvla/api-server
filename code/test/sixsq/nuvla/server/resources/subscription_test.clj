@@ -6,8 +6,8 @@
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.subscription :as t]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.subscription :as t])
   (:import
     [java.util UUID]))
 

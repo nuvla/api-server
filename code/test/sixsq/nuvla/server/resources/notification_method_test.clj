@@ -5,9 +5,9 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.notification-method :as t]
-    [sixsq.nuvla.server.resources.subscription :as subs]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu])
+    [sixsq.nuvla.server.resources.subscription :as subs])
   (:import
     [java.util UUID]))
 

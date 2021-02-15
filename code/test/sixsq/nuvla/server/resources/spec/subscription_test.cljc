@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.spec.subscription-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.subscription-config :as t]
-    [sixsq.nuvla.server.resources.spec.subscription-config-test :as sct]
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.subscription :as subs]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
+    [sixsq.nuvla.server.resources.spec.subscription-config-test :as sct]
+    [sixsq.nuvla.server.resources.subscription-config :as t]))
 
 (def valid-acl {:owners   ["group/nuvla-admin"]
                 :edit-acl ["group/nuvla-admin"]})

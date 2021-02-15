@@ -27,8 +27,8 @@
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
-    [sixsq.nuvla.server.util.kafka-embeded :as ke]
     [sixsq.nuvla.server.util.kafka :as ka]
+    [sixsq.nuvla.server.util.kafka-embeded :as ke]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
   (:import
@@ -379,9 +379,9 @@
 (defn create-es-node-client
   []
   (log/info "creating elasticsearch node and client")
-  (let [node   (create-test-node)
-        client (-> (esu/create-es-client)
-                   esu/wait-for-cluster)
+  (let [node    (create-test-node)
+        client  (-> (esu/create-es-client)
+                    esu/wait-for-cluster)
         sniffer (esu/create-es-sniffer client)]
     [node client sniffer]))
 
@@ -428,8 +428,8 @@
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [cache# (set-es-node-client-cache)
-         client# (second cache#)
+  `(let [cache#   (set-es-node-client-cache)
+         client#  (second cache#)
          sniffer# (nth cache# 2)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      (esu/reset-index client# (str escu/default-index-prefix "*"))
@@ -495,32 +495,32 @@
   [f]
   (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
         k-dir (ke/create-tmp-dir "kafka-log-dir")]
-     (try
-        (log/info "starting kafka")
-        (with-open [k (ke/start-embedded-kafka
-                        {::ke/host kafka-host
-                         ::ke/kafka-port kafka-port
-                         ::ke/zk-port kafka-zk-port
-                         ::ke/zookeeper-data-dir (str z-dir)
-                         ::ke/kafka-log-dir (str k-dir)
-                         ::ke/broker-config {"auto.create.topics.enable" "true"}})]
-          ;; Create and set kafka producer.
-          (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host kafka-port)))
-          (f))
-        (catch Throwable t
-          (throw t))
-        (finally
-          (ka/close-producer!)
-          (ke/delete-dir z-dir)
-          (ke/delete-dir k-dir)))))
+    (try
+      (log/info "starting kafka")
+      (with-open [k (ke/start-embedded-kafka
+                      {::ke/host               kafka-host
+                       ::ke/kafka-port         kafka-port
+                       ::ke/zk-port            kafka-zk-port
+                       ::ke/zookeeper-data-dir (str z-dir)
+                       ::ke/kafka-log-dir      (str k-dir)
+                       ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
+        ;; Create and set kafka producer.
+        (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host kafka-port)))
+        (f))
+      (catch Throwable t
+        (throw t))
+      (finally
+        (ka/close-producer!)
+        (ke/delete-dir z-dir)
+        (ke/delete-dir k-dir)))))
 
 (defmacro with-test-es-client
   "Creates an Elasticsearch test client, executes the body with the created
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [cache# (set-es-node-client-cache)
-         client# (second cache#)
+  `(let [cache#   (set-es-node-client-cache)
+         client#  (second cache#)
          sniffer# (nth cache# 2)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      (esu/reset-index client# (str escu/default-index-prefix "*"))

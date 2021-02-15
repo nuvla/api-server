@@ -2,30 +2,30 @@
   "Based on crux.kafka.embedded"
   (:require [clojure.java.io :as io]
             [clojure.spec.alpha :as s])
-  (:import (kafka.server
+  (:import (java.io Closeable)
+           (java.nio.file Files FileVisitResult Path Paths SimpleFileVisitor)
+           (kafka.server
              KafkaConfig
              KafkaServerStartable)
            (org.apache.zookeeper.server
-             ServerCnxnFactory ZooKeeperServer)
-           (java.nio.file Files Paths Path FileVisitResult SimpleFileVisitor)
-           (java.io Closeable)))
+             ServerCnxnFactory ZooKeeperServer)))
 
 (def default-kafka-broker-config
-  {"broker.id" "0"
-   "num.io.threads" "5"
-   "num.network.threads" "5"
-   "log.cleaner.dedupe.buffer.size" "1048577"
-   "log.flush.interval.messages"  "1"
-   "offsets.topic.num.partitions" "1"
-   "offsets.topic.replication.factor" "1"
-   "transaction.state.log.num.partitions" "1"
+  {"broker.id"                                "0"
+   "num.io.threads"                           "5"
+   "num.network.threads"                      "5"
+   "log.cleaner.dedupe.buffer.size"           "1048577"
+   "log.flush.interval.messages"              "1"
+   "offsets.topic.num.partitions"             "1"
+   "offsets.topic.replication.factor"         "1"
+   "transaction.state.log.num.partitions"     "1"
    "transaction.state.log.replication.factor" "1"
-   "transaction.state.log.min.isr" "1"
-   "auto.create.topics.enable" "false"
-   "auto.offset.reset" "earliest"
-   "retry.backoff.ms" "500"
-   "message.send.max.retries" "5"
-   "max.poll.records" "1"})
+   "transaction.state.log.min.isr"            "1"
+   "auto.create.topics.enable"                "false"
+   "auto.offset.reset"                        "earliest"
+   "retry.backoff.ms"                         "500"
+   "message.send.max.retries"                 "5"
+   "max.poll.records"                         "1"})
 
 (defn start-kafka-broker ^KafkaServerStartable [config]
   (doto (KafkaServerStartable. (KafkaConfig. (merge default-kafka-broker-config
@@ -63,11 +63,11 @@
 (defn start-zookeeper
   ^org.apache.zookeeper.server.ServerCnxnFactory
   [data-dir ^long port]
-  (let [tick-time 2000
+  (let [tick-time       2000
         max-connections 16
-        server (ZooKeeperServer. (io/file data-dir)
-                                 (io/file data-dir)
-                                 tick-time)]
+        server          (ZooKeeperServer. (io/file data-dir)
+                                          (io/file data-dir)
+                                          tick-time)]
     (doto (ServerCnxnFactory/createFactory port
                                            max-connections)
       (.startup server))))
@@ -114,26 +114,26 @@
   [{::keys [host zookeeper-data-dir zookeeper-port
             kafka-log-dir kafka-port
             broker-config broker-id]
-    :or {zookeeper-port 2182
-         host "localhost"
-         kafka-port 9092
-         broker-id "0"}
-    :as options}]
+    :or    {zookeeper-port 2182
+            host           "localhost"
+            kafka-port     9092
+            broker-id      "0"}
+    :as    options}]
   (s/assert ::options options)
   (let [zookeeper (start-zookeeper (io/file zookeeper-data-dir)
                                    zookeeper-port)
-        kafka (try
-                (start-kafka-broker (assoc broker-config
-                                      "log.dir" (str (io/file kafka-log-dir))
-                                      "port" (str kafka-port)
-                                      "host" host
-                                      "broker-id" broker-id
-                                      "zookeeper.connect" (format "%s:%s"
-                                                                  host
-                                                                  zookeeper-port)))
-                (catch Throwable t
-                  (stop-zookeeper zookeeper)
-                  (throw t)))]
+        kafka     (try
+                    (start-kafka-broker (assoc broker-config
+                                          "log.dir" (str (io/file kafka-log-dir))
+                                          "port" (str kafka-port)
+                                          "host" host
+                                          "broker-id" broker-id
+                                          "zookeeper.connect" (format "%s:%s"
+                                                                      host
+                                                                      zookeeper-port)))
+                    (catch Throwable t
+                      (stop-zookeeper zookeeper)
+                      (throw t)))]
     (->EmbeddedKafka zookeeper
                      kafka
                      (assoc options
