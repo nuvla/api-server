@@ -25,7 +25,7 @@
                           :nuvla/authn auth/internal-identity}]
       (crud/add create-request))
      (catch Exception e
-       (log/error (format "Failed to create subscription: %s" e)))))
+       (log/errorf "Failed to create subscription: %s" e))))
 
 
 (defn create-subscription-if-enabled

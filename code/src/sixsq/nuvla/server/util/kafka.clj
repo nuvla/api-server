@@ -19,7 +19,7 @@
                          :or   {kserializer   :string
                                 vserializer   kc/json-serializer
                                 producer-name "nuvla-server"}}]
-   (log/info (format "creating kafka producer '%s': %s" producer-name bootstrap-servers))
+   (log/infof "creating kafka producer '%s': %s" producer-name bootstrap-servers)
    (kc/producer {:bootstrap.servers bootstrap-servers
                  :client.id         producer-name}
                 kserializer

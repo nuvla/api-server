@@ -152,4 +152,4 @@ Collection for holding subscriptions.
                                               :resource-name resource-type}
                                 :nuvla/authn auth/internal-identity})]
           (if (not= (:status res) 200)
-            (log/warn (format "Failed to delete %s when deleting %s" id resource-id))))))))
+            (log/warnf "Failed to delete %s when deleting %s" id resource-id)))))))
