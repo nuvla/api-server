@@ -23,14 +23,15 @@
 
                    :subtype       "s3"
                    :endpoint      "https://s3.example.org:2000"
-                   :state         "STARTED"}]
+                   :state         "STARTED"
+                   :capabilities  ["NUVLA_JOB_PULL"]}]
 
     (stu/is-valid ::spec-generic/schema cfg)
 
     (doseq [attr #{:id :resource-type :created :updated :acl :method :subtype :endpoint}]
       (stu/is-invalid ::spec-generic/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:state}]
+    (doseq [attr #{:state :capabilities}]
       (stu/is-valid ::spec-generic/schema (dissoc cfg attr)))))
 
 

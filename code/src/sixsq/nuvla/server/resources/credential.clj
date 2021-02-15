@@ -45,7 +45,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (defn initialize
   []
-  (std-crud/initialize resource-type nil)
+  (std-crud/initialize resource-type ::credential/schema)
   (md/register resource-metadata))
 
 

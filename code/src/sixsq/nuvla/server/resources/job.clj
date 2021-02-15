@@ -76,24 +76,26 @@ request.
 ;;
 
 (defn add-impl [{{:keys [priority execution-mode version]
-                  :or {priority 999 execution-mode "push" version latest-version} :as body} :body :as request}]
+                  :or {priority 999 execution-mode "push"
+                       version  latest-version} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [id             (u/new-resource-id resource-type)
-        new-job        (-> body
-                           u/strip-service-attrs
-                           (assoc :resource-type resource-type)
-                           (assoc :id id)
-                           (assoc :state ju/state-queued)
-                           (assoc :execution-mode execution-mode)
-                           (assoc :version version)
-                           u/update-timestamps
-                           (u/set-created-by request)
-                           ju/job-cond->addition
-                           (crud/add-acl request)
-                           (crud/validate))
-        response       (db/add resource-type new-job {})
-        zookeeper-path (ju/add-job-to-queue id priority)]
-    (log/debugf "Added %s, zookeeper path %s." id zookeeper-path)
+  (let [id       (u/new-resource-id resource-type)
+        new-job  (-> body
+                     u/strip-service-attrs
+                     (assoc :resource-type resource-type)
+                     (assoc :id id)
+                     (assoc :state ju/state-queued)
+                     (assoc :execution-mode execution-mode)
+                     (assoc :version version)
+                     u/update-timestamps
+                     (u/set-created-by request)
+                     ju/job-cond->addition
+                     (crud/add-acl request)
+                     (crud/validate))
+        response (db/add resource-type new-job {})]
+    (when (#{"push" "mixed"} execution-mode)
+      (let [zk-path (ju/add-job-to-queue id priority)]
+        (log/infof "Added %s, zookeeper path %s." id zk-path)))
     response))
 
 
@@ -120,7 +122,10 @@ request.
                                        (set)
                                        (u/strip-select-from-mandatory-attrs))
           current-without-selected (apply dissoc current dissoc-keys)
-          merged                   (merge current-without-selected body)]
+          merged                   (merge current-without-selected
+                                          (dissoc body
+                                                  :target-resource
+                                                  :action))]
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)
@@ -166,9 +171,11 @@ request.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [stop-op (u/action-map id :stop)]
+  (let [stop-op        (u/action-map id :stop)
+        get-context-op (u/action-map id :get-context)]
     (cond-> (crud/set-standard-operations resource request)
-            (a/can-manage? resource request) (update-in [:operations] conj stop-op))))
+            (a/can-manage? resource request) (update :operations conj stop-op)
+            (ju/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]
@@ -176,11 +183,22 @@ request.
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (a/throw-cannot-edit request)
+        (a/throw-cannot-manage request)
         (ju/stop)
         (u/update-timestamps)
         (u/set-updated-by request)
-        (db/edit request))
+        (db/edit {:nuvla/authn auth/internal-identity}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "get-context"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (-> (str resource-type "/" uuid)
+        (db/retrieve request)
+        (ju/throw-cannot-get-context request)
+        (ju/get-context))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -190,12 +208,13 @@ request.
 ;;
 
 (defn create-job
-  [target-resource action acl & {:keys [priority affected-resources]}]
+  [target-resource action acl & {:keys [priority affected-resources execution-mode]}]
   (let [job-map        (cond-> {:action          action
                                 :target-resource {:href target-resource}
                                 :acl             acl}
                                priority (assoc :priority priority)
-                               affected-resources (assoc :affected-resources affected-resources))
+                               affected-resources (assoc :affected-resources affected-resources)
+                               execution-mode (assoc :execution-mode execution-mode))
         create-request {:params      {:resource-name resource-type}
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]

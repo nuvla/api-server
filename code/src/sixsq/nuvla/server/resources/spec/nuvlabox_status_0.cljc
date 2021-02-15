@@ -589,12 +589,27 @@
 
            :json-schema/order 72)))
 
+
+(def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
+
+
+(s/def ::job-id (-> (st/spec (s/and string? #(re-matches job-regex %)))))
+
+
+(s/def ::jobs
+  (-> (st/spec (s/coll-of ::job-id :kind vector?))
+      (assoc :name "jobs"
+             :json-schema/description "List of jobs to be executed by NuvlaBox"
+
+             :json-schema/order 73)))
+
+
 (s/def ::swarm-node-cert-expiry-date
   (-> (st/spec ::core/timestamp)
     (assoc :name "swarm-node-cert-expiry-date"
            :json-schema/description "Expiry date of the Docker Swarm CA certificates"
 
-           :json-schema/order 73)))
+           :json-schema/order 74)))
 
 
 (s/def ::online
@@ -604,7 +619,7 @@
              :json-schema/description "Indicate if the nuvlabox is connected to Nuvla service based on next-heartbeat attribute"
              :json-schema/server-managed true
 
-             :json-schema/order 74)))
+             :json-schema/order 75)))
 
 
 (s/def ::schema
@@ -632,6 +647,7 @@
                                ::vulnerabilities
                                ::swarm-node-id
                                ::installation-parameters
+                               ::jobs
                                ::swarm-node-cert-expiry-date
                                ::online]}))
 

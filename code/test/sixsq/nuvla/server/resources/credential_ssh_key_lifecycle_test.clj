@@ -65,6 +65,13 @@
                           :tags        tags-attr
                           :template    {:href  href}}]
 
+    ;; check we can perform search with ordering by name
+    (-> session-admin
+        (request (str base-uri "?orderby=name:asc")
+                 :request-method :put)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
       (-> session

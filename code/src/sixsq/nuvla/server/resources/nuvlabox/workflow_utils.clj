@@ -156,22 +156,23 @@
 
 
 (defn create-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        (str (str/capitalize subtype) " "
-                                                (utils/format-nb-name
-                                                  nuvlabox-name (utils/short-nb-id nuvlabox-id)))
+                                                   (utils/format-nb-name
+                                                     nuvlabox-name (utils/short-nb-id nuvlabox-id)))
                                  :description (str (str/capitalize subtype) " cluster on "
-                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                                                   (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl
                                  :template    (cond->
                                                 {:href     "infrastructure-service-template/generic"
                                                  :endpoint endpoint
                                                  :subtype  subtype}
-                                                tags (assoc :tags tags))}
+                                                tags (assoc :tags tags)
+                                                capabilities (assoc :capabilities capabilities))}
                    :nuvla/authn auth/internal-identity}
           {{:keys [resource-id]} :body status :status} (crud/add request)]
 
@@ -187,22 +188,23 @@
 
 
 (defn update-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
   (when-let [resource-id (get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name infra-service/resource-type}
                    :body        (cond->
                                   {:name        (str (str/capitalize subtype) " "
-                                                  (utils/format-nb-name
-                                                    nuvlabox-name
-                                                    (utils/short-nb-id nuvlabox-id)))
+                                                     (utils/format-nb-name
+                                                       nuvlabox-name
+                                                       (utils/short-nb-id nuvlabox-id)))
                                    :description (str (str/capitalize subtype) " cluster on "
-                                                  (utils/format-nb-name
-                                                    nuvlabox-name nuvlabox-id))
+                                                     (utils/format-nb-name
+                                                       nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   tags (assoc :tags tags)
-                                  endpoint (assoc :endpoint endpoint))
+                                  endpoint (assoc :endpoint endpoint)
+                                  capabilities (assoc :capabilities capabilities))
                    :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
 
@@ -275,17 +277,17 @@
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
                                :select ["id"]}}]
     (-> (crud/query-as-admin credential/resource-type options)
-      second
-      first
-      :id)))
+        second
+        first
+        :id)))
 
 
 (defn create-coe-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
   (if (and key cert ca)
     (let [acl     (-> nuvlabox-acl
-                    (utils/set-acl-nuvlabox-view-only)
-                    (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
+                      (utils/set-acl-nuvlabox-view-only)
+                      (assoc :manage (:view-meta nuvlabox-acl))) ;; add manage to allow check cred
           tmpl    (cond->
                     {:href (str "credential-template/" subtype)
                      :cert cert
@@ -293,9 +295,9 @@
                     ca (assoc :ca ca))
           request {:params      {:resource-name credential/resource-type}
                    :body        {:name        (utils/format-nb-name nuvlabox-name
-                                                (utils/short-nb-id nuvlabox-id))
+                                                                    (utils/short-nb-id nuvlabox-id))
                                  :description (str subtype " client credential linked to "
-                                                (utils/format-nb-name nuvlabox-name nuvlabox-id))
+                                                   (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      coe-id
                                  :acl         acl
                                  :template    tmpl}
@@ -307,7 +309,7 @@
           (log/info subtype " service credential" resource-id "created")
           resource-id)
         (let [msg (str "cannot create " subtype " service credential for "
-                    coe-id " linked to " nuvlabox-id)]
+                       coe-id " linked to " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))
     (do
       (log/info "skipping creation of " subtype " credential; key, cert, or ca is missing")
@@ -318,8 +320,8 @@
   [nuvlabox-id nuvlabox-name nuvlabox-acl coe-id key cert ca subtype]
   (when-let [resource-id (get-coe-cred subtype coe-id)]
     (let [acl     (-> nuvlabox-acl
-                    (utils/set-acl-nuvlabox-view-only)
-                    (assoc :manage (:view-meta nuvlabox-acl)))
+                      (utils/set-acl-nuvlabox-view-only)
+                      (assoc :manage (:view-meta nuvlabox-acl)))
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name credential/resource-type}
                    :body        (cond->
@@ -327,8 +329,8 @@
                                                   nuvlabox-name
                                                   (utils/short-nb-id nuvlabox-id))
                                    :description (str "NuvlaBox credential linked to "
-                                                  (utils/format-nb-name
-                                                    nuvlabox-name nuvlabox-id))
+                                                     (utils/format-nb-name
+                                                       nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   ca (assoc :ca ca)
                                   key (assoc :key key)
@@ -341,7 +343,7 @@
           (log/info subtype " service credential" resource-id "updated")
           resource-id)
         (let [msg (str "cannot update " subtype " service credential for "
-                    coe-id " linked to " nuvlabox-id)]
+                       coe-id " linked to " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
@@ -526,6 +528,7 @@
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
    {{:keys [tags
+            capabilities
             swarm-endpoint
             swarm-token-manager swarm-token-worker
             swarm-client-key swarm-client-cert swarm-client-ca
@@ -536,22 +539,26 @@
             kubernetes-client-key kubernetes-client-cert kubernetes-client-ca]} :body :as request}]
 
   (when-let [isg-id infrastructure-service-group]
-    (let [swarm-id (or
-                     (update-coe-service id name acl isg-id swarm-endpoint tags "swarm")
-                     (create-coe-service id name acl isg-id swarm-endpoint tags "swarm"))
+    (let [swarm-id      (or
+                          (update-coe-service id name acl isg-id swarm-endpoint
+                                              tags capabilities "swarm")
+                          (create-coe-service id name acl isg-id swarm-endpoint
+                                              tags capabilities "swarm"))
           kubernetes-id (or
-                          (update-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes")
-                          (create-coe-service id name acl isg-id kubernetes-endpoint tags "kubernetes"))
-          minio-id (or
-                     (update-minio-service id name acl isg-id minio-endpoint)
-                     (create-minio-service id name acl isg-id minio-endpoint))]
+                          (update-coe-service id name acl isg-id kubernetes-endpoint
+                                              tags capabilities "kubernetes")
+                          (create-coe-service id name acl isg-id kubernetes-endpoint
+                                              tags capabilities "kubernetes"))
+          minio-id      (or
+                          (update-minio-service id name acl isg-id minio-endpoint)
+                          (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when swarm-id
         (or
           (update-coe-cred id name acl swarm-id swarm-client-key
-                             swarm-client-cert swarm-client-ca "infrastructure-service-swarm")
+                           swarm-client-cert swarm-client-ca "infrastructure-service-swarm")
           (create-coe-cred id name acl swarm-id swarm-client-key
-                             swarm-client-cert swarm-client-ca "infrastructure-service-swarm"))
+                           swarm-client-cert swarm-client-ca "infrastructure-service-swarm"))
         (or
           (update-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager)
           (create-swarm-token id name acl swarm-id "MANAGER" swarm-token-manager))
@@ -562,9 +569,9 @@
       (when kubernetes-id
         (or
           (update-coe-cred id name acl kubernetes-id kubernetes-client-key
-            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
+                           kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")
           (create-coe-cred id name acl kubernetes-id kubernetes-client-key
-            kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")))
+                           kubernetes-client-cert kubernetes-client-ca "infrastructure-service-kubernetes")))
 
       (when minio-id
         (or
@@ -577,8 +584,7 @@
               authn-info   (auth/current-authentication request)]
           (when vpn-cred-id
             (delete-vpn-cred vpn-cred-id authn-info))
-          (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
-      )))
+          (create-vpn-cred id name vpn-server-id vpn-csr authn-info))))))
 
 
 (defn get-nuvlabox-peripherals-ids

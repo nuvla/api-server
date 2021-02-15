@@ -10,6 +10,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -97,22 +98,42 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
   resource)
 
 
+(defn get-jobs
+  [{nb-id :parent :as resource}]
+  (->> {:params      {:resource-name "job"}
+        :cimi-params {:filter (cimi-params-impl/cimi-filter
+                                {:filter (str "execution-mode='pull' and "
+                                              "state!='FAILED' and "
+                                              "state!='SUCCESS' and state!='STOPPED'")})
+                      :select ["id"]
+                      :orderby [["created" :asc]]}
+        :nuvla/authn {:user-id      nb-id
+                      :active-claim nb-id
+                      :claims       #{nb-id "group/nuvla-user" "group/nuvla-anon"}}}
+       crud/query
+       :body
+       :resources
+       (mapv :id)))
+
+
 (defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
     (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
                                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
                                         (a/throw-cannot-edit request))
-          rights (a/extract-rights (auth/current-authentication request) acl)
-          dissoc-keys (-> (map keyword select)
-                          set
-                          u/strip-select-from-mandatory-attrs
-                          (a/editable-keys rights))
+          jobs                     (get-jobs current)
+          rights                   (a/extract-rights (auth/current-authentication request) acl)
+          dissoc-keys              (-> (map keyword select)
+                                       set
+                                       u/strip-select-from-mandatory-attrs
+                                       (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
           editable-body (select-keys body (-> body keys (a/editable-keys rights)))
           merged (merge current-without-selected editable-body)]
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)
+          (assoc :jobs jobs)
           (status-utils/set-online request)
           pre-edit
           crud/validate

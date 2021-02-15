@@ -4,7 +4,12 @@
 
 ### Changed
 
+  - Nuvlabox - Update nuvlabox set job execution-mode depending
+    on nuvlabox capabilities
   - Job - Log zookeeper path at INFO level
+
+### Added
+  - Notifications with Kafka.
 
 ## [5.8.0] - 2021-02-09
 
@@ -28,7 +33,7 @@
     corresponding deployment parameters
   - Email template - Generate copyright year from current date
   - Credential - fix issue mapping creation and update at server startup time
-  - Nuvlabox status - fix spec
+  - Nuvlabox status - fix spec 
   - Credential - status can now also be UNKNOWN
 
 ## [5.7.0] - 2020-12-10

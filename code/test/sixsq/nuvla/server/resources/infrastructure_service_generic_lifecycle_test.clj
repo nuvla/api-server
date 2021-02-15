@@ -64,7 +64,8 @@
                              :endpoint "https://docker.example.org/api"
                              :state    "STARTED"
                              :swarm-enabled true
-                             :online   true}
+                             :online   true
+                             :capabilities  ["NUVLA_JOB_PULL"]}
 
         valid-create        {:name        service-name
                              :description service-desc
