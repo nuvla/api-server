@@ -203,7 +203,7 @@ Collection for holding subscriptions configurations.
         subs-ids (->> (crud/query req)
                       :body
                       :resources
-                      (map #(:id %)))]
+                      (map :id))]
     (if (not-empty subs-ids)
       (let [req-with-filter (assoc request :cimi-params {:filter filter})
             req (merge-with merge req-with-filter {:headers {"bulk" true}})]
