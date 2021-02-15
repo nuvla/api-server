@@ -10,17 +10,19 @@ This is a templated resource. All creation requests must be done via an
 existing `infrastructure-service-template` resource.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-srvc-gen]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.resources.subscription :as subs]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -235,12 +237,29 @@ existing `infrastructure-service-template` resource.
   (retrieve-impl request))
 
 
+(defn event-state-change
+  [{current-state :state id :id} {{new-state :state} :body :as request}]
+  (if (and new-state (not (= current-state new-state)))
+           (event-utils/create-event id new-state
+                                     (a/default-acl (auth/current-authentication request))
+                                     :severity "low"
+                                     :category "state")))
+
+
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{{uuid :uuid} :params {new-state :state} :body :as request}]
+  (let [id (str resource-type "/" uuid)
+        resource (if (boolean new-state) (db/retrieve id request))
+        ret (edit-impl request)]
+    (try
+      (if (and (= 200 (:status ret)) resource)
+        (event-state-change resource request))
+      (catch Exception e
+        (log/errorf "Failed creating event on state change of %s with %s" id e)))
+    ret))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -256,10 +275,22 @@ existing `infrastructure-service-template` resource.
   (delete-impl request))
 
 
+(defn post-delete-hooks
+  [{{uuid :uuid} :params :as request} delete-resp]
+  (let [id (str resource-type "/" uuid)]
+    (if (= 200 (:status delete-resp))
+      (do (event-utils/create-event id "DELETED"
+                                (a/default-acl (auth/current-authentication request))
+                                :severity "low"
+                                :category "state")
+          (subs/delete-individual-subscriptions id request)))))
+
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [resource (db/retrieve (str resource-type "/" uuid) request)]
-    (delete resource request)))
+  (let [resource (db/retrieve (str resource-type "/" uuid) request)
+        delete-resp (delete resource request)]
+    (post-delete-hooks request delete-resp)
+    delete-resp))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))

@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-coe :as infra-service-tpl-coe]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [ring.util.codec :as rc]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -208,131 +209,167 @@
                                                 :method   infra-service-tpl-coe/method
                                                 :parent   service-group-id
                                                 :subtype  subtype
-                                                :management-credential credential-id}}]
+                                                :management-credential credential-id}}
+             uri (-> session-user
+                     (request base-uri
+                              :request-method :post
+                              :body (json/write-str valid-create))
+                     (ltu/body->edn)
+                     (ltu/is-status 201)
+                     (ltu/location))
+             abs-uri (str p/service-context uri)
+             check-event (fn [exp-state]
+                           (let [filter (format "category='state' and content/resource/href='%s' and content/state='%s'" uri exp-state)
+                                 state (-> session-user
+                                           (content-type "application/x-www-form-urlencoded")
+                                           (request "/api/event"
+                                                    :request-method :put
+                                                    :body (rc/form-encode {:filter filter}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-count 1)
+                                           (ltu/body)
+                                           :resources
+                                           first
+                                           :content
+                                           :state)]
+                             (is (= state exp-state))))]
 
-         (let [uri (-> session-user
-                       (request base-uri
-                                :request-method :post
-                                :body (json/write-str valid-create))
-                       (ltu/body->edn)
-                       (ltu/is-status 201)
-                       (ltu/location))
-               abs-uri (str p/service-context uri)]
+             ;; STARTING: edit
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "STARTING" (:state service)))
+               (is (= 1 (count (:operations service))))
+               (ltu/is-operation-present response :edit))
 
-           ;; STARTING: edit
-           (let [response (-> session-user
+             ;; check event for STARTING was created
+             (check-event "STARTING")
+
+             ;; set STARTED state
+             (set-state-on-is abs-uri session-user "STARTED")
+
+             ;; check event for STARTED was created
+             (check-event "STARTED")
+
+             ;; STARTED: edit, stop, terminate
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "STARTED" (:state service)))
+               (is (= 3 (count (:operations service))))
+               (ltu/is-operation-present response :edit)
+               (ltu/is-operation-present response :stop)
+               (ltu/is-operation-present response :terminate))
+
+             ;; call 'stop' action to enter STOPPING state
+             (let [op-uri (-> session-user
                               (request abs-uri)
                               (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "STARTING" (:state service)))
-             (is (= 1 (count (:operations service))))
-             (ltu/is-operation-present response :edit))
+                              (ltu/is-status 200)
+                              (ltu/get-op-url "stop"))]
+               (-> session-user
+                   (request op-uri
+                            :request-method :post)
+                   (ltu/is-status 202)
+                   (ltu/body->edn)))
 
-           ;; set STARTED state
-           (set-state-on-is abs-uri session-user "STARTED")
+             ;; check event for STOPPING was created
+             (check-event "STOPPING")
 
-           ;; STARTED: edit, stop, terminate
-           (let [response (-> session-user
+             ;; STOPPING: edit
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "STOPPING" (:state service)))
+               (is (= 1 (count (:operations service))))
+               (ltu/is-operation-present response :edit))
+
+             ;; set STOPPED state manually (there is no job to do that)
+             (set-state-on-is abs-uri session-user "STOPPED")
+
+             ;; check event for STOPPED was created
+             (check-event "STOPPED")
+
+             ;; STOPPED: edit, start, terminate
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "STOPPED" (:state service)))
+               (is (= 3 (count (:operations service))))
+               (ltu/is-operation-present response :edit)
+               (ltu/is-operation-present response :start)
+               (ltu/is-operation-present response :terminate))
+
+             ;; call terminate action to enter 'TERMINATING' state
+             (let [op-uri (-> session-user
                               (request abs-uri)
                               (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "STARTED" (:state service)))
-             (is (= 3 (count (:operations service))))
-             (ltu/is-operation-present response :edit)
-             (ltu/is-operation-present response :stop)
-             (ltu/is-operation-present response :terminate))
+                              (ltu/is-status 200)
+                              (ltu/get-op-url "terminate"))]
+               (-> session-user
+                   (request op-uri
+                            :request-method :post)
+                   (ltu/is-status 202)
+                   (ltu/body->edn)))
 
-           ;; call 'stop' action to enter STOPPING state
-           (let [op-uri (-> session-user
-                            (request abs-uri)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/get-op-url "stop"))]
+             ;; check event for TERMINATING was created
+             (check-event "TERMINATING")
+
+             ;; TERMINATING: edit
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "TERMINATING" (:state service)))
+               (is (= 1 (count (:operations service))))
+               (ltu/is-operation-present response :edit))
+
+             ;;; set ERROR state to fake an error
+             (set-state-on-is abs-uri session-user "ERROR")
+
+             ;; check event for ERROR was created
+             (check-event "ERROR")
+
+             ;; ERROR: edit, terminate
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "ERROR" (:state service)))
+               (is (= 2 (count (:operations service))))
+               (ltu/is-operation-present response :edit)
+               (ltu/is-operation-present response :terminate))
+
+             ;; set TERMINATED state
+             (set-state-on-is abs-uri session-user "TERMINATED")
+
+             ;; check event for TERMINATED was created
+             (check-event "TERMINATED")
+
+             ;; TERMINATED: edit, delete
+             (let [response (-> session-user
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200))
+                   service (ltu/body response)]
+               (is (= "TERMINATED" (:state service)))
+               (is (= 2 (count (:operations service))))
+               (ltu/is-operation-present response :edit)
+               (ltu/is-operation-present response :delete))
+
+             ;; can delete resource in TERMINATED state
              (-> session-user
-                 (request op-uri
-                          :request-method :post)
-                 (ltu/is-status 202)
-                 (ltu/body->edn)))
-
-           ;; STOPPING: edit
-           (let [response (-> session-user
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "STOPPING" (:state service)))
-             (is (= 1 (count (:operations service))))
-             (ltu/is-operation-present response :edit))
-
-           ;; set STOPPED state manually (there is no job to do that)
-           (set-state-on-is abs-uri session-user "STOPPED")
-
-           ;; STOPPED: edit, start, terminate
-           (let [response (-> session-user
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "STOPPED" (:state service)))
-             (is (= 3 (count (:operations service))))
-             (ltu/is-operation-present response :edit)
-             (ltu/is-operation-present response :start)
-             (ltu/is-operation-present response :terminate))
-
-           ;; call terminate action to enter 'TERMINATING' state
-           (let [op-uri (-> session-user
-                            (request abs-uri)
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/get-op-url "terminate"))]
-             (-> session-user
-                 (request op-uri
-                          :request-method :post)
-                 (ltu/is-status 202)
-                 (ltu/body->edn)))
-
-           ;; TERMINATING: edit
-           (let [response (-> session-user
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "TERMINATING" (:state service)))
-             (is (= 1 (count (:operations service))))
-             (ltu/is-operation-present response :edit))
-
-           ;;; set ERROR state to fake an error
-           (set-state-on-is abs-uri session-user "ERROR")
-
-           ;; ERROR: edit, terminate
-           (let [response (-> session-user
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "ERROR" (:state service)))
-             (is (= 2 (count (:operations service))))
-             (ltu/is-operation-present response :edit)
-             (ltu/is-operation-present response :terminate))
-
-           ;; set TERMINATED state
-           (set-state-on-is abs-uri session-user "TERMINATED")
-
-           ;; TERMINATED: edit, delete
-           (let [response (-> session-user
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/is-status 200))
-                 service (ltu/body response)]
-             (is (= "TERMINATED" (:state service)))
-             (is (= 2 (count (:operations service))))
-             (ltu/is-operation-present response :edit)
-             (ltu/is-operation-present response :delete))
-
-           ;; can delete resource in TERMINATED state
-           (-> session-user
-               (request abs-uri :request-method :delete)
-               (ltu/body->edn)
-               (ltu/is-status 200)))))))
+                 (request abs-uri :request-method :delete)
+                 (ltu/body->edn)
+                 (ltu/is-status 200))))))

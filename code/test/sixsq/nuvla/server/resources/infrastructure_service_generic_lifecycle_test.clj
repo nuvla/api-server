@@ -10,7 +10,12 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.resources.subscription-config :as subs-conf]
+    [sixsq.nuvla.server.resources.subscription :as subscr]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [ring.util.codec :as rc])
+  (:import
+    [java.util UUID]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -139,3 +144,117 @@
             (request abs-uri :request-method :delete)
             (ltu/body->edn)
             (ltu/is-status 200))))))
+
+
+(def subs-base-uri (str p/service-context subs-conf/resource-type))
+
+(deftest subscription-created-and-deleted
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+
+        valid-service-group {:name          "my-service-group"
+                             :description   "my-description"
+                             :documentation "http://my-documentation.org"}
+
+        service-group-id (-> session-user
+                             (request service-group-base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-service-group))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        service-name "my-service"
+        service-desc "my-description"
+        service-tags ["alpha" "beta" "gamma"]
+
+        valid-service {:parent        service-group-id
+                       :subtype       "docker"
+                       :endpoint      "https://docker.example.org/api"
+                       :state         "STARTED"
+                       :swarm-enabled true
+                       :online        true}
+
+        valid-create {:name        service-name
+                      :description service-desc
+                      :tags        service-tags
+                      :acl         valid-acl
+                      :template    (merge {:href (str infra-service-tpl/resource-type "/"
+                                                      infra-service-tpl-generic/method)}
+                                          valid-service)}]
+
+    ;; check creation
+    (let [uri (-> session-user
+                  (request base-uri
+                           :request-method :post
+                           :body (json/write-str (assoc valid-create
+                                                   :acl {:owners ["user/jane"]})))
+                  (ltu/body->edn)
+                  (ltu/is-status 201)
+                  (ltu/location))
+          abs-uri (str p/service-context uri)]
+
+      ;; verify contents
+      (let [service (-> session-user
+                        (request abs-uri)
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/is-operation-present :edit)
+                        (ltu/is-operation-present :delete)
+                        (ltu/body))]
+
+        (is (= service-name (:name service)))
+        (is (= service-desc (:description service)))
+        (is (= service-tags (:tags service)))
+        (is (:subtype service))
+        (is (:swarm-enabled service))
+        (is (:online service))
+        (is (:endpoint service))
+        (is (= "STARTED" (:state service))))
+
+      ;; check subscription created
+      (let [notification-method (str "notification-method/" (str (UUID/randomUUID)))
+
+            valid-subscription-config {:enabled         true
+                                       :category        "notification"
+                                       :method-id       notification-method
+                                       :resource-kind   "infrastructure-service"
+                                       :resource-filter "tags='alpha'"
+                                       :criteria        {:kind      "numeric"
+                                                         :metric    "load"
+                                                         :value     "75"
+                                                         :condition ">"}
+                                       :acl             {:owners ["user/jane"]}}
+           subs-conf-uri (-> session-user
+                              (request subs-base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-subscription-config))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location))
+
+            subs (-> session-user
+                     (request (str p/service-context subscr/resource-type))
+                     (ltu/body->edn)
+                     (ltu/is-status 200)
+                     (ltu/is-count 1)
+                     (ltu/body)
+                     :resources
+                     first)
+            subs-id (:id subs)]
+        (is (= uri (:resource-id subs)))
+        (is (= notification-method (:method-id subs)))
+
+        ;; can delete resource
+        (-> session-user
+            (request abs-uri :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; subscription is deleted after resource is deleted
+        (-> session-user
+            (request (str p/service-context subs-id))
+            (ltu/body->edn)
+            (ltu/is-status 404))))))

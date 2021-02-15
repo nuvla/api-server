@@ -6,6 +6,7 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -126,8 +127,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        u/strip-select-from-mandatory-attrs
                                        (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
-          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-          merged                   (merge current-without-selected editable-body)]
+          editable-body (select-keys body (-> body keys (a/editable-keys rights)))
+          merged (merge current-without-selected editable-body)]
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)

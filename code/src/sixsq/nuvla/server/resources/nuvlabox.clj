@@ -23,6 +23,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
+    [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
@@ -205,14 +206,15 @@ particular NuvlaBox release.
 
     (customer/throw-user-hasnt-active-subscription request)
 
-    (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
-                                     (auth/current-active-claim request))
+    (let [nb-owner (if is-admin? (or owner "group/nuvla-admin")
+                                 (auth/current-active-claim request))
           new-nuvlabox (assoc body :version version
                                    :state state-new
                                    :refresh-interval refresh-interval
-                                   :owner nb-owner)]
-
-      (add-impl (assoc request :body new-nuvlabox)))))
+                                   :owner nb-owner)
+          resp (add-impl (assoc request :body new-nuvlabox))]
+      (ka-crud/publish-on-add resource-type resp)
+      resp)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -286,7 +288,9 @@ particular NuvlaBox release.
 
     (edit-subresources updated-nuvlabox)
 
-    (edit-impl (assoc request :body updated-nuvlabox))))
+    (let [resp (edit-impl (assoc request :body updated-nuvlabox))]
+      (ka-crud/publish-on-edit resource-type resp)
+      resp)))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
@@ -314,7 +318,9 @@ particular NuvlaBox release.
       (-> (db/retrieve id request)
           (a/throw-cannot-delete request)
           verify-deletable-state)
-      (delete-impl request)
+      (let [resp (delete-impl request)]
+        (ka-crud/publish-tombstone resource-type id)
+        resp)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

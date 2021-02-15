@@ -6,11 +6,13 @@
     [sixsq.nuvla.server.util.time :as time]))
 
 
+(def topic event/resource-type)
+
+
 (defn create-event
   [resource-href message acl & {:keys [severity category]
                                 :or   {severity "medium"
                                        category "action"}}]
-
   (let [event-map      {:resource-type event/resource-type
                         :content       {:resource {:href resource-href}
                                         :state    message}
