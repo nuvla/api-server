@@ -110,7 +110,7 @@ Collection for holding subscriptions configurations.
   [request]
   (let [resp (add-impl request)]
     (create-subscriptions request resp)
-    (ka-crud/publish-on-add resource-type resp :key "resource")
+    (ka-crud/publish-on-add resource-type resp :key "id")
     resp))
 
 
