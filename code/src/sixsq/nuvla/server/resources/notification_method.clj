@@ -12,7 +12,6 @@ Collection for holding notification method configurations.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.notification-method :as notif-method-schema]
-    [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as ru]))
