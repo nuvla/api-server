@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.9.0] - 2021-02-16
+
 ### Changed
 
   - Nuvlabox - Update nuvlabox set job execution-mode depending
@@ -9,6 +11,7 @@
   - Job - Log zookeeper path at INFO level
 
 ### Added
+
   - Notifications with Kafka.
 
 ## [5.8.0] - 2021-02-09
