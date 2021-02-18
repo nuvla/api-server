@@ -143,6 +143,8 @@ particular NuvlaBox release.
                :input-message    "application/json"
                :output-message   "application/json"
                :input-parameters [{:name "nuvlabox-release"
+                                   :type "string"}
+                                  {:name "payload"
                                    :type "string"}]}
               ])
 
@@ -206,13 +208,13 @@ particular NuvlaBox release.
 
     (customer/throw-user-hasnt-active-subscription request)
 
-    (let [nb-owner (if is-admin? (or owner "group/nuvla-admin")
-                                 (auth/current-active-claim request))
+    (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
+                                     (auth/current-active-claim request))
           new-nuvlabox (assoc body :version version
                                    :state state-new
                                    :refresh-interval refresh-interval
                                    :owner nb-owner)
-          resp (add-impl (assoc request :body new-nuvlabox))]
+          resp         (add-impl (assoc request :body new-nuvlabox))]
       (ka-crud/publish-on-add resource-type resp)
       resp)))
 
@@ -680,7 +682,7 @@ particular NuvlaBox release.
 ;;
 
 (defn update-nuvlabox
-  [{:keys [id state acl capabilities] :as nuvlabox} nb-release-id]
+  [{:keys [id state acl capabilities] :as nuvlabox} nb-release-id payload]
   (if (= state state-commissioned)
     (if (nil? nb-release-id)
       (logu/log-and-throw-400 "Target NuvlaBox release is missing")
@@ -697,7 +699,8 @@ particular NuvlaBox release.
                                                    (a/acl-append :manage id))
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
-                                               :execution-mode execution-mode)
+                                               :execution-mode execution-mode
+                                               :payload (when-not (str/blank? payload) payload))
                 job-msg        (str "updating NuvlaBox " id " with target release " nb-release-id
                                     ", with async " job-id)]
             (when (not= job-status 201)
@@ -710,15 +713,14 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "update-nuvlabox"]
-  [{{uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid} :params {:keys [nuvlabox-release payload]} :body :as request}]
   (try
-    (let [id            (str resource-type "/" uuid)
-          nb-release-id (:nuvlabox-release body)]
-      (-> (db/retrieve nb-release-id request)
+    (let [id            (str resource-type "/" uuid)]
+      (-> (db/retrieve nuvlabox-release request)
           (a/throw-cannot-view request))
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (update-nuvlabox nb-release-id)))
+          (update-nuvlabox nuvlabox-release payload)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
