@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Nuvlabox status - Next-heartbeat set 2 * refresh-interval + 10s
   - Deployment - Bugfix always recreate deployment creds at start
   - Nuvlabox - Update operation support payload
   - Voucher - Decommission voucher resources

@@ -12,6 +12,8 @@
     (some-> nuvlabox-id
             crud/retrieve-by-id-as-admin
             :refresh-interval
+            (* 2)
+            (+ 10)
             (time/from-now :seconds)
             time/to-str)
     (catch Exception _
