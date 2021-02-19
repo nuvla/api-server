@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Nuvlabox - Update operation support payload
   - Voucher - Decommission voucher resources
 
 ## [5.9.0] - 2021-02-16
