@@ -282,7 +282,6 @@ a container orchestration engine.
           price          (get-in deployment [:module :price])
           coupon         (:coupon deployment)
           data?          (some? (:data deployment))
-          no-api-keys?   (nil? (:api-credentials deployment))
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
                            (some-> (auth/current-active-claim request)
                                    (utils/create-subscription price coupon)
@@ -291,13 +290,10 @@ a container orchestration engine.
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state)
-                             (cond-> subs-id (assoc :subscription-id subs-id)
-                                     no-api-keys? (assoc :api-credentials
-                                                         (utils/generate-api-key-secret
-                                                           id
-                                                           (when data?
-                                                             (auth/current-authentication
-                                                               request)))))
+                             (assoc :api-credentials (utils/generate-api-key-secret id
+                                                       (when data?
+                                                         (auth/current-authentication request))))
+                             (cond-> subs-id (assoc :subscription-id subs-id))
                              (edit-deployment request))]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))

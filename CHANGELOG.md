@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Deployment - Bugfix always recreate deployment creds at start
   - Nuvlabox - Update operation support payload
   - Voucher - Decommission voucher resources
 
