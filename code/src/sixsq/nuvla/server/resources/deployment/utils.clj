@@ -17,10 +17,10 @@
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.job.interface :as job-interface]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret

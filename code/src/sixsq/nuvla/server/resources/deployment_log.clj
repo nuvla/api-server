@@ -10,6 +10,7 @@ These resources represent the logs of a deployment.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-log :as dl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -161,6 +162,17 @@ These resources represent the logs of a deployment.
       response
       (create-job job-type request))))
 
+
+(defmethod job-interface/get-context ["deployment-log" "fetch_deployment_log"]
+  [{:keys [target-resource] :as resource}]
+  (let [deployment-log   (some-> target-resource :href crud/retrieve-by-id-as-admin)
+        deployment       (some-> deployment-log :parent crud/retrieve-by-id-as-admin)
+        credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
+        infra            (some-> credential :parent crud/retrieve-by-id-as-admin)]
+    (job-interface/get-context->response
+      deployment
+      credential
+      infra)))
 
 ;;
 ;; internal crud

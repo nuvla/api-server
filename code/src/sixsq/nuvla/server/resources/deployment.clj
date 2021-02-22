@@ -436,11 +436,6 @@ a container orchestration engine.
   (utils/get-context resource false))
 
 
-(defmethod job-interface/get-context ["deployment" "fetch_deployment_log"]
-  [resource]
-  (utils/get-context resource false))
-
-
 ;;
 ;; initialization
 ;;
