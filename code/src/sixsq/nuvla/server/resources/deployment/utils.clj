@@ -19,7 +19,8 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]))
 
 
 (defn generate-api-key-secret
@@ -278,3 +279,21 @@
                                      :parent)]
       (when (str/starts-with? parent-infra-group "nuvlabox/") parent-infra-group))
     (catch Exception _)))
+
+
+(defn get-context
+  [{:keys [target-resource] :as resource} full]
+  (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
+        credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
+        infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
+        registries-creds (when full
+                           (some->> deployment :registries-credentials
+                                    (map crud/retrieve-by-id-as-admin)))
+        registries-infra (when full
+                           (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))]
+    (job-interface/get-context->response
+      deployment
+      credential
+      infra
+      registries-creds
+      registries-infra)))
