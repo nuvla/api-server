@@ -17,7 +17,8 @@ request.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.job.utils :as ju]
+    [sixsq.nuvla.server.resources.job.interface :as interface]
+    [sixsq.nuvla.server.resources.job.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.job :as job]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
@@ -47,7 +48,7 @@ request.
   []
   (std-crud/initialize resource-type ::job/schema)
   (md/register resource-metadata)
-  (ju/create-job-queue))
+  (utils/create-job-queue))
 
 
 ;;
@@ -84,17 +85,17 @@ request.
                      u/strip-service-attrs
                      (assoc :resource-type resource-type)
                      (assoc :id id)
-                     (assoc :state ju/state-queued)
+                     (assoc :state utils/state-queued)
                      (assoc :execution-mode execution-mode)
                      (assoc :version version)
                      u/update-timestamps
                      (u/set-created-by request)
-                     ju/job-cond->addition
+                     utils/job-cond->addition
                      (crud/add-acl request)
                      (crud/validate))
         response (db/add resource-type new-job {})]
     (when (#{"push" "mixed"} execution-mode)
-      (let [zk-path (ju/add-job-to-queue id priority)]
+      (let [zk-path (utils/add-job-to-queue id priority)]
         (log/infof "Added %s, zookeeper path %s." id zk-path)))
     response))
 
@@ -129,7 +130,7 @@ request.
       (-> merged
           (u/update-timestamps)
           (u/set-updated-by request)
-          (ju/job-cond->edition)
+          (utils/job-cond->edition)
           (crud/validate)
           (db/edit request)))
     (catch Exception e
@@ -175,7 +176,7 @@ request.
         get-context-op (u/action-map id :get-context)]
     (cond-> (crud/set-standard-operations resource request)
             (a/can-manage? resource request) (update :operations conj stop-op)
-            (ju/can-get-context? resource request) (update :operations conj get-context-op))))
+            (utils/can-get-context? resource request) (update :operations conj get-context-op))))
 
 
 (defmethod crud/do-action [resource-type "stop"]
@@ -184,7 +185,7 @@ request.
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
         (a/throw-cannot-manage request)
-        (ju/stop)
+        (utils/stop)
         (u/update-timestamps)
         (u/set-updated-by request)
         (db/edit {:nuvla/authn auth/internal-identity}))
@@ -197,8 +198,8 @@ request.
   (try
     (-> (str resource-type "/" uuid)
         (db/retrieve request)
-        (ju/throw-cannot-get-context request)
-        (ju/get-context))
+        (utils/throw-cannot-get-context request)
+        (interface/get-context))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
