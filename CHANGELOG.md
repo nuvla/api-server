@@ -2,12 +2,11 @@
 
 ## Unreleased
 
-### Added
-
-  - Nuvlabox status - online-prev flag to keep previous NB online value.
+## [5.10.0] - 2021-02-22
 
 ### Changed
 
+  - Nuvlabox status - online-prev flag to keep previous NB online value
   - Deployment log - Bugfix deployment log need job get-context
   - Nuvlabox status - Next-heartbeat set 2 * refresh-interval + 10s
   - Deployment - Bugfix always recreate deployment creds at start
