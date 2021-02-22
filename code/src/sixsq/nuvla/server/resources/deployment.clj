@@ -16,7 +16,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.server.resources.job.utils :as job-utils]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
@@ -411,47 +411,34 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
-(defn get-context
-  [{:keys [target-resource] :as resource} full]
-  (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
-        credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
-        infra            (some-> credential :parent crud/retrieve-by-id-as-admin)
-        registries-creds (when full
-                           (some->> deployment :registries-credentials
-                                    (map crud/retrieve-by-id-as-admin)))
-        registries-infra (when full
-                           (map (comp crud/retrieve-by-id-as-admin :parent) registries-creds))]
-    (job-utils/get-context->response
-      deployment
-      credential
-      infra
-      registries-creds
-      registries-infra)))
-
-
-(defmethod job-utils/get-context ["deployment" "start_deployment"]
+(defmethod job-interface/get-context ["deployment" "start_deployment"]
   [resource]
-  (get-context resource true))
+  (utils/get-context resource true))
 
 
-(defmethod job-utils/get-context ["deployment" "update_deployment"]
+(defmethod job-interface/get-context ["deployment" "update_deployment"]
   [resource]
-  (get-context resource true))
+  (utils/get-context resource true))
 
 
-(defmethod job-utils/get-context ["deployment" "stop_deployment"]
+(defmethod job-interface/get-context ["deployment" "stop_deployment"]
   [resource]
-  (get-context resource false))
+  (utils/get-context resource false))
 
 
-(defmethod job-utils/get-context ["deployment" "deployment_state_10"]
+(defmethod job-interface/get-context ["deployment" "deployment_state_10"]
   [resource]
-  (get-context resource false))
+  (utils/get-context resource false))
 
 
-(defmethod job-utils/get-context ["deployment" "deployment_state_60"]
+(defmethod job-interface/get-context ["deployment" "deployment_state_60"]
   [resource]
-  (get-context resource false))
+  (utils/get-context resource false))
+
+
+(defmethod job-interface/get-context ["deployment" "fetch_deployment_log"]
+  [resource]
+  (utils/get-context resource false))
 
 
 ;;

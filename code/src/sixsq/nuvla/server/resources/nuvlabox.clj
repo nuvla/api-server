@@ -19,7 +19,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.job.utils :as job-utils]
+    [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
@@ -616,10 +616,10 @@ particular NuvlaBox release.
                             (some (fn [{:keys [href]}]
                                     (when (str/starts-with? href "credential/") href)))
                             crud/retrieve-by-id-as-admin)]
-    (job-utils/get-context->response credential)))
+    (job-interface/get-context->response credential)))
 
 
-(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_add_ssh_key"]
+(defmethod job-interface/get-context ["nuvlabox" "nuvlabox_add_ssh_key"]
   [resource]
   (get-context-ssh-credential resource))
 
@@ -672,7 +672,7 @@ particular NuvlaBox release.
       (or (ex-data e) (throw e)))))
 
 
-(defmethod job-utils/get-context ["nuvlabox" "nuvlabox_revoke_ssh_key"]
+(defmethod job-interface/get-context ["nuvlabox" "nuvlabox_revoke_ssh_key"]
   [resource]
   (get-context-ssh-credential resource))
 
