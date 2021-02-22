@@ -180,6 +180,7 @@
                        :body (json/write-str {}))
               (ltu/body->edn)
               (ltu/is-status 200)
+              (ltu/is-key-value :online-prev nil)
               (ltu/is-key-value :online nil))
 
           ;; nuvlabox user is able to update nuvlabox-status
@@ -190,6 +191,7 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :resources resources-updated)
+              (ltu/is-key-value :online-prev nil)
               (ltu/is-key-value :online true))
 
           ;; admin edition can set online flag
@@ -199,7 +201,19 @@
                        :body (json/write-str {:online false}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :online false))
+              (ltu/is-key-value :online-prev true)
+              (ltu/is-key-value :online false)
+              (ltu/body))
+
+          (-> session-nb
+              (request state-url
+                       :request-method :put
+                       :body (json/write-str {:resources resources-updated}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :resources resources-updated)
+              (ltu/is-key-value :online-prev false)
+              (ltu/is-key-value :online true))
 
           ;; verify that the update was written to disk
           (-> session-nb
@@ -214,7 +228,9 @@
                        :body (json/write-str {:peripherals peripherals-updated}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :peripherals peripherals-updated))
+              (ltu/is-key-value :peripherals peripherals-updated)
+              (ltu/is-key-value :online-prev true)
+              (ltu/is-key-value :online true))
 
           ;; verify that the update was written to disk
           (let [next-heartbeat (-> session-nb
