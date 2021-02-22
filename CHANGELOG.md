@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Nuvlabox status - online-prev flag to keep previous NB online value.
+
 ### Changed
 
   - Deployment log - Bugfix deployment log need job get-context
