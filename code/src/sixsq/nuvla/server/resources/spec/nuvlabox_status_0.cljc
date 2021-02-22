@@ -622,6 +622,16 @@
              :json-schema/order 75)))
 
 
+(s/def ::online-prev
+  (-> (st/spec boolean?)
+      (assoc :name "online-prev"
+             :json-schema/type "boolean"
+             :json-schema/description "Indicates previous value of ::online"
+             :json-schema/server-managed true
+
+             :json-schema/order 76)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -649,5 +659,6 @@
                                ::installation-parameters
                                ::jobs
                                ::swarm-node-cert-expiry-date
-                               ::online]}))
+                               ::online
+                               ::online-prev]}))
 
