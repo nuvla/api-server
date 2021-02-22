@@ -25,5 +25,5 @@
   (let [active-claim (auth/current-active-claim request)
         is-nuvlabox? (str/starts-with? active-claim "nuvlabox/")]
     (cond-> resource
-            ((complement nil?) online-prev) (assoc :online-prev online-prev)
+            (some? online-prev) (assoc :online-prev online-prev)
             is-nuvlabox? (assoc :online true))))
