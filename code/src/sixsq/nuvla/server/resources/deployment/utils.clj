@@ -269,6 +269,15 @@
      "transfer_data"           {"destination" account-id}}))
 
 
+(defn cred-id->infra-id
+  [cred-id authn-info]
+  (try
+    (some-> cred-id
+            (crud/retrieve-by-id {:nuvla/authn authn-info})
+            :parent)
+    (catch Exception _)))
+
+
 (defn infra-id->nb-id
   [infra-id]
   (try

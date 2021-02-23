@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Deployment - Bugfix deployment shouldn't fail on edit when credential
+    doesn't exist
+
 ## [5.10.0] - 2021-02-22
 
 ### Changed
