@@ -463,7 +463,7 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 400)
-          (ltu/is-key-value :message "Bulk operation should contain bulk http header."))
+          (ltu/is-key-value :message "Bulk request should contain bulk http header."))
 
       ;; user try to delete but without a cimi filter
       ;; server doesn't allow bulk delete without a filter
@@ -474,7 +474,7 @@
                    :headers {:bulk true})
           (ltu/body->edn)
           (ltu/is-status 400)
-          (ltu/is-key-value :message "Bulk operation should contain a non empty cimi filter."))
+          (ltu/is-key-value :message "Bulk request should contain a non empty cimi filter."))
 
       ;; user can use filter in bulk delete operation
 

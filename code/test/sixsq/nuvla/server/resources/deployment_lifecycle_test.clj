@@ -691,6 +691,12 @@
                                                         "group/nuvla-user"]}}))))
 
         (-> session-user
+            (request deployment-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
             (request (str p/service-context module-id)
                      :request-method :delete)
             (ltu/is-status 200)))
