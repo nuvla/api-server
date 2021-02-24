@@ -12,7 +12,9 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.response :as ru]))
+    [sixsq.nuvla.server.util.response :as ru]
+    [clojure.data.json :as json]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -107,7 +109,6 @@
   [resource-name collection-acl collection-uri]
   (let [wrapper-fn (collection-wrapper-fn resource-name collection-acl collection-uri)]
     (validate-collection-acl collection-acl)
-
     (fn [request]
       (a/throw-cannot-query collection-acl request)
       (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
@@ -117,18 +118,53 @@
         (r/json-response entries-and-count)))))
 
 
+(defn throw-bulk-header-missing
+  [{:keys [headers] :as request}]
+  (when-not (contains? headers "bulk")
+    (throw (ru/ex-bad-request "Bulk request should contain bulk http header."))))
+
+
 (defn bulk-delete-fn
   [resource-name collection-acl collection-uri]
   (validate-collection-acl collection-acl)
-  (fn [{:keys [headers cimi-params] :as request}]
-    (when-not (contains? headers "bulk")
-      (throw (ru/ex-bad-request "Bulk operation should contain bulk http header.")))
+  (fn [{:keys [cimi-params] :as request}]
+    (throw-bulk-header-missing request)
     (when-not (coll? (:filter cimi-params))
-      (throw (ru/ex-bad-request "Bulk operation should contain a non empty cimi filter.")))
+      (throw (ru/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-delete collection-acl request)
     (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
           result  (db/bulk-delete resource-name options)]
       (r/json-response result))))
+
+
+(defn bulk-action-fn
+  [resource-name collection-acl collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [params body] :as request}]
+    (throw-bulk-header-missing request)
+    (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
+      (throw (ru/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+    (a/throw-cannot-bulk-action collection-acl request)
+    (let [authn-info     (auth/current-authentication request)
+          active-claim   (auth/current-active-claim request)
+          action-name    (:action params)
+          create-request {:params      {:resource-name "job"}
+                          :body        {:action          action-name
+                                        :target-resource {:href resource-name}
+                                        :payload         (-> body
+                                                             (assoc :authn-info authn-info)
+                                                             (json/write-str))
+                                        :acl             {:owners   ["group/nuvla-admin"]
+                                                          :view-acl [active-claim]}}
+                          :nuvla/authn auth/internal-identity}
+          {{job-id     :resource-id
+            job-status :status} :body} (crud/add create-request)]
+      (when (not= job-status 201)
+        (throw (r/ex-response
+                 (format "unable to create async job for %s " action-name)
+                 500 resource-name)))
+      (r/map-response (str "starting " action-name " with async " job-id)
+                      202 resource-name job-id))))
 
 
 (def ^:const href-not-found-msg "requested href not found")

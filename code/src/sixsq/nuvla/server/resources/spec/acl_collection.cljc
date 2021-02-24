@@ -26,7 +26,7 @@
 
 
 (s/def ::acl
-  (-> (st/spec (su/only-keys :opt-un [::query ::add ::bulk-delete]))
+  (-> (st/spec (su/only-keys :opt-un [::query ::add ::bulk-delete ::bulk-action]))
       (assoc :name "acl"
              :json-schema/type "map"
              :json-schema/display-name "ACL"

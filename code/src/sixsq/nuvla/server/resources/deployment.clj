@@ -33,8 +33,9 @@ a container orchestration engine.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-action ["group/nuvla-user"]})
 
 
 (def actions [{:name           "start"
@@ -288,7 +289,8 @@ a container orchestration engine.
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state)
-                             (assoc :api-credentials (utils/generate-api-key-secret id
+                             (assoc :api-credentials (utils/generate-api-key-secret
+                                                       id
                                                        (when data?
                                                          (auth/current-authentication request))))
                              (cond-> subs-id (assoc :subscription-id subs-id))
@@ -433,6 +435,12 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+
+(def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-action [resource-type "bulk-update"]
+  [request]
+  (bulk-action-impl request))
 
 ;;
 ;; initialization

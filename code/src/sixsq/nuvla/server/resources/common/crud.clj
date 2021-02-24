@@ -60,6 +60,14 @@
   (throw (r/ex-bad-method request)))
 
 
+(defmulti bulk-action resource-name-and-action-dispatch)
+
+
+(defmethod bulk-action :default
+  [request]
+  (throw (r/ex-bad-action request (resource-name-and-action-dispatch request))))
+
+
 (defmulti retrieve resource-name-dispatch)
 
 

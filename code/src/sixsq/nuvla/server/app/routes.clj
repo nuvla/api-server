@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.app.routes
   (:require
-    [compojure.core :refer [ANY DELETE GET let-routes POST PUT routes]]
+    [compojure.core :refer [ANY DELETE GET let-routes POST PUT routes PATCH]]
     [compojure.route :as route]
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
@@ -41,6 +41,12 @@
       (crud/do-action request))))
 
 
+(def bulk-action-routes
+  (let-routes [uri (str p/service-context ":resource-name/:action")]
+    (PATCH uri request
+      (crud/bulk-action request))))
+
+
 (defn not-found
   "Route always returns a 404 error response as a JSON map."
   []
@@ -64,6 +70,7 @@
 (def final-routes
   [collection-routes
    user-routes
+   bulk-action-routes
    resource-routes
    action-routes
    (not-found)])
