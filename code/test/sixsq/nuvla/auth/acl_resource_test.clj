@@ -145,7 +145,12 @@
       (is (isa? a/rights-hierarchy right right)))
 
     ;; ::edit-acl covers everything except ::query and ::add
-    (doseq [right (disj all-rights ::a/edit-acl ::a/query ::a/add ::a/bulk-delete)]
+    (doseq [right (disj all-rights
+                        ::a/edit-acl
+                        ::a/query
+                        ::a/add
+                        ::a/bulk-delete
+                        ::a/bulk-action)]
       (is (isa? a/rights-hierarchy ::a/edit-acl right))
       (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
@@ -153,7 +158,8 @@
                               ::a/edit-acl :edit-acl
                               ::a/query :query
                               ::a/add :add
-                              ::a/bulk-delete :bulk-delete))]
+                              ::a/bulk-delete :bulk-delete
+                              ::a/bulk-action :bulk-action))]
     (is (isa? a/rights-hierarchy ::a/edit-acl right))
     (is (not (isa? a/rights-hierarchy right ::a/edit-acl)))))
 
