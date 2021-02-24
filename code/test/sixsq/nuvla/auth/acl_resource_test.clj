@@ -49,6 +49,7 @@
                                ::a/view-data
                                ::a/query
                                ::a/bulk-delete
+                               ::a/bulk-action
                                ::a/add} {:claims #{"user/user1"}}
 
                              #{::a/edit-acl
@@ -61,6 +62,7 @@
                                ::a/view-data
                                ::a/query
                                ::a/bulk-delete
+                               ::a/bulk-action
                                ::a/add} {:claims #{"group/nuvla-admin"}}
 
                              #{::a/view-acl
@@ -82,6 +84,7 @@
                                ::a/view-data
                                ::a/query
                                ::a/bulk-delete
+                               ::a/bulk-action
                                ::a/add} {:claims #{"user/user1", "group/role2"}}
 
                              #{::a/delete
