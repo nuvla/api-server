@@ -24,5 +24,5 @@
 (deftest lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (vpn-utils-test/credential-vpn-lifecycle-test
-     ctisoc/method "customer" "user/jane" "user/jane group/nuvla-user group/nuvla-anon"
+     ctisoc/method "customer" "user/jane" "user/jane user/jane group/nuvla-user group/nuvla-anon"
      ctison/method)))

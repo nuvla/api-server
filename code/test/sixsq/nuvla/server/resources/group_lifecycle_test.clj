@@ -26,8 +26,8 @@
 
   (let [app                     (ltu/ring-app)
         session-json            (content-type (session app) "application/json")
-        session-admin           (header session-json authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user            (header session-json authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin           (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user            (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon            (header session-json authn-info-header "group/nuvla-anon")
 
         href                    (str group-tpl/resource-type "/generic")

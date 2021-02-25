@@ -85,7 +85,7 @@
   [f]
   (let [session-admin (-> (session (ltu/ring-app))
                           (content-type "application/json")
-                          (header authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon"))]
+                          (header authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon"))]
 
     (doseq [namespace [ns1 ns2]]
       (-> session-admin
@@ -105,8 +105,8 @@
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; anonymous create should fail
     (-> session-anon
@@ -151,7 +151,7 @@
         (is ((set (:edit-acl data-record-acl)) "user/jane")))
 
       (-> (session (ltu/ring-app))
-          (header authn-info-header "user/jane role1 group/nuvla-admin")
+          (header authn-info-header "user/jane user/jane role1 group/nuvla-admin")
           (request abs-uri :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))
@@ -233,8 +233,8 @@
 
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         connector-with-namespaced-key
                       (format "
@@ -266,8 +266,8 @@
 
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     (let [uri     (-> session-user
                       (request base-uri
@@ -301,8 +301,8 @@
 
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         attr          (ltu/random-string)
         valid-entry   {:infrastructure-service             "infrastructure-service/cloud-software-solution-1"
@@ -348,8 +348,8 @@
 
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     (-> session-user
         (request base-uri
@@ -378,7 +378,7 @@
 
           res-ok-put-body    (-> (session (ltu/ring-app))
                                  (content-type "application/x-www-form-urlencoded")
-                                 (header authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                 (header authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
                                  (request cimi-url-ok
                                           :request-method :put
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='456'" ns1-prefix ns1-prefix)}))
@@ -401,7 +401,7 @@
 
           no-result-put-body (-> (session (ltu/ring-app))
                                  (content-type "application/x-www-form-urlencoded")
-                                 (header authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                 (header authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
                                  (request cimi-url-no-result
                                           :request-method :put
                                           :body (rc/form-encode {:filter (format "%s:att3/%s:att4='xxx'" ns1-prefix ns1-prefix)}))
@@ -422,9 +422,9 @@
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header
-                              "user/jane group/nuvla-user group/nuvla-anon")]
+                              "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     (let [data-record-fn    (fn [infra-id]
                               {:infrastructure-service (str "infrastructure-service/" infra-id)})

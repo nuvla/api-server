@@ -32,12 +32,13 @@
 (defn extract-header-authn-info
   [request]
   (when-let [terms (parse-authn-header request)]
-    (let [user-id (first terms)
-          claims  (seq (rest terms))
-          session (first (keep is-session? (rest terms)))]
+    (let [user-id      (first terms)
+          active-claim (or (second terms) user-id)
+          claims       (seq (nthrest terms 2))
+          session      (first (keep is-session? (rest terms)))]
       (cond-> {:claims (set [user-id "group/nuvla-anon"])}
               user-id (assoc :user-id user-id)
-              user-id (assoc :active-claim user-id)
+              active-claim (assoc :active-claim active-claim)
               claims (update :claims set/union (set claims))
               session (assoc :session session)))))
 

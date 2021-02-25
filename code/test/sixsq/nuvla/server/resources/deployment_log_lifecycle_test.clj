@@ -46,10 +46,10 @@
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane  (header session authn-info-header (str "user/jane group/nuvla-user group/nuvla-anon" " " session-id))
-        session-other (header session authn-info-header "user/other group/nuvla-user group/nuvla-anon")
-        session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-jane  (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon" " " session-id))
+        session-other (header session authn-info-header "user/other user/other group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
     ;; admin deployment-log collection query should succeed but be empty (no logs created yet)
     (-> session-admin

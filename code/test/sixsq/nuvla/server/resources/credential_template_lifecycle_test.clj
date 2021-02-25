@@ -68,7 +68,7 @@
 (deftest lifecycle-admin
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
-                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
+                         (header authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon"))
         entries      (-> session-user
                          (request base-uri)
                          (ltu/body->edn)

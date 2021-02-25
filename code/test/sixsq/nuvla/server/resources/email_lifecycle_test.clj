@@ -32,8 +32,8 @@
                           session
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
 
     ;; verify resource metadata
     (-> session-anon

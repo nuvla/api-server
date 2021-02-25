@@ -87,9 +87,9 @@
                                  session
                                  (content-type "application/json"))
           session-admin      (header session-anon authn-info-header
-                                     (str "group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+                                     (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
           session-user       (header session-anon authn-info-header
-                                     (str "user/jane group/nuvla-user group/nuvla-anon " session-id))
+                                     (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
           module-id          (-> session-user
@@ -528,9 +528,9 @@
                                session
                                (content-type "application/json"))
           session-admin    (header session-anon authn-info-header
-                                   "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                   "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user     (header session-anon authn-info-header
-                                   "user/jane group/nuvla-user group/nuvla-anon")
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
           module-id        (-> session-user
@@ -598,7 +598,7 @@
                                session
                                (content-type "application/json"))
           session-user     (header session-anon authn-info-header
-                                   "user/jane group/nuvla-user group/nuvla-anon")
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
           module-id        (-> session-user

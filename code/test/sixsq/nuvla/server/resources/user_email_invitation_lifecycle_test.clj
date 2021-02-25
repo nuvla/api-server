@@ -35,9 +35,9 @@
         session         (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user    (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-        session-anon    (header session authn-info-header "user/unknown group/nuvla-anon")]
+        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        session-anon    (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
     (with-redefs [email-utils/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
@@ -132,7 +132,7 @@
                                        (ltu/body->edn)
                                        (ltu/is-status 201))
               user-id              (ltu/body-resource-id resp)
-              session-created-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))
+              session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
 
               {email-id :email :as user} (-> session-created-user
                                              (request (str p/service-context user-id))

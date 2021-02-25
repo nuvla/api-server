@@ -53,16 +53,22 @@
                      "user/uname"}} "  user/uname"
     {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
      :user-id      "user/uname"
-     :active-claim "user/uname"} "user/uname group/r1"
+     :active-claim "user/uname"} "user/uname user/uname group/r1"
     {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
      :user-id      "user/uname"
-     :active-claim "user/uname"} "  user/uname group/r1"
+     :active-claim "user/uname"} "  user/uname user/uname group/r1"
     {:claims       #{"group/nuvla-anon" "user/uname" "group/r1"}
      :user-id      "user/uname"
-     :active-claim "user/uname"} "user/uname group/r1  "
+     :active-claim "user/uname"} "user/uname user/uname group/r1  "
     {:claims       #{"group/nuvla-anon" "user/uname" "group/r1" "group/r2"}
      :user-id      "user/uname"
-     :active-claim "user/uname"} "user/uname group/r1 group/r2"))
+     :active-claim "user/uname"} "user/uname user/uname group/r1 group/r2"
+    {:claims       #{"group/nuvla-anon" "user/uname" "group/r1" "group/r2"}
+     :user-id      "user/uname"
+     :active-claim "group/r1"} "user/uname group/r1 group/r1 group/r2"
+    {:claims       #{"group/nuvla-anon" "user/uname"}
+     :user-id      "user/uname"
+     :active-claim "user/uname"} "user/uname"))
 
 
 (deftest check-cookie-info->authn-info
@@ -131,11 +137,11 @@
 
       {:active-claim "user/uname"
        :claims       #{"group/r1", "group/nuvla-anon", "user/uname"}
-       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname group/r1"}}
+       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname user/uname group/r1"}}
 
       {:active-claim "user/uname"
        :claims       #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
-       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname group/r1 group/r2"}}
+       :user-id      "user/uname"} {:headers {t/authn-info-header "user/uname user/uname group/r1 group/r2"}}
 
       {:active-claim "user/uname2"
        :claims       #{"group/nuvla-anon", "user/uname2", "group/nuvla-user"}
@@ -151,6 +157,6 @@
       {:active-claim "user/uname"
        :claims       #{"group/r1", "group/r2", "group/nuvla-anon", "user/uname"}
        :user-id      "user/uname"}
-      {:headers {t/authn-info-header "user/uname group/r1 group/r2"}
+      {:headers {t/authn-info-header "user/uname user/uname group/r1 group/r2"}
        :cookies {t/authn-cookie cookie-id-roles}})))
 

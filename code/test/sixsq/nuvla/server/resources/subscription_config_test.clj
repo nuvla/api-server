@@ -25,8 +25,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header "user/super user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         valid-subscription-config {:enabled         true
                                    :category        "notification"
@@ -205,7 +205,7 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         acl {:owners ["user/jane"]}
         num-resources 3
@@ -340,7 +340,7 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         acl {:owners ["user/jane"]}
         _ (create-monitored-resources session-user acl 3 "FOO")
@@ -473,7 +473,7 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         acl {:owners ["user/jane"]}
         _ (create-monitored-resources session-user acl 3 "FOO")

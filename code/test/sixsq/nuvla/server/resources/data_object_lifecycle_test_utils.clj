@@ -29,23 +29,23 @@
 (def credential-base-uri (str p/service-context credential/resource-type))
 
 
-(def ^:const user-info-header "user/jane group/nuvla-user group/nuvla-anon")
+(def ^:const user-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
 
-(def ^:const admin-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+(def ^:const admin-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
 (def ^:const username-view "user/tarzan")
 
 
-(def ^:const user-view-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
+(def ^:const user-view-info-header (str username-view " " username-view " group/nuvla-user group/nuvla-anon"))
 
 
-(def ^:const tarzan-info-header (str username-view " group/nuvla-user group/nuvla-anon"))
+(def ^:const tarzan-info-header (str username-view " " username-view " group/nuvla-user group/nuvla-anon"))
 
 (def ^:const username-no-view "user/other")
 
 
-(def ^:const user-no-view-info-header (str username-no-view " group/nuvla-user group/nuvla-anon"))
+(def ^:const user-no-view-info-header (str username-no-view " " username-no-view " group/nuvla-user group/nuvla-anon"))
 
 
 (defn build-session
