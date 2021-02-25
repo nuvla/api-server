@@ -308,7 +308,7 @@
                               (ltu/body->edn)
                               (ltu/is-status 201))
              user-id      (ltu/body-resource-id resp)
-             session-user (header session authn-info-header (str user-id " group/nuvla-user group/nuvla-anon"))]
+             session-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))]
 
          ; credential password is created and visible by the created user
          (-> session-user
