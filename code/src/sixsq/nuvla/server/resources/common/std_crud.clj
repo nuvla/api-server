@@ -147,7 +147,10 @@
     (a/throw-cannot-bulk-action collection-acl request)
     (let [authn-info     (auth/current-authentication request)
           active-claim   (auth/current-active-claim request)
-          action-name    (:action params)
+          action         (:action params)
+          action-name    (-> action
+                             (str/replace #"-" "_")
+                             (str "_" resource-name))
           create-request {:params      {:resource-name "job"}
                           :body        {:action          action-name
                                         :target-resource {:href resource-name}
@@ -161,9 +164,9 @@
             job-status :status} :body} (crud/add create-request)]
       (when (not= job-status 201)
         (throw (r/ex-response
-                 (format "unable to create async job for %s " action-name)
+                 (format "unable to create async job for %s " action)
                  500 resource-name)))
-      (r/map-response (str "starting " action-name " with async " job-id)
+      (r/map-response (str "starting " action " with async " job-id)
                       202 resource-name job-id))))
 
 
