@@ -292,6 +292,15 @@
              :json-schema/order 33)))
 
 
+(s/def ::resources-prev
+  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption]))
+      (assoc :name "resources-prev"
+             :json-schema/type "map"
+             :json-schema/description "available and consumed resources; previous values."
+
+             :json-schema/order 30)))
+
+
 (s/def ::operating-system
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "operating-system"
@@ -640,6 +649,7 @@
                                ::current-time
                                ::comment
                                ::resources
+                               ::resources-prev
                                ::operating-system
                                ::architecture
                                ::hostname

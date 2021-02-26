@@ -133,6 +133,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           (u/update-timestamps)
           (u/set-updated-by request)
           (assoc :jobs jobs)
+          (cond-> (contains? body :resources) (assoc :resources-prev (:resources current)))
           (status-utils/set-online request (:online current))
           pre-edit
           crud/validate

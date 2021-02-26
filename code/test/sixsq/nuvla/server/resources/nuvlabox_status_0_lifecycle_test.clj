@@ -183,37 +183,52 @@
               (ltu/is-key-value :online-prev nil)
               (ltu/is-key-value :online nil))
 
-          ;; nuvlabox user is able to update nuvlabox-status
-          (-> session-nb
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:resources resources-updated}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :resources resources-updated)
-              (ltu/is-key-value :online-prev nil)
-              (ltu/is-key-value :online true))
+          ;; nuvlabox user is able to update nuvlabox-status and :resources are rotated
+          (let [resources-prev (-> session-nb
+                                   (request state-url)
+                                   (ltu/body->edn)
+                                   (ltu/body)
+                                   :resources)]
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:resources resources-updated}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev resources-prev)
+                (ltu/is-key-value :online-prev nil)
+                (ltu/is-key-value :online true))
 
-          ;; admin edition can set online flag
-          (-> session-admin
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:online false}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :online-prev true)
-              (ltu/is-key-value :online false)
-              (ltu/body))
+            ;; admin edition can set online flag
+            ;; no :resources rotation as no update is done
+            (-> session-admin
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:online false}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online-prev true)
+                (ltu/is-key-value :online false)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev resources-prev)))
 
-          (-> session-nb
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:resources resources-updated}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :resources resources-updated)
-              (ltu/is-key-value :online-prev false)
-              (ltu/is-key-value :online true))
+
+          (let [resources-prev (-> session-nb
+                                   (request state-url)
+                                   (ltu/body->edn)
+                                   (ltu/body)
+                                   :resources)]
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:resources resources-updated}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online-prev false)
+                (ltu/is-key-value :online true)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev resources-prev)))
 
           ;; verify that the update was written to disk
           (-> session-nb
