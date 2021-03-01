@@ -20,6 +20,7 @@
                                ::nb-status-0/current-time
                                ::nb-status-0/comment
                                ::nb-status-0/resources
+                               ::nb-status-0/resources-prev
                                ::nb-status-0/operating-system
                                ::nb-status-0/architecture
                                ::nb-status-0/hostname

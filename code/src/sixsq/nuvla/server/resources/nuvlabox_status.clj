@@ -6,7 +6,6 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -63,6 +62,18 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defmethod crud/add resource-type
   [request]
   (add-impl request))
+
+
+(def blacklist-response-keys [:resources-prev
+                              :online-prev])
+
+
+(defn remove-blacklisted
+  [response]
+  (if (= collection-type (get-in response [:body :resource-type]))
+    (update-in response [:body :resources]
+               #(for [r %] (apply dissoc r blacklist-response-keys)))
+    (update response :body #(apply dissoc % blacklist-response-keys))))
 
 
 (defn create-nuvlabox-status
@@ -133,6 +144,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           (u/update-timestamps)
           (u/set-updated-by request)
           (assoc :jobs jobs)
+          (cond-> (contains? body :resources) (assoc :resources-prev (:resources current)))
           (status-utils/set-online request (:online current))
           pre-edit
           crud/validate
@@ -143,7 +155,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (-> (edit-impl request)
+      remove-blacklisted))
 
 
 (defn update-nuvlabox-status
@@ -164,7 +177,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defmethod crud/retrieve resource-type
   [request]
-  (retrieve-impl request))
+  (-> (retrieve-impl request)
+      remove-blacklisted))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -180,7 +194,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defmethod crud/query resource-type
   [request]
-  (query-impl request))
+  (-> (query-impl request)
+      remove-blacklisted))
 
 
 ;;
