@@ -85,7 +85,7 @@
              :json-schema/order 27)))
 
 
-(def job-href-regex #"^job/[a-z]+(-[a-z]+)*$")
+(def job-href-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 (s/def ::href (s/and string? #(re-matches job-href-regex %)))
@@ -100,9 +100,14 @@
 
              :json-schema/order 28)))
 
+(s/def ::nested-job
+  (-> (st/spec (s/keys :req-un [::href]))
+      (assoc :name "nested-job"
+             :json-schema/type "map")))
+
 
 (s/def ::nested-jobs
-  (-> (st/spec (s/coll-of ::href :kind vector?))
+  (-> (st/spec (s/coll-of ::nested-job :kind vector?))
       (assoc :name "nested-jobs"
              :json-schema/type "array"
              :json-schema/display-name "nested jobs"
