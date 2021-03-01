@@ -70,7 +70,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 (defn remove-blacklisted
   [response]
-  (update response :body #(apply dissoc % blacklist-response-keys)))
+  (if (= collection-type (get-in response [:body :resource-type]))
+    (update-in response [:body :resources]
+               #(for [r %] (apply dissoc r blacklist-response-keys)))
+    (update response :body #(apply dissoc % blacklist-response-keys))))
 
 
 (defn create-nuvlabox-status

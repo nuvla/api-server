@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -226,6 +227,33 @@
              (ltu/body->edn)
              (ltu/is-status 200)
              (ltu/is-key-value :resources resources-updated))
+
+         ;; non of the items in the collection contain '-prev' keys
+         (let [resp-resources (-> session-nb
+                                  (request base-uri)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-count #(> % 0))
+                                  (ltu/body)
+                                  :resources)]
+           (doseq [r resp-resources]
+             (doseq [k nb-status/blacklist-response-keys]
+               (is (not (contains? r k))))))
+
+         ;; non of the items in the collection after search contain '-prev' keys
+         (let [resp-resources (-> session-nb
+                                  (content-type "application/x-www-form-urlencoded")
+                                  (request base-uri
+                                           :request-method :put
+                                           :body (rc/form-encode {:filter "version='1'"}))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-count #(> % 0))
+                                  (ltu/body)
+                                  :resources)]
+           (doseq [r resp-resources]
+             (doseq [k nb-status/blacklist-response-keys]
+               (is (not (contains? r k))))))
 
          ;; nuvlabox identity cannot delete the state
          (-> session-nb
