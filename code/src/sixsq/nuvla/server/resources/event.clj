@@ -12,7 +12,9 @@ an application.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -44,8 +46,11 @@ an application.
 
 (defmethod crud/add resource-type
   [request]
-  (let [resp (add-impl request)]
+  (let [resp (add-impl request)
+        now  (time/now-str)]
+    (log/error "Kafka publish request started:" now "resp:" resp)
     (ka-crud/publish-on-add resource-type resp)
+    (log/error "Kafka publish finished:" (time/time-between-date-now now :seconds) "resp:" resp)
     resp))
 
 
