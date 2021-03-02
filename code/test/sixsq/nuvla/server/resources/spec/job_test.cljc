@@ -25,7 +25,7 @@
                    :expiry             timestamp
                    :target-resource    {:href "abc/def"}
                    :affected-resources [{:href "abc/def"}]
-                   :nested-jobs        [{:href "job/7c0af720-b40a-4b22-a004-cc1e8ef52248"}]
+                   :nested-jobs        ["job/7c0af720-b40a-4b22-a004-cc1e8ef52248"]
                    :execution-mode     "mixed"
                    :version            1}]
 
