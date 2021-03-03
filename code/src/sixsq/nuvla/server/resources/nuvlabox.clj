@@ -227,34 +227,50 @@ particular NuvlaBox release.
   (retrieve-impl request))
 
 
+(defn value-changed?
+  [current-nb updated-nb field-key]
+  (and (some? (get updated-nb field-key))
+       (not= (get updated-nb field-key) (get current-nb field-key))))
+
+
+(defn should-propagate-changes?
+  [current-nb updated-nb]
+  (->> [:acl :name :capabilities :nuvlabox-status
+        :infrastructure-service-group :credential-api-key]
+       (some (partial value-changed? current-nb updated-nb))
+       boolean))
+
+
 (defn edit-subresources
-  [resource]
-  (let [{:keys [id name acl nuvlabox-status
-                infrastructure-service-group credential-api-key capabilities]
-         :as   nuvlabox} (acl-utils/normalize-acl-for-resource resource)]
+  [current-nb updated-nb]
+  (when (should-propagate-changes? current-nb updated-nb)
+    (let [{:keys [id name acl nuvlabox-status
+                  infrastructure-service-group credential-api-key capabilities]
+           :as   nuvlabox} updated-nb]
 
-    (when nuvlabox-status
-      (wf-utils/update-nuvlabox-status nuvlabox-status nuvlabox))
+      (when nuvlabox-status
+        (wf-utils/update-nuvlabox-status nuvlabox-status nuvlabox))
 
-    (when infrastructure-service-group
+      (when infrastructure-service-group
 
-      (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
+        (wf-utils/update-infrastructure-service-group infrastructure-service-group nuvlabox)
 
-      (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "swarm")]
-        (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
-        (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
-        (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
+        (let [swarm-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "swarm")]
+          (wf-utils/update-coe-cred id name acl swarm-id nil nil nil "infrastructure-service-swarm")
+          (wf-utils/update-swarm-token id name acl swarm-id "MANAGER" nil)
+          (wf-utils/update-swarm-token id name acl swarm-id "WORKER" nil))
 
-      (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "kubernetes")]
-        (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
+        (let [k8s-id (wf-utils/update-coe-service id name acl infrastructure-service-group nil nil capabilities "kubernetes")]
+          (wf-utils/update-coe-cred id name acl k8s-id nil nil nil "infrastructure-service-kubernetes"))
 
-      (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
-        (wf-utils/update-minio-cred id name acl minio-id nil nil)))
+        (let [minio-id (wf-utils/update-minio-service id name acl infrastructure-service-group nil)]
+          (wf-utils/update-minio-cred id name acl minio-id nil nil)))
 
-    (when credential-api-key
-      (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
+      (when credential-api-key
+        (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
 
-    (wf-utils/update-peripherals id acl)))
+      (when (value-changed? current-nb updated-nb :acl)
+        (wf-utils/update-peripherals id acl)))))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -284,11 +300,13 @@ particular NuvlaBox release.
   [{:keys [body params] :as request}]
   (let [id               (str resource-type "/" (:uuid params))
         authn-info       (auth/current-authentication request)
-        is-admin?        (acl-resource/is-admin? authn-info)
+        not-admin?       (not (acl-resource/is-admin? authn-info))
         nuvlabox         (db/retrieve id request)
-        updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
+        updated-nuvlabox (-> body
+                             (cond->> not-admin? (restricted-body nuvlabox))
+                             (acl-utils/normalize-acl-for-resource))]
 
-    (edit-subresources updated-nuvlabox)
+    (edit-subresources nuvlabox updated-nuvlabox)
 
     (let [resp (edit-impl (assoc request :body updated-nuvlabox))]
       (ka-crud/publish-on-edit resource-type resp)
@@ -715,7 +733,7 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "update-nuvlabox"]
   [{{uuid :uuid} :params {:keys [nuvlabox-release payload]} :body :as request}]
   (try
-    (let [id            (str resource-type "/" uuid)]
+    (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve nuvlabox-release request)
           (a/throw-cannot-view request))
       (-> (db/retrieve id request)

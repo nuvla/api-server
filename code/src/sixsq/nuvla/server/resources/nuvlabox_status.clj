@@ -138,9 +138,9 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        u/strip-select-from-mandatory-attrs
                                        (a/editable-keys rights))
           current-without-selected (apply dissoc current dissoc-keys)
-          editable-body (select-keys body (-> body keys (a/editable-keys rights)))
-          merged (merge current-without-selected editable-body)]
-      (-> merged
+          editable-body (select-keys body (-> body keys (a/editable-keys rights)))]
+      (-> current-without-selected
+          (merge editable-body)
           (u/update-timestamps)
           (u/set-updated-by request)
           (assoc :jobs jobs)
