@@ -246,7 +246,7 @@ particular NuvlaBox release.
   (when (should-propagate-changes? current-nb updated-nb)
     (let [{:keys [id name acl nuvlabox-status
                   infrastructure-service-group credential-api-key capabilities]
-           :as   nuvlabox} updated-nb]
+           :as   nuvlabox} (acl-utils/normalize-acl-for-resource updated-nb)]
 
       (when nuvlabox-status
         (wf-utils/update-nuvlabox-status nuvlabox-status nuvlabox))
@@ -300,11 +300,9 @@ particular NuvlaBox release.
   [{:keys [body params] :as request}]
   (let [id               (str resource-type "/" (:uuid params))
         authn-info       (auth/current-authentication request)
-        not-admin?       (not (acl-resource/is-admin? authn-info))
+        is-admin?        (acl-resource/is-admin? authn-info)
         nuvlabox         (db/retrieve id request)
-        updated-nuvlabox (-> body
-                             (cond->> not-admin? (restricted-body nuvlabox))
-                             (acl-utils/normalize-acl-for-resource))]
+        updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
 
     (edit-subresources nuvlabox updated-nuvlabox)
 

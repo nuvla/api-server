@@ -56,7 +56,8 @@
                :vpn-server-id                  "infrastructure-service/uuid-1"
                :internal-data-gateway-endpoint "nb-data-gateway"
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
-               :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]})
+               :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
+               :online                         true})
 
 
 (deftest check-nuvlabox
@@ -94,5 +95,6 @@
                  :monitored
                  :infrastructure-service-id
                  :ssh-keys
-                 :capabilities}]
+                 :capabilities
+                 :online}]
     (stu/is-valid ::nb-1/schema (dissoc valid-nb attr))))
