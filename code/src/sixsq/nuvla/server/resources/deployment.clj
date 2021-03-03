@@ -21,9 +21,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -362,28 +360,22 @@ a container orchestration engine.
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [now             (time/now-str)
-          _ (log/error uuid ": update started" now)
-          current         (-> (str resource-type "/" uuid)
+    (let [current         (-> (str resource-type "/" uuid)
                               (crud/retrieve-by-id-as-admin)
                               (a/throw-cannot-manage request)
                               (utils/throw-can-not-do-action
                                 utils/can-update? "update_deployment"))
-          _ (log/error uuid ": update delta_1" (time/time-between-date-now now :seconds))
           current-subs-id (when config-nuvla/*stripe-api-key* (:subscription-id current))
-          _ (log/error uuid ": update delta_2" (time/time-between-date-now now :seconds))
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
           {:keys [name description price license]} (utils/resolve-module
                                                      (assoc request
                                                        :body {:module {:href module-href}}))
-          _ (log/error uuid ": update delta_3" (time/time-between-date-now now :seconds))
           coupon          (:coupon current)
           new-subs-id     (when (and config-nuvla/*stripe-api-key* price)
                             (some-> (auth/current-active-claim request)
                                     (utils/create-subscription price coupon)
                                     (stripe/get-id)))
-          _ (log/error uuid ": update delta_4" (time/time-between-date-now now :seconds))
           new             (-> current
                               (assoc :state "UPDATING")
                               (cond-> name (assoc-in [:module :name] name)
@@ -391,14 +383,10 @@ a container orchestration engine.
                                       price (assoc-in [:module :price] price)
                                       license (assoc-in [:module :license] license)
                                       new-subs-id (assoc :subscription-id new-subs-id))
-                              (edit-deployment request))
-          _ (log/error uuid ": update delta_5" (time/time-between-date-now now :seconds))]
+                              (edit-deployment request))]
       (some-> current-subs-id stripe/retrieve-subscription
               (stripe/cancel-subscription {"invoice_now" true}))
-      (log/error uuid ": update delta_6" (time/time-between-date-now now :seconds))
-      (let [res (utils/create-job new request "update_deployment" (:execution-mode new))]
-        (log/error uuid ": update delta_7" (time/time-between-date-now now :seconds) "finised time:" (time/now-str))
-        res))
+      (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
