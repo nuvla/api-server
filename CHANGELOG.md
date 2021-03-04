@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Nuvlabox - propagate nuvlabox status online field to nuvlabox
+    on change
   - Deployment - Bugfix deployment shouldn't fail on edit when credential
     doesn't exist
 

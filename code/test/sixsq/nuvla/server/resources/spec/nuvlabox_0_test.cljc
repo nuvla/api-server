@@ -53,7 +53,8 @@
                :hw-revision-code             "a020d3"
                :monitored                    true
                :ssh-keys                     []
-               :capabilities                 []})
+               :capabilities                 []
+               :online                       true})
 
 
 (deftest check-nuvlabox
@@ -89,5 +90,6 @@
                  :hw-revision-code
                  :monitored
                  :ssh-keys
-                 :capabilities}]
+                 :capabilities
+                 :online}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))

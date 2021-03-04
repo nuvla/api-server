@@ -37,4 +37,5 @@
                                ::nb-0/vpn-server-id
                                ::nb-0/internal-data-gateway-endpoint
                                ::nb-0/ssh-keys
-                               ::nb-0/capabilities]}))
+                               ::nb-0/capabilities
+                               ::nb-0/online]}))
