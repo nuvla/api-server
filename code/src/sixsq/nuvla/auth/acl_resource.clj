@@ -108,6 +108,9 @@
 (def can-edit? (partial has-rights? #{::edit-meta ::edit-data ::edit-acl}))
 
 
+(def can-edit-data? (partial has-rights? #{::edit-data}))
+
+
 (def can-view? (partial has-rights? #{::view-meta ::view-data ::view-acl}))
 
 

@@ -591,6 +591,95 @@
                    :request-method :delete)
           (ltu/is-status 200)))))
 
+(deftest lifecycle-fetch-module
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon     (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-admin    (header session-anon authn-info-header
+                                   "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user     (header session-anon authn-info-header
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          ;; setup a module that can be referenced from the deployment
+          module-id        (-> session-user
+                               (request module-base-uri
+                                        :request-method :post
+                                        :body (json/write-str
+                                                (valid-module "component" valid-component)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+          valid-deployment {:module {:href module-id}}]
+
+      ;; check deployment creation
+      (let [deployment-id  (-> session-user
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str valid-deployment))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+            deployment-url (str p/service-context deployment-id)
+            fetch-url      (-> session-user
+                               (request deployment-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url :fetch-module))
+            module-url     (str p/service-context module-id)
+            module         (-> session-user
+                               (request module-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/body))]
+
+        (-> session-user
+            (request (str p/service-context module-id)
+                     :request-method :put
+                     :body (json/write-str
+                             (assoc-in module
+                                       [:content :image]
+                                       {:image-name "ubuntu"
+                                        :tag        "18.04"})))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
+            (request fetch-url)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "invalid module-href"))
+
+        ;; try resolve module version not existing should fail
+        (-> session-user
+            (request fetch-url
+                     :request-method :put
+                     :body (json/write-str {:module-href (str module-id "_10000")}))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "cannot resolve"))
+
+        (-> session-user
+            (request fetch-url
+                     :request-method :put
+                     :body (json/write-str {:module-href module-id}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value #(-> % :content :image :tag) :module "18.04"))
+
+        (-> session-user
+            (request deployment-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200)))
+
+      (-> session-user
+          (request (str p/service-context module-id)
+                   :request-method :delete)
+          (ltu/is-status 200)))))
+
 
 (deftest lifecycle-bulk-update
   (binding [config-nuvla/*stripe-api-key* nil]
