@@ -116,7 +116,7 @@
         subscription {:enabled         true
                       :category        "notification"
                       :parent          (str "subscription-config/" (str (UUID/randomUUID)))
-                      :method-id       notif-uri
+                      :method-ids      [notif-uri]
                       :resource-kind   "nuvlabox-state"
                       :resource-filter "tags='foo'"
                       :resource-id     (str "nuvlabox-status/" (str (UUID/randomUUID)))

@@ -103,7 +103,10 @@ Collection for holding subscriptions configurations.
           resources-to-subscribe (individual-resources-to-subscribe resource-kind resource-filter request)]
       (if (not-empty resources-to-subscribe)
         (doseq [res resources-to-subscribe]
-          (add-subscription (assoc resource :resource-id res :parent parent)))))))
+          (doseq [method-id (:method-ids resource)]
+            (add-subscription (-> resource
+                                  (dissoc :method-ids)
+                                  (assoc :resource-id res :parent parent :method-id method-id)))))))))
 
 
 (defmethod crud/add resource-type
@@ -133,30 +136,64 @@ Collection for holding subscriptions configurations.
   (concat edit-forbidden-attrs [:resource-id :resource-type :id :operations]))
 
 
+;; FIXME: to be removed - only for migration
+(defn migration--method-id
+  [resource]
+  (if (contains? resource :method-id)
+    (-> resource
+        (assoc :method-ids (vec (conj (:method-ids resource []) (:method-id resource))))
+        (dissoc :method-id))
+    resource))
+
+
+;; FIXME: to be removed - only for migration
+(defn migration--method-id-subs-config
+  [{{uuid :uuid} :params :as request} body]
+  (let [current (if-not (:method-ids body)
+                  (crud/retrieve-by-id (str resource-type "/" uuid) request)
+                  {})]
+    (-> (cond-> body
+                (:method-id current) (assoc :method-id (:method-id current)))
+        migration--method-id)))
+
+
 (defn edit-individual-subs
-  [{body :body {uuid :uuid} :params :as request}]
-  (let [authn (auth/current-authentication request)
-        filter (format "parent='%s'" (str resource-type "/" uuid))
-        req {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-             :params      {:resource-name subs/resource-type}
-             :nuvla/authn authn}
-        results (for [res (->> (crud/query req) :body :resources)]
-                  (let [new-body (merge res (apply dissoc body edit-forbidden-attrs-subs))
-                        r (crud/edit {:params      {:uuid          (second (str/split (:id res) #"/"))
-                                                    :resource-name subs/resource-type}
-                                      :body        new-body
-                                      :nuvla/authn authn})]
-                    (= 200 (:status r))))]
-    (if (not (every? true? results))
-      (throw (r/ex-bad-request "Failed to set state on subscriptions from subscription configuration."))
-      results)))
+  ([{body :body :as request} filter]
+   (println "=============== " filter " ===================")
+   (let [authn (auth/current-authentication request)
+         req {:cimi-params {:filter (parser/parse-cimi-filter filter)}
+              :params      {:resource-name subs/resource-type}
+              :nuvla/authn authn}
+         _ (println req)
+         results (for [res (->> (crud/query req) :body :resources)]
+                   (do  (println res)
+                     (let [new-body (merge res (apply dissoc body edit-forbidden-attrs-subs))
+                           r (crud/edit {:params      {:uuid          (second (str/split (:id res) #"/"))
+                                                       :resource-name subs/resource-type}
+                                         :body        new-body
+                                         :nuvla/authn authn})
+                           _ (println r)]
+                     (= 200 (:status r)))))]
+     (if (not (every? true? results))
+       (throw (r/ex-bad-request "Failed to set state on subscriptions from subscription configuration."))
+       results)))
+  ([{{uuid :uuid} :params :as request}]
+   (edit-individual-subs request (format "parent='%s'" (str resource-type "/" uuid)))))
+
+
+(defn edit-conf
+  [request]
+  (let [req-updated (->> request
+                         :body
+                         (migration--method-id-subs-config request) ;; FIXME: remove
+                         (#(apply dissoc % edit-forbidden-attrs))
+                         (assoc request :body))]
+    (edit-impl req-updated)))
 
 
 (defn edit-conf-and-subs
   [request]
-  (let [new-body (apply dissoc (:body request) edit-forbidden-attrs)
-        req-updated (assoc request :body new-body)
-        response (edit-impl req-updated)]
+  (let [response (edit-conf request)]
     (edit-individual-subs request)
     response))
 
@@ -177,42 +214,73 @@ Collection for holding subscriptions configurations.
   (set-enabled request true))
 
 
-(defn set-notif-method-id-all
-  [request]
-  (edit-conf-and-subs (assoc request :body {:method-id (-> request
-                                                           :body
-                                                           :method-id)})))
+(defn delete-subscriptions
+  ([parent-id request filter]
+   ;; With 'parent-id' as parent
+   ;; 1. Delete individual subscriptions from ES (with bulk delete)
+   ;; 2. Publish tombstones to Kafka
+   (let [flt (parser/parse-cimi-filter filter)
+         req {:cimi-params {:filter flt
+                            :select ["id"]}
+              :params      {:resource-name subs/resource-type}
+              :nuvla/authn (auth/current-authentication request)}
+         subs-ids (->> (crud/query req)
+                       :body
+                       :resources
+                       (map :id))]
+     (if (not-empty subs-ids)
+       (let [req-with-filter (assoc request :cimi-params {:filter flt})
+             req (merge-with merge req-with-filter {:headers {"bulk" true}})]
+         ;; delete individual subscriptions
+         (subs/bulk-delete-impl req)
+         ;; publish tombstone
+         (for [subs-id subs-ids]
+           (ka-crud/publish-tombstone subs/resource-type subs-id)))))
+   parent-id)
+  ([parent-id request]
+   (delete-subscriptions parent-id request (format "parent='%s'" parent-id))))
+
+
+(defn delete-subs
+  [method-ids request current]
+  (println "method ids to DELETE:::" method-ids)
+  (let [parent-id (:id current)]
+    (doseq [method-id method-ids]
+      (delete-subscriptions parent-id request (format "parent='%s' and method-id='%'" parent-id method-id)))))
+
+(defn add-subs
+  [method-ids current]
+  (println "method ids to ADD:::" method-ids)
+  current)
+
+(defn replace-subs
+  [method-ids old-method-ids {{uuid :uuid} :params :as request}]
+  (let [response (edit-conf request)
+        parent (str resource-type "/" uuid)]
+    (doseq [[o n] (map vector old-method-ids method-ids)]
+      (edit-individual-subs (assoc request :body {:method-id n})
+                            (format "parent='%s' and method-id='%s'" parent o)))
+    response))
+
+(defn set-notif-method-ids-all
+  [{{uuid :uuid } :params {method-ids :method-ids} :body :as request}]
+  (let [current (crud/retrieve-by-id (str resource-type "/" uuid) request)]
+    (if method-ids
+      (let [current-ids (set (:method-ids current))
+            new-ids (set method-ids)
+            _ (println (str current-ids " .... " new-ids))
+            req-updated (assoc request :body {:method-ids (:method-ids method-ids)})]
+        (cond
+          (= current-ids new-ids) current
+          (= #{} (clojure.set/intersection current-ids new-ids)) (replace-subs new-ids current-ids request)
+          (not (= #{} (clojure.set/difference current-ids new-ids))) (delete-subs (clojure.set/difference current-ids new-ids) request current)
+          (clojure.set/difference new-ids current-ids) (add-subs (clojure.set/difference new-ids current-ids) current)
+          :else current))
+      current)))
 
 (defmethod crud/edit resource-type
   [request]
   (edit-conf-and-subs request))
-
-
-(defn delete-subscriptions
-  [parent-id request]
-  ;; With 'parent-id' as parent
-  ;; 1. Delete individual subscriptions from ES (with bulk delete)
-  ;; 2. Publish tombstones to Kafka
-  (let [filter (->> parent-id
-                    (format "parent='%s'")
-                    (parser/parse-cimi-filter))
-        req {:cimi-params {:filter filter
-                           :select ["id"]}
-             :params      {:resource-name subs/resource-type}
-             :nuvla/authn (auth/current-authentication request)}
-        subs-ids (->> (crud/query req)
-                      :body
-                      :resources
-                      (map :id))]
-    (if (not-empty subs-ids)
-      (let [req-with-filter (assoc request :cimi-params {:filter filter})
-            req (merge-with merge req-with-filter {:headers {"bulk" true}})]
-        ;; delete individual subscriptions
-        (subs/bulk-delete-impl req)
-        ;; publish tombstone
-        (for [subs-id subs-ids]
-          (ka-crud/publish-tombstone subs/resource-type subs-id)))))
-  parent-id)
 
 
 (defn delete-impl
@@ -256,19 +324,18 @@ Collection for holding subscriptions configurations.
 
 (def ^:const enable "enable")
 (def ^:const disable "disable")
-(def ^:const set-notif-method-id "set-notif-method-id")
+(def ^:const set-notif-method-ids "set-notif-method-ids")
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
         enable-op (u/action-map id enable)
         disable-op (u/action-map id disable)
-        method-id-op (u/action-map id set-notif-method-id)
-        ]
+        methods-id-op (u/action-map id set-notif-method-ids)]
     (cond-> (crud/set-standard-operations resource request)
             can-manage? (update :operations concat [enable-op
                                                     disable-op
-                                                    method-id-op]))))
+                                                    methods-id-op]))))
 
 ;; Action to enable all subscription of this configuration.
 
@@ -285,6 +352,6 @@ Collection for holding subscriptions configurations.
 
 ;; Action to set notification method id.
 
-(defmethod crud/do-action [resource-type set-notif-method-id]
+(defmethod crud/do-action [resource-type set-notif-method-ids]
   [request]
-  (set-notif-method-id-all request))
+  (set-notif-method-ids-all request))
