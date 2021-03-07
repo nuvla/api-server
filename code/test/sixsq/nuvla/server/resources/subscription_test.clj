@@ -27,7 +27,7 @@
         valid-subscription {:enabled true
                             :category "notification"
                             :parent (str "subscription-config/" (str (UUID/randomUUID)))
-                            :method-id (str "notification-method/" (str (UUID/randomUUID)))
+                            :method-ids [(str "notification-method/" (str (UUID/randomUUID)))]
                             :resource-kind "nuvlabox-state"
                             :resource-filter "tags='foo'"
                             :resource-id subs-resource
@@ -97,8 +97,8 @@
         (is (= t/resource-type (:description body))))
 
       ;; verify that an edit works
-      (let [notif-id (str "notification-method/" (str (UUID/randomUUID)))
-            updated (assoc valid-subscription :method-id notif-id)]
+      (let [notif-ids [(str "notification-method/" (str (UUID/randomUUID)))]
+            updated (assoc valid-subscription :method-ids notif-ids)]
 
         (-> session-user
             (request user-abs-uri
@@ -114,7 +114,7 @@
                                (ltu/is-status 200)
                                (ltu/body))]
 
-          (is (= notif-id (:method-id updated-body)))))
+          (is (= notif-ids (:method-ids updated-body)))))
 
       (-> session-user
           (request user-abs-uri :request-method :delete)

@@ -35,27 +35,11 @@ against resource 'resource-id'.
              :json-schema/order 29)))
 
 
-;; Action method.
-(s/def ::method-id
-  (-> (st/spec ::core/resource-href)
-      (assoc :name "method-id"
-             :json-schema/type "resource-id"
-             :json-schema/editable false
-
-             :json-schema/description "Action method resource id"
-             :json-schema/order 23)))
-
-
-(def attr-to-remove #{::subs-conf/method-ids ::subs-conf/method-id})
-
-
-(def attributes {:req-un (concat [::parent
-                                  ::resource-id
-                                  ::method-id]
-                                 (remove attr-to-remove (:req-un subs-conf/attributes)))
-                 :opt-un (remove attr-to-remove (:opt-un subs-conf/attributes))})
+(def attributes {:req-un [::parent
+                          ::resource-id]})
 
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
+                     subs-conf/attributes
                      attributes))

@@ -30,8 +30,7 @@
 
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-ids      [(str "notification-method/" (str (UUID/randomUUID)))
-                                                     (str "notification-method/" (str (UUID/randomUUID)))]
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   "infrastructure-service"
                                    :resource-filter "tags='foo'"
                                    :criteria        {:kind      "numeric"
@@ -137,7 +136,7 @@
                       (ltu/body)
                       :enabled)))
 
-      ;; set method-id using operation
+      ;; set method-ids using operation
       (let [method-ids [(str "notification-method/" (str (UUID/randomUUID)))]]
         (-> session-user
             (request (str subs-abs-uri "/" t/set-notif-method-ids)
@@ -147,10 +146,10 @@
             (ltu/is-status 200))
 
         (is (= method-ids (-> session-user
-                              (request subs-abs-uri)
-                              (ltu/body->edn)
-                              (ltu/body)
-                              :method-ids))))
+                             (request subs-abs-uri)
+                             (ltu/body->edn)
+                             (ltu/body)
+                             :method-ids))))
       ;; delete
       (-> session-user
           (request subs-abs-uri
@@ -202,236 +201,6 @@
           (ltu/is-status 201)))))
 
 
-(defn notif-meth-ids
-  [n]
-  (vec (for [_ (range n)]
-         (str "notification-method/" (str (UUID/randomUUID))))))
-
-(defn notif-meth-id
-  []
-  (first (notif-meth-ids 1)))
-
-(defn in?
-  "true if coll contains elm"
-  [coll elm]
-  (some #(= elm %) coll))
-
-
-(deftest same-method-ids
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-
-        acl {:owners ["user/jane"]}
-        num-resources 3
-        tag "FOO"
-        _ (create-monitored-resources session-user acl num-resources tag)
-        notif-methods (notif-meth-ids 2)
-        valid-subscription-config {:enabled         true
-                                   :category        "notification"
-                                   :method-ids      notif-methods
-                                   :resource-kind   infra-service/resource-type
-                                   :resource-filter (str "tags='" tag "'")
-                                   :criteria        {:kind      "numeric"
-                                                     :metric    "load"
-                                                     :value     "75"
-                                                     :condition ">"}
-                                   :acl             acl}]
-    (let [subs-base-uri (str p/service-context sub/resource-type)
-          subs-conf-uri (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-subscription-config))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
-
-          subs-conf-abs-uri (str p/service-context subs-conf-uri)]
-
-      (-> session-user
-          (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-                   :request-method :post
-                   :body (json/write-str {:method-ids notif-methods}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/body)
-          :method-ids
-          set
-          (= (set notif-methods)))
-
-      ;; check individual subscriptions
-      (let [filter (format "parent='%s'" subs-conf-uri)
-            resources (-> session-user
-                          (content-type "application/x-www-form-urlencoded")
-                          (request subs-base-uri
-                                   :request-method :put
-                                   :body (rc/form-encode {:filter filter}))
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/is-count (* num-resources (count notif-methods)))
-                          (ltu/body)
-                          :resources)]
-        (doseq [m-id (map :method-id resources)]
-          (is (in? notif-methods m-id))))
-
-      ;; Delete subscription
-      (-> session-user
-          (request subs-conf-abs-uri
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
-
-      ;; check individual subscriptions are deleted
-      (-> session-user
-          (content-type "application/x-www-form-urlencoded")
-          (request subs-base-uri
-                   :request-method :put
-                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
-                                          :last   0}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 0)))))
-
-
-(deftest replace-method-ids
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-
-        acl {:owners ["user/jane"]}
-        num-resources 3
-        tag "FOO"
-        _ (create-monitored-resources session-user acl num-resources tag)
-        notif-methods (notif-meth-ids 2)
-        valid-subscription-config {:enabled         true
-                                   :category        "notification"
-                                   :method-ids      notif-methods
-                                   :resource-kind   infra-service/resource-type
-                                   :resource-filter (str "tags='" tag "'")
-                                   :criteria        {:kind      "numeric"
-                                                     :metric    "load"
-                                                     :value     "75"
-                                                     :condition ">"}
-                                   :acl             acl}]
-    (let [subs-base-uri (str p/service-context sub/resource-type)
-          subs-conf-uri (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-subscription-config))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
-
-          subs-conf-abs-uri (str p/service-context subs-conf-uri)]
-
-      (let [new-method-ids (notif-meth-ids 2)]
-        (-> session-user
-            (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-                     :request-method :post
-                     :body (json/write-str {:method-ids new-method-ids}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/body)
-            :method-ids
-            set
-            (= (set new-method-ids)))
-
-        ;; check individual subscriptions
-        (let [filter (format "parent='%s'" subs-conf-uri)
-              resources (-> session-user
-                            (content-type "application/x-www-form-urlencoded")
-                            (request subs-base-uri
-                                     :request-method :put
-                                     :body (rc/form-encode {:filter filter}))
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/is-count (* num-resources (count notif-methods)))
-                            (ltu/body)
-                            :resources)]
-          (doseq [m-id (map :method-id resources)]
-            (is (in? new-method-ids m-id)))))
-      ;; Delete subscription
-      (-> session-user
-          (request subs-conf-abs-uri
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
-
-      ;; check individual subscriptions are deleted
-      (-> session-user
-          (content-type "application/x-www-form-urlencoded")
-          (request subs-base-uri
-                   :request-method :put
-                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
-                                          :last   0}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 0)))))
-
-
-(deftest delete-some-method-ids
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-
-        acl {:owners ["user/jane"]}
-        num-resources 3
-        tag "FOO"
-        _ (create-monitored-resources session-user acl num-resources tag)
-        notif-methods (notif-meth-ids 2)
-        valid-subscription-config {:enabled         true
-                                   :category        "notification"
-                                   :method-ids      notif-methods
-                                   :resource-kind   infra-service/resource-type
-                                   :resource-filter (str "tags='" tag "'")
-                                   :criteria        {:kind      "numeric"
-                                                     :metric    "load"
-                                                     :value     "75"
-                                                     :condition ">"}
-                                   :acl             acl}]
-    (let [subs-base-uri (str p/service-context sub/resource-type)
-          subs-conf-uri (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-subscription-config))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location))
-
-          subs-conf-abs-uri (str p/service-context subs-conf-uri)]
-
-      (-> session-user
-          (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-                   :request-method :post
-                   :body (json/write-str {:method-ids [(first notif-methods)]}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/body)
-          :method-ids
-          set
-          (= (set notif-methods)))
-
-      ;; Delete subscription
-      (-> session-user
-          (request subs-conf-abs-uri
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
-
-      ;; check individual subscriptions are deleted
-      (-> session-user
-          (content-type "application/x-www-form-urlencoded")
-          (request subs-base-uri
-                   :request-method :put
-                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
-                                          :last   0}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-count 0)))))
-
 (deftest create-with-individual-subscriptions-with-filter
   (let [session-anon (-> (ltu/ring-app)
                          session
@@ -442,10 +211,15 @@
         num-resources 3
         tag "FOO"
         _ (create-monitored-resources session-user acl num-resources tag)
-        notif-methods (notif-meth-ids 2)
+        num-created (-> session-user
+                        (request (str p/service-context infra-service/resource-type))
+                        (ltu/body->edn)
+                        (ltu/is-status 200)
+                        (ltu/body)
+                        :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-ids      notif-methods
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter (str "tags='" tag "'")
                                    :criteria        {:kind      "numeric"
@@ -479,17 +253,17 @@
                          (ltu/is-status 200)
                          (ltu/body)
                          :count)]
-      (is (= (* num-resources (count notif-methods)) (- subs-after subs-before)))
+      (is (= num-resources (- subs-after subs-before)))
 
       ;;
-      ;; disable subscription configuration
+      ;; disable subscription
       (-> session-user
           (request (str subs-conf-abs-uri "/" t/disable)
                    :request-method :post)
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; check subscription configuration
+      ;; check subscription
       (is (= false (-> session-user
                        (request subs-conf-abs-uri)
                        (ltu/body->edn)
@@ -506,7 +280,7 @@
                                                           :select ["enabled"]}))
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-count (* num-resources (count notif-methods)))
+                          (ltu/is-count num-resources)
                           (ltu/body)
                           :resources)]
         (doseq [res resources]
@@ -537,82 +311,29 @@
                                                           :select ["enabled"]}))
                           (ltu/body->edn)
                           (ltu/is-status 200)
-                          (ltu/is-count (* num-resources (count notif-methods)))
+                          (ltu/is-count num-resources)
                           (ltu/body)
                           :resources)]
         (doseq [res resources]
           (is (= true (:enabled res)))))
 
-      (println "DELETE SOME -------------------")
+      ;; Delete subscription
       (-> session-user
-          (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-                   :request-method :post
-                   :body (json/write-str {:method-ids [(first notif-methods)]}))
+          (request subs-conf-abs-uri
+                   :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (println "REPLACE -------------------")
-      (let [new-method-ids (notif-meth-ids 2)]
-        (-> session-user
-            (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-                     :request-method :post
-                     :body (json/write-str {:method-ids new-method-ids}))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/body)
-            :method-ids
-            set
-            (= (set new-method-ids)))
-
-        ;; check individual subscriptions
-        (let [filter (format "parent='%s'" subs-conf-uri)
-              resources (-> session-user
-                            (content-type "application/x-www-form-urlencoded")
-                            (request subs-base-uri
-                                     :request-method :put
-                                     :body (rc/form-encode {:filter filter}))
-                            (ltu/body->edn)
-                            (ltu/is-status 200)
-                            (ltu/is-count (* num-resources (count notif-methods)))
-                            (ltu/body)
-                            :resources)]
-          (doseq [m-id (map :method-id resources)]
-            (is (in? new-method-ids m-id)))))
-
-      ;(println "ADD -------------------")
-      ;(-> session-user
-      ;    (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-      ;             :request-method :post
-      ;             :body (json/write-str {:method-ids (conj notif-methods (notif-meth-id))}))
-      ;    (ltu/body->edn)
-      ;    (ltu/is-status 200))
-      ;
-      ;(println "DELETE/ADD -------------------")
-      ;(-> session-user
-      ;    (request (str subs-conf-abs-uri "/" t/set-notif-method-ids)
-      ;             :request-method :post
-      ;             :body (json/write-str {:method-ids (conj [(first notif-methods)] (notif-meth-id))}))
-      ;    (ltu/body->edn)
-      ;    (ltu/is-status 200))
-
-      ;;; Delete subscription
-      ;(-> session-user
-      ;    (request subs-conf-abs-uri
-      ;             :request-method :delete)
-      ;    (ltu/body->edn)
-      ;    (ltu/is-status 200))
-      ;
-      ;;; check individual subscriptions are deleted
-      ;(-> session-user
-      ;    (content-type "application/x-www-form-urlencoded")
-      ;    (request subs-base-uri
-      ;             :request-method :put
-      ;             :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
-      ;                                    :last   0}))
-      ;    (ltu/body->edn)
-      ;    (ltu/is-status 200)
-      ;    (ltu/is-count 0))
-      )))
+      ;; check individual subscriptions are deleted
+      (-> session-user
+          (content-type "application/x-www-form-urlencoded")
+          (request subs-base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter (format "parent='%s'" subs-conf-uri)
+                                          :last   0}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0)))))
 
 
 (deftest create-with-individual-subscriptions-empty-filter
@@ -631,7 +352,7 @@
                         :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-ids      [(str "notification-method/" (str (UUID/randomUUID)))]
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter ""
                                    :criteria        {:kind      "numeric"
@@ -764,7 +485,7 @@
                         :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-ids      [(str "notification-method/" (str (UUID/randomUUID)))]
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter ""
                                    :criteria        {:kind      "numeric"
