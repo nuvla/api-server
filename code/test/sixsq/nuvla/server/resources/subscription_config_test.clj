@@ -30,7 +30,7 @@
 
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   "infrastructure-service"
                                    :resource-filter "tags='foo'"
                                    :criteria        {:kind      "numeric"
@@ -86,11 +86,11 @@
           (ltu/is-status 200)
           (ltu/is-operation-present :enable)
           (ltu/is-operation-present :disable)
-          (ltu/is-operation-present :set-notif-method-id))
+          (ltu/is-operation-present :set-notif-method-ids))
 
       ;; verify that an edit works
-      (let [notif-id (str "notification-method/" (str (UUID/randomUUID)))
-            updated (assoc valid-subscription-config :method-id notif-id)]
+      (let [notif-ids [(str "notification-method/" (str (UUID/randomUUID)))]
+            updated (assoc valid-subscription-config :method-ids notif-ids)]
 
         (-> session-user
             (request subs-abs-uri
@@ -106,7 +106,7 @@
                                (ltu/is-status 200)
                                (ltu/body))]
 
-          (is (= notif-id (:method-id updated-body)))))
+          (is (= notif-ids (:method-ids updated-body)))))
 
       ;;
       ;; disable subscription
@@ -136,20 +136,20 @@
                       (ltu/body)
                       :enabled)))
 
-      ;; set method-id using operation
-      (let [method-id (str "notification-method/" (str (UUID/randomUUID)))]
+      ;; set method-ids using operation
+      (let [method-ids [(str "notification-method/" (str (UUID/randomUUID)))]]
         (-> session-user
-            (request (str subs-abs-uri "/" t/set-notif-method-id)
+            (request (str subs-abs-uri "/" t/set-notif-method-ids)
                      :request-method :post
-                     :body (json/write-str {:method-id method-id}))
+                     :body (json/write-str {:method-ids method-ids}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        (is (= method-id (-> session-user
+        (is (= method-ids (-> session-user
                              (request subs-abs-uri)
                              (ltu/body->edn)
                              (ltu/body)
-                             :method-id))))
+                             :method-ids))))
       ;; delete
       (-> session-user
           (request subs-abs-uri
@@ -219,7 +219,7 @@
                         :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter (str "tags='" tag "'")
                                    :criteria        {:kind      "numeric"
@@ -352,7 +352,7 @@
                         :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter ""
                                    :criteria        {:kind      "numeric"
@@ -485,7 +485,7 @@
                         :count)
         valid-subscription-config {:enabled         true
                                    :category        "notification"
-                                   :method-id       (str "notification-method/" (str (UUID/randomUUID)))
+                                   :method-ids       [(str "notification-method/" (str (UUID/randomUUID)))]
                                    :resource-kind   infra-service/resource-type
                                    :resource-filter ""
                                    :criteria        {:kind      "numeric"

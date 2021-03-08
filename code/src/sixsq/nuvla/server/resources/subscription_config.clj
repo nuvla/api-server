@@ -177,11 +177,11 @@ Collection for holding subscriptions configurations.
   (set-enabled request true))
 
 
-(defn set-notif-method-id-all
+(defn set-notif-method-ids-all
   [request]
-  (edit-conf-and-subs (assoc request :body {:method-id (-> request
+  (edit-conf-and-subs (assoc request :body {:method-ids (-> request
                                                            :body
-                                                           :method-id)})))
+                                                           :method-ids)})))
 
 (defmethod crud/edit resource-type
   [request]
@@ -256,19 +256,18 @@ Collection for holding subscriptions configurations.
 
 (def ^:const enable "enable")
 (def ^:const disable "disable")
-(def ^:const set-notif-method-id "set-notif-method-id")
+(def ^:const set-notif-method-ids "set-notif-method-ids")
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [can-manage? (a/can-manage? resource request)
         enable-op (u/action-map id enable)
         disable-op (u/action-map id disable)
-        method-id-op (u/action-map id set-notif-method-id)
-        ]
+        method-ids-op (u/action-map id set-notif-method-ids)]
     (cond-> (crud/set-standard-operations resource request)
             can-manage? (update :operations concat [enable-op
                                                     disable-op
-                                                    method-id-op]))))
+                                                    method-ids-op]))))
 
 ;; Action to enable all subscription of this configuration.
 
@@ -285,6 +284,6 @@ Collection for holding subscriptions configurations.
 
 ;; Action to set notification method id.
 
-(defmethod crud/do-action [resource-type set-notif-method-id]
+(defmethod crud/do-action [resource-type set-notif-method-ids]
   [request]
-  (set-notif-method-id-all request))
+  (set-notif-method-ids-all request))
