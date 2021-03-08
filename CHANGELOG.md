@@ -4,6 +4,10 @@
 
 ### Changed
 
+## [5.11.0] - 2021-03-08
+
+### Changed
+
   - Nuvlabox - propagate nuvlabox status online field to nuvlabox
     on change
   - Deployment - Bugfix deployment shouldn't fail on edit when credential
