@@ -233,6 +233,16 @@
            :json-schema/order 34)))
 
 
+(s/def ::online
+  (-> (st/spec boolean?)
+      (assoc :name "online"
+             :json-schema/type "boolean"
+             :json-schema/description "Indicate if the nuvlabox is connected to Nuvla service"
+             :json-schema/server-managed true
+
+             :json-schema/order 35)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -260,4 +270,5 @@
                                ::vpn-server-id
                                ::internal-data-gateway-endpoint
                                ::ssh-keys
-                               ::capabilities]}))
+                               ::capabilities
+                               ::online]}))

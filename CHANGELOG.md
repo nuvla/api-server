@@ -4,8 +4,13 @@
 
 ### Changed
 
+  - Nuvlabox - propagate nuvlabox status online field to nuvlabox
+    on change
   - Deployment - Bugfix deployment shouldn't fail on edit when credential
     doesn't exist
+  - Subscriptions to notifications - Subscription configuration and
+    individual subscriptions with lists of notification methods. The
+    expansion of the methods was moved to ksqlDB.
 
 ## [5.10.0] - 2021-02-22
 

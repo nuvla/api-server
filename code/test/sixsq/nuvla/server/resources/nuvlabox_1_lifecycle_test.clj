@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [are deftest is use-fixtures]]
     [clojure.tools.logging :as log]
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
@@ -1202,33 +1202,33 @@
                            (ltu/body->edn)
                            (ltu/is-status 200)
                            (ltu/get-op-url :reboot))]
-        (let [job-url    (-> session-owner
-                             (request reboot-url :request-method :post)
-                             (ltu/body->edn)
-                             (ltu/is-status 202)
-                             (ltu/location-url))]
-         (-> session-admin
-             (request job-url)
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-key-value :execution-mode "push"))
+        (let [job-url (-> session-owner
+                          (request reboot-url :request-method :post)
+                          (ltu/body->edn)
+                          (ltu/is-status 202)
+                          (ltu/location-url))]
+          (-> session-admin
+              (request job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :execution-mode "push"))
 
-         (-> session-admin
-             (request job-url
-                      :request-method :put
-                      :body (json/write-str {:execution-mode "pull"}))
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-key-value :execution-mode "pull")
-             (ltu/is-key-value :acl {:edit-data ["user/alpha"],
-                                     :owners    ["group/nuvla-admin"],
-                                     :view-acl  ["user/alpha"],
-                                     :delete    ["user/alpha"],
-                                     :view-meta [nuvlabox-id "user/alpha"],
-                                     :edit-acl  ["user/alpha"],
-                                     :view-data [nuvlabox-id "user/alpha"],
-                                     :manage    [nuvlabox-id "user/alpha"],
-                                     :edit-meta ["user/alpha"]}))))
+          (-> session-admin
+              (request job-url
+                       :request-method :put
+                       :body (json/write-str {:execution-mode "pull"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :execution-mode "pull")
+              (ltu/is-key-value :acl {:edit-data ["user/alpha"],
+                                      :owners    ["group/nuvla-admin"],
+                                      :view-acl  ["user/alpha"],
+                                      :delete    ["user/alpha"],
+                                      :view-meta [nuvlabox-id "user/alpha"],
+                                      :edit-acl  ["user/alpha"],
+                                      :view-data [nuvlabox-id "user/alpha"],
+                                      :manage    [nuvlabox-id "user/alpha"],
+                                      :edit-meta ["user/alpha"]}))))
 
       )))
 
@@ -1281,24 +1281,24 @@
               (ltu/body->edn)
               (ltu/is-status 200))
 
-          (let [add-ssh-key     (-> session-owner
-                                    (request nuvlabox-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/get-op-url :add-ssh-key))
-                job-url         (-> session-owner
-                                    (request add-ssh-key
-                                             :request-method :post)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 202)
-                                    (ltu/location-url))
+          (let [add-ssh-key      (-> session-owner
+                                     (request nuvlabox-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/get-op-url :add-ssh-key))
+                job-url          (-> session-owner
+                                     (request add-ssh-key
+                                              :request-method :post)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 202)
+                                     (ltu/location-url))
 
-                get-context-url (-> session-nuvlabox
-                                    (request job-url)
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/is-operation-present :get-context)
-                                    (ltu/get-op-url :get-context))
+                get-context-url  (-> session-nuvlabox
+                                     (request job-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :get-context)
+                                     (ltu/get-op-url :get-context))
 
                 get-context-body (-> session-nuvlabox
                                      (request get-context-url)
@@ -1322,6 +1322,38 @@
                 (ltu/is-status 403)))
 
           )))))
+
+
+(deftest should-propagate-changes-test
+  (are [expected current updated]
+    (= expected (nb/should-propagate-changes? current updated))
+    true {:acl 1} {:acl 2}
+    false {:acl 1} {}
+    false {:acl 1} {:acl 1}
+    true {:acl {:edit-data ["user/alpha"],
+                :owners    ["group/nuvla-admin"],
+                :view-acl  ["user/alpha"],
+                :delete    ["user/alpha"],
+                :view-meta ["nuvlabox/id" "user/alpha"],
+                :edit-acl  ["user/alpha"],
+                :view-data ["nuvlabox/id" "user/alpha"],
+                :manage    ["nuvlabox/id" "user/alpha"],
+                :edit-meta ["user/alpha"]}} {:acl {:edit-data ["user/alpha"],
+                                                   :owners    ["group/nuvla-admin"],
+                                                   :view-acl  ["user/alpha"],
+                                                   :delete    ["user/alpha"],
+                                                   :view-meta ["nuvlabox/id" "user/alpha"],
+                                                   :edit-acl  [],
+                                                   :view-data ["nuvlabox/id" "user/alpha"],
+                                                   :manage    ["nuvlabox/id" "user/alpha"],
+                                                   :edit-meta ["user/alpha"]}}
+    false {:acl 1, :capabilities []} {:acl 1, :capabilities []}
+    false {:acl 1, :capabilities []} {:acl 1}
+    true {:acl 1, :capabilities []} {:acl 1 :capabilities ["a"]}
+    true {:acl 1, :capabilities []} {:acl 2 :capabilities ["a"]}
+    true {:acl 1, :capabilities ["a"], :name "x"} {:acl 1, :capabilities ["a"], :name "z"}
+    true {} {:nuvlabox-status "nuvlabox-status"}
+    false {:acl 1, :online true} {:acl 1, :online false}))
 
 
 (deftest bad-methods

@@ -22,7 +22,7 @@ Example:
   :category #{notification, bill, etc.}
 
   ;; Action method and schedule
-	:method-id 'notification-conf/<uuid>'
+	:method-ids ['notification-conf/<uuid>', ]
 	:schedule {} ; open map defining the scheduling policy
 
 	;; Component
@@ -58,7 +58,8 @@ Example:
              :json-schema/order 22)))
 
 
-;; Action method and schedule.
+;; NB! For backward compatibility.
+;; Action method.
 (s/def ::method-id
   (-> (st/spec ::core/resource-href)
       (assoc :name "method-id"
@@ -66,6 +67,17 @@ Example:
              :json-schema/editable false
 
              :json-schema/description "Action method resource id"
+             :json-schema/order 23)))
+
+
+;; Action methods.
+(s/def ::method-ids
+  (-> (st/spec (s/coll-of ::core/resource-href :kind vector? :distinct true))
+      (assoc :name "method-ids"
+             :json-schema/type "resource-id"
+             :json-schema/editable false
+
+             :json-schema/description "Action method resource ids"
              :json-schema/order 23)))
 
 
@@ -157,11 +169,12 @@ Example:
 
 (def attributes {:req-un [::enabled
                           ::category
-                          ::method-id
+                          ::method-ids
                           ::resource-kind
                           ::resource-filter
                           ::criteria]
-                 :opt-un [::schedule]})
+                 :opt-un [::schedule
+                          ::method-id]})
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs

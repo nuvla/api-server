@@ -3,6 +3,8 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [ring.util.codec :as rc]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -183,37 +185,60 @@
               (ltu/is-key-value :online-prev nil)
               (ltu/is-key-value :online nil))
 
-          ;; nuvlabox user is able to update nuvlabox-status
-          (-> session-nb
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:resources resources-updated}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :resources resources-updated)
-              (ltu/is-key-value :online-prev nil)
-              (ltu/is-key-value :online true))
+          ;; nuvlabox user is able to update nuvlabox-status and :resources are rotated
+          (let [resources-prev (-> session-nb
+                                   (request state-url)
+                                   (ltu/body->edn)
+                                   (ltu/body)
+                                   :resources)]
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:resources resources-updated}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev nil)
+                (ltu/is-key-value :online-prev nil)
+                (ltu/is-key-value :online true))
 
-          ;; admin edition can set online flag
-          (-> session-admin
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:online false}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :online-prev true)
-              (ltu/is-key-value :online false)
-              (ltu/body))
+            (is (= resources-prev (:resources-prev (db/retrieve state-id {}))))
 
-          (-> session-nb
-              (request state-url
-                       :request-method :put
-                       :body (json/write-str {:resources resources-updated}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :resources resources-updated)
-              (ltu/is-key-value :online-prev false)
-              (ltu/is-key-value :online true))
+            ;; admin edition can set online flag
+            ;; no :resources rotation as no update is done
+            (-> session-admin
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:online false}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online-prev nil)
+                (ltu/is-key-value :online false)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev nil))
+
+            (is (= true (:online-prev (db/retrieve state-id {}))))
+            (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
+
+
+          (let [resources-prev (-> session-nb
+                                   (request state-url)
+                                   (ltu/body->edn)
+                                   (ltu/body)
+                                   :resources)]
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:resources resources-updated}))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :online-prev nil)
+                (ltu/is-key-value :online true)
+                (ltu/is-key-value :resources resources-updated)
+                (ltu/is-key-value :resources-prev nil))
+
+            (is (= false (:online-prev (db/retrieve state-id {}))))
+            (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
 
           ;; verify that the update was written to disk
           (-> session-nb
@@ -222,6 +247,11 @@
               (ltu/is-status 200)
               (ltu/is-key-value :resources resources-updated))
 
+          (let [resources-prev (-> session-nb
+                                   (request state-url)
+                                   (ltu/body->edn)
+                                   (ltu/body)
+                                   :resources)]
           (-> session-nb
               (request state-url
                        :request-method :put
@@ -229,8 +259,11 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :peripherals peripherals-updated)
-              (ltu/is-key-value :online-prev true)
+              (ltu/is-key-value :online-prev nil)
               (ltu/is-key-value :online true))
+
+          (is (= true (:online-prev (db/retrieve state-id {}))))
+          (is (= resources-prev (:resources-prev (db/retrieve state-id {})))))
 
           ;; verify that the update was written to disk
           (let [next-heartbeat (-> session-nb
@@ -244,6 +277,33 @@
 
             ;; verify that the next-heartbeat was overwritten with new value
             (is (not= timestamp next-heartbeat)))
+
+          ;; non of the items in the collection contain '-prev' keys
+          (let [resp-resources (-> session-nb
+                                   (request base-uri)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/is-count #(> % 0))
+                                   (ltu/body)
+                                   :resources)]
+            (doseq [r resp-resources]
+              (doseq [k nb-status/blacklist-response-keys]
+                (is (not (contains? r k))))))
+
+          ;; non of the items in the collection after search contain '-prev' keys
+          (let [resp-resources (-> session-nb
+                                   (content-type "application/x-www-form-urlencoded")
+                                   (request base-uri
+                                            :request-method :put
+                                            :body (rc/form-encode {:filter "version='0'"}))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/is-count #(> % 0))
+                                   (ltu/body)
+                                   :resources)]
+            (doseq [r resp-resources]
+              (doseq [k nb-status/blacklist-response-keys]
+                (is (not (contains? r k))))))
 
           ;; nuvlabox identity cannot delete the state
           (-> session-nb

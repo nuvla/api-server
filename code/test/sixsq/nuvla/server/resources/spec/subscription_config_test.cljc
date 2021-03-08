@@ -19,7 +19,7 @@
 
    :enabled         true
    :category        "notification"
-   :method-id       "notification/01"
+   :method-ids      ["notification/01"]
    :resource-kind   "nuvlabox-state"
    :resource-filter "tags='foo'"
    :criteria        {:kind      "numeric"
@@ -29,7 +29,7 @@
    :schedule        {:rule "1m"}})
 
 (def attrs #{:id :resource-type :created :updated :acl
-             :enabled :category :method-id
+             :enabled :category :method-ids
              :resource-kind :resource-filter
              :criteria})
 

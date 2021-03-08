@@ -218,7 +218,7 @@
 
             valid-subscription-config {:enabled         true
                                        :category        "notification"
-                                       :method-id       notification-method
+                                       :method-ids      [notification-method]
                                        :resource-kind   "infrastructure-service"
                                        :resource-filter "tags='alpha'"
                                        :criteria        {:kind      "numeric"
@@ -244,7 +244,7 @@
                                           first)
             subs-id                   (:id subs)]
         (is (= uri (:resource-id subs)))
-        (is (= notification-method (:method-id subs)))
+        (is (= [notification-method] (:method-ids subs)))
 
         ;; can delete resource
         (-> session-user

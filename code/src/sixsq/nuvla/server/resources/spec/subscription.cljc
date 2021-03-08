@@ -8,10 +8,12 @@
     [spec-tools.core :as st]))
 
 "
-Subscription to actions (defined by 'method-id') from trigger 'criteria'
+Subscription to actions (defined by 'method-ids') from trigger 'criteria'
 against resource 'resource-id'.
 "
 
+
+;; Parent subscription configuration.
 (s/def ::parent
   (-> (st/spec ::core/resource-href)
       (assoc :name "parent"
@@ -33,8 +35,11 @@ against resource 'resource-id'.
              :json-schema/order 29)))
 
 
+(def attributes {:req-un [::parent
+                          ::resource-id]})
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      subs-conf/attributes
-                     {:req-un [::parent
-                               ::resource-id]}))
+                     attributes))
