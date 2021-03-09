@@ -34,13 +34,34 @@
 
            :json-schema/order 79)))
 
+(s/def ::cluster-node-role
+  (-> (st/spec #{"manager" "worker"})
+    (assoc :name "cluster-node-role"
+           :json-schema/description "Role of the node in the cluster, if any"
+           :json-schema/value-scope {:values ["manager" "worker"]}
+
+           :json-schema/order 80)))
+
+(s/def ::status-notes
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "status-notes"
+           :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
+
+           :json-schema/order 82)))
+
+(s/def ::cluster-nodes
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "cluster-nodes"
+           :json-schema/description "List of Node IDs in the cluster"
+
+           :json-schema/order 81)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
                      {:req-un [::nb-status-0/status]
                       :opt-un [::nb-status-0/next-heartbeat
                                ::nb-status-0/current-time
-                               ::nb-status-0/comment
                                ::nb-status-0/resources
                                ::nb-status-0/resources-prev
                                ::nb-status-0/operating-system
@@ -64,5 +85,8 @@
                                ::nb-status-0/online-prev
                                ::host-user-home
                                ::node-id
-                               ::cluster-id]}))
+                               ::cluster-id
+                               ::cluster-node-role
+                               ::cluster-nodes
+                               ::status-notes]}))
 

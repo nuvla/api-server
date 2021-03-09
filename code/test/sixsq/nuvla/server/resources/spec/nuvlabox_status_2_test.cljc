@@ -77,7 +77,10 @@
                                       "job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0d"]
             :swarm-node-cert-expiry-date "2020-02-18T19:42:08Z"
             :online                      true
-            :host-user-home           "/home/user"})
+            :host-user-home           "/home/user"
+            :cluster-node-role        "manager"
+            :status-notes             ["Lost quorum", "Swap disabled"]
+            :cluster-nodes            ["syz", "xyz", "1dsdr3"]})
 
 
 (deftest check-nuvlabox-status
@@ -94,5 +97,6 @@
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
-                 :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home}]
+                 :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
+                 :cluster-id :cluster-node-role :status-notes :cluster-nodes}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))

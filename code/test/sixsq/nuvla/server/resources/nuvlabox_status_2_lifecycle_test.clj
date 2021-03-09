@@ -90,7 +90,10 @@
                                             :project-name   "nuvlabox"
                                             :environment    []}
                   :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"
-                  :host-user-home         "/home/user"})
+                  :host-user-home         "/home/user"
+                  :cluster-node-role      "worker"
+                  :status-notes           ["Lost quorum", "Swap disabled"]
+                  :cluster-nodes          ["syz", "xyz", "1dsdr3"]})
 
 
 (def resources-updated {:cpu   {:capacity 10
