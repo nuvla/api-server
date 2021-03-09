@@ -82,7 +82,8 @@
                                            :pin   7}
                                           {:pin   1}]
                   :nuvlabox-engine-version  "1.2.3"
-                  :swarm-node-id           "xyz"
+                  :node-id                "xyz"
+                  :cluster-id             "123xyz"
                   :installation-parameters {:config-files   ["docker-compose.yml",
                                                              "docker-compose.usb.yaml"]
                                             :working-dir    "/home/user"

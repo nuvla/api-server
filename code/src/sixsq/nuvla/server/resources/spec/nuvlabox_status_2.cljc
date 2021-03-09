@@ -20,6 +20,20 @@
 
            :json-schema/order 77)))
 
+(s/def ::node-id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "node-id"
+           :json-schema/description "Node ID, if it exists (usually assigned when node belongs to a cluster)"
+
+           :json-schema/order 78)))
+
+(s/def ::cluster-id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "cluster-id"
+           :json-schema/description "Cluster ID, if it exists (usually assigned when node is a cluster manager)"
+
+           :json-schema/order 79)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -43,11 +57,11 @@
                                ::nb-status-0/gpio-pins
                                ::nb-status-0/docker-plugins
                                ::nb-status-0/vulnerabilities
-                               ::nb-status-0/swarm-node-id
                                ::nb-status-0/installation-parameters
                                ::nb-status-0/jobs
                                ::nb-status-0/swarm-node-cert-expiry-date
                                ::nb-status-0/online
                                ::nb-status-0/online-prev
-                               ::host-user-home]}))
+                               ::host-user-home
+                               ::node-id]}))
 

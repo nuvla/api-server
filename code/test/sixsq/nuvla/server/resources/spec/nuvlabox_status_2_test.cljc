@@ -66,7 +66,8 @@
             :nuvlabox-engine-version "1.2.3"
             :docker-plugins          []
             :vulnerabilities         {}
-            :swarm-node-id           "xyz"
+            :node-id                "xyz"
+            :cluster-id             "123xyz"
             :installation-parameters {:config-files ["docker-compose.yml",
                                                      "docker-compose.usb.yaml"]
                                       :working-dir  "/home/user"
