@@ -75,7 +75,8 @@
             :jobs                    ["job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
                                       "job/d2dc1733-ac2c-45b1-b68a-0ec02653bc0d"]
             :swarm-node-cert-expiry-date "2020-02-18T19:42:08Z"
-            :online                      true})
+            :online                      true
+            :host-user-home           "/home/user"})
 
 
 (deftest check-nuvlabox-status
@@ -92,5 +93,5 @@
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
-                 :power-consumption ::jobs :swarm-node-cert-expiry-date :online}]
+                 :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))

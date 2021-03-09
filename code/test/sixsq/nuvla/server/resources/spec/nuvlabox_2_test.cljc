@@ -44,13 +44,10 @@
 
                :login-username                 "l-user"
                :login-password                 "l-password"
-               :cloud-password                 "c-password"
 
                :comment                        "nuvlabox shutdown because it was tired"
 
-               :vm-cidr                        "0.0.0.0/32"
                :lan-cidr                       "0.0.0.0/32"
-               :os-version                     "OS version"
                :hw-revision-code               "a020d3"
                :monitored                      true
                :vpn-server-id                  "infrastructure-service/uuid-1"

@@ -88,7 +88,8 @@
                                             :working-dir    "/home/user"
                                             :project-name   "nuvlabox"
                                             :environment    []}
-                  :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"})
+                  :swarm-node-cert-expiry-date  "2020-02-18T19:42:08Z"
+                  :host-user-home         "/home/user"})
 
 
 (def resources-updated {:cpu   {:capacity 10

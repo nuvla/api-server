@@ -67,13 +67,11 @@
                      ;:version          2
 
                      :organization     "ACME"
-                     :os-version       "OS version"
                      :hw-revision-code "a020d3"
                      :login-username   "aLoginName"
                      :login-password   "aLoginPassword"
 
                      :form-factor      "Nuvlabox"
-                     :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"
                      :ssh-keys         ["credential/aaa-bbb-ccc"]
                      :capabilities     ["RANDOM"]})

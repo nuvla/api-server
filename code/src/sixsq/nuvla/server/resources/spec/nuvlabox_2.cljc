@@ -27,11 +27,8 @@
                                ::nb-0/root-password
                                ::nb-0/login-username
                                ::nb-0/login-password
-                               ::nb-0/cloud-password
                                ::nb-0/comment
-                               ::nb-0/vm-cidr
                                ::nb-0/lan-cidr
-                               ::nb-0/os-version
                                ::nb-0/hw-revision-code
                                ::nb-0/monitored
                                ::nb-0/vpn-server-id

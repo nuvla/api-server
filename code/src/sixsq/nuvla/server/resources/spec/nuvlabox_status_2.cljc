@@ -4,13 +4,20 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status-0 :as nb-status-0]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [sixsq.nuvla.server.util.spec :as su]
+    [spec-tools.core :as st]))
 
 
 ;; This version of the schema is the same as the previous one (0),
 ;; except that the peripherals attribute has been removed. Use the
 ;; same attribute definitions to avoid repetition.
 
+(s/def ::host-user-home
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "host-user-home"
+           :json-schema/description "Home directory, on the host, of the user who installed the NuvlaBox"
+
+           :json-schema/order 77)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -40,5 +47,6 @@
                                ::nb-status-0/jobs
                                ::nb-status-0/swarm-node-cert-expiry-date
                                ::nb-status-0/online
-                               ::nb-status-0/online-prev]}))
+                               ::nb-status-0/online-prev
+                               ::host-user-home]}))
 
