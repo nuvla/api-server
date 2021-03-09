@@ -22,7 +22,6 @@
             :version                 2
             :parent                  "nuvlabox/uuid"
             :status                  "OPERATIONAL"
-            :comment                 "some witty comment"
 
             :next-heartbeat          timestamp
             :current-time            timestamp

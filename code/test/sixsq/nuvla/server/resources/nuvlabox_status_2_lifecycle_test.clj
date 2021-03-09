@@ -44,7 +44,6 @@
 
                   :version               2
                   :status                "OPERATIONAL"
-                  :comment               "some witty comment"
 
                   :next-heartbeat        timestamp
 
