@@ -79,7 +79,8 @@
             :host-user-home           "/home/user"
             :cluster-node-role        "manager"
             :status-notes             ["Lost quorum", "Swap disabled"]
-            :cluster-nodes            ["syz", "xyz", "1dsdr3"]})
+            :cluster-nodes            ["syz", "xyz", "1dsdr3"]
+            :orchestrator             "swarm"})
 
 
 (deftest check-nuvlabox-status
@@ -97,5 +98,5 @@
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
-                 :cluster-id :cluster-node-role :status-notes :cluster-nodes}]
+                 :cluster-id :cluster-node-role :status-notes :cluster-nodes :orchestrator}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))

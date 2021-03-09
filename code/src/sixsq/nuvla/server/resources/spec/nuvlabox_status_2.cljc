@@ -57,6 +57,15 @@
 
            :json-schema/order 81)))
 
+(s/def ::orchestrator
+  (-> (st/spec #{"swarm" "kubernetes"})
+    (assoc :name "orchestrator"
+           :json-schema/type "string"
+           :json-schema/value-scope {:values ["swarm" "kubernetes"]}
+           :json-schema/description "Container orchestration being used, if part of a cluster"
+
+           :json-schema/order 82)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -89,5 +98,6 @@
                                ::cluster-id
                                ::cluster-node-role
                                ::cluster-nodes
-                               ::status-notes]}))
+                               ::status-notes
+                               ::orchestrator]}))
 

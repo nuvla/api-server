@@ -92,7 +92,8 @@
                   :host-user-home         "/home/user"
                   :cluster-node-role      "worker"
                   :status-notes           ["Lost quorum", "Swap disabled"]
-                  :cluster-nodes          ["syz", "xyz", "1dsdr3"]})
+                  :cluster-nodes          ["syz", "xyz", "1dsdr3"]
+                  :orchestrator           "kubernetes"})
 
 
 (def resources-updated {:cpu   {:capacity 10
