@@ -37,6 +37,7 @@
 (s/def ::cluster-node-role
   (-> (st/spec #{"manager" "worker"})
     (assoc :name "cluster-node-role"
+           :json-schema/type "string"
            :json-schema/description "Role of the node in the cluster, if any"
            :json-schema/value-scope {:values ["manager" "worker"]}
 
