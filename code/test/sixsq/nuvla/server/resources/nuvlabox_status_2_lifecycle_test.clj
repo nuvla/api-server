@@ -42,7 +42,7 @@
                   :created               timestamp
                   :updated               timestamp
 
-                  :version               1
+                  :version               2
                   :status                "OPERATIONAL"
                   :comment               "some witty comment"
 

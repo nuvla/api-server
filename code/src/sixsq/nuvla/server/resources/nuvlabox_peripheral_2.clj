@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-peripheral-2
   "
-The nuvlabox-peripheral (version 1) describes an attached peripheral.
+The nuvlabox-peripheral (version 2) describes an attached peripheral.
 "
   (:require
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -11,7 +11,7 @@ The nuvlabox-peripheral (version 1) describes an attached peripheral.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def schema-version 1)
+(def schema-version 2)
 
 
 ;;

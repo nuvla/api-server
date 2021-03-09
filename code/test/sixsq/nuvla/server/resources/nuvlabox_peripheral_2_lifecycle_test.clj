@@ -46,7 +46,7 @@
                        :created                     timestamp
                        :updated                     timestamp
 
-                       :version                     1
+                       :version                     2
 
                        :identifier                  "046d:082d"
                        :available                   true

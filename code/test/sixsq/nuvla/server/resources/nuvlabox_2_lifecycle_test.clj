@@ -61,10 +61,10 @@
                      :updated          timestamp
 
                      ;; This doesn't need to be specified as it will default to the
-                     ;; latest version (which is currently 1). If new versions are added,
+                     ;; latest version (which is currently 2). If new versions are added,
                      ;; the following line must be uncommented; the value must be the
                      ;; version number to test.
-                     ;:version          1
+                     ;:version          2
 
                      :organization     "ACME"
                      :os-version       "OS version"

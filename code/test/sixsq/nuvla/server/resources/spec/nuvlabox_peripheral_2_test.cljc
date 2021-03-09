@@ -21,7 +21,7 @@
 
                  :acl           valid-acl
 
-                 :version       1
+                 :version       2
                  :parent        "nuvlabox/uuid"
 
                  :identifier    "046d:082d"

@@ -19,6 +19,7 @@
               ::nb-p-1/vendor
               ::nb-p-1/product
               ::nb-p-1/local-data-gateway-endpoint
+              ::nb-p-1/data-gateway-enabled
               ::nb-p-1/raw-data-sample
               ::nb-p-1/serial-number
               ::nb-p-1/video-device

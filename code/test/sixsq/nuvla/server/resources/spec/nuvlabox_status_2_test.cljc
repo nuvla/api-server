@@ -19,7 +19,7 @@
 
             :acl                     valid-acl
 
-            :version                 1
+            :version                 2
             :parent                  "nuvlabox/uuid"
             :status                  "OPERATIONAL"
             :comment                 "some witty comment"

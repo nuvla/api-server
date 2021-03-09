@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-status-2
   "
-The nuvlabox-status (version 1) contains attributes to describe available
+The nuvlabox-status (version 2) contains attributes to describe available
 resources.
 "
   (:require
@@ -13,7 +13,7 @@ resources.
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
-(def schema-version 1)
+(def schema-version 2)
 
 
 ;;

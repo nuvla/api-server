@@ -19,7 +19,7 @@
                :updated                        timestamp
                :acl                            valid-acl
 
-               :version                        1
+               :version                        2
 
                :nuvlabox-status                "nuvlabox-status/abcdef"
                :infrastructure-service-group   "infrastructure-service-group/abcdef"
