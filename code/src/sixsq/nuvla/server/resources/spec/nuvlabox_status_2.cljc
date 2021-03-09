@@ -63,5 +63,6 @@
                                ::nb-status-0/online
                                ::nb-status-0/online-prev
                                ::host-user-home
-                               ::node-id]}))
+                               ::node-id
+                               ::cluster-id]}))
 
