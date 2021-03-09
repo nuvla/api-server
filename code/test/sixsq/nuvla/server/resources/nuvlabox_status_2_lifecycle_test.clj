@@ -246,7 +246,7 @@
                                   (content-type "application/x-www-form-urlencoded")
                                   (request base-uri
                                            :request-method :put
-                                           :body (rc/form-encode {:filter "version='1'"}))
+                                           :body (rc/form-encode {:filter "version='2'"}))
                                   (ltu/body->edn)
                                   (ltu/is-status 200)
                                   (ltu/is-count #(> % 0))
