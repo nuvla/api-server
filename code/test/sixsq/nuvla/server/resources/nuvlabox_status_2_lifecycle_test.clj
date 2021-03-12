@@ -93,6 +93,7 @@
                   :cluster-node-role      "worker"
                   :status-notes           ["Lost quorum", "Swap disabled"]
                   :cluster-nodes          ["syz", "xyz", "1dsdr3"]
+                  :cluster-nodes          ["syz"]
                   :orchestrator           "kubernetes"})
 
 

@@ -48,7 +48,7 @@
     (assoc :name "status-notes"
            :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
 
-           :json-schema/order 82)))
+           :json-schema/order 83)))
 
 (s/def ::cluster-nodes
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
@@ -57,6 +57,13 @@
 
            :json-schema/order 81)))
 
+(s/def ::cluster-managers
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "cluster-managers"
+           :json-schema/description "List of Node IDs in the cluster, corresponding to the managers only"
+
+           :json-schema/order 82)))
+
 (s/def ::orchestrator
   (-> (st/spec #{"swarm" "kubernetes"})
     (assoc :name "orchestrator"
@@ -64,7 +71,7 @@
            :json-schema/value-scope {:values ["swarm" "kubernetes"]}
            :json-schema/description "Container orchestration being used, if part of a cluster"
 
-           :json-schema/order 82)))
+           :json-schema/order 84)))
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -98,6 +105,7 @@
                                ::cluster-id
                                ::cluster-node-role
                                ::cluster-nodes
+                               ::cluster-managers
                                ::status-notes
                                ::orchestrator]}))
 
