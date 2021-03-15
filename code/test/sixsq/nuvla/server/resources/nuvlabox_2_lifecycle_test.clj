@@ -161,6 +161,8 @@
                                (ltu/is-operation-present :edit)
                                (ltu/is-operation-present :delete)
                                (ltu/is-operation-present :activate)
+                               ; check-api has been disabled in version 2
+                               (ltu/is-operation-absent :check-api)
                                (ltu/is-operation-absent :commission)
                                (ltu/is-operation-absent :decommission)
                                (ltu/is-key-value :state "NEW")

@@ -122,7 +122,8 @@
        (-> session-owner
            (request peripheral-url)
            (ltu/body->edn)
-           (ltu/is-operation-present :enable-stream)
+           ; these are disabled on version 2
+           (ltu/is-operation-absent :enable-stream)
            (ltu/is-operation-absent :disable-stream)
            (ltu/is-status 200))
 
@@ -164,61 +165,7 @@
        (-> session-user
            (request peripheral-url)
            (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-operation-present :enable-stream)
-           (ltu/is-operation-absent :disable-stream))
-
-       ;; stream operation tests
-       (let [enable-stream-op-url (-> session-owner
-                                      (request peripheral-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :enable-stream)
-                                      (ltu/is-operation-absent :disable-stream)
-                                      (ltu/get-op-url :enable-stream))]
-
-         (-> session-owner
-             (request enable-stream-op-url
-                      :request-method :post)
-             (ltu/body->edn)
-             (ltu/is-status 202))
-
-         (-> session-nb
-             (request peripheral-url
-                      :request-method :put
-                      :body (json/write-str {:data-gateway-enabled true}))
-             (ltu/body->edn)
-             (ltu/is-status 200))
-
-
-         (-> session-owner
-             (request peripheral-url)
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-operation-present :disable-stream)
-             (ltu/is-operation-absent :enable-stream))
-
-         (-> session-nb
-             (request (str peripheral-url "?select=video-device")
-                      :request-method :put
-                      :body (json/write-str {}))
-             (ltu/body->edn)
-             (ltu/is-status 200))
-
-         (-> session-owner
-             (request peripheral-url)
-             (ltu/body->edn)
-             (ltu/is-status 200)
-             (ltu/is-operation-absent :disable-stream)
-             (ltu/is-operation-absent :enable-stream))
-
-         (-> session-owner
-             (request enable-stream-op-url
-                      :request-method :post)
-             (ltu/body->edn)
-             (ltu/is-status 400)
-             (ltu/message-matches #"NuvlaBox peripheral does not have video capability!")))
-
+           (ltu/is-status 200))
 
        ;; nuvlabox can delete the peripheral
        (-> session-nb
@@ -237,47 +184,11 @@
                                    (ltu/is-status 201)
                                    (ltu/location-url))]
 
-       ;; stream operation tests
-       (let [enable-stream-op-url (-> session-owner
-                                      (request peripheral-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :enable-stream)
-                                      (ltu/is-operation-absent :disable-stream)
-                                      (ltu/get-op-url :enable-stream))]
-
-         (-> session-owner
-             (request enable-stream-op-url
-                      :request-method :post)
-             (ltu/body->edn)
-             (ltu/is-status 202)))
-
-       (-> session-admin
-           (request peripheral-url
-                    :request-method :put
-                    :body (json/write-str {:data-gateway-enabled true}))
-           (ltu/body->edn)
-           (ltu/is-status 200))
-
-
        ;; nuvlabox can delete the peripheral
        (-> session-admin
            (request peripheral-url
                     :request-method :delete)
            (ltu/body->edn)
-           (ltu/is-status 200))
-
-       (-> session-admin
-           (content-type "application/x-www-form-urlencoded")
-           (request (str p/service-context "job")
-                    :request-method :put
-                    :body (rc/form-encode {:filter
-                                           (str "target-resource/href='"
-                                                (str/replace peripheral-url
-                                                             p/service-context "")
-                                                "' and action='disable-stream'")}))
-           (ltu/body->edn)
-           (ltu/is-count 1)
            (ltu/is-status 200)))
      )))
 
