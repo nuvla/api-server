@@ -73,6 +73,13 @@
 
            :json-schema/order 84)))
 
+(s/def ::cluster-join-address
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "cluster-join-address"
+           :json-schema/description "If manager, this is the advertised address to be used by other nodes to join"
+
+           :json-schema/order 85)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -105,6 +112,7 @@
                                ::cluster-node-role
                                ::cluster-nodes
                                ::cluster-managers
+                               ::cluster-join-address
                                ::status-notes
                                ::orchestrator]}))
 
