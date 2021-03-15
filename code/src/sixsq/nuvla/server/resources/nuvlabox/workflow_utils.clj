@@ -361,11 +361,12 @@
         :id)))
 
 
-(defn delete-vpn-cred
-  [id auth-info]
-  (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
-                              :resource-name credential/resource-type}
-                :nuvla/authn auth-info}))
+(defn delete-resource
+  [id authn-info]
+  (when id
+    (crud/delete {:params      {:uuid          (u/id->uuid id)
+                                :resource-name (u/id->resource-type id)}
+                  :nuvla/authn authn-info})))
 
 
 (defn create-vpn-cred
@@ -536,22 +537,25 @@
             minio-access-key minio-secret-key
             vpn-csr
             kubernetes-endpoint
-            kubernetes-client-key kubernetes-client-cert kubernetes-client-ca]} :body :as request}]
-
+            kubernetes-client-key kubernetes-client-cert kubernetes-client-ca
+            removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
-    (let [swarm-id      (or
-                          (update-coe-service id name acl isg-id swarm-endpoint
-                                              tags capabilities "swarm")
-                          (create-coe-service id name acl isg-id swarm-endpoint
-                                              tags capabilities "swarm"))
-          kubernetes-id (or
-                          (update-coe-service id name acl isg-id kubernetes-endpoint
-                                              tags capabilities "kubernetes")
-                          (create-coe-service id name acl isg-id kubernetes-endpoint
-                                              tags capabilities "kubernetes"))
-          minio-id      (or
-                          (update-minio-service id name acl isg-id minio-endpoint)
-                          (create-minio-service id name acl isg-id minio-endpoint))]
+    (let [removed-set    (if (coll? removed) (set removed) #{})
+          swarm-removed? (contains? removed-set "swarm-endpoint")
+          swarm-id       (or
+                           (when swarm-removed? (get-service "swarm" isg-id))
+                           (update-coe-service id name acl isg-id swarm-endpoint
+                                               tags capabilities "swarm")
+                           (create-coe-service id name acl isg-id swarm-endpoint
+                                               tags capabilities "swarm"))
+          kubernetes-id  (or
+                           (update-coe-service id name acl isg-id kubernetes-endpoint
+                                               tags capabilities "kubernetes")
+                           (create-coe-service id name acl isg-id kubernetes-endpoint
+                                               tags capabilities "kubernetes"))
+          minio-id       (or
+                           (update-minio-service id name acl isg-id minio-endpoint)
+                           (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when swarm-id
         (or
@@ -583,8 +587,23 @@
               vpn-cred-id  (get-vpn-cred vpn-server-id active-claim)
               authn-info   (auth/current-authentication request)]
           (when vpn-cred-id
-            (delete-vpn-cred vpn-cred-id authn-info))
-          (create-vpn-cred id name vpn-server-id vpn-csr authn-info))))))
+            (delete-resource vpn-cred-id authn-info))
+          (create-vpn-cred id name vpn-server-id vpn-csr authn-info)))
+
+      (when (contains? removed-set "swarm-token-manager")
+        (delete-resource (get-swarm-token swarm-id "MANAGER") auth/internal-identity))
+
+      (when (contains? removed-set "swarm-token-worker")
+        (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
+
+      (when (contains? removed-set "swarm-client-key")
+        (delete-resource (get-coe-cred "infrastructure-service-swarm" swarm-id)
+                         auth/internal-identity))
+
+      (when swarm-removed?
+        (delete-resource swarm-id auth/internal-identity))
+
+      )))
 
 
 (defn get-nuvlabox-peripherals-ids
