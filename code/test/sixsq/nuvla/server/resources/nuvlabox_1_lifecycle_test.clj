@@ -1449,7 +1449,7 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :execution-mode "pull")
-              (ltu/is-key-value :acl {:edit-data ["user/alpha"],
+              (ltu/is-key-value :acl {:edit-data [nuvlabox-id "user/alpha"],
                                       :owners    ["group/nuvla-admin"],
                                       :view-acl  ["user/alpha"],
                                       :delete    ["user/alpha"],
@@ -1457,7 +1457,7 @@
                                       :edit-acl  ["user/alpha"],
                                       :view-data [nuvlabox-id "user/alpha"],
                                       :manage    [nuvlabox-id "user/alpha"],
-                                      :edit-meta ["user/alpha"]}))))
+                                      :edit-meta [nuvlabox-id "user/alpha"]}))))
 
       )))
 
