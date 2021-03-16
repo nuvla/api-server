@@ -62,7 +62,7 @@ particular NuvlaBox release.
 ;;
 ;; WARNING: This must be updated when new nuvlabox schemas are added!
 ;;
-(def ^:const latest-version 1)
+(def ^:const latest-version 2)
 
 
 (def ^:const default-refresh-interval 90)
@@ -573,6 +573,57 @@ particular NuvlaBox release.
 
 
 ;;
+;; Cluster action
+;;
+
+
+(defn cluster-nuvlabox
+  [{:keys [id state acl capabilities] :as nuvlabox} cluster-action nuvlabox-manager-id]
+  (if (= state state-commissioned)
+    (do
+      (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-id))
+        (logu/log-and-throw-400 "To join a cluster you need to specify the managing NuvlaBox ID"))
+
+      (log/warn "Running cluster action " cluster-action)
+      (try
+        (let [pull-support?  (contains? (set capabilities) "NUVLA_JOB_PULL")
+              execution-mode (if pull-support? "pull" "push")
+              {{job-id     :resource-id
+                job-status :status} :body} (job/create-job
+                                             id "nuvlabox_cluster"
+                                             (-> acl
+                                               (a/acl-append :edit-data id)
+                                               (a/acl-append :manage id))
+                                             :affected-resources (if nuvlabox-manager-id
+                                                                   [{:href nuvlabox-manager-id}]
+                                                                   [])
+                                             :priority 50
+                                             :execution-mode execution-mode)
+              job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
+                               ", with async " job-id)]
+          (when (not= job-status 201)
+            (throw (r/ex-response "unable to create async job to cluster NuvlaBox" 500 id)))
+          (event-utils/create-event id job-msg acl)
+          (r/map-response job-msg 202 id job-id))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox actions: " state))))
+
+
+(defmethod crud/do-action [resource-type "cluster-nuvlabox"]
+  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-id]} :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve nuvlabox-manager-id request)
+        (a/throw-cannot-view request))
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (cluster-nuvlabox cluster-action nuvlabox-manager-id)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Add ssh-key action
 ;;
 
@@ -770,6 +821,7 @@ particular NuvlaBox release.
         add-ssh-key-op     (u/action-map id :add-ssh-key)
         revoke-ssh-key-op  (u/action-map id :revoke-ssh-key)
         update-nuvlabox-op (u/action-map id :update-nuvlabox)
+        cluster-nb-op      (u/action-map id :cluster-nuvlabox)
         ops                (cond-> []
                                    (a/can-edit? resource request) (conj edit-op)
                                    (and (a/can-delete? resource request)
@@ -793,6 +845,9 @@ particular NuvlaBox release.
                                         (#{state-commissioned} state)) (conj revoke-ssh-key-op)
                                    (and (a/can-manage? resource request)
                                         (#{state-commissioned} state)) (conj update-nuvlabox-op)
+                                   (and (a/can-manage? resource request)
+                                        (#{state-commissioned} state)
+                                        (>= (:version resource) 2)) (conj cluster-nb-op)
                                    (and (a/can-manage? resource request)
                                         (#{state-commissioned} state)) (conj reboot-op))]
     (assoc resource :operations ops)))

@@ -160,10 +160,10 @@
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str (str/capitalize subtype) " "
+                   :body        {:name        (str "Infra "
                                                    (utils/format-nb-name
                                                      nuvlabox-name (utils/short-nb-id nuvlabox-id)))
-                                 :description (str (str/capitalize subtype) " cluster on "
+                                 :description (str "NuvlaBox compute infrastructure on "
                                                    (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl

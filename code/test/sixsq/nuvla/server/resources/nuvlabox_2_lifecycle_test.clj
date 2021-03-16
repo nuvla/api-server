@@ -7,6 +7,7 @@
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -64,7 +65,7 @@
                      ;; latest version (which is currently 2). If new versions are added,
                      ;; the following line must be uncommented; the value must be the
                      ;; version number to test.
-                     ;:version          2
+                     :version          2
 
                      :organization     "ACME"
                      :hw-revision-code "a020d3"
@@ -391,12 +392,14 @@
             (-> session
                 (request nuvlabox-url)
                 (ltu/body->edn)
+              ;(pprint)
                 (ltu/is-status 200)
                 (ltu/is-operation-present :edit)
                 (ltu/is-operation-absent :delete)
                 (ltu/is-operation-absent :activate)
                 (ltu/is-operation-present :commission)
                 (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value set :tags tags))
 
@@ -442,6 +445,37 @@
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
                   )))
+
+
+
+            ;; check custom operations
+            ;;
+            (let [cluster-nuvlabox  (-> session
+                                      (request nuvlabox-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present :edit)
+                                      (ltu/is-operation-absent :delete)
+                                      (ltu/is-operation-absent :activate)
+                                      (ltu/is-operation-present :commission)
+                                      (ltu/is-operation-present :decommission)
+                                      (ltu/is-operation-absent :check-api)
+                                      (ltu/is-operation-present :reboot)
+                                      (ltu/is-operation-present :add-ssh-key)
+                                      (ltu/is-operation-present :revoke-ssh-key)
+                                      (ltu/is-operation-present :update-nuvlabox)
+                                      (ltu/is-operation-present :cluster-nuvlabox)
+                                      (ltu/is-key-value :state "COMMISSIONED")
+                                      (ltu/get-op-url :cluster-nuvlabox))]
+
+
+              ;; cluster-nuvlabox-action
+              (-> session
+                (request cluster-nuvlabox
+                  :request-method :post
+                  :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-id nuvlabox-id}))
+                (ltu/body->edn)
+                (ltu/is-status 202)))
 
 
             ;; second commissioning of the resource (with swarm credentials)
