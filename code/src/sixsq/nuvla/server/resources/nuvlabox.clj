@@ -545,7 +545,9 @@ particular NuvlaBox release.
       (try
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id "reboot_nuvlabox"
-                                                           acl
+                                                           (-> acl
+                                                               (a/acl-append :edit-data id)
+                                                               (a/acl-append :manage id))
                                                            :priority 50
                                                            :execution-mode execution-mode)
               job-msg (str "sending reboot request to NuvlaBox " id " with async " job-id)]

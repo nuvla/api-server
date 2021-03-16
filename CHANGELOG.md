@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - Nuvlabox - Allow Nuvlabox credential to edit reboot action job
+  - Nuvlabox - On commission allow Nuvlabox to remove resources
+
 ## [5.11.0] - 2021-03-08
 
 ### Changed
