@@ -611,7 +611,7 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
-  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-id]} :body :as request}]
+  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve nuvlabox-manager-id request)
