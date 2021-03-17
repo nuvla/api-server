@@ -473,7 +473,7 @@
               (-> session
                 (request cluster-nuvlabox
                   :request-method :post
-                  :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-id {}}))
+                  :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-status {}}))
                 (ltu/body->edn)
                 (ltu/is-status 202)))
 
