@@ -578,11 +578,11 @@ particular NuvlaBox release.
 
 
 (defn cluster-nuvlabox
-  [{:keys [id state acl capabilities] :as nuvlabox} cluster-action nuvlabox-manager-id]
+  [{:keys [id state acl capabilities] :as nuvlabox} cluster-action nuvlabox-manager-status token]
   (if (= state state-commissioned)
     (do
-      (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-id))
-        (logu/log-and-throw-400 "To join a cluster you need to specify the managing NuvlaBox ID"))
+      (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-status))
+        (logu/log-and-throw-400 "To join a cluster you need to specify the managing NuvlaBox"))
 
       (log/warn "Running cluster action " cluster-action)
       (try
@@ -594,8 +594,8 @@ particular NuvlaBox release.
                                              (-> acl
                                                (a/acl-append :edit-data id)
                                                (a/acl-append :manage id))
-                                             :affected-resources (if nuvlabox-manager-id
-                                                                   [{:href nuvlabox-manager-id}]
+                                             :affected-resources (if nuvlabox-manager-status
+                                                                   [{:id nuvlabox-manager-status}]
                                                                    [])
                                              :priority 50
                                              :execution-mode execution-mode)
@@ -611,14 +611,15 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
-  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status]} :body :as request}]
+  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve nuvlabox-manager-id request)
-        (a/throw-cannot-view request))
+      (when nuvlabox-manager-status
+        (-> (db/retrieve (:id nuvlabox-manager-status) request)
+          (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
-        (cluster-nuvlabox cluster-action nuvlabox-manager-id)))
+        (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
