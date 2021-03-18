@@ -596,9 +596,11 @@ particular NuvlaBox release.
                                                (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode execution-mode
-                                             :payload {:cluster-action cluster-action
-                                                       :nuvlabox-manager-status nuvlabox-manager-status
-                                                       :token token})
+                                             :payload (str "{\"cluster-action\": \""
+                                                        cluster-action "\",
+                                                       \"nuvlabox-manager-status\": \""
+                                                        nuvlabox-manager-status "\",
+                                                       \"token\": \"" token "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
                                ", with async " job-id)]
           (when (not= job-status 201)
