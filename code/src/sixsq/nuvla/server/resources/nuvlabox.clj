@@ -596,10 +596,8 @@ particular NuvlaBox release.
                                                (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode execution-mode
-                                             :payload (str "{\"cluster-action\": \""
-                                                        cluster-action "\",
-                                                       \"nuvlabox-manager-status\": \""
-                                                        nuvlabox-manager-status "\",
+                                             :payload (str "{\"cluster-action\": \"" cluster-action "\",
+                                                       \"nuvlabox-manager-status\": " nuvlabox-manager-status ",
                                                        \"token\": \"" token "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
                                ", with async " job-id)]
@@ -618,7 +616,7 @@ particular NuvlaBox release.
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
         (-> (db/retrieve (:id nuvlabox-manager-status) request)
-          (a/throw-cannot-view request)))
+          (a/throw-cannot-manage request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
         (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
