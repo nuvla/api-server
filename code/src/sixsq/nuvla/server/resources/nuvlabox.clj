@@ -597,7 +597,7 @@ particular NuvlaBox release.
                                              :priority 50
                                              :execution-mode execution-mode
                                              :payload (str "{\"cluster-action\": \"" cluster-action "\","
-                                                        (when nuvlabox-manager-status
+                                                        (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
                                                           "\"nuvlabox-manager-status\": " nuvlabox-manager-status ","
                                                           )
                                                         "\"nuvlabox-manager-status\": " nuvlabox-manager-status ","
