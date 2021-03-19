@@ -598,7 +598,7 @@ particular NuvlaBox release.
                                              :execution-mode execution-mode
                                              :payload (str "{\"cluster-action\": \"" cluster-action "\","
                                                         (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
-                                                          "\"nuvlabox-manager-status\": " nuvlabox-manager-status ","
+                                                          (str "\"nuvlabox-manager-status\": " nuvlabox-manager-status ",")
                                                           )
                                                         "\"token\": \"" token "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
