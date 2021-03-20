@@ -21,7 +21,8 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -268,6 +269,16 @@ a container orchestration engine.
       (crud/edit)
       :body))
 
+;; FIXME: remove after this date:
+(def gnss-expiry-date "2021-08-01T00:00:00.000Z")
+(def gnss-groups ["group/gnss-admin" "group/gnss-user"])
+(defn gnss-group?
+  [request expiry-date]
+  (let [claim (auth/current-active-claim request)]
+    (and
+      (boolean (time/before? (time/now) (time/date-from-str expiry-date)))
+      (some #(= claim %) gnss-groups))))
+
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
@@ -289,7 +300,7 @@ a container orchestration engine.
           new-deployment (-> deployment
                              (assoc :state state)
                              (assoc :api-credentials (utils/generate-api-key-secret id
-                                                       (when data?
+                                                       (when (or data? (gnss-group? request gnss-expiry-date))
                                                          (auth/current-authentication request))))
                              (cond-> subs-id (assoc :subscription-id subs-id))
                              (edit-deployment request))]
