@@ -831,8 +831,8 @@
                             session
                             (content-type "application/json"))
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "unknown unknown group/nuvla-anon")]
 
       (let [nuvlabox-id      (-> session-owner
                                  (request base-uri

@@ -824,9 +824,9 @@
                              session
                              (content-type "application/json"))
             session-admin (header session-anon authn-info-header
-                                  "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                  "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
             session-user (header session-anon authn-info-header
-                                 (format "%s group/nuvla-user group/nuvla-anon" gg))
+                                 (str gg " " gg " group/nuvla-user group/nuvla-anon"))
 
             ;; setup a module that can be referenced from the deployment
             module-id (-> session-user
