@@ -410,6 +410,9 @@
                                              (ltu/is-status 200)
                                              (ltu/body)
                                              :acl)]
+
+                      (ltu/refresh-es-indices)
+
                       (-> session-user
                           (request dep-param-url)
                           (ltu/body->edn)
