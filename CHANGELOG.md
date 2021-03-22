@@ -4,7 +4,8 @@
 
 ### Changed
 
-  - Nuvlabox - Allow Nuvlabox credential to edit reboot action job
+  - Deployment - Extend scope of deployment credential for gnss groups
+  - Nuvlabox - Allow Nuvlabox credential to edit job resource for reboot action
   - Nuvlabox - On commission allow Nuvlabox to remove resources
 
 ## [5.11.0] - 2021-03-08
