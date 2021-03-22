@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.11.1] - 2021-03-22
+
 ### Changed
 
   - Deployment - Extend scope of deployment credential for gnss groups
