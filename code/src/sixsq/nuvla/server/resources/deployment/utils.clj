@@ -145,6 +145,7 @@
   [{:keys [id nuvlabox] :as resource} request action execution-mode]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
+        low-priority (get-in request [:body :low-priority] false)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
                                        id action
@@ -152,7 +153,7 @@
                                            (a/acl-append :edit-acl active-claim)
                                            (a/acl-append :edit-data nuvlabox)
                                            (a/acl-append :manage nuvlabox))
-                                       :priority 50
+                                       :priority (if low-priority 999 50)
                                        :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
