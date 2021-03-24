@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.common.std-crud
   "Standard CRUD functions for resources."
   (:require
+    [clojure.data.json :as json]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
@@ -8,13 +9,12 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.response :as ru]
-    [clojure.data.json :as json]
-    [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]))
+    [sixsq.nuvla.server.util.response :as ru]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))

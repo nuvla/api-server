@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.app.routes
   (:require
-    [compojure.core :refer [ANY DELETE GET let-routes POST PUT routes PATCH]]
+    [compojure.core :refer [ANY DELETE GET let-routes PATCH POST PUT routes]]
     [compojure.route :as route]
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
