@@ -23,4 +23,4 @@
 (deftest lifecycle
   (vpn-utils-test/credential-vpn-lifecycle-test
     ctison/method "nuvlabox" "nuvlabox/bernard"
-    "nuvlabox/bernard group/nuvla-nuvlabox group/nuvla-user group/nuvla-anon" ctisoc/method))
+    "nuvlabox/bernard nuvlabox/bernard group/nuvla-nuvlabox group/nuvla-user group/nuvla-anon" ctisoc/method))

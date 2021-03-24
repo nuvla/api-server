@@ -88,7 +88,7 @@
 
   (let [app             (ltu/ring-app)
         session-json    (content-type (session app) "application/json")
-        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin   (header session-json authn-info-header "user/super user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         admin-group-uri (str p/service-context group/resource-type "/nuvla-admin")
 

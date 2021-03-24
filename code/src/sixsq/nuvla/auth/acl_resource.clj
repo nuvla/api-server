@@ -24,7 +24,7 @@
 
 
 (def collection-rights
-  [::query ::add ::bulk-delete])
+  [::query ::add ::bulk-delete ::bulk-action])
 
 
 (def all-defined-rights (set
@@ -106,6 +106,9 @@
 
 
 (def can-edit? (partial has-rights? #{::edit-meta ::edit-data ::edit-acl}))
+
+
+(def can-edit-data? (partial has-rights? #{::edit-data}))
 
 
 (def can-view? (partial has-rights? #{::view-meta ::view-data ::view-acl}))
@@ -192,6 +195,13 @@
    bulk delete into the given collection."
   [collection-acl request]
   (throw-without-rights #{::bulk-delete} {:acl collection-acl} request))
+
+
+(defn throw-cannot-bulk-action
+  "Will throw an error ring response if the user identified in the request cannot
+   bulk action into the given collection."
+  [collection-acl request]
+  (throw-without-rights #{::bulk-action} {:acl collection-acl} request))
 
 
 (defn throw-cannot-add

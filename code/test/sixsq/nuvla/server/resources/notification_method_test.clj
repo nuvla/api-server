@@ -24,8 +24,8 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")]
+        session-admin (header session-anon authn-info-header "user/super user/super group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")]
     (doseq [session [session-admin session-user]]
       (-> session
           (request base-uri)
@@ -100,7 +100,7 @@
   (let [session-anon (-> (ltu/ring-app)
                          session
                          (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         ; create notification configuration method
         notif-uri (-> session-user

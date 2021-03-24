@@ -29,8 +29,8 @@
   (let [session-anon   (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-        session-admin  (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user   (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+        session-admin  (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user   (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         valid-data-set {:name               "my-data-set"
                         :description        "my-data-set description"

@@ -118,8 +118,7 @@ These resources represent the logs of a deployment.
   (try
     (let [id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
-        (let [
-              {{job-id     :resource-id
+        (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id (str job-type "_deployment_log")
                                                            {:owners   ["group/nuvla-admin"]
                                                             :view-acl [session-id]}
@@ -165,10 +164,10 @@ These resources represent the logs of a deployment.
 
 (defmethod job-interface/get-context ["deployment-log" "fetch_deployment_log"]
   [{:keys [target-resource] :as resource}]
-  (let [deployment-log   (some-> target-resource :href crud/retrieve-by-id-as-admin)
-        deployment       (some-> deployment-log :parent crud/retrieve-by-id-as-admin)
-        credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
-        infra            (some-> credential :parent crud/retrieve-by-id-as-admin)]
+  (let [deployment-log (some-> target-resource :href crud/retrieve-by-id-as-admin)
+        deployment     (some-> deployment-log :parent crud/retrieve-by-id-as-admin)
+        credential     (some-> deployment :parent crud/retrieve-by-id-as-admin)
+        infra          (some-> credential :parent crud/retrieve-by-id-as-admin)]
     (job-interface/get-context->response
       deployment
       credential

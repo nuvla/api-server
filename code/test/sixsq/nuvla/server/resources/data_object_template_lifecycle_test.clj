@@ -27,8 +27,8 @@
   (let [session-anon  (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-user  (header session-anon authn-info-header "user/jane group/nuvla-user")
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+        session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user")
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
 
     ;; anonymous query is not authorized

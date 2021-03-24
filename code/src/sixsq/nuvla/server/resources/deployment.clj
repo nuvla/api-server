@@ -34,8 +34,9 @@ a container orchestration engine.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-action ["group/nuvla-user"]})
 
 
 (def actions [{:name           "start"
@@ -234,8 +235,10 @@ a container orchestration engine.
         create-log-op       (u/action-map id :create-log)
         clone-op            (u/action-map id :clone)
         check-dct-op        (u/action-map id :check-dct)
+        fetch-module-op     (u/action-map id :fetch-module)
         upcoming-invoice-op (u/action-map id :upcoming-invoice)
         can-manage?         (a/can-manage? resource request)
+        can-edit-data?      (a/can-edit-data? resource request)
         can-clone?          (a/can-view-data? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
@@ -255,6 +258,8 @@ a container orchestration engine.
             can-manage? (update :operations conj upcoming-invoice-op)
 
             can-manage? (update :operations conj check-dct-op)
+
+            (and can-manage? can-edit-data?) (update :operations conj fetch-module-op)
 
             (not (utils/can-delete? resource))
             (update :operations utils/remove-delete))))
@@ -299,8 +304,13 @@ a container orchestration engine.
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
                              (assoc :state state)
-                             (assoc :api-credentials (utils/generate-api-key-secret id
-                                                       (when (or data? (gnss-group? request gnss-expiry-date))
+
+                             (assoc :api-credentials (utils/generate-api-key-secret
+                                                       id
+                                                       (when (or data?
+                                                                 (gnss-group?
+                                                                   request
+                                                                   gnss-expiry-date))
                                                          (auth/current-authentication request))))
                              (cond-> subs-id (assoc :subscription-id subs-id))
                              (edit-deployment request))]
@@ -444,6 +454,34 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+
+(def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-action [resource-type "bulk-update"]
+  [request]
+  (bulk-action-impl request))
+
+
+(defmethod crud/do-action [resource-type "fetch-module"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (let [id          (str resource-type "/" uuid)
+        deployment  (crud/retrieve-by-id-as-admin id)
+        module-href (:module-href body)]
+    (a/throw-cannot-edit deployment request)
+    (when (or (not (string? module-href))
+              (str/blank? module-href)
+              (not (str/starts-with? module-href (-> deployment
+                                                     (get-in [:module :href])
+                                                     (str/split #"_")
+                                                     first))))
+      (throw (r/ex-response "invalid module-href" 400)))
+    (let [authn-info  (auth/current-authentication request)
+          module      (utils/resolve-module (assoc request :body {:module {:href module-href}}))
+          dep-updated (update deployment :module utils/merge-module module)]
+      (crud/edit {:params      {:uuid          uuid
+                                :resource-name resource-type}
+                  :body        dep-updated
+                  :nuvla/authn authn-info}))))
 
 ;;
 ;; initialization

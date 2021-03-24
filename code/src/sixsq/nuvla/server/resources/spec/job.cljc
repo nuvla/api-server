@@ -85,7 +85,7 @@
              :json-schema/order 27)))
 
 
-(def job-href-regex #"^job/[a-z]+(-[a-z]+)*$")
+(def job-href-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 (s/def ::href (s/and string? #(re-matches job-href-regex %)))

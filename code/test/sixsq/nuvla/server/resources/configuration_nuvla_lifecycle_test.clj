@@ -28,7 +28,7 @@
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         template-url  (str p/service-context ct/resource-type "/" service)
         template      (-> session-admin
