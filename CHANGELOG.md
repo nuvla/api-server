@@ -7,6 +7,10 @@
   - Deployment - Support bulk update
   - Bulk - Bulk operation support
 
+### Changed
+
+  - Header authentication extended to support active-claim
+
 ## [5.11.1] - 2021-03-22
 
 ### Changed
