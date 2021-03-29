@@ -39,7 +39,7 @@
   (let [state (-> (ltu/ring-app)
                   session
                   (content-type "application/json")
-                  (header authn-info-header (str/join " " ["user/joe" "group/nuvla-user" "group/nuvla-anon"])))]
+                  (header authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon"))]
     (doseq [valid-event valid-events]
       (-> state
           (request base-uri

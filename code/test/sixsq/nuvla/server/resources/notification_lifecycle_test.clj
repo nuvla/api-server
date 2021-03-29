@@ -31,9 +31,9 @@
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         user          "user/jane"
-        session-user  (header session-anon authn-info-header (format "%s group/nuvla-user group/nuvla-anon" user))
+        session-user  (header session-anon authn-info-header (str user " " user " group/nuvla-user group/nuvla-anon"))
         session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     ;; admin can query; adding resources is allowed
     (-> session-admin
@@ -107,7 +107,7 @@
                          :message)))
 
       ;; users not in the view ACL can not see the notification
-      (-> (header session-anon authn-info-header "user/foo group/nuvla-user group/nuvla-anon")
+      (-> (header session-anon authn-info-header "user/foo user/foo group/nuvla-user group/nuvla-anon")
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 403))
@@ -190,7 +190,7 @@
 (deftest metadata
   (let [session-user (-> (session (ltu/ring-app))
                          (content-type "application/json")
-                         (header authn-info-header "user/jane group/nuvla-user group/nuvla-anon"))
+                         (header authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon"))
         uri          (str p/service-context "resource-metadata/" t/resource-type)
 
         actions      (-> session-user

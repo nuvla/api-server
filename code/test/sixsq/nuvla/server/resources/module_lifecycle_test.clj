@@ -44,9 +44,9 @@
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user  (header session-anon authn-info-header
-                              "user/jane group/nuvla-user group/nuvla-anon")
+                              "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         valid-entry   {:id                        (str module/resource-type "/connector-uuid")
                        :resource-type             module/resource-type
@@ -247,7 +247,7 @@
   (let [session-anon    (-> (session (ltu/ring-app))
                             (content-type "application/json"))
         session-user    (header session-anon authn-info-header
-                                "user/jane group/nuvla-user group/nuvla-anon")
+                                "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
         valid-component {:author        "someone"
                          :commit        "wip"

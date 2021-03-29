@@ -37,7 +37,7 @@
         session-anon   (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-        session-admin  (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin  (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         template       (-> session-admin
                            (request template-url)
@@ -162,7 +162,7 @@
   (let [session-anon  (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
-        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
         entries       (-> session-admin
                           (request tpl-base-uri)

@@ -29,8 +29,8 @@
   (let [session-anon           (-> (ltu/ring-app)
                                    session
                                    (content-type "application/json"))
-        session-admin          (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user           (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
+        session-admin          (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012347 user/abcdef01-abcd-abcd-abcd-abcdef012347 group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user           (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012346 user/abcdef01-abcd-abcd-abcd-abcdef012346 group/nuvla-user group/nuvla-anon")
 
         valid-nuvlabox-release {:name          "my-nuvlabox-release"
                                 :description   "my-nuvlabox-release description"

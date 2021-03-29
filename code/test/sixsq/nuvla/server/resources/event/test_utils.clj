@@ -37,7 +37,7 @@
    (-> (ltu/ring-app)
        session
        (content-type "application/json")
-       (header authn-info-header (str/join " " [auth-name "group/nuvla-user" "group/nuvla-anon"]))
+       (header authn-info-header (str/join " " [auth-name " " auth-name "group/nuvla-user" "group/nuvla-anon"]))
        (request (str uri (urlencode-params query-string))
                 :body (some-> body json/write-str)
                 :request-method http-verb

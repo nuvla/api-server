@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.deployment-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -14,7 +15,7 @@
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -31,21 +32,23 @@
 
 
 (defn valid-module
-  [subtype content]
-  {:id                        (str module/resource-type "/connector-uuid")
-   :resource-type             module/resource-type
-   :created                   timestamp
-   :updated                   timestamp
-   :parent-path               "a/b"
-   :path                      "a/b/c"
-   :subtype                   subtype
+  ([subtype content]
+   (valid-module subtype content "a/b/c"))
+  ([subtype content path]
+   {:id                        (str module/resource-type "/component-uuid")
+    :resource-type             module/resource-type
+    :created                   timestamp
+    :updated                   timestamp
+    :parent-path               (str/join "/" (butlast (str/split path #"/")))
+    :path                      path
+    :subtype                   subtype
 
-   :logo-url                  "https://example.org/logo"
+    :logo-url                  "https://example.org/logo"
 
-   :data-accept-content-types ["application/json" "application/x-something"]
-   :data-access-protocols     ["http+s3" "posix+nfs"]
+    :data-accept-content-types ["application/json" "application/x-something"]
+    :data-access-protocols     ["http+s3" "posix+nfs"]
 
-   :content                   content})
+    :content                   content}))
 
 
 (def valid-component {:author                  "someone"
@@ -87,9 +90,9 @@
                                  session
                                  (content-type "application/json"))
           session-admin      (header session-anon authn-info-header
-                                     (str "group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+                                     (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
           session-user       (header session-anon authn-info-header
-                                     (str "user/jane group/nuvla-user group/nuvla-anon " session-id))
+                                     (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
           module-id          (-> session-user
@@ -407,6 +410,9 @@
                                              (ltu/is-status 200)
                                              (ltu/body)
                                              :acl)]
+
+                      (ltu/refresh-es-indices)
+
                       (-> session-user
                           (request dep-param-url)
                           (ltu/body->edn)
@@ -528,9 +534,9 @@
                                session
                                (content-type "application/json"))
           session-admin    (header session-anon authn-info-header
-                                   "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+                                   "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user     (header session-anon authn-info-header
-                                   "user/jane group/nuvla-user group/nuvla-anon")
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
           module-id        (-> session-user
@@ -591,6 +597,207 @@
                    :request-method :delete)
           (ltu/is-status 200)))))
 
+(deftest lifecycle-fetch-module
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon     (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-admin    (header session-anon authn-info-header
+                                   "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user     (header session-anon authn-info-header
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          ;; setup a module that can be referenced from the deployment
+          module-id        (-> session-user
+                               (request module-base-uri
+                                        :request-method :post
+                                        :body (json/write-str
+                                                (valid-module "component" valid-component)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+          valid-deployment {:module {:href module-id}}]
+
+      ;; check deployment creation
+      (let [deployment-id  (-> session-user
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str valid-deployment))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+            deployment-url (str p/service-context deployment-id)
+            fetch-url      (-> session-user
+                               (request deployment-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url :fetch-module))
+            module-url     (str p/service-context module-id)
+            module         (-> session-user
+                               (request module-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/body))]
+
+        (-> session-user
+            (request (str p/service-context module-id)
+                     :request-method :put
+                     :body (json/write-str
+                             (assoc-in module
+                                       [:content :image]
+                                       {:image-name "ubuntu"
+                                        :tag        "18.04"})))
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
+            (request fetch-url)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "invalid module-href"))
+
+        ;; try resolve module version not existing should fail
+        (-> session-user
+            (request fetch-url
+                     :request-method :put
+                     :body (json/write-str {:module-href (str module-id "_10000")}))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "cannot resolve"))
+
+        (-> session-user
+            (request fetch-url
+                     :request-method :put
+                     :body (json/write-str {:module-href module-id}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value #(-> % :content :image :tag) :module "18.04"))
+
+        (-> session-user
+            (request deployment-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200)))
+
+      (-> session-user
+          (request (str p/service-context module-id)
+                   :request-method :delete)
+          (ltu/is-status 200)))))
+
+
+(deftest lifecycle-bulk-update
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session-anon     (-> (ltu/ring-app)
+                               session
+                               (content-type "application/json"))
+          session-user     (header session-anon authn-info-header
+                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          ;; setup a module that can be referenced from the deployment
+          module-id        (-> session-user
+                               (request module-base-uri
+                                        :request-method :post
+                                        :body (json/write-str
+                                                (valid-module "component" valid-component)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+          valid-deployment {:module {:href module-id}}]
+
+      ;; check deployment creation
+      (let [deployment-id  (-> session-user
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str valid-deployment))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+
+            deployment-url (str p/service-context deployment-id)]
+
+        (-> session-user
+            (request base-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-resource-uri t/collection-type)
+            (ltu/is-count 1))
+
+        (-> session-user
+            (request (str base-uri "/foo")
+                     :request-method :patch)
+            (ltu/body->edn)
+            (ltu/is-status 404)
+            (ltu/message-matches #"undefined action \(patch, \[\"deployment\" \"foo\".*"))
+
+        (-> session-user
+            (request (str base-uri "/bulk-update")
+                     :request-method :patch)
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"Bulk request should contain bulk http header."))
+
+        (-> session-user
+            (request (str base-uri "/bulk-update")
+                     :request-method :patch
+                     :headers {:bulk true}
+                     :body (json/write-str {}))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches #"Bulk request should contain a non empty cimi filter."))
+
+        (-> session-user
+            (request (str base-uri "/bulk-update")
+                     :request-method :patch
+                     :headers {:bulk true}
+                     :body (json/write-str
+                             {:filter "foobar"
+                              :other  "hello"}))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "Invalid CIMI filter. Parse error at line"))
+
+
+        (let [job-url (-> session-user
+                          (request (str base-uri "/bulk-update")
+                                   :request-method :patch
+                                   :headers {:bulk true}
+                                   :body (json/write-str
+                                           {:filter "id='foobar'"
+                                            :other  "hello"}))
+                          (ltu/body->edn)
+                          (ltu/is-status 202)
+                          (ltu/message-matches "starting bulk-update with async job")
+                          (ltu/location-url))]
+          (-> session-user
+              (request job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value
+                :payload (json/write-str
+                           {:filter     "id='foobar'"
+                            :other      "hello"
+                            :authn-info {:user-id      "user/jane"
+                                         :active-claim "user/jane"
+                                         :claims       ["group/nuvla-anon"
+                                                        "user/jane"
+                                                        "group/nuvla-user"]}}))))
+
+        (-> session-user
+            (request deployment-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
+            (request (str p/service-context module-id)
+                     :request-method :delete)
+            (ltu/is-status 200)))
+
+      )))
+
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
@@ -598,3 +805,84 @@
                             [base-uri :delete]
                             [resource-uri :options]
                             [resource-uri :post]])))
+
+
+;; FIXME: Remove this test after sixsq.nuvla.server.resources.deployment/gnss-expiry-date.
+;;        The test will fail after this date.
+(deftest gnss-extended-api-key
+  (binding [config-nuvla/*stripe-api-key* nil]
+
+    (doseq [g t/gnss-groups]
+      (is (t/gnss-group? {:nuvla/authn {:active-claim g}} t/gnss-expiry-date)))
+    (doseq [g t/gnss-groups]
+      (is (not (t/gnss-group? {:nuvla/authn {:active-claim g}} "1970-01-01T00:00:00.000Z"))))
+    (is (not (t/gnss-group? {:nuvla/authn {:active-claim "group/hello"}} t/gnss-expiry-date)))
+    (is (not (t/gnss-group? {:nuvla/authn {:active-claim "group/hello"}} "1970-01-01T00:00:00.000Z")))
+
+    (doseq [gg t/gnss-groups]
+      (let [session-anon (-> (ltu/ring-app)
+                             session
+                             (content-type "application/json"))
+            session-admin (header session-anon authn-info-header
+                                  "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+            session-user (header session-anon authn-info-header
+                                 (str gg " " gg " group/nuvla-user group/nuvla-anon"))
+
+            ;; setup a module that can be referenced from the deployment
+            module-id (-> session-user
+                          (request module-base-uri
+                                   :request-method :post
+                                   :body (json/write-str
+                                           (valid-module "component" valid-component (format "a/b/%s" gg))))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
+
+            valid-deployment {:module {:href module-id}}]
+
+        (let [deployment-id (-> session-user
+                                (request base-uri
+                                         :request-method :post
+                                         :body (json/write-str valid-deployment))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
+              deployment-url (str p/service-context deployment-id)
+              deployment-response (-> session-user
+                                      (request deployment-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-key-value :state "CREATED")
+                                      (ltu/is-key-value :owner gg))
+              start-url (ltu/get-op-url deployment-response "start")
+              job-url (-> session-user
+                          (request start-url
+                                   :request-method :post)
+                          (ltu/body->edn)
+                          (ltu/is-status 202)
+                          (ltu/location-url))
+              _ (-> session-user
+                    (request job-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :state "QUEUED")
+                    (ltu/is-key-value :action "start_deployment"))
+
+              deployment (-> session-user
+                             (request deployment-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-key-value some? :api-credentials true)
+                             (ltu/body))
+              credential-id (-> deployment :api-credentials :api-key)
+              credential-url (str p/service-context credential-id)
+              credential (-> session-admin
+                             (request credential-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/body))]
+
+          (is (= deployment-id (:parent credential)))
+
+          ;; verify that the credential has the correct identity
+          (is (= gg (-> credential :claims :identity))))))))

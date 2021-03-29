@@ -2,9 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+  - Deployment - Support bulk update
+  - Bulk - Bulk operation support
+
 ### Changed
 
-  - Nuvlabox - Allow Nuvlabox credential to edit reboot action job
+  - Header authentication extended to support active-claim
+
+## [5.11.1] - 2021-03-22
+
+### Changed
+
+  - Deployment - Extend scope of deployment credential for gnss groups
+  - Nuvlabox - Allow Nuvlabox credential to edit job resource for reboot action
   - Nuvlabox - On commission allow Nuvlabox to remove resources
 
 ## [5.11.0] - 2021-03-08

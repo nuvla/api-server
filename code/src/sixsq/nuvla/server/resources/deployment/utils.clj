@@ -145,6 +145,7 @@
   [{:keys [id nuvlabox] :as resource} request action execution-mode]
   (a/throw-cannot-manage resource request)
   (let [active-claim (auth/current-active-claim request)
+        low-priority (get-in request [:body :low-priority] false)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
                                        id action
@@ -152,7 +153,7 @@
                                            (a/acl-append :edit-acl active-claim)
                                            (a/acl-append :edit-data nuvlabox)
                                            (a/acl-append :manage nuvlabox))
-                                       :priority 50
+                                       :priority (if low-priority 999 50)
                                        :execution-mode execution-mode)
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
@@ -306,3 +307,36 @@
       infra
       registries-creds
       registries-infra)))
+
+
+(defn merge-module-element
+  [key-fn current-val-fn current resolved]
+  (let [coll->map           (fn [val-fn coll] (into {} (map (juxt key-fn val-fn) coll)))
+        resolved-params-map (coll->map identity resolved)
+        valid-params-set    (set (map key-fn resolved))
+        current-params-map  (->> current
+                                 (filter (fn [entry] (valid-params-set (key-fn entry))))
+                                 (coll->map current-val-fn))]
+    (into [] (vals (merge-with merge resolved-params-map current-params-map)))))
+
+
+(defn merge-module
+  [{current-content :content :as current-module}
+   {resolved-content :content :as resolved-module}]
+  (let [params (merge-module-element :name #(select-keys % [:value])
+                                     (:output-parameters current-content)
+                                     (:output-parameters resolved-content))
+        env    (merge-module-element :name #(select-keys % [:value])
+                                     (:environmental-variables current-content)
+                                     (:environmental-variables resolved-content))
+
+        files  (merge-module-element :file-name #(select-keys % [:file-content])
+                                     (:files current-content)
+                                     (:files resolved-content))]
+    (assoc resolved-module
+      :content
+      (cond-> (dissoc resolved-content :output-parameters :environmental-variables :files)
+              (seq params) (assoc :output-parameters params)
+              (seq env) (assoc :environmental-variables env)
+              (seq files) (assoc :files files))
+      :href (:id current-module))))

@@ -113,9 +113,9 @@
     (let [session       (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-         session-user  (header session authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
-         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
+         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+         session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
 
          nuvlabox-id   (-> session-user
                            (request nuvlabox-base-uri
@@ -128,7 +128,7 @@
          valid-acl     {:owners    ["group/nuvla-admin"]
                         :edit-data [nuvlabox-id]}
 
-         session-nb    (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+         session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
      ;; non-admin users cannot create a nuvlabox-status resource
      (doseq [session [session-anon session-user]]

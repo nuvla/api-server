@@ -48,8 +48,8 @@
                            (content-type "application/json"))
         session-admin  (header session-anon authn-info-header
                                "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-jane   (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
-        session-tarzan (header session-anon authn-info-header "user/tarzan group/nuvla-user group/nuvla-anon")]
+        session-jane   (header session-anon authn-info-header "user/abcdef01-abcd-abcd-abcd-abcdef012345 user/abcdef01-abcd-abcd-abcd-abcdef012345 group/nuvla-user group/nuvla-anon")
+        session-tarzan (header session-anon authn-info-header "user/tarzan user/tarzan group/nuvla-user group/nuvla-anon")]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-jane session-tarzan]]

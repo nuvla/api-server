@@ -57,7 +57,7 @@
                                   (content-type "application/json"))
           session-admin       (header session-anon authn-info-header
                                       "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+          session-user        (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a service-group to act as parent for service
           valid-service-group {:name          "my-service-group"
@@ -165,7 +165,7 @@
       (let [session-anon        (-> (ltu/ring-app)
                                     session
                                     (content-type "application/json"))
-            session-user        (header session-anon authn-info-header "user/jane group/nuvla-user group/nuvla-anon")
+            session-user        (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
             ;; setup a service-group to act as parent for service
             valid-service-group {:name          "my-service-group"
