@@ -78,10 +78,10 @@
     (let [session       (-> (ltu/ring-app)
                            session
                            (content-type "application/json"))
-         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-         session-user  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))
-         session-owner (header session authn-info-header (str nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
-         session-anon  (header session authn-info-header "user/unknown group/nuvla-anon")
+         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+         session-user  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))
+         session-owner (header session authn-info-header (str nuvlabox-owner " " nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
+         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
 
          nuvlabox-id   (-> session-owner
                            (request nuvlabox-base-uri
@@ -91,7 +91,7 @@
                            (ltu/is-status 201)
                            (ltu/location))
 
-         session-nb    (header session authn-info-header (str nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+         session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
      ;; anonymous users cannot create a nuvlabox-peripheral resource
      (-> session-anon
