@@ -90,7 +90,7 @@
                             session
                             (content-type "application/json"))
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
 
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
@@ -139,10 +139,10 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (doseq [session [session-admin session-owner]]
         (let [nuvlabox-id  (-> session
@@ -306,10 +306,10 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
           tags          #{"tag-1", "tag-2"}]
 
       (doseq [session [session-admin session-owner]]
@@ -658,10 +658,10 @@
                             session
                             (content-type "application/json"))
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
           user-beta     "user/beta"
-          session-beta  (header session authn-info-header (str user-beta " group/nuvla-user group/nuvla-anon"))]
+          session-beta  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))]
 
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
@@ -864,10 +864,10 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
@@ -926,7 +926,7 @@
             (ltu/is-status 200))
 
         (let [session-nuvlabox  (header session authn-info-header
-                                        (str nuvlabox-id
+                                        (str nuvlabox-id " " nuvlabox-id
                                              " group/nuvla-nuvlabox group/nuvla-anon"))
               commission        (-> session-owner
                                     (request nuvlabox-url)
@@ -1007,10 +1007,10 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
@@ -1069,7 +1069,7 @@
             (ltu/is-status 200))
 
         (let [session-nuvlabox  (header session authn-info-header
-                                        (str nuvlabox-id
+                                        (str nuvlabox-id " " nuvlabox-id
                                              " group/nuvla-nuvlabox group/nuvla-anon"))
               commission        (-> session-owner
                                     (request nuvlabox-url)
@@ -1148,8 +1148,8 @@
                                 session
                                 (content-type "application/json"))
 
-          session-admin     (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-owner     (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+          session-admin     (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner     (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
 
           customer-base-uri (str p/service-context customer/resource-type)]
 
@@ -1211,8 +1211,8 @@
                             session
                             (content-type "application/json"))
 
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
 
           nuvlabox-id   (-> session-owner
                             (request base-uri
@@ -1272,10 +1272,10 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
@@ -1301,7 +1301,7 @@
             (ltu/is-status 200))
 
         (let [session-nuvlabox (header session authn-info-header
-                                       (str nuvlabox-id
+                                       (str nuvlabox-id " " nuvlabox-id
                                             " group/nuvla-nuvlabox group/nuvla-anon"))
               commission       (-> session-owner
                                    (request nuvlabox-url)
