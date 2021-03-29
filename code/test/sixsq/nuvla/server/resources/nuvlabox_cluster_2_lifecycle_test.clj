@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
+    [sixsq.nuvla.server.resources.nuvlabox-cluster-2 :as nb-cluster-2]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [clojure.pprint :refer [pprint]]))
 
@@ -56,12 +57,11 @@
 
 
 (deftest check-metadata
-  (mdtu/check-metadata-exists nb-cluster/resource-type))
+  (mdtu/check-metadata-exists nb-cluster/resource-type
+    (str nb-cluster/resource-type "-" nb-cluster-2/schema-version)))
 
 
 (deftest lifecycle
-
-  (pprint valid-cluster)
 
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)

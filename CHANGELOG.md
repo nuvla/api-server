@@ -6,6 +6,7 @@
 
   - Deployment - Support bulk update
   - Bulk - Bulk operation support
+  - NuvlaBox Cluster - new resource
 
 ### Changed
 

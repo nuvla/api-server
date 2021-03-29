@@ -19,8 +19,7 @@
              :json-schema/order 30)))
 
 
-(def attributes {:req-un [::common/parent                   ;; reference to nuvlabox
-                          ::version]})
+(def attributes {:req-un [::version]})
 
 
 (s/def ::schema

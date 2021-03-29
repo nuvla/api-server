@@ -31,7 +31,7 @@ The version 2 of nuvlabox-cluster resource
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::nb-cluster/ns ::nb-cluster-2/schema schema-version))
+(def resource-metadata (gen-md/generate-metadata ::ns ::nb-cluster/ns ::nb-cluster-2/schema))
 
 
 (defn initialize
