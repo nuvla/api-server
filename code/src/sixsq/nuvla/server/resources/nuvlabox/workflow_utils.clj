@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
+    [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -616,6 +617,16 @@
          (map :id))))
 
 
+(defn get-parent-nuvlabox-cluster
+  [id]
+  (let [filter  (format "nuvlabox-workers='%s' or nuvlabox-managers='%s'" id id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (->> (crud/query-as-admin nb-cluster/resource-type options)
+      second
+      (map :id))))
+
+
 (defn update-peripherals
   [nuvlabox-id nuvlabox-acl]
   (when-let [ids (get-nuvlabox-peripherals-ids nuvlabox-id)]
@@ -631,4 +642,22 @@
         (if (= 200 status)
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))))))
+
+
+(defn update-cluster
+  [nuvlabox-id nuvlabox-acl]
+  (when-let [ids (get-parent-nuvlabox-cluster nuvlabox-id)]
+    (doseq [id ids]
+      (let [request {:params      {:uuid          (u/id->uuid id)
+                                   :resource-name nb-cluster/resource-type}
+                     :body        {:acl (-> nuvlabox-acl
+                                          (utils/set-acl-nuvlabox-view-only
+                                            {:owners [nuvlabox-id]})
+                                          (assoc :manage (:view-acl nuvlabox-acl)))}
+                     :nuvla/authn auth/internal-identity}
+            {status :status :as resp} (crud/edit request)]
+        (if (= 200 status)
+          (log/info "nuvlabox cluster" id "updated")
+          (let [msg (str "cannot update nuvlabox cluster for " nuvlabox-id)]
             (throw (ex-info msg (r/map-response msg 400 "")))))))))
