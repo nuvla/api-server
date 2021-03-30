@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-cluster-2-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
@@ -12,10 +11,11 @@
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
+    [clojure.pprint :refer [pprint]]
+    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
     [sixsq.nuvla.server.resources.nuvlabox-cluster-2 :as nb-cluster-2]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [clojure.pprint :refer [pprint]]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -26,6 +26,7 @@
 
 (def nuvlabox-base-uri (str p/service-context nb/resource-type))
 
+(def nuvlabox-status-base-uri (str p/service-context nb-status/resource-type))
 
 (def timestamp "1964-08-25T10:00:00Z")
 
@@ -40,6 +41,11 @@
 
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
+(def valid-nuvlabox-status {:node-id "abcd1234"
+                            :version 2
+                            :status                "OPERATIONAL"})
+
+(def valid-acl {:owners    [nuvlabox-owner]})
 
 (def valid-cluster {:id            (str nb-cluster/resource-type "/uuid")
                     :resource-type nb-cluster/resource-type
@@ -48,11 +54,10 @@
 
                     :version       2
 
-                    :cluster-id    "1234abcd"
-                    :workers       ["12nb12hb"]
-                    :managers      ["absafhwe"]
-                    :nuvlabox-workers         ["nuvlabox/123-456-abc-def-worker"]
-                    :nuvlabox-managers        ["nuvlabox/123-456-abc-def-manager"]
+                    :acl           valid-acl
+
+                    :cluster-id    "1234abcdcluster"
+                    :managers      ["abcd1234"]
                     :orchestrator  "swarm"})
 
 
@@ -79,6 +84,16 @@
                            (ltu/body->edn)
                            (ltu/is-status 201)
                            (ltu/location))
+
+          nuvlabox-status-id  (-> session-admin
+                                (request nuvlabox-status-base-uri
+                                  :request-method :post
+                                  :body (json/write-str (assoc valid-nuvlabox-status :parent nuvlabox-id
+                                                                                     :acl {:owners    ["group/nuvla-admin"]
+                                                                                           :edit-data [nuvlabox-id]})))
+                                (ltu/body->edn)
+                                (ltu/is-status 201)
+                                (ltu/location))
 
          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
@@ -112,21 +127,13 @@
            (ltu/body->edn)
            (ltu/is-status 200))
 
-       ;; nuvlabox user is able to update nuvlabox-cluster
+       ;; nuvlabox user cannot update nuvlabox-cluster (only via commissioning
        (-> session-nb
            (request cluster-url
                     :request-method :put
                     :body (json/write-str {:name "new cluster name"}))
            (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-key-value :name "new cluster name"))
-
-       ;; verify that the update was written to disk
-       (-> session-nb
-           (request cluster-url)
-           (ltu/body->edn)
-           (ltu/is-status 200)
-           (ltu/is-key-value :name "new cluster name"))
+           (ltu/is-status 403))
 
        ;; nuvlabox owner identity cannot delete the cluster
        (-> session-owner
