@@ -4,6 +4,7 @@
 
 ### Added
 
+  - Module - Publish version support
   - Deployment - Support bulk update
   - Bulk - Bulk operation support
 
