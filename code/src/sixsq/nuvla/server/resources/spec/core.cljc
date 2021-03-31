@@ -4,8 +4,7 @@
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [sixsq.nuvla.server.util.time :as time]
-    [spec-tools.core :as st]
-    [sixsq.nuvla.server.util.spec :as su]))
+    [spec-tools.core :as st]))
 
 
 (s/def ::scalar
@@ -151,10 +150,9 @@
       (assoc :name "href"
              :json-schema/description "reference to another resource")))
 
-(def ^:const resource-link {:req-un [::href]})
 
 (s/def ::resource-link
-  (-> (st/spec (su/merge-keys-specs [resource-link]))
+  (-> (st/spec (s/keys :req-un [::href]))
       (assoc :name "resource-link"
              :json-schema/type "map"
              :json-schema/display-name "resource link"

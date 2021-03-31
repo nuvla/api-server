@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.module :as module]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -19,10 +18,7 @@
                            :json-schema/order 6)))
 
 
-(s/def ::module (-> (st/spec (su/only-keys-maps core/resource-link
-                                                module/module-keys-spec))
-                    (assoc :name "module"
-                           :json-schema/type "map")))
+(s/def ::module ::core/resource-link)
 
 
 (s/def ::state
