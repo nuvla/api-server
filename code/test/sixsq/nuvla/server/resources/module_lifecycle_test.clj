@@ -1,9 +1,7 @@
 (ns sixsq.nuvla.server.resources.module-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -165,6 +163,79 @@
               (is (= (-> versions (nth n) :author) "someone"))
               (is (= (-> versions (nth n) :commit) "wip")))))
 
+        ;; publish
+        (let [publish-url (-> session
+                              (request abs-uri)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (ltu/is-operation-present :publish)
+                              (ltu/is-operation-present :unpublish)
+                              (ltu/get-op-url :publish))]
+
+          ; publish last version
+          (-> session
+              (request publish-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/message-matches "published successfully"))
+
+          ; publish specific version
+          (-> session
+              (request (str abs-uri "_2/publish"))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/message-matches "published successfully"))
+
+          (let [unpublish-url (-> session
+                                  (request abs-uri)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present :publish)
+                                  (ltu/is-operation-present :unpublish)
+                                  (ltu/is-key-value #(-> % last :published) :versions true)
+                                  (ltu/is-key-value #(-> % (nth 2) :published) :versions true)
+                                  (ltu/is-key-value :published true)
+                                  (ltu/get-op-url :unpublish))]
+
+            (-> session
+                (request unpublish-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/message-matches "unpublished successfully")))
+
+          ; publish is idempotent
+          (-> session
+              (request (str abs-uri "_2/publish"))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/message-matches "published successfully"))
+
+          (-> session
+              (request abs-uri)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-present :publish)
+              (ltu/is-operation-present :unpublish)
+              (ltu/is-key-value #(-> % last :published) :versions false)
+              (ltu/is-key-value :published true)
+              (ltu/get-op-url :unpublish))
+
+          (-> session
+              (request (str abs-uri "_2/unpublish"))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/message-matches "unpublished successfully"))
+
+          (-> session
+              (request abs-uri)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-operation-present :publish)
+              (ltu/is-operation-present :unpublish)
+              (ltu/is-key-value #(-> % (nth 2) :published) :versions false)
+              (ltu/is-key-value :published false)
+              (ltu/get-op-url :unpublish)))
+
         ;; edit module without putting the module-content should not create new version
         (is (= 7 (-> session-admin
                      (request abs-uri
@@ -244,64 +315,64 @@
 ;; disabled to not create to much resources in Stripe test-account
 
 #_(deftest lifecycle-component-pricing
-  (let [session-anon    (-> (session (ltu/ring-app))
-                            (content-type "application/json"))
-        session-user    (header session-anon authn-info-header
-                                "user/jane user/jane group/nuvla-user group/nuvla-anon")
+    (let [session-anon    (-> (session (ltu/ring-app))
+                              (content-type "application/json"))
+          session-user    (header session-anon authn-info-header
+                                  "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-component {:author        "someone"
-                         :commit        "wip"
+          valid-component {:author        "someone"
+                           :commit        "wip"
 
-                         :architectures ["amd64" "arm/v6"]
-                         :image         {:image-name "ubuntu"
-                                         :tag        "16.04"}
-                         :ports         [{:protocol       "tcp"
-                                          :target-port    22
-                                          :published-port 8022}]}
+                           :architectures ["amd64" "arm/v6"]
+                           :image         {:image-name "ubuntu"
+                                           :tag        "16.04"}
+                           :ports         [{:protocol       "tcp"
+                                            :target-port    22
+                                            :published-port 8022}]}
 
-        valid-entry     {:id                        (str module/resource-type "/connector-uuid")
-                         :resource-type             module/resource-type
-                         :created                   timestamp
-                         :updated                   timestamp
-                         :parent-path               "a/b"
-                         :path                      "a/b/c"
-                         :subtype                   utils/subtype-comp
+          valid-entry     {:id                        (str module/resource-type "/connector-uuid")
+                           :resource-type             module/resource-type
+                           :created                   timestamp
+                           :updated                   timestamp
+                           :parent-path               "a/b"
+                           :path                      "a/b/c"
+                           :subtype                   utils/subtype-comp
 
-                         :logo-url                  "https://example.org/logo"
+                           :logo-url                  "https://example.org/logo"
 
-                         :data-accept-content-types ["application/json" "application/x-something"]
-                         :data-access-protocols     ["http+s3" "posix+nfs"]
+                           :data-accept-content-types ["application/json" "application/x-something"]
+                           :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                         :content                   valid-component
-                         :price                     {:cent-amount-daily 10
-                                                     :currency          "EUR"}}]
+                           :content                   valid-component
+                           :price                     {:cent-amount-daily 10
+                                                       :currency          "EUR"}}]
 
-    (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
-      (let [uri      (-> session-user
-                         (request base-uri
-                                  :request-method :post
-                                  :body (json/write-str valid-entry))
-                         (ltu/body->edn)
-                         (ltu/is-status 201)
-                         (ltu/location))
+      (with-redefs [module/active-claim->account-id (constantly "acct_xyz")]
+        (let [uri      (-> session-user
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-entry))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
 
-            abs-uri  (str p/service-context uri)
-            price-id (-> session-user
-                         (request abs-uri :request-method :get)
-                         (ltu/body->edn)
-                         (ltu/is-status 200)
-                         (ltu/is-key-value #(str/starts-with? (:product-id %) "prod_") :price true)
-                         (ltu/is-key-value #(str/starts-with? (:price-id %) "price_") :price true)
-                         (get-in [:response :body :price :price-id]))]
+              abs-uri  (str p/service-context uri)
+              price-id (-> session-user
+                           (request abs-uri :request-method :get)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-key-value #(str/starts-with? (:product-id %) "prod_") :price true)
+                           (ltu/is-key-value #(str/starts-with? (:price-id %) "price_") :price true)
+                           (get-in [:response :body :price :price-id]))]
 
-        (-> session-user
-            (request abs-uri :request-method :put
-                     :body (json/write-str (assoc-in valid-entry [:price :cent-amount-daily] 20)))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value #(and (str/starts-with? (:price-id %) "price_")
-                                    (not= (:price-id %) price-id)) :price true))
-        ))))
+          (-> session-user
+              (request abs-uri :request-method :put
+                       :body (json/write-str (assoc-in valid-entry [:price :cent-amount-daily] 20)))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value #(and (str/starts-with? (:price-id %) "price_")
+                                      (not= (:price-id %) price-id)) :price true))
+          ))))
 
 
 (deftest bad-methods

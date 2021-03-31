@@ -209,7 +209,7 @@ component, or application.
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
                                                                         utils/split-resource)
-        module-meta (dissoc module-meta :compatibility :parent-path)]
+        module-meta (dissoc module-meta :compatibility :parent-path :published)]
 
     (if (utils/is-project? subtype)
       (db-add-module-meta module-meta request)
@@ -256,9 +256,8 @@ component, or application.
 
 (defn retrieve-content-id
   [versions index]
-  (if index
-    (-> versions (nth index) :href)
-    (->> versions (remove nil?) last :href)))
+  (let [index (or index (utils/last-index versions))]
+    (-> versions (nth index) :href)))
 
 
 (defmethod crud/retrieve resource-type
@@ -287,6 +286,20 @@ component, or application.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
+(defn edit-module
+  [{{uuid-full :uuid} :params :as request} resource error-message]
+  (let [uuid     (-> uuid-full split-uuid first)
+        response (-> request
+                     (assoc :request-method :put
+                            :params {:uuid          uuid
+                                     :resource-type resource-type}
+                            :body resource)
+                     edit-impl)]
+    (if (= (:status response) 200)
+      response
+      (throw (r/ex-response (str error-message ": " response) 500)))))
+
+
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
   (try
@@ -297,7 +310,7 @@ component, or application.
                                                                           utils/split-resource)
           {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
-                          (dissoc :compatibility :parent-path)
+                          (dissoc :compatibility :parent-path :published)
                           (assoc :subtype subtype)
                           utils/set-parent-path)]
 
@@ -383,11 +396,10 @@ component, or application.
   (let [content-id       (retrieve-content-id versions version-index)
         delete-response  (delete-content content-id subtype)
         updated-versions (remove-version versions version-index)
-        module-meta      (assoc module-meta :versions updated-versions)
-        {:keys [status]} (edit-impl (assoc request :request-method :put
-                                                   :body module-meta))]
-    (when (not= status 200)
-      (throw (r/ex-response "A failure happened during delete module item" 500)))
+        module-meta      (-> module-meta
+                             (assoc :versions updated-versions)
+                             (utils/set-published))]
+    (edit-module request module-meta "A failure happened during delete module item")
 
     delete-response))
 
@@ -445,13 +457,60 @@ component, or application.
       (throw (r/ex-response "invalid subtype" 400)))))
 
 
+(defn publish-version
+  [{:keys [versions] :as resource} index publish]
+
+  (if index
+    (let [part-a   (subvec versions 0 index)
+          part-b   (subvec versions (inc index))
+          version  (-> versions
+                       (nth index)
+                       (assoc :published publish))
+          versions (concat part-a [version] part-b)]
+      (assoc resource :versions versions))
+    resource))
+
+
+(defn publish-unpublish
+  [{{uuid-full :uuid} :params :as request} publish]
+  (let [[uuid version-index] (split-uuid uuid-full)
+        id (str resource-type "/" uuid)
+        {:keys [subtype versions] :as resource} (crud/retrieve-by-id-as-admin id)]
+    (a/throw-cannot-manage resource request)
+    (if (utils/is-project? subtype)
+      (throw (r/ex-response "invalid subtype" 400))
+      (edit-module
+        request
+        (-> resource
+            (publish-version (or version-index
+                                 (utils/last-index versions)) publish)
+            utils/set-published)
+        "Edit versions failed"))
+    (r/map-response (str (if publish "published" "unpublished") " successfully") 200)))
+
+
+(defmethod crud/do-action [resource-type "publish"]
+  [request]
+  (publish-unpublish request true))
+
+
+(defmethod crud/do-action [resource-type "unpublish"]
+  [request]
+  (publish-unpublish request false))
+
+
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} request]
   (let [validate-docker-compose-op (u/action-map id :validate-docker-compose)
-        check-op-present?          (and (a/can-manage? resource request)
-                                        (utils/is-application? subtype))]
+        publish-op                 (u/action-map id :publish)
+        unpublish-op               (u/action-map id :unpublish)
+        can-manage?                (a/can-manage? resource request)
+        check-op-present?          (and can-manage? (utils/is-application? subtype))
+        publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
     (cond-> (crud/set-standard-operations resource request)
-            check-op-present? (update :operations conj validate-docker-compose-op))))
+            check-op-present? (update :operations conj validate-docker-compose-op)
+            publish-eligible? (update :operations conj publish-op)
+            publish-eligible? (update :operations conj unpublish-op))))
 
 
 ;;
