@@ -13,14 +13,15 @@
 ;;
 
 (def ^:const resource
-  {:service       service
-   :name          "OIDC Authentication Configuration"
-   :description   "OpenID Connect Authentication Configuration"
-   :instance      "authn-name"
-   :authorize-url "http://auth.example.com"
-   :token-url     "http://token.example.com"
-   :client-id     "server-assigned-client-id"
-   :public-key    "ABCDEF..."})
+  {:service               service
+   :name                  "OIDC Authentication Configuration"
+   :description           "OpenID Connect Authentication Configuration"
+   :instance              "authn-name"
+   :authorize-url         "http://auth.example.com"
+   :token-url             "http://token.example.com"
+   :client-id             "server-assigned-client-id"
+   :public-key            "ABCDEF..."
+   :redirect-url-resource "callback"})
 
 
 ;;

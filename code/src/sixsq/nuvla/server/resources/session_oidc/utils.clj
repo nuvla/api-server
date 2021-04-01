@@ -104,7 +104,7 @@
 
 ;; retrieval of configuration parameters
 
-(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url})
+(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url :redirect-url-resource})
 
 
 (def mitreid-keys #{:client-id :client-secret :public-key :authorize-url :token-url :user-profile-url})

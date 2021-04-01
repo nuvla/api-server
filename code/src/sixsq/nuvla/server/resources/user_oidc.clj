@@ -6,7 +6,11 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.spec.user-template-oidc :as ut-oidc]
     [sixsq.nuvla.server.resources.user-interface :as p]
-    [sixsq.nuvla.server.resources.user-template-oidc :as user-template]))
+    [sixsq.nuvla.server.resources.user-template-oidc :as user-template]
+    [clojure.string :as str]
+    [sixsq.nuvla.server.resources.hook :as hook]
+    [sixsq.nuvla.server.resources.hook-oidc-user :as hook-oidc-user]
+    [clojure.tools.logging :as log]))
 
 
 ;;
@@ -17,7 +21,7 @@
 
 
 (defmethod p/create-validate-subtype user-template/registration-method
-  [{resource :userTemplate :as create-document}]
+  [create-document]
   (create-validate-fn create-document))
 
 
@@ -28,11 +32,17 @@
 
 (def create-user-oidc-callback (partial callback/create user-oidc-callback/action-name))
 
+(defn get-authorize-url
+  [{:keys [href instance redirect-url] :as resource} {:keys [base-uri] :as request}]
+  (let [{:keys [client-id authorize-url
+                redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
+        redirect-url (if (= redirect-url-resource "callback")
+                       (create-user-oidc-callback
+                         base-uri href :data (when redirect-url {:redirect-url redirect-url}))
+                       (str base-uri hook/resource-type "/" hook-oidc-user/action))]
+    (oidc-utils/create-redirect-url authorize-url client-id redirect-url)))
+
 
 (defmethod p/tpl->user user-template/registration-method
-  [{:keys [href instance redirect-url] :as resource} {:keys [base-uri] :as request}]
-  (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
-        data         (when redirect-url {:redirect-url redirect-url})
-        callback-url (create-user-oidc-callback base-uri href :data data)
-        redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
-    [{:status 303, :headers {"Location" redirect-url}} nil]))
+  [resource request]
+  [{:status 303, :headers {"Location" (get-authorize-url resource request)}} nil])
