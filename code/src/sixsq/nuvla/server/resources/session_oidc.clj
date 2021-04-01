@@ -1,17 +1,17 @@
 (ns sixsq.nuvla.server.resources.session-oidc
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.resources.callback-create-session-oidc :as cb]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.hook :as hook]
+    [sixsq.nuvla.server.resources.hook-oidc-session :as hook-oidc-session]
     [sixsq.nuvla.server.resources.session :as p]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.spec.session-template-oidc :as st-oidc]
-    [sixsq.nuvla.server.resources.hook :as hook]
-    [sixsq.nuvla.server.resources.hook-oidc-session :as hook-oidc-session]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.resources.spec.session-template-oidc :as st-oidc]))
 
 
 (def ^:const authn-method "oidc")

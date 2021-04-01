@@ -3,21 +3,19 @@
 Stripe oidc session.
 "
   (:require
-    [clojure.string :as str]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.app.params :as app-params]
     [clojure.tools.logging :as log]
+    [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.sign :as sign]
-    [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
-    [sixsq.nuvla.auth.cookies :as cookies]
+    [sixsq.nuvla.server.app.params :as app-params]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
+    [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.resources.session.utils :as sutils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action "oidc-session")

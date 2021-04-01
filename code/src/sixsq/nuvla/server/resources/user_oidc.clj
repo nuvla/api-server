@@ -1,16 +1,16 @@
 (ns sixsq.nuvla.server.resources.user-oidc
   (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-create-user-oidc :as user-oidc-callback]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.hook :as hook]
+    [sixsq.nuvla.server.resources.hook-oidc-user :as hook-oidc-user]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.spec.user-template-oidc :as ut-oidc]
     [sixsq.nuvla.server.resources.user-interface :as p]
-    [sixsq.nuvla.server.resources.user-template-oidc :as user-template]
-    [clojure.string :as str]
-    [sixsq.nuvla.server.resources.hook :as hook]
-    [sixsq.nuvla.server.resources.hook-oidc-user :as hook-oidc-user]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.resources.user-template-oidc :as user-template]))
 
 
 ;;

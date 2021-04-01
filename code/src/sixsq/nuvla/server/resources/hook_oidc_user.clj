@@ -3,16 +3,14 @@
 Stripe oidc user.
 "
   (:require
-    [clojure.string :as str]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.app.params :as app-params]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.external :as ex]
     [sixsq.nuvla.auth.oidc :as auth-oidc]
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.sign :as sign]
-    [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
+    [sixsq.nuvla.server.app.params :as app-params]
     [sixsq.nuvla.server.resources.hook-oidc-session :refer [instance]]
+    [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
 

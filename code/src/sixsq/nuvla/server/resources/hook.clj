@@ -7,10 +7,10 @@ for events driven workflows.
     [compojure.core :refer [ANY defroutes]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.hook-stripe-oauth :as stripe-oauth]
-    [sixsq.nuvla.server.resources.hook-oidc-user :as oidc-user]
     [sixsq.nuvla.server.resources.hook-oidc-session :as oidc-session]
-    [sixsq.nuvla.server.resources.hook-reset-password :as reset-password]))
+    [sixsq.nuvla.server.resources.hook-oidc-user :as oidc-user]
+    [sixsq.nuvla.server.resources.hook-reset-password :as reset-password]
+    [sixsq.nuvla.server.resources.hook-stripe-oauth :as stripe-oauth]))
 
 ;;
 ;; utilities
