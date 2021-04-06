@@ -1,7 +1,5 @@
 (ns sixsq.nuvla.server.resources.user-oidc
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-create-user-oidc :as user-oidc-callback]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -40,7 +38,7 @@
                        (create-user-oidc-callback
                          base-uri href :data (when redirect-url {:redirect-url redirect-url}))
                        (str base-uri hook/resource-type "/" hook-oidc-user/action))]
-    (oidc-utils/create-redirect-url authorize-url client-id redirect-url)))
+    (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email")))
 
 
 (defmethod p/tpl->user user-template/registration-method

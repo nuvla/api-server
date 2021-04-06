@@ -136,9 +136,12 @@
 
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
-  [authorizeURL client-id callback-url]
-  (let [url-params-format "?response_type=code&client_id=%s&redirect_uri=%s"]
-    (str authorizeURL (format url-params-format client-id callback-url))))
+  ([authorizeURL client-id callback-url]
+   (create-redirect-url authorizeURL client-id callback-url nil))
+  ([authorizeURL client-id callback-url scope]
+   (let [url-params-format "?response_type=code&client_id=%s&redirect_uri=%s"]
+     (cond-> (str authorizeURL (format url-params-format client-id callback-url))
+             scope (str "&scope=" scope)))))
 
 
 (defn get-mitreid-userinfo

@@ -58,7 +58,7 @@
                          ;; fake session values, will be replaced after callback execution
                          (sutils/create-callback base-uri (:id session) cb/action-name))
                        (str base-uri hook/resource-type "/" hook-oidc-session/action))]
-    (oidc-utils/create-redirect-url authorize-url client-id redirect-url)))
+    (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email")))
 
 
 (defmethod p/tpl->session authn-method
