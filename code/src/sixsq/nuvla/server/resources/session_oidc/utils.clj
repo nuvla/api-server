@@ -3,6 +3,7 @@
     [clj-http.client :as http]
     [clojure.data.json :as json]
     [clojure.string :as str]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.log :as logu]))
 
@@ -104,7 +105,7 @@
 
 ;; retrieval of configuration parameters
 
-(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url})
+(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url :redirect-url-resource})
 
 
 (def mitreid-keys #{:client-id :client-secret :public-key :authorize-url :token-url :user-profile-url})
@@ -136,9 +137,13 @@
 
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
-  [authorizeURL client-id callback-url]
-  (let [url-params-format "?response_type=code&client_id=%s&redirect_uri=%s"]
-    (str authorizeURL (format url-params-format client-id callback-url))))
+  ([authorizeURL client-id callback-url]
+   (create-redirect-url authorizeURL client-id callback-url nil))
+  ([authorizeURL client-id callback-url scope]
+   (-> (str authorizeURL "?response_type=code")
+       (str "&client_id=" (codec/url-encode client-id))
+       (cond-> scope (str "&scope=" (codec/url-encode scope)))
+       (str "&redirect_uri=" callback-url))))
 
 
 (defn get-mitreid-userinfo

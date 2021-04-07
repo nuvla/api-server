@@ -12,27 +12,28 @@
 
 (deftest test-configuration-template-schema-check
   (let [timestamp "1964-08-25T10:00:00Z"
-        root      {:id            (str ct/resource-type "/session-oidc-test-instance")
-                   :resource-type ct/resource-type
-                   :created       timestamp
-                   :updated       timestamp
-                   :acl           valid-acl
+        root      {:id                    (str ct/resource-type "/session-oidc-test-instance")
+                   :resource-type         ct/resource-type
+                   :created               timestamp
+                   :updated               timestamp
+                   :acl                   valid-acl
 
-                   :service       "session-oidc"
-                   :instance      "test-instance"
+                   :service               "session-oidc"
+                   :instance              "test-instance"
 
-                   :client-id     "FAKE_CLIENT_ID"
-                   :public-key    "my-public-key"
-                   :authorize-url "relative-authorize-url"
-                   :token-url     "relative-token-url"
-                   :client-secret "MyOIDCClientSecret"}]
+                   :client-id             "FAKE_CLIENT_ID"
+                   :public-key            "my-public-key"
+                   :authorize-url         "relative-authorize-url"
+                   :token-url             "relative-token-url"
+                   :client-secret         "MyOIDCClientSecret"
+                   :redirect-url-resource "callback"}]
 
     (stu/is-valid ::cts-oidc/schema root)
 
     (stu/is-invalid ::cts-oidc/schema (assoc root :bad "BAD"))
 
-    (doseq [k #{:id :resource-type :created :updated :acl
-                :service :instance :client-id :public-key :authorize-url :token-url}]
+    (doseq [k #{:id :resource-type :created :updated :acl :service :instance
+                :client-id :public-key :authorize-url :token-url :redirect-url-resource}]
       (stu/is-invalid ::cts-oidc/schema (dissoc root k)))
 
     (doseq [k #{:client-secret}]

@@ -50,13 +50,15 @@
     "3wIDAQAB"))
 
 
-(def configuration-user-oidc {:template {:service       "session-oidc" ;;reusing configuration from session
-                                         :instance      oidc/registration-method
-                                         :client-id     "FAKE_CLIENT_ID"
-                                         :client-secret "MyClientSecret"
-                                         :authorize-url "https://authorize.oidc.com/authorize"
-                                         :token-url     "https://token.oidc.com/token"
-                                         :public-key    auth-pubkey}})
+(def configuration-user-oidc
+  {:template {:service               "session-oidc"         ;;reusing configuration from session
+              :instance              oidc/registration-method
+              :client-id             "FAKE_CLIENT_ID"
+              :client-secret         "MyClientSecret"
+              :authorize-url         "https://authorize.oidc.com/authorize"
+              :token-url             "https://token.oidc.com/token"
+              :public-key            auth-pubkey
+              :redirect-url-resource "callback"}})
 
 
 (deftest check-metadata
