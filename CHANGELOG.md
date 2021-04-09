@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.12.0] - 2021-04-09
+
 ### Added
 
   - Module - Publish version support
