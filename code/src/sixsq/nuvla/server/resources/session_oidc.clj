@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.session-oidc
   (:require
-    [clojure.string :as str]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.resources.callback-create-session-oidc :as cb]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -44,26 +43,23 @@
 ;; transform template into session resource
 ;;
 
-(defn get-authorize-url
+(defmethod p/tpl->session authn-method
   [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
   (let [{:keys [client-id authorize-url
                 redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
-        redirect-url (if (= redirect-url-resource "callback")
-                       (let [session      (-> (sutils/create-session
-                                                nil "user-id" {:href href} headers
-                                                authn-method redirect-url)
-                                              (assoc :expiry (ts/rfc822->iso8601
-                                                               (ts/expiry-later-rfc822
-                                                                 login-request-timeout))))]
-                         ;; fake session values, will be replaced after callback execution
-                         (sutils/create-callback base-uri (:id session) cb/action-name))
-                       (str base-uri hook/resource-type "/" hook-oidc-session/action))]
-    (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email")))
-
-
-(defmethod p/tpl->session authn-method
-  [resource request]
-  [{:status 303, :headers {"Location" (get-authorize-url resource request)}} nil])
+        ;; fake session values, will be replaced after callback execution
+        session      (-> (sutils/create-session
+                           nil "user-id" {:href href} headers
+                           authn-method redirect-url)
+                         (assoc :expiry (ts/rfc822->iso8601
+                                          (ts/expiry-later-rfc822
+                                            login-request-timeout))))
+        callback-url (if (= redirect-url-resource "callback")
+                       (sutils/create-callback base-uri (:id session) cb/action-name)
+                       (str base-uri hook/resource-type "/" hook-oidc-session/action))
+        redirect-url (oidc-utils/create-redirect-url authorize-url client-id
+                                                     callback-url "openid email")]
+    [{:status 303, :headers {"Location" redirect-url}} session]))
 
 
 ;;

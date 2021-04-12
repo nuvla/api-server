@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - Session oidc - Bugfix session oidc
+
 ## [5.12.0] - 2021-04-09
 
 ### Added
