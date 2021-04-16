@@ -59,9 +59,11 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
           view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
           acl        {:owners    ["group/nuvla-admin"]
                       :delete    ["group/nuvla-admin"]
+                      :edit-acl  ["group/nuvla-admin"]
                       :manage    (into [] manage)
                       :view-data (into [] view-data)
-                      :edit-acl  edit-acl}]
+                      :edit-data edit-acl
+                      :view-acl  edit-acl}]
       (assoc resource :acl acl))))
 
 

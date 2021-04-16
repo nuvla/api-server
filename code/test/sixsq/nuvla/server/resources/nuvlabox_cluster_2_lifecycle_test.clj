@@ -127,6 +127,13 @@
            (ltu/body->edn)
            (ltu/is-status 200))
 
+       ;; admin can see the cluster
+       (-> session-admin
+         (request cluster-url)
+         (pprint)
+         (ltu/body->edn)
+         (ltu/is-status 200))
+
        ;; nuvlabox user cannot update nuvlabox-cluster (only via commissioning
        (-> session-nb
            (request cluster-url
@@ -165,20 +172,20 @@
            (ltu/is-status 200)))
 
 
-     (when-let [cluster-url (-> session-nb
-                                   (request base-uri
-                                            :request-method :post
-                                            :body (json/write-str valid-cluster))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
-
-       ;; nuvlabox can delete the cluster
-       (-> session-admin
-           (request cluster-url
-                    :request-method :delete)
-           (ltu/body->edn)
-           (ltu/is-status 200)))
+     ;(when-let [cluster-url (-> session-nb
+     ;                              (request base-uri
+     ;                                       :request-method :post
+     ;                                       :body (json/write-str valid-cluster))
+     ;                              (ltu/body->edn)
+     ;                              (ltu/is-status 201)
+     ;                              (ltu/location-url))]
+     ;
+     ;  ;; nuvlabox can delete the cluster
+     ;  (-> session-admin
+     ;      (request cluster-url
+     ;               :request-method :delete)
+     ;      (ltu/body->edn)
+     ;      (ltu/is-status 200)))
      )))
 
 
