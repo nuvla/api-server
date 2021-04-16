@@ -54,6 +54,23 @@
           path (assoc :parent-path (get-parent-path path))))
 
 
+(defn set-published
+  "Updates the :parent-path key in the module resource to ensure that it is
+   consistent with the value of :path."
+  [{:keys [versions] :as resource}]
+  (cond-> resource
+          (not (is-project? resource)) (assoc :published (boolean (some :published versions)))))
+
+
+(defn last-index
+  [versions]
+  (loop [i (dec (count versions))]
+    (when (not (neg? i))
+      (if (some? (nth versions i))
+       i
+       (recur (dec i))))))
+
+
 (def ^:const compose-specific-keys
   #{"devices" "build" "cap_add" "cap_drop" "cgroup_parent" "container_name" "depends_on"
     "external_links" "network_mode" "restart" "security_opt" "tmpfs" "userns_mode" "privileged"

@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.hook :as t]
+    [sixsq.nuvla.server.resources.hook-reset-password :as hrp]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session-password-lifecycle-test :as password-test]
     [sixsq.nuvla.server.resources.session-template :as st]))
@@ -17,7 +18,7 @@
 (use-fixtures :once ltu/with-test-server-fixture)
 
 
-(def base-uri (str p/service-context t/resource-type "/" t/reset-password))
+(def base-uri (str p/service-context t/resource-type "/" hrp/action))
 
 
 (def session-template-base-uri (str p/service-context st/resource-type))

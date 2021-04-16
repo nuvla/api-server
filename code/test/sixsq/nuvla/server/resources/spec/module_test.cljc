@@ -24,7 +24,9 @@
                                                 :author "someone"
                                                 :commit "wip"}
                                                nil
-                                               {:href "module-component/abc"}]
+                                               {:href "module-component/abc"
+                                                :author "someone"
+                                                :published true}]
                    :logo-url                  "https://example.org/logo"
 
                    :data-accept-content-types ["application/json" "application/x-something"]
@@ -50,5 +52,5 @@
 
     ;; optional attributes
     (doseq [k #{:logo-url :versions :data-accept-content-types :data-access-protocols
-                :compatibility :valid :validation-message :price :license}]
+                :compatibility :valid :validation-message :price :license :published}]
       (stu/is-valid ::module/schema (dissoc root k)))))

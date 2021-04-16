@@ -4,6 +4,8 @@
     [sixsq.nuvla.server.resources.callback-create-session-oidc :as cb]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.hook :as hook]
+    [sixsq.nuvla.server.resources.hook-oidc-session :as hook-oidc-session]
     [sixsq.nuvla.server.resources.session :as p]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
@@ -43,14 +45,22 @@
 
 (defmethod p/tpl->session authn-method
   [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
-  (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
-
+  (let [{:keys [client-id authorize-url
+                redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
         ;; fake session values, will be replaced after callback execution
-        session      (-> (sutils/create-session nil "user-id" {:href href} headers authn-method redirect-url)
-                         (assoc :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 login-request-timeout))))
-        callback-url (sutils/create-callback base-uri (:id session) cb/action-name)
-        redirect-url (oidc-utils/create-redirect-url authorize-url client-id callback-url)]
+        session      (-> (sutils/create-session
+                           nil "user-id" {:href href} headers
+                           authn-method redirect-url)
+                         (assoc :expiry (ts/rfc822->iso8601
+                                          (ts/expiry-later-rfc822
+                                            login-request-timeout))))
+        callback-url (if (= redirect-url-resource "callback")
+                       (sutils/create-callback base-uri (:id session) cb/action-name)
+                       (str base-uri hook/resource-type "/" hook-oidc-session/action))
+        redirect-url (oidc-utils/create-redirect-url authorize-url client-id
+                                                     callback-url "openid email")]
     [{:status 303, :headers {"Location" redirect-url}} session]))
+
 
 ;;
 ;; initialization: no schema for this parent resource

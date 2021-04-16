@@ -51,10 +51,44 @@
              :json-schema/order 34)))
 
 
+(s/def ::commit (-> (st/spec string?)
+                    (assoc :name "commit"
+                           :json-schema/type "string"
+                           :json-schema/description "commit message")))
+
+(s/def ::author (-> (st/spec string?)
+                    (assoc :name "author"
+                           :json-schema/type "string"
+                           :json-schema/description "author of the commit")))
+
+
+(s/def ::published
+  (-> (st/spec boolean?)
+      (assoc :name "published"
+             :json-schema "boolean"
+             :json-schema/description "module is published"
+             :json-schema/server-managed true
+             :json-schema/editable false)))
+
+
+(def module-regex #"^module\-(component|application)/[a-z0-9]+(-[a-z0-9]+)*$")
+
+(s/def ::href
+  (-> (st/spec (s/and string? #(re-matches module-regex %)))
+      (assoc :name "href"
+             :json-schema/type "string"
+             :json-schema/description "reference to the configuration template used")))
+
+
 (s/def ::version
-  (-> (st/spec (s/nilable ::core/resource-link))
+  (-> (st/spec (s/nilable
+                 (su/only-keys
+                   :req-un [::href
+                            ::author]
+                   :opt-un [::commit
+                            ::published])))
       (assoc :name "version"
-             :json-schema/type "resource-id"
+             :json-schema/type "map"
              :json-schema/description "module version identifier"
 
              :json-schema/server-managed true
@@ -229,7 +263,8 @@
                                                       ::valid
                                                       ::validation-message
                                                       ::price
-                                                      ::license]}]))
+                                                      ::license
+                                                      ::published]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-keys-spec))

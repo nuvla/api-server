@@ -2,14 +2,22 @@
 
 ## Unreleased
 
+### Changed
+
+  - Session oidc - Bugfix session oidc
+
+## [5.12.0] - 2021-04-09
+
 ### Added
 
+  - Module - Publish version support
   - Deployment - Support bulk update
   - Bulk - Bulk operation support
   - NuvlaBox Cluster - new resource
 
 ### Changed
 
+  - User, session and configuration OIDC support fixed predefined redirect-url 
   - Header authentication extended to support active-claim
 
 ## [5.11.1] - 2021-03-22
