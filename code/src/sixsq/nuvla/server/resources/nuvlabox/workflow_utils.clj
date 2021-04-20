@@ -623,8 +623,7 @@
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
                                :select ["id"]}}]
     (->> (crud/query-as-admin nb-cluster/resource-type options)
-      second
-      (map :id))))
+      second)))
 
 
 (defn update-peripherals
@@ -647,17 +646,29 @@
 
 (defn update-cluster
   [nuvlabox-id nuvlabox-acl]
-  (when-let [ids (get-parent-nuvlabox-cluster nuvlabox-id)]
-    (doseq [id ids]
-      (let [request {:params      {:uuid          (u/id->uuid id)
+  (when-let [clusters (get-parent-nuvlabox-cluster nuvlabox-id)]
+    (doseq [cluster clusters]
+      (let [id      (:id cluster)
+            cluster-acl (:acl cluster)
+            cluster-manage-acl   (:manage cluster-acl)
+            cluster-view-data    (:view-data cluster-acl)
+            cluster-edit-data    (:edit-data cluster-acl)
+            cluster-view-acl     (:edit-data cluster-acl)
+
+            request {:params      {:uuid          (u/id->uuid id)
                                    :resource-name nb-cluster/resource-type}
-                     :body        {:acl (-> nuvlabox-acl
-                                          (utils/set-acl-nuvlabox-view-only
-                                            {:owners [nuvlabox-id]})
-                                          (assoc :manage (:view-acl nuvlabox-acl)))}
+                     :body        {:acl (-> cluster-acl
+                                          (assoc :manage (into [] (distinct
+                                                           (concat (:manage nuvlabox-acl) cluster-manage-acl))))
+                                          (assoc :view-data (into [] (distinct
+                                                              (concat (:view-data nuvlabox-acl) cluster-view-data))))
+                                          (assoc :edit-acl (into [] (distinct
+                                                             (concat (:edit-data nuvlabox-acl) cluster-edit-data))))
+                                          (assoc :view-acl (into [] (distinct
+                                                             (concat (:view-acl nuvlabox-acl) cluster-view-acl)))))}
                      :nuvla/authn auth/internal-identity}
             {status :status :as resp} (crud/edit request)]
         (if (= 200 status)
           (log/info "nuvlabox cluster" id "updated")
-          (let [msg (str "cannot update nuvlabox cluster for " nuvlabox-id)]
+          (let [msg (str "cannot update nuvlabox cluster from " resp)]
             (throw (ex-info msg (r/map-response msg 400 "")))))))))

@@ -43,7 +43,8 @@
 
 (def valid-nuvlabox-status {:node-id "abcd1234"
                             :version 2
-                            :status                "OPERATIONAL"})
+                            :status                "OPERATIONAL"
+                            :cluster-node-role     "worker"})
 
 (def valid-acl {:owners    [nuvlabox-owner]})
 
@@ -130,7 +131,6 @@
        ;; admin can see the cluster
        (-> session-admin
          (request cluster-url)
-         (pprint)
          (ltu/body->edn)
          (ltu/is-status 200))
 
@@ -159,17 +159,24 @@
            (ltu/is-status 200))
 
        ;; now user beta can also see the cluster
-       (-> session-user
+       (-> session-admin
            (request cluster-url)
            (ltu/body->edn)
            (ltu/is-status 200))
 
-       ;; nuvlabox can delete the cluster
+       ;; nuvlabox cannot delete the cluster
        (-> session-nb
            (request cluster-url
                     :request-method :delete)
            (ltu/body->edn)
-           (ltu/is-status 200)))
+           (ltu/is-status 403))
+
+       ;; only admin can delete
+       (-> session-admin
+         (request cluster-url
+           :request-method :delete)
+         (ltu/body->edn)
+         (ltu/is-status 200)))
 
 
      ;(when-let [cluster-url (-> session-nb
