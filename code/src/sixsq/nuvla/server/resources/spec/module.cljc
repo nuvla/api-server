@@ -250,6 +250,13 @@
              :json-schema/order 39)))
 
 
+(s/def ::requires-user-rights
+  (-> (st/spec boolean?)
+      (assoc :name "requires-user-rights"
+             :json-schema "boolean"
+             :json-schema/description "deployments of this module require user rights")))
+
+
 (def module-keys-spec (su/merge-keys-specs [common/common-attrs
                                             {:req-un [::path
                                                       ::parent-path
@@ -264,6 +271,7 @@
                                                       ::validation-message
                                                       ::price
                                                       ::license
+                                                      ::requires-user-rights
                                                       ::published]}]))
 
 
