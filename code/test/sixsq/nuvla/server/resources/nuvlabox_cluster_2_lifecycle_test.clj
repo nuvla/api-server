@@ -1,10 +1,8 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-cluster-2-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -44,7 +42,7 @@
 (def valid-nuvlabox-status {:node-id "abcd1234"
                             :version 2
                             :status                "OPERATIONAL"
-                            :cluster-node-role     "worker"})
+                            :cluster-node-role     "manager"})
 
 (def valid-acl {:owners    [nuvlabox-owner]})
 
@@ -71,20 +69,20 @@
 
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
-                           session
-                           (content-type "application/json"))
-         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-         session-user  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))
-         session-owner (header session authn-info-header (str nuvlabox-owner " " nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
-         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+                          session
+                          (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))
+          session-owner (header session authn-info-header (str nuvlabox-owner " " nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
 
-         nuvlabox-id   (-> session-owner
-                           (request nuvlabox-base-uri
-                                    :request-method :post
-                                    :body (json/write-str valid-nuvlabox))
-                           (ltu/body->edn)
-                           (ltu/is-status 201)
-                           (ltu/location))
+          nuvlabox-id   (-> session-owner
+                          (request nuvlabox-base-uri
+                            :request-method :post
+                            :body (json/write-str valid-nuvlabox))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
 
           nuvlabox-status-id  (-> session-admin
                                 (request nuvlabox-status-base-uri
@@ -96,104 +94,141 @@
                                 (ltu/is-status 201)
                                 (ltu/location))
 
-         session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
+          nuvlabox-id-2   (-> session-user
+                            (request nuvlabox-base-uri
+                              :request-method :post
+                              :body (json/write-str valid-nuvlabox))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
 
-     ;; anonymous users cannot create a nuvlabox-cluster resource
-     (-> session-anon
-         (request base-uri
-                  :request-method :post
-                  :body (json/write-str valid-cluster))
-         (ltu/body->edn)
-         (ltu/is-status 403))
+          nuvlabox-status-id-2  (-> session-admin
+                                  (request nuvlabox-status-base-uri
+                                    :request-method :post
+                                    :body (json/write-str (assoc valid-nuvlabox-status :parent nuvlabox-id-2
+                                                                                       :node-id "newone123"
+                                                                                       :cluster-node-role "manager"
+                                                                                       :acl {:owners    ["group/nuvla-admin"]
+                                                                                             :edit-data [nuvlabox-id-2]})))
+                                  (ltu/body->edn)
+                                  (ltu/is-status 201)
+                                  (ltu/location))
 
-     ;; admin/nuvlabox users can create a nuvlabox-cluster resource
-     ;; use the default ACL
-     (when-let [cluster-url (-> session-nb
-                                   (request base-uri
-                                            :request-method :post
-                                            :body (json/write-str valid-cluster))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+          session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
+          session-nb-2  (header session authn-info-header (str nuvlabox-id-2 " " nuvlabox-id-2 " group/nuvla-user group/nuvla-anon"))]
 
-       ;; other users can't see the cluster
-       (-> session-user
-           (request cluster-url)
-           (ltu/body->edn)
-           (ltu/is-status 403))
+      ;; anonymous users cannot create a nuvlabox-cluster resource
+      (-> session-anon
+        (request base-uri
+          :request-method :post
+          :body (json/write-str valid-cluster))
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
-       ;; owners can see the cluster
-       (-> session-owner
-           (request cluster-url)
-           (ltu/body->edn)
-           (ltu/is-status 200))
+      ;; admin/nuvlabox users can create a nuvlabox-cluster resource
+      ;; use the default ACL
+      (when-let [cluster-url (-> session-nb
+                               (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-cluster))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location-url))]
 
-       ;; admin can see the cluster
-       (-> session-admin
-         (request cluster-url)
-         (ltu/body->edn)
-         (ltu/is-status 200))
+        ;; other users can't see the cluster
+        (-> session-user
+          (request cluster-url)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-       ;; nuvlabox user cannot update nuvlabox-cluster (only via commissioning
-       (-> session-nb
-           (request cluster-url
-                    :request-method :put
-                    :body (json/write-str {:name "new cluster name"}))
-           (ltu/body->edn)
-           (ltu/is-status 403))
+        ;; owners can see the cluster
+        (-> session-owner
+          (request cluster-url)
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-       ;; nuvlabox owner identity cannot delete the cluster
-       (-> session-owner
-           (request cluster-url
-                    :request-method :delete)
-           (ltu/body->edn)
-           (ltu/is-status 403))
+        ;; admin can see the cluster
+        (-> session-admin
+          (request cluster-url)
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-       ;; share nuvlabox with user beta
-       (-> session-owner
-           (request (str p/service-context nuvlabox-id)
-                    :request-method :put
-                    :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
-                                                 :view-acl [nuvlabox-owner user-beta]}}))
-           (ltu/body->edn)
-           (ltu/is-status 200))
+        ;; nuvlabox user cannot update nuvlabox-cluster (only via commissioning)
+        (-> session-nb
+          (request cluster-url
+            :request-method :put
+            :body (json/write-str {:name "new cluster name"}))
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-       ;; now user beta can also see the cluster
-       (-> session-admin
-           (request cluster-url)
-           (ltu/body->edn)
-           (ltu/is-status 200))
+        ;; nuvlabox owner identity cannot delete the cluster
+        (-> session-owner
+          (request cluster-url
+            :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
-       ;; nuvlabox cannot delete the cluster
-       (-> session-nb
-           (request cluster-url
-                    :request-method :delete)
-           (ltu/body->edn)
-           (ltu/is-status 403))
+        ;; share nuvlabox with user beta
+        (-> session-owner
+          (request (str p/service-context nuvlabox-id)
+            :request-method :put
+            :body (json/write-str {:acl {:owners   ["group/nuvla-admin"]
+                                         :view-acl [nuvlabox-owner user-beta]}}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-       ;; only admin can delete
-       (-> session-admin
-         (request cluster-url
-           :request-method :delete)
-         (ltu/body->edn)
-         (ltu/is-status 200)))
+        ;; STILL, until there's a commission, user beta cannot see the cluster
+        (-> session-user
+          (request cluster-url)
+          (ltu/body->edn)
+          (ltu/is-status 403))
+
+        ;; if we add nb-2 to the cluster, then the beta user will automatically become part of the cluster acls
+        ;; cause this nb is a manager
+        (-> session-admin
+          (request cluster-url
+            :request-method :put
+            :body (json/write-str {:managers ["abcd1234" "newone123"]}))
+          (pprint)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        ;; now beta user can see it
+        (-> session-user
+          (request cluster-url)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        ;; nuvlabox cannot delete the cluster
+        (-> session-nb
+          (request cluster-url
+            :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 403))
+
+        ;; only admin can delete
+        (-> session-admin
+          (request cluster-url
+            :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)))
 
 
-     ;(when-let [cluster-url (-> session-nb
-     ;                              (request base-uri
-     ;                                       :request-method :post
-     ;                                       :body (json/write-str valid-cluster))
-     ;                              (ltu/body->edn)
-     ;                              (ltu/is-status 201)
-     ;                              (ltu/location-url))]
-     ;
-     ;  ;; nuvlabox can delete the cluster
-     ;  (-> session-admin
-     ;      (request cluster-url
-     ;               :request-method :delete)
-     ;      (ltu/body->edn)
-     ;      (ltu/is-status 200)))
-     )))
+      ;(when-let [cluster-url (-> session-nb
+      ;                              (request base-uri
+      ;                                       :request-method :post
+      ;                                       :body (json/write-str valid-cluster))
+      ;                              (ltu/body->edn)
+      ;                              (ltu/is-status 201)
+      ;                              (ltu/location-url))]
+      ;
+      ;  ;; nuvlabox can delete the cluster
+      ;  (-> session-admin
+      ;      (request cluster-url
+      ;               :request-method :delete)
+      ;      (ltu/body->edn)
+      ;      (ltu/is-status 200)))
+      )))
 
 
 (deftest bad-methods

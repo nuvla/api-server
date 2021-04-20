@@ -46,28 +46,6 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 
 ;;
-;; acl
-;;
-
-
-(defmethod crud/add-acl resource-type
-  [resource request]
-  (when-let [nuvlabox-ids (concat (:nuvlabox-managers resource) (:nuvlabox-workers resource))]
-    (let [acls       (utils/get-nuvlabox-acls nuvlabox-ids)
-          edit-acl   (into [] (distinct (apply concat (mapv :edit-acl acls))))
-          manage     (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
-          view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
-          acl        {:owners    ["group/nuvla-admin"]
-                      :delete    ["group/nuvla-admin"]
-                      :edit-acl  ["group/nuvla-admin"]
-                      :manage    (into [] manage)
-                      :view-data (into [] view-data)
-                      :edit-data edit-acl
-                      :view-acl  edit-acl}]
-      (assoc resource :acl acl))))
-
-
-;;
 ;; cluster ID must be unique
 ;;
 
@@ -86,21 +64,8 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
-  [{{:keys [workers managers
-            nuvlabox-workers nuvlabox-managers]
-     :as   body} :body :as request}]
-  (let [nb-workers  (if workers
-                      (utils/get-matching-nuvlaboxes workers)
-                      nuvlabox-workers)
-        nb-managers (if managers
-                      (utils/get-matching-nuvlaboxes managers)
-                      nuvlabox-managers)
-        new-body    (apply assoc body
-                      (apply concat
-                        (filter second
-                          (partition 2 [:nuvlabox-workers nb-workers
-                                        :nuvlabox-managers nb-managers]))))]
-    (add-impl (assoc request :body new-body))))
+  [request]
+  (utils/complete-cluster-details add-impl request))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -108,7 +73,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (utils/complete-cluster-details edit-impl request))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

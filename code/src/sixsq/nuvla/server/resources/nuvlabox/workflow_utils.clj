@@ -642,33 +642,3 @@
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
             (throw (ex-info msg (r/map-response msg 400 "")))))))))
-
-
-(defn update-cluster
-  [nuvlabox-id nuvlabox-acl]
-  (when-let [clusters (get-parent-nuvlabox-cluster nuvlabox-id)]
-    (doseq [cluster clusters]
-      (let [id      (:id cluster)
-            cluster-acl (:acl cluster)
-            cluster-manage-acl   (:manage cluster-acl)
-            cluster-view-data    (:view-data cluster-acl)
-            cluster-edit-data    (:edit-data cluster-acl)
-            cluster-view-acl     (:edit-data cluster-acl)
-
-            request {:params      {:uuid          (u/id->uuid id)
-                                   :resource-name nb-cluster/resource-type}
-                     :body        {:acl (-> cluster-acl
-                                          (assoc :manage (into [] (distinct
-                                                           (concat (:manage nuvlabox-acl) cluster-manage-acl))))
-                                          (assoc :view-data (into [] (distinct
-                                                              (concat (:view-data nuvlabox-acl) cluster-view-data))))
-                                          (assoc :edit-acl (into [] (distinct
-                                                             (concat (:edit-data nuvlabox-acl) cluster-edit-data))))
-                                          (assoc :view-acl (into [] (distinct
-                                                             (concat (:view-acl nuvlabox-acl) cluster-view-acl)))))}
-                     :nuvla/authn auth/internal-identity}
-            {status :status :as resp} (crud/edit request)]
-        (if (= 200 status)
-          (log/info "nuvlabox cluster" id "updated")
-          (let [msg (str "cannot update nuvlabox cluster from " resp)]
-            (throw (ex-info msg (r/map-response msg 400 "")))))))))

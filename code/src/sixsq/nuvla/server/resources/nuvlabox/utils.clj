@@ -63,3 +63,39 @@
     (mapv :acl)))
 
 
+(defn set-nuvlabox-cluster-acls
+  [resource]
+  (when-let [nuvlabox-ids (:nuvlabox-managers resource)]
+    (let [acls       (get-nuvlabox-acls nuvlabox-ids)
+          edit-acl   (into [] (distinct (apply concat (mapv :edit-acl acls))))
+          manage     (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
+          view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
+          acl        {:owners    ["group/nuvla-admin"]
+                      :delete    ["group/nuvla-admin"]
+                      :edit-acl  ["group/nuvla-admin"]
+                      :manage    (into [] manage)
+                      :view-data (into [] view-data)
+                      :edit-data edit-acl
+                      :view-acl  edit-acl}]
+      (assoc resource :acl acl))))
+
+
+(defn complete-cluster-details
+  [action {{:keys [workers managers
+                   nuvlabox-workers nuvlabox-managers]
+            :as   body} :body :as request}]
+  (let [nb-workers  (if workers
+                      (get-matching-nuvlaboxes workers)
+                      nuvlabox-workers)
+        nb-managers (if managers
+                      (get-matching-nuvlaboxes managers)
+                      nuvlabox-managers)
+        dyn-body    (apply assoc body
+                      (apply concat
+                        (filter second
+                          (partition 2 [:nuvlabox-workers nb-workers
+                                        :nuvlabox-managers nb-managers]))))
+        new-body    (set-nuvlabox-cluster-acls dyn-body)]
+    (pprint dyn-body)
+    (pprint new-body)
+    (action (assoc request :body new-body))))
