@@ -15,7 +15,8 @@ Stripe oidc session.
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.common.crud :as crud]))
 
 
 (def ^:const action "oidc-session")
@@ -44,9 +45,8 @@ Stripe oidc session.
                        :as        session} (-> (sutils/create-session
                                                  nil "user-id" {:href "session-template/oidc-geant"}
                                                  headers "oidc" redirect-ui-url)
-                                               (assoc :expiry
-                                                      (ts/rfc822->iso8601
-                                                        (ts/expiry-later-rfc822 (* 3 60)))))
+                                               :id
+                                               crud/retrieve-by-id-as-admin)
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
