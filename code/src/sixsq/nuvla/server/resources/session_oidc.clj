@@ -10,7 +10,9 @@
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
-    [sixsq.nuvla.server.resources.spec.session-template-oidc :as st-oidc]))
+    [sixsq.nuvla.server.resources.spec.session-template-oidc :as st-oidc]
+    [sixsq.nuvla.auth.cookies :as cookies]
+    [sixsq.nuvla.server.middleware.authn-info :as authn-info]))
 
 
 (def ^:const authn-method "oidc")
@@ -58,9 +60,16 @@
                        (sutils/create-callback base-uri (:id session) cb/action-name)
                        (str base-uri hook/resource-type "/" hook-oidc-session/action))
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id
-                                                     callback-url "openid email" (:id session))]
-    [{:status 303, :headers {"Location" redirect-url
-                             "nuvla-session-id" (:id session)}} session]))
+                                                     callback-url "openid email" (:id session))
+
+        cookie-info (cookies/create-cookie-info "group/anon"
+                                                :session-id (:id session)
+                                                :headers headers
+                                                :client-ip (:client-ip session))
+        cookie      (cookies/create-cookie cookie-info)]
+    [{:status  303
+      :cookies {authn-info/authn-cookie cookie}
+      :headers {"Location" redirect-url}} session]))
 
 
 ;;
