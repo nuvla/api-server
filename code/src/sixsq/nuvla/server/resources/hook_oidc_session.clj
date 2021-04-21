@@ -45,8 +45,10 @@ Stripe oidc session.
                        :as        session} (-> (sutils/create-session
                                                  nil "user-id" {:href "session-template/oidc-geant"}
                                                  headers "oidc" redirect-ui-url)
+                                               (#(do (log/error "hook oidc session created:" %) %))
                                                :id
-                                               crud/retrieve-by-id-as-admin)
+                                               crud/retrieve-by-id-as-admin
+                                               (#(do (log/error "hook oidc session retrieved:" %) %)))
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
