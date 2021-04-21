@@ -29,6 +29,7 @@ Stripe oidc session.
   (let [redirect-hook-url (str base-uri "hook" "/" action)
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
+    (log/debug "hook oidc request" request)
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
                                                         code redirect-hook-url)]
@@ -45,10 +46,10 @@ Stripe oidc session.
                        :as        session} (-> (sutils/create-session
                                                  nil "user-id" {:href "session-template/oidc-geant"}
                                                  headers "oidc" redirect-ui-url)
-                                               (#(do (log/error "hook oidc session created:" %) %))
+                                               (#(do (log/debug "hook oidc session created:" %) %))
                                                :id
                                                crud/retrieve-by-id-as-admin
-                                               (#(do (log/error "hook oidc session retrieved:" %) %)))
+                                               (#(do (log/debug "hook oidc session retrieved:" %) %)))
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
