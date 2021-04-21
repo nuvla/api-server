@@ -144,7 +144,7 @@
        (str "&client_id=" (codec/url-encode client-id))
        (cond-> scope (str "&scope=" (codec/url-encode scope))
                session-id (str "&nuvla-session-id=" (codec/url-encode session-id)))
-       (str "&redirect_uri=" callback-url))))
+       (str "&redirect_uri=" (str callback-url "?session-id=" (codec/url-encode (str session-id)))))))
 
 
 (defn get-mitreid-userinfo
