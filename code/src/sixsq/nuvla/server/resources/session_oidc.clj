@@ -66,9 +66,10 @@
                                                 :session-id (:id session)
                                                 :headers headers
                                                 :client-ip (:client-ip session))
-        cookie      (cookies/create-cookie cookie-info)]
+        cookie       {:value   (:id session)
+                      :expires (ts/rfc822 (ts/expiry-later))}]
     [{:status  303
-      :cookies {authn-info/authn-cookie cookie}
+      :cookies {authn-info/future-session-cookie cookie}
       :headers {"Location" redirect-url}} session]))
 
 

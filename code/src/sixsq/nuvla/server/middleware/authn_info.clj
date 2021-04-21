@@ -13,6 +13,9 @@
 (def ^:const authn-cookie
   "com.sixsq.nuvla.cookie")
 
+(def ^:const future-session-cookie
+  "com.sixsq.nuvla.future-session")
+
 
 (defn parse-authn-header
   [request]
