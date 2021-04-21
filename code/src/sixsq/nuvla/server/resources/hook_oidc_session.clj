@@ -12,11 +12,11 @@ Stripe oidc session.
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.app.params :as app-params]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.common.crud :as crud]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action "oidc-session")
