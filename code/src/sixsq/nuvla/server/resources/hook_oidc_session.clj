@@ -29,7 +29,7 @@ Stripe oidc session.
   (let [redirect-hook-url (str base-uri "hook" "/" action)
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
-    (log/debug "hook oidc request" request)
+    (log/debug "hook oidc request " (:session request)  request)
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
                                                         code redirect-hook-url)]
@@ -43,13 +43,7 @@ Stripe oidc session.
               (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)
                       {session-id :id
-                       :as        session} (-> (sutils/create-session
-                                                 nil "user-id" {:href "session-template/oidc-geant"}
-                                                 headers "oidc" redirect-ui-url)
-                                               (#(do (log/debug "hook oidc session created:" %) %))
-                                               :id
-                                               crud/retrieve-by-id-as-admin
-                                               (#(do (log/debug "hook oidc session retrieved:" %) %)))
+                       :as current-session} (crud/retrieve-by-id-as-admin (:session request))
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
@@ -57,7 +51,7 @@ Stripe oidc session.
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims          (:claims cookie-info)
                       groups          (:groups cookie-info)
-                      updated-session (cond-> (assoc session
+                      updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
