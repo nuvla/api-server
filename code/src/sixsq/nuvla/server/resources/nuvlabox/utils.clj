@@ -2,7 +2,6 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
-    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]))
@@ -33,18 +32,20 @@
 
 (defn get-matching-nuvlaboxes
   [node-ids]
-  (->> {:params      {:resource-name "nuvlabox-status"}
-        :cimi-params {:filter (cimi-params-impl/cimi-filter
-                                {:filter (->> node-ids
-                                           (map #(str "node-id='" % "'"))
-                                           (str/join " or "))})
-                      :select ["parent"]
-                      :last 1000}
-        :nuvla/authn auth/internal-identity}
-    crud/query
-    :body
-    :resources
-    (mapv :parent)))
+  (if-not (empty? node-ids)
+    (->> {:params      {:resource-name "nuvlabox-status"}
+          :cimi-params {:filter (cimi-params-impl/cimi-filter
+                                  {:filter (->> node-ids
+                                             (map #(str "node-id='" % "'"))
+                                             (str/join " or "))})
+                        :select ["parent"]
+                        :last 1000}
+          :nuvla/authn auth/internal-identity}
+      crud/query
+      :body
+      :resources
+      (mapv :parent))
+    []))
 
 
 (defn get-nuvlabox-acls
@@ -81,21 +82,11 @@
 
 
 (defn complete-cluster-details
-  [action {{:keys [workers managers
-                   nuvlabox-workers nuvlabox-managers]
-            :as   body} :body :as request}]
-  (let [nb-workers  (if workers
-                      (get-matching-nuvlaboxes workers)
-                      nuvlabox-workers)
-        nb-managers (if managers
-                      (get-matching-nuvlaboxes managers)
-                      nuvlabox-managers)
-        dyn-body    (apply assoc body
+  [action nb-workers nb-managers {body :body :as request}]
+  (let [dyn-body    (apply assoc body
                       (apply concat
                         (filter second
                           (partition 2 [:nuvlabox-workers nb-workers
                                         :nuvlabox-managers nb-managers]))))
         new-body    (set-nuvlabox-cluster-acls dyn-body)]
-    (pprint dyn-body)
-    (pprint new-body)
     (action (assoc request :body new-body))))

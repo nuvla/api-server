@@ -1,5 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.workflow-utils
   (:require
+    [clojure.pprint :refer [pprint]]
+
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
@@ -470,6 +472,18 @@
         :id)))
 
 
+(defn get-nuvlabox-cluster
+  "Searches for an nuvlabox cluster, given the cluster ID"
+  [cluster-id]
+  (let [filter  (format "cluster-id='%s'" cluster-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :select ["id"]}}]
+    (-> (crud/query-as-admin nb-cluster/resource-type options)
+      second
+      first
+      :id)))
+
+
 (defn create-minio-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl minio-id access-key secret-key]
   (if (and access-key secret-key)
@@ -527,6 +541,54 @@
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
+(defn update-nuvlabox-cluster
+  [nuvlabox-id cluster-id cluster-managers cluster-workers]
+  (when-let [resource-id (get-nuvlabox-cluster cluster-id)]
+    (let [request {:params      {:uuid          (u/id->uuid resource-id)
+                                 :resource-name nb-cluster/resource-type}
+                   :body        (cond->
+                                  {}
+                                  cluster-managers (assoc :managers cluster-managers)
+                                  cluster-workers (assoc :workers (if cluster-workers
+                                                                    cluster-workers
+                                                                    [])))
+                   :nuvla/authn auth/internal-identity}
+          {status :status} (crud/edit request)]
+      (if (= 200 status)
+        (do
+          (log/info "nuvlabox cluster " resource-id "updated")
+          resource-id)
+        (let [msg (str "cannot update nuvlabox cluster "
+                    resource-id " with ID to " cluster-id
+                    ", from NuvlaBox commissioning in " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+
+
+(defn create-nuvlabox-cluster
+  [nuvlabox-id nuvlabox-name cluster-id cluster-orchestrator cluster-managers cluster-workers]
+    (let [request {:params      {:resource-name nb-cluster/resource-type}
+                   :body        {:name        cluster-id
+                                 :description (str "NuvlaBox cluster created by "
+                                                (or nuvlabox-name nuvlabox-id))
+                                 :orchestrator (or cluster-orchestrator "swarm")
+                                 :cluster-id  cluster-id
+                                 :managers    cluster-managers
+                                 :workers     (if cluster-workers
+                                                cluster-workers
+                                                [])
+                                 :version     2}
+                   :nuvla/authn auth/internal-identity}
+          {{:keys [resource-id]} :body status :status} (crud/add request)]
+
+      (if (= 201 status)
+        (do
+          (log/info "NuvlaBox cluster " resource-id "created")
+          resource-id)
+        (let [msg (str "cannot create NuvlaBox cluster "
+                    cluster-id " from NuvlaBox " nuvlabox-id)]
+          (throw (ex-info msg (r/map-response msg 400 "")))))))
+
+
 (defn commission
   [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
    {{:keys [tags
@@ -539,6 +601,7 @@
             vpn-csr
             kubernetes-endpoint
             kubernetes-client-key kubernetes-client-cert kubernetes-client-ca
+            cluster-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
     (let [removed-set    (if (coll? removed) (set removed) #{})
@@ -557,6 +620,11 @@
           minio-id       (or
                            (update-minio-service id name acl isg-id minio-endpoint)
                            (create-minio-service id name acl isg-id minio-endpoint))]
+
+      (when (and cluster-id cluster-managers)
+        (or
+          (update-nuvlabox-cluster id cluster-id cluster-managers cluster-workers)
+          (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers)))
 
       (when swarm-id
         (or
@@ -615,15 +683,6 @@
     (->> (crud/query-as-admin nb-peripheral/resource-type options)
          second
          (map :id))))
-
-
-(defn get-parent-nuvlabox-cluster
-  [id]
-  (let [filter  (format "nuvlabox-workers='%s' or nuvlabox-managers='%s'" id id)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
-    (->> (crud/query-as-admin nb-cluster/resource-type options)
-      second)))
 
 
 (defn update-peripherals

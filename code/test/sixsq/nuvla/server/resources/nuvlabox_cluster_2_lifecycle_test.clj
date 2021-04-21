@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-cluster-2-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -39,7 +40,11 @@
 
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
-(def valid-nuvlabox-status {:node-id "abcd1234"
+(def node-1-id "abcd1234")
+
+(def node-2-id "new-one-123")
+
+(def valid-nuvlabox-status {:node-id node-1-id
                             :version 2
                             :status                "OPERATIONAL"
                             :cluster-node-role     "manager"})
@@ -56,7 +61,7 @@
                     :acl           valid-acl
 
                     :cluster-id    "1234abcdcluster"
-                    :managers      ["abcd1234"]
+                    :managers      [node-1-id]
                     :orchestrator  "swarm"})
 
 
@@ -106,7 +111,7 @@
                                   (request nuvlabox-status-base-uri
                                     :request-method :post
                                     :body (json/write-str (assoc valid-nuvlabox-status :parent nuvlabox-id-2
-                                                                                       :node-id "newone123"
+                                                                                       :node-id node-2-id
                                                                                        :cluster-node-role "manager"
                                                                                        :acl {:owners    ["group/nuvla-admin"]
                                                                                              :edit-data [nuvlabox-id-2]})))
@@ -115,7 +120,37 @@
                                   (ltu/location))
 
           session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
-          session-nb-2  (header session authn-info-header (str nuvlabox-id-2 " " nuvlabox-id-2 " group/nuvla-user group/nuvla-anon"))]
+          session-nb-2  (header session authn-info-header (str nuvlabox-id-2 " " nuvlabox-id-2 " group/nuvla-user group/nuvla-anon"))
+
+          nuvlabox-url-2 (str p/service-context nuvlabox-id-2)
+
+          activate-url  (-> session-nb-2
+                          (request nuvlabox-url-2)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value :state "NEW")
+                          (ltu/get-op-url :activate))
+
+          credential-url (-> session-anon
+                                (request activate-url
+                                  :request-method :post)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                                (ltu/body)
+                                :api-key
+                                (ltu/href->url))
+
+          commission    (-> session-nb-2
+                          (request nuvlabox-url-2)
+                          (ltu/body->edn)
+                          (ltu/is-status 200)
+                          (ltu/is-key-value :state "ACTIVATED")
+                          (ltu/get-op-url :commission))
+
+          commission-payload  {:cluster-id  "new-id-123"
+                               :cluster-orchestrator  "swarm"
+                               :cluster-managers    [node-2-id]}]
 
       ;; anonymous users cannot create a nuvlabox-cluster resource
       (-> session-anon
@@ -188,8 +223,7 @@
         (-> session-admin
           (request cluster-url
             :request-method :put
-            :body (json/write-str {:managers ["abcd1234" "newone123"]}))
-          (pprint)
+            :body (json/write-str {:managers [node-1-id node-2-id]}))
           (ltu/body->edn)
           (ltu/is-status 200))
 
@@ -211,24 +245,80 @@
           (request cluster-url
             :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)))
+          (ltu/is-status 200))
 
+        ;; 0 clusters
+        (-> session-admin
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0))
 
-      ;(when-let [cluster-url (-> session-nb
-      ;                              (request base-uri
-      ;                                       :request-method :post
-      ;                                       :body (json/write-str valid-cluster))
-      ;                              (ltu/body->edn)
-      ;                              (ltu/is-status 201)
-      ;                              (ltu/location-url))]
-      ;
-      ;  ;; nuvlabox can delete the cluster
-      ;  (-> session-admin
-      ;      (request cluster-url
-      ;               :request-method :delete)
-      ;      (ltu/body->edn)
-      ;      (ltu/is-status 200)))
-      )))
+        ;; if we commission NB 2, it should create the new cluster automatically
+        (-> session-nb-2
+          (request commission
+            :request-method :post
+            :body (json/write-str commission-payload))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        ;; we should see 1 cluster now
+        (-> session-admin
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1))
+
+        ;; and because it was created by nb-2, beta user can see the cluster
+        (-> session-user
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1))
+
+        ;; but nb-1 can't, cause it is not part of the cluster
+        (-> session-nb
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0))
+
+        ;; so let's add it, first as a worker
+        (-> session-nb-2
+          (request commission
+            :request-method :post
+            :body (json/write-str (assoc commission-payload :cluster-workers [node-1-id])))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        ;; cause nb-1 is a worker, it cannot view the cluster
+        ;; but nb-1 can't, cause it is not part of the cluster
+        (-> session-nb
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 0))
+
+        ;; but if we promote nb-1 to manager...
+        (-> session-nb-2
+          (request commission
+            :request-method :post
+            :body (json/write-str (assoc commission-payload :cluster-managers [node-1-id] :cluster-workers [])))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        ;; then nb-1 can see the cluster
+        (-> session-nb
+          (request base-uri
+            :request-method :get)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-count 1))))))
 
 
 (deftest bad-methods

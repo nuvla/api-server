@@ -3,6 +3,8 @@
 The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 "
   (:require
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -10,7 +12,6 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-cluster :as nb-cluster]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -64,16 +65,31 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
-  [request]
-  (utils/complete-cluster-details add-impl request))
+  [{{:keys [workers managers]
+     :as   body} :body :as request}]
+  (let [nb-workers  (if workers
+                      (utils/get-matching-nuvlaboxes workers)
+                      [])
+        nb-managers (utils/get-matching-nuvlaboxes managers)]
+    (utils/complete-cluster-details add-impl nb-workers nb-managers request)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (utils/complete-cluster-details edit-impl request))
+  [{{select :select} :cimi-params {uuid :uuid} :params {:keys [workers managers]
+                                                        :as   body} :body :as request}]
+  (let [current    (-> (str resource-type "/" uuid)
+                     (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                     (a/throw-cannot-edit request))
+        nb-workers (if workers
+                     (utils/get-matching-nuvlaboxes workers)
+                     (utils/get-matching-nuvlaboxes (:workers current)))
+        nb-managers (if managers
+                      (utils/get-matching-nuvlaboxes managers)
+                      (utils/get-matching-nuvlaboxes (:managers current)))]
+    (utils/complete-cluster-details edit-impl nb-workers nb-managers request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

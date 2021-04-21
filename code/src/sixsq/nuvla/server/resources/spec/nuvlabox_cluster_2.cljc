@@ -32,14 +32,14 @@
            :json-schema/order 13)))
 
 (s/def ::workers
-  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 0 :kind vector?))
     (assoc :name "workers"
            :json-schema/description "List of Node IDs in the cluster, corresponding to the workers only"
 
            :json-schema/order 14)))
 
 (s/def ::nuvlabox-workers
-  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 0 :kind vector?))
     (assoc :name "nuvlabox-workers"
            :json-schema/description "NuvlaBox IDs of the workers"
 
