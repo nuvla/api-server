@@ -58,7 +58,7 @@
                        (sutils/create-callback base-uri (:id session) cb/action-name)
                        (str base-uri hook/resource-type "/" hook-oidc-session/action))
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id
-                                                     callback-url "openid email")]
+                                                     callback-url "openid email" (:id session))]
     [{:status 303, :headers {"Location" redirect-url}} session]))
 
 
