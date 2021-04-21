@@ -60,12 +60,7 @@
                        (sutils/create-callback base-uri (:id session) cb/action-name)
                        (str base-uri hook/resource-type "/" hook-oidc-session/action))
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id
-                                                     callback-url "openid email" (:id session))
-
-        cookie-info (cookies/create-cookie-info "group/anon"
-                                                :session-id (:id session)
-                                                :headers headers
-                                                :client-ip (:client-ip session))
+                                                     callback-url "openid email")
         cookie       {:value   (:id session)
                       :expires (ts/rfc822 (ts/expiry-later))}]
     [{:status  303

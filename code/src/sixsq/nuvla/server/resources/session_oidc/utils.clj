@@ -138,12 +138,11 @@
 (defn create-redirect-url
   "Generate a redirect-url from the provided authorizeURL"
   ([authorizeURL client-id callback-url]
-   (create-redirect-url authorizeURL client-id callback-url nil nil))
-  ([authorizeURL client-id callback-url scope session-id]
+   (create-redirect-url authorizeURL client-id callback-url nil))
+  ([authorizeURL client-id callback-url scope]
    (-> (str authorizeURL "?response_type=code")
        (str "&client_id=" (codec/url-encode client-id))
-       (cond-> scope (str "&scope=" (codec/url-encode scope))
-               session-id (str "&nuvla-session-id=" (codec/url-encode session-id)))
+       (cond-> scope (str "&scope=" (codec/url-encode scope)))
        (str "&redirect_uri=" callback-url))))
 
 

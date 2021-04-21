@@ -32,7 +32,6 @@ Stripe oidc session.
         redirect-hook-url (str base-uri "hook" "/" action)
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
-    (log/debug "hook oidc request " session-id  request)
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
                                                         code redirect-hook-url)]

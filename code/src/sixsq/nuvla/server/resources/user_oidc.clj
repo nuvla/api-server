@@ -38,7 +38,7 @@
                        (create-user-oidc-callback
                          base-uri href :data (when redirect-url {:redirect-url redirect-url}))
                        (str base-uri hook/resource-type "/" hook-oidc-user/action))]
-    (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email" nil)))
+    (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email")))
 
 
 (defmethod p/tpl->user user-template/registration-method
