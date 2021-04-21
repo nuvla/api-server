@@ -488,7 +488,7 @@
 
 (def kafka-host "127.0.0.1")
 (def kafka-port 9093)
-(def kafka-zk-port 22184)
+(def kafka-zk-port 22183)
 
 
 (defn with-test-kafka-fixture
