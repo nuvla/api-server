@@ -12,6 +12,7 @@ Stripe oidc session.
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.app.params :as app-params]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.user.user-identifier-utils :as uiu]
@@ -24,8 +25,11 @@ Stripe oidc session.
 (def ^:const instance "geant")
 
 (defn validate-session
-  [{:keys [base-uri headers] :as request} redirect-ui-url]
-  (let [redirect-hook-url (str base-uri "hook" "/" action)
+  [{:keys [base-uri cookies] :as request} redirect-ui-url]
+  (let [session-id        (-> cookies
+                              (get authn-info/future-session-cookie)
+                              :value)
+        redirect-hook-url (str base-uri "hook" "/" action)
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -41,12 +45,7 @@ Stripe oidc session.
               (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)
                       {session-id :id
-                       :as        session} (-> (sutils/create-session
-                                                 nil "user-id" {:href "session-template/oidc-geant"}
-                                                 headers "oidc" redirect-ui-url)
-                                               (assoc :expiry
-                                                      (ts/rfc822->iso8601
-                                                        (ts/expiry-later-rfc822 (* 3 60)))))
+                       :as current-session} (crud/retrieve-by-id-as-admin session-id)
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
@@ -54,7 +53,7 @@ Stripe oidc session.
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims          (:claims cookie-info)
                       groups          (:groups cookie-info)
-                      updated-session (cond-> (assoc session
+                      updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
