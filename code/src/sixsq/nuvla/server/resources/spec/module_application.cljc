@@ -54,6 +54,13 @@
            :json-schema/editable false)))
 
 
+(s/def ::requires-user-rights
+  (-> (st/spec boolean?)
+      (assoc :name "requires-user-rights"
+             :json-schema "boolean"
+             :json-schema/description "deployments of this module require user rights")))
+
+
 (def module-application-keys-spec (su/merge-keys-specs
                                     [common/common-attrs
                                      {:req-un [::docker-compose
@@ -65,7 +72,8 @@
                                                ::container/private-registries
                                                ::deployment/registries-credentials
                                                ::unsupported-options
-                                               ::files]}]))
+                                               ::files
+                                               ::requires-user-rights]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))
