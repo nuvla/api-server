@@ -4,7 +4,8 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]))
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn set-acl-nuvlabox-view-only
@@ -44,7 +45,9 @@
       crud/query
       :body
       :resources
-      (mapv :parent))
+      (map :parent)
+      (remove nil?)
+      (into []))
     []))
 
 
@@ -67,18 +70,20 @@
 (defn set-nuvlabox-cluster-acls
   [resource]
   (when-let [nuvlabox-ids (:nuvlabox-managers resource)]
-    (let [acls       (get-nuvlabox-acls nuvlabox-ids)
-          edit-acl   (into [] (distinct (apply concat (mapv :edit-acl acls))))
-          manage     (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
-          view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
-          acl        {:owners    ["group/nuvla-admin"]
-                      :delete    ["group/nuvla-admin"]
-                      :edit-acl  ["group/nuvla-admin"]
-                      :manage    (into [] manage)
-                      :view-data (into [] view-data)
-                      :edit-data edit-acl
-                      :view-acl  edit-acl}]
-      (assoc resource :acl acl))))
+    (if (empty? nuvlabox-ids)
+      (throw (r/ex-bad-request "NuvlaBox clusters must have at least one NuvlaBox"))
+      (let [acls       (get-nuvlabox-acls nuvlabox-ids)
+            edit-acl   (into [] (distinct (apply concat (mapv :edit-acl acls))))
+            manage     (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
+            view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
+            acl        {:owners    ["group/nuvla-admin"]
+                        :delete    ["group/nuvla-admin"]
+                        :edit-acl  ["group/nuvla-admin"]
+                        :manage    (into [] manage)
+                        :view-data (into [] view-data)
+                        :edit-data edit-acl
+                        :view-acl  edit-acl}]
+        (assoc resource :acl acl)))))
 
 
 (defn complete-cluster-details

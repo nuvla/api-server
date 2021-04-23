@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Automated commissioning of NuvlaBox clusters
+  
 ### Changed
 
   - Session oidc - Bugfix session oidc
