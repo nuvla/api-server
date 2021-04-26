@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Apps and Deployment - Apps can ask for a credential with user permission
+
 ### Changed
 
   - Session oidc - Bugfix session oidc
