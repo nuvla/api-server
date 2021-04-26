@@ -170,8 +170,14 @@ a container orchestration engine.
   (let [id           (str resource-type "/" uuid)
         current      (db/retrieve id request)
         authn-info   (auth/current-authentication request)
-        infra-id     (utils/cred-id->infra-id (or parent (:parent current)) authn-info)
-        nb-id        (utils/infra-id->nb-id infra-id)
+        cred-id      (or parent (:parent current))
+        cred         (utils/some-id->resource cred-id authn-info)
+        infra-id     (:parent cred)
+        cred-name    (:name cred)
+        infra        (utils/some-id->resource infra-id authn-info)
+        infra-name   (:name cred)
+        nb-id        (utils/infra->nb-id infra authn-info)
+        nb-name      (:name (utils/some-id->resource nb-id authn-info))
         fixed-attr   (select-keys (:module current) [:href :price :license])
         is-user?     (not (a/is-admin? authn-info))
         new-acl      (-> (or acl (:acl current))
@@ -180,8 +186,8 @@ a container orchestration engine.
                          (a/acl-append :edit-data id)
                          (a/acl-append :edit-data nb-id)
                          (cond->
-                           (and (some? (:nuvlabox current))
-                                (not= nb-id (:nuvlabox current)))
+                          (and (some? (:nuvlabox current))
+                               (not= nb-id (:nuvlabox current)))
                            (a/acl-remove (:nuvlabox current))))
         acl-updated? (not= new-acl (:acl current))]
     (when acl-updated?
@@ -195,8 +201,12 @@ a container orchestration engine.
                                   "owner" "infrastructure-service" "module/price"
                                   "module/license" "subscription-id")
               new-acl (assoc-in [:body :acl] new-acl)
+              cred-name (assoc-in [:body :credential-name] cred-name)
               infra-id (assoc-in [:body :infrastructure-service] infra-id)
-              nb-id (assoc-in [:body :nuvlabox] nb-id)))))
+              infra-name (assoc-in [:body :infrastructure-service-name] infra-name)
+              nb-id (assoc-in [:body :nuvlabox] nb-id)
+              nb-name (assoc-in [:body :nuvlabox-name] nb-name)
+        ))))
 
 
 (defn delete-impl

@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Deployment - Denormalize nuvlabox name, credential name, infrastructure name
   - Clj kondo - Reported errors fix
   - Session oidc - Bugfix session oidc
 

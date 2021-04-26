@@ -244,6 +244,36 @@
                              :json-schema/server-managed true)))
 
 
+(s/def ::nuvlabox-name (-> (st/spec string?)
+                      (assoc :name "nuvlabox-name"
+                             :json-schema/type "string"
+                             :json-schema/description "nuvlabox name"
+
+                             :json-schema/section "meta"
+                             :json-schema/editable false
+                             :json-schema/server-managed true)))
+
+
+(s/def ::infrastructure-service-name (-> (st/spec string?)
+                           (assoc :name "infrastructure-service-name"
+                                  :json-schema/type "string"
+                                  :json-schema/description "infrastructure service name"
+
+                                  :json-schema/section "meta"
+                                  :json-schema/editable false
+                                  :json-schema/server-managed true)))
+
+
+(s/def ::credential-name (-> (st/spec string?)     
+                             (assoc :name "credential-name"
+                                                :json-schema/type "string"
+                                                :json-schema/description "credential name"
+
+                                                :json-schema/section "meta"
+                                                :json-schema/editable false
+                                                :json-schema/server-managed true)))
+
+
 (def ^:const subscription-id-regex #"^sub_.+$")
 
 (defn subscription-id? [s] (re-matches subscription-id-regex s))
@@ -288,7 +318,10 @@
                                   ::nuvlabox
                                   ::subscription-id
                                   ::coupon
-                                  ::execution-mode]}]))
+                                  ::execution-mode
+                                  ::nuvlabox-name
+                                  ::credential-name
+                                  ::infrastructure-service-name]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

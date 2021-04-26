@@ -270,25 +270,24 @@
      "transfer_data"           {"destination" account-id}}))
 
 
-(defn cred-id->infra-id
-  [cred-id authn-info]
+(defn some-id->resource
+  [id authn-info]
   (try
-    (some-> cred-id
-            (crud/retrieve-by-id {:nuvla/authn authn-info})
-            :parent)
+    (some-> id
+            (crud/retrieve-by-id {:nuvla/authn authn-info}))
     (catch Exception _)))
 
 
-(defn infra-id->nb-id
-  [infra-id]
-  (try
-    (let [parent-infra-group (some-> infra-id
-                                     crud/retrieve-by-id-as-admin
-                                     :parent
-                                     crud/retrieve-by-id-as-admin
-                                     :parent)]
-      (when (str/starts-with? parent-infra-group "nuvlabox/") parent-infra-group))
-    (catch Exception _)))
+(defn infra->nb-id
+  [infra authn-info]
+  (let [parent-infra-group (some-> infra
+                                   :parent
+                                   (some-id->resource authn-info)
+                                   :parent)]
+    (when (and
+            (string? parent-infra-group)
+            (str/starts-with? parent-infra-group "nuvlabox/"))
+       parent-infra-group)))
 
 
 (defn get-context
