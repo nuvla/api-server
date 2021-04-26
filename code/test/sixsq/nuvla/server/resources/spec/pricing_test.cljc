@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.pricing-test
   (:require
+    [clojure.edn :refer [read-string]]
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.pricing :as pricing]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))

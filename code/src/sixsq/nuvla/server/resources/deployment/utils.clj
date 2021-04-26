@@ -42,7 +42,7 @@
     (if (= status 201)
       {:api-key    resource-id
        :api-secret secret-key}
-      (throw (r/ex-response (format "exception when creating api key/secret for "
+      (throw (r/ex-response (format "exception when creating api key/secret for %s"
                                     deployment-id) 500 deployment-id)))))
 
 

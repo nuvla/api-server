@@ -301,7 +301,7 @@
   [{:keys [id] :as resource} request action]
   (if (a/can-manage? resource request)
     resource
-    (throw (r/ex-response (format "action not available for %s!" action id) 409 id))))
+    (throw (r/ex-response (format "action not available for %s! %s" action id) 409 id))))
 
 
 (defn throw-plan-id-mandatory
@@ -317,4 +317,4 @@
   (if subscription-id
     resource
     (throw (r/ex-response
-             (format "subscription already created!" create-subscription-action id) 409 id))))
+             (format "subscription already created! %s on %s" create-subscription-action id) 409 id))))
