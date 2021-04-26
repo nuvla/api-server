@@ -4,7 +4,7 @@
 
 ### Added
 
-  - Apps and Deployment - Apps can ask for a credential with user permission
+  - Apps and Deployment - Apps can ask for a credential with user permissions
 
 ### Changed
 
