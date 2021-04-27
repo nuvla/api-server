@@ -5,9 +5,12 @@
 ### Added
 
   - Automated commissioning of NuvlaBox clusters
-  
+  - Apps and Deployment - Apps can ask for a credential with user permissions
+
 ### Changed
 
+  - Deployment - Denormalize nuvlabox name, credential name, infrastructure name
+  - Clj kondo - Reported errors fix
   - Session oidc - Bugfix session oidc
 
 ## [5.12.0] - 2021-04-09
