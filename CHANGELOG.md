@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Apps and Deployment - Apps can ask for a credential with user permissions
+
 ### Changed
 
   - Deployment - Denormalize nuvlabox name, credential name, infrastructure name

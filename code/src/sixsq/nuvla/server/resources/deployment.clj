@@ -304,6 +304,7 @@ a container orchestration engine.
                              (utils/throw-can-not-access-registries-creds request))
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
+          user-rights?   (get-in deployment [:module :content :requires-user-rights])
           coupon         (:coupon deployment)
           data?          (some? (:data deployment))
           subs-id        (when (and config-nuvla/*stripe-api-key* price)
@@ -318,6 +319,7 @@ a container orchestration engine.
                              (assoc :api-credentials (utils/generate-api-key-secret
                                                        id
                                                        (when (or data?
+                                                                 user-rights?
                                                                  (gnss-group?
                                                                    request
                                                                    gnss-expiry-date))
