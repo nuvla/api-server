@@ -567,7 +567,7 @@
 (defn create-nuvlabox-cluster
   [nuvlabox-id nuvlabox-name cluster-id cluster-orchestrator cluster-managers cluster-workers]
     (let [request {:params      {:resource-name nb-cluster/resource-type}
-                   :body        {:name        cluster-id
+                   :body        {:name        (str "Cluster-" cluster-id)
                                  :description (str "NuvlaBox cluster created by "
                                                 (or nuvlabox-name nuvlabox-id))
                                  :orchestrator (or cluster-orchestrator "swarm")
