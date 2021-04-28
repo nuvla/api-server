@@ -5,6 +5,7 @@
 ### Added
 
   - Automated commissioning of NuvlaBox clusters
+  - NuvlaBox Status - expand CPU metrics
   - Apps and Deployment - Apps can ask for a credential with user permissions
 
 ### Changed

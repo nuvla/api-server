@@ -86,6 +86,19 @@
 
              :json-schema/order 12)))
 
+(s/def ::load-1
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "load-1"
+           :json-schema/type "double"
+           :json-schema/description "CPU load last minute")))
+
+
+(s/def ::load-5
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "load-5"
+           :json-schema/type "double"
+           :json-schema/description "CPU load last 5 minutes")))
+
 
 (s/def ::bytes-transmitted
   (-> (st/spec (s/and number? #(not (neg? %))))
@@ -105,8 +118,39 @@
              :json-schema/order 43)))
 
 
+(s/def ::context-switches
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "context-switches"
+           :json-schema/type "double"
+           :json-schema/description "number of CPU context switches since boot")))
+
+
+(s/def ::interrupts
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "interrupts"
+           :json-schema/type "double"
+           :json-schema/description "number of CPU interrupts since boot")))
+
+
+(s/def ::software-interrupts
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "software-interrupts"
+           :json-schema/type "double"
+           :json-schema/description "number of CPU software interrupts since boot")))
+
+
+(s/def ::system-calls
+  (-> (st/spec (s/and number? #(not (neg? %))))
+    (assoc :name "system-calls"
+           :json-schema/type "double"
+           :json-schema/description "number of CPU system calls since boot")))
+
+
 (s/def ::cpu
-  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample]))
+  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample
+                                                                  ::load-1 ::load-5
+                                                                  ::context-switches ::interrupts
+                                                                  ::software-interrupts ::system-calls]))
       (assoc :name "cpu"
              :json-schema/type "map"
              :json-schema/display-name "CPU"

@@ -27,7 +27,13 @@
             :current-time            timestamp
 
             :resources               {:cpu               {:capacity 8
-                                                          :load     4.5}
+                                                          :load     4.5
+                                                          :load-1   4.3
+                                                          :load-5   5.5
+                                                          :system-calls   0
+                                                          :interrupts     13621648
+                                                          :software-interrupts  37244
+                                                          :context-switches     382731}
                                       :ram               {:capacity 4096
                                                           :used     1000}
                                       :disks             [{:device   "root"
