@@ -2,12 +2,11 @@
 
 ## Unreleased
 
-### Added
-
-  - Apps and Deployment - Apps can ask for a credential with user permissions
+## [5.12.1] - 2021-04-28
 
 ### Changed
 
+  - Apps and Deployment - Apps can ask for a credential with user permissions
   - Deployment - Denormalize nuvlabox name, credential name, infrastructure name
   - Clj kondo - Reported errors fix
   - Session oidc - Bugfix session oidc
