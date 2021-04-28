@@ -590,7 +590,7 @@ particular NuvlaBox release.
               execution-mode (if pull-support? "pull" "push")
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
-                                             id "nuvlabox_cluster"
+                                             id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
                                              (-> acl
                                                (a/acl-append :edit-data id)
                                                (a/acl-append :manage id))
