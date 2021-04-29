@@ -65,7 +65,8 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 
 (defn tpl->group
-  [{:keys [group-identifier] :as resource}]
+  [{:keys [group-identifier]
+    :as   resource}]
   (let [id (str resource-type "/" group-identifier)]
     (-> resource
         (dissoc :group-identifier)
@@ -74,7 +75,8 @@ that start with 'nuvla-' are reserved for the server.
 
 
 ;; modified to retain id and not call new-identifier
-(defn add-impl [{:keys [body] :as request}]
+(defn add-impl [{:keys [body]
+                 :as   request}]
   (a/throw-cannot-add collection-acl request)
   (let [id (:id body)]
     (db/add
@@ -91,7 +93,8 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/add resource-type
-  [{:keys [body] :as request}]
+  [{:keys [body]
+    :as   request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
@@ -118,7 +121,10 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (let [users (get-in request [:body :users])]
+    (-> request
+        (cond-> (seq users) (update-in [:body :acl :view-meta] (comp vec set concat) users))
+        (edit-impl))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
@@ -164,23 +170,23 @@ that start with 'nuvla-' are reserved for the server.
   (let [default-acl {:owners    ["group/nuvla-admin"]
                      :view-meta ["group/nuvla-user"]}]
     (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
-                            {:name        "Nuvla Administrator Group"
-                             :description "group of users with server administration rights"
-                             :template    {:group-identifier "nuvla-admin"
-                                           :acl              default-acl}})
+      {:name        "Nuvla Administrator Group"
+       :description "group of users with server administration rights"
+       :template    {:group-identifier "nuvla-admin"
+                     :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-user") resource-type
-                            {:name        "Nuvla Authenticated Users"
-                             :description "pseudo-group of users that have been authenticated"
-                             :template    {:group-identifier "nuvla-user"
-                                           :acl              default-acl}})
+      {:name        "Nuvla Authenticated Users"
+       :description "pseudo-group of users that have been authenticated"
+       :template    {:group-identifier "nuvla-user"
+                     :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-anon") resource-type
-                            {:name        "Nuvla Anonymous Users"
-                             :description "pseudo-group of all users authenticated or not"
-                             :template    {:group-identifier "nuvla-anon"
-                                           :acl              default-acl}})
+      {:name        "Nuvla Anonymous Users"
+       :description "pseudo-group of all users authenticated or not"
+       :template    {:group-identifier "nuvla-anon"
+                     :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-nuvlabox") resource-type
-                            {:name        "Nuvla NuvlaBox Systems"
-                             :description "pseudo-group of all NuvlaBox systems"
-                             :template    {:group-identifier "nuvla-nuvlabox"
-                                           :acl              default-acl}})))
+      {:name        "Nuvla NuvlaBox Systems"
+       :description "pseudo-group of all NuvlaBox systems"
+       :template    {:group-identifier "nuvla-nuvlabox"
+                     :acl              default-acl}})))
 
