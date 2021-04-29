@@ -121,8 +121,11 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/edit resource-type
   [request]
-  (let [users (get-in request [:body :users])]
+  (let [id    (str resource-type "/" (-> request :params :uuid))
+        users (get-in request [:body :users])
+        acl   (get-in request [:body :acl] (:acl (crud/retrieve-by-id-as-admin id)))]
     (-> request
+        (assoc-in [:body :acl] acl)
         (cond-> (seq users) (update-in [:body :acl :view-meta] (comp vec set concat) users))
         (edit-impl))))
 
