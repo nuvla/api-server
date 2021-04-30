@@ -256,7 +256,7 @@ component, or application.
     (let [{:keys [subtype] :as module-meta} (retrieve-edn request)
           is-not-project? (not (utils/is-project? subtype))]
       (-> module-meta
-          (cond-> is-not-project? (utils/get-module-content))
+          (cond-> is-not-project? (utils/get-module-content uuid))
           (crud/set-operations request)
           (a/select-viewable-keys request)
           (r/json-response)))

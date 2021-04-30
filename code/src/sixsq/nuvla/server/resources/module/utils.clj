@@ -142,8 +142,8 @@
 
 
 (defn get-module-content
-  [{:keys [id versions] :as module-meta}]
-  (let [version-index  (second (split-uuid id))
+  [{:keys [id versions] :as module-meta} uuid]
+  (let [version-index  (second (split-uuid uuid))
         version-id     (retrieve-content-id versions version-index)
         module-content (if version-id
                          (-> version-id
