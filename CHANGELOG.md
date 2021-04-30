@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.12.2] - 2021-04-30
+
 ### Changed
 
   - Module - Retrieve project 500 fix
