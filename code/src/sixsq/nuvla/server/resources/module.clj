@@ -240,40 +240,23 @@ component, or application.
             (db-add-module-meta request))))))
 
 
-(defn split-uuid
-  [uuid]
-  (let [[uuid-module index] (str/split uuid #"_")
-        index (some-> index read-string)]
-    [uuid-module index]))
+
 
 
 (defn retrieve-edn
   [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" (-> uuid split-uuid first))
+  (-> (str resource-type "/" (-> uuid utils/split-uuid first))
       (db/retrieve request)
       (a/throw-cannot-view request)))
-
-
-(defn retrieve-content-id
-  [versions index]
-  (let [index (or index (utils/last-index versions))]
-    (-> versions (nth index) :href)))
 
 
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [{:keys [versions] :as module-meta} (retrieve-edn request)
-          version-index  (second (split-uuid uuid))
-          version-id     (retrieve-content-id versions version-index)
-          module-content (if version-id
-                           (-> version-id
-                               (crud/retrieve-by-id-as-admin)
-                               (dissoc :resource-type :operations :acl))
-                           (when version-index
-                             (throw (r/ex-not-found
-                                      (str "Module version not found: " resource-type "/" uuid)))))]
-      (-> (assoc module-meta :content module-content)
+    (let [{:keys [subtype] :as module-meta} (retrieve-edn request)
+          is-not-project? (not (utils/is-project? subtype))]
+      (-> module-meta
+          (cond-> is-not-project? (utils/get-module-content))
           (crud/set-operations request)
           (a/select-viewable-keys request)
           (r/json-response)))
@@ -288,7 +271,7 @@ component, or application.
 
 (defn edit-module
   [{{uuid-full :uuid} :params :as request} resource error-message]
-  (let [uuid     (-> uuid-full split-uuid first)
+  (let [uuid     (-> uuid-full utils/split-uuid first)
         response (-> request
                      (assoc :request-method :put
                             :params {:uuid          uuid
@@ -393,7 +376,7 @@ component, or application.
 
 (defn delete-item
   [request {:keys [subtype versions] :as module-meta} version-index]
-  (let [content-id       (retrieve-content-id versions version-index)
+  (let [content-id       (utils/retrieve-content-id versions version-index)
         delete-response  (delete-content content-id subtype)
         updated-versions (remove-version versions version-index)
         module-meta      (-> module-meta
@@ -410,7 +393,7 @@ component, or application.
     (let [module-meta (-> (retrieve-edn request)
                           (a/throw-cannot-edit request))
 
-          [uuid version-index] (split-uuid uuid-full)
+          [uuid version-index] (utils/split-uuid uuid-full)
           request     (assoc-in request [:params :uuid] uuid)]
 
       (if version-index
@@ -473,7 +456,7 @@ component, or application.
 
 (defn publish-unpublish
   [{{uuid-full :uuid} :params :as request} publish]
-  (let [[uuid version-index] (split-uuid uuid-full)
+  (let [[uuid version-index] (utils/split-uuid uuid-full)
         id (str resource-type "/" uuid)
         {:keys [subtype versions] :as resource} (crud/retrieve-by-id-as-admin id)]
     (a/throw-cannot-manage resource request)

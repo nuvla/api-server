@@ -3,7 +3,9 @@
     [clj-yaml.core :as yaml]
     [clojure.set :as set]
     [clojure.string :as str]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const subtype-comp "component")
 
@@ -124,3 +126,30 @@
     (-> docker-compose
         parse-and-throw-when-not-parsable-docker-compose
         get-compatibility-fields)))
+
+
+(defn retrieve-content-id
+  [versions index]
+  (let [index (or index (last-index versions))]
+    (-> versions (nth index) :href)))
+
+
+(defn split-uuid
+  [uuid]
+  (let [[uuid-module index] (str/split uuid #"_")
+        index (some-> index read-string)]
+    [uuid-module index]))
+
+
+(defn get-module-content
+  [{:keys [id versions] :as module-meta}]
+  (let [version-index  (second (split-uuid id))
+        version-id     (retrieve-content-id versions version-index)
+        module-content (if version-id
+                         (-> version-id
+                             (crud/retrieve-by-id-as-admin)
+                             (dissoc :resource-type :operations :acl))
+                         (when version-index
+                           (throw (r/ex-not-found
+                                    (str "Module version not found: " id)))))]
+    (assoc module-meta :content module-content)))
