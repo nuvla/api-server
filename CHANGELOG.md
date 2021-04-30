@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - Group - users members get view-meta right automatically
+
 ## [5.12.1] - 2021-04-28
 
 ### Changed
