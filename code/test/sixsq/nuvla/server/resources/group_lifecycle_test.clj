@@ -95,10 +95,11 @@
             expected-id (str "group/" (get-in tpl [:template :group-identifier]))]
 
         ;; check contents of resource
-        (let [{:keys [id name description tags users] :as body} (-> session-admin
-                                                                    (request abs-uri)
-                                                                    (ltu/body->edn)
-                                                                    (ltu/body))]
+        (let [{:keys [id name description tags users]
+               :as   body} (-> session-admin
+                               (request abs-uri)
+                               (ltu/body->edn)
+                               (ltu/body))]
           (is (= id expected-id))
           (is (= name name-attr))
           (is (= description description-attr))
@@ -117,11 +118,13 @@
                 (ltu/body->edn)
                 (ltu/is-status 200))
 
-            (let [{updated-users :users} (-> session-admin
+            (let [{updated-users :users
+                   acl :acl} (-> session-admin
                                              (request abs-uri)
                                              (ltu/body->edn)
                                              (ltu/body))]
-              (is (= users updated-users)))))
+              (is (= users updated-users))
+              (is (= users (:view-meta acl))))))
 
         ;; delete should work
         (-> session-admin

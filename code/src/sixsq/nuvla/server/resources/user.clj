@@ -227,9 +227,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                                          :uuid          "nuvla-admin"}
                            :body        {:users [super-user-id]}
                            :nuvla/authn auth/internal-identity}
-                  {:keys [status]} (crud/edit request)]
+                  {:keys [status] :as resp} (crud/edit request)]
               (when (not= status 200)
-                (log/error "could not append super in nuvla-admin group!"))))
+                (log/error "could not append super in nuvla-admin group!" resp))))
         (log/error "could not create user 'super'")))
     (log/info "user 'super' already exists; skip trying to create it")))
 
