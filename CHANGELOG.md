@@ -6,7 +6,12 @@
 
   - Automated commissioning of NuvlaBox clusters
   - NuvlaBox Status - expand CPU metrics
-  - Apps and Deployment - Apps can ask for a credential with user permissions
+
+## [5.12.2] - 2021-04-30
+
+### Changed
+
+  - Module - Retrieve project 500 fix
   - Group - users members get view-meta right automatically
 
 ## [5.12.1] - 2021-04-28
