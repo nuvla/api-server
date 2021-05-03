@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Automated commissioning of NuvlaBox clusters
+  - NuvlaBox Status - expand CPU metrics
+
 ## [5.12.2] - 2021-04-30
 
 ### Changed
@@ -25,6 +30,7 @@
   - Module - Publish version support
   - Deployment - Support bulk update
   - Bulk - Bulk operation support
+  - NuvlaBox Cluster - new resource
 
 ### Changed
 

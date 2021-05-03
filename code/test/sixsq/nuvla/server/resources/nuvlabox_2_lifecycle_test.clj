@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.nuvlabox-1-lifecycle-test
+(ns sixsq.nuvla.server.resources.nuvlabox-2-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -7,6 +7,7 @@
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -23,7 +24,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-1 :as nb-1]
+    [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
@@ -60,16 +61,18 @@
 (def valid-nuvlabox {:created          timestamp
                      :updated          timestamp
 
-                     :version          1
+                     ;; This doesn't need to be specified as it will default to the
+                     ;; latest version (which is currently 2). If new versions are added,
+                     ;; the following line must be uncommented; the value must be the
+                     ;; version number to test.
+                     :version          2
 
                      :organization     "ACME"
-                     :os-version       "OS version"
                      :hw-revision-code "a020d3"
                      :login-username   "aLoginName"
                      :login-password   "aLoginPassword"
 
                      :form-factor      "Nuvlabox"
-                     :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"
                      :ssh-keys         ["credential/aaa-bbb-ccc"]
                      :capabilities     ["RANDOM"]})
@@ -77,7 +80,7 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists nb/resource-type
-                              (str nb/resource-type "-" nb-1/schema-version)))
+                              (str nb/resource-type "-" nb-2/schema-version)))
 
 
 (deftest create-edit-delete-lifecycle
@@ -159,6 +162,8 @@
                                (ltu/is-operation-present :edit)
                                (ltu/is-operation-present :delete)
                                (ltu/is-operation-present :activate)
+                               ; check-api has been disabled in version 2
+                               (ltu/is-operation-absent :check-api)
                                (ltu/is-operation-absent :commission)
                                (ltu/is-operation-absent :decommission)
                                (ltu/is-key-value :state "NEW")
@@ -387,12 +392,14 @@
             (-> session
                 (request nuvlabox-url)
                 (ltu/body->edn)
+              ;(pprint)
                 (ltu/is-status 200)
                 (ltu/is-operation-present :edit)
                 (ltu/is-operation-absent :delete)
                 (ltu/is-operation-absent :activate)
                 (ltu/is-operation-present :commission)
                 (ltu/is-operation-present :decommission)
+                (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
                 (ltu/is-key-value set :tags tags))
 
@@ -438,6 +445,37 @@
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
                   )))
+
+
+
+            ;; check custom operations
+            ;;
+            (let [cluster-nuvlabox  (-> session
+                                      (request nuvlabox-url)
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-operation-present :edit)
+                                      (ltu/is-operation-absent :delete)
+                                      (ltu/is-operation-absent :activate)
+                                      (ltu/is-operation-present :commission)
+                                      (ltu/is-operation-present :decommission)
+                                      (ltu/is-operation-absent :check-api)
+                                      (ltu/is-operation-present :reboot)
+                                      (ltu/is-operation-present :add-ssh-key)
+                                      (ltu/is-operation-present :revoke-ssh-key)
+                                      (ltu/is-operation-present :update-nuvlabox)
+                                      (ltu/is-operation-present :cluster-nuvlabox)
+                                      (ltu/is-key-value :state "COMMISSIONED")
+                                      (ltu/get-op-url :cluster-nuvlabox))]
+
+
+              ;; cluster-nuvlabox-action
+              (-> session
+                (request cluster-nuvlabox
+                  :request-method :post
+                  :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-status {}}))
+                (ltu/body->edn)
+                (ltu/is-status 202)))
 
 
             ;; second commissioning of the resource (with swarm credentials)
@@ -681,7 +719,7 @@
                              (ltu/is-key-value :state "ACTIVATED")
                              (ltu/get-op-url :commission))]
 
-          ;; commissioning of the nuvlabox
+          ;; commissioning of the nuvlabox (no swarm credentials)
           (-> session-owner
               (request commission
                        :request-method :post
@@ -817,235 +855,6 @@
                 (if (= "kubernetes" subtype)
                   (is (= 1 (count creds))))
                 )))
-
-          )))))
-
-
-(deftest create-activate-commission-removed-lifecycle
-  (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session       (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "unknown unknown group/nuvla-anon")]
-
-      (let [nuvlabox-id      (-> session-owner
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str valid-nuvlabox))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location))
-
-            session-nuvlabox (header session authn-info-header
-                                     (str nuvlabox-id
-                                          " group/nuvla-nuvlabox group/nuvla-anon"))
-
-            nuvlabox-url     (str p/service-context nuvlabox-id)
-
-            activate-url     (-> session-owner
-                                 (request nuvlabox-url)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/is-operation-present :edit)
-                                 (ltu/is-operation-present :delete)
-                                 (ltu/is-operation-present :activate)
-                                 (ltu/is-operation-absent :commission)
-                                 (ltu/is-operation-absent :decommission)
-                                 (ltu/is-key-value :state "NEW")
-                                 (ltu/get-op-url :activate))]
-
-        ;; activate nuvlabox
-        (-> session-anon
-            (request activate-url
-                     :request-method :post)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value (comp not str/blank?) :secret-key true)
-            (ltu/body)
-            :api-key
-            (ltu/href->url))
-
-        (let [{isg-id :id} (-> session-owner
-                               (content-type "application/x-www-form-urlencoded")
-                               (request isg-collection-uri
-                                        :request-method :put
-                                        :body (rc/form-encode {:filter (format "parent='%s'"
-                                                                               nuvlabox-id)}))
-                               (ltu/body->edn)
-                               (ltu/is-status 200)
-                               (ltu/is-count 1)
-                               (ltu/entries)
-                               first)
-
-              commission (-> session-owner
-                             (request nuvlabox-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-operation-present :edit)
-                             (ltu/is-operation-absent :delete)
-                             (ltu/is-operation-absent :activate)
-                             (ltu/is-operation-present :commission)
-                             (ltu/is-operation-present :decommission)
-                             (ltu/is-key-value :state "ACTIVATED")
-                             (ltu/get-op-url :commission))]
-
-          ;; commissioning of the nuvlabox
-          (-> session-nuvlabox
-              (request commission
-                       :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
-                                              :swarm-token-manager    "def"
-                                              :swarm-client-key       "key"
-                                              :swarm-client-cert      "cert"
-                                              :swarm-client-ca        "ca"
-                                              :swarm-endpoint         "https://swarm.example.com"
-                                              :minio-access-key       "access"
-                                              :minio-secret-key       "secret"
-                                              :minio-endpoint         "https://minio.example.com"
-                                              :kubernetes-client-key  "key"
-                                              :kubernetes-client-cert "cert"
-                                              :kubernetes-client-ca   "ca"
-                                              :kubernetes-endpoint    "https://k8s.example.com"}))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          ;; verify state of the resource
-          (-> session-owner
-              (request nuvlabox-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-operation-present :edit)
-              (ltu/is-operation-absent :delete)
-              (ltu/is-operation-absent :activate)
-              (ltu/is-operation-present :commission)
-              (ltu/is-operation-present :decommission)
-              (ltu/is-key-value :state "COMMISSIONED"))
-
-          ;; check that services exist
-          (let [services (-> session-owner
-                             (content-type "application/x-www-form-urlencoded")
-                             (request infra-service-collection-uri
-                                      :request-method :put
-                                      :body (rc/form-encode {:filter (format
-                                                                       "parent='%s'" isg-id)}))
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-count 3)
-                             (ltu/entries))]
-
-            (is (= #{"swarm" "s3" "kubernetes"} (set (map :subtype services))))
-
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:view-acl acl))))
-
-            (doseq [{:keys [subtype] :as service} services]
-              (let [creds (-> session-owner
-                              (content-type "application/x-www-form-urlencoded")
-                              (request credential-collection-uri
-                                       :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'"
-                                                                              (:id service))}))
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/entries))]
-
-                (if (= "swarm" subtype)
-                  (is (= 3 (count creds))))                 ;; only swarm token credentials
-
-                (if (= "s3" subtype)
-                  (is (= 1 (count creds))))                 ;; only key/secret pair
-
-                (if (= "kubernetes" subtype)
-                  (is (= 1 (count creds))))
-                )))
-
-          ;; commissioning with removed
-          (-> session-nuvlabox
-              (request commission
-                       :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
-                                              :swarm-token-manager    "def"
-                                              :swarm-client-key       "key"
-                                              :swarm-client-cert      "cert"
-                                              :swarm-client-ca        "ca"
-                                              :swarm-endpoint         "https://swarm.example.com"
-                                              :minio-access-key       "access"
-                                              :minio-secret-key       "secret"
-                                              :minio-endpoint         "https://minio.example.com"
-                                              :kubernetes-client-key  "key"
-                                              :kubernetes-client-cert "cert"
-                                              :kubernetes-client-ca   "ca"
-                                              :kubernetes-endpoint    "https://k8s.example.com"
-                                              :removed                ["swarm-endpoint"
-                                                                       "swarm-token-manager"
-                                                                       "swarm-token-worker"
-                                                                       "swarm-client-key"]}))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          ;; check that services exist
-          (let [services (-> session-owner
-                             (content-type "application/x-www-form-urlencoded")
-                             (request infra-service-collection-uri
-                                      :request-method :put
-                                      :body (rc/form-encode {:filter (format
-                                                                       "parent='%s'" isg-id)}))
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-count 2)
-                             (ltu/entries))]
-
-            (is (= #{"s3" "kubernetes"} (set (map :subtype services))))
-
-            (doseq [{:keys [acl]} services]
-              (is (= [nuvlabox-owner] (:view-acl acl))))
-
-            (doseq [{:keys [subtype] :as service} ["swarm" "s3" "kubernetes"]]
-              (let [creds (-> session-owner
-                              (content-type "application/x-www-form-urlencoded")
-                              (request credential-collection-uri
-                                       :request-method :put
-                                       :body (rc/form-encode {:filter (format "parent='%s'"
-                                                                              (:id service))}))
-                              (ltu/body->edn)
-                              (ltu/is-status 200)
-                              (ltu/entries))]
-
-                (if (= "swarm" subtype)
-                  (is (= 0 (count creds))))                 ;; swarm creds all gone
-
-                (if (= "s3" subtype)
-                  (is (= 1 (count creds))))                 ;; only key/secret pair
-
-                (if (= "kubernetes" subtype)
-                  (is (= 1 (count creds))))
-                )))
-
-          ;; additionnal call to commission will not fail
-          (-> session-nuvlabox
-              (request commission
-                       :request-method :post
-                       :body (json/write-str {:swarm-token-worker     "abc"
-                                              :swarm-token-manager    "def"
-                                              :swarm-client-key       "key"
-                                              :swarm-client-cert      "cert"
-                                              :swarm-client-ca        "ca"
-                                              :swarm-endpoint         "https://swarm.example.com"
-                                              :minio-access-key       "access"
-                                              :minio-secret-key       "secret"
-                                              :minio-endpoint         "https://minio.example.com"
-                                              :kubernetes-client-key  "key"
-                                              :kubernetes-client-cert "cert"
-                                              :kubernetes-client-ca   "ca"
-                                              :kubernetes-endpoint    "https://k8s.example.com"
-                                              :removed                ["swarm-endpoint"
-                                                                       "swarm-token-manager"
-                                                                       "swarm-token-worker"
-                                                                       "swarm-client-key"]}))
-              (ltu/body->edn)
-              (ltu/is-status 200))
 
           )))))
 

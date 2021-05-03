@@ -214,9 +214,10 @@ nuvlabox.
         has-video?        (has-video-capability? resource)]
     (cond-> (crud/set-standard-operations resource request)
             (and can-manage?
-                 has-video?) (update :operations conj (if data-gateway-enabled
-                                                        disable-stream-op
-                                                        enable-stream-op)))))
+                 has-video?
+                 (< (:version resource) 2)) (update :operations conj (if data-gateway-enabled
+                                                                       disable-stream-op
+                                                                       enable-stream-op)))))
 
 
 ;;
