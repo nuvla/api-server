@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Deployment - Keep versions map in deployment module
   - Automated commissioning of NuvlaBox clusters
   - NuvlaBox Status - expand CPU metrics
 

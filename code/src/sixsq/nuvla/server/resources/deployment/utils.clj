@@ -114,8 +114,9 @@
         module-body    (:body response)]
     (if (= (:status response) 200)
       (-> module-body
-          (dissoc :versions :operations)
+          (dissoc :versions :operations)                    ;; dissoc versions to avoid resolving all hrefs
           (std-crud/resolve-hrefs authn-info true)
+          (assoc :versions (:versions module-body))
           (assoc :href href))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
@@ -287,7 +288,7 @@
     (when (and
             (string? parent-infra-group)
             (str/starts-with? parent-infra-group "nuvlabox/"))
-       parent-infra-group)))
+      parent-infra-group)))
 
 
 (defn get-context
