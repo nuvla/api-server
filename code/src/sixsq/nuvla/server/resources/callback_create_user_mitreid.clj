@@ -17,7 +17,8 @@
 
 
 (defn register-user
-  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
+  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data callback-id :id :as _callback-resource}
+   {:keys [base-uri] :as request}]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url user-profile-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
@@ -26,7 +27,7 @@
           (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "MITREid access token claims for %s: %s" instance (pr-str claims))
             (if sub
-              (let [{:keys [emails] :as userinfo} (oidc-utils/get-mitreid-userinfo user-profile-url access-token)
+              (let [{:keys [emails] :as _userinfo} (oidc-utils/get-mitreid-userinfo user-profile-url access-token)
                     email (->> emails (filter :primary) first :value)]
                 (if email
                   (or

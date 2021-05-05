@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.event-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
     [clojure.test :refer [deftest is join-fixtures use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]

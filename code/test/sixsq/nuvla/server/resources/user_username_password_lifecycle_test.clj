@@ -37,22 +37,20 @@
         session-user  (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [template           (-> session-admin
                                  (request template-url)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (get-in [:response :body]))
 
-          name-attr          "name"
           description-attr   "description"
           tags-attr          ["one", "two"]
           plaintext-password "Plaintext-password-1"
 
-          uname-alt          "user/jane"
-
           no-href-create     {:template (ltu/strip-unwanted-attrs (assoc template
-                                                                    :password plaintext-password
-                                                                    :username "alice"))}
+                                                                         :password plaintext-password
+                                                                         :username "alice"))}
           href-create        {:description description-attr
                               :tags        tags-attr
                               :template    {:href     template-href
@@ -103,23 +101,24 @@
             (ltu/is-status 400)))
 
       ;; create user, username-password template is only accessible by admin
-      (let [resp                 (-> session-admin
-                                     (request base-uri
-                                              :request-method :post
-                                              :body (json/write-str href-create))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201))
-            user-id              (get-in resp [:response :body :resource-id])
+      (let [resp                                    (-> session-admin
+                                                        (request base-uri
+                                                                 :request-method :post
+                                                                 :body (json/write-str href-create))
+                                                        (ltu/body->edn)
+                                                        (ltu/is-status 201))
+            user-id                                 (get-in resp [:response :body :resource-id])
 
-            username-id          (get-in href-create [:template :username])
+            username-id                             (get-in href-create [:template :username])
 
-            session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
+            session-created-user                    (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
 
-            {:keys [credential-password] :as user} (-> session-created-user
-                                                       (request (str p/service-context user-id))
-                                                       (ltu/body->edn)
-                                                       (ltu/is-status 200)
-                                                       (get-in [:response :body]))]
+            {:keys [credential-password]
+             :as   user} (-> session-created-user
+                             (request (str p/service-context user-id))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (get-in [:response :body]))]
 
         ;; verify the ACL of the user
         (let [user-acl (:acl user)]

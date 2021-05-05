@@ -41,7 +41,7 @@
 
 ;; creates a temporary session and redirects to GitHub to start authentication workflow
 (defmethod p/tpl->session authn-method
-  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  [{:keys [href instance redirect-url] :as _resource} {:keys [headers base-uri] :as _request}]
   (let [[client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if (and client-id client-secret)
       ;; fake session values will be replaced after callback execution

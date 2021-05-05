@@ -4,7 +4,6 @@ Provides the functions necessary to create a session from a login request with
 an API key-secret pair.
 "
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
@@ -70,14 +69,14 @@ an API key-secret pair.
 (defn valid-api-key?
   "Checks that the API key document is of the correct subtype, hasn't expired,
    and that the digest matches the given secret."
-  [{:keys [digest expiry subtype] :as api-key} secret]
+  [{:keys [digest expiry subtype] :as _api-key} secret]
   (and (= api-key-tpl/credential-subtype subtype)
        (u/not-expired? expiry)
        (key-utils/valid? secret digest)))
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href key secret] :as resource} {:keys [headers] :as request}]
+  [{:keys [href key secret] :as _resource} {:keys [headers] :as _request}]
   (let [{{:keys [identity roles]} :claims :as api-key} (retrieve-credential-by-id key)]
     (if (valid-api-key? api-key secret)
       (let [session     (sutils/create-session identity identity {:href href} headers authn-method)

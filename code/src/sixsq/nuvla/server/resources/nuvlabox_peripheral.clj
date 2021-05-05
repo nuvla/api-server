@@ -5,7 +5,6 @@ nuvlabox.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -42,7 +41,7 @@ nuvlabox.
           {{job-id     :resource-id
             job-status :status} :body} (job/create-job
                                          id action
-                                         (if (acl-resource/is-admin? authn-info)
+                                         (if (a/is-admin? authn-info)
                                            {:owners ["group/nuvla-admin"]}
                                            {:owners   ["group/nuvla-admin"]
                                             :edit-acl [(auth/current-active-claim request)]})
@@ -115,7 +114,7 @@ nuvlabox.
 
 
 (defmethod validate-subtype :default
-  [{:keys [version] :as resource}]
+  [{:keys [version] :as _resource}]
   (if version
     (throw (r/ex-bad-request (str "unsupported nuvlabox-peripheral version: " version)))
     (throw (r/ex-bad-request "missing nuvlabox-peripheral version"))))
@@ -130,7 +129,7 @@ nuvlabox.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
+  [resource _request]
   (when-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)]

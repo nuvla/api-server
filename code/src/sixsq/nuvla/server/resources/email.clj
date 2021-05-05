@@ -54,7 +54,7 @@ address. When the callback is triggered, the `validated` flag is set to true.
 ;; resource identifier a UUID generated from the email address
 (defmethod crud/new-identifier resource-type
   [resource resource-name]
-  (if-let [new-id (some-> resource :address u/from-data-uuid)]
+  (when-let [new-id (some-> resource :address u/from-data-uuid)]
     (assoc resource :id (str resource-name "/" new-id))))
 
 

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.common.user-utils-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]

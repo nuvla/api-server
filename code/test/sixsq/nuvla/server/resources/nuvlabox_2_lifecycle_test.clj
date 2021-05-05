@@ -7,7 +7,6 @@
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
-    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -25,7 +24,6 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.pricing :as pricing]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -46,13 +44,7 @@
 (def credential-collection-uri (str p/service-context credential/resource-type))
 
 
-(def nb-status-collection-uri (str p/service-context nb-status/resource-type))
-
-
 (def timestamp "1964-08-25T10:00:00Z")
-
-
-(def user "jane")
 
 
 (def nuvlabox-owner "user/alpha")
@@ -392,7 +384,7 @@
             (-> session
                 (request nuvlabox-url)
                 (ltu/body->edn)
-              ;(pprint)
+                ;(pprint)
                 (ltu/is-status 200)
                 (ltu/is-operation-present :edit)
                 (ltu/is-operation-absent :delete)
@@ -438,10 +430,10 @@
                                 (ltu/is-status 200)
                                 (ltu/entries))]
 
-                  (if (= "swarm" subtype)
+                  (when (= "swarm" subtype)
                     (is (= 2 (count creds))))               ;; only swarm token credentials
 
-                  (if (= "s3" subtype)
+                  (when (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
                   )))
@@ -450,32 +442,32 @@
 
             ;; check custom operations
             ;;
-            (let [cluster-nuvlabox  (-> session
-                                      (request nuvlabox-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :edit)
-                                      (ltu/is-operation-absent :delete)
-                                      (ltu/is-operation-absent :activate)
-                                      (ltu/is-operation-present :commission)
-                                      (ltu/is-operation-present :decommission)
-                                      (ltu/is-operation-absent :check-api)
-                                      (ltu/is-operation-present :reboot)
-                                      (ltu/is-operation-present :add-ssh-key)
-                                      (ltu/is-operation-present :revoke-ssh-key)
-                                      (ltu/is-operation-present :update-nuvlabox)
-                                      (ltu/is-operation-present :cluster-nuvlabox)
-                                      (ltu/is-key-value :state "COMMISSIONED")
-                                      (ltu/get-op-url :cluster-nuvlabox))]
+            (let [cluster-nuvlabox (-> session
+                                       (request nuvlabox-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-status 200)
+                                       (ltu/is-operation-present :edit)
+                                       (ltu/is-operation-absent :delete)
+                                       (ltu/is-operation-absent :activate)
+                                       (ltu/is-operation-present :commission)
+                                       (ltu/is-operation-present :decommission)
+                                       (ltu/is-operation-absent :check-api)
+                                       (ltu/is-operation-present :reboot)
+                                       (ltu/is-operation-present :add-ssh-key)
+                                       (ltu/is-operation-present :revoke-ssh-key)
+                                       (ltu/is-operation-present :update-nuvlabox)
+                                       (ltu/is-operation-present :cluster-nuvlabox)
+                                       (ltu/is-key-value :state "COMMISSIONED")
+                                       (ltu/get-op-url :cluster-nuvlabox))]
 
 
               ;; cluster-nuvlabox-action
               (-> session
-                (request cluster-nuvlabox
-                  :request-method :post
-                  :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-status {}}))
-                (ltu/body->edn)
-                (ltu/is-status 202)))
+                  (request cluster-nuvlabox
+                           :request-method :post
+                           :body (json/write-str {:cluster-action "join-worker" :nuvlabox-manager-status {}}))
+                  (ltu/body->edn)
+                  (ltu/is-status 202)))
 
 
             ;; second commissioning of the resource (with swarm credentials)
@@ -553,13 +545,13 @@
                                 (ltu/is-status 200)
                                 (ltu/entries))]
 
-                  (if (= "swarm" subtype)
+                  (when (= "swarm" subtype)
                     (is (= 3 (count creds))))               ;; now both tokens and credential
 
-                  (if (= "s3" subtype)
+                  (when (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
-                  (if (= "kubernetes" subtype)
+                  (when (= "kubernetes" subtype)
                     (is (= 1 (count creds))))
                   ))))
 
@@ -663,6 +655,7 @@
           user-beta     "user/beta"
           session-beta  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post
@@ -779,13 +772,13 @@
                               (ltu/is-status 200)
                               (ltu/entries))]
 
-                (if (= "swarm" subtype)
+                (when (= "swarm" subtype)
                   (is (= 3 (count creds))))                 ;; only swarm token credentials
 
-                (if (= "s3" subtype)
+                (when (= "s3" subtype)
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
-                (if (= "kubernetes" subtype)
+                (when (= "kubernetes" subtype)
                   (is (= 1 (count creds))))
                 )))
 
@@ -846,13 +839,13 @@
                               (ltu/is-status 200)
                               (ltu/entries))]
 
-                (if (= "swarm" subtype)
+                (when (= "swarm" subtype)
                   (is (= 3 (count creds))))                 ;; only swarm token credentials
 
-                (if (= "s3" subtype)
+                (when (= "s3" subtype)
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
-                (if (= "kubernetes" subtype)
+                (when (= "kubernetes" subtype)
                   (is (= 1 (count creds))))
                 )))
 
@@ -869,6 +862,7 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"
@@ -1012,6 +1006,7 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"
@@ -1235,34 +1230,34 @@
                            (request nuvlabox-url)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/get-op-url :reboot))]
-        (let [job-url (-> session-owner
-                          (request reboot-url :request-method :post)
-                          (ltu/body->edn)
-                          (ltu/is-status 202)
-                          (ltu/location-url))]
-          (-> session-admin
-              (request job-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :execution-mode "push"))
+                           (ltu/get-op-url :reboot))
+            job-url    (-> session-owner
+                           (request reboot-url :request-method :post)
+                           (ltu/body->edn)
+                           (ltu/is-status 202)
+                           (ltu/location-url))]
+        (-> session-admin
+            (request job-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :execution-mode "push"))
 
-          (-> session-admin
-              (request job-url
-                       :request-method :put
-                       :body (json/write-str {:execution-mode "pull"}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :execution-mode "pull")
-              (ltu/is-key-value :acl {:edit-data [nuvlabox-id "user/alpha"],
-                                      :owners    ["group/nuvla-admin"],
-                                      :view-acl  ["user/alpha"],
-                                      :delete    ["user/alpha"],
-                                      :view-meta [nuvlabox-id "user/alpha"],
-                                      :edit-acl  ["user/alpha"],
-                                      :view-data [nuvlabox-id "user/alpha"],
-                                      :manage    [nuvlabox-id "user/alpha"],
-                                      :edit-meta [nuvlabox-id "user/alpha"]}))))
+        (-> session-admin
+            (request job-url
+                     :request-method :put
+                     :body (json/write-str {:execution-mode "pull"}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :execution-mode "pull")
+            (ltu/is-key-value :acl {:edit-data [nuvlabox-id "user/alpha"],
+                                    :owners    ["group/nuvla-admin"],
+                                    :view-acl  ["user/alpha"],
+                                    :delete    ["user/alpha"],
+                                    :view-meta [nuvlabox-id "user/alpha"],
+                                    :edit-acl  ["user/alpha"],
+                                    :view-data [nuvlabox-id "user/alpha"],
+                                    :manage    [nuvlabox-id "user/alpha"],
+                                    :edit-meta [nuvlabox-id "user/alpha"]})))
 
       )))
 
@@ -1277,6 +1272,7 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post

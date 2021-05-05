@@ -405,35 +405,35 @@
                     ;; Disabled test because of flapping error build
                     ;; on edit changes on deployment acl are propagated to deployment parameters
                     #_(let [deployment-acl (-> session-user
-                                             (request deployment-url)
-                                             (ltu/body->edn)
-                                             (ltu/is-status 200)
-                                             (ltu/body)
-                                             :acl)]
+                                               (request deployment-url)
+                                               (ltu/body->edn)
+                                               (ltu/is-status 200)
+                                               (ltu/body)
+                                               :acl)]
 
-                      (ltu/refresh-es-indices)
+                        (ltu/refresh-es-indices)
 
-                      (-> session-user
-                          (request dep-param-url)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/is-key-value #(= deployment-acl %) :acl true))
+                        (-> session-user
+                            (request dep-param-url)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-key-value #(= deployment-acl %) :acl true))
 
-                      (-> session-user
-                          (request deployment-url
-                                   :request-method :put
-                                   :body (json/write-str
-                                           {:acl (update deployment-acl
-                                                         :view-data conj "user/shared")}))
-                          (ltu/body->edn)
-                          (ltu/is-status 200))
+                        (-> session-user
+                            (request deployment-url
+                                     :request-method :put
+                                     :body (json/write-str
+                                             {:acl (update deployment-acl
+                                                           :view-data conj "user/shared")}))
+                            (ltu/body->edn)
+                            (ltu/is-status 200))
 
-                      (-> session-user
-                          (request dep-param-url)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)
-                          (ltu/is-key-value #(some #{"user/shared"} (:view-data %))
-                                            :acl "user/shared")))
+                        (-> session-user
+                            (request dep-param-url)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-key-value #(some #{"user/shared"} (:view-data %))
+                                              :acl "user/shared")))
 
                     ;; verify user can create another deployment from existing one
                     (let [deployment-url-from-dep (-> session-user
@@ -602,8 +602,6 @@
     (let [session-anon     (-> (ltu/ring-app)
                                session
                                (content-type "application/json"))
-          session-admin    (header session-anon authn-info-header
-                                   "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user     (header session-anon authn-info-header
                                    "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
@@ -705,10 +703,8 @@
                                (ltu/is-status 201)
                                (ltu/location))
 
-          valid-deployment {:module {:href module-id}}]
-
-      ;; check deployment creation
-      (let [deployment-id  (-> session-user
+          valid-deployment {:module {:href module-id}}
+          deployment-id    (-> session-user
                                (request base-uri
                                         :request-method :post
                                         :body (json/write-str valid-deployment))
@@ -716,85 +712,86 @@
                                (ltu/is-status 201)
                                (ltu/location))
 
-            deployment-url (str p/service-context deployment-id)]
+          deployment-url   (str p/service-context deployment-id)]
 
+      ;; check deployment creation
+      (-> session-user
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-resource-uri t/collection-type)
+          (ltu/is-count 1))
+
+      (-> session-user
+          (request (str base-uri "/foo")
+                   :request-method :patch)
+          (ltu/body->edn)
+          (ltu/is-status 404)
+          (ltu/message-matches #"undefined action \(patch, \[\"deployment\" \"foo\".*"))
+
+      (-> session-user
+          (request (str base-uri "/bulk-update")
+                   :request-method :patch)
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Bulk request should contain bulk http header."))
+
+      (-> session-user
+          (request (str base-uri "/bulk-update")
+                   :request-method :patch
+                   :headers {:bulk true}
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches #"Bulk request should contain a non empty cimi filter."))
+
+      (-> session-user
+          (request (str base-uri "/bulk-update")
+                   :request-method :patch
+                   :headers {:bulk true}
+                   :body (json/write-str
+                           {:filter "foobar"
+                            :other  "hello"}))
+          (ltu/body->edn)
+          (ltu/is-status 400)
+          (ltu/message-matches "Invalid CIMI filter. Parse error at line"))
+
+
+      (let [job-url (-> session-user
+                        (request (str base-uri "/bulk-update")
+                                 :request-method :patch
+                                 :headers {:bulk true}
+                                 :body (json/write-str
+                                         {:filter "id='foobar'"
+                                          :other  "hello"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 202)
+                        (ltu/message-matches "starting bulk-update with async job")
+                        (ltu/location-url))]
         (-> session-user
-            (request base-uri)
+            (request job-url)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-resource-uri t/collection-type)
-            (ltu/is-count 1))
+            (ltu/is-key-value
+              :payload (json/write-str
+                         {:filter     "id='foobar'"
+                          :other      "hello"
+                          :authn-info {:user-id      "user/jane"
+                                       :active-claim "user/jane"
+                                       :claims       ["group/nuvla-anon"
+                                                      "user/jane"
+                                                      "group/nuvla-user"]}}))))
 
-        (-> session-user
-            (request (str base-uri "/foo")
-                     :request-method :patch)
-            (ltu/body->edn)
-            (ltu/is-status 404)
-            (ltu/message-matches #"undefined action \(patch, \[\"deployment\" \"foo\".*"))
+      (-> session-user
+          (request deployment-url
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
-        (-> session-user
-            (request (str base-uri "/bulk-update")
-                     :request-method :patch)
-            (ltu/body->edn)
-            (ltu/is-status 400)
-            (ltu/message-matches #"Bulk request should contain bulk http header."))
-
-        (-> session-user
-            (request (str base-uri "/bulk-update")
-                     :request-method :patch
-                     :headers {:bulk true}
-                     :body (json/write-str {}))
-            (ltu/body->edn)
-            (ltu/is-status 400)
-            (ltu/message-matches #"Bulk request should contain a non empty cimi filter."))
-
-        (-> session-user
-            (request (str base-uri "/bulk-update")
-                     :request-method :patch
-                     :headers {:bulk true}
-                     :body (json/write-str
-                             {:filter "foobar"
-                              :other  "hello"}))
-            (ltu/body->edn)
-            (ltu/is-status 400)
-            (ltu/message-matches "Invalid CIMI filter. Parse error at line"))
-
-
-        (let [job-url (-> session-user
-                          (request (str base-uri "/bulk-update")
-                                   :request-method :patch
-                                   :headers {:bulk true}
-                                   :body (json/write-str
-                                           {:filter "id='foobar'"
-                                            :other  "hello"}))
-                          (ltu/body->edn)
-                          (ltu/is-status 202)
-                          (ltu/message-matches "starting bulk-update with async job")
-                          (ltu/location-url))]
-          (-> session-user
-              (request job-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value
-                :payload (json/write-str
-                           {:filter     "id='foobar'"
-                            :other      "hello"
-                            :authn-info {:user-id      "user/jane"
-                                         :active-claim "user/jane"
-                                         :claims       ["group/nuvla-anon"
-                                                        "user/jane"
-                                                        "group/nuvla-user"]}}))))
-
-        (-> session-user
-            (request deployment-url
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))
-
-        (-> session-user
-            (request (str p/service-context module-id)
-                     :request-method :delete)
-            (ltu/is-status 200)))
+      (-> session-user
+          (request (str p/service-context module-id)
+                   :request-method :delete)
+          (ltu/is-status 200))
 
       )))
 
@@ -820,69 +817,68 @@
     (is (not (t/gnss-group? {:nuvla/authn {:active-claim "group/hello"}} "1970-01-01T00:00:00.000Z")))
 
     (doseq [gg t/gnss-groups]
-      (let [session-anon (-> (ltu/ring-app)
-                             session
-                             (content-type "application/json"))
-            session-admin (header session-anon authn-info-header
-                                  "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-            session-user (header session-anon authn-info-header
-                                 (str gg " " gg " group/nuvla-user group/nuvla-anon"))
+      (let [session-anon        (-> (ltu/ring-app)
+                                    session
+                                    (content-type "application/json"))
+            session-admin       (header session-anon authn-info-header
+                                        "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+            session-user        (header session-anon authn-info-header
+                                        (str gg " " gg " group/nuvla-user group/nuvla-anon"))
 
             ;; setup a module that can be referenced from the deployment
-            module-id (-> session-user
-                          (request module-base-uri
-                                   :request-method :post
-                                   :body (json/write-str
-                                           (valid-module "component" valid-component (format "a/b/%s" gg))))
-                          (ltu/body->edn)
-                          (ltu/is-status 201)
-                          (ltu/location))
+            module-id           (-> session-user
+                                    (request module-base-uri
+                                             :request-method :post
+                                             :body (json/write-str
+                                                     (valid-module "component" valid-component (format "a/b/%s" gg))))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
 
-            valid-deployment {:module {:href module-id}}]
+            valid-deployment    {:module {:href module-id}}
+            deployment-id       (-> session-user
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str valid-deployment))
+                                    (ltu/body->edn)
+                                    (ltu/is-status 201)
+                                    (ltu/location))
+            deployment-url      (str p/service-context deployment-id)
+            deployment-response (-> session-user
+                                    (request deployment-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state "CREATED")
+                                    (ltu/is-key-value :owner gg))
+            start-url           (ltu/get-op-url deployment-response "start")
+            job-url             (-> session-user
+                                    (request start-url
+                                             :request-method :post)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    (ltu/location-url))
+            _                   (-> session-user
+                                    (request job-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value :state "QUEUED")
+                                    (ltu/is-key-value :action "start_deployment"))
 
-        (let [deployment-id (-> session-user
-                                (request base-uri
-                                         :request-method :post
-                                         :body (json/write-str valid-deployment))
-                                (ltu/body->edn)
-                                (ltu/is-status 201)
-                                (ltu/location))
-              deployment-url (str p/service-context deployment-id)
-              deployment-response (-> session-user
-                                      (request deployment-url)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-key-value :state "CREATED")
-                                      (ltu/is-key-value :owner gg))
-              start-url (ltu/get-op-url deployment-response "start")
-              job-url (-> session-user
-                          (request start-url
-                                   :request-method :post)
-                          (ltu/body->edn)
-                          (ltu/is-status 202)
-                          (ltu/location-url))
-              _ (-> session-user
-                    (request job-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-key-value :state "QUEUED")
-                    (ltu/is-key-value :action "start_deployment"))
+            deployment          (-> session-user
+                                    (request deployment-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-key-value some? :api-credentials true)
+                                    (ltu/body))
+            credential-id       (-> deployment :api-credentials :api-key)
+            credential-url      (str p/service-context credential-id)
+            credential          (-> session-admin
+                                    (request credential-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/body))]
 
-              deployment (-> session-user
-                             (request deployment-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/is-key-value some? :api-credentials true)
-                             (ltu/body))
-              credential-id (-> deployment :api-credentials :api-key)
-              credential-url (str p/service-context credential-id)
-              credential (-> session-admin
-                             (request credential-url)
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             (ltu/body))]
+        (is (= deployment-id (:parent credential)))
 
-          (is (= deployment-id (:parent credential)))
-
-          ;; verify that the credential has the correct identity
-          (is (= gg (-> credential :claims :identity))))))))
+        ;; verify that the credential has the correct identity
+        (is (= gg (-> credential :claims :identity)))))))

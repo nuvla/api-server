@@ -64,13 +64,13 @@ marketplace.
        (str resource-type "/")))
 
 (defn request->resource-id
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params :as _request}]
   (str resource-type "/" uuid))
 
 
 ;; resource identifier a UUID generated from the user-id
 (defmethod crud/new-identifier resource-type
-  [resource resource-name]
+  [resource _resource-name]
   (assoc resource :id (-> resource :parent active-claim->resource-id)))
 
 

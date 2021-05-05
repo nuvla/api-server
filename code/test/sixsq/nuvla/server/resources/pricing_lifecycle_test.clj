@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.pricing-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures]]
     [clojure.tools.logging :as log]
     [environ.core :as env]
     [peridot.core :refer [content-type header request session]]

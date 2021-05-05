@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.callback-module-update
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.callback :as callback]
@@ -43,7 +42,7 @@
 
 
 (defmethod callback/execute action-name
-  [{{module-id :href} :target-resource callback-id :id :as callback-resource} request]
+  [{{module-id :href} :target-resource callback-id :id :as callback-resource} _request]
   (let [update-response (update-component! module-id (:data callback-resource))]
     (when (= (:status update-response) 200)
       (delete-notification! callback-id))

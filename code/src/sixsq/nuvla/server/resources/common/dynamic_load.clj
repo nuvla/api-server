@@ -29,14 +29,14 @@
    keyword associated with the relative URL for the resource. Function returns
    nil if 'resource-type' cannot be found in the resource."
   [resource-ns]
-  (if-let [vtag (dyn/resolve "resource-type" resource-ns)]
+  (when-let [vtag (dyn/resolve "resource-type" resource-ns)]
     [(keyword (deref vtag)) {:href (deref vtag)}]))
 
 
 (defn- initialize-resource
   "Run a resource's initialization function if it exists."
   [resource-ns]
-  (if-let [fvar (dyn/resolve "initialize" resource-ns)]
+  (when-let [fvar (dyn/resolve "initialize" resource-ns)]
     (try
       ((deref fvar))
       (log/info "initialized resource" (ns-name resource-ns))

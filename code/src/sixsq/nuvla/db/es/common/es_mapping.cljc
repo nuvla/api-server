@@ -15,7 +15,7 @@
 
 (defn keep-key?
   [arg]
-  (let [[k v] (seq arg)]                                    ;; seq avoids corner case where we're passed a map
+  (let [[k _v] (seq arg)]                                    ;; seq avoids corner case where we're passed a map
     (or (string? k) (#{:type :enabled :properties :format :copy_to :index} k))))
 
 

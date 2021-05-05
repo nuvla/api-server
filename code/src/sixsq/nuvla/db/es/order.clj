@@ -24,7 +24,7 @@
 (defn sorters
   "Given the sorting information in the :cimi-params parameter, add all of the
    sorting clauses to the sort map."
-  [{:keys [orderby] :as cimi-params}]
+  [{:keys [orderby] :as _cimi-params}]
   (let [entries (mapv sort-entry orderby)]
     (when (seq entries)
       {:sort entries})))

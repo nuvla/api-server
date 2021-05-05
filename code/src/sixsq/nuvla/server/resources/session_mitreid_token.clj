@@ -44,7 +44,7 @@
 ;;
 
 (defmethod p/tpl->session authn-method
-  [{:keys [token instance href redirect-url] :as resource} {:keys [headers] :as request}]
+  [{:keys [token instance href redirect-url] :as _resource} {:keys [headers] :as _request}]
   (if token
     (let [{:keys [client-ips]} (oidc-utils/config-mitreid-token-params redirect-url instance)
           {:keys [public-key]} (oidc-utils/config-mitreid-params redirect-url instance)]

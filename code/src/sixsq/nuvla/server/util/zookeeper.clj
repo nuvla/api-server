@@ -39,7 +39,7 @@
                (instance? clojure.lang.Var$Unbound *client*))
        (set-client! (create-client)))
      (~zk-func *client* ~path ~@options)
-     (catch KeeperException$SessionExpiredException e#
+     (catch KeeperException$SessionExpiredException _e#
        (log/warn "zookeeper session expired exception occurred!")
        (close-client!)
        (set-client! (create-client))
@@ -54,45 +54,45 @@
   `(retry-zk-client zk/create ~path ~@options))
 
 
-(defmacro get-znode [path & options]
-  `(let [result# (retry-zk-client zk/data ~path ~@options)
-         data#   (:data result#)
-         value#  (when (-> data# nil? not) (String. data#))]
-     (assoc result# :data value#)))
+;(defmacro get-znode [path & options]
+;  `(let [result# (retry-zk-client zk/data ~path ~@options)
+;         data#   (:data result#)
+;         value#  (when (-> data# nil? not) (String. ^String data#))]
+;     (assoc result# :data value#)))
 
 
-(defmacro get-data [path & options]
-  `(-> (get-znode ~path ~@options)
-       :data))
+;(defmacro get-data [path & options]
+;  `(-> (get-znode ~path ~@options)
+;       :data))
 
 
-(defmacro get-stat [path & options]
-  `(-> (retry-zk-client get-znode ~path ~@options)
-       :stat))
+;(defmacro get-stat [path & options]
+;  `(-> (retry-zk-client get-znode ~path ~@options)
+;       :stat))
 
 
-(defn get-version
-  [path]
-  (-> (get-znode path) :stat :version))
+;(defn get-version
+;  [path]
+;  (-> (get-znode path) :stat :version))
 
 
-(defmacro set-data [path value & options]
-  `(let [version# (get-version ~path)
-         data#    (string-to-byte ~value)]
-     (retry-zk-client zk/set-data ~path data# version# ~@options)))
+;(defmacro set-data [path value & options]
+;  `(let [version# (get-version ~path)
+;         data#    (string-to-byte ~value)]
+;     (retry-zk-client zk/set-data ~path data# version# ~@options)))
 
 
 (defmacro exists [path & options]
   `(retry-zk-client zk/exists ~path ~@options))
 
 
-(defmacro children [path & options]
-  `(retry-zk-client zk/children ~path ~@options))
+;(defmacro children [path & options]
+;  `(retry-zk-client zk/children ~path ~@options))
 
 
-(defmacro delete-all [path & options]
-  `(retry-zk-client zk/delete-all ~path ~@options))
+;(defmacro delete-all [path & options]
+;  `(retry-zk-client zk/delete-all ~path ~@options))
 
 
-(defmacro delete [path & options]
-  `(retry-zk-client zk/delete ~path ~@options))
+;(defmacro delete [path & options]
+;  `(retry-zk-client zk/delete ~path ~@options))

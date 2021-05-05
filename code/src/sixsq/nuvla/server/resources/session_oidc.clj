@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.session-oidc
   (:require
-    [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback-create-session-oidc :as cb]
@@ -46,7 +45,7 @@
 ;;
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  [{:keys [href instance redirect-url] :as _resource} {:keys [headers base-uri] :as _request}]
   (let [{:keys [client-id authorize-url
                 redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
         ;; fake session values, will be replaced after callback execution

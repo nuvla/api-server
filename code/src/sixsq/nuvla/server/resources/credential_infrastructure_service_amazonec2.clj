@@ -16,7 +16,7 @@ correspond exactly to those required by `docker-machine`.
 ;;
 
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method amazonec2-access-key amazonec2-secret-key parent acl]} request]
+  [{:keys [subtype method amazonec2-access-key amazonec2-secret-key acl]} _request]
   (let [resource (cond-> {:resource-type        p/resource-type
                           :subtype              subtype
                           :method               method

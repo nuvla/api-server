@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.app.server
   (:require
     [clojure.tools.logging :as log]
+    [compojure.core :as compojure]
     [environ.core :as env]
     [ring.middleware.cookies :refer [wrap-cookies]]
     [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
@@ -33,7 +34,7 @@
   []
   (log/info "creating ring handler")
 
-  (compojure.core/routes)
+  (compojure/routes)
 
   (-> (routes/get-main-routes)
 
@@ -46,7 +47,8 @@
       wrap-exceptions
       wrap-authn-info
       (wrap-json-body {:keywords? true})
-      (wrap-json-response {:pretty true :escape-non-ascii true})
+      (wrap-json-response {:pretty           true
+                           :escape-non-ascii true})
       (default-content-type "application/json")
       redirect-cep
       wrap-logger

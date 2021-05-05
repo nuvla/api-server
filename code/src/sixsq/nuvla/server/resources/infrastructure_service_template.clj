@@ -137,7 +137,7 @@ paging, etc. parameters are not supported.
   (let [wrapper-fn              (std-crud/collection-wrapper-fn resource-type collection-acl collection-type true false)
         entries                 (or (filter #(a/can-view? % request) (vals @templates)) [])
         ;; FIXME: At least the paging options should be supported.
-        options                 (select-keys request [:query-params :cimi-params])
+        ;; options                 (select-keys request [:query-params :cimi-params])
         count-before-pagination (count entries)
         wrapped-entries         (wrapper-fn request entries)
         entries-and-count       (assoc wrapped-entries :count count-before-pagination)]

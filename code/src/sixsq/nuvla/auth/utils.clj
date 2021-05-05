@@ -12,7 +12,7 @@
 
 (defn current-authentication
   "Extracts the current authentication from the ring request."
-  [{:keys [nuvla/authn] :as request}]
+  [{:keys [nuvla/authn] :as _request}]
   (select-keys authn [:user-id :active-claim :claims :groups]))
 
 
@@ -26,9 +26,9 @@
   (:active-claim (current-authentication request)))
 
 
-(defn current-claims
-  [request]
-  (:claims (current-authentication request)))
+;(defn current-claims
+;  [request]
+;  (:claims (current-authentication request)))
 
 
 (defn current-groups

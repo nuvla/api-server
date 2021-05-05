@@ -27,7 +27,7 @@
 (defn aggregators
   "Given the aggregation information in the :cimi-params parameter, add all of the
    aggregation clauses to the aggs map."
-  [{:keys [aggregation] :as cimi-params}]
+  [{:keys [aggregation] :as _cimi-params}]
   (let [entries (mapv agg-entry aggregation)]
     (when (seq entries)
       {:aggs (into {} entries)})))

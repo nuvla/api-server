@@ -105,7 +105,7 @@ from the response! The secret cannot be recovered from the server later.**
 ;; multimethod for edition
 ;;
 (defmethod p/special-edit tpl/credential-subtype
-  [resource {:keys [nuvla/authn] :as request}]
+  [resource {:keys [nuvla/authn] :as _request}]
   (if (acl-resource/is-admin? authn)
     resource
     (dissoc resource :claims)))

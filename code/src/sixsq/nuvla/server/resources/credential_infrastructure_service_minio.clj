@@ -17,7 +17,7 @@ Provides the credentials necessary to access a Minio S3 service.
 ;;
 
 (defmethod p/tpl->credential cred-tpl-mino/credential-subtype
-  [{:keys [subtype method access-key secret-key parent acl]} request]
+  [{:keys [subtype method access-key secret-key parent acl]} _request]
   (let [resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method

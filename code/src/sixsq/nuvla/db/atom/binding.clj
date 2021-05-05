@@ -73,7 +73,7 @@
 
 
 (defn atomic-delete
-  [db {:keys [id] :as data}]
+  [db {:keys [id] :as _data}]
   (if-let [[collection-id doc-id :as path] (cu/split-id-kw id)]
     (if (get-in db path)
       (update-in db [collection-id] dissoc doc-id)
@@ -87,7 +87,7 @@
 
 
 (defn query-info
-  [data-atom collection-id options]
+  [data-atom collection-id _options]
   (let [collection-kw (keyword collection-id)
         hits          (vals (collection-kw @data-atom))
         meta          {:count (count hits)}]
@@ -99,27 +99,27 @@
 
   Binding
 
-  (initialize [_ collection-id options]
+  (initialize [_ _collection-id _options]
     nil)
 
 
-  (add [_ data options]
+  (add [_ data _options]
     (add-data data-atom data))
 
 
-  (add [_ _ data options]
+  (add [_ _ data _options]
     (add-data data-atom data))
 
 
-  (retrieve [_ id options]
+  (retrieve [_ id _options]
     (atomic-retrieve data-atom id))
 
 
-  (delete [_ data options]
+  (delete [_ data _options]
     (delete-data data-atom data))
 
 
-  (edit [_ data options]
+  (edit [_ data _options]
     (update-data data-atom data))
 
 

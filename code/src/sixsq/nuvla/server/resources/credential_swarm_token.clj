@@ -31,7 +31,7 @@ either a manager or worker within the Swarm.
 ;;
 
 (defmethod p/tpl->credential tpl-swarm-token/credential-subtype
-  [{:keys [subtype method scope token parent acl]} request]
+  [{:keys [subtype method scope token parent acl]} _request]
   [nil (cond-> {:resource-type p/resource-type
                 :subtype       subtype
                 :method        method

@@ -30,7 +30,7 @@
 
 
 (defmethod p/tpl->user user-template/registration-method
-  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  [{:keys [href instance redirect-url] :as _resource} {:keys [base-uri] :as _request}]
   (let [{:keys [client-id authorize-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if (and client-id authorize-url)
       (let [data         (when redirect-url {:redirect-url redirect-url})

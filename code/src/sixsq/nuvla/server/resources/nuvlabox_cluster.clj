@@ -35,7 +35,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 
 (defmethod validate-subtype :default
-  [{:keys [version] :as resource}]
+  [{:keys [version] :as _resource}]
   (if version
     (throw (r/ex-bad-request (str "unsupported nuvlabox-cluster version: " version)))
     (throw (r/ex-bad-request "missing nuvlabox-cluster version"))))
@@ -52,10 +52,10 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [cluster-id] :as cluster} resource-name]
+  [{:keys [cluster-id] :as cluster} _resource-name]
   (->> (u/from-data-uuid cluster-id)
-    (str resource-type "/")
-    (assoc cluster :id)))
+       (str resource-type "/")
+       (assoc cluster :id)))
 
 
 ;;
@@ -65,8 +65,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
-  [{{:keys [workers managers]
-     :as   body} :body :as request}]
+  [{{:keys [workers managers]} :body :as request}]
   (let [nb-workers  (if workers
                       (utils/get-matching-nuvlaboxes workers)
                       [])
@@ -78,14 +77,13 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
 
 
 (defmethod crud/edit resource-type
-  [{{select :select} :cimi-params {uuid :uuid} :params {:keys [workers managers]
-                                                        :as   body} :body :as request}]
-  (let [current    (-> (str resource-type "/" uuid)
-                     (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                     (a/throw-cannot-edit request))
-        nb-workers (if workers
-                     (utils/get-matching-nuvlaboxes workers)
-                     (utils/get-matching-nuvlaboxes (:workers current)))
+  [{{uuid :uuid} :params {:keys [workers managers]} :body :as request}]
+  (let [current     (-> (str resource-type "/" uuid)
+                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                        (a/throw-cannot-edit request))
+        nb-workers  (if workers
+                      (utils/get-matching-nuvlaboxes workers)
+                      (utils/get-matching-nuvlaboxes (:workers current)))
         nb-managers (if managers
                       (utils/get-matching-nuvlaboxes managers)
                       (utils/get-matching-nuvlaboxes (:managers current)))]

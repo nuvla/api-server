@@ -98,7 +98,7 @@ resources. The resources are tied to an infrastructure via the
 
 
 (defn assoc-services
-  [{:keys [body] :as response} {:keys [headers] :as request}]
+  [{:keys [body] :as response} request]
   (assoc response :body (assoc body :infrastructure-services (service-query request (:id body)))))
 
 

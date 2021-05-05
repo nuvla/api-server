@@ -133,7 +133,7 @@ These resources represent the logs of a deployment.
 
 
 (defn already-job-exist
-  [job-type {{uuid :uuid} :params :as request}]
+  [job-type {{uuid :uuid} :params :as _request}]
   (try
     (let [id               (str resource-type "/" uuid)
           filter           (format "action='%s' and target-resource/href='%s' and %s"
@@ -163,7 +163,7 @@ These resources represent the logs of a deployment.
 
 
 (defmethod job-interface/get-context ["deployment-log" "fetch_deployment_log"]
-  [{:keys [target-resource] :as resource}]
+  [{:keys [target-resource] :as _resource}]
   (let [deployment-log (some-> target-resource :href crud/retrieve-by-id-as-admin)
         deployment     (some-> deployment-log :parent crud/retrieve-by-id-as-admin)
         credential     (some-> deployment :parent crud/retrieve-by-id-as-admin)

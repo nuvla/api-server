@@ -9,8 +9,7 @@
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as tpl-customer]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as logu]))
 
 
 (defn get-service

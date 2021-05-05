@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.hook-reset-password-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]

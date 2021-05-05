@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.callback-create-session-oidc
   "Creates a new OIDC session resource presumably after external authentication has succeeded."
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
@@ -23,7 +22,7 @@
 
 
 (defn validate-session
-  [{{session-id :href} :target-resource callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
+  [{{session-id :href} :target-resource callback-id :id :as _callback-resource} {:keys [base-uri] :as request}]
 
   (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)

@@ -16,7 +16,7 @@
 
 
 (defn register-user
-  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data :as callback-resource} request]
+  [{{:keys [href]} :target-resource {:keys [redirect-url]} :data :as _callback-resource} request]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         [client-id client-secret] (gu/config-github-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]

@@ -31,7 +31,7 @@
 (def create-user-oidc-callback (partial callback/create user-oidc-callback/action-name))
 
 (defn get-authorize-url
-  [{:keys [href instance redirect-url] :as resource} {:keys [base-uri] :as request}]
+  [{:keys [href instance redirect-url] :as _resource} {:keys [base-uri] :as _request}]
   (let [{:keys [client-id authorize-url
                 redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
         redirect-url (if (= redirect-url-resource "callback")

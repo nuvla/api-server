@@ -13,7 +13,7 @@
 (def ^:private all-ascii-chars (map str (map char (range 0 256))))
 
 
-(defn- regex-chars
+(defn regex-chars
   "Provides a list of ASCII characters that satisfy the regex pattern."
   [pattern]
   (set (filter #(re-matches pattern %) all-ascii-chars)))
@@ -84,7 +84,7 @@
 ;; spec parsing patches
 ;;
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys [dispatch form]
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys [_dispatch form]
   (st-parse/parse-form 'clojure.spec.alpha/keys form))
 
 
@@ -96,7 +96,7 @@
        (cons spec-name)))
 
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys-maps [dispatch form]
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys-maps [_dispatch form]
   (st-parse/parse-form 'clojure.spec.alpha/keys (transform-form form)))
 
 
@@ -105,7 +105,7 @@
   [[spec-name key-spec value-spec]])
 
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/constrained-map [dispatch form]
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/constrained-map [_dispatch form]
   (st-parse/parse-form 'clojure.spec.alpha/every (transform-as-every form)))
 
 
@@ -130,7 +130,7 @@
 
 ;; accept-spec monkey patches
 
-(defmethod jsc/accept-spec 'sixsq.nuvla.server.util.spec/only-keys [dispatch spec children arg]
+(defmethod jsc/accept-spec 'sixsq.nuvla.server.util.spec/only-keys [_dispatch spec children arg]
   (jsc/accept-spec 'clojure.spec.alpha/keys spec children arg))
 
 
@@ -165,14 +165,14 @@
 (defmulti accept-spec spec-dispatch :default ::default)
 
 
-(defmethod accept-spec 'sixsq.nuvla.server.util.spec/only-keys [dispatch spec children arg]
+(defmethod accept-spec 'sixsq.nuvla.server.util.spec/only-keys [_dispatch spec children arg]
   (accept-spec 'clojure.spec.alpha/keys spec children arg))
 
 
-(defmethod accept-spec 'sixsq.nuvla.server.util.spec/only-keys-maps [dispatch spec children arg]
+(defmethod accept-spec 'sixsq.nuvla.server.util.spec/only-keys-maps [_dispatch spec children arg]
   (accept-spec 'clojure.spec.alpha/keys spec children arg))
 
 
-(defmethod accept-spec 'sixsq.nuvla.server.util.spec/constrained-map [dispatch spec children arg]
+(defmethod accept-spec 'sixsq.nuvla.server.util.spec/constrained-map [_dispatch spec children arg]
   (accept-spec 'clojure.spec.alpha/keys spec children arg))
 

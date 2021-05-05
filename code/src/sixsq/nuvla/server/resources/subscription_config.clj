@@ -15,7 +15,6 @@ Collection for holding subscriptions configurations.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
     [sixsq.nuvla.server.resources.subscription :as subs]
-    [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
@@ -95,13 +94,13 @@ Collection for holding subscriptions configurations.
 ;; create individual subscriptions
 (defn create-subscriptions
   [request response]
-  (if (= 201 (-> response :body :status))
+  (when (= 201 (-> response :body :status))
     (let [id (-> response :body :resource-id)
           resource (db/retrieve id request)
           {:keys [resource-kind resource-filter]} resource
           parent (:id resource)
           resources-to-subscribe (individual-resources-to-subscribe resource-kind resource-filter request)]
-      (if (not-empty resources-to-subscribe)
+      (when (not-empty resources-to-subscribe)
         (doseq [res resources-to-subscribe]
           (add-subscription (assoc resource :resource-id res :parent parent)))))))
 
@@ -163,7 +162,7 @@ Collection for holding subscriptions configurations.
 
 (defn set-enabled
   "'enabled' boolean"
-  [{{uuid :uuid} :params :as request} enabled]
+  [request enabled]
   (edit-conf-and-subs (assoc request :body {:enabled enabled})))
 
 
@@ -204,7 +203,7 @@ Collection for holding subscriptions configurations.
                       :body
                       :resources
                       (map :id))]
-    (if (not-empty subs-ids)
+    (when (not-empty subs-ids)
       (let [req-with-filter (assoc request :cimi-params {:filter filter})
             req (merge-with merge req-with-filter {:headers {"bulk" true}})]
         ;; delete individual subscriptions

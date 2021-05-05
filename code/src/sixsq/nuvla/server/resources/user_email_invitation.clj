@@ -34,7 +34,7 @@ using an email address.
 ;;
 
 (defmethod p/tpl->user email-invitation/registration-method
-  [resource request]
+  [resource _request]
   [nil (password-utils/create-user-map resource)])
 
 
@@ -50,7 +50,7 @@ using an email address.
 
 
 (defmethod p/post-user-add email-invitation/registration-method
-  [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
+  [{:keys [id redirect-url] :as _resource} {:keys [base-uri body] :as request}]
   (try
     (let [{{:keys [email]} :template} body
           invited-by-user-id (auth/current-active-claim request)

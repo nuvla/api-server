@@ -18,9 +18,9 @@ visited, the email identifier is marked as validated.
 
 (defmethod callback/execute action-name
   [{callback-id    :id
-    {:keys [href]} :target-resource :as callback-resource} request]
+    {:keys [href]} :target-resource :as _callback-resource} _request]
   (try
-    (let [{:keys [id validated] :as email} (crud/retrieve-by-id-as-admin href)]
+    (let [{:keys [id validated] :as _email} (crud/retrieve-by-id-as-admin href)]
       (if-not validated
         (let [msg (str id " successfully validated")]
           (email-utils/validate-email! id)

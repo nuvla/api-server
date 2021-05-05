@@ -11,7 +11,7 @@
 
 
 (defmethod callback/execute action-name
-  [{{:keys [ok?]} :data id :id :as callback-resource} request]
+  [{{:keys [ok?]} :data id :id :as _callback-resource} _request]
   (if ok?
     (do
       (utils/callback-succeeded! id)

@@ -324,21 +324,21 @@
   (swap! zk-client-server-cache (fn [current] (or current (create-zk-client-server)))))
 
 
-(defn clear-zk-client-server-cache
-  "Unconditionally clears the cached Elasticsearch node and client. Can be
-   used to force the re-initialization of the node and client. If the current
-   values are not nil, then the node and client will be closed, with errors
-   silently ignored."
-  []
-  (let [[[client server] _] (swap-vals! zk-client-server-cache (constantly nil))]
-    (when client
-      (try
-        (.close client)
-        (catch Exception _)))
-    (when server
-      (try
-        (.close server)
-        (catch Exception _)))))
+;(defn clear-zk-client-server-cache
+;  "Unconditionally clears the cached Elasticsearch node and client. Can be
+;   used to force the re-initialization of the node and client. If the current
+;   values are not nil, then the node and client will be closed, with errors
+;   silently ignored."
+;  []
+;  (let [[[client server] _] (swap-vals! zk-client-server-cache (constantly nil))]
+;    (when client
+;      (try
+;        (.close client)
+;        (catch Exception _)))
+;    (when server
+;      (try
+;        (.close server)
+;        (catch Exception _)))))
 
 
 ;;
@@ -435,7 +435,6 @@
      (esu/reset-index client# (str escu/default-index-prefix "*"))
      ~@body))
 
-
 ;;
 ;; Ring Application Management
 ;;
@@ -497,13 +496,13 @@
         k-dir (ke/create-tmp-dir "kafka-log-dir")]
     (try
       (log/info "starting kafka")
-      (with-open [k (ke/start-embedded-kafka
-                      {::ke/host               kafka-host
-                       ::ke/kafka-port         kafka-port
-                       ::ke/zk-port            kafka-zk-port
-                       ::ke/zookeeper-data-dir (str z-dir)
-                       ::ke/kafka-log-dir      (str k-dir)
-                       ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
+      (with-open [_k (ke/start-embedded-kafka
+                       {::ke/host               kafka-host
+                        ::ke/kafka-port         kafka-port
+                        ::ke/zk-port            kafka-zk-port
+                        ::ke/zookeeper-data-dir (str z-dir)
+                        ::ke/kafka-log-dir      (str k-dir)
+                        ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
         ;; Create and set kafka producer.
         (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host kafka-port)))
         (f))
@@ -514,17 +513,6 @@
         (ke/delete-dir z-dir)
         (ke/delete-dir k-dir)))))
 
-(defmacro with-test-es-client
-  "Creates an Elasticsearch test client, executes the body with the created
-   client bound to the Elasticsearch client binding, and then clean up the
-   allocated resources by closing both the client and the node."
-  [& body]
-  `(let [cache#   (set-es-node-client-cache)
-         client#  (second cache#)
-         sniffer# (nth cache# 2)]
-     (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
-     (esu/reset-index client# (str escu/default-index-prefix "*"))
-     ~@body))
 ;;
 ;; test fixture to ensure that all parts of the test server are started
 ;; (elasticsearch, zookeeper, ring application)

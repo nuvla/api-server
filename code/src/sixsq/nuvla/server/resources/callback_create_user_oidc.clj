@@ -17,11 +17,13 @@
 
 
 (defn register-user
-  [{{href :href} :target-resource {:keys [redirect-url]} :data callback-id :id :as callback-resource} {:keys [base-uri] :as request}]
+  [{{href :href} :target-resource {:keys [redirect-url]} :data callback-id :id :as _callback-resource}
+   {:keys [base-uri] :as request}]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url]} (oidc-utils/config-oidc-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
+      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
+                                                        code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
           (let [{:keys [sub email] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))

@@ -22,7 +22,6 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-0 :as nb-0]
     [sixsq.nuvla.server.resources.nuvlabox-release :as nuvlabox-release]
-    [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -40,15 +39,11 @@
 
 (def credential-collection-uri (str p/service-context credential/resource-type))
 
-(def nuvlabox-release-collection-uri (str p/service-context nuvlabox-release/resource-type))
 
-(def nb-status-collection-uri (str p/service-context nb-status/resource-type))
+(def nuvlabox-release-collection-uri (str p/service-context nuvlabox-release/resource-type))
 
 
 (def timestamp "1964-08-25T10:00:00Z")
-
-
-(def user "jane")
 
 
 (def nuvlabox-owner "user/alpha")
@@ -447,10 +442,10 @@
                                 (ltu/is-status 200)
                                 (ltu/entries))]
 
-                  (if (= "swarm" subtype)
+                  (when (= "swarm" subtype)
                     (is (= 2 (count creds))))               ;; only swarm token credentials
 
-                  (if (= "s3" subtype)
+                  (when (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
                   )))
@@ -672,13 +667,13 @@
                                 (ltu/is-status 200)
                                 (ltu/entries))]
 
-                  (if (= "swarm" subtype)
+                  (when (= "swarm" subtype)
                     (is (= 3 (count creds))))               ;; now both tokens and credential
 
-                  (if (= "s3" subtype)
+                  (when (= "s3" subtype)
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
-                  (if (= "kubernetes" subtype)
+                  (when (= "kubernetes" subtype)
                     (is (= 1 (count creds))))
 
                   ))))
@@ -781,7 +776,7 @@
 
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
-
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [nuvlabox-id  (-> session-owner
                              (request base-uri
                                       :request-method :post
@@ -890,6 +885,7 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"
@@ -1033,6 +1029,7 @@
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
+      #_{:clj-kondo/ignore [:redundant-let]}
       (let [infra-srvc-vpn-create {:template {:href      (str infra-service-tpl/resource-type "/"
                                                               infra-srvc-tpl-vpn/method)
                                               :vpn-scope "nuvlabox"

@@ -9,7 +9,7 @@
   "Publish to a `topic` based on result of add response `add-response`."
   [topic add-response & {:keys [key] :or {key "resource-id"}}]
   (try
-    (if (= 201 (:status add-response))
+    (when (= 201 (:status add-response))
       (let [resource-id (-> add-response :body :resource-id)
             resource (db/retrieve resource-id {})
             msg-key (if (= key "resource-id")
@@ -24,7 +24,7 @@
   "Publish to a `topic` based on result of edit response `edit-response`."
   [topic edit-response & {:keys [key] :or {key "id"}}]
   (try
-    (if (= 200 (int (:status edit-response)))
+    (when (= 200 (int (:status edit-response)))
       (let [msg-key (-> edit-response :body (get (keyword key)))
             resource (:body edit-response)]
         (ka/publish-async topic msg-key resource)))

@@ -16,7 +16,7 @@ correspond exactly to those required by `docker-machine`.
 ;;
 
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method exoscale-api-key exoscale-api-secret-key parent acl]} request]
+  [{:keys [subtype method exoscale-api-key exoscale-api-secret-key acl]} _request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :subtype                 subtype
                           :method                  method

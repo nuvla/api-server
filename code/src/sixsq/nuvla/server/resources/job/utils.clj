@@ -4,7 +4,6 @@
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.server.util.response :as ru]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]
     [sixsq.nuvla.server.util.zookeeper :as uzk]))
@@ -44,12 +43,12 @@
 
 
 (defn is-final-state?
-  [{:keys [state] :as job}]
+  [{:keys [state] :as _job}]
   (contains? #{state-failed state-success} state))
 
 
 (defn should_insert_target-resource-in-affected-resources?
-  [{:keys [target-resource affected-resources] :as job}]
+  [{:keys [target-resource affected-resources] :as _job}]
   (when target-resource
     (not-any? #(= target-resource %) affected-resources)))
 
@@ -97,4 +96,4 @@
   [resource request]
   (if (can-get-context? resource request)
     resource
-    (throw (ru/ex-unauthorized (:id resource)))))
+    (throw (r/ex-unauthorized (:id resource)))))

@@ -4,7 +4,7 @@
 (defn create-user-map
   "Transforms template into a user resource. Strips the method attribute and
    updates the resource-type."
-  [{:keys [name description tags method username email] :as resource}]
+  [{:keys [name description tags method username email] :as _resource}]
   (let [name-attr (or name username email)]
     (cond-> {:resource-type "user"
              :method        method

@@ -5,7 +5,7 @@
 
 (defn and-acl
   "Enriches query-builder by adding a clause on ACL (extracted from options)"
-  [query {:keys [nuvla/authn] :as options} right]
+  [query {:keys [nuvla/authn] :as _options} right]
   (let [claims                (:claims authn)
         acl-view-meta-clauses (map vector (repeat (str "acl." right)) claims)
 

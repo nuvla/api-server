@@ -30,7 +30,7 @@ information."
 ;;
 
 (defmethod p/tpl->user minimum/registration-method
-  [resource request]
+  [resource _request]
   [nil (-> resource
            password-utils/create-user-map
            (assoc :state "ACTIVE"))])
@@ -41,7 +41,7 @@ information."
 ;;
 
 (defmethod p/post-user-add minimum/registration-method
-  [{user-id :id :as resource} {:keys [body] :as request}]
+  [{user-id :id :as _resource} {:keys [body] :as _request}]
   (try
     (let [{{:keys [username email]} :template} body]
       (when username

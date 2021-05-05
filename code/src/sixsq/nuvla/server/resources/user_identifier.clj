@@ -63,7 +63,7 @@ must delete the old one and create a new one.
 
 
 (defmethod crud/add-acl resource-type
-  [{:keys [parent] :as resource} request]
+  [{:keys [parent] :as resource} _request]
   (assoc resource :acl (user-acl parent)))
 
 
@@ -72,7 +72,7 @@ must delete the old one and create a new one.
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [identifier] :as resource} resource-name]
+  [{:keys [identifier] :as resource} _resource-name]
   (->> identifier
        u/from-data-uuid
        (str resource-type "/")

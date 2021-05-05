@@ -11,13 +11,13 @@
 (defn cimi-first
   "Calculates the value for the :first key in the CIMI parameters map. If a
    valid value isn't specified, this defaults to 1."
-  [{:keys [first] :as params}]
+  [{:keys [first] :as _params}]
   (or (utils/first-valid-long first) 1))
 
 (defn cimi-last
   "Calculates the value for the :last key in the CIMI parameters map. If a
    valid value isn't specified, then the value is nil."
-  [{:keys [last] :as params}]
+  [{:keys [last] :as _params}]
   (utils/first-valid-long last))
 
 (defn cimi-filter
@@ -25,7 +25,7 @@
   AST resulting from the parsing of the complete filter. If the filter
   parameter appears more than once, then the filters are combined with a
   logical AND. If the filter is invalid, then an exception is thrown."
-  [{:keys [filter] :as params}]
+  [{:keys [filter] :as _params}]
   (some->> filter
            utils/as-vector
            utils/wrap-join-with-and
@@ -38,7 +38,7 @@
   were given. If the wildcard is specified '*', then :all will be given as the
   value. In all other cases, a set of the specified attributes will be
   provided."
-  [{:keys [expand] :as params}]
+  [{:keys [expand] :as _params}]
   (->> expand
        utils/as-vector
        (mapcat utils/comma-split)
@@ -50,7 +50,7 @@
   value will be nil if the select key was not specified or if the wildcard
   value '*' is given. Otherwise a set of the desired keys (with 'resource-type'
   added automatically) is returned."
-  [{:keys [select] :as params}]
+  [{:keys [select] :as _params}]
   (some->> select
            utils/as-vector
            (mapcat utils/comma-split)
@@ -72,7 +72,7 @@
   Note that the specification states that this option must override any values
   provided in the HTTP Accept header. Consequently, the value must be checked
   before generating the output."
-  [{:keys [format] :as params}]
+  [{:keys [format] :as _params}]
   (->> format
        utils/as-vector
        (filter string?)
@@ -88,7 +88,7 @@
   specified or has no valid values. Otherwise it will contain a sequence of
   [attribute name, direction] tuples where the direction is either :asc
   (ascending) or :desc (descending)."
-  [{:keys [orderby] :as params}]
+  [{:keys [orderby] :as _params}]
   (->> orderby
        utils/as-vector
        (mapcat utils/comma-split)
@@ -99,7 +99,7 @@
   "Calculates the value of the :aggregation key for the CIMI parameters map.
   The value is a map where the keys are algorithm names (as keywords) and the
   values are the attribute names to which the algorithms should be applied."
-  [{:keys [aggregation] :as params}]
+  [{:keys [aggregation] :as _params}]
   (->> aggregation
        utils/as-vector
        (mapcat utils/comma-split)

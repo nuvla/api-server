@@ -97,7 +97,7 @@ a username and password pair stored in Nuvla's internal database.
 ;; identifiers for these resources are the same as the :instance value
 ;;
 (defmethod crud/new-identifier resource-type
-  [{:keys [instance method] :as resource} resource-name]
+  [{:keys [instance method] :as resource} _resource-name]
   (let [new-id (if (= method instance)
                  instance
                  (str method "-" instance))]

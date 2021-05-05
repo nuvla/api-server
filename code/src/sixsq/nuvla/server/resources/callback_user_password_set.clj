@@ -34,8 +34,8 @@ Allow a user to set a new password when the execute URL is visited.
 
 (defmethod callback/execute action-name
   [{callback-id    :id
-    {:keys [href]} :target-resource :as callback-resource}
-   {{:keys [new-password]} :body :as request}]
+    {:keys [href]} :target-resource :as _callback-resource}
+   {{:keys [new-password]} :body :as _request}]
   (when-not (hashed-password/acceptable-password? new-password)
     (throw (r/ex-response hashed-password/acceptable-password-msg 400)))
   (try
