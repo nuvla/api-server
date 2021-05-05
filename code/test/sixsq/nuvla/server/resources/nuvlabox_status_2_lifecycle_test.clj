@@ -95,7 +95,8 @@
                   :cluster-nodes          ["syz", "xyz", "1dsdr3"]
                   :cluster-managers       ["syz"]
                   :cluster-join-address   "194.182.171.166:2377"
-                  :orchestrator           "kubernetes"})
+                  :orchestrator           "kubernetes"
+                  :container-stats        []})
 
 
 (def resources-updated {:cpu   {:capacity 10
