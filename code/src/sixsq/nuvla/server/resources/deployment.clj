@@ -473,6 +473,10 @@ a container orchestration engine.
   [request]
   (bulk-action-impl request))
 
+(defmethod crud/bulk-action [resource-type "bulk-stop"]
+  [request]
+  (bulk-action-impl request))
+
 
 (defmethod crud/do-action [resource-type "fetch-module"]
   [{{uuid :uuid} :params body :body :as request}]

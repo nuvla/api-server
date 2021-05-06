@@ -782,6 +782,32 @@
                                                       "user/jane"
                                                       "group/nuvla-user"]}}))))
 
+
+      (let [job-url (-> session-user
+                        (request (str base-uri "/bulk-stop")
+                                 :request-method :patch
+                                 :headers {:bulk true}
+                                 :body (json/write-str
+                                         {:filter "id='foobar'"
+                                          :other  "hello"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 202)
+                        (ltu/message-matches "starting bulk-stop with async job")
+                        (ltu/location-url))]
+        (-> session-user
+            (request job-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value
+              :payload (json/write-str
+                         {:filter     "id='foobar'"
+                          :other      "hello"
+                          :authn-info {:user-id      "user/jane"
+                                       :active-claim "user/jane"
+                                       :claims       ["group/nuvla-anon"
+                                                      "user/jane"
+                                                      "group/nuvla-user"]}}))))
+
       (-> session-user
           (request deployment-url
                    :request-method :delete)
