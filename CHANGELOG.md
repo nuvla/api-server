@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.13.0] - 2021-05-06
+
 ### Changed
 
   - Deployment - Keep versions map in deployment module
