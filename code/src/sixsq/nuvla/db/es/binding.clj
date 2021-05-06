@@ -54,7 +54,7 @@
                 (log/warn index "index may or may not have been created")))
             (log/error "unexpected status code when checking" index "index (" status "). " body))
           (catch Exception e
-            (let [{:keys [status body] :as response} (ex-data e)
+            (let [{:keys [status body] :as _response} (ex-data e)
                   error (:error body)]
               (log/error "unexpected status code when creating" index "index (" status "). " (or error e)))))))))
 
@@ -69,7 +69,7 @@
         (log/info index "mapping updated")
         (log/warn index "mapping could not be updated (" status "). " body)))
     (catch Exception e
-      (let [{:keys [status body] :as response} (ex-data e)
+      (let [{:keys [status body] :as _response} (ex-data e)
             error (:error body)]
         (log/warn index "mapping could not be updated (" status "). " (or error e))))))
 
@@ -91,7 +91,7 @@
         (r/response-created id)
         (r/response-conflict id)))
     (catch Exception e
-      (let [{:keys [status body] :as response} (ex-data e)
+      (let [{:keys [status body] :as _response} (ex-data e)
             error (:error body)]
         (if (= 409 status)
           (r/response-conflict id)
@@ -115,7 +115,7 @@
         (r/json-response data)
         (r/response-conflict id)))
     (catch Exception e
-      (let [{:keys [body] :as response} (ex-data e)
+      (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)]
         (r/response-error (str "unexpected exception updating " id ": " (or error e)))))))
 
@@ -132,7 +132,7 @@
         (-> response :body :_source)
         (throw (r/ex-not-found id))))
     (catch Exception e
-      (let [{:keys [status body] :as response} (ex-data e)
+      (let [{:keys [status body] :as _response} (ex-data e)
             error (:error body)]
         (if (= 404 status)
           (throw (r/ex-not-found id))
@@ -177,7 +177,7 @@
         (let [msg (str "error when querying: " (:body response))]
           (throw (r/ex-response msg 500)))))
     (catch Exception e
-      (let [{:keys [body] :as response} (ex-data e)
+      (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
@@ -199,7 +199,7 @@
         (let [msg (str "error when deleting by query: " body-response)]
           (throw (r/ex-response msg 500)))))
     (catch Exception e
-      (let [{:keys [body] :as response} (ex-data e)
+      (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)
             msg   (str "unexpected exception delete by query: " (or error e))]
         (throw (r/ex-response msg 500))))))
@@ -208,30 +208,30 @@
 (deftype ElasticsearchRestBinding [client sniffer]
   Binding
 
-  (initialize [_ collection-id {:keys [spec] :as options}]
+  (initialize [_ collection-id {:keys [spec] :as _options}]
     (let [index   (escu/collection-id->index collection-id)
           mapping (mapping/mapping spec)]
       (create-index client index)
       (set-index-mapping client index mapping)))
 
 
-  (add [_ data options]
+  (add [_ data _options]
     (add-data client data))
 
 
-  (add [_ collection-id data options]
+  (add [_ _collection-id data _options]
     (add-data client data))
 
 
-  (retrieve [_ id options]
+  (retrieve [_ id _options]
     (find-data client id))
 
 
-  (delete [_ {:keys [id]} options]
+  (delete [_ {:keys [id]} _options]
     (delete-data client id))
 
 
-  (edit [_ data options]
+  (edit [_ data _options]
     (update-data client data))
 
 

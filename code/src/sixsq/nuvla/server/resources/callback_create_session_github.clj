@@ -62,7 +62,7 @@
 
 
 (defmethod callback/execute action-name
-  [{callback-id :id {session-id :href} :target-resource :as callback-resource} request]
+  [{callback-id :id {session-id :href} :target-resource :as _callback-resource} request]
   (try
     (if-let [resp (validate-session request session-id)]
       resp

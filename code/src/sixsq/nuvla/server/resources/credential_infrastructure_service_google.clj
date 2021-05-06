@@ -22,7 +22,7 @@ correspond exactly to those required by `docker-machine`.
            client-id
            client-secret
            refresh-token
-           acl]} request]
+           acl]} _request]
   (let [resource (cond-> {:resource-type   p/resource-type
                           :subtype         subtype
                           :method          method

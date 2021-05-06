@@ -14,9 +14,9 @@
        r/json-response))
 
 
-(defmulti get-context (fn [{:keys [target-resource action] :as resource}]
+(defmulti get-context (fn [{:keys [target-resource action] :as _resource}]
                         [(some-> target-resource :href (str/split #"/") first) action]))
 
 (defmethod get-context :default
-  [resource]
+  [_resource]
   (get-context->response))

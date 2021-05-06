@@ -65,7 +65,7 @@
   is used."
   ([]
    (let [env-endpoints (env/env :es-endpoints)
-         endpoints (-> (or (if-not (str/blank? env-endpoints) env-endpoints) ES_HOST)
+         endpoints (-> (or (when-not (str/blank? env-endpoints) env-endpoints) ES_HOST)
                        (clojure.string/split #","))
          es-endpoints (->> endpoints
                        (map #(if-not (.contains % ":") (str % ":" ES_PORT) %))

@@ -9,14 +9,14 @@
 (defn create-user!
   "Create a new user in the database. Values for 'email' and 'user-identifier'
    must be provided. The id of the created user resource is returned."
-  ([{:keys [user-identifier email authn-method] :as user-record}]
+  ([{:keys [user-identifier email authn-method] :as _user-record}]
    (let [request {:params      {:resource-name user/resource-type}
                   :body        {:template (cond-> {:href "user-template/minimum"}
                                                   user-identifier (assoc :username user-identifier)
                                                   email (assoc :email email)
                                                   authn-method (assoc :method authn-method))}
                   :nuvla/authn auth/internal-identity}
-         {{:keys [status resource-id] :as body} :body} (crud/add request)]
+         {{:keys [status resource-id]} :body} (crud/add request)]
 
      (if (= 201 status)
        (do

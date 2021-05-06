@@ -13,7 +13,7 @@ Stripe oauth hook.
 
 
 (defn execute
-  [{{req-state :state code :code} :params :as request}]
+  [{{req-state :state code :code} :params :as _request}]
   (try
     (let [[resource uuid] (str/split req-state #"/")
           action "execute"]

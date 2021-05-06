@@ -54,7 +54,7 @@ plain text password against the stored hash and to change the password (hash).
 ;;
 
 (defmethod p/tpl->credential tpl-hashed-pwd/credential-subtype
-  [{:keys [subtype method password parent]} request]
+  [{:keys [subtype method password parent]} _request]
   (if (acceptable-password? password)
     (let [hash (hashers/derive password)]
       [nil (cond-> {:resource-type p/resource-type
@@ -90,7 +90,7 @@ plain text password against the stored hash and to change the password (hash).
 ;;
 
 (defmethod p/special-edit tpl-hashed-pwd/credential-subtype
-  [resource request]
+  [resource _request]
   (dissoc resource :hash))
 
 

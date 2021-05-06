@@ -21,7 +21,7 @@ Provides the credentials necessary to access a Docker Registry service.
 ;;
 
 (defmethod p/tpl->credential cred-tpl-registry/credential-subtype
-  [{:keys [subtype method username password parent acl]} request]
+  [{:keys [subtype method username password parent acl]} _request]
   (let [resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype
                           :method        method

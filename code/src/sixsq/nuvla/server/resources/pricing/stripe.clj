@@ -6,7 +6,8 @@
     (com.stripe.exception StripeException)
     (com.stripe.model Customer Invoice LoginLink PaymentMethod Price
                       Product SetupIntent Subscription)
-    (com.stripe.net OAuth)))
+    (com.stripe.net OAuth)
+    (java.util HashMap)))
 
 
 (defn set-api-key!
@@ -38,7 +39,7 @@
 (defn create-customer
   [customer-params]
   (try-catch-exception
-    (Customer/create customer-params)))
+    (Customer/create ^HashMap customer-params)))
 
 
 (defn retrieve-customer
@@ -62,19 +63,19 @@
 (defn list-products
   [params]
   (try-catch-exception
-    (Product/list params)))
+    (Product/list ^HashMap params)))
 
 
 (defn list-prices
   [params]
   (try-catch-exception
-    (Price/list params)))
+    (Price/list ^HashMap params)))
 
 
 (defn list-payment-methods
   [params]
   (try-catch-exception
-    (PaymentMethod/list params)))
+    (PaymentMethod/list ^HashMap params)))
 
 
 (defn get-customer-subscriptions
@@ -97,7 +98,7 @@
 (defn create-subscription
   [subscription-params]
   (try-catch-exception
-    (Subscription/create subscription-params)))
+    (Subscription/create ^HashMap subscription-params)))
 
 
 (defn retrieve-subscription
@@ -114,19 +115,19 @@
 (defn create-setup-intent
   [setup-intent-params]
   (try-catch-exception
-    (SetupIntent/create setup-intent-params)))
+    (SetupIntent/create ^HashMap setup-intent-params)))
 
 
 (defn get-upcoming-invoice
   [invoice-params]
   (try-catch-exception
-    (Invoice/upcoming invoice-params)))
+    (Invoice/upcoming ^HashMap invoice-params)))
 
 
 (defn list-invoices
   [params]
   (try-catch-exception
-    (Invoice/list params)))
+    (Invoice/list ^HashMap params)))
 
 
 (defn retrieve-payment-method
@@ -149,19 +150,19 @@
 (defn login-link-create-on-account
   [account-id]
   (try-catch-exception
-    (LoginLink/createOnAccount account-id {} nil)))
+    (LoginLink/createOnAccount ^String account-id {} nil)))
 
 
 (defn create-product
   [product-params]
   (try-catch-exception
-    (Product/create product-params)))
+    (Product/create ^HashMap product-params)))
 
 
 (defn create-price
   [price-params]
   (try-catch-exception
-    (Price/create price-params)))
+    (Price/create ^HashMap price-params)))
 
 
 (defn retrieve-price
@@ -237,11 +238,6 @@
 (defn get-amount
   [obj]
   (.getAmount obj))
-
-
-(defn get-unit-amount
-  [obj]
-  (.getUnitAmount obj))
 
 (defn get-recurring
   [obj]

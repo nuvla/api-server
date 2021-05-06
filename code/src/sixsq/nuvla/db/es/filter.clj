@@ -102,7 +102,7 @@
 
 
 (defn filter
-  [{:keys [filter] :as cimi-params}]
+  [{:keys [filter] :as _cimi-params}]
   (if filter
     (query/constant-score-query (w/postwalk convert filter))
     (query/match-all-query)))

@@ -66,7 +66,7 @@ password.
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href username password] :as resource} {:keys [headers] :as request}]
+  [{:keys [href username password] :as _resource} {:keys [headers] :as _request}]
   (let [user (auth-password/valid-user-password username password)]
     (create-session-password username user headers href)))
 

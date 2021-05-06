@@ -76,7 +76,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [{:keys [id] :as resource} request]
+  [{:keys [id] :as resource} _request]
   (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-meta ["group/nuvla-user"]
                         :edit-acl  [id]}))
@@ -118,7 +118,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                           (user-interface/tpl->user request))]
 
       (or frag
-          (if user
+          (when user
             (let [{{:keys [status resource-id]} :body :as result} (add-impl (assoc request :body (merge user desc-attrs)))]
               (when (and resource-id (= 201 status))
                 (user-interface/post-user-add
@@ -138,7 +138,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 
 (defn delete-children
-  [children-resource-types {:keys [params] :as request}]
+  [children-resource-types {:keys [params] :as _request}]
   (doseq [children-resource-type children-resource-types]
     (try
       (let [filter  (format "%s='%s/%s'" "parent" resource-type (:uuid params))
@@ -172,7 +172,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defn throw-no-id
   [body]
-  (if-not (contains? body :id)
+  (when-not (contains? body :id)
     (logu/log-and-throw-400 "id is not provided in the document.")))
 
 

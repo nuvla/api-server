@@ -27,7 +27,7 @@
   [^String s]
   (try
     (let [port (Integer/valueOf s)]
-      (if (< 0 port 65536) port))
+      (when (< 0 port 65536) port))
     (catch Exception _
       nil)))
 

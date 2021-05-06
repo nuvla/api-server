@@ -28,7 +28,7 @@
 (defn is-session?
   "returns nil if the value does not look like a session; the session otherwise"
   [^String s]
-  (if s
+  (when s
     (re-matches #"^session/.*" s)))
 
 
@@ -64,7 +64,7 @@
 
 
 (defn extract-cookie-authn-info
-  [{:keys [cookies] :as request}]
+  [{:keys [cookies] :as _request}]
   (some-> cookies
           (get authn-cookie)
           (cookies/extract-cookie-info)

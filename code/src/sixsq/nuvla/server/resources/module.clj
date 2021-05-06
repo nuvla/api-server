@@ -367,7 +367,7 @@ component, or application.
 
 
 (defn delete-all
-  [request {:keys [subtype versions] :as module-meta}]
+  [request {:keys [subtype versions] :as _module-meta}]
   (doseq [version versions]
     (when version
       (delete-content (:href version) subtype)))
@@ -415,7 +415,7 @@ component, or application.
 
 
 (defn create-validate-docker-compose-job
-  [{:keys [id acl] :as resource}]
+  [{:keys [id acl] :as _resource}]
   (try
     (let [{{job-id     :resource-id
             job-status :status} :body} (job/create-job id "validate-docker-compose"
@@ -433,7 +433,7 @@ component, or application.
 (defmethod crud/do-action [resource-type "validate-docker-compose"]
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)
-        {:keys [subtype acl] :as resource} (crud/retrieve-by-id-as-admin id)]
+        {:keys [subtype _acl] :as resource} (crud/retrieve-by-id-as-admin id)]
     (a/throw-cannot-manage resource request)
     (if (utils/is-application? subtype)
       (create-validate-docker-compose-job resource)

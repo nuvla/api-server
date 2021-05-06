@@ -13,7 +13,7 @@
 
 
 (defn- display-authn-info
-  [{:keys [nuvla/authn] :as request}]
+  [{:keys [nuvla/authn] :as _request}]
   (let [{:keys [active-claim claims]} authn]
     (str "[" active-claim " - " (str/join "," (sort claims)) "]")))
 

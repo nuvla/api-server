@@ -30,7 +30,7 @@ is marked as validated."
 
 
 (defn activate-user-new-active
-  [{:keys [id state email] :as user}]
+  [{:keys [id state email] :as _user}]
   (when (#{"NEW" "ACTIVE"} state)
     (email-utils/validate-email! email)
     (log/info (str "email for " id " successfully validated"))
@@ -40,7 +40,7 @@ is marked as validated."
 (defmethod callback/execute action-name
   [{callback-id            :id
     {:keys [href]}         :target-resource
-    {:keys [redirect-url]} :data :as callback-resource} request]
+    {:keys [redirect-url]} :data :as _callback-resource} _request]
   (try
     (let [{:keys [id] :as user} (crud/retrieve-by-id-as-admin href)]
       (if (activate-user-new-active user)

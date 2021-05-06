@@ -86,7 +86,7 @@ The `name` and `description` attributes are required for this resource.
     (throw (Exception. (str "attribute URI cannot be nil")))))
 
 (defmethod crud/new-identifier resource-type
-  [json resource-name]
+  [json _resource-name]
   (let [new-id (str resource-type "/" (uri->id (str (:prefix json) ":" (:key json))))]
     (assoc json :id new-id)))
 

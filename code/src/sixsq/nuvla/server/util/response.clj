@@ -125,7 +125,7 @@
   "Provides an ExceptionInfo exception when an unsupported method is used on a
    resource. This is a 405 status code. Information from the request is used to
    provide a reasonable message."
-  [{:keys [uri request-method] :as request}]
+  [{:keys [uri request-method] :as _request}]
   (let [msg (format "invalid method (%s) for %s"
                     (name (or request-method "UNKNOWN"))
                     (or uri "UNKNOWN"))]
@@ -136,7 +136,7 @@
   "Provides an ExceptionInfo exception when an unsupported resource action is
    used. This is a 404 status code. Information from the request and the action
    are used to provide a reasonable message."
-  [{:keys [uri request-method] :as request} action]
+  [{:keys [uri request-method] :as _request} action]
   (let [msg (format "undefined action (%s, %s) for %s"
                     (name (or request-method "UNKNOWN"))
                     action

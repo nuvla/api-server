@@ -43,7 +43,7 @@
                          :resources
                          first
                          :method)]
-    (if (not (str/blank? notif-method))
+    (when-not (str/blank? notif-method)
       (create-subscription resource-id type kind category notif-method authn-info))))
 
 

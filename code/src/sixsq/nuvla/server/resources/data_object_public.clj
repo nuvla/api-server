@@ -61,7 +61,7 @@ fixed URL.
 
 
 (defmethod do/download-subtype dot/data-object-subtype
-  [{:keys [url] :as resource} request]
+  [{:keys [url] :as resource} _request]
   (do/verify-state resource #{do/state-ready} "download")
   (log/info "Public download url: " url)
   url)

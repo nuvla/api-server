@@ -13,8 +13,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.response :as ru]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
@@ -119,18 +118,18 @@
 
 
 (defn throw-bulk-header-missing
-  [{:keys [headers] :as request}]
+  [{:keys [headers] :as _request}]
   (when-not (contains? headers "bulk")
-    (throw (ru/ex-bad-request "Bulk request should contain bulk http header."))))
+    (throw (r/ex-bad-request "Bulk request should contain bulk http header."))))
 
 
 (defn bulk-delete-fn
-  [resource-name collection-acl collection-uri]
+  [resource-name collection-acl _collection-uri]
   (validate-collection-acl collection-acl)
   (fn [{:keys [cimi-params] :as request}]
     (throw-bulk-header-missing request)
     (when-not (coll? (:filter cimi-params))
-      (throw (ru/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+      (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-delete collection-acl request)
     (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
           result  (db/bulk-delete resource-name options)]
@@ -138,12 +137,12 @@
 
 
 (defn bulk-action-fn
-  [resource-name collection-acl collection-uri]
+  [resource-name collection-acl _collection-uri]
   (validate-collection-acl collection-acl)
   (fn [{:keys [params body] :as request}]
     (throw-bulk-header-missing request)
     (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
-      (throw (ru/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+      (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-action collection-acl request)
     (let [authn-info     (auth/current-authentication request)
           active-claim   (auth/current-active-claim request)

@@ -419,125 +419,124 @@
 
 (deftest bulk-delete
 
-  (let [session-anon  (-> (session (ltu/ring-app))
-                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header
-                              "user/jane user/jane group/nuvla-user group/nuvla-anon")]
+  (let [session-anon      (-> (session (ltu/ring-app))
+                              (content-type "application/json"))
+        session-admin     (header session-anon authn-info-header
+                                  "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user      (header session-anon authn-info-header
+                                  "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        data-record-fn    (fn [infra-id]
+                            {:infrastructure-service (str "infrastructure-service/" infra-id)})
+        count-existing-dr (-> session-admin
+                              (request base-uri
+                                       :request-method :put)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              (get-in [:response :body :count]))
+        base-uri-filter   (str base-uri "?filter=id!=null")] ;; empty filter isnn't allowed bulk
 
-    (let [data-record-fn    (fn [infra-id]
-                              {:infrastructure-service (str "infrastructure-service/" infra-id)})
-          count-existing-dr (-> session-admin
-                                (request base-uri
-                                         :request-method :put)
-                                (ltu/body->edn)
-                                (ltu/is-status 200)
-                                (get-in [:response :body :count]))
-          base-uri-filter   (str base-uri "?filter=id!=null")] ;; empty filter isnn't allowed bulk
-
-      ;; cleanup all existing data record if any
-      (when (pos? count-existing-dr)
-        (-> session-admin
-            (request base-uri-filter
-                     :request-method :delete
-                     :headers {:bulk true})
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :deleted count-existing-dr)))
-
-      ;; user create 10 data-records
-      (doseq [infra-id (range 10)]
-        (-> session-user
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str (data-record-fn infra-id)))
-            (ltu/body->edn)
-            (ltu/is-status 201)))
-
-      ;; user try to delete but forgot the header bulk
-      ;; server doesn't allow bulk delete without the special header
-
-      (-> session-user
-          (request base-uri
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 400)
-          (ltu/is-key-value :message "Bulk request should contain bulk http header."))
-
-      ;; user try to delete but without a cimi filter
-      ;; server doesn't allow bulk delete without a filter
-
-      (-> session-user
-          (request base-uri
-                   :request-method :delete
-                   :headers {:bulk true})
-          (ltu/body->edn)
-          (ltu/is-status 400)
-          (ltu/is-key-value :message "Bulk request should contain a non empty cimi filter."))
-
-      ;; user can use filter in bulk delete operation
-
-      (let [query-filter (str base-uri
-                              "?filter=infrastructure-service='infrastructure-service/5'")]
-        (-> session-user
-            (request query-filter
-                     :request-method :delete
-                     :headers {:bulk true})
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :deleted 1))
-
-        ;; the data record was deleted
-        (-> session-user
-            (request query-filter
-                     :request-method :put)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-count 0)))
-
-      ;; user delete the 9 left data records
-      (-> session-user
+    ;; cleanup all existing data record if any
+    (when (pos? count-existing-dr)
+      (-> session-admin
           (request base-uri-filter
                    :request-method :delete
                    :headers {:bulk true})
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-key-value :deleted 9))
+          (ltu/is-key-value :deleted count-existing-dr)))
 
-      ;; admin add data record which can be deleted by user
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (assoc (data-record-fn 100)
-                                           :acl {:owners ["group/nuvla-admin"]
-                                                 :delete ["user/jane"]})))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-      (-> session-admin
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str (data-record-fn 101)))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-      ; delete acl is taken into account for the user
+    ;; user create 10 data-records
+    (doseq [infra-id (range 10)]
       (-> session-user
-          (request base-uri-filter
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (data-record-fn infra-id)))
+          (ltu/body->edn)
+          (ltu/is-status 201)))
+
+    ;; user try to delete but forgot the header bulk
+    ;; server doesn't allow bulk delete without the special header
+
+    (-> session-user
+        (request base-uri
+                 :request-method :delete)
+        (ltu/body->edn)
+        (ltu/is-status 400)
+        (ltu/is-key-value :message "Bulk request should contain bulk http header."))
+
+    ;; user try to delete but without a cimi filter
+    ;; server doesn't allow bulk delete without a filter
+
+    (-> session-user
+        (request base-uri
+                 :request-method :delete
+                 :headers {:bulk true})
+        (ltu/body->edn)
+        (ltu/is-status 400)
+        (ltu/is-key-value :message "Bulk request should contain a non empty cimi filter."))
+
+    ;; user can use filter in bulk delete operation
+
+    (let [query-filter (str base-uri
+                            "?filter=infrastructure-service='infrastructure-service/5'")]
+      (-> session-user
+          (request query-filter
                    :request-method :delete
                    :headers {:bulk true})
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-key-value :deleted 1))
 
-      (-> session-admin
-          (request base-uri-filter
-                   :request-method :delete
-                   :headers {:bulk true})
+      ;; the data record was deleted
+      (-> session-user
+          (request query-filter
+                   :request-method :put)
           (ltu/body->edn)
           (ltu/is-status 200)
-          (ltu/is-key-value :deleted 1)))))
+          (ltu/is-count 0)))
+
+    ;; user delete the 9 left data records
+    (-> session-user
+        (request base-uri-filter
+                 :request-method :delete
+                 :headers {:bulk true})
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :deleted 9))
+
+    ;; admin add data record which can be deleted by user
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (assoc (data-record-fn 100)
+                                         :acl {:owners ["group/nuvla-admin"]
+                                               :delete ["user/jane"]})))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
+    (-> session-admin
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (data-record-fn 101)))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
+    ; delete acl is taken into account for the user
+    (-> session-user
+        (request base-uri-filter
+                 :request-method :delete
+                 :headers {:bulk true})
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :deleted 1))
+
+    (-> session-admin
+        (request base-uri-filter
+                 :request-method :delete
+                 :headers {:bulk true})
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :deleted 1))))
 
 
 (deftest bad-methods

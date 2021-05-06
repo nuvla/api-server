@@ -4,7 +4,6 @@ Customer mapping to external banking system."
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
@@ -49,7 +48,7 @@ Customer mapping to external banking system."
 ;;
 
 (defmethod crud/add-acl resource-type
-  [{:keys [parent] :as resource} request]
+  [{:keys [parent] :as resource} _request]
   (assoc resource :acl {:owners   ["group/nuvla-admin"]
                         :view-acl [parent]
                         :manage   [parent]}))
@@ -66,13 +65,13 @@ Customer mapping to external banking system."
        (str resource-type "/")))
 
 (defn request->resource-id
-  [{{uuid :uuid} :params :as request}]
+  [{{uuid :uuid} :params :as _request}]
   (str resource-type "/" uuid))
 
 
 ;; resource identifier a UUID generated from the user-id
 (defmethod crud/new-identifier resource-type
-  [resource resource-name]
+  [resource _resource-name]
   (assoc resource :id (-> resource :parent active-claim->resource-id)))
 
 
@@ -90,7 +89,7 @@ Customer mapping to external banking system."
   (config-nuvla/throw-stripe-not-configured)
   (let [auth-info    (auth/current-authentication request)
         active-claim (or
-                       (when (acl-resource/is-admin? auth-info) (:parent body))
+                       (when (a/is-admin? auth-info) (:parent body))
                        (auth/current-active-claim request))]
     (utils/throw-email-mandatory-for-group active-claim email)
     (utils/throw-customer-exist (active-claim->resource-id active-claim))
@@ -232,10 +231,10 @@ Customer mapping to external banking system."
   (validate-customer-body body)
   (try
     (let [{:keys [street-address city postal-code country]} address
-          {:keys [id customer-id] :as resource} (-> request
-                                                    (request->resource-id)
-                                                    (crud/retrieve-by-id-as-admin)
-                                                    (a/throw-cannot-manage request))]
+          {:keys [id customer-id] :as _resource} (-> request
+                                                     (request->resource-id)
+                                                     (crud/retrieve-by-id-as-admin)
+                                                     (a/throw-cannot-manage request))]
       (try
         (-> customer-id
             stripe/retrieve-customer
@@ -314,10 +313,10 @@ Customer mapping to external banking system."
 (defmethod crud/do-action [resource-type utils/detach-payment-method-action]
   [{{:keys [payment-method]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id] :as resource} (-> request
-                                      (request->resource-id)
-                                      (crud/retrieve-by-id-as-admin)
-                                      (a/throw-cannot-manage request))]
+  (let [{:keys [id] :as _resource} (-> request
+                                       (request->resource-id)
+                                       (crud/retrieve-by-id-as-admin)
+                                       (a/throw-cannot-manage request))]
     (try
       (some-> payment-method
               stripe/retrieve-payment-method
@@ -330,10 +329,10 @@ Customer mapping to external banking system."
 (defmethod crud/do-action [resource-type utils/set-default-payment-method-action]
   [{{:keys [payment-method]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id customer-id] :as resource} (-> request
-                                                  (request->resource-id)
-                                                  (crud/retrieve-by-id-as-admin)
-                                                  (a/throw-cannot-manage request))]
+  (let [{:keys [id customer-id] :as _resource} (-> request
+                                                   (request->resource-id)
+                                                   (crud/retrieve-by-id-as-admin)
+                                                   (a/throw-cannot-manage request))]
     (try
       (-> customer-id
           stripe/retrieve-customer
@@ -346,10 +345,10 @@ Customer mapping to external banking system."
 (defmethod crud/do-action [resource-type utils/add-coupon-action]
   [{{:keys [coupon]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id customer-id] :as resource} (-> request
-                                                  (request->resource-id)
-                                                  (crud/retrieve-by-id-as-admin)
-                                                  (a/throw-cannot-manage request))]
+  (let [{:keys [id customer-id] :as _resource} (-> request
+                                                   (request->resource-id)
+                                                   (crud/retrieve-by-id-as-admin)
+                                                   (a/throw-cannot-manage request))]
     (try
       (-> customer-id
           stripe/retrieve-customer
@@ -362,7 +361,7 @@ Customer mapping to external banking system."
 (defmethod crud/do-action [resource-type utils/delete-coupon-action]
   [{{:keys [coupon]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
-  (let [{:keys [id customer-id] :as resource} (-> request
+  (let [{:keys [id customer-id] :as _resource} (-> request
                                                   (request->resource-id)
                                                   (crud/retrieve-by-id-as-admin)
                                                   (a/throw-cannot-manage request))]

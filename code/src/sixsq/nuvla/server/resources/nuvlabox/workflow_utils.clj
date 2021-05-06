@@ -1,7 +1,5 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.workflow-utils
   (:require
-    [clojure.pprint :refer [pprint]]
-
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
@@ -14,8 +12,8 @@
      :as ctison]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
-    [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
     [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
+    [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -29,7 +27,7 @@
                   :description (str "services available on " (utils/format-nb-name name id))
                   :parent      id
                   :acl         isg-acl}
-        {:keys [status body] :as resp} (isg/create-infrastructure-service-group skeleton)]
+        {:keys [status body] :as _resp} (isg/create-infrastructure-service-group skeleton)]
     (if (= 201 status)
       (assoc nuvlabox :infrastructure-service-group (:resource-id body))
       (let [msg (str "creating infrastructure-service-group resource failed:"
@@ -43,7 +41,7 @@
 
         body    {:name (str (utils/format-nb-name name (utils/short-nb-id id)) " service group")
                  :acl  isg-acl}
-        {:keys [status body] :as resp} (isg/update-infrastructure-service-group isg-id body)]
+        {:keys [status body] :as _resp} (isg/update-infrastructure-service-group isg-id body)]
     (if (= 200 status)
       nuvlabox
       (let [msg (str "creating infrastructure-service-group resource failed:"
@@ -53,7 +51,7 @@
 
 (defn create-nuvlabox-status
   [{:keys [id version acl] :as nuvlabox}]
-  (let [{:keys [status body] :as resp} (nb-status/create-nuvlabox-status version id acl)]
+  (let [{:keys [status body] :as _resp} (nb-status/create-nuvlabox-status version id acl)]
     (if (= 201 status)
       (assoc nuvlabox :nuvlabox-status (:resource-id body))
       (let [msg (str "creating nuvlabox-status resource failed:" status (:message body))]
@@ -62,7 +60,7 @@
 
 (defn update-nuvlabox-status
   [status-id {:keys [id acl] :as nuvlabox}]
-  (let [{:keys [status body] :as resp} (nb-status/update-nuvlabox-status status-id id acl)]
+  (let [{:keys [status body] :as _resp} (nb-status/update-nuvlabox-status status-id id acl)]
     (if (= 200 status)
       nuvlabox
       (let [msg (str "updating nuvlabox-status resource failed:" status (:message body))]
@@ -88,7 +86,7 @@
                                  :method  cred-tmpl-api/method
                                  :ttl     0}}
 
-        {:keys [status body] :as resp} (credential/create-credential cred-tmpl identity)
+        {:keys [status body] :as _resp} (credential/create-credential cred-tmpl identity)
         {:keys [resource-id secret-key]} body]
     (if (= 201 status)
       [(assoc nuvlabox :credential-api-key resource-id)
@@ -101,7 +99,7 @@
 (defn create-ssh-key
   "Create SSH key to be associated with the NuvlaBox"
   [ssh-cred-body]
-  (let [{:keys [status body] :as resp} (credential/create-credential ssh-cred-body auth/internal-identity)
+  (let [{:keys [status body] :as _resp} (credential/create-credential ssh-cred-body auth/internal-identity)
         {:keys [resource-id public-key private-key]} body]
 
     (if (= 201 status)
@@ -121,7 +119,7 @@
                                               (utils/format-nb-name name id)])
                   :acl         cred-acl}
 
-        {:keys [status body] :as resp} (credential/update-credential
+        {:keys [status body] :as _resp} (credential/update-credential
                                          cred-id body auth/internal-identity)]
     (if (= 200 status)
       nuvlabox
@@ -383,7 +381,7 @@
                             :method  ctison/method
                             :vpn-csr vpn-csr}}
 
-        {:keys [status body] :as resp} (credential/create-credential tmpl auth-info)
+        {:keys [status body] :as _resp} (credential/create-credential tmpl auth-info)
         {:keys [resource-id]} body]
     (if (= 201 status)
       resource-id
@@ -486,7 +484,7 @@
 
 (defn create-minio-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl minio-id access-key secret-key]
-  (if (and access-key secret-key)
+  (when (and access-key secret-key)
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           tmpl    {:href       "credential-template/infrastructure-service-minio"
                    :access-key access-key
@@ -590,7 +588,7 @@
 
 
 (defn commission
-  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as resource}
+  [{:keys [id name acl vpn-server-id infrastructure-service-group] :as _resource}
    {{:keys [tags
             capabilities
             swarm-endpoint
@@ -696,7 +694,7 @@
                                               {:owners [nuvlabox-id]})
                                             (assoc :manage (:view-acl nuvlabox-acl)))}
                      :nuvla/authn auth/internal-identity}
-            {status :status :as resp} (crud/edit request)]
+            {status :status :as _resp} (crud/edit request)]
         (if (= 200 status)
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]

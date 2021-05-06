@@ -141,7 +141,7 @@
 
 (defn extract-s3-endpoint
   "Returns the endpoint of the S3 service referenced by the credential."
-  [{:keys [parent] :as credential}]
+  [{:keys [parent] :as _credential}]
   (->> parent
        crud/retrieve-by-id-as-admin
        :endpoint))
@@ -173,7 +173,7 @@
    written to. If it doesn't exist, this function will create it. This function
    throws an exception when either the bucket isn't writable or can't be
    created."
-  [{:keys [bucket credential] :as resource} request]
+  [{:keys [bucket credential] :as resource} _request]
   (let [s3-client (some-> credential
                           credential->s3-client-cfg
                           get-s3-client)]

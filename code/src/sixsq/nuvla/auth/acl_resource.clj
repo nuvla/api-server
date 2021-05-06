@@ -52,13 +52,13 @@
 
 
 (defn is-owner?
-  [{:keys [claims] :as authn-info}
-   {:keys [owners] :as acl}]
+  [{:keys [claims] :as _authn-info}
+   {:keys [owners] :as _acl}]
   (some (set claims) owners))
 
 
 (defn is-admin?
-  [{:keys [claims] :as authn-info}]
+  [{:keys [claims] :as _authn-info}]
   (contains? (set claims) "group/nuvla-admin"))
 
 
@@ -88,7 +88,7 @@
 (defn has-rights?
   "Based on the rights derived from the authentication information and the
    acl, this function returns true if the given `right` is allowed."
-  [required-rights {:keys [acl] :as resource} request]
+  [required-rights {:keys [acl] :as _resource} request]
   (let [authn-info (auth/current-authentication request)]
     (boolean
       (seq (set/intersection
@@ -216,7 +216,7 @@
   "Provides a default ACL based on the authentication information.
    The ACL will have the identity as the owner with no other ACL
    rules.  If there is no identity then returns nil."
-  [{:keys [active-claim] :as authn-info}]
+  [{:keys [active-claim] :as _authn-info}]
   (when active-claim
     {:owners [active-claim]}))
 

@@ -8,7 +8,6 @@ particular NuvlaBox release.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
     [sixsq.nuvla.db.impl :as db]
@@ -160,7 +159,7 @@ particular NuvlaBox release.
 
 
 (defmethod validate-subtype :default
-  [{:keys [version] :as resource}]
+  [{:keys [version] :as _resource}]
   (if version
     (throw (r/ex-bad-request (str "unsupported nuvlabox version: " version)))
     (throw (r/ex-bad-request "missing nuvlabox version"))))
@@ -178,7 +177,7 @@ particular NuvlaBox release.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [{:keys [id vpn-server-id owner] :as resource} request]
+  [{:keys [id vpn-server-id owner] :as resource} _request]
   (let [acl (cond-> {:owners    ["group/nuvla-admin"]
                      :manage    [id]
                      :view-data [id]
@@ -199,9 +198,8 @@ particular NuvlaBox release.
      :or   {version          latest-version
             refresh-interval default-refresh-interval}
      :as   body} :body :as request}]
-
   (let [authn-info (auth/current-authentication request)
-        is-admin?  (acl-resource/is-admin? authn-info)]
+        is-admin?  (a/is-admin? authn-info)]
     (when vpn-server-id
       (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
@@ -277,7 +275,7 @@ particular NuvlaBox release.
 
 (defn restricted-body
   [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags ssh-keys capabilities] :as body}]
+   {:keys [acl name description location tags ssh-keys capabilities] :as _body}]
   (cond-> existing-resource
           name (assoc :name name)
           description (assoc :description description)
@@ -300,7 +298,7 @@ particular NuvlaBox release.
   [{:keys [body params] :as request}]
   (let [id               (str resource-type "/" (:uuid params))
         authn-info       (auth/current-authentication request)
-        is-admin?        (acl-resource/is-admin? authn-info)
+        is-admin?        (a/is-admin? authn-info)
         nuvlabox         (db/retrieve id request)
         updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
 
@@ -384,11 +382,11 @@ particular NuvlaBox release.
           "Recreates the infrastructure-service(s), credentials, etc. that are
            associated with this nuvlabox. The resources that are created
            depend on the version of nuvlabox-* resources being used."
-          (fn [resource request] (:version resource)))
+          (fn [resource _request] (:version resource)))
 
 
 (defmethod commission :default
-  [{:keys [version] :as resource} request]
+  [{:keys [version] :as _resource} _request]
   (if version
     (throw (r/ex-bad-request (str "unsupported nuvlabox version for commission action: " version)))
     (throw (r/ex-bad-request "missing nuvlabox version for commission action"))))
@@ -396,27 +394,26 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "commission"]
   [{{uuid :uuid} :params body :body :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (try
-        (let [tags         (some-> body :tags set vec)
-              capabilities (some-> body :capabilities set vec)
-              ssh-keys     (some-> body :ssh-keys set vec)
-              nuvlabox     (-> (db/retrieve id request)
-                               (assoc :state state-commissioned)
-                               (cond-> tags (assoc :tags tags)
-                                       capabilities (assoc :capabilities capabilities)
-                                       ssh-keys (assoc :ssh-keys ssh-keys))
-                               crud/validate)]
-          (-> nuvlabox
-              (a/throw-cannot-manage request)
-              (commission request))
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (let [tags         (some-> body :tags set vec)
+            capabilities (some-> body :capabilities set vec)
+            ssh-keys     (some-> body :ssh-keys set vec)
+            nuvlabox     (-> (db/retrieve id request)
+                             (assoc :state state-commissioned)
+                             (cond-> tags (assoc :tags tags)
+                                     capabilities (assoc :capabilities capabilities)
+                                     ssh-keys (assoc :ssh-keys ssh-keys))
+                             crud/validate)]
+        (-> nuvlabox
+            (a/throw-cannot-manage request)
+            (commission request))
 
-          (db/edit nuvlabox request)
+        (db/edit nuvlabox request)
 
-          (r/map-response "commission executed successfully" 200))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
+        (r/map-response "commission executed successfully" 200))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 ;;
@@ -440,7 +437,7 @@ particular NuvlaBox release.
           "Executes the synchronous tasks associated with decommissioning a
            nuvlabox resource. This must always return the value of the resource
            that was passed in."
-          (fn [resource request] (:version resource)))
+          (fn [resource _request] (:version resource)))
 
 
 (defmethod decommission-sync :default
@@ -458,11 +455,11 @@ particular NuvlaBox release.
 (defmulti decommission-async
           "Creates a job to handle all the asynchronous clean up that is
            needed when decommissioning a nuvlabox."
-          (fn [resource request] (:version resource)))
+          (fn [resource _request] (:version resource)))
 
 
 (defmethod decommission-async :default
-  [{:keys [id acl] :as resource} request]
+  [{:keys [id acl] :as _resource} _request]
   (try
     (let [{{job-id     :resource-id
             job-status :status} :body} (job/create-job id "decommission_nuvlabox"
@@ -480,15 +477,14 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "decommission"]
   [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (try
-        (-> (db/retrieve id request)
-            (a/throw-cannot-manage request)
-            (decommission-sync request)
-            (decommission-async request))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))))
+  (let [id (str resource-type "/" uuid)]
+    (try
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (decommission-sync request)
+          (decommission-async request))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 ;;
@@ -502,7 +498,7 @@ particular NuvlaBox release.
 ;;
 
 (defn check-api
-  [{:keys [id state acl] :as nuvlabox}]
+  [{:keys [id state acl] :as _nuvlabox}]
   (if (= state state-commissioned)
     (do
       (log/warn "Checking API for NuvlaBox:" id)
@@ -538,7 +534,7 @@ particular NuvlaBox release.
 ;;
 
 (defn reboot
-  [{:keys [id state acl] :as nuvlabox} execution-mode]
+  [{:keys [id state acl] :as _nuvlabox} execution-mode]
   (if (= state state-commissioned)
     (do
       (log/warn "Rebooting NuvlaBox:" id)
@@ -578,7 +574,7 @@ particular NuvlaBox release.
 
 
 (defn cluster-nuvlabox
-  [{:keys [id state acl capabilities] :as nuvlabox} cluster-action nuvlabox-manager-status token]
+  [{:keys [id state acl capabilities] :as _nuvlabox} cluster-action nuvlabox-manager-status token]
   (if (= state state-commissioned)
     (do
       (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-status))
@@ -590,7 +586,7 @@ particular NuvlaBox release.
               execution-mode (if pull-support? "pull" "push")
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
-                                             id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
+                                               id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
                                              (-> acl
                                                (a/acl-append :edit-data id)
                                                (a/acl-append :manage id))
@@ -632,7 +628,7 @@ particular NuvlaBox release.
 
 
 (defn add-ssh-key
-  [{:keys [id state acl] :as nuvlabox} ssh-credential execution-mode]
+  [{:keys [id state acl] :as _nuvlabox} ssh-credential execution-mode]
   (if (= state state-commissioned)
     (do
       (log/warn "Adding new SSH key for NuvlaBox:" id)
@@ -683,7 +679,7 @@ particular NuvlaBox release.
 
 
 (defn get-context-ssh-credential
-  [{:keys [affected-resources] :as job}]
+  [{:keys [affected-resources] :as _job}]
   (let [credential (some->> affected-resources
                             (some (fn [{:keys [href]}]
                                     (when (str/starts-with? href "credential/") href)))
@@ -702,7 +698,7 @@ particular NuvlaBox release.
 
 
 (defn revoke-ssh-key
-  [{:keys [id state acl] :as nuvlabox} ssh-credential-id execution-mode]
+  [{:keys [id state acl] :as _nuvlabox} ssh-credential-id execution-mode]
   (if (= state state-commissioned)
     (if (nil? ssh-credential-id)
       (logu/log-and-throw-400 "SSH credential ID is missing")
@@ -754,7 +750,7 @@ particular NuvlaBox release.
 ;;
 
 (defn update-nuvlabox
-  [{:keys [id state acl capabilities] :as nuvlabox} nb-release-id payload]
+  [{:keys [id state acl capabilities] :as _nuvlabox} nb-release-id payload]
   (if (= state state-commissioned)
     (if (nil? nb-release-id)
       (logu/log-and-throw-400 "Target NuvlaBox release is missing")

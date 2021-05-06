@@ -14,12 +14,12 @@ Reset password hook.
 (def ^:const action "reset-password")
 
 (defn execute
-  [{{:keys [username redirect-url]} :body base-uri :base-uri :as request}]
+  [{{:keys [username redirect-url]} :body base-uri :base-uri :as _request}]
   (let [{user-id  :id
          email-id :email
-         state    :state :as user} (auth-password/extract-user username)
+         state    :state :as _user} (auth-password/extract-user username)
 
-        {email-address :address :as email} (when email-id (crud/retrieve-by-id-as-admin email-id))]
+        {email-address :address :as _email} (when email-id (crud/retrieve-by-id-as-admin email-id))]
 
     (when-not email-address
       (throw (r/ex-response (str "invalid username '" username "'") 400)))

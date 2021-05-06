@@ -33,7 +33,7 @@ address and password.
 ;;
 
 (defmethod p/tpl->user email-password/registration-method
-  [resource request]
+  [resource _request]
   [nil (password-utils/create-user-map resource)])
 
 
@@ -51,7 +51,7 @@ address and password.
 
 
 (defmethod p/post-user-add email-password/registration-method
-  [{:keys [id redirect-url] :as resource} {:keys [base-uri body] :as request}]
+  [{:keys [id redirect-url] :as _resource} {:keys [base-uri body] :as _request}]
   (try
     (let [{{:keys [email password username customer]} :template} body
           callback-data {:redirect-url redirect-url}]

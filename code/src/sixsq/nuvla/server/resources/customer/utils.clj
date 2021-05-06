@@ -5,7 +5,6 @@
     [clojure.string :as str]
     [expound.alpha :as expound]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.acl-resource :as acl-resource]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.pricing :as pricing]
@@ -127,7 +126,7 @@
 
 
 (defn throw-plan-invalid
-  [{:keys [plan-id plan-item-ids] :as body} catalogue]
+  [{:keys [plan-id plan-item-ids] :as _body} catalogue]
   (when plan-id
     (let [plan (some->> catalogue
                         :plans
@@ -168,7 +167,7 @@
     (and (nil? (get-in request [:body :parent]))
          (-> request
              (auth/current-authentication)
-             (acl-resource/is-admin?)))
+             (a/is-admin?)))
     (logu/log-and-throw-400 "Admin can't create customer!")))
 
 
@@ -305,7 +304,7 @@
 
 
 (defn throw-plan-id-mandatory
-  [{:keys [id] :as resource} {{:keys [plan-id] :as body} :body :as request}]
+  [{:keys [id] :as resource} {{:keys [plan-id]} :body :as _request}]
   (if plan-id
     resource
     (throw (r/ex-response
@@ -313,7 +312,7 @@
 
 
 (defn throw-subscription-already-exist
-  [{:keys [id subscription-id] :as resource} request]
+  [{:keys [id subscription-id] :as resource} _request]
   (if subscription-id
     resource
     (throw (r/ex-response

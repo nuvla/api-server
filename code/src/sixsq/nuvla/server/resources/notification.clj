@@ -152,7 +152,7 @@ provide an explicit ACL that the describes the desired visibility.
 
 (defn- throw-not-pos-int?
   [n]
-  (if-not (pos-int? n)
+  (when-not (pos-int? n)
     (throw (r/ex-bad-request "delay should be a positive integer.")))
   n)
 

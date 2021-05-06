@@ -40,7 +40,7 @@
 (defn extract-cookie-info
   "Extracts cookie info. Returns nil if no cookie is
    provided or if there is an error when extracting the value from the cookie."
-  [{:keys [value] :as cookie}]
+  [{:keys [value] :as _cookie}]
   (try
     (when value
       (sg/unsign-cookie-info value))

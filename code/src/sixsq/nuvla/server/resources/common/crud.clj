@@ -185,7 +185,7 @@
 ;;
 
 (defmulti new-identifier
-          (fn [json resource-name]
+          (fn [_json resource-name]
             resource-name))
 
 
@@ -200,10 +200,10 @@
 ;;
 
 (defmulti add-acl
-          (fn [{:keys [resource-type]} request]
+          (fn [{:keys [resource-type]} _request]
             resource-type))
 
 
 (defmethod add-acl :default
-  [json request]
+  [json _request]
   json)

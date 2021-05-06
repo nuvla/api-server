@@ -58,8 +58,8 @@
                       (ltu/entries))]
       (is (= #{"group/nuvla-admin" "group/nuvla-user"
                "group/nuvla-nuvlabox" "group/nuvla-anon"} (set (map :id entries))))
-      (is (= (every? #(not (nil? %)) (set (map :name entries)))))
-      (is (= (every? #(not (nil? %)) (set (map :description entries))))))
+      (is (every? #(not (nil? %)) (set (map :name entries))))
+      (is (every? #(not (nil? %)) (set (map :description entries)))))
 
 
     ;; user query should also have 4 entries, but only common attributes (i.e. no :users field)

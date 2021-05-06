@@ -39,7 +39,7 @@ User interface contain multimethods of user resource. Interface is there to reso
 ;;; server error' exception.
 ;;
 (defmethod tpl->user :default
-  [resource request]
+  [_resource _request]
   [{:status 400, :message "missing or invalid user-template reference"} nil])
 
 
@@ -48,5 +48,5 @@ User interface contain multimethods of user resource. Interface is there to reso
 
 ;; default implementation is a no-op
 (defmethod post-user-add :default
-  [resource request]
+  [_resource _request]
   nil)

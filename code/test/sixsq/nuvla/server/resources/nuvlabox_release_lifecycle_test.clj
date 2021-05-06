@@ -79,16 +79,14 @@
                             (ltu/is-status 201)
                             (ltu/location))
 
-          admin-abs-uri (str p/service-context admin-uri)
+          admin-abs-uri (str p/service-context admin-uri)]
 
-          user-uri      (-> session-user
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str valid-nuvlabox-release))
-                            (ltu/body->edn)
-                            (ltu/is-status 403))
-
-          user-abs-uri  (str p/service-context user-uri)]
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-nuvlabox-release))
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
       ;; admin should see 1 nuvlabox-release resources
       (-> session-admin

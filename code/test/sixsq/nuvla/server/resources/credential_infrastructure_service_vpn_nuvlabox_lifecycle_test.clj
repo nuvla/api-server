@@ -1,8 +1,6 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-vpn-nuvlabox-lifecycle-test
   (:require
-    [clojure.test :refer [deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [clojure.test :refer [deftest use-fixtures]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
      :as ctisoc]

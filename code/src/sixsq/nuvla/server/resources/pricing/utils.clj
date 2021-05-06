@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.pricing.utils
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.pricing.stripe :as s]))
 
 

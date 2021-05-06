@@ -30,7 +30,7 @@ password, and other given information."
 ;;
 
 (defmethod p/tpl->user username-password/registration-method
-  [resource request]
+  [resource _request]
   [nil (-> resource
            password-utils/create-user-map
            (assoc :state "ACTIVE"))])
@@ -41,7 +41,7 @@ password, and other given information."
 ;;
 
 (defmethod p/post-user-add username-password/registration-method
-  [{user-id :id :as resource} {:keys [body] :as request}]
+  [{user-id :id :as _resource} {:keys [body] :as _request}]
   (try
     (let [{{:keys [password username]} :template} body]
       (user-utils/create-user-subresources user-id nil password username nil))

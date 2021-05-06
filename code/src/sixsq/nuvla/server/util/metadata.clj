@@ -13,14 +13,14 @@
 
 
 (defn treat-array
-  [{:keys [items] :as description}]
+  [{:keys [items] :as _description}]
   (when (seq items)
     ;; items is a single attribute map, not a collection
     [(select-resource-metadata-keys ["item" items])]))
 
 
 (defn treat-map
-  [{:keys [properties] :as description}]
+  [{:keys [properties] :as _description}]
   (when (seq properties)
     (->> properties
          (map select-resource-metadata-keys)

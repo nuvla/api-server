@@ -32,7 +32,7 @@ certificate authority's public certificate, 'ca', should also be provided.
 ;;
 
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method parent ca cert key acl]} request]
+  [{:keys [subtype method parent ca cert key acl]} _request]
   [nil (cond-> {:resource-type p/resource-type
                 :subtype       subtype
                 :method        method

@@ -39,7 +39,7 @@ from the response! The secret cannot be recovered from the server later.**
 ;; provides attributes about the key.
 ;;
 (defmethod p/tpl->credential tpl/credential-subtype
-  [{:keys [subtype method public-key private-key acl]} request]
+  [{:keys [subtype method public-key private-key acl]} _request]
   (let [[pubkey pvtkey] (if public-key [public-key private-key] (key-utils/generate-ssh-keypair))
         resource (cond-> {:resource-type p/resource-type
                           :subtype       subtype

@@ -104,7 +104,7 @@ Collection for holding notification method configurations.
           count      (-> (crud/query req)
                          :body
                          :count)]
-      (if (> count 0)
+      (when (pos? count)
         (throw (ru/ex-conflict (format "References to %s exist in %s." resource-id collection)))))))
 
 (defn integrity-check

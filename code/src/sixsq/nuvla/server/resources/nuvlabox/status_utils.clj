@@ -24,7 +24,7 @@
 
 
 (defn set-nuvlabox-online
-  [{:keys [parent online online-prev] :as nuvlabox-status}]
+  [{:keys [parent online online-prev] :as _nuvlabox-status}]
   ;;TODO retrieve of nuvlabox can be deleted in the futur after a release
   (let [nuvlabox (crud/retrieve-by-id-as-admin parent)]
     (when (and

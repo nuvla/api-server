@@ -3,13 +3,7 @@
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
     [sixsq.nuvla.server.resources.spec.subscription :as subs]
-    [sixsq.nuvla.server.resources.spec.subscription-config-test :as sct]
-    [sixsq.nuvla.server.resources.subscription-config :as t]))
-
-(def valid-acl {:owners   ["group/nuvla-admin"]
-                :edit-acl ["group/nuvla-admin"]})
-
-(def timestamp "1972-10-08T10:00:00.00Z")
+    [sixsq.nuvla.server.resources.spec.subscription-config-test :as sct]))
 
 (def valid-subs
   (assoc sct/valid-subs-config :resource-id "nuvlabox-state/01"

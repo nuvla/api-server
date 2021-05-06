@@ -227,7 +227,7 @@
         ; the private key was generated but it is not stored
         (is (= nil private-key))
         ; its value is returned in the response though
-        (string? (:private-key keypair)))
+        (is (string? (:private-key keypair))))
 
       ;; delete the credential
       (-> session-user

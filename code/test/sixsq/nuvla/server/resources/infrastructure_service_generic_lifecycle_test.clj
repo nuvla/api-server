@@ -185,6 +185,7 @@
                                                  valid-service)}]
 
     ;; check creation
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [uri     (-> session-user
                       (request base-uri
                                :request-method :post
@@ -226,7 +227,7 @@
                                                          :value     "75"
                                                          :condition ">"}
                                        :acl             {:owners ["user/jane"]}}
-            subs-conf-uri             (-> session-user
+            _                         (-> session-user
                                           (request subs-base-uri
                                                    :request-method :post
                                                    :body (json/write-str valid-subscription-config))

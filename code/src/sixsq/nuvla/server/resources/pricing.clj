@@ -57,7 +57,7 @@ These resources describe pricing catalogue.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
+  [resource _request]
   (assoc resource :acl {:owners    ["group/nuvla-admin"]
                         :view-data ["group/nuvla-anon"]}))
 
@@ -67,7 +67,7 @@ These resources describe pricing catalogue.
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [resource resource-name]
+  [resource _resource-name]
   (assoc resource :id resource-id))
 
 

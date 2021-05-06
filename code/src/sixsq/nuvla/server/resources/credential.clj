@@ -121,7 +121,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 ;; default implementation throws if the credential subtype is unknown
 (defmethod tpl->credential :default
-  [resource request]
+  [resource _request]
   (logu/log-and-throw-400
     (str "cannot transform credential-template document to template for subtype: '"
          (:subtype resource) "'")))
@@ -189,7 +189,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defn check-connector-exists
   "Use ADMIN role as we only want to check if href points to an existing
   resource."
-  [body authn-info]
+  [body _authn-info]
   (let [href (get-in body [:template :connector])]
     (std-crud/resolve-hrefs href auth/internal-identity))
   body)

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-peripheral-1-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]

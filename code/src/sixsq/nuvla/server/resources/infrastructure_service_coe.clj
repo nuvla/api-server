@@ -33,22 +33,22 @@ manage it.
 
 
 (defn can-start?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (#{"STOPPED"} state))
 
 
 (defn can-stop?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"STARTED"} state))
 
 
 (defn can-terminate?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "STOPPED" "ERROR"} state))
 
 
 (defn can-delete?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (#{"TERMINATED"} state))
 
 
@@ -103,7 +103,6 @@ manage it.
   [{id :id :as resource} request]
   (let [start-op     (u/action-map id :start)
         stop-op      (u/action-map id :stop)
-        delete-op    (u/action-map id :delete)
         terminate-op (u/action-map id :terminate)
         can-manage?  (a/can-manage? resource request)]
     (cond-> (crud/set-standard-resource-operations resource request)

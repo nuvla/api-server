@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.subscription-config-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -211,7 +211,7 @@
         num-resources 3
         tag "FOO"
         _ (create-monitored-resources session-user acl num-resources tag)
-        num-created (-> session-user
+        _ (-> session-user
                         (request (str p/service-context infra-service/resource-type))
                         (ltu/body->edn)
                         (ltu/is-status 200)
@@ -229,6 +229,7 @@
                                    :acl             acl}]
 
     ;; check creation of individual subscriptions
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [subs-base-uri (str p/service-context sub/resource-type)
           subs-before (-> session-user
                           (request subs-base-uri)
@@ -362,6 +363,7 @@
                                    :acl             acl}]
 
     ;; check creation of individual subscriptions
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [subs-base-uri (str p/service-context sub/resource-type)
           subs-before (-> session-user
                           (request subs-base-uri)
@@ -495,6 +497,7 @@
                                    :acl             acl}]
 
     ;; check creation of individual subscriptions
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [subs-base-uri (str p/service-context sub/resource-type)
           subs-before (-> session-user
                           (request subs-base-uri)
@@ -569,10 +572,6 @@
                         (ltu/body->edn)
                         (ltu/is-status 200)
                         (ltu/body))
-            new-criteria {:kind      "numeric"
-                          :metric    "disk"
-                          :value     "85"
-                          :condition "<"}
             to-update (merge current {:resource-filter "new filter"
                                       :resource-kind   "new resource kind"})
             updated (-> session-user

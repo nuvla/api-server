@@ -117,7 +117,7 @@ existing `infrastructure-service-template` resource.
 ;;
 
 (defmethod tpl->service :default
-  [{:keys [method] :as resource}]
+  [{:keys [method] :as _resource}]
   [{:status 500, :message (str "invalid service resource implementation '" method "'")} nil])
 
 
@@ -126,13 +126,13 @@ existing `infrastructure-service-template` resource.
 ;;
 
 (defmulti post-add-hook
-  (fn [service request]
-    (:method service)))
+          (fn [service _request]
+            (:method service)))
 
 
 ;; default post-add hook is a no-op
 (defmethod post-add-hook :default
-  [service request]
+  [_service _request]
   nil)
 
 
@@ -142,8 +142,8 @@ existing `infrastructure-service-template` resource.
 
 
 (defmulti set-crud-operations
-  (fn [resource request]
-    (:method resource)))
+          (fn [resource _request]
+            (:method resource)))
 
 
 (defmethod set-crud-operations :default
@@ -157,8 +157,8 @@ existing `infrastructure-service-template` resource.
 
 
 (defmulti do-action-stop
-  (fn [resource request]
-    (:method resource)))
+          (fn [resource _request]
+            (:method resource)))
 
 
 (defmethod do-action-stop :default
@@ -168,12 +168,12 @@ existing `infrastructure-service-template` resource.
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-stop resource request)) )
+    (do-action-stop resource request)))
 
 
 
 (defmulti do-action-start
-          (fn [resource request]
+          (fn [resource _request]
             (:method resource)))
 
 
@@ -184,11 +184,11 @@ existing `infrastructure-service-template` resource.
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
   (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-start resource request)) )
+    (do-action-start resource request)))
 
 
 (defmulti do-action-terminate
-          (fn [resource request]
+          (fn [resource _request]
             (:method resource)))
 
 
@@ -199,7 +199,7 @@ existing `infrastructure-service-template` resource.
 (defmethod crud/do-action [resource-type "terminate"]
   [{{uuid :uuid} :params :as request}]
   (let [resource (crud/retrieve-by-id-as-admin (str resource-type "/" uuid))]
-    (do-action-terminate resource request)) )
+    (do-action-terminate resource request)))
 
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
@@ -239,11 +239,11 @@ existing `infrastructure-service-template` resource.
 
 (defn event-state-change
   [{current-state :state id :id} {{new-state :state} :body :as request}]
-  (if (and new-state (not (= current-state new-state)))
-           (event-utils/create-event id new-state
-                                     (a/default-acl (auth/current-authentication request))
-                                     :severity "low"
-                                     :category "state")))
+  (when (and new-state (not (= current-state new-state)))
+    (event-utils/create-event id new-state
+                              (a/default-acl (auth/current-authentication request))
+                              :severity "low"
+                              :category "state")))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -251,11 +251,11 @@ existing `infrastructure-service-template` resource.
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params {new-state :state} :body :as request}]
-  (let [id (str resource-type "/" uuid)
-        resource (if (boolean new-state) (db/retrieve id request))
-        ret (edit-impl request)]
+  (let [id       (str resource-type "/" uuid)
+        resource (when (boolean new-state) (db/retrieve id request))
+        ret      (edit-impl request)]
     (try
-      (if (and (= 200 (:status ret)) resource)
+      (when (and (= 200 (:status ret)) resource)
         (event-state-change resource request))
       (catch Exception e
         (log/errorf "Failed creating event on state change of %s with %s" id e)))
@@ -266,28 +266,28 @@ existing `infrastructure-service-template` resource.
 
 
 (defmulti delete
-  (fn [resource request]
-    (:method resource)))
+          (fn [resource _request]
+            (:method resource)))
 
 
 (defmethod delete :default
-  [resource request]
+  [_resource request]
   (delete-impl request))
 
 
 (defn post-delete-hooks
   [{{uuid :uuid} :params :as request} delete-resp]
   (let [id (str resource-type "/" uuid)]
-    (if (= 200 (:status delete-resp))
-      (do (event-utils/create-event id "DELETED"
+    (when (= 200 (:status delete-resp))
+      (event-utils/create-event id "DELETED"
                                 (a/default-acl (auth/current-authentication request))
                                 :severity "low"
                                 :category "state")
-          (subs/delete-individual-subscriptions id request)))))
+      (subs/delete-individual-subscriptions id request))))
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]
-  (let [resource (db/retrieve (str resource-type "/" uuid) request)
+  (let [resource    (db/retrieve (str resource-type "/" uuid) request)
         delete-resp (delete resource request)]
     (post-delete-hooks request delete-resp)
     delete-resp))

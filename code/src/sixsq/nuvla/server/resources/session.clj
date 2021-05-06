@@ -79,7 +79,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
 `session` resource.
 "
   (:require
-    [clojure.pprint :as pprint]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
@@ -163,7 +162,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defmethod crud/add-acl resource-type
-  [{:keys [id acl] :as resource} request]
+  [{:keys [id acl] :as resource} _request]
   (assoc
     resource
     :acl
@@ -236,7 +235,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 ;;
 
 (defmethod tpl->session :default
-  [resource request]
+  [_resource _request]
   [{:status 500, :message "invalid session resource implementation"} nil])
 
 
@@ -293,7 +292,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
-(defn delete-cookie [{:keys [status] :as response}]
+(defn delete-cookie [{:keys [status] :as _response}]
   (if (= status 200)
     {:cookies (cookies/revoked-cookie authn-info/authn-cookie)}
     {}))
@@ -351,7 +350,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn throw-switch-group-not-authorized
-  [resource {{:keys [claim] :as body} :body :as request}]
+  [resource {{:keys [claim]} :body :as request}]
   (let [groups  (auth/current-groups request)
         user-id (auth/current-user-id request)]
     (if (or (= claim user-id)

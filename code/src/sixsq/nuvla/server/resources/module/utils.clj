@@ -83,7 +83,7 @@
 
 
 (defn docker-compose-services-keys-set
-  [{:strs [services] :as docker-compose}]
+  [{:strs [services] :as _docker-compose}]
   (set
     (when (coll? services)
       (->> services

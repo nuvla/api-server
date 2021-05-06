@@ -28,36 +28,36 @@
       (is (= {:bytes 1} (u/add-s3-bytes nil)))
       (is (= {:bytes 1} (u/add-s3-bytes {:bytes 99})))
       (is (= {:md5sum "aaa"} (u/add-s3-md5sum {})))
-      (is (= {:mykey "myvalue" :bytes 1 :m5sum "aaa"}) (-> {:myKey "myvalue"}
+      (is (= {:myKey "myvalue" :bytes 1 :md5sum "aaa"} (-> {:myKey "myvalue"}
                                                            (u/add-s3-bytes)
-                                                           (u/add-s3-md5sum))))
+                                                           (u/add-s3-md5sum)))))
 
     (with-redefs [u/s3-object-metadata (fn [_ _ _] {:contentLength 2, :contentMD5 nil})]
       (is (= {:bytes 2} (u/add-s3-bytes {})))
       (is (= {:bytes 2} (u/add-s3-bytes nil)))
       (is (= {:bytes 2} (u/add-s3-bytes {:bytes 99})))
       (is (= {} (u/add-s3-md5sum {})))
-      (is (= {:mykey "myvalue" :bytes 2}) (-> {:myKey "myvalue"}
-                                              (u/add-s3-bytes)
-                                              (u/add-s3-md5sum))))
+      (is (= {:myKey "myvalue" :bytes 2} (-> {:myKey "myvalue"}
+                                             (u/add-s3-bytes)
+                                             (u/add-s3-md5sum)))))
 
     (with-redefs [u/s3-object-metadata (fn [_ _ _] {:contentLength nil, :contentMD5 nil})]
       (is (= {} (u/add-s3-bytes {})))
       (is (= nil (u/add-s3-bytes nil)))
       (is (= {:bytes 99} (u/add-s3-bytes {:bytes 99})))
       (is (= {} (u/add-s3-md5sum {})))
-      (is (= {:mykey "myvalue"}) (-> {:myKey "myvalue"}
-                                     (u/add-s3-bytes)
-                                     (u/add-s3-md5sum))))
+      (is (= {:myKey "myvalue"} (-> {:myKey "myvalue"}
+                                    (u/add-s3-bytes)
+                                    (u/add-s3-md5sum)))))
 
     (with-redefs [u/s3-object-metadata (fn [_ _ _] nil)]
       (is (= {} (u/add-s3-bytes {})))
       (is (= nil (u/add-s3-bytes nil)))
       (is (= {:bytes 99} (u/add-s3-bytes {:bytes 99})))
       (is (= {} (u/add-s3-md5sum {})))
-      (is (= {:mykey "myvalue"}) (-> {:myKey "myvalue"}
-                                     (u/add-s3-bytes)
-                                     (u/add-s3-md5sum))))
+      (is (= {:myKey "myvalue"} (-> {:myKey "myvalue"}
+                                    (u/add-s3-bytes)
+                                    (u/add-s3-md5sum)))))
 
 
     (with-redefs [u/s3-object-metadata (fn [_ _ _] (let [ex (doto
@@ -68,6 +68,6 @@
       (is (= nil (u/add-s3-bytes nil)))
       (is (= {:bytes 99} (u/add-s3-bytes {:bytes 99})))
       (is (= {} (u/add-s3-md5sum {})))
-      (is (= {:mykey "myvalue"}) (-> {:myKey "myvalue"}
-                                     (u/add-s3-bytes)
-                                     (u/add-s3-md5sum))))))
+      (is (= {:myKey "myvalue"} (-> {:myKey "myvalue"}
+                                    (u/add-s3-bytes)
+                                    (u/add-s3-md5sum)))))))

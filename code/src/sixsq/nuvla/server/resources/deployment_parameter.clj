@@ -57,7 +57,7 @@ configuration option.
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [parent node-id name] :as parameter} resource-name]
+  [{:keys [parent node-id name] :as parameter} _resource-name]
   (->> (parameter->uuid parent node-id name)
        (str resource-type "/")
        (assoc parameter :id)))

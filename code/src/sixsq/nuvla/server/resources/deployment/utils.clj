@@ -165,36 +165,36 @@
 
 
 (defn can-delete?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (#{"CREATED" "STOPPED" "ERROR"} state))
 
 
 (defn can-start?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"CREATED" "STOPPED"} state))
 
 
 (defn can-stop?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"PENDING" "STARTING" "UPDATING" "STARTED" "ERROR"} state))
 
 
 (defn can-update?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "ERROR"} state))
 
 
 (defn can-create-log?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "UPDATING" "ERROR"} state))
 
 (defn can-fetch-module?
-  [{:keys [state] :as resource}]
+  [{:keys [state] :as _resource}]
   (contains? #{"CREATED" "STOPPED"} state))
 
 
 (defn create-log
-  [{:keys [id] :as resource} {:keys [body] :as request}]
+  [{:keys [id] :as _resource} {:keys [body] :as request}]
   (let [session-id (auth/current-session-id request)
         opts       (select-keys body [:since :lines])
         service    (:service body)]
@@ -259,7 +259,7 @@
 
 
 (defn create-subscription
-  [active-claim {:keys [account-id price-id] :as price} coupon]
+  [active-claim {:keys [account-id price-id] :as _price} coupon]
   (stripe/create-subscription
     {"customer"                (some-> active-claim
                                        customer/active-claim->customer
@@ -292,7 +292,7 @@
 
 
 (defn get-context
-  [{:keys [target-resource] :as resource} full]
+  [{:keys [target-resource] :as _resource} full]
   (let [deployment       (some-> target-resource :href crud/retrieve-by-id-as-admin)
         credential       (some-> deployment :parent crud/retrieve-by-id-as-admin)
         infra            (some-> credential :parent crud/retrieve-by-id-as-admin)

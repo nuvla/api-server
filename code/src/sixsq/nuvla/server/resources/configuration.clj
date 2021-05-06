@@ -139,7 +139,7 @@ may be added, for example, to configure external authentication.
 
 (defmethod crud/new-identifier resource-type
   [{:keys [service instance] :as resource} resource-name]
-  (if-let [new-id (cond-> service
+  (when-let [new-id (cond-> service
                           instance (str "-" instance))]
     (assoc resource :id (str resource-name "/" new-id))))
 

@@ -84,7 +84,7 @@ verification.
 ;;
 
 (defmethod crud/new-identifier resource-type
-  [{:keys [instance] :as resource} resource-name]
+  [{:keys [instance] :as resource} _resource-name]
   (->> instance
        (str resource-type "/")
        (assoc resource :id)))

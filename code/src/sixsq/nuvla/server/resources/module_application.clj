@@ -40,7 +40,7 @@ stack compose file.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
+  [resource _request]
   (assoc resource :acl resource-acl))
 
 

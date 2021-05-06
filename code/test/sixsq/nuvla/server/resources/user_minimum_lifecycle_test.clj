@@ -156,7 +156,7 @@
 
           {user-acl  :acl
            email-id  :email
-           user-name :name :as user} (-> session-created-user
+           user-name :name :as _user} (-> session-created-user
                                          (request (str p/service-context user-id))
                                          (ltu/body->edn)
                                          (ltu/is-status 200)
@@ -218,7 +218,7 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      (let [{:keys [state] :as user} (-> session-created-user
+      (let [{:keys [state] :as _user} (-> session-created-user
                                          (request (str p/service-context user-id))
                                          (ltu/body->edn)
                                          :response

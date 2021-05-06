@@ -29,9 +29,6 @@
 (def base-uri (str p/service-context session/resource-type))
 
 
-(def session-template-base-uri (str p/service-context st/resource-type))
-
-
 (defn create-user
   [session-admin & {:keys [username password email activated?]}]
   (let [validation-link (atom nil)
@@ -302,6 +299,7 @@
 
 
     ;; anon with valid activated user can create session
+    #_{:clj-kondo/ignore [:redundant-let]}
     (let [username           "user/bob"
           plaintext-password "BobBob-0"
 

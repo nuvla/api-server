@@ -3,6 +3,7 @@
 Stripe oidc session.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.external :as ex]
@@ -79,7 +80,7 @@ Stripe oidc session.
   [{:keys [base-uri] :as request}]
   (log/debug "Executing hook" action request)
   (let [redirect-ui-url (-> base-uri
-                            (clojure.string/replace
+                            (str/replace
                               (re-pattern (str app-params/service-context "$"))
                               app-params/ui-context)
                             (str "sign-in"))]

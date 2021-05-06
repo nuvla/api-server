@@ -15,7 +15,7 @@
 
 
 (defn extract-roles
-  [{:keys [realm roles] :as claims}]
+  [{:keys [realm roles] :as _claims}]
   (if (and (not (str/blank? realm)) roles)
     (->> roles
          (remove str/blank?)
@@ -25,7 +25,7 @@
 
 
 (defn extract-entitlements
-  [{:keys [realm entitlement] :as claims}]
+  [{:keys [realm entitlement] :as _claims}]
   (if (and (not (str/blank? realm)) entitlement)
     (let [entitlement (if (instance? String entitlement) [entitlement] entitlement)]
       (->> entitlement
@@ -46,7 +46,7 @@
 
 
 (defn extract-groups
-  [{:keys [realm groups] :as claims}]
+  [{:keys [realm groups] :as _claims}]
   (if (and realm groups)
     (->> groups
          (mapcat group-hierarchy)

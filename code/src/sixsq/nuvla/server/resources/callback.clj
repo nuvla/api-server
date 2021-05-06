@@ -62,7 +62,7 @@ appropriate users.
 
 
 (defmethod crud/add-acl resource-type
-  [{:keys [acl] :as resource} request]
+  [{:keys [acl] :as resource} _request]
   (assoc
     resource
     :acl
@@ -125,7 +125,7 @@ appropriate users.
 ;;
 
 (defn action-dispatch
-  [callback-resource request]
+  [callback-resource _request]
   (:action callback-resource))
 
 

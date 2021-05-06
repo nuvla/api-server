@@ -152,7 +152,7 @@ how the object can be accessed.
 
 (defmethod crud/new-identifier resource-type
   [{:keys [object bucket] :as resource} resource-name]
-  (if-let [new-id (u/from-data-uuid (str object bucket))]
+  (when-let [new-id (u/from-data-uuid (str object bucket))]
     (assoc resource :id (str resource-name "/" new-id))))
 
 ;;
@@ -287,7 +287,7 @@ how the object can be accessed.
 (defn upload-fn
   "Provided 'resource' and 'request', returns object storage upload URL.
   It is assumed that the bucket already exists and the user has access to it."
-  [{:keys [content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [content-type bucket object credential runUUID filename] :as resource} {{ttl :ttl} :body :as _request}]
   (verify-state resource #{state-new state-uploading} "upload")
   (let [object         (if (not-empty object)
                          object
@@ -355,7 +355,7 @@ how the object can be accessed.
 
 
 (defmethod download-subtype :default
-  [{:keys [bucket object credential] :as resource} {{ttl :ttl} :body :as request}]
+  [{:keys [bucket object credential] :as resource} {{ttl :ttl} :body :as _request}]
   (verify-state resource #{state-ready} "download")
   (log/info "Requesting download url: " object)
   (s3/generate-url (s3/credential->s3-client-cfg credential)
@@ -391,7 +391,7 @@ how the object can be accessed.
 
 
 (defn delete
-  [{:keys [object bucket credential] :as resource}
+  [{:keys [object bucket credential] :as _resource}
    {{keep-object? :keep-s3-object, keep-bucket? :keep-s3-bucket} :body :as request}]
   (when-not keep-object?
     (try

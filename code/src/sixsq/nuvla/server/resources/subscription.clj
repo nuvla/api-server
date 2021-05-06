@@ -145,11 +145,11 @@ Collection for holding subscriptions.
                          :params      {:resource-name resource-type}
                          :nuvla/authn authn-info})
         resources (-> res :body :resources)]
-    (if (> (count resources) 0)
+    (when (pos? (count resources))
       (doseq [resource resources]
         (let [id (:id resource)
               res (crud/delete {:params      {:uuid          (some-> id (str/split #"/") second)
                                               :resource-name resource-type}
                                 :nuvla/authn auth/internal-identity})]
-          (if (not= (:status res) 200)
+          (when-not (= (:status res) 200)
             (log/warnf "Failed to delete %s when deleting %s" id resource-id)))))))

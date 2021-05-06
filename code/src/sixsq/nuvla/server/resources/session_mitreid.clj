@@ -42,7 +42,7 @@
 ;;
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href instance redirect-url] :as resource} {:keys [headers base-uri] :as request}]
+  [{:keys [href instance redirect-url] :as _resource} {:keys [headers base-uri] :as _request}]
   (let [{:keys [client-id authorize-url]} (oidc-utils/config-mitreid-params redirect-url instance)
 
         ;; fake session values will be replaced after callback execution

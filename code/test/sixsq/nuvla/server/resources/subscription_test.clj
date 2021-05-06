@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.subscription-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]

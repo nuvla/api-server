@@ -2,10 +2,8 @@
   (:require
     [buddy.hashers :as hashers]
     [clojure.test :refer [are deftest is use-fixtures]]
-    [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.auth.password :as t]
     [sixsq.nuvla.server.app.params :as p]
-    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
 

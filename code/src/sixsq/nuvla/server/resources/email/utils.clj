@@ -111,7 +111,7 @@
   (try
     (let [smtp-config (extract-smtp-cfg nuvla-config)
           resp        (postal/send-message smtp-config email-data)]
-      (if-not (= :SUCCESS (:error resp))
+      (when-not (= :SUCCESS (:error resp))
         (let [msg (str "cannot send verification email: " (:message resp))]
           (throw (r/ex-bad-request msg)))))
     (catch Exception _
@@ -133,7 +133,7 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-invitation-email [set-password-url address {:keys [name id] :as user}]
+(defn send-invitation-email [set-password-url address {:keys [name id] :as _user}]
   (let [{:keys [smtp-username, conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 

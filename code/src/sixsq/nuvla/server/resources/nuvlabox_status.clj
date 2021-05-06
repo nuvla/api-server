@@ -41,7 +41,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defmethod validate-subtype :default
-  [{:keys [version] :as resource}]
+  [{:keys [version] :as _resource}]
   (if version
     (throw (r/ex-bad-request (str "unsupported nuvlabox-status version: " version)))
     (throw (r/ex-bad-request "missing nuvlabox-status version"))))
@@ -109,7 +109,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 
 
 (defn get-jobs
-  [{nb-id :parent :as resource}]
+  [{nb-id :parent :as _resource}]
   (->> {:params      {:resource-name "job"}
         :cimi-params {:filter (cimi-params-impl/cimi-filter
                                 {:filter (str "execution-mode='pull' and "
