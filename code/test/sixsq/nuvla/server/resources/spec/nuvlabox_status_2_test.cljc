@@ -54,7 +54,7 @@
                                                            :unit               "A"}]
                                       :container-stats    [{:id "1234"
                                                             :name "container1"
-                                                            :status "running"
+                                                            :container-status "running"
                                                             :restart-count 1
                                                             :cpu-percent  "1.32%"
                                                             :mem-percent  "4.5%"
@@ -63,7 +63,7 @@
                                                             :blk-in-out "1MB / 0.0MB"}
                                                            {:id "12345"
                                                             :name "container2"
-                                                            :status "paused"
+                                                            :container-status "paused"
                                                             :restart-count 0
                                                             :cpu-percent  "1.32%"
                                                             :mem-percent  "4.5%"

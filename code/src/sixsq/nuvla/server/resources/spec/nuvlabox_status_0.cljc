@@ -342,7 +342,7 @@
 
            :json-schema/order 87)))
 
-(s/def ::status
+(s/def ::container-status
   (-> (st/spec ::core/nonblank-string)
     (assoc :name "status"
            :json-schema/description "Container status"
@@ -393,7 +393,7 @@
 
 (s/def ::cstat
   (-> (st/spec (su/only-keys :req-un [::id ::name
-                                      ::status ::restart-count
+                                      ::container-status ::restart-count
                                       ::cpu-percent ::mem-percent
                                       ::mem-usage-limit ::net-in-out
                                       ::blk-in-out]))
