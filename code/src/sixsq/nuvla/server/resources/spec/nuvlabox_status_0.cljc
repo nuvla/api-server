@@ -146,19 +146,6 @@
            :json-schema/description "number of CPU system calls since boot")))
 
 
-(s/def ::cpu
-  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample
-                                                                  ::load-1 ::load-5
-                                                                  ::context-switches ::interrupts
-                                                                  ::software-interrupts ::system-calls]))
-      (assoc :name "cpu"
-             :json-schema/type "map"
-             :json-schema/display-name "CPU"
-             :json-schema/description "CPU capacity and current load"
-
-             :json-schema/order 22)))
-
-
 (s/def ::used
   (-> (st/spec nat-int?)
       (assoc :name "used"
@@ -411,6 +398,19 @@
            :json-schema/description "Container monitoring stats, per container inside the NuvlaBox"
 
            :json-schema/order 96)))
+
+
+(s/def ::cpu
+  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample
+                                                                  ::load-1 ::load-5
+                                                                  ::context-switches ::interrupts
+                                                                  ::software-interrupts ::system-calls]))
+    (assoc :name "cpu"
+           :json-schema/type "map"
+           :json-schema/display-name "CPU"
+           :json-schema/description "CPU capacity and current load"
+
+           :json-schema/order 22)))
 
 
 (s/def ::resources
