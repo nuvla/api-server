@@ -125,5 +125,5 @@
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
-                 :cluster-join-address :container-stats}]
+                 :cluster-join-address}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))
