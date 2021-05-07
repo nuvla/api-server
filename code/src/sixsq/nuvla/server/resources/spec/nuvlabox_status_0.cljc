@@ -327,8 +327,94 @@
              :json-schema/order 71)))
 
 
+
+(s/def ::id
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "id"
+           :json-schema/description "Container ID"
+
+           :json-schema/order 86)))
+
+(s/def ::name
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "name"
+           :json-schema/description "Container name"
+
+           :json-schema/order 87)))
+
+(s/def ::status
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "status"
+           :json-schema/description "Container status"
+
+           :json-schema/order 88)))
+
+(s/def ::cpu
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "cpu"
+           :json-schema/description "Container CPU usage (%)"
+
+           :json-schema/order 89)))
+
+(s/def ::mem-usage-limit
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "mem-usage-limit"
+           :json-schema/description "Container memory usage and limit"
+
+           :json-schema/order 90)))
+
+(s/def ::mem
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "mem"
+           :json-schema/description "Container memory usage (%)"
+
+           :json-schema/order 91)))
+
+(s/def ::net-in-out
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "net-in-out"
+           :json-schema/description "Container network usage, in and out"
+
+           :json-schema/order 92)))
+
+(s/def ::blk-in-out
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "blk-in-out"
+           :json-schema/description "Container block devices usage, in and out"
+
+           :json-schema/order 93)))
+
+(s/def ::restart-count
+  (-> (st/spec nat-int?)
+    (assoc :name "restart-count"
+           :json-schema/description "Container restart count"
+
+           :json-schema/order 94)))
+
+(s/def ::cstat
+  (-> (st/spec (su/only-keys :req-un [::id ::name
+                                      ::status ::restart-count
+                                      ::cpu ::mem
+                                      ::mem-usage-limit ::net-in-out
+                                      ::blk-in-out]))
+    (assoc :name "cstat"
+           :json-schema/type "map"
+           :json-schema/display-name "Single Container Stats"
+           :json-schema/description "Single Container monitoring statistics"
+
+           :json-schema/order 95)))
+
+(s/def ::container-stats
+  (-> (st/spec (s/coll-of ::cstat :kind vector?))
+    (assoc :name "container-stats"
+           :json-schema/type "array"
+           :json-schema/description "Container monitoring stats, per container inside the NuvlaBox"
+
+           :json-schema/order 96)))
+
+
 (s/def ::resources
-  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption]))
+  (-> (st/spec (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption ::container-stats]))
       (assoc :name "resources"
              :json-schema/type "map"
              :json-schema/description "available and consumed resources"

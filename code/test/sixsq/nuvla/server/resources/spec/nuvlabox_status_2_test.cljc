@@ -51,7 +51,25 @@
                                                            :bytes-transmitted 55}]
                                       :power-consumption [{:metric-name        "IN_current"
                                                            :energy-consumption 2.4
-                                                           :unit               "A"}]}
+                                                           :unit               "A"}]
+                                      :container-stats    [{:id "1234"
+                                                            :name "container1"
+                                                            :status "running"
+                                                            :restart-count 1
+                                                            :cpu  "1.32%"
+                                                            :mem  "4.5%"
+                                                            :mem-usage-limit "200MB / 500MB"
+                                                            :net-in-out "10MB / 30MB"
+                                                            :blk-in-out "1MB / 0.0MB"}
+                                                           {:id "12345"
+                                                            :name "container2"
+                                                            :status "paused"
+                                                            :restart-count 0
+                                                            :cpu  "1.32%"
+                                                            :mem  "4.5%"
+                                                            :mem-usage-limit "200MB / 500MB"
+                                                            :net-in-out "10MB / 30MB"
+                                                            :blk-in-out "1MB / 0.0MB"}]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
@@ -88,25 +106,7 @@
             :cluster-nodes            ["syz", "xyz", "1dsdr3"]
             :cluster-managers         ["syz"]
             :cluster-join-address     "194.182.171.166:2377"
-            :orchestrator             "swarm"
-            :container-stats          [{:id "1234"
-                                        :name "container1"
-                                        :status "running"
-                                        :restart-count 1
-                                        :cpu  "1.32%"
-                                        :mem  "4.5%"
-                                        :mem-usage-limit "200MB / 500MB"
-                                        :net-in-out "10MB / 30MB"
-                                        :blk-in-out "1MB / 0.0MB"}
-                                       {:id "12345"
-                                        :name "container2"
-                                        :status "paused"
-                                        :restart-count 0
-                                        :cpu  "1.32%"
-                                        :mem  "4.5%"
-                                        :mem-usage-limit "200MB / 500MB"
-                                        :net-in-out "10MB / 30MB"
-                                        :blk-in-out "1MB / 0.0MB"}]})
+            :orchestrator             "swarm"})
 
 
 (deftest check-nuvlabox-status

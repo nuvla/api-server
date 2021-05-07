@@ -63,7 +63,8 @@
                                                        }
                                                       {:interface "vpn"
                                                        :bytes-received    2213
-                                                       :bytes-transmitted 55}]}
+                                                       :bytes-transmitted 55}]
+                                          :container-stats        []}
 
                   :wifi-password         "some-secure-password"
                   :nuvlabox-api-endpoint "https://1.2.3.4:1234"
@@ -95,8 +96,7 @@
                   :cluster-nodes          ["syz", "xyz", "1dsdr3"]
                   :cluster-managers       ["syz"]
                   :cluster-join-address   "194.182.171.166:2377"
-                  :orchestrator           "kubernetes"
-                  :container-stats        []})
+                  :orchestrator           "kubernetes"})
 
 
 (def resources-updated {:cpu   {:capacity 10
