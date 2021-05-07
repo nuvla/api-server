@@ -146,6 +146,19 @@
            :json-schema/description "number of CPU system calls since boot")))
 
 
+(s/def ::cpu
+  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample
+                                                                  ::load-1 ::load-5
+                                                                  ::context-switches ::interrupts
+                                                                  ::software-interrupts ::system-calls]))
+      (assoc :name "cpu"
+             :json-schema/type "map"
+             :json-schema/display-name "CPU"
+             :json-schema/description "CPU capacity and current load"
+
+             :json-schema/order 22)))
+
+
 (s/def ::used
   (-> (st/spec nat-int?)
       (assoc :name "used"
@@ -336,7 +349,7 @@
 
            :json-schema/order 88)))
 
-(s/def ::cpu
+(s/def ::cpu-percent
   (-> (st/spec ::core/nonblank-string)
     (assoc :name "cpu"
            :json-schema/description "Container CPU usage (%)"
@@ -350,7 +363,7 @@
 
            :json-schema/order 90)))
 
-(s/def ::mem
+(s/def ::mem-percent
   (-> (st/spec ::core/nonblank-string)
     (assoc :name "mem"
            :json-schema/description "Container memory usage (%)"
@@ -381,7 +394,7 @@
 (s/def ::cstat
   (-> (st/spec (su/only-keys :req-un [::id ::name
                                       ::status ::restart-count
-                                      ::cpu ::mem
+                                      ::cpu-percent ::mem-percent
                                       ::mem-usage-limit ::net-in-out
                                       ::blk-in-out]))
     (assoc :name "cstat"
@@ -398,19 +411,6 @@
            :json-schema/description "Container monitoring stats, per container inside the NuvlaBox"
 
            :json-schema/order 96)))
-
-
-(s/def ::cpu
-  (-> (st/spec (su/only-keys :req-un [::capacity ::load] :opt-un [::topic ::raw-sample
-                                                                  ::load-1 ::load-5
-                                                                  ::context-switches ::interrupts
-                                                                  ::software-interrupts ::system-calls]))
-    (assoc :name "cpu"
-           :json-schema/type "map"
-           :json-schema/display-name "CPU"
-           :json-schema/description "CPU capacity and current load"
-
-           :json-schema/order 22)))
 
 
 (s/def ::resources

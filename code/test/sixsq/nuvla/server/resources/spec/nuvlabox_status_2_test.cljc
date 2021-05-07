@@ -56,8 +56,8 @@
                                                             :name "container1"
                                                             :status "running"
                                                             :restart-count 1
-                                                            :cpu  "1.32%"
-                                                            :mem  "4.5%"
+                                                            :cpu-percent  "1.32%"
+                                                            :mem-percent  "4.5%"
                                                             :mem-usage-limit "200MB / 500MB"
                                                             :net-in-out "10MB / 30MB"
                                                             :blk-in-out "1MB / 0.0MB"}
@@ -65,8 +65,8 @@
                                                             :name "container2"
                                                             :status "paused"
                                                             :restart-count 0
-                                                            :cpu  "1.32%"
-                                                            :mem  "4.5%"
+                                                            :cpu-percent  "1.32%"
+                                                            :mem-percent  "4.5%"
                                                             :mem-usage-limit "200MB / 500MB"
                                                             :net-in-out "10MB / 30MB"
                                                             :blk-in-out "1MB / 0.0MB"}]}
