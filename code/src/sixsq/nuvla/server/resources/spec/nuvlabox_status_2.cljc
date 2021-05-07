@@ -115,6 +115,5 @@
                                ::cluster-managers
                                ::cluster-join-address
                                ::status-notes
-                               ::orchestrator
-                               ::container-stats]}))
+                               ::orchestrator]}))
 
