@@ -423,7 +423,7 @@
 
 
 (s/def ::resources-prev
-  (-> (st/spec (s/nilable (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption])))
+  (-> (st/spec (s/nilable (su/only-keys :req-un [::cpu ::ram ::disks] :opt-un [::net-stats ::power-consumption ::container-stats])))
       (assoc :name "resources-prev"
              :json-schema/type "map"
              :json-schema/description "available and consumed resources; previous values."
