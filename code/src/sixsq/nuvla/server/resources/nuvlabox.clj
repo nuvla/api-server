@@ -614,7 +614,7 @@ particular NuvlaBox release.
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
         (-> (db/retrieve (:id nuvlabox-manager-status) request)
-          (a/throw-cannot-manage request)))
+          (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
         (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
