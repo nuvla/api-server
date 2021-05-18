@@ -612,15 +612,10 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
   [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (log/info  id)
-      (log/info (get nuvlabox-manager-status "id"))
-      (log/info (get nuvlabox-manager-status "parent"))
-      (log/info (json/read-str nuvlabox-manager-status))
-      (log/info (get (json/read-str nuvlabox-manager-status) "id"))
-      (log/info nuvlabox-manager-status)
+    (let [id (str resource-type "/" uuid)
+          nb-manager-status (json/read-str nuvlabox-manager-status)]
       (when-not (empty? nuvlabox-manager-status)
-        (-> (db/retrieve (:id nuvlabox-manager-status) request)
+        (-> (db/retrieve (get nb-manager-status "id") request)
           (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
