@@ -614,7 +614,7 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)
           nb-manager-status (json/read-str nuvlabox-manager-status)]
-      (when-not (empty? nuvlabox-manager-status)
+      (when-not (empty? nb-manager-status)
         (-> (db/retrieve (get nb-manager-status "id") request)
           (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
