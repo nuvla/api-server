@@ -25,7 +25,8 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.data.json :as json]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -611,9 +612,10 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
   [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
+    (let [id (str resource-type "/" uuid)
+          nb-manager-status (json/read-str nuvlabox-manager-status)]
       (when-not (empty? nuvlabox-manager-status)
-        (-> (db/retrieve (:id nuvlabox-manager-status) request)
+        (-> (db/retrieve (get nb-manager-status "id") request)
           (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
