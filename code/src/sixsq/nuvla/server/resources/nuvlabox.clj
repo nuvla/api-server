@@ -595,7 +595,7 @@ particular NuvlaBox release.
                                              :execution-mode execution-mode
                                              :payload (str "{\"cluster-action\": \"" cluster-action "\","
                                                         (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
-                                                          (str "\"nuvlabox-manager-status\": " nuvlabox-manager-status ",")
+                                                          (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
                                                           )
                                                         "\"token\": \"" token "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
@@ -612,10 +612,9 @@ particular NuvlaBox release.
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
   [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
   (try
-    (let [id (str resource-type "/" uuid)
-          nb-manager-status (json/read-str nuvlabox-manager-status)]
-      (when-not (empty? nb-manager-status)
-        (-> (db/retrieve (get nb-manager-status "id") request)
+    (let [id (str resource-type "/" uuid)]
+      (when-not (empty? nuvlabox-manager-status)
+        (-> (db/retrieve (get nuvlabox-manager-status "id") request)
           (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
