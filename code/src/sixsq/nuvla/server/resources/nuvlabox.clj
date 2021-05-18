@@ -613,6 +613,9 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
+      (log/info nuvlabox-manager-status)
+      (log/info (get nuvlabox-manager-status "id"))
+      (log/info (:id nuvlabox-manager-status ))
       (when-not (empty? nuvlabox-manager-status)
         (-> (db/retrieve (get nuvlabox-manager-status "id") request)
           (a/throw-cannot-view request)))
