@@ -5,6 +5,7 @@ all subtypes of this resource. Versioned subclasses define the attributes for a
 particular NuvlaBox release.
 "
   (:require
+    [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -25,8 +26,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.data.json :as json]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -587,19 +587,19 @@ particular NuvlaBox release.
               execution-mode (if pull-support? "pull" "push")
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
-                                               id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
+                                             id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
                                              (-> acl
-                                               (a/acl-append :edit-data id)
-                                               (a/acl-append :manage id))
+                                                 (a/acl-append :edit-data id)
+                                                 (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode execution-mode
                                              :payload (str "{\"cluster-action\": \"" cluster-action "\","
-                                                        (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
-                                                          (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
-                                                          )
-                                                        "\"token\": \"" token "\"}"))
+                                                           (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
+                                                             (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
+                                                             )
+                                                           "\"token\": \"" token "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
-                               ", with async " job-id)]
+                                  ", with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response "unable to create async job to cluster NuvlaBox" 500 id)))
           (event-utils/create-event id job-msg acl)
@@ -614,11 +614,11 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
-        (-> (db/retrieve (:id nuvlabox-manager-status ) request)
-          (a/throw-cannot-view request)))
+        (-> (db/retrieve (:id nuvlabox-manager-status) request)
+            (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
+          (a/throw-cannot-manage request)
+          (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

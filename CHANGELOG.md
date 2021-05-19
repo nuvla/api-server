@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.13.1] - 2021-05-18
+
+### Changed
+
+  - Nuvlabox - Cluster action acl bugfix
+
 ## [5.13.0] - 2021-05-06
 
 ### Changed
