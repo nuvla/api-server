@@ -51,11 +51,7 @@
                                                            :bytes-transmitted 55}]
                                       :power-consumption [{:metric-name        "IN_current"
                                                            :energy-consumption 2.4
-                                                           :unit               "A"}]
-                                      :temperatures      [{:thermal-zone      "acpitz"
-                                                           :value             15.4}
-                                                          {:thermal-zone      "Tboard_tegra"
-                                                           :value             1.5}]}
+                                                           :unit               "A"}]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
@@ -92,7 +88,11 @@
             :cluster-nodes            ["syz", "xyz", "1dsdr3"]
             :cluster-managers         ["syz"]
             :cluster-join-address     "194.182.171.166:2377"
-            :orchestrator             "swarm"})
+            :orchestrator             "swarm"
+            :temperatures             [{:thermal-zone      "acpitz"
+                                       :value             15.4}
+                                      {:thermal-zone      "Tboard_tegra"
+                                       :value             1.5}]})
 
 
 (deftest check-nuvlabox-status
