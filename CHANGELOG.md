@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - NuvlaBox Status - add optional attribute for temperatures
+
 ## [5.13.1] - 2021-05-18
 
 ### Changed

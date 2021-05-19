@@ -51,7 +51,11 @@
                                                            :bytes-transmitted 55}]
                                       :power-consumption [{:metric-name        "IN_current"
                                                            :energy-consumption 2.4
-                                                           :unit               "A"}]}
+                                                           :unit               "A"}]
+                                      :temperatures      [{:thermal-zone      "acpitz"
+                                                           :value             15.4}
+                                                          {:thermal-zone      "Tboard_tegra"
+                                                           :value             1.5}]}
 
             :wifi-password           "some-secure-password"
             :nuvlabox-api-endpoint   "https://4.3.2.1:4321"
@@ -107,5 +111,5 @@
                  :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
-                 :cluster-join-address}]
+                 :cluster-join-address :temperatures}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))

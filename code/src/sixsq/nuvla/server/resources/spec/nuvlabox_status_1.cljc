@@ -40,5 +40,6 @@
                                ::nb-status-0/jobs
                                ::nb-status-0/swarm-node-cert-expiry-date
                                ::nb-status-0/online
-                               ::nb-status-0/online-prev]}))
+                               ::nb-status-0/online-prev
+                               ::nb-status-0/temperatures]}))
 
