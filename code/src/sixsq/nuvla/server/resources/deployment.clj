@@ -91,6 +91,13 @@ a container orchestration engine.
                :description    "check if images are trusted"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "force-delete"
+               :uri            "force-delete"
+               :description    "delete deployment forcefully without checking state and without stopping it"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 
@@ -186,8 +193,8 @@ a container orchestration engine.
                          (a/acl-append :edit-data id)
                          (a/acl-append :edit-data nb-id)
                          (cond->
-                          (and (some? (:nuvlabox current))
-                               (not= nb-id (:nuvlabox current)))
+                           (and (some? (:nuvlabox current))
+                                (not= nb-id (:nuvlabox current)))
                            (a/acl-remove (:nuvlabox current))))
         acl-updated? (not= new-acl (:acl current))]
     (when acl-updated?
@@ -206,22 +213,27 @@ a container orchestration engine.
               infra-name (assoc-in [:body :infrastructure-service-name] infra-name)
               nb-id (assoc-in [:body :nuvlabox] nb-id)
               nb-name (assoc-in [:body :nuvlabox-name] nb-name)
-        ))))
+              ))))
 
 
 (defn delete-impl
-  [{{uuid :uuid} :params :as request}]
-  (try
-    (let [deployment-id   (str resource-type "/" uuid)
-          delete-response (-> deployment-id
-                              (db/retrieve request)
-                              (utils/throw-can-not-do-action utils/can-delete? "delete")
-                              (a/throw-cannot-delete request)
-                              (db/delete request))]
-      (utils/delete-all-child-resources deployment-id)
-      delete-response)
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  ([request]
+   (delete-impl request false))
+  ([{{uuid :uuid} :params :as request} force-delete]
+   (try
+     (let [deployment-id   (str resource-type "/" uuid)
+           deployment      (db/retrieve deployment-id request)
+           _               (when-not force-delete
+                             (utils/throw-can-not-do-action deployment utils/can-delete? "delete"))
+           delete-response (-> deployment
+                               (a/throw-cannot-delete request)
+                               (db/delete request))]
+       (when force-delete
+         (utils/stop-subscription deployment))
+       (utils/delete-all-child-resources deployment-id)
+       delete-response)
+     (catch Exception e
+       (or (ex-data e) (throw e))))))
 
 
 (defmethod crud/delete resource-type
@@ -247,6 +259,7 @@ a container orchestration engine.
         check-dct-op        (u/action-map id :check-dct)
         fetch-module-op     (u/action-map id :fetch-module)
         upcoming-invoice-op (u/action-map id :upcoming-invoice)
+        force-delete-op     (u/action-map id :force-delete)
         can-manage?         (a/can-manage? resource request)
         can-edit-data?      (a/can-edit-data? resource request)
         can-clone?          (a/can-view-data? resource request)]
@@ -270,6 +283,8 @@ a container orchestration engine.
             can-manage? (update :operations conj check-dct-op)
 
             (and can-manage? can-edit-data?) (update :operations conj fetch-module-op)
+
+            (a/can-delete? resource request) (update :operations conj force-delete-op)
 
             (not (utils/can-delete? resource))
             (update :operations utils/remove-delete))))
@@ -305,12 +320,8 @@ a container orchestration engine.
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
-          coupon         (:coupon deployment)
           data?          (some? (:data deployment))
-          subs-id        (when (and config-nuvla/*stripe-api-key* price)
-                           (some-> (auth/current-active-claim request)
-                                   (utils/create-subscription price coupon)
-                                   (stripe/get-id)))
+          subs-id        (utils/create-subscription request deployment price)
           execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
@@ -332,7 +343,6 @@ a container orchestration engine.
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
-
 (defmethod crud/do-action [resource-type "stop"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -344,11 +354,7 @@ a container orchestration engine.
                              (assoc :state "STOPPING")
                              (edit-deployment request)
                              (utils/create-job request "stop_deployment" execution-mode))]
-      (when config-nuvla/*stripe-api-key*
-        (some-> deployment
-                :subscription-id
-                stripe/retrieve-subscription
-                (stripe/cancel-subscription {"invoice_now" true})))
+      (utils/stop-subscription deployment)
       response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -388,6 +394,11 @@ a container orchestration engine.
       (or (ex-data e) (throw e)))))
 
 
+(defmethod crud/do-action [resource-type "force-delete"]
+  [request]
+  (delete-impl request true))
+
+
 (defn update-deployment-impl
   [{{uuid :uuid} :params :as request}]
   (try
@@ -402,11 +413,7 @@ a container orchestration engine.
           {:keys [name description price license]} (utils/resolve-module
                                                      (assoc request
                                                        :body {:module {:href module-href}}))
-          coupon          (:coupon current)
-          new-subs-id     (when (and config-nuvla/*stripe-api-key* price)
-                            (some-> (auth/current-active-claim request)
-                                    (utils/create-subscription price coupon)
-                                    (stripe/get-id)))
+          new-subs-id     (utils/create-subscription request current price)
           new             (-> current
                               (assoc :state "UPDATING")
                               (cond-> name (assoc-in [:module :name] name)
@@ -474,6 +481,11 @@ a container orchestration engine.
   (bulk-action-impl request))
 
 (defmethod crud/bulk-action [resource-type "bulk-stop"]
+  [request]
+  (bulk-action-impl request))
+
+
+(defmethod crud/bulk-action [resource-type "bulk-force-delete"]
   [request]
   (bulk-action-impl request))
 
