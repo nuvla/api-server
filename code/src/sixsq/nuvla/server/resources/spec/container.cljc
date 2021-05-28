@@ -140,7 +140,7 @@
 (s/def ::required
   (-> (st/spec boolean?)
       (assoc :name "required"
-             :json-schema "boolean"
+             :json-schema/type "boolean"
              :json-schema/description "value required? (default false)")))
 
 

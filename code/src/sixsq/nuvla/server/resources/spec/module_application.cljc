@@ -57,7 +57,7 @@
 (s/def ::requires-user-rights
   (-> (st/spec boolean?)
       (assoc :name "requires-user-rights"
-             :json-schema "boolean"
+             :json-schema/type "boolean"
              :json-schema/description "deployments of this module require user rights")))
 
 

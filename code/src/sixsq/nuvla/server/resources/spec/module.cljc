@@ -65,7 +65,7 @@
 (s/def ::published
   (-> (st/spec boolean?)
       (assoc :name "published"
-             :json-schema "boolean"
+             :json-schema/type "boolean"
              :json-schema/description "module is published"
              :json-schema/server-managed true
              :json-schema/editable false)))
@@ -175,7 +175,7 @@
 (s/def ::valid
   (-> (st/spec boolean?)
       (assoc :name "valid"
-             :json-schema "boolean"
+             :json-schema/type "boolean"
              :json-schema/description "content is valid"
              :json-schema/order 36)))
 
