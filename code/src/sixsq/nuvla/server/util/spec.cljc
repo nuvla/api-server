@@ -84,8 +84,8 @@
 ;; spec parsing patches
 ;;
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys [_dispatch form]
-  (st-parse/parse-form 'clojure.spec.alpha/keys form))
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys [_dispatch form options]
+  (st-parse/parse-form 'clojure.spec.alpha/keys form options))
 
 
 (defn transform-form
@@ -96,8 +96,8 @@
        (cons spec-name)))
 
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys-maps [_dispatch form]
-  (st-parse/parse-form 'clojure.spec.alpha/keys (transform-form form)))
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/only-keys-maps [_dispatch form options]
+  (st-parse/parse-form 'clojure.spec.alpha/keys (transform-form form) options))
 
 
 (defn transform-as-every
@@ -105,8 +105,8 @@
   [[spec-name key-spec value-spec]])
 
 
-(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/constrained-map [_dispatch form]
-  (st-parse/parse-form 'clojure.spec.alpha/every (transform-as-every form)))
+(defmethod st-parse/parse-form 'sixsq.nuvla.server.util.spec/constrained-map [_dispatch form options]
+  (st-parse/parse-form 'clojure.spec.alpha/every (transform-as-every form) options))
 
 
 ;;
@@ -147,11 +147,12 @@
          :properties (zipmap (concat names names-un) children)}
         (when all-required
           {:required (vec all-required)}))
-      spec)))
+      spec
+      nil)))
 
 
 (defmethod jsc/accept-spec 'sixsq.nuvla.server.util.spec/constrained-map [_ spec children _]
-  (#'jsc/maybe-with-title {:type "object", :additionalProperties (impl/unwrap children)} spec))
+  (#'jsc/maybe-with-title {:type "object", :additionalProperties (impl/unwrap children)} spec nil))
 
 
 ;;
