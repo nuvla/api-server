@@ -685,7 +685,7 @@
           (ltu/is-status 200)))))
 
 
-(deftest lifecycle-bulk-update
+(deftest lifecycle-bulk-update-force-delete
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session-anon     (-> (ltu/ring-app)
                                session
@@ -782,11 +782,42 @@
                                                       "user/jane"
                                                       "group/nuvla-user"]}}))))
 
-      (-> session-user
-          (request deployment-url
-                   :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))
+
+      (let [job-url (-> session-user
+                        (request (str base-uri "/bulk-stop")
+                                 :request-method :patch
+                                 :headers {:bulk true}
+                                 :body (json/write-str
+                                         {:filter "id='foobar'"
+                                          :other  "hello"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 202)
+                        (ltu/message-matches "starting bulk-stop with async job")
+                        (ltu/location-url))]
+        (-> session-user
+            (request job-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value
+              :payload (json/write-str
+                         {:filter     "id='foobar'"
+                          :other      "hello"
+                          :authn-info {:user-id      "user/jane"
+                                       :active-claim "user/jane"
+                                       :claims       ["group/nuvla-anon"
+                                                      "user/jane"
+                                                      "group/nuvla-user"]}}))))
+
+      (let [force-delete-op (-> session-user
+                           (request deployment-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-operation-present :force-delete)
+                           (ltu/get-op-url :force-delete))]
+        (-> session-user
+            (request force-delete-op)
+            (ltu/body->edn)
+            (ltu/is-status 200)))
 
       (-> session-user
           (request (str p/service-context module-id)

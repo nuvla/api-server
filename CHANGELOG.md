@@ -4,6 +4,9 @@
 
 ### Changed
 
+  - Deployment - Bulk-force-delete
+  - Deployment - force-delete action 
+  - Deployment - Bulk-stop 
   - Module - Fix boolean type spec
   - Spec-tools - Fix broken changes
   - Dependencies - Update sixsq.nuvla/parent 6.7.5

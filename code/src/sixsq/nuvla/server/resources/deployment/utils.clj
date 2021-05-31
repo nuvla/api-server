@@ -20,7 +20,8 @@
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
 
 
 (defn generate-api-key-secret
@@ -258,7 +259,7 @@
   (vec (remove #(= (name :delete) (:rel %)) operations)))
 
 
-(defn create-subscription
+(defn create-stripe-subscription
   [active-claim {:keys [account-id price-id] :as _price} coupon]
   (stripe/create-subscription
     {"customer"                (some-> active-claim
@@ -340,3 +341,20 @@
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files))
       :href (:id current-module))))
+
+
+(defn create-subscription
+  [request deployment price]
+  (when (and config-nuvla/*stripe-api-key* price)
+    (some-> (auth/current-active-claim request)
+            (create-stripe-subscription price (:coupon deployment))
+            (stripe/get-id))))
+
+
+(defn stop-subscription
+  [deployment]
+  (when config-nuvla/*stripe-api-key*
+    (some-> deployment
+            :subscription-id
+            stripe/retrieve-subscription
+            (stripe/cancel-subscription {"invoice_now" true}))))
