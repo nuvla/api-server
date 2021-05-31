@@ -80,9 +80,9 @@
 
 (defmethod retrieve-by-id :default
   [resource-id & [{:keys [request] :as options}]]
-  (-> resource-id
-      (db/retrieve (or options {}))
-      (a/throw-cannot-view request)))
+  (some-> resource-id
+          (db/retrieve (or options {}))
+          (a/throw-cannot-view request)))
 
 
 (defn retrieve-by-id-as-admin
