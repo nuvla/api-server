@@ -273,10 +273,11 @@
 
 
 (defn some-id->resource
-  [id authn-info]
+  [id request]
   (try
     (some-> id
-            (crud/retrieve-by-id {:nuvla/authn authn-info}))
+            (crud/retrieve-by-id-as-admin)
+            (a/throw-cannot-view ))
     (catch Exception _)))
 
 

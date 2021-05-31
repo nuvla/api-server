@@ -12,7 +12,9 @@ an application.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.auth.utils :as auth]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -39,12 +41,35 @@ an application.
   (validate-fn resource))
 
 
+;;
+;; use default ACL method
+;;
+
+(defmethod crud/add-acl resource-type
+  [resource request]
+  (a/add-acl resource request))
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
+(defn can-view-resource?
+  [{{{href :href} :resource} :body :as request}]
+  (when (some? href) (crud/retrieve-by-id href request))
+  request)
+
+
 (defmethod crud/add resource-type
-  [request]
-  (let [resp (add-impl request)]
+  [{{:keys [timestamp] :as body} :body :as request}]
+
+  (let [authn-info   (auth/current-authentication request)
+        simple-user? (not (a/is-admin? authn-info))
+        new-body     (cond-> body
+                             (nil? timestamp) (assoc :timestamp (time/now-str))
+                             simple-user? (assoc :category "user"))
+        resp         (-> request
+                         (assoc :body new-body)
+                         (can-view-resource?)
+                         (add-impl))]
     (ka-crud/publish-on-add resource-type resp)
     resp))
 

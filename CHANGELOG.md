@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Retrieve-by-id check acl
+  - Event - Enhancement
   - Deployment - Bulk-force-delete
   - Deployment - force-delete action 
   - Deployment - Bulk-stop 
