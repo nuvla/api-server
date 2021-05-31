@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.customer :as customer]
@@ -20,8 +21,7 @@
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret
@@ -277,7 +277,7 @@
   (try
     (some-> id
             (crud/retrieve-by-id-as-admin)
-            (a/throw-cannot-view ))
+            (a/throw-cannot-view request))
     (catch Exception _)))
 
 

@@ -93,8 +93,6 @@
                                      (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
           session-user       (header session-anon authn-info-header
                                      (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-          session-user-2       (header session-anon authn-info-header
-                                     (str "user/tarzan user/tarzan group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
           module-id          (-> session-user
@@ -452,7 +450,7 @@
                           (ltu/is-status 200)))
 
                     ;; verify user can create another deployment from existing one by using clone action
-                    (let [deployment-url-from-dep (-> session-user-2
+                    (let [deployment-url-from-dep (-> session-user
                                                       (request (str deployment-url "/clone")
                                                                :request-method :post
                                                                :body (json/write-str {:deployment {:href deployment-id}}))

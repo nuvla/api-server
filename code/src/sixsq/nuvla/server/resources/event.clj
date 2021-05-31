@@ -6,6 +6,7 @@ an application.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -13,8 +14,7 @@ an application.
     [sixsq.nuvla.server.resources.spec.event :as event]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.time :as time]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -54,7 +54,7 @@ an application.
 
 (defn can-view-resource?
   [{{{href :href} :resource} :body :as request}]
-  (when (some? href) (crud/retrieve-by-id href request))
+  (when (some? href) (crud/retrieve-by-id href {:request request}))
   request)
 
 
