@@ -35,11 +35,9 @@ VPN service.
 (defmethod p/tpl->credential tpl-customer/credential-subtype
   [{:keys [subtype method parent vpn-csr]} request]
   (let [active-claim        (auth/current-active-claim request)
-        authn-info     (auth/current-authentication request)
         customer?      (= method tpl-customer/method)
         expected-scope (if customer? "customer" "nuvlabox")
-        vpn-service    (vpn-utils/get-service authn-info parent)]
-
+        vpn-service    (vpn-utils/get-service parent)]
     (vpn-utils/check-service-subtype vpn-service)
     (vpn-utils/check-scope vpn-service expected-scope)
     (vpn-utils/check-existing-credential parent active-claim)
