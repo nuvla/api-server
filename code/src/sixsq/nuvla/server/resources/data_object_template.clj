@@ -118,7 +118,7 @@ this template define how the object can be accessed.
 ;; must override the default implementation so that the
 ;; data can be pulled from the atom rather than the database
 (defmethod crud/retrieve-by-id resource-type
-  [id]
+  [id & _]
   (try
     (get @templates id)
     (catch Exception e

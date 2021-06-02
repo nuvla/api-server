@@ -33,11 +33,12 @@
 
 
 (deftest check-retrieve-by-id
-  (doseq [registration-method [email-password/registration-method
-                               username-password/registration-method]]
-    (let [id  (str t/resource-type "/" registration-method)
-          doc (crud/retrieve-by-id id)]
-      (is (= id (:id doc))))))
+  (let [id  (str t/resource-type "/" email-password/registration-method)
+        doc (crud/retrieve-by-id id {:nuvla/authn {:claims #{"group/nuvla-anon"}}})]
+    (is (= id (:id doc))))
+  (let [id  (str t/resource-type "/" username-password/registration-method)
+        doc (crud/retrieve-by-id-as-admin id)]
+    (is (= id (:id doc)))))
 
 
 ;; check that all templates are visible as administrator

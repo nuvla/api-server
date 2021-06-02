@@ -22,7 +22,6 @@
                   :timestamp "2015-01-16T08:05:00.00Z"
                   :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                               :state    "Started"}
-                  :category  "state"
                   :severity  "critical"})
 
 
@@ -120,38 +119,38 @@
     (are-counts 1 (str "?filter=content/resource/href='run/" i "'")))
   (are-counts 0 "?filter=content/resource/href='run/100'")
 
-  (are-counts 1 "?filter=content/resource/href='run/3' and category='state'")
-  (are-counts 1 "?filter=category='state' and content/resource/href='run/3'")
-  (are-counts 1 "?filter=category='state'       and     content/resource/href='run/3'")
+  (are-counts 1 "?filter=content/resource/href='run/3' and category='user'")
+  (are-counts 1 "?filter=category='user' and content/resource/href='run/3'")
+  (are-counts 1 "?filter=category='user'       and     content/resource/href='run/3'")
 
   (are-counts 1 "?filter=content/resource/href='run/3'")
   (are-counts 0 "?filter=category='WRONG' and content/resource/href='run/3'")
   (are-counts 0 "?filter=content/resource/href='run/3' and category='WRONG'")
-  (are-counts nb-events "?filter=category='state'"))
+  (are-counts nb-events "?filter=category='user'"))
 
 
 (deftest filter-and
-  (are-counts nb-events "filter=category='state' and timestamp='2015-01-16T08:05:00Z'")
-  (are-counts 0 "?filter=category='state' and category='XXX'")
-  (are-counts 0 "?filter=category='YYY' and category='state'")
-  (are-counts 0 "?filter=(category='state') and (category='XXX')")
-  (are-counts 0 "?filter=(category='YYY') and (category='state')"))
+  (are-counts nb-events "filter=category='user' and timestamp='2015-01-16T08:05:00Z'")
+  (are-counts 0 "?filter=category='user' and category='XXX'")
+  (are-counts 0 "?filter=category='YYY' and category='user'")
+  (are-counts 0 "?filter=(category='user') and (category='XXX')")
+  (are-counts 0 "?filter=(category='YYY') and (category='user')"))
 
 
 (deftest filter-or
   (are-counts 0 "?filter=category='XXX'")
-  (are-counts nb-events "?filter=category='state'")
-  (are-counts nb-events "?filter=category='state' or category='XXXX'")
-  (are-counts nb-events "?filter=category='XXXX' or category='state'")
-  (are-counts nb-events "?filter=(category='state') or (category='XXX')")
-  (are-counts nb-events "?filter=(category='XXXXX') or (category='state')")
+  (are-counts nb-events "?filter=category='user'")
+  (are-counts nb-events "?filter=category='user' or category='XXXX'")
+  (are-counts nb-events "?filter=category='XXXX' or category='user'")
+  (are-counts nb-events "?filter=(category='user') or (category='XXX')")
+  (are-counts nb-events "?filter=(category='XXXXX') or (category='user')")
   (are-counts 0 "?filter=category='XXXXX' or category='YYYY'")
   (are-counts 0 "?filter=(category='XXXXX') or (category='YYYY')"))
 
 
 (deftest filter-multiple
-  (are-counts 0 "?filter=category='state'&filter=category='XXX'")
-  (are-counts 1 "?filter=category='state'&filter=content/resource/href='run/3'"))
+  (are-counts 0 "?filter=category='user'&filter=category='XXX'")
+  (are-counts 1 "?filter=category='user'&filter=content/resource/href='run/3'"))
 
 
 (deftest filter-nulls
@@ -159,14 +158,14 @@
   (are-counts nb-events "?filter=null!=category")
   (are-counts 0 "?filter=category=null")
   (are-counts 0 "?filter=null=category")
-  (are-counts nb-events "?filter=(unknown=null)and(category='state')")
-  (are-counts nb-events "?filter=(content/resource/href!=null)and(category='state')"))
+  (are-counts nb-events "?filter=(unknown=null)and(category='user')")
+  (are-counts nb-events "?filter=(content/resource/href!=null)and(category='user')"))
 
 
 (deftest filter-prefix
-  (are-counts nb-events "?filter=category^='st'")
+  (are-counts nb-events "?filter=category^='us'")
   (are-counts nb-events "?filter=content/resource/href^='run/'")
-  (are-counts 0 "?filter=category^='stXXX'")
+  (are-counts 0 "?filter=category^='usXXX'")
   (are-counts 0 "?filter=content/resource/href^='XXX/'"))
 
 

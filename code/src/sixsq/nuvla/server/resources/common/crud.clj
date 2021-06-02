@@ -79,8 +79,10 @@
 
 
 (defmethod retrieve-by-id :default
-  [resource-id & [options]]
-  (db/retrieve resource-id (or options {})))
+  [resource-id & [request]]
+  (some-> resource-id
+          (db/retrieve (or request {}))
+          (a/throw-cannot-view request)))
 
 
 (defn retrieve-by-id-as-admin
@@ -88,8 +90,7 @@
    identity to the administrator to allow access to any resource. Works around
    the authentication enforcement at the database level."
   [resource-id]
-  (let [opts {:nuvla/authn auth/internal-identity}]
-    (retrieve-by-id resource-id opts)))
+  (retrieve-by-id resource-id {:nuvla/authn auth/internal-identity}))
 
 
 (defmulti edit resource-name-dispatch)

@@ -13,9 +13,8 @@
 
 
 (defn get-service
-  [authn-info is-id]
-  (let [opts {:nuvla/authn authn-info}]
-    (crud/retrieve-by-id is-id opts)))
+  [is-id]
+  (crud/retrieve-by-id-as-admin is-id))
 
 
 (defn get-configuration
