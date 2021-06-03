@@ -21,7 +21,7 @@ user passes it along with the GPG key creation request, otherwise only the publi
 (def ^:const resource-url credential-subtype)
 
 
-(def ^:const method "generate-gpg-key")
+(def ^:const method "gpg-key")
 
 
 (def resource-acl (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
