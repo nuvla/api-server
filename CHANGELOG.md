@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.14.0] - 2021-06-04
+
 ### Added
 
   - Credential - gpg key
