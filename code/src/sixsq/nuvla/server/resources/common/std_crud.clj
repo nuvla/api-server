@@ -188,7 +188,7 @@
   (if-not (or (str/blank? href)
               (str/starts-with? href "http://")
               (str/starts-with? href "https://"))
-    (if-let [refdoc (crud/retrieve-by-id href)]
+    (if-let [refdoc (crud/retrieve-by-id-as-admin href)]
       (try
         (a/throw-cannot-view-data refdoc {:nuvla/authn authn-info})
         (-> refdoc

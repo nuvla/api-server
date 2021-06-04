@@ -43,7 +43,10 @@
                                srvc-swarm/method
                                swarm-token/method]]
     (let [id  (str ct/resource-type "/" registration-method)
-          doc (crud/retrieve-by-id id)]
+          doc (crud/retrieve-by-id id {:nuvla/authn
+                                       {:user-id      "user/alpha"
+                                        :active-claim "user/alpha"
+                                        :claims       #{"group/nuvla-user" "group/nuvla-anon"}}})]
       (is (= id (:id doc))))))
 
 

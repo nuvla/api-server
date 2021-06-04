@@ -5,6 +5,14 @@
 ### Changed
 
   - NuvlaBox Status - add optional attribute for temperatures
+  - Retrieve-by-id check acl
+  - Event - Enhancement
+  - Deployment - Bulk-force-delete
+  - Deployment - force-delete action
+  - Deployment - Bulk-stop
+  - Module - Fix boolean type spec
+  - Spec-tools - Fix broken changes
+  - Dependencies - Update sixsq.nuvla/parent 6.7.5
 
 ## [5.13.1] - 2021-05-18
 

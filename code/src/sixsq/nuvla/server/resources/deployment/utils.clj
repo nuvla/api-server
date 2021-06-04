@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
     [sixsq.nuvla.server.resources.customer :as customer]
@@ -258,7 +259,7 @@
   (vec (remove #(= (name :delete) (:rel %)) operations)))
 
 
-(defn create-subscription
+(defn create-stripe-subscription
   [active-claim {:keys [account-id price-id] :as _price} coupon]
   (stripe/create-subscription
     {"customer"                (some-> active-claim
@@ -272,10 +273,11 @@
 
 
 (defn some-id->resource
-  [id authn-info]
+  [id request]
   (try
     (some-> id
-            (crud/retrieve-by-id {:nuvla/authn authn-info}))
+            (crud/retrieve-by-id-as-admin)
+            (a/throw-cannot-view request))
     (catch Exception _)))
 
 
@@ -340,3 +342,20 @@
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files))
       :href (:id current-module))))
+
+
+(defn create-subscription
+  [request deployment price]
+  (when (and config-nuvla/*stripe-api-key* price)
+    (some-> (auth/current-active-claim request)
+            (create-stripe-subscription price (:coupon deployment))
+            (stripe/get-id))))
+
+
+(defn stop-subscription
+  [deployment]
+  (when config-nuvla/*stripe-api-key*
+    (some-> deployment
+            :subscription-id
+            stripe/retrieve-subscription
+            (stripe/cancel-subscription {"invoice_now" true}))))

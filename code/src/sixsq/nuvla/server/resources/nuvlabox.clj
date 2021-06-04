@@ -202,7 +202,7 @@ particular NuvlaBox release.
   (let [authn-info (auth/current-authentication request)
         is-admin?  (a/is-admin? authn-info)]
     (when vpn-server-id
-      (let [vpn-service (vpn-utils/get-service authn-info vpn-server-id)]
+      (let [vpn-service (vpn-utils/get-service vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
     (customer/throw-user-hasnt-active-subscription request)
