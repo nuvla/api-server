@@ -80,6 +80,7 @@
 
            :json-schema/order 85)))
 
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
