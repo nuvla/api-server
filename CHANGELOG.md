@@ -8,6 +8,7 @@
 
 ### Changed
 
+  - NuvlaBox Status - add container-stats attribute
   - NuvlaBox Status - add optional attribute for temperatures
   - Retrieve-by-id check acl
   - Event - Enhancement
@@ -30,7 +31,7 @@
 
   - Deployment - Keep versions map in deployment module
   - Automated commissioning of NuvlaBox clusters
-  - NuvlaBox Status - expand CPU metrics and add container-stats attribute
+  - NuvlaBox Status - expand CPU metrics
 
 ## [5.12.2] - 2021-04-30
 
