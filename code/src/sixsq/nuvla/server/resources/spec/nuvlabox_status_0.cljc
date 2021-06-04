@@ -685,6 +685,40 @@
              :json-schema/order 76)))
 
 
+(s/def ::thermal-zone
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "thermal-zone"
+           :json-schema/description "Name of the thermal zone"
+
+           :json-schema/order 77)))
+
+
+(s/def ::value
+  (-> (st/spec number?)
+    (assoc :name "value"
+           :json-schema/description "Temperature of the thermal zone"
+
+           :json-schema/order 78)))
+
+
+(s/def ::temperature-metric
+  (-> (st/spec (su/only-keys :req-un [::thermal-zone ::value]))
+    (assoc :name "temperature-metric"
+           :json-schema/type "map"
+           :json-schema/description "{thermal-zone value} combination"
+
+           :json-schema/order 79)))
+
+
+(s/def ::temperatures
+  (-> (st/spec (s/coll-of ::temperature-metric :kind vector?))
+    (assoc :name "temperatures"
+           :json-schema/type "array"
+           :json-schema/description "list of temperatures in the edge device"
+
+           :json-schema/order 80)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -714,5 +748,6 @@
                                ::jobs
                                ::swarm-node-cert-expiry-date
                                ::online
-                               ::online-prev]}))
+                               ::online-prev
+                               ::temperatures]}))
 
