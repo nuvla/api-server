@@ -108,7 +108,7 @@ Example:
 
 ;; Triggering criteria via matching rules.
 (s/def ::kind
-  (-> (st/spec #{"boolean" "set" "numeric"})
+  (-> (st/spec #{"boolean" "set" "numeric" "string"})
       (assoc :name "kind"
              :json-schema/type "string"
              :json-schema/description "kind of the criteria"
