@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Credential - gpg key
+
 ### Changed
 
   - Retrieve-by-id check acl
