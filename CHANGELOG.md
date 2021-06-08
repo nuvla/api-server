@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - Deployment - get-context deployment state align with distributor
+
 ## [5.14.0] - 2021-06-04
 
 ### Added
