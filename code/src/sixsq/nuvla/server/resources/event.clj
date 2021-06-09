@@ -54,7 +54,7 @@ an application.
 
 (defn can-view-resource?
   [{{{href :href} :resource} :body :as request}]
-  (when (some? href) (crud/retrieve-by-id href {:request request}))
+  (when (some? href) (crud/retrieve-by-id href request))
   request)
 
 

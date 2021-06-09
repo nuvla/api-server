@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.14.2] - 2021-06-09
+
+### Changed
+
+  - Event - User event bug fix
+
 ## [5.14.1] - 2021-06-09
 
 ### Changed
