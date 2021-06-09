@@ -464,12 +464,7 @@ a container orchestration engine.
   (utils/get-context resource false))
 
 
-(defmethod job-interface/get-context ["deployment" "deployment_state_10"]
-  [resource]
-  (utils/get-context resource false))
-
-
-(defmethod job-interface/get-context ["deployment" "deployment_state_60"]
+(defmethod job-interface/get-context ["deployment" "deployment_state"]
   [resource]
   (utils/get-context resource false))
 
