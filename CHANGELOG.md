@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.14.1] - 2021-06-09
+
+### Changed
+
+  - Deployment - Denormalization regression fix
+
 ## [5.14.0] - 2021-06-04
 
 ### Added

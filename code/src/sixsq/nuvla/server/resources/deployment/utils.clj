@@ -282,10 +282,10 @@
 
 
 (defn infra->nb-id
-  [infra authn-info]
+  [infra request]
   (let [parent-infra-group (some-> infra
                                    :parent
-                                   (some-id->resource authn-info)
+                                   (some-id->resource request)
                                    :parent)]
     (when (and
             (string? parent-infra-group)
