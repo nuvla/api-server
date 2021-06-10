@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - User email invitation - invited by is the email of logged in user-id
+  - Group - Invite by email action
   - Deployment - get-context deployment state align with distributor
 
 ## [5.14.2] - 2021-06-09

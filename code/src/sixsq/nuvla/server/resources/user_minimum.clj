@@ -44,14 +44,10 @@ information."
   [{user-id :id :as _resource} {:keys [body] :as _request}]
   (try
     (let [{{:keys [username email]} :template} body]
-      (when username
-        (user-utils/create-identifier user-id username))
-      (when email
-        (user-utils/create-identifier user-id email)
-        (let [email-id (user-utils/create-email user-id email :validated true)]
-          (user-utils/update-user user-id {:id    user-id
-                                           :email email-id})
-          (email-utils/validate-email! email-id))))
+      (user-utils/create-user-subresources user-id
+                                           :username username
+                                           :email email
+                                           :email-validated true))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

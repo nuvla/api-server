@@ -104,7 +104,8 @@
 
 
 (defn create-user-subresources
-  [user-id email password username customer]
+  [user-id & {:keys [email email-validated password username customer]
+              :or   {email-validated false}}]
 
   (when email
     (create-identifier user-id email))
@@ -113,7 +114,7 @@
     (create-identifier user-id username))
 
   (let [credential-id (when password (create-hashed-password user-id password))
-        email-id      (when email (create-email user-id email))]
+        email-id      (when email (create-email user-id email :email-validated email-validated))]
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)

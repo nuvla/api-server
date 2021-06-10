@@ -80,58 +80,79 @@
         (ltu/is-status 403))
 
     ;; test lifecycle of new group
-    (doseq [tpl [valid-create valid-create-no-href]]
-      (let [resp        (-> session-admin
-                            (request base-uri
-                                     :request-method :post
-                                     :body (json/write-str tpl))
-                            (ltu/body->edn)
-                            (ltu/is-status 201))
+    (doseq [session [session-user session-admin]]
+      (doseq [tpl [valid-create valid-create-no-href]]
+        (let [resp        (-> session
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str tpl))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
 
-            abs-uri     (->> resp
-                             ltu/location
-                             (str p/service-context))
+              abs-uri     (->> resp
+                               ltu/location
+                               (str p/service-context))
 
-            expected-id (str "group/" (get-in tpl [:template :group-identifier]))]
+              expected-id (str "group/" (get-in tpl [:template :group-identifier]))]
 
-        ;; check contents of resource
-        (let [{:keys [id name description tags users]
-               :as   body} (-> session-admin
-                               (request abs-uri)
-                               (ltu/body->edn)
-                               (ltu/body))]
-          (is (= id expected-id))
-          (is (= name name-attr))
-          (is (= description description-attr))
-          (is (= tags tags-attr))
-          (is (= [] users))
+          ;; check contents of resource
+          (let [{:keys [id name description tags users]
+                 :as   body} (-> session
+                                 (request abs-uri)
+                                 (ltu/body->edn)
+                                 (ltu/body))]
+            (is (= id expected-id))
+            (is (= name name-attr))
+            (is (= description description-attr))
+            (is (= tags tags-attr))
+            (is (= [] users))
 
-          ;; actually add some users to the group
-          (let [users ["user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                       "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                       "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
+            ;; actually add some users to the group
+            (let [users ["user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                         "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                         "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
 
-            (-> session-admin
-                (request abs-uri
-                         :request-method :put
-                         :body (json/write-str (assoc body :users users)))
-                (ltu/body->edn)
-                (ltu/is-status 200))
+              (-> session
+                  (request abs-uri
+                           :request-method :put
+                           :body (json/write-str (assoc body :users users)))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
 
-            (let [{updated-users :users
-                   acl :acl} (-> session-admin
-                                             (request abs-uri)
-                                             (ltu/body->edn)
-                                             (ltu/body))]
-              (is (= users updated-users))
-              (is (= users (:view-meta acl))))))
+              (let [response   (-> session
+                                   (request abs-uri)
+                                   (ltu/body->edn))
+                    {updated-users :users
+                     acl           :acl} (ltu/body response)
+                    invite-url (-> response
+                                   (ltu/is-operation-present :invite)
+                                   (ltu/get-op-url :invite))]
 
-        ;; delete should work
-        (-> session-admin
-            (request abs-uri
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 200))))))
+                (-> session
+                    (request invite-url
+                             :request :put
+                             :body (json/write-str {:username "notexistandnotemail"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/message-matches "invalid email"))
+
+                (-> session
+                    (request invite-url
+                             :request :put
+                             :body (json/write-str {:username "jane@example.com"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/message-matches (str "successfully invited to " id)))
+
+                (is (= users updated-users))
+                (is (= users (remove #{"group/nuvla-admin"} (:view-meta acl)))))))
+
+          ;; delete should work
+          (-> session
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200)))))))
 
 
 (deftest bad-methods

@@ -8,13 +8,19 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.spec.core :as spec-core]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.email.utils :as email-utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -27,7 +33,8 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"]
+                     :add         ["group/nuvla-admin"
+                                   "group/nuvla-user"]
                      :bulk-delete ["group/nuvla-admin"]})
 
 
@@ -139,6 +146,45 @@ that start with 'nuvla-' are reserved for the server.
 
 
 ;;
+;; "Implementations" of actions
+;;
+
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id] :as resource} request]
+  (let [invite-op      (u/action-map id :invite)
+        can-manage?    (a/can-manage? resource request)
+        can-edit-data? (a/can-edit-data? resource request)]
+    (cond-> (crud/set-standard-operations resource request)
+            (and can-manage? can-edit-data?) (update :operations conj invite-op))))
+
+
+(defmethod crud/do-action [resource-type "invite"]
+  [{base-uri :base-uri {username :username} :body {uuid :uuid} :params :as request}]
+  ;; TODO redirect-uri, create ui redirect url with callback in params
+
+  (try
+    (let [invited-by      (auth-password/invited-by request)
+          id              (str resource-type "/" uuid)
+          user-id         (auth-password/identifier->user-id username)
+          email           (if-let [email-address (some-> user-id auth-password/user-id->email)]
+                            email-address
+                            (if (s/valid? ::spec-core/email username)
+                              username
+                              (throw (r/ex-response (str "invalid email '" username "'") 400))))
+          callback-url    (callback-join-group/create-callback
+                            base-uri id
+                            :data {:user-id user-id
+                                   :email   email}
+                            :expires (u/ttl->timestamp 2592000))] ;; expire after one month
+
+      (email-utils/send-join-group-email id invited-by callback-url email)
+      (r/map-response (format "successfully invited to %s" id) 200 id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; collection
 ;;
 
@@ -173,23 +219,22 @@ that start with 'nuvla-' are reserved for the server.
   (let [default-acl {:owners    ["group/nuvla-admin"]
                      :view-meta ["group/nuvla-user"]}]
     (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
-      {:name        "Nuvla Administrator Group"
-       :description "group of users with server administration rights"
-       :template    {:group-identifier "nuvla-admin"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Administrator Group"
+                             :description "group of users with server administration rights"
+                             :template    {:group-identifier "nuvla-admin"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-user") resource-type
-      {:name        "Nuvla Authenticated Users"
-       :description "pseudo-group of users that have been authenticated"
-       :template    {:group-identifier "nuvla-user"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Authenticated Users"
+                             :description "pseudo-group of users that have been authenticated"
+                             :template    {:group-identifier "nuvla-user"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-anon") resource-type
-      {:name        "Nuvla Anonymous Users"
-       :description "pseudo-group of all users authenticated or not"
-       :template    {:group-identifier "nuvla-anon"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Anonymous Users"
+                             :description "pseudo-group of all users authenticated or not"
+                             :template    {:group-identifier "nuvla-anon"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-nuvlabox") resource-type
-      {:name        "Nuvla NuvlaBox Systems"
-       :description "pseudo-group of all NuvlaBox systems"
-       :template    {:group-identifier "nuvla-nuvlabox"
-                     :acl              default-acl}})))
-
+                            {:name        "Nuvla NuvlaBox Systems"
+                             :description "pseudo-group of all NuvlaBox systems"
+                             :template    {:group-identifier "nuvla-nuvlabox"
+                                           :acl              default-acl}})))

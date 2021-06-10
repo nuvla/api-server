@@ -23,10 +23,12 @@ creating a group and does not provide any useful defaults.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def resource-acl (acl-utils/normalize-acl {:owners ["group/nuvla-admin"]}))
+(def resource-acl (acl-utils/normalize-acl {:owners    ["group/nuvla-admin"]
+                                            :view-data ["group/nuvla-user"]}))
 
 
-(def collection-acl {:query ["group/nuvla-admin"]
+(def collection-acl {:query ["group/nuvla-admin"
+                             "group/nuvla-user"]
                      :add   ["group/nuvla-admin"]})
 
 

@@ -38,22 +38,28 @@
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
 
+    (-> session-jane
+        (request base-uri)
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-count 1))
+
     ;; a query for anyone else should fail
-    (doseq [session [session-jane session-anon]]
-      (-> session
-          (request base-uri)
-          (ltu/body->edn)
-          (ltu/is-status 403)))
+    (-> session-anon
+        (request base-uri)
+        (ltu/body->edn)
+        (ltu/is-status 403))
 
 
     (let [group-tpl-id (str group-tpl/resource-type "/generic")
           abs-url      (str p/service-context group-tpl-id)]
-      (-> session-admin
-          (request abs-url)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-operation-absent :delete)
-          (ltu/is-operation-absent :edit)))))
+      (doseq [session [session-admin session-jane]]
+        (-> session
+            (request abs-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-operation-absent :delete)
+            (ltu/is-operation-absent :edit))))))
 
 
 (deftest bad-methods
