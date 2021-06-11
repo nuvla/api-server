@@ -5,6 +5,7 @@ using an email address.
 "
   (:require
     [ring.util.codec :as codec]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.callback-user-password-set :as callback-pass-set]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -12,8 +13,7 @@ using an email address.
     [sixsq.nuvla.server.resources.user-interface :as p]
     [sixsq.nuvla.server.resources.user-template-email-invitation :as email-invitation]
     [sixsq.nuvla.server.resources.user.password :as password-utils]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
-    [sixsq.nuvla.auth.password :as auth-password]))
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]))
 
 
 ;;
@@ -55,7 +55,7 @@ using an email address.
           invited-by   (auth-password/invited-by request)
           callback-url (callback-pass-set/create-callback
                          base-uri id :expires (u/ttl->timestamp 2592000))] ;;30 days
-      (user-utils/create-user-subresources id email nil nil nil)
+      (user-utils/create-user-subresources id :email email)
 
       (-> (str redirect-url "?callback=" (codec/url-encode callback-url)
                "&type=" (codec/url-encode "invitation")

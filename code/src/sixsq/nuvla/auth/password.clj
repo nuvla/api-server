@@ -2,12 +2,12 @@
   (:refer-clojure :exclude [update])
   (:require
     [buddy.hashers :as hashers]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.server.resources.user-identifier :as user-identifier]))
 
 
 (defn identifier->user-id

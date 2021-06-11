@@ -5,22 +5,23 @@ is a kebab-case string, provided when the group is created. All group names
 that start with 'nuvla-' are reserved for the server.
 "
   (:require
+    [clojure.spec.alpha :as s]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.spec.core :as spec-core]
-    [sixsq.nuvla.auth.password :as auth-password]
+    [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.core :as spec-core]
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -160,25 +161,30 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/do-action [resource-type "invite"]
-  [{base-uri :base-uri {username :username} :body {uuid :uuid} :params :as request}]
-  ;; TODO redirect-uri, create ui redirect url with callback in params
-
+  [{base-uri :base-uri {username         :username
+                        redirect-url     :redirect-url
+                        set-password-url :set-password-url} :body {uuid :uuid} :params :as request}]
   (try
-    (let [invited-by      (auth-password/invited-by request)
-          id              (str resource-type "/" uuid)
-          user-id         (auth-password/identifier->user-id username)
-          email           (if-let [email-address (some-> user-id auth-password/user-id->email)]
-                            email-address
-                            (if (s/valid? ::spec-core/email username)
-                              username
-                              (throw (r/ex-response (str "invalid email '" username "'") 400))))
-          callback-url    (callback-join-group/create-callback
-                            base-uri id
-                            :data {:user-id user-id
-                                   :email   email}
-                            :expires (u/ttl->timestamp 2592000))] ;; expire after one month
-
-      (email-utils/send-join-group-email id invited-by callback-url email)
+    (let [invited-by   (auth-password/invited-by request)
+          id           (str resource-type "/" uuid)
+          user-id      (auth-password/identifier->user-id username)
+          email        (if-let [email-address (some-> user-id auth-password/user-id->email)]
+                         email-address
+                         (if (s/valid? ::spec-core/email username)
+                           username
+                           (throw (r/ex-response (str "invalid email '" username "'") 400))))
+          callback-url (callback-join-group/create-callback
+                         base-uri id
+                         :data (cond-> {:email email}
+                                       user-id (assoc :user-id user-id)
+                                       redirect-url (assoc :redirect-url redirect-url))
+                         :expires (u/ttl->timestamp 2592000)) ;; expire after one month
+          invite-url   (if (and (nil? user-id) set-password-url)
+                         (str set-password-url "?callback=" (codec/url-encode callback-url)
+                              "&type=" (codec/url-encode "invitation")
+                              "&username=" (codec/url-encode email))
+                         callback-url)]
+      (email-utils/send-join-group-email id invited-by invite-url email)
       (r/map-response (format "successfully invited to %s" id) 200 id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
