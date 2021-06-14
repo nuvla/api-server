@@ -10,7 +10,8 @@
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]))
 
 
 (def ^:const resource-url "user")
@@ -48,13 +49,14 @@
 (defn create-email
   [user-id email & {:keys [validated], :or {validated false}}]
   (let [request {:params      {:resource-name email/resource-type}
-                 :body        (cond-> {:parent  user-id
-                                       :address email}
-                                      validated (assoc :validated true))
+                 :body        {:parent  user-id
+                               :address email}
                  :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
-      resource-id
+      (do
+        (when validated (email-utils/validate-email! resource-id))
+        resource-id)
       (throw (ex-info "" body)))))
 
 
@@ -114,7 +116,7 @@
     (create-identifier user-id username))
 
   (let [credential-id (when password (create-hashed-password user-id password))
-        email-id      (when email (create-email user-id email :email-validated email-validated))]
+        email-id      (when email (create-email user-id email :validated email-validated))]
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)

@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-minimum :as minimum]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.tools.logging :as log]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -65,7 +66,10 @@
           (ltu/is-status 200)))
 
     (-> session-admin
-        (request base-uri)
+        (content-type "application/x-www-form-urlencoded")
+        (request base-uri
+                 :request-method :put
+                 :body (rc/form-encode {:filter "name!='super'"}))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
@@ -103,7 +107,10 @@
     ;; user collection query should succeed but be empty for all users
     (doseq [session [session-anon session-user session-admin]]
       (-> session
-          (request base-uri)
+          (content-type "application/x-www-form-urlencoded")
+          (request base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter "name!='super'"}))
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
@@ -157,10 +164,10 @@
           {user-acl  :acl
            email-id  :email
            user-name :name :as _user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (get-in [:response :body]))]
+                                          (request (str p/service-context user-id))
+                                          (ltu/body->edn)
+                                          (ltu/is-status 200)
+                                          (get-in [:response :body]))]
 
       ;; verify the ACL of the user
       (is (some #{"group/nuvla-admin"} (:owners user-acl)))
@@ -187,7 +194,6 @@
 
       ;; email resource has been created and is visible for the user
       (-> session-created-user
-          (content-type "application/x-www-form-urlencoded")
           (request (str p/service-context email-id))
           (ltu/body->edn)
           (ltu/is-status 200)
@@ -219,10 +225,10 @@
           (ltu/is-status 200))
 
       (let [{:keys [state] :as _user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         :response
-                                         :body)]
+                                          (request (str p/service-context user-id))
+                                          (ltu/body->edn)
+                                          :response
+                                          :body)]
         (is (= "ACTIVE" state)))
 
       ;; user can delete his account
