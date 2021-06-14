@@ -4,7 +4,7 @@
 
 ### Changed
 
-  - User email invitation - invited by is the email of logged in user-id
+  - User email invitation - invited by changed from active claim to user-id (logged in user)
   - Group - Invite by email action
   - Deployment - get-context deployment state align with distributor
 

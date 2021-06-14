@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
@@ -10,8 +11,7 @@
     [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-url "user")

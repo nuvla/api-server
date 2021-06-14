@@ -5,6 +5,8 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]
+    [ring.util.codec :as rc]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
@@ -79,7 +81,10 @@
         ;; user collection query should succeed but be empty for all users
         (doseq [session [session-anon session-user session-admin]]
           (-> session
-              (request base-uri)
+              (content-type "application/x-www-form-urlencoded")
+              (request base-uri
+                       :request-method :put
+                       :body (rc/form-encode {:filter "name!='super'"}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count zero?)
@@ -124,84 +129,85 @@
             (ltu/is-status 400))
 
         ;; create user
-        (let [resp                 (-> session-user
-                                       (request base-uri
-                                                :request-method :post
-                                                :body (json/write-str href-create))
-                                       (ltu/body->edn)
-                                       (ltu/is-status 201))
-              user-id              (ltu/body-resource-id resp)
-              session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
-
-              {email-id :email :as user} (-> session-created-user
-                                             (request (str p/service-context user-id))
-                                             (ltu/body->edn)
-                                             (ltu/body))
-
-              callback-url         (->> @invitation-link
-                                        codec/url-decode
-                                        (re-matches #".*callback=(.*?)&.*")
-                                        second)]
-
-          ;; verify name attribute (should default to username if no :name)
-          (is (= "jane@example.org" (:name user)))
-
-
-          ; 1 identifier is visible for the created user one for email
-          (-> session-created-user
-              (request (str p/service-context user-identifier/resource-type))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count 1))
-
-          ; one email is visible for the user
-          (-> session-created-user
-              (request (str p/service-context email-id))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-          ;; check validation of resource
-          (is (not (nil? @invitation-link)))
-
-          (-> session-admin
-              (request (str p/service-context user-id))
-              (ltu/body->edn)
-              (ltu/is-status 200))
-
-          (-> session-anon
-              (request callback-url
-                       :request-method :post
-                       :body (json/write-str {:new-password "VeryDifficult-1"}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/message-matches
-                (re-pattern (format "set password for %s successfully executed" user-id))))
-
-          (let [{:keys [state]} (-> session-created-user
-                                    (request (str p/service-context user-id))
-                                    (ltu/body->edn)
-                                    (ltu/body))]
-            (is (= "ACTIVE" state)))
-
-          (let [{:keys [validated]} (-> session-created-user
-                                        (request (str p/service-context email-id))
+        (with-redefs [auth-password/invited-by (fn [_] "tarzan")]
+          (let [resp                 (-> session-user
+                                        (request base-uri
+                                                 :request-method :post
+                                                 :body (json/write-str href-create))
                                         (ltu/body->edn)
-                                        (ltu/body))]
-            (is validated))
+                                        (ltu/is-status 201))
+               user-id              (ltu/body-resource-id resp)
+               session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
 
-          ;; user can delete his account
-          (-> session-created-user
-              (request (str p/service-context user-id)
-                       :request-method :delete)
-              (ltu/body->edn)
-              (ltu/is-status 200))
+               {email-id :email :as user} (-> session-created-user
+                                              (request (str p/service-context user-id))
+                                              (ltu/body->edn)
+                                              (ltu/body))
 
-          (-> session-created-user
-              (request (str p/service-context user-identifier/resource-type))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-count 0))
+               callback-url         (->> @invitation-link
+                                         codec/url-decode
+                                         (re-matches #".*callback=(.*?)&.*")
+                                         second)]
 
-          (-> session-created-user
-              (request (str p/service-context email-id))
-              (ltu/body->edn)
-              (ltu/is-status 404)))))))
+           ;; verify name attribute (should default to username if no :name)
+           (is (= "jane@example.org" (:name user)))
+
+
+           ; 1 identifier is visible for the created user one for email
+           (-> session-created-user
+               (request (str p/service-context user-identifier/resource-type))
+               (ltu/body->edn)
+               (ltu/is-status 200)
+               (ltu/is-count 1))
+
+           ; one email is visible for the user
+           (-> session-created-user
+               (request (str p/service-context email-id))
+               (ltu/body->edn)
+               (ltu/is-status 200))
+           ;; check validation of resource
+           (is (not (nil? @invitation-link)))
+
+           (-> session-admin
+               (request (str p/service-context user-id))
+               (ltu/body->edn)
+               (ltu/is-status 200))
+
+           (-> session-anon
+               (request callback-url
+                        :request-method :post
+                        :body (json/write-str {:new-password "VeryDifficult-1"}))
+               (ltu/body->edn)
+               (ltu/is-status 200)
+               (ltu/message-matches
+                 (re-pattern (format "set password for %s successfully executed" user-id))))
+
+           (let [{:keys [state]} (-> session-created-user
+                                     (request (str p/service-context user-id))
+                                     (ltu/body->edn)
+                                     (ltu/body))]
+             (is (= "ACTIVE" state)))
+
+           (let [{:keys [validated]} (-> session-created-user
+                                         (request (str p/service-context email-id))
+                                         (ltu/body->edn)
+                                         (ltu/body))]
+             (is validated))
+
+           ;; user can delete his account
+           (-> session-created-user
+               (request (str p/service-context user-id)
+                        :request-method :delete)
+               (ltu/body->edn)
+               (ltu/is-status 200))
+
+           (-> session-created-user
+               (request (str p/service-context user-identifier/resource-type))
+               (ltu/body->edn)
+               (ltu/is-status 200)
+               (ltu/is-count 0))
+
+           (-> session-created-user
+               (request (str p/service-context email-id))
+               (ltu/body->edn)
+               (ltu/is-status 404))))))))
