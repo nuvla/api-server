@@ -243,7 +243,7 @@ Customer mapping to external banking system."
                                                 "city"        city
                                                 "postal_code" postal-code
                                                 "country"     country}}))
-        (r/map-response (format "successfully updated") 200 id)
+        (r/map-response "successfully updated" 200 id)
         (catch Exception e
           (or (ex-data e) (throw e)))))
     (catch Exception e
