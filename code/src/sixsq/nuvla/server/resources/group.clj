@@ -177,7 +177,8 @@ that start with 'nuvla-' are reserved for the server.
                          base-uri id
                          :data (cond-> {:email email}
                                        user-id (assoc :user-id user-id)
-                                       redirect-url (assoc :redirect-url redirect-url))
+                                       redirect-url (assoc :redirect-url redirect-url)
+                                       set-password-url (assoc :set-password-url set-password-url))
                          :expires (u/ttl->timestamp 2592000)) ;; expire after one month
           invite-url   (if (and (nil? user-id) set-password-url)
                          (str set-password-url "?callback=" (codec/url-encode callback-url)
