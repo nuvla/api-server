@@ -206,7 +206,7 @@
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :claim))
+            (ltu/is-operation-absent :switch-group))
 
         ; check contents of session
         (let [{:keys [name description tags]} (-> session-user
@@ -250,8 +250,7 @@
                    :request-method :post
                    :body (json/write-str invalid-create))
           (ltu/body->edn)
-          (ltu/is-status 400))
-      )
+          (ltu/is-status 400)))
 
     ;; anon with valid non activated user cannot create session
     (let [username           "alex"
@@ -344,7 +343,7 @@
             (ltu/is-id session-1-id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :claim))
+            (ltu/is-operation-absent :switch-group))
 
         ;; add user to group/alpha
         (-> session-admin
@@ -383,7 +382,8 @@
               (ltu/is-id session-2-id)
               (ltu/is-operation-present :delete)
               (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :switch-group))
+              (ltu/is-operation-present :switch-group)
+              (ltu/is-operation-present :get-peers))
 
           ;; claiming group-beta should fail
           (-> (apply request session-json
@@ -470,3 +470,62 @@
 
         ))))
 
+(deftest get-peers-test
+  (let [app           (ltu/ring-app)
+        session-json  (content-type (session app) "application/json")
+        session-user  (header session-json authn-info-header "user group/nuvla-user")
+        session-anon  (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+
+    (let [href               (str st/resource-type "/password")
+          username           "user/jane"
+          plaintext-password "JaneJane-0"
+
+          valid-create       {:template {:href     href
+                                         :username username
+                                         :password plaintext-password}}]
+      (create-user session-admin
+                   :username username
+                   :password plaintext-password
+                   :activated? true
+                   :email "jane@example.org")
+
+      ; anonymous create must succeed
+      (let [resp    (-> session-anon
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str valid-create))
+                        (ltu/body->edn)
+                        (ltu/is-set-cookie)
+                        (ltu/is-status 201))
+            id      (ltu/body-resource-id resp)
+            uri     (ltu/location resp)
+            abs-uri (str p/service-context uri)]
+
+
+        ; user should be able to see session with session role
+        (-> (session app)
+            (header authn-info-header (str "user/user group/nuvla-user " id))
+            (request abs-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-id id)
+            (ltu/is-operation-present :delete)
+            (ltu/is-operation-absent :edit)
+            (ltu/is-operation-absent :switch-group)
+            (ltu/is-operation-present :get-peers))
+
+        ; check contents of session
+        (let [get-peers-url (-> session-user
+                                (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/get-op-url :get-peers))]
+          (-> session-user
+              (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+              (request get-peers-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/body)
+              (= {})
+              (is "Get peers body should be empty")))))))

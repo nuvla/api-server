@@ -79,6 +79,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
 `session` resource.
 "
   (:require
+    [clojure.set :as set]
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
@@ -90,6 +91,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.log :as log-util]
@@ -190,6 +192,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
       [(u/operation-map id :add)])
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
+            (a/can-manage? resource request) (conj (u/action-map id :get-peers))
             (can-switch-group? request) (conj (u/action-map id :switch-group)))))
 
 
@@ -397,6 +400,36 @@ status, a 'set-cookie' header, and a 'location' header with the created
           (throw-switch-group-not-authorized request)
           (a/throw-cannot-edit request)
           (update-cookie-session request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "get-peers"]
+  [request]
+  (try
+    (let [user-id       (auth/current-user-id request)
+          is-admin?     (a/is-admin? (auth/current-authentication request))
+          peers-ids     (when-not is-admin?
+                          (->> user-id
+                               cookies/collect-groups-for-user
+                               (map :users)
+                               (reduce set/union #{})
+                               seq))
+          filter-emails (if peers-ids
+                          (->> peers-ids
+                               (map #(format "parent='%s'" %))
+                               (str/join " or ")
+                               (format "(%s) and validated=true"))
+                          (when is-admin? "validated=true"))
+          peers         (when filter-emails
+                          (->> {:cimi-params {:filter filter-emails
+                                              :select ["id", "address", "parent"]
+                                              :last   10000}}
+                               (crud/query-as-admin email/resource-type)
+                               second
+                               (map (juxt :parent :address))
+                               (into {})))]
+      (r/json-response (or peers {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

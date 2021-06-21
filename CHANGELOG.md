@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Session - Get peers operation
   - User email invitation - invited by changed from active claim to user-id (logged in user)
   - Group - Invite by email action
   - Deployment - get-context deployment state align with distributor
