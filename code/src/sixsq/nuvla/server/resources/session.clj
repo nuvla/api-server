@@ -410,8 +410,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [user-id       (auth/current-user-id request)
           is-admin?     (a/is-admin? (auth/current-authentication request))
           peers-ids     (when-not is-admin?
-                          (->> user-id
-                               cookies/collect-groups-for-user
+                          (->> (cookies/collect-groups-for-user user-id :with-users true)
                                (map :users)
                                (reduce set/union #{})
                                seq))

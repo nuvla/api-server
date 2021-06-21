@@ -50,11 +50,12 @@
 
 
 (defn collect-groups-for-user
-  [user-id]
+   [user-id & {:keys [with-users?] :or {with-users? false}}]
   (-> (crud/query-as-admin
         group/resource-type
         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" user-id))
-                       :select ["id"]}})
+                       :select (cond-> ["id"]
+                                       with-users? (conj "users"))}})
       second))
 
 
