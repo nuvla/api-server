@@ -8,13 +8,14 @@ visited, the email identifier is marked as validated.
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
+    [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-validation]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
-    [sixsq.nuvla.server.resources.user-template :as user-template]
-    [sixsq.nuvla.server.resources.user-template-minimum :as user-template-minimum]
+    [sixsq.nuvla.server.resources.user-template :as p]
+    [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -32,10 +33,14 @@ visited, the email identifier is marked as validated.
   (std-crud/add-if-absent
     (str user-utils/resource-url " '" email "'") user-utils/resource-url
     {:template
-     {:href     (str user-template/resource-type "/" user-template-minimum/registration-method)
-      :email    email
+     {:href     (str p/resource-type "/" email-password/registration-method)
+      :email email
       :password new-password}})
-  (auth-password/identifier->user-id email))
+  (let [user-id (auth-password/identifier->user-id email)
+        {:keys [state] :as user} (crud/retrieve-by-id-as-admin user-id)]
+    (when (= state "NEW")
+      (user-email-validation/activate-user-new-active user))
+    user-id))
 
 
 (defn add-user-to-group

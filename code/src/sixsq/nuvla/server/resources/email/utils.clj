@@ -180,7 +180,7 @@
                        conditions-url (str (conditions-acceptance conditions-url)))}
      {:type    "text/html; charset=utf-8"
       :content (render-email
-                 {:title          (format "You’re invited to join group %s" group)
+                 {:title          (format "You’re invited to join %s" group)
                   :button-text    "Accept invitation"
                   :button-url     callback-url
                   :text-1         (str
