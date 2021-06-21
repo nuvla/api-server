@@ -478,8 +478,8 @@
         session-admin (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
 
     (let [href               (str st/resource-type "/password")
-          username           "user/jane"
-          plaintext-password "JaneJane-0"
+          username           "user/jack"
+          plaintext-password "JackJack-0"
 
           valid-create       {:template {:href     href
                                          :username username
@@ -488,7 +488,7 @@
                    :username username
                    :password plaintext-password
                    :activated? true
-                   :email "jane@example.org")
+                   :email "jack@example.org")
 
       ; anonymous create must succeed
       (let [resp    (-> session-anon
