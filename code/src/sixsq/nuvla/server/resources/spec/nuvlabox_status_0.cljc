@@ -392,11 +392,11 @@
            :json-schema/order 94)))
 
 (s/def ::cstat
-  (-> (st/spec (su/only-keys :req-un [::id ::name
-                                      ::container-status ::restart-count
-                                      ::cpu-percent ::mem-percent
-                                      ::mem-usage-limit ::net-in-out
-                                      ::blk-in-out]))
+  (-> (st/spec (su/only-keys :req-un [::id ::name]
+                 :opt-un [::container-status ::restart-count
+                          ::cpu-percent ::mem-percent
+                          ::mem-usage-limit ::net-in-out
+                          ::blk-in-out]))
     (assoc :name "cstat"
            :json-schema/type "map"
            :json-schema/display-name "Single Container Stats"
