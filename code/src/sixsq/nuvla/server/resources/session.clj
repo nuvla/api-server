@@ -422,7 +422,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                (format "(%s) and validated=true"))
                           (when is-admin? "validated=true"))
           peers         (when filter-emails
-                          (->> {:cimi-params {:filter filter-emails
+                          (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
                                               :select ["id", "address", "parent"]
                                               :last   10000}}
                                (crud/query-as-admin email/resource-type)
