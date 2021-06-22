@@ -813,6 +813,14 @@
            :json-schema/order 81)))
 
 
+(s/def ::container-plugins
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "Container Plugins"
+           :json-schema/description "List of enabled Container Plugins on the NuvlaBox host"
+
+           :json-schema/order 82)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes
@@ -843,5 +851,6 @@
                                ::swarm-node-cert-expiry-date
                                ::online
                                ::online-prev
-                               ::temperatures]}))
+                               ::temperatures
+                               ::container-plugins]}))
 

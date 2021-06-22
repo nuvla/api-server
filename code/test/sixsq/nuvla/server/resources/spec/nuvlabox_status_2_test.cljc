@@ -87,7 +87,7 @@
                                        :pin     7}
                                       {:pin 1}]
             :nuvlabox-engine-version "1.2.3"
-            :docker-plugins          []
+            :container-plugins          []
             :vulnerabilities         {}
             :node-id                "xyz"
             :cluster-id             "123xyz"
@@ -126,7 +126,7 @@
   ;; optional
   (doseq [attr #{:next-heartbeat :current-time :resources :wifi-password :comment
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
-                 :docker-plugins :vulnerabilities :swarm-node-id :installation-parameters
+                 :container-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
                  :cluster-join-address :temperatures}]

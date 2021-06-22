@@ -100,7 +100,7 @@
                                ::nb-status-0/inferred-location
                                ::nb-status-0/gpio-pins
                                ::nb-status-0/nuvlabox-engine-version
-                               ::nb-status-0/docker-plugins
+                               ::nb-status-0/container-plugins
                                ::nb-status-0/vulnerabilities
                                ::nb-status-0/installation-parameters
                                ::nb-status-0/jobs
