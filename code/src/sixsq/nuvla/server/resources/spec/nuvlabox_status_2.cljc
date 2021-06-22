@@ -107,6 +107,7 @@
                                ::nb-status-0/swarm-node-cert-expiry-date
                                ::nb-status-0/online
                                ::nb-status-0/online-prev
+                               ::nb-status-0/kubelet-version
                                ::host-user-home
                                ::node-id
                                ::cluster-id

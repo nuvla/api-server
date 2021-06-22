@@ -805,6 +805,14 @@
            :json-schema/order 80)))
 
 
+(s/def ::kubelet-version
+  (-> (st/spec ::core/nonblank-string)
+    (assoc :name "kubelet version"
+           :json-schema/description "kubelet version on the host"
+
+           :json-schema/order 81)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb-status/attributes

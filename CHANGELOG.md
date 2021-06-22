@@ -5,6 +5,7 @@
 ### Changed
 
   - Deployment - get-context deployment state align with distributor
+  - NuvlaBox Status - add attribute kubelet-version
 
 ## [5.14.2] - 2021-06-09
 
