@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Group - Group has at least view-meta on itself
   - Session - Get peers operation
   - User email invitation - invited by changed from active claim to user-id (logged in user)
   - Group - Invite by email action

@@ -81,6 +81,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (:require
     [clojure.set :as set]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils :as auth]
@@ -96,8 +97,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.tools.logging :as log]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -415,17 +415,12 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                (map :users)
                                (reduce set/union #{})
                                seq))
-          _             (log/error "PEER user-id: " user-id)
-          _             (log/error "PEER is-admin?: " is-admin?)
-          _             (log/error "PEER (cookies/collect-groups-for-user user-id :with-users true): " (cookies/collect-groups-for-user user-id :with-users true))
-          _             (log/error "PEER peers-ids: " peers-ids)
           filter-emails (if peers-ids
                           (->> peers-ids
                                (map #(format "parent='%s'" %))
                                (str/join " or ")
                                (format "(%s) and validated=true"))
                           (when is-admin? "validated=true"))
-          _             (log/error "PEER filter-emails: " filter-emails)
           peers         (when filter-emails
                           (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
                                               :select ["id", "address", "parent"]
@@ -433,8 +428,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                (crud/query-as-admin email/resource-type)
                                second
                                (map (juxt :parent :address))
-                               (into {})))
-          _             (log/error "PEER peers: " filter-emails)]
+                               (into {})))]
       (r/json-response (or peers {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
