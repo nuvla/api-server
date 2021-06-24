@@ -11,10 +11,16 @@
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]))
 
+
+(def tarzan-email "tarzan@example.com")
 
 (use-fixtures :once ltu/with-test-server-fixture)
+
+(use-fixtures :once ltu/with-test-server-fixture
+              (partial user-utils-test/with-existing-user tarzan-email))
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -112,9 +118,9 @@
               (is (= [] users))
 
               ;; actually add some users to the group
-              (let [users ["user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                           "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                           "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
+              (let [users      [@user-utils-test/user-id!
+                                "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                                "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
 
                 (-> session
                     (request abs-uri
@@ -139,6 +145,14 @@
                       (ltu/body->edn)
                       (ltu/is-status 400)
                       (ltu/message-matches "invalid email"))
+
+                  (-> session
+                      (request invite-url
+                               :request :put
+                               :body (json/write-str {:username tarzan-email}))
+                      (ltu/body->edn)
+                      (ltu/is-status 400)
+                      (ltu/message-matches "user already in group"))
 
                   (-> session
                       (request invite-url

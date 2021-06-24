@@ -27,7 +27,8 @@
                     :instance      minimum/registration-method
 
                     :username      "super"
-                    :email         "jane@example.com"}
+                    :email         "jane@example.com"
+                    :password      "some-password"}
 
         create-tpl {:name          "my-create"
                     :description   "my create description"
@@ -55,7 +56,7 @@
       (stu/is-invalid ::spec-minimum/schema-create (dissoc create-tpl attr)))
 
     ;; optional template attributes
-    (doseq [attr #{:username :email}]
+    (doseq [attr #{:username :email :password}]
       (let [create-tpl (assoc create-tpl :template (dissoc tpl :id attr))]
         (stu/is-valid ::spec-minimum/schema-create create-tpl)))
 

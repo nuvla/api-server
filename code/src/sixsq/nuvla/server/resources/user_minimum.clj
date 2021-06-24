@@ -3,7 +3,6 @@
 Provides the functions necessary to create a `user` resource from minimal
 information."
   (:require
-    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.user]
     [sixsq.nuvla.server.resources.spec.user-template-minimum :as spec-minimum]
@@ -43,11 +42,12 @@ information."
 (defmethod p/post-user-add minimum/registration-method
   [{user-id :id :as _resource} {:keys [body] :as _request}]
   (try
-    (let [{{:keys [username email]} :template} body]
+    (let [{{:keys [username email password]} :template} body]
       (user-utils/create-user-subresources user-id
                                            :username username
                                            :email email
-                                           :email-validated true))
+                                           :email-validated true
+                                           :password password))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

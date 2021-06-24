@@ -20,12 +20,22 @@
       (assoc :name "email"
              :json-schema/description "email address"
 
-             :json-schema/order 20)))
+             :json-schema/order 21)))
+
+
+(s/def ::password
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "password"
+             :json-schema/description "password for your account"
+
+             :json-schema/order 22
+             :json-schema/sensitive true)))
 
 
 (def keys-opt
   {:opt-un [::username
-            ::email]})
+            ::email
+            ::password]})
 
 
 (def keys-href
