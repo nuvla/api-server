@@ -5,9 +5,8 @@ using an email address.
 "
   (:require
     [ring.util.codec :as codec]
-    [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.resources.callback-user-password-set :as callback-pass-set]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.spec.user-template-email-invitation :as spec-email-invitation]
@@ -53,14 +52,10 @@ using an email address.
   [{:keys [id redirect-url] :as _resource} {:keys [base-uri body] :as request}]
   (try
     (let [{{:keys [email]} :template} body
-          invited-by-user-id (auth/current-active-claim request)
-          invited-by         (try
-                               (crud/retrieve-by-id-as-admin invited-by-user-id)
-                               (catch Exception _
-                                 invited-by-user-id))
-          callback-url       (callback-pass-set/create-callback
-                               base-uri id :expires (u/ttl->timestamp 2592000))] ;;30 days
-      (user-utils/create-user-subresources id email nil nil nil)
+          invited-by   (auth-password/invited-by request)
+          callback-url (callback-pass-set/create-callback
+                         base-uri id :expires (u/ttl->timestamp 2592000))] ;;30 days
+      (user-utils/create-user-subresources id :email email)
 
       (-> (str redirect-url "?callback=" (codec/url-encode callback-url)
                "&type=" (codec/url-encode "invitation")

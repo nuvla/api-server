@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
@@ -48,13 +49,14 @@
 (defn create-email
   [user-id email & {:keys [validated], :or {validated false}}]
   (let [request {:params      {:resource-name email/resource-type}
-                 :body        (cond-> {:parent  user-id
-                                       :address email}
-                                      validated (assoc :validated true))
+                 :body        {:parent  user-id
+                               :address email}
                  :nuvla/authn (user-id-identity user-id)}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
-      resource-id
+      (do
+        (when validated (email-utils/validate-email! resource-id))
+        resource-id)
       (throw (ex-info "" body)))))
 
 
@@ -104,7 +106,8 @@
 
 
 (defn create-user-subresources
-  [user-id email password username customer]
+  [user-id & {:keys [email email-validated password username customer]
+              :or   {email-validated false}}]
 
   (when email
     (create-identifier user-id email))
@@ -113,7 +116,7 @@
     (create-identifier user-id username))
 
   (let [credential-id (when password (create-hashed-password user-id password))
-        email-id      (when email (create-email user-id email))]
+        email-id      (when email (create-email user-id email :validated email-validated))]
 
     (update-user user-id (cond-> {:id user-id}
                                  credential-id (assoc :credential-password credential-id)

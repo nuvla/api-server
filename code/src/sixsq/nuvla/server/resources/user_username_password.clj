@@ -44,7 +44,9 @@ password, and other given information."
   [{user-id :id :as _resource} {:keys [body] :as _request}]
   (try
     (let [{{:keys [password username]} :template} body]
-      (user-utils/create-user-subresources user-id nil password username nil))
+      (user-utils/create-user-subresources user-id
+                                           :password password
+                                           :username username))
     (catch Exception e
       (user-utils/delete-user user-id)
       (throw e))))

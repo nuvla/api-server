@@ -81,7 +81,7 @@
 
 (deftest check-collect-groups-for-user
   (with-redefs [db/query (constantly nil)]
-    (is (= #{} (t/collect-groups-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")))))
+    (is (= #{} (t/collect-groups-set-for-user "user/aa2f41a3-c54c-fce8-32d2-0324e1c32e22")))))
 
 
 (deftest check-collect-groups-for-user-with-real-groups
@@ -136,6 +136,6 @@
 
 
       ;; check that the changes have been picked up
-      (let [result (t/collect-groups-for-user user-id)]
+      (let [result (t/collect-groups-set-for-user user-id)]
         (is (= #{"group/nuvla-admin" "group/test-group"}
                result))))))

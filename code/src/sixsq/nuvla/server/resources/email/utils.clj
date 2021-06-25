@@ -134,7 +134,7 @@
 
 
 (defn send-invitation-email [set-password-url address {:keys [name id] :as _user}]
-  (let [{:keys [smtp-username, conditions-url]
+  (let [{:keys [smtp-username conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
         body (invitation-email-body (or name id) set-password-url conditions-url)
@@ -166,6 +166,29 @@
                 :warning-initiate true})}])
 
 
+(defn join-group-email-body
+  [group invited-by callback-url conditions-url]
+  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla." invited-by group)]
+    [:alternative
+     {:type    "text/plain"
+      :content (cond-> (format
+                         (str/join "\n"
+                                   [msg
+                                    "To accept the invitation, visit:"
+                                    "\n    %s\n"])
+                         callback-url)
+                       conditions-url (str (conditions-acceptance conditions-url)))}
+     {:type    "text/html; charset=utf-8"
+      :content (render-email
+                 {:title          (format "You’re invited to join %s" group)
+                  :button-text    "Accept invitation"
+                  :button-url     callback-url
+                  :text-1         (str
+                                    msg
+                                    "To accept the invitation, click the following button:")
+                  :conditions-url conditions-url})}]))
+
+
 (defn send-password-set-email [set-password-url address]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                    config-nuvla/config-instance-url)
@@ -175,6 +198,20 @@
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
               :subject "Set password for Nuvla service"
+              :body    body}]
+
+    (send-email nuvla-config msg)))
+
+
+(defn send-join-group-email [group invited-by callback-url address]
+  (let [{:keys [smtp-username conditions-url] :as nuvla-config} (crud/retrieve-by-id-as-admin
+                                                                  config-nuvla/config-instance-url)
+
+        body (join-group-email-body group invited-by callback-url conditions-url)
+
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject (format "You’re invited to join %s" group)
               :body    body}]
 
     (send-email nuvla-config msg)))

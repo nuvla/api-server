@@ -55,7 +55,11 @@ address and password.
   (try
     (let [{{:keys [email password username customer]} :template} body
           callback-data {:redirect-url redirect-url}]
-      (user-utils/create-user-subresources id email password username customer)
+      (user-utils/create-user-subresources id
+                                           :email email
+                                           :username username
+                                           :password password
+                                           :customer customer)
       (-> (create-user-email-callback base-uri id :data callback-data)
           (email-utils/send-validation-email email)))
     (catch Exception e

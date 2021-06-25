@@ -51,7 +51,8 @@
                            :tags        tags-attr
                            :template    {:href     template-href
                                          :username "user/jane"
-                                         :email    "jane@example.com"}}
+                                         :email    "jane@example.com"
+                                         :password "Some-password-1?"}}
 
         invalid-create    (assoc-in href-create [:template :href] "user-template/unknown-template")
 
@@ -65,7 +66,10 @@
           (ltu/is-status 200)))
 
     (-> session-admin
-        (request base-uri)
+        (content-type "application/x-www-form-urlencoded")
+        (request base-uri
+                 :request-method :put
+                 :body (rc/form-encode {:filter "name!='super'"}))
         (ltu/body->edn)
         (ltu/is-status 200)
         (ltu/is-count zero?)
@@ -103,7 +107,10 @@
     ;; user collection query should succeed but be empty for all users
     (doseq [session [session-anon session-user session-admin]]
       (-> session
-          (request base-uri)
+          (content-type "application/x-www-form-urlencoded")
+          (request base-uri
+                   :request-method :put
+                   :body (rc/form-encode {:filter "name!='super'"}))
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-count zero?)
@@ -139,14 +146,13 @@
           (ltu/is-status 400)))
 
     ;; create user, minimum template is only accessible by admin
-    (let [resp                 (-> session-admin
+    (let [user-id              (-> session-admin
                                    (request base-uri
                                             :request-method :post
                                             :body (json/write-str href-create))
                                    (ltu/body->edn)
-                                   (ltu/is-status 201))
-
-          user-id              (get-in resp [:response :body :resource-id])
+                                   (ltu/is-status 201)
+                                   (ltu/location))
 
           username-id          (get-in href-create [:template :username])
 
@@ -154,13 +160,14 @@
 
           session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
 
-          {user-acl  :acl
-           email-id  :email
-           user-name :name :as _user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         (ltu/is-status 200)
-                                         (get-in [:response :body]))]
+          {user-acl    :acl
+           email-id    :email
+           password-id :credential-password
+           user-name   :name :as _user} (-> session-created-user
+                                            (request (str p/service-context user-id))
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            (ltu/body))]
 
       ;; verify the ACL of the user
       (is (some #{"group/nuvla-admin"} (:owners user-acl)))
@@ -187,11 +194,16 @@
 
       ;; email resource has been created and is visible for the user
       (-> session-created-user
-          (content-type "application/x-www-form-urlencoded")
           (request (str p/service-context email-id))
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-key-value :validated true))
+
+
+      (-> session-created-user
+          (request (str p/service-context password-id))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
       ; 1 identifier for the email is visible for the created user; find by identifier
       (-> session-created-user
@@ -219,10 +231,9 @@
           (ltu/is-status 200))
 
       (let [{:keys [state] :as _user} (-> session-created-user
-                                         (request (str p/service-context user-id))
-                                         (ltu/body->edn)
-                                         :response
-                                         :body)]
+                                          (request (str p/service-context user-id))
+                                          (ltu/body->edn)
+                                          (ltu/body))]
         (is (= "ACTIVE" state)))
 
       ;; user can delete his account

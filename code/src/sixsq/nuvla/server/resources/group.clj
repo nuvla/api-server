@@ -5,16 +5,24 @@ is a kebab-case string, provided when the group is created. All group names
 that start with 'nuvla-' are reserved for the server.
 "
   (:require
+    [clojure.spec.alpha :as s]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.core :as spec-core]
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.customer.utils :as utils]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -27,7 +35,8 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"]
+                     :add         ["group/nuvla-admin"
+                                   "group/nuvla-user"]
                      :bulk-delete ["group/nuvla-admin"]})
 
 
@@ -122,11 +131,11 @@ that start with 'nuvla-' are reserved for the server.
 (defmethod crud/edit resource-type
   [request]
   (let [id    (str resource-type "/" (-> request :params :uuid))
-        users (get-in request [:body :users])
+        users (get-in request [:body :users] [])
         acl   (get-in request [:body :acl] (:acl (crud/retrieve-by-id-as-admin id)))]
     (-> request
         (assoc-in [:body :acl] acl)
-        (cond-> (seq users) (update-in [:body :acl :view-meta] (comp vec set concat) users))
+        (update-in [:body :acl :view-meta] (comp vec set concat) (conj users id))
         (edit-impl))))
 
 
@@ -136,6 +145,61 @@ that start with 'nuvla-' are reserved for the server.
 (defmethod crud/delete resource-type
   [request]
   (delete-impl request))
+
+
+;;
+;; "Implementations" of actions
+;;
+
+
+(defmethod crud/set-operations resource-type
+  [{:keys [id] :as resource} request]
+  (let [invite-op      (u/action-map id :invite)
+        can-manage?    (a/can-manage? resource request)
+        can-edit-data? (a/can-edit-data? resource request)]
+    (cond-> (crud/set-standard-operations resource request)
+            (and can-manage? can-edit-data?) (update :operations conj invite-op))))
+
+
+(defn throw-is-already-in-group
+  [{:keys [id users] :as resource} user-id]
+  (if-not ((set users) user-id)
+    resource
+    (throw (r/ex-response "user already in group" 400 id))))
+
+
+(defmethod crud/do-action [resource-type "invite"]
+  [{base-uri :base-uri {username         :username
+                        redirect-url     :redirect-url
+                        set-password-url :set-password-url} :body {uuid :uuid} :params :as request}]
+  (try
+    (let [id           (str resource-type "/" uuid)
+          user-id      (auth-password/identifier->user-id username)
+          _group       (-> (crud/retrieve-by-id-as-admin id)
+                           (utils/throw-can-not-manage request "invite")
+                           (throw-is-already-in-group user-id))
+          invited-by   (auth-password/invited-by request)
+          email        (if-let [email-address (some-> user-id auth-password/user-id->email)]
+                         email-address
+                         (if (s/valid? ::spec-core/email username)
+                           username
+                           (throw (r/ex-response (str "invalid email '" username "'") 400))))
+          callback-url (callback-join-group/create-callback
+                         base-uri id
+                         :data (cond-> {:email email}
+                                       user-id (assoc :user-id user-id)
+                                       redirect-url (assoc :redirect-url redirect-url)
+                                       set-password-url (assoc :set-password-url set-password-url))
+                         :expires (u/ttl->timestamp 2592000)) ;; expire after one month
+          invite-url   (if (and (nil? user-id) set-password-url)
+                         (str set-password-url "?callback=" (codec/url-encode callback-url)
+                              "&type=" (codec/url-encode "invitation")
+                              "&username=" (codec/url-encode email))
+                         callback-url)]
+      (email-utils/send-join-group-email id invited-by invite-url email)
+      (r/map-response (format "successfully invited to %s" id) 200 id))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 ;;
@@ -173,23 +237,22 @@ that start with 'nuvla-' are reserved for the server.
   (let [default-acl {:owners    ["group/nuvla-admin"]
                      :view-meta ["group/nuvla-user"]}]
     (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
-      {:name        "Nuvla Administrator Group"
-       :description "group of users with server administration rights"
-       :template    {:group-identifier "nuvla-admin"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Administrator Group"
+                             :description "group of users with server administration rights"
+                             :template    {:group-identifier "nuvla-admin"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-user") resource-type
-      {:name        "Nuvla Authenticated Users"
-       :description "pseudo-group of users that have been authenticated"
-       :template    {:group-identifier "nuvla-user"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Authenticated Users"
+                             :description "pseudo-group of users that have been authenticated"
+                             :template    {:group-identifier "nuvla-user"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-anon") resource-type
-      {:name        "Nuvla Anonymous Users"
-       :description "pseudo-group of all users authenticated or not"
-       :template    {:group-identifier "nuvla-anon"
-                     :acl              default-acl}})
+                            {:name        "Nuvla Anonymous Users"
+                             :description "pseudo-group of all users authenticated or not"
+                             :template    {:group-identifier "nuvla-anon"
+                                           :acl              default-acl}})
     (std-crud/add-if-absent (str resource-type "/nuvla-nuvlabox") resource-type
-      {:name        "Nuvla NuvlaBox Systems"
-       :description "pseudo-group of all NuvlaBox systems"
-       :template    {:group-identifier "nuvla-nuvlabox"
-                     :acl              default-acl}})))
-
+                            {:name        "Nuvla NuvlaBox Systems"
+                             :description "pseudo-group of all NuvlaBox systems"
+                             :template    {:group-identifier "nuvla-nuvlabox"
+                                           :acl              default-acl}})))

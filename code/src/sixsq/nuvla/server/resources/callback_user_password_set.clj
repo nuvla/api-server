@@ -33,13 +33,13 @@ Allow a user to set a new password when the execute URL is visited.
 
 
 (defmethod callback/execute action-name
-  [{callback-id    :id
-    {:keys [href]} :target-resource :as _callback-resource}
+  [{callback-id     :id
+    {user-id :href} :target-resource :as _callback-resource}
    {{:keys [new-password]} :body :as _request}]
   (when-not (hashed-password/acceptable-password? new-password)
     (throw (r/ex-response hashed-password/acceptable-password-msg 400)))
   (try
-    (let [{:keys [id state] :as user} (crud/retrieve-by-id-as-admin href)]
+    (let [{:keys [id state] :as user} (crud/retrieve-by-id-as-admin user-id)]
       (when (= state "SUSPENDED")
         (utils/callback-failed! callback-id)
         (throw (r/ex-response (format "%s is not in the 'NEW' or 'ACTIVE' state" id) 400)))

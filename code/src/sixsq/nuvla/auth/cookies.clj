@@ -50,12 +50,18 @@
 
 
 (defn collect-groups-for-user
+   [user-id & {:keys [with-users?] :or {with-users? false}}]
+  (-> (crud/query-as-admin
+        group/resource-type
+        {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" user-id))
+                       :select (cond-> ["id"]
+                                       with-users? (conj "users"))}})
+      second))
+
+
+(defn collect-groups-set-for-user
   [id]
-  (->> (crud/query-as-admin
-         group/resource-type
-         {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" id))
-                        :select ["id"]}})
-       second
+  (->> (collect-groups-for-user id)
        (map :id)
        set))
 
@@ -63,7 +69,7 @@
 (defn create-cookie-info
   [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
   (let [server               (:nuvla-ssl-server-name headers)
-        collected-groups-set (collect-groups-for-user user-id)
+        collected-groups-set (collect-groups-set-for-user user-id)
         groups               (-> collected-groups-set
                                  sort
                                  seq)]
