@@ -81,7 +81,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (:require
     [clojure.set :as set]
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.utils :as auth]
