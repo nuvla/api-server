@@ -48,7 +48,7 @@
     :content (render-email {:title            "Nuvla email validation"
                             :button-text      "Validate"
                             :button-url       callback-url
-                            :text-1           "To validate your email address click validate button."
+                            :text-1           "To validate your email address click the validate button."
                             :conditions-url   conditions-url
                             :warning-initiate true})}])
 
@@ -59,7 +59,7 @@
    {:type    "text/plain"
     :content (cond-> (format (str/join "\n"
                                        ["You have been invited by \"%s\" to use Nuvla."
-                                        "To accept the invitation, follow this link:"
+                                        " To accept the invitation, follow this link:"
                                         "\n    %s\n"]) name set-password-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
@@ -162,13 +162,13 @@
                {:title            "Nuvla set password"
                 :button-text      "Set new password"
                 :button-url       set-password-url
-                :text-1           "To set your password click following button:"
+                :text-1           "To set your password click the following button:"
                 :warning-initiate true})}])
 
 
 (defn join-group-email-body
   [group invited-by callback-url conditions-url]
-  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
+  (let [msg  (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
         note "Note that you will be visible to all current and future members of this group. "]
     [:alternative
      {:type    "text/plain"

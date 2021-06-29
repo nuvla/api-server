@@ -163,7 +163,7 @@
                       (ltu/message-matches (str "successfully invited to " id)))
 
                   (is (= users updated-users))
-                  (is (= (cons id users) (remove #{"group/nuvla-admin"} (:view-meta acl)))))))
+                  (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin"} (:view-meta acl))))))))
 
             ;; delete should work
             (-> session
