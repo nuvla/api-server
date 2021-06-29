@@ -168,12 +168,14 @@
 
 (defn join-group-email-body
   [group invited-by callback-url conditions-url]
-  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)]
+  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
+        note "Note that you will be visible to all current and future members of this group. "]
     [:alternative
      {:type    "text/plain"
       :content (cond-> (format
                          (str/join "\n"
                                    [msg
+                                    note
                                     "To accept the invitation, visit:"
                                     "\n    %s\n"])
                          callback-url)
@@ -185,6 +187,7 @@
                   :button-url     callback-url
                   :text-1         (str
                                     msg
+                                    note
                                     "To accept the invitation, click the following button:")
                   :conditions-url conditions-url})}]))
 
