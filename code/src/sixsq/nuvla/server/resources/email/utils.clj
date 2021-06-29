@@ -48,7 +48,7 @@
     :content (render-email {:title            "Nuvla email validation"
                             :button-text      "Validate"
                             :button-url       callback-url
-                            :text-1           "To validate your email address click validate button."
+                            :text-1           "To validate your email address click the validate button."
                             :conditions-url   conditions-url
                             :warning-initiate true})}])
 
@@ -59,7 +59,7 @@
    {:type    "text/plain"
     :content (cond-> (format (str/join "\n"
                                        ["You have been invited by \"%s\" to use Nuvla."
-                                        "To accept the invitation, follow this link:"
+                                        " To accept the invitation, follow this link:"
                                         "\n    %s\n"]) name set-password-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
