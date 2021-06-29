@@ -162,13 +162,13 @@
                {:title            "Nuvla set password"
                 :button-text      "Set new password"
                 :button-url       set-password-url
-                :text-1           "To set your password click following button:"
+                :text-1           "To set your password click the following button:"
                 :warning-initiate true})}])
 
 
 (defn join-group-email-body
   [group invited-by callback-url conditions-url]
-  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
+  (let [msg  (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
         note "Note that you will be visible to all current and future members of this group. "]
     [:alternative
      {:type    "text/plain"
