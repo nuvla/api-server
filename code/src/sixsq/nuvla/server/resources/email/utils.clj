@@ -168,7 +168,7 @@
 
 (defn join-group-email-body
   [group invited-by callback-url conditions-url]
-  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla." invited-by group)]
+  (let [msg (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)]
     [:alternative
      {:type    "text/plain"
       :content (cond-> (format
