@@ -11,6 +11,7 @@
   - Group - Invite by email action
   - Deployment - get-context deployment state align with distributor
   - NuvlaBox Status - add attribute kubelet-version and container-plugins
+  - NuvlaBox Cluster - let NBs delete a cluster
 
 ## [5.14.2] - 2021-06-09
 
