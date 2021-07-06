@@ -77,7 +77,7 @@
             manage     (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
             view-data  (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
             acl        {:owners    ["group/nuvla-admin"]
-                        :delete    ["group/nuvla-admin"]
+                        :delete    (concat ["group/nuvla-admin"] (into [] manage))
                         :edit-acl  ["group/nuvla-admin"]
                         :manage    (into [] manage)
                         :view-data (into [] view-data)
