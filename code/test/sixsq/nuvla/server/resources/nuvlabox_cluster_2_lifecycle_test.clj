@@ -232,15 +232,8 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; nuvlabox cannot delete the cluster
+        ;; nuvlabox can delete the cluster
         (-> session-nb
-            (request cluster-url
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 403))
-
-        ;; only admin can delete
-        (-> session-admin
             (request cluster-url
                      :request-method :delete)
             (ltu/body->edn)
