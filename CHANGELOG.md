@@ -4,6 +4,11 @@
 
 ### Changed
 
+## [5.15.0] - 2021-08-04
+
+### Changed
+
+  - Remove specific project related conditions
   - Updated SixSq legal status (Sarl to SA)
   - Group - Group has at least view-meta on itself
   - Session - Get peers operation
