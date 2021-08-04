@@ -299,16 +299,6 @@ a container orchestration engine.
       (crud/edit)
       :body))
 
-;; FIXME: remove after this date:
-(def gnss-expiry-date "2021-08-01T00:00:00.000Z")
-(def gnss-groups ["group/gnss-admin" "group/gnss-user"])
-(defn gnss-group?
-  [request expiry-date]
-  (let [claim (auth/current-active-claim request)]
-    (and
-      (boolean (time/before? (time/now) (time/date-from-str expiry-date)))
-      (some #(= claim %) gnss-groups))))
-
 
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
@@ -330,10 +320,7 @@ a container orchestration engine.
                              (assoc :api-credentials (utils/generate-api-key-secret
                                                        id
                                                        (when (or data?
-                                                                 user-rights?
-                                                                 (gnss-group?
-                                                                   request
-                                                                   gnss-expiry-date))
+                                                                 user-rights?)
                                                          (auth/current-authentication request))))
                              (cond-> subs-id (assoc :subscription-id subs-id))
                              (edit-deployment request))]
