@@ -16,6 +16,7 @@
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-google :as srvc-gce]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-kubernetes :as srvc-kubernetes]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-minio :as srvc-minio]
+    [sixsq.nuvla.server.resources.credential-template-infrastructure-service-openstack :as srvc-openstack]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-registry :as srvc-registry]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-swarm :as srvc-swarm]
     [sixsq.nuvla.server.resources.credential-template-infrastructure-service-vpn-customer
@@ -42,6 +43,7 @@
                                srvc/method
                                srvc-gce/method
                                srvc-minio/method
+                               srvc-openstack/method
                                srvc-swarm/method
                                swarm-token/method]]
     (let [id  (str ct/resource-type "/" registration-method)
@@ -64,6 +66,7 @@
                         srvc/credential-subtype
                         srvc-gce/credential-subtype
                         srvc-minio/credential-subtype
+                        srvc-openstack/credential-subtype
                         srvc-swarm/credential-subtype
                         swarm-token/credential-subtype]]
     (mdtu/check-metadata-exists (str ct/resource-type "-" resource-url)
@@ -93,6 +96,7 @@
              (str ct/resource-type "/" sshkey/method)
              (str ct/resource-type "/" hashed-password/method)
              (str ct/resource-type "/" srvc-minio/method)
+             (str ct/resource-type "/" srvc-openstack/method)
              (str ct/resource-type "/" srvc-swarm/method)
              (str ct/resource-type "/" srvc-kubernetes/method)
              (str ct/resource-type "/" srvc-aws/method)
@@ -108,6 +112,7 @@
              sshkey/method
              hashed-password/method
              srvc-minio/method
+             srvc-openstack/method
              srvc-registry/method
              srvc-swarm/method
              srvc-kubernetes/method
@@ -122,6 +127,7 @@
              sshkey/credential-subtype
              hashed-password/credential-subtype
              srvc-minio/credential-subtype
+             srvc-openstack/credential-subtype
              srvc-registry/credential-subtype
              srvc-swarm/credential-subtype
              srvc-kubernetes/credential-subtype
