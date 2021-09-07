@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Credential template for Openstack infrastructure services
+
 ### Changed
 
 ## [5.15.0] - 2021-08-04

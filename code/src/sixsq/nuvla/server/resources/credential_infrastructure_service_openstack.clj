@@ -22,7 +22,7 @@ correspond exactly to those required by `docker-machine`.
            openstack-password
            openstack-tenant-id
            openstack-domain-name
-           openstack-authz-url
+           openstack-auth-url
            acl]} _request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :subtype                 subtype
@@ -31,7 +31,7 @@ correspond exactly to those required by `docker-machine`.
                           :openstack-password      openstack-password
                           :openstack-tenant-id     openstack-tenant-id
                           :openstack-domain-name   openstack-domain-name
-                          :openstack-authz-url     openstack-authz-url}
+                          :openstack-auth-url      openstack-auth-url}
                          acl (assoc :acl acl))]
     [nil resource]))
 

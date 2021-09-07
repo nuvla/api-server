@@ -53,7 +53,7 @@
                                              :openstack-password      "bar"
                                              :openstack-tenant-id     "1234"
                                              :openstack-domain-name   "domain"
-                                             :openstack-authz-url     "https://url.com"}}]
+                                             :openstack-auth-url      "https://url.com"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -119,7 +119,7 @@
                     openstack-password
                     openstack-tenant-id
                     openstack-domain-name
-                    openstack-authz-url]} (-> session-user
+                    openstack-auth-url]} (-> session-user
                                                                    (request abs-uri)
                                                                    (ltu/body->edn)
                                                                    (ltu/is-status 200)
@@ -131,7 +131,7 @@
         (is openstack-password)
         (is openstack-tenant-id)
         (is openstack-domain-name)
-        (is openstack-authz-url))
+        (is openstack-auth-url))
 
       ;; delete the credential
       (-> session-user
