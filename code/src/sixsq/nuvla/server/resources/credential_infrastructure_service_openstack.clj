@@ -20,18 +20,12 @@ correspond exactly to those required by `docker-machine`.
            method
            openstack-username
            openstack-password
-           openstack-tenant-id
-           openstack-domain-name
-           openstack-auth-url
            acl]} _request]
   (let [resource (cond-> {:resource-type           p/resource-type
                           :subtype                 subtype
                           :method                  method
                           :openstack-username      openstack-username
-                          :openstack-password      openstack-password
-                          :openstack-tenant-id     openstack-tenant-id
-                          :openstack-domain-name   openstack-domain-name
-                          :openstack-auth-url      openstack-auth-url}
+                          :openstack-password      openstack-password}
                          acl (assoc :acl acl))]
     [nil resource]))
 
