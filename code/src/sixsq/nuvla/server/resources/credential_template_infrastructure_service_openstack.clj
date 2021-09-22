@@ -38,9 +38,6 @@ names correspond exactly to those required by `docker-machine`.
    :description             "Openstack cloud credentials"
    :openstack-username      ""
    :openstack-password      ""
-   :openstack-tenant-id     ""
-   :openstack-domain-name   ""
-   :openstack-auth-url      ""
    :acl                     resource-acl
    :resource-metadata       "resource-metadata/credential-template-driver-openstack"})
 
