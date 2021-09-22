@@ -23,43 +23,13 @@
              :json-schema/sensitive true)))
 
 
-(s/def ::openstack-tenant-id
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-    (assoc :name "openstack-tenant-id"
-           :json-schema/type "string"
-           :json-schema/description "Openstack tenant ID"
-           :json-schema/order 22)))
-
-
-(s/def ::openstack-domain-name
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-    (assoc :name "openstack-domain-name"
-           :json-schema/type "string"
-           :json-schema/description "Openstack domain name"
-           :json-schema/order 23)))
-
-
-(s/def ::openstack-auth-url
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
-    (assoc :name "openstack-auth-url"
-           :json-schema/type "string"
-           :json-schema/description "Openstack authorization endpoint"
-           :json-schema/order 24)))
-
-
 (def credential-template-keys-spec
   {:req-un [::openstack-username
-            ::openstack-password
-            ::openstack-tenant-id
-            ::openstack-domain-name
-            ::openstack-auth-url]})
+            ::openstack-password]})
 
 (def credential-template-create-keys-spec
   {:req-un [::openstack-username
-            ::openstack-password
-            ::openstack-tenant-id
-            ::openstack-domain-name
-            ::openstack-auth-url]})
+            ::openstack-password]})
 
 ;; Defines the contents of the openstack CredentialTemplate resource itself.
 (s/def ::schema

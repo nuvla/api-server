@@ -50,10 +50,7 @@
                                :tags        tags-attr
                                :template    {:href                    href
                                              :openstack-username      "foo"
-                                             :openstack-password      "bar"
-                                             :openstack-tenant-id     "1234"
-                                             :openstack-domain-name   "domain"
-                                             :openstack-auth-url      "https://url.com"}}]
+                                             :openstack-password      "bar"}}]
 
     ;; admin/user query should succeed but be empty (no credentials created yet)
     (doseq [session [session-admin session-user]]
@@ -116,10 +113,7 @@
       ;; ensure credential contains correct information
       (let [{:keys [name description tags
                     openstack-username
-                    openstack-password
-                    openstack-tenant-id
-                    openstack-domain-name
-                    openstack-auth-url]} (-> session-user
+                    openstack-password]} (-> session-user
                                                                    (request abs-uri)
                                                                    (ltu/body->edn)
                                                                    (ltu/is-status 200)
@@ -128,10 +122,7 @@
         (is (= description description-attr))
         (is (= tags tags-attr))
         (is openstack-username)
-        (is openstack-password)
-        (is openstack-tenant-id)
-        (is openstack-domain-name)
-        (is openstack-auth-url))
+        (is openstack-password))
 
       ;; delete the credential
       (-> session-user

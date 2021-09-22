@@ -24,9 +24,6 @@
 
                    :openstack-username      "foo"
                    :openstack-password      "bar"
-                   :openstack-tenant-id     "1234"
-                   :openstack-domain-name   "domain"
-                   :openstack-auth-url      "https://url.com"
 
                    :parent                  "infrastructure-service/service-1"}]
 
