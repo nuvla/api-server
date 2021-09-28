@@ -38,4 +38,5 @@
                                ::nb-0/internal-data-gateway-endpoint
                                ::nb-0/ssh-keys
                                ::nb-0/capabilities
-                               ::nb-0/online]}))
+                               ::nb-0/online
+                               ::nb-0/inferred-location]}))

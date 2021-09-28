@@ -243,6 +243,16 @@
              :json-schema/order 35)))
 
 
+(s/def ::inferred-location
+  (-> (st/spec (s/coll-of number? :min-count 2 :max-count 3))
+      (assoc :name "inferred-location"
+             :json-schema/type "geo-point"
+             :json-schema/display-name "inferred-location"
+             :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
+
+             :json-schema/order 56)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      nb/attributes
@@ -271,4 +281,5 @@
                                ::internal-data-gateway-endpoint
                                ::ssh-keys
                                ::capabilities
-                               ::online]}))
+                               ::online
+                               ::inferred-location]}))
