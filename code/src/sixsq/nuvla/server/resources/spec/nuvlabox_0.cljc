@@ -249,8 +249,9 @@
              :json-schema/type "geo-point"
              :json-schema/display-name "inferred-location"
              :json-schema/description "location [longitude, latitude, altitude] - dynamically inferred by the NuvlaBox"
+             :json-schema/server-managed true
 
-             :json-schema/order 56)))
+             :json-schema/order 36)))
 
 
 (s/def ::schema

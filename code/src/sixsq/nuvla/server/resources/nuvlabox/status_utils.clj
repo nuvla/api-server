@@ -53,14 +53,14 @@
 
 
 (defn set-inferred-location
-  [resource inferred-location]
-  (let [{:keys [parent]} resource]
+  [{:keys [parent] :as resource} inferred-location]
+  (when (some? inferred-location)
     (try
       (-> (crud/retrieve-by-id-as-admin parent)
           (u/update-timestamps)
           (assoc :inferred-location inferred-location)
           (db/edit {:nuvla/authn auth/internal-identity}))
       (catch Exception ex
-        (log/info parent "update inferred-location attribute failed!" ex)))
-    resource))
+        (log/info parent "update inferred-location attribute failed!" ex))))
+  resource)
 
