@@ -28,6 +28,7 @@
                :refresh-interval             90
 
                :location                     [46.2044 6.1432 373.]
+               :inferred-location            [46.2044 6.1432 373.]
 
                :supplier                     "super-hardware-company"
                :organization                 "MyNanoCompany"
