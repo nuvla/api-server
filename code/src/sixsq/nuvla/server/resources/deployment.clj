@@ -455,6 +455,14 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+(defmethod job-interface/get-context ["deployment" "deployment_state_10"]
+  [resource]
+  (utils/get-context resource false))
+
+(defmethod job-interface/get-context ["deployment" "deployment_state_60"]
+  [resource]
+  (utils/get-context resource false))
+
 
 (def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
 
