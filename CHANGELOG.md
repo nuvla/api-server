@@ -8,6 +8,8 @@
 
 ### Changed
 
+  - Copy inferred-location from nuvlabox-status to nuvlabox resource.
+
 ## [5.15.0] - 2021-08-04
 
 ### Changed
