@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.credential-infrastructure-service-openstack
   "
-Provides `docker-machine` credentials for Exoscale. The attribute names
+Provides `docker-machine` credentials for OpenStack. The attribute names
 correspond exactly to those required by `docker-machine`.
 "
   (:require
