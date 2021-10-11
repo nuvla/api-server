@@ -7,7 +7,7 @@
 
 
 (s/def ::openstack-username
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+  (-> (st/spec ::cimi-core/nonblank-string)                                     
       (assoc :name "openstack-username"
              :json-schema/type "string"
              :json-schema/description "Openstack username to login with"
@@ -15,7 +15,7 @@
 
 
 (s/def ::openstack-password
-  (-> (st/spec string?)                                     ;; ::cimi-core/nonblank-string
+  (-> (st/spec ::cimi-core/nonblank-string)
       (assoc :name "openstack-password"
              :json-schema/type "string"
              :json-schema/description "Password for the Openstack username"
