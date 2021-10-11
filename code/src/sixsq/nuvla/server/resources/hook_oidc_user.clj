@@ -22,6 +22,7 @@ Stripe oidc user.
   (let [{:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)
         redirect-hook-url (str base-uri "hook" "/" action)]
+    (log/info "hook-oidc-user redirect request:" request)
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token
                               client-id client-secret token-url code redirect-hook-url)]
