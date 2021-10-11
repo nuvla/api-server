@@ -1,14 +1,13 @@
 (ns sixsq.nuvla.server.resources.spec.credential-template-infrastructure-service-openstack
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as cimi-core]
     [sixsq.nuvla.server.resources.spec.credential-template :as ct]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
 (s/def ::openstack-username
-  (-> (st/spec ::cimi-core/nonblank-string)                                     
+  (-> (st/spec string?)
       (assoc :name "openstack-username"
              :json-schema/type "string"
              :json-schema/description "Openstack username to login with"
@@ -16,7 +15,7 @@
 
 
 (s/def ::openstack-password
-  (-> (st/spec ::cimi-core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "openstack-password"
              :json-schema/type "string"
              :json-schema/description "Password for the Openstack username"
