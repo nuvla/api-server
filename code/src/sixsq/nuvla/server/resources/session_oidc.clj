@@ -57,7 +57,8 @@
                                             login-request-timeout))))
         callback-url (if (= redirect-url-resource "callback")
                        (sutils/create-callback base-uri (:id session) cb/action-name)
-                       (str base-uri hook/resource-type "/" hook-oidc-session/action))
+                       (cond-> (str base-uri hook/resource-type "/" hook-oidc-session/action)
+                               (not= instance oidc-utils/geant-instance) (str "/" instance)))
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id
                                                      callback-url "openid email")
         cookie       {:value   (:id session)
