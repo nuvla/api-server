@@ -10,7 +10,6 @@ Stripe oidc user.
     [sixsq.nuvla.auth.utils.http :as uh]
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as app-params]
-    [sixsq.nuvla.server.resources.hook-oidc-session :refer [instance]]
     [sixsq.nuvla.server.resources.session-oidc.utils :as oidc-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -18,10 +17,13 @@ Stripe oidc user.
 (def ^:const action "oidc-user")
 
 (defn register-user
-  [{:keys [base-uri] :as request} redirect-ui-url]
-  (let [{:keys [client-id client-secret
+  [{:keys [base-uri params] :as request} redirect-ui-url]
+  (let [instance (get params :instance (oidc-utils/geant-instance))
+        {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)
-        redirect-hook-url (str base-uri "hook" "/" action)]
+        redirect-hook-url (cond-> (str base-uri "hook" "/" action)
+                                  instance (str "/" instance))]
+    (log/info "hook-oidc-user redirect request:" request)
     (if-let [code (uh/param-value request :code)]
       (if-let [access-token (auth-oidc/get-access-token
                               client-id client-secret token-url code redirect-hook-url)]
@@ -43,7 +45,7 @@ Stripe oidc user.
 
 (defn execute
   [{:keys [base-uri] :as request}]
-  (log/debug "Executing hook" action request)
+  (log/debug "Executing hook oidc user registration" request)
   (let [redirect-ui-url         (-> base-uri
                                     (str/replace
                                       (re-pattern (str app-params/service-context "$"))

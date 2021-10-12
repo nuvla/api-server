@@ -37,7 +37,8 @@
         redirect-url (if (= redirect-url-resource "callback")
                        (create-user-oidc-callback
                          base-uri href :data (when redirect-url {:redirect-url redirect-url}))
-                       (str base-uri hook/resource-type "/" hook-oidc-user/action))]
+                       (cond-> (str base-uri hook/resource-type "/" hook-oidc-user/action)
+                         (not= instance oidc-utils/geant-instance) (str "/" instance)))]
     (oidc-utils/create-redirect-url authorize-url client-id redirect-url "openid email")))
 
 
