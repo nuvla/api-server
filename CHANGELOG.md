@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Support multiple instance of OIDC
+  - Allow back get-context operation on deployment_state_10 and deployment_state_60
   - Copy inferred-location from nuvlabox-status to nuvlabox resource.
 
 ## [5.15.0] - 2021-08-04
