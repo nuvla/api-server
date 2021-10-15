@@ -539,9 +539,9 @@
 
 (defn update-nuvlabox-cluster
   [nuvlabox-id cluster-id cluster-node-id cluster-managers cluster-workers]
-  (when-let [cluster (get-nuvlabox-cluster cluster-id)
-             resource-id  (:id cluster)]
-    (let [body  (if (and cluster-id cluster-node-id)
+  (when-let [cluster (get-nuvlabox-cluster cluster-id)]
+    (let [resource-id  (:id cluster)
+          body  (if (and cluster-id cluster-node-id)
                   (cond->
                     {}
                     (some #{cluster-node-id} (:workers cluster)) (assoc :workers (:workers cluster)))
