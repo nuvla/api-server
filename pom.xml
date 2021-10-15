@@ -3,7 +3,7 @@
 
   <groupId>sixsq.nuvla.server</groupId>
   <artifactId>server</artifactId>
-  <version>5.15.1-SNAPSHOT</version>
+  <version>5.16.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>server</name>
   <url>http://sixsq.com/</url>
@@ -27,7 +27,7 @@
       <url>https://clojars.org/repo</url>
     </pluginRepository>
   </pluginRepositories>
-  
+
   <repositories>
 
     <repository>
@@ -71,9 +71,9 @@
   </distributionManagement>
 
   <build>
-    
+
     <extensions>
-      
+
       <!-- provide build time details for modules and plugins -->
       <extension>
         <groupId>co.leantechniques</groupId>
@@ -106,7 +106,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <version>3.1.0</version>
@@ -116,7 +116,7 @@
             <phase>validate</phase>
             <goals>
               <goal>copy-resources</goal>
-            </goals>                                                                                
+            </goals>
             <configuration>
               <outputDirectory>${basedir}</outputDirectory>
               <encoding>UTF-8</encoding>
@@ -133,7 +133,7 @@
           </execution>
         </executions>
       </plugin>
-    </plugins>    
+    </plugins>
   </build>
 
 </project>
