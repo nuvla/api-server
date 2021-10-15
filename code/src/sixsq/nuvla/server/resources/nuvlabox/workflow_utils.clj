@@ -551,15 +551,10 @@
                     cluster-workers (assoc :workers (if cluster-workers
                                                       cluster-workers
                                                       []))))
-          request (if (and cluster-id cluster-node-id)
-                    {:params      {:uuid          (u/id->uuid resource-id)
-                                   :resource-name nb-cluster/resource-type}
-                     :body
-                     :nuvla/authn auth/internal-identity}
-                    {:params      {:uuid          (u/id->uuid resource-id)
-                                   :resource-name nb-cluster/resource-type}
-                     :body        body
-                     :nuvla/authn auth/internal-identity})
+          request {:params      {:uuid          (u/id->uuid resource-id)
+                                 :resource-name nb-cluster/resource-type}
+                   :body        body
+                   :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
       (if (= 200 status)
         (do
