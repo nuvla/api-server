@@ -149,6 +149,7 @@
 
           commission-payload {:cluster-id           "new-id-123"
                               :cluster-orchestrator "swarm"
+                              :cluster-node-id      "notNeededForManagers"
                               :cluster-managers     [node-2-id]}]
 
       ;; anonymous users cannot create a nuvlabox-cluster resource
