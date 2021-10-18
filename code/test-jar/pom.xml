@@ -3,19 +3,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>code-dep</artifactId>
+  <artifactId>code-test-jar-dep</artifactId>
   <packaging>pom</packaging>
   <version>5.16.1-SNAPSHOT</version>
-  <name>server/code</name>
+  <name>server/code/test-jar</name>
   <url>http://sixsq.com</url>
-
-  <modules>
-    <module>test-jar</module>
-  </modules>
 
   <parent>
     <groupId>sixsq.nuvla.server</groupId>
-    <artifactId>server</artifactId>
+    <artifactId>code-dep</artifactId>
     <version>5.16.1-SNAPSHOT</version>
   </parent>
 
@@ -25,41 +21,6 @@
       <url>http://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
-
-  <profiles>
-    <profile>
-      <id>run-tests</id>
-      <activation>
-        <property>
-          <name>!skipTests</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>1.6.0</version>
-            <executions>
-              <execution>
-                <id>lein-test</id>
-                <phase>test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>lein</executable>
-                  <arguments>
-                    <argument>test</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
   <build>
     <plugins>
