@@ -149,7 +149,6 @@
 
           commission-payload {:cluster-id           "new-id-123"
                               :cluster-orchestrator "swarm"
-                              :cluster-node-id      "notNeededForManagers"
                               :cluster-managers     [node-2-id]}]
 
       ;; anonymous users cannot create a nuvlabox-cluster resource
@@ -287,6 +286,14 @@
                      :body (json/write-str (assoc commission-payload :cluster-workers [node-1-id])))
             (ltu/body->edn)
             (ltu/is-status 200))
+
+        ;; commissioning just the worker 1 ID will force a server-side update of the cluster
+        (-> session-nb
+          (request commission
+            :request-method :post
+            :body (json/write-str {:cluster-node-id node-1-id}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
         ;; cause nb-1 is a worker, it cannot view the cluster
         ;; but nb-1 can't, cause it is not part of the cluster

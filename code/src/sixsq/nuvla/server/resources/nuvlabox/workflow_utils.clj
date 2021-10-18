@@ -480,6 +480,17 @@
       first)))
 
 
+(defn get-nuvlabox-cluster-id-from-worker-id
+  "Searches for an nuvlabox cluster, given one of the worker IDs"
+  [node-id]
+  (let [filter  (format "workers='%s'" node-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :orderby "updated:desc"}}]
+    (-> (crud/query-as-admin nb-cluster/resource-type options)
+      second
+      first)))
+
+
 (defn create-minio-cred
   [nuvlabox-id nuvlabox-name nuvlabox-acl minio-id access-key secret-key]
   (when (and access-key secret-key)
@@ -539,31 +550,36 @@
 
 (defn update-nuvlabox-cluster
   [nuvlabox-id cluster-id cluster-node-id cluster-managers cluster-workers]
-  (when-let [cluster (get-nuvlabox-cluster cluster-id)]
-    (let [resource-id  (:id cluster)
-          body  (if (and cluster-id cluster-node-id)
-                  (cond->
-                    {}
-                    (some #{cluster-node-id} (:workers cluster)) (assoc :workers (:workers cluster)))
-                  (cond->
-                    {}
-                    cluster-managers (assoc :managers cluster-managers)
-                    cluster-workers (assoc :workers (if cluster-workers
-                                                      cluster-workers
-                                                      []))))
-          request {:params      {:uuid          (u/id->uuid resource-id)
-                                 :resource-name nb-cluster/resource-type}
-                   :body        body
-                   :nuvla/authn auth/internal-identity}
-          {status :status} (crud/edit request)]
-      (if (= 200 status)
-        (do
-          (log/info "nuvlabox cluster " resource-id "updated")
-          resource-id)
-        (let [msg (str "cannot update nuvlabox cluster "
-                    resource-id " with ID to " cluster-id
-                    ", from NuvlaBox commissioning in " nuvlabox-id)]
-          (throw (ex-info msg (r/map-response msg 400 ""))))))))
+  (if cluster-id
+    (when-let [cluster (if cluster-node-id
+                         (get-nuvlabox-cluster-id-from-worker-id cluster-node-id)
+                         (get-nuvlabox-cluster cluster-id))]
+      (let [resource-id  (:id cluster)
+            body  (if (and cluster-id cluster-node-id)
+                    (cond->
+                      {}
+                      (some #{cluster-node-id} (:workers cluster)) (assoc :workers (:workers cluster)))
+                    (cond->
+                      {}
+                      cluster-managers (assoc :managers cluster-managers)
+                      cluster-workers (assoc :workers (if cluster-workers
+                                                        cluster-workers
+                                                        []))))
+            request {:params      {:uuid          (u/id->uuid resource-id)
+                                   :resource-name nb-cluster/resource-type}
+                     :body        body
+                     :nuvla/authn auth/internal-identity}
+            {status :status} (crud/edit request)]
+        (if (= 200 status)
+          (do
+            (log/info "nuvlabox cluster " resource-id "updated")
+            resource-id)
+          (let [msg (str "cannot update nuvlabox cluster "
+                      resource-id " with ID to " cluster-id
+                      ", from NuvlaBox commissioning in " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))))
+
+    else))
 
 
 (defn create-nuvlabox-cluster
@@ -628,7 +644,7 @@
           (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
           (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers)))
 
-      (when (and cluster-id cluster-node-id)
+      (when (and (not cluster-id) cluster-node-id)
         (update-nuvlabox-cluster id cluster-id cluster-node-id cluster-managers cluster-workers))
 
       (when swarm-id
