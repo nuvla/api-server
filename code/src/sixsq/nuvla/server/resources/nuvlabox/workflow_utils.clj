@@ -485,7 +485,7 @@
   [node-id]
   (let [filter  (format "workers='%s'" node-id)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :orderby "updated:desc"}}]
+                               :orderby [["updated" :desc]]}}]
     (-> (crud/query-as-admin nb-cluster/resource-type options)
       second
       first)))
@@ -549,15 +549,15 @@
 
 
 (defn update-nuvlabox-cluster
-  [nuvlabox-id cluster-id cluster-node-id cluster-managers cluster-workers]
-  (when-let [cluster (if cluster-node-id
-                       (get-nuvlabox-cluster-id-from-worker-id cluster-node-id)
+  [nuvlabox-id cluster-id cluster-worker-id cluster-managers cluster-workers]
+  (when-let [cluster (if cluster-worker-id
+                       (get-nuvlabox-cluster-id-from-worker-id cluster-worker-id)
                        (get-nuvlabox-cluster cluster-id))]
     (let [resource-id  (:id cluster)
-          body  (if (and cluster-id cluster-node-id)
+          body  (if cluster-worker-id
                   (cond->
                     {}
-                    (some #{cluster-node-id} (:workers cluster)) (assoc :workers (:workers cluster)))
+                    (some #{cluster-worker-id} (:workers cluster)) (assoc :workers (:workers cluster)))
                   (cond->
                     {}
                     cluster-managers (assoc :managers cluster-managers)
@@ -616,7 +616,7 @@
             vpn-csr
             kubernetes-endpoint
             kubernetes-client-key kubernetes-client-cert kubernetes-client-ca
-            cluster-id cluster-node-id cluster-orchestrator cluster-managers cluster-workers
+            cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
     (let [removed-set    (if (coll? removed) (set removed) #{})
@@ -641,8 +641,8 @@
           (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
           (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers)))
 
-      (when (and (not cluster-id) cluster-node-id)
-        (update-nuvlabox-cluster id cluster-id cluster-node-id cluster-managers cluster-workers))
+      (when (and (not cluster-id) cluster-worker-id)
+        (update-nuvlabox-cluster id cluster-id cluster-worker-id cluster-managers cluster-workers))
 
       (when swarm-id
         (or
