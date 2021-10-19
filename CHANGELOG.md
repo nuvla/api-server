@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Let NuvlaBox workers force update the nuvlabox-cluster they belong to via commissioning 
+
 ## [5.16.0] - 2021-10-12
 
 ### Changed
