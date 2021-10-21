@@ -13,7 +13,7 @@ marketplace.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.vendor :as vendor]
     [sixsq.nuvla.server.util.log :as logu]
@@ -172,8 +172,8 @@ marketplace.
 (defn account-id->dashboard-url
   [account-id]
   (some-> account-id
-          stripe/login-link-create-on-account
-          stripe/get-url))
+          pricing-impl/login-link-create-on-account
+          pricing-impl/get-url))
 
 
 (defmethod crud/do-action [resource-type dashboard-action]

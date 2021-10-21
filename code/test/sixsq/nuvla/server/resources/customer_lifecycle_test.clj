@@ -13,7 +13,7 @@
     [sixsq.nuvla.server.resources.customer :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -178,8 +178,8 @@
                                           (ltu/is-count 1)
                                           (ltu/entries))]
           (-> customer-id
-              stripe/retrieve-customer
-              stripe/delete-customer))))))
+              pricing-impl/retrieve-customer
+              pricing-impl/delete-customer))))))
 
 
 (deftest bad-methods

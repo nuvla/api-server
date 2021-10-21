@@ -8,10 +8,9 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const customer-info-action "customer-info")
 (def ^:const update-customer-action "update-customer")
@@ -25,104 +24,6 @@
 (def ^:const list-invoices-action "list-invoices")
 (def ^:const add-coupon-action "add-coupon")
 (def ^:const delete-coupon-action "remove-coupon")
-
-
-(defn s-coupon->coupon-map
-  [s-coupon]
-  {:id                 (stripe/get-id s-coupon)
-   :name               (stripe/get-name s-coupon)
-   :amount-off         (-> s-coupon
-                           stripe/get-amount-off
-                           stripe/price->unit-float)
-   :currency           (stripe/get-currency s-coupon)
-   :duration           (stripe/get-duration s-coupon)
-   :duration-in-months (stripe/get-duration-in-months s-coupon)
-   :percent-off        (stripe/get-percent-off s-coupon)
-   :valid              (stripe/get-valid s-coupon)})
-
-(defn s-customer->customer-map
-  [s-customer]
-  (let [s-address (stripe/get-address s-customer)
-        s-coupon  (some-> s-customer stripe/get-discount stripe/get-coupon)]
-    (cond-> {:fullname (stripe/get-name s-customer)
-             :address  {:street-address (stripe/get-line1 s-address)
-                        :city           (stripe/get-city s-address)
-                        :country        (stripe/get-country s-address)
-                        :postal-code    (stripe/get-postal-code s-address)}}
-            s-coupon (assoc :coupon (s-coupon->coupon-map s-coupon)))))
-
-
-(defn s-subscription->map
-  [s-subscription]
-  (cond-> {:id                   (stripe/get-id s-subscription)
-           :status               (stripe/get-status s-subscription)
-           :start-date           (some-> (stripe/get-start-date s-subscription)
-                                         time/unix-timestamp->str)
-           :current-period-start (some-> (stripe/get-current-period-start s-subscription)
-                                         time/unix-timestamp->str)
-           :current-period-end   (some-> (stripe/get-current-period-end s-subscription)
-                                         time/unix-timestamp->str)
-           :trial-start          (some-> (stripe/get-trial-start s-subscription)
-                                         time/unix-timestamp->str)
-           :trial-end            (some-> (stripe/get-trial-end s-subscription)
-                                         time/unix-timestamp->str)}))
-
-
-(defn s-payment-method-card->map
-  [s-payment-method]
-  (let [card (stripe/get-card s-payment-method)]
-    {:payment-method (stripe/get-id s-payment-method)
-     :brand          (stripe/get-brand card)
-     :last4          (stripe/get-last4 card)
-     :exp-month      (stripe/get-exp-month card)
-     :exp-year       (stripe/get-exp-year card)}))
-
-
-(defn s-payment-method-sepa->map
-  [s-payment-method]
-  (let [sepa-debit (stripe/get-sepa-debit s-payment-method)]
-    {:payment-method (stripe/get-id s-payment-method)
-     :last4          (stripe/get-last4 sepa-debit)}))
-
-
-(defn s-setup-intent->map
-  [s-setup-intent]
-  {:client-secret (stripe/get-client-secret s-setup-intent)})
-
-
-(defn s-invoice-line-item->map
-  [s-invoice-line-item]
-  {:amount      (stripe/price->unit-float (stripe/get-amount s-invoice-line-item))
-   :currency    (stripe/get-currency s-invoice-line-item)
-   :description (stripe/get-description s-invoice-line-item)
-   :period      (let [p (stripe/get-period s-invoice-line-item)]
-                  {:start (some-> (stripe/get-start p)
-                                  time/unix-timestamp->str)
-
-                   :end   (some-> (stripe/get-end p)
-                                  time/unix-timestamp->str)})
-   :quantity    (stripe/get-quantity s-invoice-line-item)})
-
-(defn s-invoice->map
-  [s-invoice extend]
-  (let [s-coupon (some-> s-invoice stripe/get-discount stripe/get-coupon)]
-    (cond-> {:id          (stripe/get-id s-invoice)
-             :number      (stripe/get-number s-invoice)
-             :created     (some-> (stripe/get-created s-invoice)
-                                  time/unix-timestamp->str)
-             :currency    (stripe/get-currency s-invoice)
-             :due-date    (some-> (stripe/get-due-date s-invoice)
-                                  time/unix-timestamp->str)
-             :invoice-pdf (stripe/get-invoice-pdf s-invoice)
-             :paid        (stripe/get-paid s-invoice)
-             :status      (stripe/get-status s-invoice)
-             :subtotal    (stripe/price->unit-float (stripe/get-subtotal s-invoice))
-             :total       (stripe/price->unit-float (stripe/get-total s-invoice))}
-            s-coupon (assoc :discount {:coupon (s-coupon->coupon-map s-coupon)})
-            extend (assoc :lines (->> s-invoice
-                                      stripe/get-lines
-                                      stripe/collection-iterator
-                                      (map s-invoice-line-item->map))))))
 
 
 (defn throw-plan-invalid
@@ -161,7 +62,7 @@
     (logu/log-and-throw-400 "Customer email is mandatory for group!")))
 
 
-(defn throw-admin-can-not-be-customer
+(defn throw-admin-cannot-be-customer
   [request]
   (when
     (and (nil? (get-in request [:body :parent]))
@@ -191,8 +92,8 @@
          "collection_method" "send_invoice"
          "days_until_due"    14}
         (cond-> trial? (assoc "trial_period_days" 14))
-        stripe/create-subscription
-        s-subscription->map)))
+        pricing-impl/create-subscription
+        pricing-impl/subscription->map)))
 
 
 (defn create-customer
@@ -207,7 +108,7 @@
                                         crud/retrieve-by-id-as-admin
                                         :address)
                                 (catch Exception _))))
-        s-customer      (stripe/create-customer
+        s-customer      (pricing-impl/create-customer
                           (cond-> {"name"    fullname
                                    "address" {"line1"       street-address
                                               "city"        city
@@ -217,14 +118,14 @@
                                   pm-id (assoc "payment_method" pm-id
                                                "invoice_settings" {"default_payment_method" pm-id})
                                   coupon (assoc "coupon" coupon)))
-        customer-id     (stripe/get-id s-customer)
+        customer-id     (pricing-impl/get-id s-customer)
         subscription-id (when subscription
                           (try
                             (-> customer-id
                                 (create-subscription subscription true)
                                 :id)
                             (catch Exception e
-                              (stripe/delete-customer s-customer)
+                              (pricing-impl/delete-customer s-customer)
                               (throw e))))]
     [customer-id subscription-id]))
 
@@ -232,75 +133,23 @@
 (defn create-setup-intent
   [customer-id]
   (-> {"customer" customer-id}
-      stripe/create-setup-intent
-      s-setup-intent->map))
-
-
-(defn get-upcoming-invoice
-  [subscription-id]
-  (some-> {"subscription" subscription-id}
-          stripe/get-upcoming-invoice
-          (s-invoice->map true)))
+      pricing-impl/create-setup-intent
+      pricing-impl/setup-intent->map))
 
 
 (defn list-invoices
   [subscription-id]
   (let [paid (->> {"subscription" subscription-id
                    "status"       "paid"}
-                  stripe/list-invoices
-                  stripe/get-data
-                  (map #(s-invoice->map % false)))
+                  pricing-impl/list-invoices
+                  pricing-impl/get-data
+                  (map #(pricing-impl/invoice->map % false)))
         open (->> {"subscription" subscription-id
                    "status"       "open"}
-                  stripe/list-invoices
-                  stripe/get-data
-                  (map #(s-invoice->map % false)))]
+                  pricing-impl/list-invoices
+                  pricing-impl/get-data
+                  (map #(pricing-impl/invoice->map % false)))]
     (concat open paid)))
-
-
-(defn get-default-payment-method
-  [s-customer]
-  (-> s-customer
-      stripe/get-invoice-settings
-      stripe/get-default-payment-method))
-
-
-(defn list-payment-methods
-  [s-customer]
-  (let [id            (stripe/get-id s-customer)
-        cards         (->> {"customer" id
-                            "type"     "card"}
-                           (stripe/list-payment-methods)
-                           (stripe/collection-iterator)
-                           (map s-payment-method-card->map))
-        bank-accounts (->> {"customer" id
-                            "type"     "sepa_debit"}
-                           (stripe/list-payment-methods)
-                           (stripe/collection-iterator)
-                           (map s-payment-method-sepa->map))]
-    {:cards                  cards
-     :bank-accounts          bank-accounts
-     :default-payment-method (get-default-payment-method s-customer)}))
-
-
-(defn can-do-action?
-  [resource request action]
-  (let [subscription (:subscription resource)
-        can-manage?  (a/can-manage? resource request)]
-    (a/can-manage? resource request)
-    (condp = action
-      create-subscription-action (and can-manage? (nil? subscription))
-      create-setup-intent-action can-manage?
-      detach-payment-method-action can-manage?
-      set-default-payment-method-action can-manage?
-      :else false)))
-
-
-(defn throw-can-not-manage
-  [{:keys [id] :as resource} request action]
-  (if (a/can-manage? resource request)
-    resource
-    (throw (r/ex-response (format "action not available for %s! %s" action id) 409 id))))
 
 
 (defn throw-plan-id-mandatory

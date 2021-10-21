@@ -5,14 +5,13 @@ Customer mapping to external banking system."
     [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.customer.utils :as utils]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.customer :as customer]
     [sixsq.nuvla.server.resources.spec.customer-related :as customer-related]
@@ -85,7 +84,7 @@ Customer mapping to external banking system."
 (defmethod crud/add resource-type
   [{{:keys [email] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (utils/throw-admin-can-not-be-customer request)
+  (utils/throw-admin-cannot-be-customer request)
   (config-nuvla/throw-stripe-not-configured)
   (let [auth-info    (auth/current-authentication request)
         active-claim (or
@@ -126,40 +125,6 @@ Customer mapping to external banking system."
   [request]
   (config-nuvla/throw-stripe-not-configured)
   (query-impl request))
-
-
-(defn active-claim->customer
-  [active-claim]
-  (some-> resource-type
-          (crud/query-as-admin
-            {:cimi-params
-             {:filter (parser/parse-cimi-filter
-                        (format "parent='%s'" active-claim))}})
-          second
-          first))
-
-
-(defn customer-has-active-subscription?
-  [active-claim]
-  (boolean
-    (try
-      (some-> active-claim
-              active-claim->customer
-              :subscription-id
-              stripe/retrieve-subscription
-              utils/s-subscription->map
-              :status
-              (#{"active" "trialing" "past_due"}))
-      (catch Exception _))))
-
-
-(defn throw-user-hasnt-active-subscription
-  [request]
-  (let [active-claim (auth/current-active-claim request)]
-    (when (and config-nuvla/*stripe-api-key*
-               (not (customer-has-active-subscription? active-claim)))
-      (throw (r/ex-response "An active subscription is required!" 402)))))
-
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
@@ -202,8 +167,8 @@ Customer mapping to external banking system."
                   (crud/retrieve-by-id-as-admin)
                   (a/throw-cannot-manage request)
                   :subscription-id
-                  stripe/retrieve-subscription
-                  utils/s-subscription->map)
+                  pricing-impl/retrieve-subscription
+                  pricing-impl/subscription->map)
           {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -218,8 +183,8 @@ Customer mapping to external banking system."
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         :customer-id
-        stripe/retrieve-customer
-        utils/s-customer->customer-map
+        pricing-impl/retrieve-customer
+        pricing-impl/customer->map
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -237,12 +202,12 @@ Customer mapping to external banking system."
                                                      (a/throw-cannot-manage request))]
       (try
         (-> customer-id
-            stripe/retrieve-customer
-            (stripe/update-customer {"name"    fullname
-                                     "address" {"line1"       street-address
-                                                "city"        city
-                                                "postal_code" postal-code
-                                                "country"     country}}))
+            pricing-impl/retrieve-customer
+            (pricing-impl/update-customer {"name"    fullname
+                                           "address" {"line1"       street-address
+                                                      "city"        city
+                                                      "postal_code" postal-code
+                                                      "country"     country}}))
         (r/map-response "successfully updated" 200 id)
         (catch Exception e
           (or (ex-data e) (throw e)))))
@@ -303,8 +268,8 @@ Customer mapping to external banking system."
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         :customer-id
-        stripe/retrieve-customer
-        (utils/list-payment-methods)
+        pricing-impl/retrieve-customer
+        (pricing-impl/list-payment-methods)
         r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -319,8 +284,8 @@ Customer mapping to external banking system."
                                        (a/throw-cannot-manage request))]
     (try
       (some-> payment-method
-              stripe/retrieve-payment-method
-              stripe/detach-payment-method)
+              pricing-impl/retrieve-payment-method
+              pricing-impl/detach-payment-method)
       (r/map-response (format "%s successfully detached" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -335,8 +300,8 @@ Customer mapping to external banking system."
                                                    (a/throw-cannot-manage request))]
     (try
       (-> customer-id
-          stripe/retrieve-customer
-          (stripe/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
+          pricing-impl/retrieve-customer
+          (pricing-impl/update-customer {"invoice_settings" {"default_payment_method" payment-method}}))
       (r/map-response (format "%s successfully set as default" payment-method) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -351,8 +316,8 @@ Customer mapping to external banking system."
                                                    (a/throw-cannot-manage request))]
     (try
       (-> customer-id
-          stripe/retrieve-customer
-          (stripe/update-customer {"coupon" coupon}))
+          pricing-impl/retrieve-customer
+          (pricing-impl/update-customer {"coupon" coupon}))
       (r/map-response (format "%s successfully added coupon" coupon) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -362,13 +327,13 @@ Customer mapping to external banking system."
   [{{:keys [coupon]} :body :as request}]
   (config-nuvla/throw-stripe-not-configured)
   (let [{:keys [id customer-id] :as _resource} (-> request
-                                                  (request->resource-id)
-                                                  (crud/retrieve-by-id-as-admin)
-                                                  (a/throw-cannot-manage request))]
+                                                   (request->resource-id)
+                                                   (crud/retrieve-by-id-as-admin)
+                                                   (a/throw-cannot-manage request))]
     (try
       (-> customer-id
-          stripe/retrieve-customer
-          stripe/delete-discount-customer)
+          pricing-impl/retrieve-customer
+          pricing-impl/delete-discount-customer)
       (r/map-response (format "%s successfully deleted coupon" coupon) 200 id)
       (catch Exception e
         (or (ex-data e) (throw e))))))
@@ -384,7 +349,7 @@ Customer mapping to external banking system."
               (crud/retrieve-by-id-as-admin)
               (a/throw-cannot-manage request)
               :subscription-id
-              (utils/get-upcoming-invoice))
+              (pricing-impl/get-upcoming-invoice))
           {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -19,12 +19,11 @@ component, or application.
     [sixsq.nuvla.server.resources.module-application :as module-application]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
-    [sixsq.nuvla.server.resources.vendor :as vendor]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -115,16 +114,11 @@ component, or application.
     {}))
 
 
-(defn s-price->price-map
-  [s-price]
-  {:product-id (stripe/get-product s-price)})
-
-
 (defn active-claim->account-id
   [active-claim]
   (let [filter     (format "parent='%s'" active-claim)
         options    {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
-        account-id (-> (crud/query-as-admin vendor/resource-type options)
+        account-id (-> (crud/query-as-admin "vendor" options)
                        second
                        first
                        :account-id)]
@@ -139,11 +133,11 @@ component, or application.
    active-claim]
   (if price
     (let [product-id (some-> price-id
-                             (stripe/retrieve-price)
-                             s-price->price-map
+                             pricing-impl/retrieve-price
+                             pricing-impl/price->map
                              :product-id)
           account-id (active-claim->account-id active-claim)
-          s-price    (stripe/create-price
+          s-price    (pricing-impl/create-price
                        (cond-> {"currency"    currency
                                 "unit_amount" cent-amount-daily
                                 "recurring"   {"interval"        "month"
@@ -153,8 +147,8 @@ component, or application.
                                (nil? product-id) (assoc "product_data"
                                                         {"name"       (or name path)
                                                          "unit_label" "day"})))]
-      (assoc body :price {:price-id          (stripe/get-id s-price)
-                          :product-id        (stripe/get-product s-price)
+      (assoc body :price {:price-id          (pricing-impl/get-id s-price)
+                          :product-id        (pricing-impl/get-product s-price)
                           :account-id        account-id
                           :cent-amount-daily cent-amount-daily
                           :currency          currency}))

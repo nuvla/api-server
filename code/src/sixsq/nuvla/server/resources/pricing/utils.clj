@@ -1,14 +1,14 @@
 (ns sixsq.nuvla.server.resources.pricing.utils
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.server.resources.pricing.stripe :as s]))
+    [sixsq.nuvla.pricing.impl :as pricing-impl]))
 
 
 (defn is-product-metadata-in-values?
   [product key values]
   (when-let [values-set (some-> values seq set)]
     (-> product
-        (s/get-metadata)
+        (pricing-impl/get-metadata)
         (get key)
         (values-set))))
 
@@ -26,35 +26,35 @@
 
 (defn get-nuvla-products
   []
-  (->> (s/list-products {"active" true})
-       (s/collection-iterator)
+  (->> (pricing-impl/list-products {"active" true})
+       (pricing-impl/collection-iterator)
        (filter is-nuvla-product?)))
 
 (defn get-nuvla-plan-splited
   []
   (->> (get-nuvla-products)
-       (group-by #(get (s/get-metadata %) META_KEY_NUVLA))))
+       (group-by #(get (pricing-impl/get-metadata %) META_KEY_NUVLA))))
 
 
 (defn stripe-product-plan->charge
   [stripe-product-plan]
-  (let [amount            (s/price->unit-float (s/get-unit-amount stripe-product-plan))
-        recurring         (s/get-recurring stripe-product-plan)
-        aggregate-usage   (s/get-aggregate-usage recurring)
-        tiers-mode        (s/get-tiers-mode stripe-product-plan)
+  (let [amount            (pricing-impl/price->unit-float (pricing-impl/get-unit-amount stripe-product-plan))
+        recurring         (pricing-impl/get-recurring stripe-product-plan)
+        aggregate-usage   (pricing-impl/get-aggregate-usage recurring)
+        tiers-mode        (pricing-impl/get-tiers-mode stripe-product-plan)
         tiers             (some->> stripe-product-plan
-                                   (s/get-tiers)
+                                   (pricing-impl/get-tiers)
                                    seq
                                    (map-indexed
                                      (fn [i tier]
                                        {:order  i
-                                        :amount (s/price->unit-float (s/get-unit-amount tier))
-                                        :up-to  (s/get-up-to tier)})))
-        trial-period-days (s/get-trial-period-days recurring)]
-    (cond-> {:currency       (s/get-currency stripe-product-plan)
-             :interval       (s/get-interval recurring)
-             :usage-type     (s/get-usage-type recurring)
-             :billing-scheme (s/get-billing-scheme stripe-product-plan)}
+                                        :amount (pricing-impl/price->unit-float (pricing-impl/get-unit-amount tier))
+                                        :up-to  (pricing-impl/get-up-to tier)})))
+        trial-period-days (pricing-impl/get-trial-period-days recurring)]
+    (cond-> {:currency       (pricing-impl/get-currency stripe-product-plan)
+             :interval       (pricing-impl/get-interval recurring)
+             :usage-type     (pricing-impl/get-usage-type recurring)
+             :billing-scheme (pricing-impl/get-billing-scheme stripe-product-plan)}
             amount (assoc :amount amount)
             aggregate-usage (assoc :aggregate-usage aggregate-usage)
             tiers-mode (assoc :tiers-mode tiers-mode)
@@ -64,20 +64,20 @@
 
 (defn transform-plan-items
   [plan-item]
-  (let [stripe-product-prices (-> (s/list-prices {"active"  true
-                                                  "product" (s/get-id plan-item)
-                                                  "expand"  ["data.tiers"]})
-                                  s/collection-iterator
+  (let [stripe-product-prices (-> (pricing-impl/list-prices {"active" true
+                                                  "product"       (pricing-impl/get-id plan-item)
+                                                  "expand"        ["data.tiers"]})
+                                  pricing-impl/collection-iterator
                                   seq)
-        metadata              (s/get-metadata plan-item)
+        metadata              (pricing-impl/get-metadata plan-item)
         required-items        (some-> metadata (get META_KEY_REQUIRED_PLAN_ITEM) (str/split #","))
         optional-items        (some-> metadata (get META_KEY_OPTIONAL_PLAN_ITEM) (str/split #","))
         order                 (some-> (get metadata META_KEY_ORDER) (Integer/parseInt))]
     (map
       (fn [stripe-product-plan]
-        (let [id (s/get-id stripe-product-plan)]
+        (let [id (pricing-impl/get-id stripe-product-plan)]
           (cond-> {:plan-id id
-                   :name    (s/get-name plan-item)
+                   :name    (pricing-impl/get-name plan-item)
                    :charge  (stripe-product-plan->charge stripe-product-plan)}
                   order (assoc :order order)
                   required-items (assoc :required-items required-items)

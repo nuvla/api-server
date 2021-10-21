@@ -13,9 +13,11 @@ default values.
     [sixsq.nuvla.server.resources.configuration :as p]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as tpl-nuvla]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    #_[sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.namespace-utils :as dyn]))
 
 
 (def ^:const service "nuvla")
@@ -58,13 +60,15 @@ default values.
                                         crud/retrieve-by-id-as-admin
                                         :stripe-api-key)
                                     (env/env :stripe-api-key))]
-        (stripe/set-api-key! stripe-api-key)
-        (alter-var-root #'*stripe-api-key* (constantly stripe-api-key)))
-      (when-let [stripe-client-id (or (-> config-instance-url
-                                          crud/retrieve-by-id-as-admin
-                                          :stripe-client-id)
-                                      (env/env :stripe-client-id))]
-        (alter-var-root #'*stripe-client-id* (constantly stripe-client-id)))
+        (when-let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
+          (pricing-impl/set-impl! pricing-instance)
+          (pricing-impl/set-api-key! stripe-api-key)
+          (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
+          (when-let [stripe-client-id (or (-> config-instance-url
+                                              crud/retrieve-by-id-as-admin
+                                              :stripe-client-id)
+                                          (env/env :stripe-client-id))]
+            (alter-var-root #'*stripe-client-id* (constantly stripe-client-id)))))
       (catch Exception e
         (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
 

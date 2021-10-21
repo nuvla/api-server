@@ -3,8 +3,6 @@
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.test :refer [are deftest is use-fixtures]]
-    [clojure.tools.logging :as log]
-    [environ.core :as env]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -16,7 +14,6 @@
     [sixsq.nuvla.server.resources.configuration-template-vpn-api :as configuration-tpl-vpn]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
-    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
@@ -24,8 +21,6 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
-    [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -1135,69 +1130,6 @@
               (is (= srvc-endpoint "http://bar")))
 
             ))))))
-
-(deftest create-without-active-subscription-lifecycle
-  (if-not (env/env :stripe-api-key)
-    (log/error "Customer lifecycle is not tested because lack of stripe-api-key!")
-    (let [session           (-> (ltu/ring-app)
-                                session
-                                (content-type "application/json"))
-
-          session-admin     (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-owner     (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-
-          customer-base-uri (str p/service-context customer/resource-type)]
-
-      (-> session-owner
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str valid-nuvlabox))
-          (ltu/body->edn)
-          (ltu/is-status 402)
-          (ltu/message-matches #"An active subscription is required!"))
-
-      (-> session-admin
-          (request (str p/service-context pricing/resource-type)
-                   :request-method :post
-                   :body (json/write-str {}))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-      (-> session-owner
-          (request customer-base-uri
-                   :request-method :post
-                   :body (json/write-str {:fullname     "toto"
-                                          :address      {:street-address "Av. quelque chose"
-                                                         :city           "Meyrin"
-                                                         :country        "CH"
-                                                         :postal-code    "1217"}
-                                          :email        "toto@example.com"
-                                          :subscription {:plan-id       "price_1GzO4WHG9PNMTNBOSfypKuEa"
-                                                         :plan-item-ids ["price_1GzO8HHG9PNMTNBOWuXQm9zZ"
-                                                                         "price_1GzOC6HG9PNMTNBOEb5819lm"
-                                                                         "price_1GzOfLHG9PNMTNBO0l2yDtPS"]}}))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-      (-> session-owner
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str valid-nuvlabox))
-          (ltu/body->edn)
-          (ltu/is-status 201))
-
-      (doseq [{:keys [customer-id]} (-> session-admin
-                                        (request customer-base-uri
-                                                 :request-method :put)
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-count 1)
-                                        (ltu/entries))]
-        (-> customer-id
-            stripe/retrieve-customer
-            stripe/delete-customer))
-
-      )))
 
 
 (deftest execution-mode-action-lifecycle

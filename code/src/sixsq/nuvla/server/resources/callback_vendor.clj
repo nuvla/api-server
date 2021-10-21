@@ -8,7 +8,7 @@ registration has succeeded.
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.vendor :as vendor]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -18,9 +18,10 @@ registration has succeeded.
 
 (defn get-account-id
   [code]
-  (stripe/get-stripe-user-id
-    (stripe/oauth-token {"grant_type" "authorization_code"
-                         "code"       code})))
+  (pricing-impl/get-user-id
+    (pricing-impl/oauth-token
+      {"grant_type" "authorization_code"
+       "code"       code})))
 
 (defmethod callback/execute action-name
   [{callback-id :id {:keys [redirect-url active-claim]} :data :as _callback-resource}
