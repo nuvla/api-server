@@ -7,6 +7,7 @@ default values.
   (:require
     [clojure.tools.logging :as log]
     [environ.core :as env]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -14,10 +15,9 @@ default values.
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as tpl-nuvla]
     #_[sixsq.nuvla.server.resources.pricing.stripe :as stripe]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.namespace-utils :as dyn]))
+    [sixsq.nuvla.server.util.namespace-utils :as dyn]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const service "nuvla")

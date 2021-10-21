@@ -6,9 +6,9 @@
     [expound.alpha :as expound]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.pricing :as pricing]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 

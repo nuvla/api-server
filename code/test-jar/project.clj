@@ -14,7 +14,8 @@
                                        :repositories
                                        :deploy-repositories
                                        :resource-paths
-                                       :pom-location]}
+                                       :pom-location
+                                       [:profiles :provided]]}
             :source-paths ["../test"]
             :clean-targets ^{:protect false} ["target"]
             )

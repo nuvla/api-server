@@ -5,10 +5,10 @@ registration has succeeded.
 "
   (:require
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.vendor :as vendor]
     [sixsq.nuvla.server.util.response :as r]))
 

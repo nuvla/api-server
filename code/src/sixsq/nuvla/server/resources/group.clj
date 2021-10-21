@@ -21,8 +21,7 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.customer.utils :as utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

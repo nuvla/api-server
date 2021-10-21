@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.pricing.stripe.stripe
   (:require
-    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.pricing.protocol :refer [Pricing]]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.pricing.protocol :refer [Pricing]])
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (com.stripe Stripe)
     (com.stripe.exception StripeException)
