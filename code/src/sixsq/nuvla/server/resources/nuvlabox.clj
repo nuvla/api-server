@@ -575,7 +575,8 @@ particular NuvlaBox release.
 
 
 (defn cluster-nuvlabox
-  [{:keys [id state acl capabilities] :as _nuvlabox} cluster-action nuvlabox-manager-status token]
+  [{:keys [id state acl capabilities] :as _nuvlabox}
+   cluster-action nuvlabox-manager-status token advertise-addr]
   (if (= state state-commissioned)
     (do
       (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-status))
@@ -597,7 +598,8 @@ particular NuvlaBox release.
                                                            (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
                                                              (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
                                                              )
-                                                           "\"token\": \"" token "\"}"))
+                                                           "\"token\": \"" token "\","
+                                                           "\"advertise-addr\": \"" advertise-addr "\"}"))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
                                   ", with async " job-id)]
           (when (not= job-status 201)
@@ -610,7 +612,7 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
-  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
+  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token advertise-addr]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
@@ -618,7 +620,7 @@ particular NuvlaBox release.
             (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
+          (cluster-nuvlabox cluster-action nuvlabox-manager-status token advertise-addr)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
