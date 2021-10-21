@@ -1,4 +1,5 @@
 (ns sixsq.nuvla.pricing.impl
+  (:refer-clojure :exclude [load])
   (:require [sixsq.nuvla.pricing.protocol :as protocol]))
 
 
