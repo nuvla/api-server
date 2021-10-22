@@ -48,8 +48,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SIXSQ_DOCKER_USERNAME: ${{ secrets.SIXSQ_DOCKER_USERNAME }}
           SIXSQ_DOCKER_PASSWORD: ${{ secrets.SIXSQ_DOCKER_PASSWORD }}
-          STRIPE_CLIENT_ID: ${{ secrets.STRIPE_CLIENT_ID }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
         run: mvn deploy
 
   job-notify:
