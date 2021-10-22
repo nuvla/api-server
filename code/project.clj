@@ -40,7 +40,6 @@
    [clj-stacktrace]
    [clojure.java-time]
    [com.amazonaws/aws-java-sdk-s3]
-   [com.stripe/stripe-java "19.24.0"]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
