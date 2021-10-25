@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Commission and activate actions on NB does not update updated field bugfix
+
 ## [5.17.0] - 2021-10-21
 
 ### Added
