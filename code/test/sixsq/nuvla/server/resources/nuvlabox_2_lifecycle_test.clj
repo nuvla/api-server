@@ -379,7 +379,6 @@
             (-> session
                 (request nuvlabox-url)
                 (ltu/body->edn)
-                ;(pprint)
                 (ltu/is-status 200)
                 (ltu/is-operation-present :edit)
                 (ltu/is-operation-absent :delete)
