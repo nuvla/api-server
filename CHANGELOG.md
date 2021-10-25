@@ -6,6 +6,12 @@
 
   - Commission and activate actions on NB does not update updated field bugfix
 
+## [5.17.0] - 2021-10-21
+
+### Added
+
+  - Credential template for Openstack infrastructure services
+
 ## [5.16.0] - 2021-10-12
 
 ### Changed
