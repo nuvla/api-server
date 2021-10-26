@@ -65,7 +65,7 @@
                      :vm-cidr          "10.0.0.0/24"
                      :lan-cidr         "10.0.1.0/24"
                      :ssh-keys         ["credential/aaa-bbb-ccc"]
-                     :capabilities     ["RANDOM"]})
+                     :capabilities     ["RANDOM" "NUVLA_JOB_PULL"]})
 
 
 (deftest check-metadata
@@ -1418,7 +1418,7 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; push
+      ;; pull
       (let [reboot-url (-> session-owner
                            (request nuvlabox-url)
                            (ltu/body->edn)
@@ -1431,14 +1431,6 @@
                            (ltu/location-url))]
         (-> session-admin
             (request job-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :execution-mode "push"))
-
-        (-> session-admin
-            (request job-url
-                     :request-method :put
-                     :body (json/write-str {:execution-mode "pull"}))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :execution-mode "pull")

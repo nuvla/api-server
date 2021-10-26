@@ -64,7 +64,8 @@
 
                      :form-factor      "Nuvlabox"
                      :vm-cidr          "10.0.0.0/24"
-                     :lan-cidr         "10.0.1.0/24"})
+                     :lan-cidr         "10.0.1.0/24"
+                     :capabilities     ["RANDOM" "NUVLA_JOB_PULL"]})
 
 
 (def valid-nb-rel {:release       "1"
@@ -827,10 +828,7 @@
                                      (ltu/is-status 200)
                                      (ltu/get-op-url :add-ssh-key))
                 job-url          (-> session-owner
-                                     (request add-ssh-key
-                                              :request-method :put
-                                              :body (json/write-str
-                                                      {:execution-mode "pull"}))
+                                     (request add-ssh-key)
                                      (ltu/body->edn)
                                      (ltu/is-status 202)
                                      (ltu/location-url))
