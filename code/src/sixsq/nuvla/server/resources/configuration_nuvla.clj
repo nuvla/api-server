@@ -14,7 +14,6 @@ default values.
     [sixsq.nuvla.server.resources.configuration :as p]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as tpl-nuvla]
-    #_[sixsq.nuvla.server.resources.pricing.stripe :as stripe]
     [sixsq.nuvla.server.resources.spec.configuration-template-nuvla :as ct-nuvla]
     [sixsq.nuvla.server.util.namespace-utils :as dyn]
     [sixsq.nuvla.server.util.response :as r]))
@@ -60,15 +59,18 @@ default values.
                                         crud/retrieve-by-id-as-admin
                                         :stripe-api-key)
                                     (env/env :stripe-api-key))]
-        (when-let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
-          (pricing-impl/set-impl! pricing-instance)
-          (pricing-impl/set-api-key! stripe-api-key)
-          (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
-          (when-let [stripe-client-id (or (-> config-instance-url
-                                              crud/retrieve-by-id-as-admin
-                                              :stripe-client-id)
-                                          (env/env :stripe-client-id))]
-            (alter-var-root #'*stripe-client-id* (constantly stripe-client-id)))))
+        (let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
+          (if (some? pricing-instance)
+            (do
+              (pricing-impl/set-impl! pricing-instance)
+              (pricing-impl/set-api-key! stripe-api-key)
+              (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
+              (when-let [stripe-client-id (or (-> config-instance-url
+                                                  crud/retrieve-by-id-as-admin
+                                                  :stripe-client-id)
+                                              (env/env :stripe-client-id))]
+                (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
+            (log/error "Stripe-api-key configured but no princing implementation found!"))))
       (catch Exception e
         (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
 
