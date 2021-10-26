@@ -365,6 +365,7 @@ particular NuvlaBox release.
     (let [id (str resource-type "/" uuid)
           [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
                                                    (activate)
+                                                   u/update-timestamps
                                                    (wf-utils/create-nuvlabox-api-key))]
 
 
@@ -405,6 +406,7 @@ particular NuvlaBox release.
                              (cond-> tags (assoc :tags tags)
                                      capabilities (assoc :capabilities capabilities)
                                      ssh-keys (assoc :ssh-keys ssh-keys))
+                             u/update-timestamps
                              crud/validate)]
         (-> nuvlabox
             (a/throw-cannot-manage request)
@@ -447,6 +449,8 @@ particular NuvlaBox release.
     (-> resource
         (assoc :state state-decommissioning
                :acl updated-acl)
+        u/update-timestamps
+        (u/set-updated-by request)
         (db/edit request))
 
     ;; read back the updated resource to ensure that ACL is fully normalized
