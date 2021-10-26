@@ -4,7 +4,7 @@
 
 ### Changed
 
-  - Nuvlabox - Reboot adn SSH related actions check NuvlaBox capabilities
+  - Nuvlabox - Reboot and SSH related actions check NuvlaBox capabilities
   - Commission and activate actions on NB does not update updated field bugfix
 
 ## [5.17.0] - 2021-10-21
