@@ -6,6 +6,12 @@
 
   - Allow to set advertised address when forcing a new Swarm cluster on a NuvlaBox
 
+## [5.17.0] - 2021-10-21
+
+### Added
+
+  - Credential template for Openstack infrastructure services
+
 ## [5.16.0] - 2021-10-12
 
 ### Changed
