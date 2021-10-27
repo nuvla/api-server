@@ -590,6 +590,11 @@ particular NuvlaBox release.
       (try
         (let [pull-support?  (contains? (set capabilities) "NUVLA_JOB_PULL")
               execution-mode (if pull-support? "pull" "push")
+              payload        (cond-> {:cluster-action cluster-action
+                                      :token          token
+                                      :advertise-addr advertise-addr}
+                                     (seq nuvlabox-manager-status) (assoc :nuvlabox-manager-status
+                                                                          nuvlabox-manager-status))
               {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
                                              id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
@@ -598,12 +603,7 @@ particular NuvlaBox release.
                                                  (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode execution-mode
-                                             :payload (str "{\"cluster-action\": \"" cluster-action "\","
-                                                           (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
-                                                             (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
-                                                             )
-                                                           "\"token\": \"" token "\","
-                                                           "\"advertise-addr\": \"" advertise-addr "\"}"))
+                                             :payload (json/write-str payload))
               job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
                                   ", with async " job-id)]
           (when (not= job-status 201)
