@@ -102,3 +102,7 @@
   (contains? (set capabilities) capability))
 
 (def has-pull-support? (partial has-capability? "NUVLA_JOB_PULL"))
+
+(defn get-execution-mode
+  [nuvlabox]
+  (if (has-pull-support? nuvlabox) "pull" "push"))

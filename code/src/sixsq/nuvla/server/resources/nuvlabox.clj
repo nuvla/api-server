@@ -527,7 +527,7 @@ particular NuvlaBox release.
 ;;
 
 (defn reboot
-  [{:keys [id state acl] :as _nuvlabox}]
+  [{:keys [id state acl] :as nuvlabox}]
   (if (= state state-commissioned)
     (do
       (log/warn "Rebooting NuvlaBox:" id)
@@ -538,7 +538,7 @@ particular NuvlaBox release.
                                                                (a/acl-append :edit-data id)
                                                                (a/acl-append :manage id))
                                                            :priority 50
-                                                           :execution-mode "pull")
+                                                           :execution-mode (utils/get-execution-mode nuvlabox))
               job-msg (str "sending reboot request to NuvlaBox " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response
@@ -575,15 +575,14 @@ particular NuvlaBox release.
 
       (log/warn "Running cluster action " cluster-action)
       (try
-        (let [execution-mode (if (utils/has-pull-support? nuvlabox) "pull" "push")
-              {{job-id     :resource-id
+        (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job
                                              id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
                                              (-> acl
                                                  (a/acl-append :edit-data id)
                                                  (a/acl-append :manage id))
                                              :priority 50
-                                             :execution-mode execution-mode
+                                             :execution-mode (utils/get-execution-mode nuvlabox)
                                              :payload (str "{\"cluster-action\": \"" cluster-action "\","
                                                            (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
                                                              (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
@@ -620,7 +619,7 @@ particular NuvlaBox release.
 
 
 (defn add-ssh-key
-  [{:keys [id state acl] :as _nuvlabox} ssh-credential]
+  [{:keys [id state acl] :as nuvlabox} ssh-credential]
   (if (= state state-commissioned)
     (do
       (log/warn "Adding new SSH key for NuvlaBox:" id)
@@ -634,7 +633,7 @@ particular NuvlaBox release.
                                                  (a/acl-append :manage id))
                                              :affected-resources [{:href cred-id}]
                                              :priority 50
-                                             :execution-mode "pull")
+                                             :execution-mode (utils/get-execution-mode nuvlabox))
               job-msg (str "asking NuvlaBox "
                            id " to add SSH key "
                            cred-id " with async " job-id)]
@@ -690,7 +689,7 @@ particular NuvlaBox release.
 
 
 (defn revoke-ssh-key
-  [{:keys [id state acl] :as _nuvlabox} ssh-credential-id]
+  [{:keys [id state acl] :as nuvlabox} ssh-credential-id]
   (if (= state state-commissioned)
     (if (nil? ssh-credential-id)
       (logu/log-and-throw-400 "SSH credential ID is missing")
@@ -705,7 +704,7 @@ particular NuvlaBox release.
                                                    (a/acl-append :manage id))
                                                :affected-resources [{:href ssh-credential-id}]
                                                :priority 50
-                                               :execution-mode "pull")
+                                               :execution-mode (utils/get-execution-mode nuvlabox))
                 job-msg (str "removing SSH key " ssh-credential-id
                              " from NuvlaBox " id " with async " job-id)]
             (when (not= job-status 201)
@@ -749,8 +748,7 @@ particular NuvlaBox release.
       (do
         (log/warn "Updating NuvlaBox " id)
         (try
-          (let [execution-mode (if (utils/has-pull-support? nuvlabox) "pull" "push")
-                {{job-id     :resource-id
+          (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
                                                id "nuvlabox_update"
                                                (-> acl
@@ -758,7 +756,7 @@ particular NuvlaBox release.
                                                    (a/acl-append :manage id))
                                                :affected-resources [{:href nb-release-id}]
                                                :priority 50
-                                               :execution-mode execution-mode
+                                               :execution-mode (utils/get-execution-mode nuvlabox)
                                                :payload (when-not (str/blank? payload) payload))
                 job-msg        (str "updating NuvlaBox " id " with target release " nb-release-id
                                     ", with async " job-id)]
@@ -830,19 +828,16 @@ particular NuvlaBox release.
                                         (#{state-commissioned} state)
                                         (< (:version resource) 2)) (conj check-api-op)
                                    (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)
-                                        (utils/has-pull-support? resource)) (conj add-ssh-key-op)
+                                        (#{state-commissioned} state)) (conj add-ssh-key-op)
                                    (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)
-                                        (utils/has-pull-support? resource)) (conj revoke-ssh-key-op)
+                                        (#{state-commissioned} state)) (conj revoke-ssh-key-op)
                                    (and (a/can-manage? resource request)
                                         (#{state-commissioned} state)) (conj update-nuvlabox-op)
                                    (and (a/can-manage? resource request)
                                         (#{state-commissioned} state)
                                         (>= (:version resource) 2)) (conj cluster-nb-op)
                                    (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)
-                                        (utils/has-pull-support? resource)) (conj reboot-op))]
+                                        (#{state-commissioned} state)) (conj reboot-op))]
     (assoc resource :operations ops)))
 
 ;;
