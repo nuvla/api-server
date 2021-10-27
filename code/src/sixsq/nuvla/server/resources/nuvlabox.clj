@@ -97,12 +97,12 @@ particular NuvlaBox release.
                :input-message  "application/json"
                :output-message "application/json"}
 
-              {:name             "reboot"
-               :uri              "reboot"
-               :description      "reboot the nuvlabox"
-               :method           "POST"
-               :input-message    "application/json"
-               :output-message   "application/json"}
+              {:name           "reboot"
+               :uri            "reboot"
+               :description    "reboot the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
 
               {:name             "add-ssh-key"
                :uri              "add-ssh-key"
@@ -567,7 +567,8 @@ particular NuvlaBox release.
 
 
 (defn cluster-nuvlabox
-  [{:keys [id state acl] :as nuvlabox} cluster-action nuvlabox-manager-status token]
+  [{:keys [id state acl] :as nuvlabox}
+   cluster-action nuvlabox-manager-status token advertise-addr]
   (if (= state state-commissioned)
     (do
       (when (and (str/starts-with? cluster-action "join-") (nil? nuvlabox-manager-status))
@@ -575,7 +576,12 @@ particular NuvlaBox release.
 
       (log/warn "Running cluster action " cluster-action)
       (try
-        (let [{{job-id     :resource-id
+        (let [payload (cond-> {:cluster-action cluster-action
+                               :token          token
+                               :advertise-addr advertise-addr}
+                              (seq nuvlabox-manager-status) (assoc :nuvlabox-manager-status
+                                                                   nuvlabox-manager-status))
+              {{job-id     :resource-id
                 job-status :status} :body} (job/create-job
                                              id (str "nuvlabox_cluster_" (str/replace cluster-action #"-" "_"))
                                              (-> acl
@@ -583,13 +589,9 @@ particular NuvlaBox release.
                                                  (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode (utils/get-execution-mode nuvlabox)
-                                             :payload (str "{\"cluster-action\": \"" cluster-action "\","
-                                                           (when-not (or (nil? nuvlabox-manager-status) (empty? nuvlabox-manager-status))
-                                                             (str "\"nuvlabox-manager-status\": " (json/write-str nuvlabox-manager-status) ",")
-                                                             )
-                                                           "\"token\": \"" token "\"}"))
-              job-msg        (str "running cluster action " cluster-action " on NuvlaBox " id
-                                  ", with async " job-id)]
+                                             :payload (json/write-str payload))
+              job-msg (str "running cluster action " cluster-action " on NuvlaBox " id
+                           ", with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response "unable to create async job to cluster NuvlaBox" 500 id)))
           (event-utils/create-event id job-msg acl)
@@ -600,7 +602,7 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "cluster-nuvlabox"]
-  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token]} :body :as request}]
+  [{{uuid :uuid} :params {:keys [cluster-action nuvlabox-manager-status token advertise-addr]} :body :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (when-not (empty? nuvlabox-manager-status)
@@ -608,7 +610,7 @@ particular NuvlaBox release.
             (a/throw-cannot-view request)))
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
-          (cluster-nuvlabox cluster-action nuvlabox-manager-status token)))
+          (cluster-nuvlabox cluster-action nuvlabox-manager-status token advertise-addr)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -758,8 +760,8 @@ particular NuvlaBox release.
                                                :priority 50
                                                :execution-mode (utils/get-execution-mode nuvlabox)
                                                :payload (when-not (str/blank? payload) payload))
-                job-msg        (str "updating NuvlaBox " id " with target release " nb-release-id
-                                    ", with async " job-id)]
+                job-msg (str "updating NuvlaBox " id " with target release " nb-release-id
+                             ", with async " job-id)]
             (when (not= job-status 201)
               (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
             (event-utils/create-event id job-msg acl)
