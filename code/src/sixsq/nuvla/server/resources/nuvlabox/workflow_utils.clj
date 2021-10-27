@@ -561,9 +561,7 @@
                   (cond->
                     {}
                     cluster-managers (assoc :managers cluster-managers)
-                    cluster-workers (assoc :workers (if cluster-workers
-                                                      cluster-workers
-                                                      []))))
+                    cluster-workers (assoc :workers cluster-workers)))
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name nb-cluster/resource-type}
                    :body        body
