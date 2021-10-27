@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - Nuvlabox - Reboot and SSH related actions check NuvlaBox capabilities
   - Allow to set advertised address when forcing a new Swarm cluster on a NuvlaBox
   - Commission and activate actions on NB does not update updated field bugfix
 
