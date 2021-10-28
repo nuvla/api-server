@@ -95,3 +95,14 @@
                                         :nuvlabox-managers nb-managers]))))
         new-body    (set-nuvlabox-cluster-acls dyn-body)]
     (action (assoc request :body new-body))))
+
+
+(defn has-capability?
+  [capability {:keys [capabilities] :as _nuvlabox}]
+  (contains? (set capabilities) capability))
+
+(def has-pull-support? (partial has-capability? "NUVLA_JOB_PULL"))
+
+(defn get-execution-mode
+  [nuvlabox]
+  (if (has-pull-support? nuvlabox) "pull" "push"))

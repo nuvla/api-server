@@ -5,6 +5,15 @@
 ### Changed
 
   - Let NuvlaBox workers force update the nuvlabox-cluster they belong to via commissioning 
+  - Nuvlabox - Reboot and SSH related actions check NuvlaBox capabilities
+  - Allow to set advertised address when forcing a new Swarm cluster on a NuvlaBox
+  - Commission and activate actions on NB does not update updated field bugfix
+
+## [5.17.0] - 2021-10-21
+
+### Added
+
+  - Credential template for Openstack infrastructure services
 
 ## [5.16.0] - 2021-10-12
 
