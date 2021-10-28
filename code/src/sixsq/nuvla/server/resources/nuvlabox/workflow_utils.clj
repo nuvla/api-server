@@ -474,12 +474,21 @@
   "Searches for an nuvlabox cluster, given the cluster ID"
   [cluster-id]
   (let [filter  (format "cluster-id='%s'" cluster-id)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}]
     (-> (crud/query-as-admin nb-cluster/resource-type options)
       second
-      first
-      :id)))
+      first)))
+
+
+(defn get-nuvlabox-cluster-id-from-worker-id
+  "Searches for an nuvlabox cluster, given one of the worker IDs"
+  [node-id]
+  (let [filter  (format "workers='%s'" node-id)
+        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+                               :orderby [["updated" :desc]]}}]
+    (-> (crud/query-as-admin nb-cluster/resource-type options)
+      second
+      first)))
 
 
 (defn create-minio-cred
@@ -540,16 +549,22 @@
 
 
 (defn update-nuvlabox-cluster
-  [nuvlabox-id cluster-id cluster-managers cluster-workers]
-  (when-let [resource-id (get-nuvlabox-cluster cluster-id)]
-    (let [request {:params      {:uuid          (u/id->uuid resource-id)
+  [nuvlabox-id cluster-id cluster-worker-id cluster-managers cluster-workers]
+  (when-let [cluster (if cluster-worker-id
+                       (get-nuvlabox-cluster-id-from-worker-id cluster-worker-id)
+                       (get-nuvlabox-cluster cluster-id))]
+    (let [resource-id  (:id cluster)
+          body  (if cluster-worker-id
+                  (cond->
+                    {}
+                    (some #{cluster-worker-id} (:workers cluster)) (assoc :workers (:workers cluster)))
+                  (cond->
+                    {}
+                    cluster-managers (assoc :managers cluster-managers)
+                    cluster-workers (assoc :workers cluster-workers)))
+          request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name nb-cluster/resource-type}
-                   :body        (cond->
-                                  {}
-                                  cluster-managers (assoc :managers cluster-managers)
-                                  cluster-workers (assoc :workers (if cluster-workers
-                                                                    cluster-workers
-                                                                    [])))
+                   :body        body
                    :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
       (if (= 200 status)
@@ -599,7 +614,7 @@
             vpn-csr
             kubernetes-endpoint
             kubernetes-client-key kubernetes-client-cert kubernetes-client-ca
-            cluster-id cluster-orchestrator cluster-managers cluster-workers
+            cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
     (let [removed-set    (if (coll? removed) (set removed) #{})
@@ -621,8 +636,11 @@
 
       (when (and cluster-id cluster-managers)
         (or
-          (update-nuvlabox-cluster id cluster-id cluster-managers cluster-workers)
+          (update-nuvlabox-cluster id cluster-id nil cluster-managers cluster-workers)
           (create-nuvlabox-cluster id name cluster-id cluster-orchestrator cluster-managers cluster-workers)))
+
+      (when (and (not cluster-id) cluster-worker-id)
+        (update-nuvlabox-cluster id cluster-id cluster-worker-id cluster-managers cluster-workers))
 
       (when swarm-id
         (or
