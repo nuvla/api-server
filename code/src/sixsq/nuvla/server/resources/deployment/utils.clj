@@ -6,6 +6,7 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -13,13 +14,11 @@
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [sixsq.nuvla.server.resources.customer :as customer]
-    [sixsq.nuvla.server.resources.customer.utils :as customer-utils]
     [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
-    [sixsq.nuvla.server.resources.pricing.stripe :as stripe]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -243,10 +242,10 @@
   (if price
     (let [count-pm (-> request
                        auth/current-active-claim
-                       customer/active-claim->customer
+                       user-utils/active-claim->customer
                        :customer-id
-                       stripe/retrieve-customer
-                       customer-utils/list-payment-methods
+                       pricing-impl/retrieve-customer
+                       pricing-impl/list-payment-methods
                        count-payment-methods)]
       (if (pos? count-pm)
         resource
@@ -261,9 +260,9 @@
 
 (defn create-stripe-subscription
   [active-claim {:keys [account-id price-id] :as _price} coupon]
-  (stripe/create-subscription
+  (pricing-impl/create-subscription
     {"customer"                (some-> active-claim
-                                       customer/active-claim->customer
+                                       user-utils/active-claim->customer
                                        :customer-id)
      "items"                   [{"price" price-id}]
      "application_fee_percent" 20
@@ -349,7 +348,7 @@
   (when (and config-nuvla/*stripe-api-key* price)
     (some-> (auth/current-active-claim request)
             (create-stripe-subscription price (:coupon deployment))
-            (stripe/get-id))))
+            (pricing-impl/get-id))))
 
 
 (defn stop-subscription
@@ -357,5 +356,5 @@
   (when config-nuvla/*stripe-api-key*
     (some-> deployment
             :subscription-id
-            stripe/retrieve-subscription
-            (stripe/cancel-subscription {"invoice_now" true}))))
+            pricing-impl/retrieve-subscription
+            (pricing-impl/cancel-subscription {"invoice_now" true}))))

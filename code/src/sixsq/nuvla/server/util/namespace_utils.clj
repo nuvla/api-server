@@ -55,3 +55,23 @@
       (log/debug varname "NOT found in" (ns-name resource-ns)))
     v))
 
+
+(defn load-ns
+  "Dynamically requires the binding identified by the given namespace and then
+   executes the 'load' function in that namespace. Will log and then rethrow
+   exceptions."
+  [ns-to-load]
+  (try
+    (-> ns-to-load symbol require)
+    (catch Exception e
+      (log/errorf "cannot require namespace %s: %s" ns-to-load (.getMessage e))
+      (throw e)))
+  (try
+    (let [load         (-> ns-to-load symbol find-ns (ns-resolve 'load))
+          impl (load)]
+      (log/infof "created binding implementation from %s" ns-to-load)
+      impl)
+    (catch Exception e
+      (log/errorf "error executing load function from %s: %s" ns-to-load (.getMessage e))
+      (throw e))))
+

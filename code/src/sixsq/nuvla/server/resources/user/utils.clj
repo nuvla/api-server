@@ -2,19 +2,23 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.callback.email-utils :as email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
-    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-url "user")
+
+(def ^:const customer-resource-url "customer")
 
 
 (defn check-password-constraints
@@ -75,7 +79,7 @@
 
 (defn create-customer
   [user-id customer]
-  (let [request {:params      {:resource-name customer/resource-type}
+  (let [request {:params      {:resource-name customer-resource-url}
                  :body        (assoc customer :parent user-id)
                  :nuvla/authn auth/internal-identity}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
@@ -124,3 +128,36 @@
 
   (when customer
     (create-customer user-id customer)))
+
+
+(defn active-claim->customer
+  [active-claim]
+  (some-> customer-resource-url
+          (crud/query-as-admin
+            {:cimi-params
+             {:filter (parser/parse-cimi-filter
+                        (format "parent='%s'" active-claim))}})
+          second
+          first))
+
+
+(defn customer-has-active-subscription?
+  [active-claim]
+  (boolean
+    (try
+      (some-> active-claim
+              active-claim->customer
+              :subscription-id
+              pricing-impl/retrieve-subscription
+              pricing-impl/subscription->map
+              :status
+              (#{"active" "trialing" "past_due"}))
+      (catch Exception _))))
+
+
+(defn throw-user-hasnt-active-subscription
+  [request]
+  (let [active-claim (auth/current-active-claim request)]
+    (when (and config-nuvla/*stripe-api-key*
+               (not (customer-has-active-subscription? active-claim)))
+      (throw (r/ex-response "An active subscription is required!" 402)))))

@@ -7,12 +7,12 @@
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (def tarzan-email "tarzan@example.com")

@@ -3,7 +3,6 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.pricing :as pricing]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -15,6 +14,11 @@
 
 
 (defn parent-path? [v] (or (= "" v) (path? v)))
+
+
+(def ^:const price-id-regex #"^price_.+$")
+
+(defn price-id? [s] (re-matches price-id-regex s))
 
 
 (s/def ::path
@@ -200,7 +204,7 @@
 
 
 (s/def ::price-id
-  (-> (st/spec (s/and string? pricing/price-id?))
+  (-> (st/spec (s/and string? price-id?))
       (assoc :name "price-id"
              :json-schema/type "string"
              :json-schema/description "identifier of price id"
@@ -221,6 +225,11 @@
              :json-schema/editable false)))
 
 
+(s/def ::currency (-> (st/spec ::core/nonblank-string)
+                      (assoc :name "currency"
+                             :json-schema/type "string")))
+
+
 (s/def ::cent-amount-daily
   (-> (st/spec pos-int?)
       (assoc :name "cent-amount-daily"
@@ -233,7 +242,7 @@
                  :req-un [::product-id
                           ::price-id
                           ::account-id
-                          ::pricing/currency
+                          ::currency
                           ::cent-amount-daily]))
       (assoc :name "price"
              :json-schema/type "map"
