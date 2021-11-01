@@ -121,9 +121,27 @@
           session-nb         (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))
           session-nb-2       (header session authn-info-header (str nuvlabox-id-2 " " nuvlabox-id-2 " group/nuvla-user group/nuvla-anon"))
 
+          nuvlabox-url-1     (str p/service-context nuvlabox-id)
           nuvlabox-url-2     (str p/service-context nuvlabox-id-2)
 
-          activate-url       (-> session-nb-2
+          activate-url-1     (-> session-nb
+                                 (request nuvlabox-url-1)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-key-value :state "NEW")
+                                 (ltu/get-op-url :activate))
+
+          _                  (-> session-anon
+                                 (request activate-url-1
+                                   :request-method :post)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-key-value (comp not str/blank?) :secret-key true)
+                                 (ltu/body)
+                                 :api-key
+                                 (ltu/href->url))
+
+          activate-url-2     (-> session-nb-2
                                  (request nuvlabox-url-2)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
@@ -131,7 +149,7 @@
                                  (ltu/get-op-url :activate))
 
           _                  (-> session-anon
-                                 (request activate-url
+                                 (request activate-url-2
                                           :request-method :post)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
@@ -139,6 +157,13 @@
                                  (ltu/body)
                                  :api-key
                                  (ltu/href->url))
+
+          commission-1       (-> session-nb
+                                 (request nuvlabox-url-1)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-key-value :state "ACTIVATED")
+                                 (ltu/get-op-url :commission))
 
           commission         (-> session-nb-2
                                  (request nuvlabox-url-2)
@@ -286,6 +311,14 @@
                      :body (json/write-str (assoc commission-payload :cluster-workers [node-1-id])))
             (ltu/body->edn)
             (ltu/is-status 200))
+
+        ;; commissioning just the worker 1 ID will force a server-side update of the cluster
+        (-> session-nb
+          (request commission-1
+            :request-method :post
+            :body (json/write-str {:cluster-worker-id node-1-id}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
         ;; cause nb-1 is a worker, it cannot view the cluster
         ;; but nb-1 can't, cause it is not part of the cluster
