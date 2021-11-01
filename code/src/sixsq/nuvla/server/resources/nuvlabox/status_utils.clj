@@ -25,15 +25,15 @@
 
 (defn set-nuvlabox-online
   [{:keys [parent online] :as _nuvlabox-status}]
-  (when (some? online)
-    (let [{nb-online :online :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
-     (when (not= nb-online online)
-       (try
-         (-> nuvlabox
-             (assoc :online online)
-             (db/edit {:nuvla/authn auth/internal-identity}))
-         (catch Exception ex
-           (log/info parent "update online attribute failed!" ex)))))))
+  (try
+    (when (some? online)
+      (let [{nb-online :online :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
+        (when (not= nb-online online)
+          (-> nuvlabox
+              (assoc :online online)
+              (db/edit {:nuvla/authn auth/internal-identity})))))
+    (catch Exception ex
+      (log/info parent "update online attribute failed!" ex))))
 
 
 (defn set-online
@@ -49,14 +49,14 @@
 
 (defn set-inferred-location
   [{:keys [parent inferred-location] :as resource}]
-  (when (some? inferred-location)
-    (let [{nb-inferred-location :inferred-location :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
-      (when (not= nb-inferred-location inferred-location)
-        (try
-         (-> nuvlabox
-             (assoc :inferred-location inferred-location)
-             (db/edit {:nuvla/authn auth/internal-identity}))
-         (catch Exception ex
-           (log/info parent "update inferred-location attribute failed!" ex))))))
+  (try
+    (when (some? inferred-location)
+      (let [{nb-inferred-location :inferred-location :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
+        (when (not= nb-inferred-location inferred-location)
+          (-> nuvlabox
+              (assoc :inferred-location inferred-location)
+              (db/edit {:nuvla/authn auth/internal-identity})))))
+    (catch Exception ex
+      (log/info parent "update inferred-location attribute failed!" ex)))
   resource)
 
