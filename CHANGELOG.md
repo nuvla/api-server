@@ -4,6 +4,8 @@
 
 ### Changed
 
+  - Nuvlabox - Online and inferred location refactor
+
 ## [5.18.0] - 2021-10-28
 
 ### Changed
