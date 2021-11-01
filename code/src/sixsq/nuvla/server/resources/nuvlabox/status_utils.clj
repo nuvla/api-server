@@ -24,21 +24,16 @@
 
 
 (defn set-nuvlabox-online
-  [{:keys [parent online online-prev] :as _nuvlabox-status}]
-  ;;TODO retrieve of nuvlabox can be deleted in the futur after a release
-  (let [nuvlabox (crud/retrieve-by-id-as-admin parent)]
-    (when (and
-           (some? online)
-           (or (not= online-prev
-                     online)
-               (nil? (:online nuvlabox))))
-     (try
-       (-> (crud/retrieve-by-id-as-admin parent)
-           (u/update-timestamps)
-           (assoc :online online)
-           (db/edit {:nuvla/authn auth/internal-identity}))
-       (catch Exception ex
-         (log/info parent "update online attribute failed!" ex))))))
+  [{:keys [parent online] :as _nuvlabox-status}]
+  (when (some? online)
+    (let [{nb-online :online :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
+     (when (not= nb-online online)
+       (try
+         (-> nuvlabox
+             (assoc :online online)
+             (db/edit {:nuvla/authn auth/internal-identity}))
+         (catch Exception ex
+           (log/info parent "update online attribute failed!" ex)))))))
 
 
 (defn set-online
@@ -53,14 +48,15 @@
 
 
 (defn set-inferred-location
-  [{:keys [parent] :as resource} inferred-location]
+  [{:keys [parent inferred-location] :as resource}]
   (when (some? inferred-location)
-    (try
-      (-> (crud/retrieve-by-id-as-admin parent)
-          (u/update-timestamps)
-          (assoc :inferred-location inferred-location)
-          (db/edit {:nuvla/authn auth/internal-identity}))
-      (catch Exception ex
-        (log/info parent "update inferred-location attribute failed!" ex))))
+    (let [{nb-inferred-location :inferred-location :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
+      (when (not= nb-inferred-location inferred-location)
+        (try
+         (-> nuvlabox
+             (assoc :inferred-location inferred-location)
+             (db/edit {:nuvla/authn auth/internal-identity}))
+         (catch Exception ex
+           (log/info parent "update inferred-location attribute failed!" ex))))))
   resource)
 
