@@ -8,6 +8,7 @@
 
 ### Changed
 
+  - Nuvlabox - Online and inferred location refactor
   - Dynamic load namespace helper
   - Pricing related resources moved to another artifact
 
