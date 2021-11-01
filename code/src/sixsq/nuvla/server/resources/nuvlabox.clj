@@ -16,7 +16,6 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
-    [sixsq.nuvla.server.resources.customer :as customer]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
@@ -24,6 +23,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -193,7 +193,7 @@ particular NuvlaBox release.
       (let [vpn-service (vpn-utils/get-service vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
-    (customer/throw-user-hasnt-active-subscription request)
+    (user-utils/throw-user-hasnt-active-subscription request)
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
                                      (auth/current-active-claim request))

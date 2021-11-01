@@ -2,9 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+  - Nuvla api test jar artifact
+
 ### Changed
 
   - Nuvlabox - Online and inferred location refactor
+  - Dynamic load namespace helper
+  - Pricing related resources moved to another artifact
 
 ## [5.18.0] - 2021-10-28
 

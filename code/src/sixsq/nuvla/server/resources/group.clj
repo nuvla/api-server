@@ -21,8 +21,7 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.customer.utils :as utils]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -168,6 +167,13 @@ that start with 'nuvla-' are reserved for the server.
     (throw (r/ex-response "user already in group" 400 id))))
 
 
+(defn throw-cannot-manage
+  [{:keys [id] :as resource} request action]
+  (if (a/can-manage? resource request)
+    resource
+    (throw (r/ex-response (format "action not available for %s! %s" action id) 409 id))))
+
+
 (defmethod crud/do-action [resource-type "invite"]
   [{base-uri :base-uri {username         :username
                         redirect-url     :redirect-url
@@ -176,7 +182,7 @@ that start with 'nuvla-' are reserved for the server.
     (let [id           (str resource-type "/" uuid)
           user-id      (auth-password/identifier->user-id username)
           _group       (-> (crud/retrieve-by-id-as-admin id)
-                           (utils/throw-can-not-manage request "invite")
+                           (throw-cannot-manage request "invite")
                            (throw-is-already-in-group user-id))
           invited-by   (auth-password/invited-by request)
           email        (if-let [email-address (some-> user-id auth-password/user-id->email)]

@@ -54,7 +54,7 @@ tag_release() {
 # update pom.xml files for tag and next development version
 update_to_snapshot() {
   # update to next development version
-  git add $(find . -type f -and \( -name project.clj -or -name pom.xml \) | tr '\r\n' ' ')
+  git add $(find . -type f -and \( -name project.clj -or -name pom.xml \)  | grep -v /target/ | tr '\r\n' ' ')
   git commit -m "next development version"
   do_push
 }

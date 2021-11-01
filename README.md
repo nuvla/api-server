@@ -12,10 +12,15 @@ CIMI specification from DMTF.
    the [nuvla/api repository](https://hub.docker.com/r/nuvla/api)
    in Docker Hub. The tags indicate the release number.
 
- - `sixsq.nuvla.server/api-jar` JAR file.  This archive can be
+ - `sixsq.nuvla.server/api-jar` JAR file. This archive can be
    obtained from the production S3 Maven archive that is maintained in
    AWS S3. The URL can be obtained from the `project.clj` file in the
    `nuvla/parent` repository.
+   
+ - `sixsq.nuvla.server/api-test-jar` JAR file. Utility jar for testing
+    from child projects. This archive can be obtained from the production S3 Maven archive that is maintained in
+    AWS S3. The URL can be obtained from the `project.clj` file in the
+    `nuvla/parent` repository.
 
 ## Contributing
 
