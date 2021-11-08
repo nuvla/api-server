@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.19.0] - 2021-11-08
+
 ### Added
 
   - Nuvla api test jar artifact

@@ -44,7 +44,7 @@ create_tag() {
 # update pom.xml files for tag and next development version
 tag_release() {
   # make the release tag
-  git add $(find . -type f -and \( -name project.clj -or -name pom.xml \) | tr '\r\n' ' ')
+  git add $(find . -type f -and \( -name project.clj -or -name pom.xml \) | grep -v /target/ | tr '\r\n' ' ')
   git commit -m "release ${TAG_VERSION}"
   do_push
   create_tag
