@@ -8,6 +8,7 @@
 
 ### Changed
 
+  - Job - Add job to ES at last moment, and add zk path to job tags
   - Nuvlabox - Online and inferred location refactor
   - Dynamic load namespace helper
   - Pricing related resources moved to another artifact

@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.util.zookeeper :as uzk]))
+    [sixsq.nuvla.server.util.zookeeper :as uzk]
+    [clojure.string :as str]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -71,6 +72,7 @@
           (ltu/body->edn)
           (ltu/is-status 200)
           (ltu/is-operation-present :stop)
+          (ltu/is-key-value (fn [job] (some #(str/starts-with? % "/job/entries") job)) :tags true)
           (ltu/is-key-value :state "QUEUED"))
 
       (-> session-user
