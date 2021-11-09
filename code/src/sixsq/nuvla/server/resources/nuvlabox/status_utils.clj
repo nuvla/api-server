@@ -1,11 +1,9 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.status-utils
   (:require
-    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.time :as time]))
 
 
@@ -19,8 +17,8 @@
             (+ 10)
             (time/from-now :seconds)
             time/to-str)
-    (catch Exception _
-      nil)))
+    (catch Exception ex
+      (log/errorf "Unable to get next heartbeat for %1: %2" nuvlabox-id ex))))
 
 
 (defn set-nuvlabox-online
@@ -37,12 +35,10 @@
 
 
 (defn set-online
-  [resource request online-prev]
-  (let [active-claim     (auth/current-active-claim request)
-        is-nuvlabox?     (str/starts-with? active-claim "nuvlabox/")
-        updated-resource (cond-> resource
-                                 (some? online-prev) (assoc :online-prev online-prev)
-                                 is-nuvlabox? (assoc :online true))]
+  [{:keys [parent] :as resource}]
+  (let [next-heartbeat   (get-next-heartbeat parent)
+        updated-resource (cond-> (assoc resource :online true)
+                                 next-heartbeat (assoc :next-heartbeat next-heartbeat))]
     (set-nuvlabox-online updated-resource)
     updated-resource))
 

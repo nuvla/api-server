@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - Nuvlabox status - Update heartbeat even if NuvlaBox encounter a spec
+    validation issue
+
 ## [5.19.0] - 2021-11-08
 
 ### Added
