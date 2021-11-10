@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.19.1] - 2021-11-10
+
+### Changed
+
+  - Pricing regression fix
+
 ## [5.19.0] - 2021-11-08
 
 ### Added
