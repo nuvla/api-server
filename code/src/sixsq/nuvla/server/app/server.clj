@@ -15,6 +15,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
     [sixsq.nuvla.server.middleware.cimi-params :refer [wrap-cimi-params]]
+    [sixsq.nuvla.server.middleware.gzip :refer [wrap-gzip-uncompress]]
     [sixsq.nuvla.server.middleware.default-content-type :refer [default-content-type]]
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
@@ -39,6 +40,7 @@
   (-> (routes/get-main-routes)
 
       ;; handler/site
+      wrap-gzip-uncompress
       wrap-cimi-params
       wrap-base-uri
       wrap-keyword-params
