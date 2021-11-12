@@ -38,7 +38,8 @@
   [handler]
   (fn [request]
     (let [gzipped? (gzip? request)]
-      (log/error "COMPRESSION: wrap-gzip-uncompress: " request)
+      (when gzipped?
+        (log/error "COMPRESSION: wrap-gzip-uncompress: " request))
       (-> request
           (cond-> gzipped? gzip-uncompress)
           handler))))
