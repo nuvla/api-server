@@ -33,10 +33,26 @@
   (display-space-separated
     (-> request :request-method name str/upper-case)
     (:uri request)
-    request))
+    (display-authn-info request)
+    (display-querystring request)))
 
 
 (defn format-response
+  [formatted-request response start current-time-millis]
+  (display-space-separated
+    (:status response)
+    (display-elapsed-time-millis start current-time-millis)
+    formatted-request))
+
+(defn format-request-debug
+  [request]
+  (display-space-separated
+    (-> request :request-method name str/upper-case)
+    (:uri request)
+    request))
+
+
+(defn format-response-debug
   [formatted-request response start current-time-millis]
   (display-space-separated
     (:status response)
@@ -62,8 +78,8 @@
   [handler]
   (fn [request]
     (let [start             (System/currentTimeMillis)
-          formatted-request (format-request request)
+          formatted-request (format-request-debug request)
           _                 (log/debug formatted-request)
           {:keys [status] :as response} (handler request)
-          _                 (log-response status (format-response formatted-request response start (System/currentTimeMillis)))]
+          _                 (log-response status (format-response-debug formatted-request response start (System/currentTimeMillis)))]
       response)))
