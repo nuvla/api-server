@@ -33,8 +33,7 @@
   (display-space-separated
     (-> request :request-method name str/upper-case)
     (:uri request)
-    (display-authn-info request)
-    (display-querystring request)))
+    request))
 
 
 (defn format-response
@@ -42,7 +41,8 @@
   (display-space-separated
     (:status response)
     (display-elapsed-time-millis start current-time-millis)
-    formatted-request))
+    formatted-request
+    response))
 
 
 (defn log-response
