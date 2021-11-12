@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.middleware.gzip
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.tools.logging :as log])
   (:import (java.util.zip GZIPInputStream)
            (java.io ByteArrayOutputStream ByteArrayInputStream)))
 
@@ -25,15 +26,19 @@
 
 (defn gzip-uncompress
   [request]
-  (-> request
-      (update :body gunzip)
-      (update :headers dissoc "content-encoding")))
+  (let [res (-> request
+            (update :body gunzip)
+            (update :headers dissoc "content-encoding"))]
+    (log/error "COMPRESSION: gzip-uncompress: " res)
+    res
+    ))
 
 
 (defn wrap-gzip-uncompress
   [handler]
   (fn [request]
     (let [gzipped? (gzip? request)]
+      (log/error "COMPRESSION: wrap-gzip-uncompress: " request)
       (-> request
           (cond-> gzipped? gzip-uncompress)
           handler))))
