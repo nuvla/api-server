@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - Middleware - support content-encoding gzip when sent by http client
+
 ## [5.19.1] - 2021-11-10
 
 ### Changed
