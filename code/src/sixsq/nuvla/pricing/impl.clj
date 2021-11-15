@@ -16,8 +16,8 @@
 (defn get-api-key []
   (protocol/get-api-key *impl*))
 
-(defn create-customer [customer-params]
-  (protocol/create-customer *impl* customer-params))
+(defn create-customer [params]
+  (protocol/create-customer *impl* params))
 
 (defn retrieve-customer [customer-id]
   (protocol/retrieve-customer *impl* customer-id))
@@ -34,8 +34,8 @@
 (defn get-customer-subscriptions [customer]
   (protocol/get-customer-subscriptions *impl* customer))
 
-(defn create-subscription [subscription-params]
-  (protocol/create-subscription *impl* subscription-params))
+(defn create-subscription [params]
+  (protocol/create-subscription *impl* params))
 
 (defn list-products [products]
   (protocol/list-products *impl* products))
@@ -52,8 +52,8 @@
 (defn collection-iterator [collection]
   (protocol/collection-iterator *impl* collection))
 
-(defn create-setup-intent [setup-intent-params]
-  (protocol/create-setup-intent *impl* setup-intent-params))
+(defn create-setup-intent [params]
+  (protocol/create-setup-intent *impl* params))
 
 (defn list-invoices [params]
   (protocol/list-invoices *impl* params))
@@ -70,8 +70,8 @@
 (defn login-link-create-on-account [account-id]
   (protocol/login-link-create-on-account *impl* account-id))
 
-(defn create-price [price-params]
-  (protocol/create-price *impl* price-params))
+(defn create-price [params]
+  (protocol/create-price *impl* params))
 
 (defn retrieve-price [price-id]
   (protocol/retrieve-price *impl* price-id))
@@ -286,15 +286,20 @@
 (defn price->map [price]
   (protocol/price->map *impl* price))
 
-(defn get-default-payment-method-for-customer [customer]
-  (protocol/get-default-payment-method-for-customer *impl* customer))
+(defn get-default-payment-method-customer [customer]
+  (protocol/get-default-payment-method-customer *impl* customer))
 
-(defn list-payment-methods [customer]
-  (protocol/list-payment-methods *impl* customer))
+(defn list-payment-methods [params]
+  (protocol/list-payment-methods *impl* params))
 
-(defn get-upcoming-invoice [subscription-id]
-  (protocol/get-upcoming-invoice *impl* subscription-id))
+(defn list-payment-methods-customer [customer]
+  (protocol/list-payment-methods-customer *impl* customer))
 
+(defn get-upcoming-invoice [params]
+  (protocol/get-upcoming-invoice *impl* params))
+
+(defn get-upcoming-invoice-subscription-id [subscription-id]
+  (protocol/get-upcoming-invoice-subscription-id *impl* subscription-id))
 
 (defn price->unit-float [price]
   (protocol/price->unit-float *impl* price))

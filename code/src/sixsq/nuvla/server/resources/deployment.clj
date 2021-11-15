@@ -428,7 +428,7 @@ a container orchestration engine.
               (crud/retrieve-by-id-as-admin)
               (a/throw-cannot-manage request)
               :subscription-id
-              (pricing-impl/get-upcoming-invoice))
+              (pricing-impl/get-upcoming-invoice-subscription-id))
           {}))
     (catch Exception e
       (or (ex-data e) (throw e)))))

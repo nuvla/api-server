@@ -245,7 +245,7 @@
                        user-utils/active-claim->customer
                        :customer-id
                        pricing-impl/retrieve-customer
-                       pricing-impl/list-payment-methods
+                       pricing-impl/list-payment-methods-customer
                        count-payment-methods)]
       (if (pos? count-pm)
         resource
