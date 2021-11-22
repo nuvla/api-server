@@ -121,8 +121,8 @@ request.
                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
                                        (a/throw-cannot-edit request))]
       (-> request
+          (update :body dissoc :target-resource :action)
           (u/delete-attributes current)
-          (dissoc :target-resource :action)
           (u/update-timestamps)
           (u/set-updated-by request)
           (utils/job-cond->edition)
