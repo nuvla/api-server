@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [clojure.walk :as walk]
     [expound.alpha :as expound]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
@@ -258,3 +259,16 @@
        first
        second
        (= form-urlencoded)))
+
+
+(defn delete-attributes
+  [{{select :select} :cimi-params body :body :as request}
+   {:keys [acl] :as current}]
+  (let [rights                   (a/extract-rights (auth/current-authentication request) acl)
+        dissoc-keys              (-> (map keyword select)
+                                     set
+                                     strip-select-from-mandatory-attrs
+                                     (a/editable-keys rights))
+        current-without-selected (apply dissoc current dissoc-keys)
+        editable-body            (select-keys body (-> body keys (a/editable-keys rights)))]
+    (merge current-without-selected editable-body)))

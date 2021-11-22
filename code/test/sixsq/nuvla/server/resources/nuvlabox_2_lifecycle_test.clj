@@ -288,6 +288,54 @@
               (ltu/is-status 404)))))))
 
 
+(deftest create-set-and-delete-location-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
+
+      (doseq [session [session-admin session-owner]]
+        (let [nuvlabox-id  (-> session
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str (assoc valid-nuvlabox
+                                                                :owner nuvlabox-owner)))
+                               (ltu/body->edn)
+                               (ltu/is-status 201)
+                               (ltu/location))
+              nuvlabox-url (str p/service-context nuvlabox-id)
+              location     [46.2044 6.1432 373.]
+              supplier     "some-supplier"
+              nuvlabox     (-> session
+                               (request nuvlabox-url)
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/body))]
+
+          ;; admin will be able to set any value
+          ;; owner will be restricted to some attributes including location
+          (-> session
+              (request nuvlabox-url
+                       :request-method :put
+                       :body (json/write-str (assoc nuvlabox :location location :supplier supplier)))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :location location)
+              (ltu/is-key-value :supplier (if (= session session-owner) nil supplier)))
+
+          ;; admin and owner are able to delete location attribute
+          (-> session
+              (request (str nuvlabox-url "?select=location")
+                       :request-method :put
+                       :body (json/write-str (dissoc nuvlabox :location)))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :location nil)))))))
+
+
 (deftest create-activate-commission-decommission-error-delete-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
