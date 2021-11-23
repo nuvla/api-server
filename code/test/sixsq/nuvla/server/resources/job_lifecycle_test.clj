@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.job-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -9,8 +10,7 @@
     [sixsq.nuvla.server.resources.job.utils :as ju]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.util.zookeeper :as uzk]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.zookeeper :as uzk]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)

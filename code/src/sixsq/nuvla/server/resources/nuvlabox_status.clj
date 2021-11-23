@@ -111,11 +111,11 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
 (defn get-jobs
   [{nb-id :parent :as _resource}]
   (->> {:params      {:resource-name "job"}
-        :cimi-params {:filter (cimi-params-impl/cimi-filter
-                                {:filter (str "execution-mode='pull' and "
-                                              "state!='FAILED' and "
-                                              "state!='SUCCESS' and state!='STOPPED'")})
-                      :select ["id"]
+        :cimi-params {:filter  (cimi-params-impl/cimi-filter
+                                 {:filter (str "execution-mode='pull' and "
+                                               "state!='FAILED' and "
+                                               "state!='SUCCESS' and state!='STOPPED'")})
+                      :select  ["id"]
                       :orderby [["created" :asc]]}
         :nuvla/authn {:user-id      nb-id
                       :active-claim nb-id
@@ -126,21 +126,14 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
        (mapv :id)))
 
 
-(defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
+(defn edit-impl [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [{:keys [acl] :as current} (-> (str resource-type "/" uuid)
-                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                        (a/throw-cannot-edit request))
-          jobs                     (get-jobs current)
-          rights                   (a/extract-rights (auth/current-authentication request) acl)
-          dissoc-keys              (-> (map keyword select)
-                                       set
-                                       u/strip-select-from-mandatory-attrs
-                                       (a/editable-keys rights))
-          current-without-selected (apply dissoc current dissoc-keys)
-          editable-body (select-keys body (-> body keys (a/editable-keys rights)))]
-      (-> current-without-selected
-          (merge editable-body)
+    (let [current (-> (str resource-type "/" uuid)
+                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                      (a/throw-cannot-edit request))
+          jobs    (get-jobs current)]
+      (-> request
+          (u/delete-attributes current)
           (u/update-timestamps)
           (u/set-updated-by request)
           (assoc :jobs jobs)
