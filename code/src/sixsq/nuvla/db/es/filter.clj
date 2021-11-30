@@ -53,12 +53,12 @@
   [longitude latitude])
 
 
-(defmethod convert :LatitudeValue [[_ latitude]]
-  latitude)
+(defmethod convert :LatitudeValue [[_ ^String latitude]]
+  (Double/parseDouble latitude))
 
 
-(defmethod convert :LongitudeValue [[_ longitude]]
-  longitude)
+(defmethod convert :LongitudeValue [[_ ^String longitude]]
+  (Double/parseDouble longitude))
 
 (defmethod convert :PointValue [[_ longitude latitude]]
   [longitude latitude])
