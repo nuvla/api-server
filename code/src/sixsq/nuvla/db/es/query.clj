@@ -53,6 +53,12 @@
   {:range {term {:lt value}}})
 
 
+(defn in
+  [term value]
+  {:geo_shape {term {:shape    value
+                     :relation "intersects"}}})
+
+
 (defn and
   [clauses]
   {:bool {:filter (vec clauses)}})

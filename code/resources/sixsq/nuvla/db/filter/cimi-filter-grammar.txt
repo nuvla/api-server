@@ -11,12 +11,15 @@ Comp            ::= Attribute EqOp Value
                     | StringValue PrefixOp Attribute
                     | Attribute FullTextOp StringValue
                     | StringValue FullTextOp Attribute
+                    | Attribute  GeoOp GeoShapeValue
                     | WS <'('> Filter <')'> WS
 
 FullTextOp      ::= '=='
 PrefixOp        ::= '^='
 EqOp            ::= '=' | '!='
 RelOp           ::= '<' | '<=' | '>=' | '>'
+GeoOp           ::= 'in'
+
 
 Attribute       ::= WS NamespaceTerm ('/' NamespaceTerm)* WS
 
@@ -30,8 +33,14 @@ DateValue       ::= WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' W
 <StringValue>   ::= WS (DoubleQuoteString | SingleQuoteString) WS
 BoolValue       ::= WS ('true' | 'false') WS
 NullValue       ::= WS 'null' WS
+LongitudeValue  ::= WS #'[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)' WS
+LatitudeValue   ::= WS #'[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?)' WS
+PointValue      ::= WS <'['> LongitudeValue <','?> LatitudeValue <']'> WS
+EnvelopeValue   ::= WS <'ENVELOPE['>  WS PointValue <','?> PointValue <']'> WS
+PolygonValue    ::= WS <'POLYGON['> WS PointValue (<','?> PointValue)* <']'> WS
+<GeoShapeValue> ::= WS (EnvelopeValue | PolygonValue) WS
 
-<WS>            ::= <#'\s*'>
+<WS>              ::= <#'\s*'>
 
 DoubleQuoteString ::= #"\"[^\"\\]*(?:\\.[^\"\\]*)*\""
 SingleQuoteString ::= #"'[^'\\]*(?:\\.[^'\\]*)*'"

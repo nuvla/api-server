@@ -38,6 +38,32 @@
   [:Value (time/date-from-str s)])
 
 
+(defmethod convert :EnvelopeValue [[_ [long1 lat1] [long2 lat2]]]
+  [:Value {:type        "envelope"
+           :coordinates [[(min long1 long2) (max lat1 lat2)]
+                         [(max long1 long2) (min lat1 lat2)]]}])
+
+
+(defmethod convert :PolygonValue [[_ & args]]
+  [:Value {:type        "polygon"
+           :coordinates (vec args)}])
+
+
+(defmethod convert :PointValue [[_ longitude latitude]]
+  [longitude latitude])
+
+
+(defmethod convert :LatitudeValue [[_ latitude]]
+  latitude)
+
+
+(defmethod convert :LongitudeValue [[_ longitude]]
+  longitude)
+
+(defmethod convert :PointValue [[_ longitude latitude]]
+  [longitude latitude])
+
+
 (defmethod convert :NullValue [[_ ^String _]]
   [:Value nil])
 
@@ -46,8 +72,8 @@
   (let [args (rest v)]
     (if (= 1 (count args))
       (first args)                                          ;; (a=1 and b=2) case
-      (let [{:keys [Attribute EqOp RelOp PrefixOp FullTextOp Value] :as m} (into {} args)
-            Op    (or EqOp RelOp PrefixOp FullTextOp)
+      (let [{:keys [Attribute EqOp RelOp GeoOp PrefixOp FullTextOp Value] :as m} (into {} args)
+            Op    (or EqOp RelOp PrefixOp FullTextOp GeoOp)
             order (ffirst args)]
         (case [Op order]
           ["=" :Attribute] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
@@ -61,6 +87,7 @@
           [">" :Attribute] (query/gt Attribute Value)
           ["<=" :Attribute] (query/lte Attribute Value)
           ["<" :Attribute] (query/lt Attribute Value)
+          ["in" :Attribute] (query/in Attribute Value)
 
           ["=" :Value] (if (nil? Value) (query/missing Attribute) (query/eq Attribute Value))
           ["!=" :Value] (if (nil? Value) (query/exists Attribute) (query/ne Attribute Value))
