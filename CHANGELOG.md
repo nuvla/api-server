@@ -6,6 +6,9 @@
 
   - Nuvlabox status - Update heartbeat even if NuvlaBox encounter a spec
     validation issue
+  - Nuvlabox-status - Use delete attributes
+  - Job - Use delete-attributes
+  - Nuvlabox - Delete location possible
 
 ## [5.19.1] - 2021-11-10
 

@@ -53,21 +53,13 @@
 
 (defn edit-fn
   [resource-name]
-  (fn [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
+  (fn [{{uuid :uuid} :params :as request}]
     (try
-      (let [{:keys [acl] :as current} (->
-                                        (str resource-name "/" uuid)
-                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                        (a/throw-cannot-edit request))
-            rights                   (a/extract-rights (auth/current-authentication request) acl)
-            dissoc-keys              (-> (map keyword select)
-                                         set
-                                         u/strip-select-from-mandatory-attrs
-                                         (a/editable-keys rights))
-            current-without-selected (apply dissoc current dissoc-keys)
-            editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
-            merged                   (merge current-without-selected editable-body)]
-        (-> merged
+      (let [current (-> (str resource-name "/" uuid)
+                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                        (a/throw-cannot-edit request))]
+        (-> request
+            (u/delete-attributes current)
             u/update-timestamps
             (u/set-updated-by request)
             crud/validate
