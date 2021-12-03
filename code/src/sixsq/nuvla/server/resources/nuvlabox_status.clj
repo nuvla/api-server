@@ -6,6 +6,8 @@ NuvlaBox activation, although they can be created manually by an administrator.
 Versioned subclasses define the attributes for a particular NuvlaBox release.
 "
   (:require
+    [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -97,17 +99,6 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     (add-impl request)))
 
 
-(defmulti pre-edit
-          "Allows nuvlabox-status subclasses to perform actions before updating
-           the resource. The default action just returns the unmodified request."
-          :version)
-
-
-(defmethod pre-edit :default
-  [resource]
-  resource)
-
-
 (defn get-jobs
   [{nb-id :parent :as _resource}]
   (->> {:params      {:resource-name "job"}
@@ -126,23 +117,49 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
        (mapv :id)))
 
 
-(defn edit-impl [{{uuid :uuid} :params body :body :as request}]
+(defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
-    (let [current (-> (str resource-type "/" uuid)
-                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                      (a/throw-cannot-edit request))
-          jobs    (get-jobs current)]
-      (-> request
-          (u/delete-attributes current)
-          (u/update-timestamps)
-          (u/set-updated-by request)
-          (assoc :jobs jobs)
-          (cond-> (contains? body :resources) (assoc :resources-prev (:resources current)))
-          (status-utils/set-online request (:online current))
-          (status-utils/set-inferred-location)
-          pre-edit
-          crud/validate
-          (db/edit request)))
+    (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
+                                               (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                                               (a/throw-cannot-edit request))
+          jobs                     (get-jobs current)
+          rights                   (a/extract-rights (auth/current-authentication request) acl)
+          dissoc-keys              (-> (map keyword select)
+                                       set
+                                       u/strip-select-from-mandatory-attrs
+                                       (a/editable-keys rights))
+          current-without-selected (apply dissoc current dissoc-keys)
+          editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
+          is-nuvlabox?             (-> (auth/current-active-claim request)
+                                       (str/starts-with? "nuvlabox/"))
+          online-prev              (:online current)
+          minimal-update           #(-> %
+                                        (u/update-timestamps)
+                                        (u/set-updated-by request)
+                                        (cond-> is-nuvlabox? (status-utils/set-online)
+                                                (some? online-prev) (assoc :online-prev online-prev)))
+          new-status               (-> current-without-selected
+                                       (merge editable-body)
+                                       (minimal-update)
+                                       (assoc :jobs jobs)
+                                       (cond-> (contains? body :resources) (assoc :resources-prev (:resources current)))
+                                       (status-utils/set-inferred-location))
+          spec-exception           (try
+                                     (crud/validate new-status)
+                                     nil
+                                     (catch Exception e
+                                       e))]
+      (if spec-exception
+        (do
+          (when is-nuvlabox?
+            ;; update heartbeat only when spec issue
+            (-> current
+                (minimal-update)
+                (crud/validate)
+                (db/edit request))
+            (log/errorf "Nuvlabox got a spec issue while sending telemetry: %s" parent))
+          (throw spec-exception))
+        (db/edit new-status request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
