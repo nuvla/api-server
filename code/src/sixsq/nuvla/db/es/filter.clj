@@ -46,7 +46,7 @@
 
 (defmethod convert :PolygonValue [[_ & args]]
   [:Value {:type        "polygon"
-           :coordinates (vec args)}])
+           :coordinates [(vec args)]}])
 
 
 (defmethod convert :PointValue [[_ longitude latitude]]
