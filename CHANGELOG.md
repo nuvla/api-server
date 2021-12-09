@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+  - System group `group/nuvla-vpn`
+
 ### Changed
 
   - Nuvlabox status - Update heartbeat even if NuvlaBox encounter a spec
