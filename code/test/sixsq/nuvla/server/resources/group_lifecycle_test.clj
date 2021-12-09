@@ -57,29 +57,29 @@
                                  :tags        tags-attr
                                  :template    {:group-identifier valid-create-no-href-id}}]
 
-    ;; admin query should succeed and have 4 entries
+    ;; admin query should succeed and have 5 entries
     (let [entries (-> session-admin
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 4)
+                      (ltu/is-count 5)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user"
-               "group/nuvla-nuvlabox" "group/nuvla-anon"} (set (map :id entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
       (is (every? #(not (nil? %)) (set (map :name entries))))
       (is (every? #(not (nil? %)) (set (map :description entries)))))
 
 
-    ;; user query should also have 4 entries, but only common attributes (i.e. no :users field)
+    ;; user query should also have 5 entries, but only common attributes (i.e. no :users field)
     (let [entries (-> session-user
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 4)
+                      (ltu/is-count 5)
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-nuvlabox"
-               "group/nuvla-user" "group/nuvla-anon"} (set (map :id entries))))
-      (is (= [nil nil nil nil] (map :users entries))))
+      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
+      (is (= [nil nil nil nil nil] (map :users entries))))
 
     ;; anon query should see nothing
     (-> session-anon
@@ -163,7 +163,7 @@
                       (ltu/message-matches (str "successfully invited to " id)))
 
                   (is (= users updated-users))
-                  (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin"} (:view-meta acl))))))))
+                  (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl))))))))
 
             ;; delete should work
             (-> session
