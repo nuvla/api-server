@@ -115,20 +115,14 @@ request.
 
 
 (defn edit-impl
-  [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (try
     (let [current                  (-> (str resource-type "/" uuid)
                                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                       (a/throw-cannot-edit request))
-          dissoc-keys              (-> (map keyword select)
-                                       (set)
-                                       (u/strip-select-from-mandatory-attrs))
-          current-without-selected (apply dissoc current dissoc-keys)
-          merged                   (merge current-without-selected
-                                          (dissoc body
-                                                  :target-resource
-                                                  :action))]
-      (-> merged
+                                       (a/throw-cannot-edit request))]
+      (-> request
+          (update :body dissoc :target-resource :action)
+          (u/delete-attributes current)
           (u/update-timestamps)
           (u/set-updated-by request)
           (utils/job-cond->edition)

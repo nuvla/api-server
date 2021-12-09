@@ -305,6 +305,29 @@
               (doseq [k nb-status/blacklist-response-keys]
                 (is (not (contains? r k))))))
 
+          ;; when a nuvlabox send telemetry that has a spec validation issue,
+          ;; the heartbeat is still updated
+          (let [status-prev (-> session-nb
+                                (request state-url)
+                                (ltu/body->edn)
+                                (ltu/body))]
+            (-> session-nb
+                (request state-url
+                         :request-method :put
+                         :body (json/write-str {:wrong 1}))
+                (ltu/body->edn)
+                (ltu/is-status 400))
+
+            (-> session-nb
+                (request state-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value #(and (not= (:next-heartbeat status-prev) %)
+                                        (string? %)) :next-heartbeat true)
+                (ltu/is-key-value #(and (not= (:updated status-prev) %)
+                                        (string? %)) :updated true)
+                (ltu/is-key-value :online true)))
+
           ;; nuvlabox identity cannot delete the state
           (-> session-nb
               (request state-url

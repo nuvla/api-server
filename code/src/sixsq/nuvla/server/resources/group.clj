@@ -65,7 +65,9 @@ that start with 'nuvla-' are reserved for the server.
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (a/add-acl resource request))
+  (-> resource
+      (a/add-acl request)
+      (a/acl-append-resource :view-data "group/nuvla-vpn")))
 
 
 ;;
@@ -261,4 +263,9 @@ that start with 'nuvla-' are reserved for the server.
                             {:name        "Nuvla NuvlaBox Systems"
                              :description "pseudo-group of all NuvlaBox systems"
                              :template    {:group-identifier "nuvla-nuvlabox"
+                                           :acl              default-acl}})
+    (std-crud/add-if-absent (str resource-type "/nuvla-vpn") resource-type
+                            {:name        "Nuvla VPN Systems"
+                             :description "pseudo-group of all VPN systems"
+                             :template    {:group-identifier "nuvla-vpn"
                                            :acl              default-acl}})))

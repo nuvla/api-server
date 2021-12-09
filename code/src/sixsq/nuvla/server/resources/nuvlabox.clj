@@ -263,9 +263,9 @@ particular NuvlaBox release.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn restricted-body
-  [{:keys [id owner vpn-server-id] :as existing-resource}
-   {:keys [acl name description location tags ssh-keys capabilities] :as _body}]
-  (cond-> existing-resource
+  [{:keys [name description location tags ssh-keys capabilities acl] :as _body}
+   {:keys [id owner vpn-server-id] :as existing-resource}]
+  (cond-> (dissoc existing-resource :name :description :location :tags :ssh-keys :capabilities :acl)
           name (assoc :name name)
           description (assoc :description description)
           location (assoc :location location)
@@ -284,18 +284,20 @@ particular NuvlaBox release.
 
 
 (defmethod crud/edit resource-type
-  [{:keys [body params] :as request}]
-  (let [id               (str resource-type "/" (:uuid params))
-        authn-info       (auth/current-authentication request)
-        is-admin?        (a/is-admin? authn-info)
-        nuvlabox         (db/retrieve id request)
-        updated-nuvlabox (if is-admin? body (restricted-body nuvlabox body))]
-
-    (edit-subresources nuvlabox updated-nuvlabox)
-
-    (let [resp (edit-impl (assoc request :body updated-nuvlabox))]
-      (ka-crud/publish-on-edit resource-type resp)
-      resp)))
+  [{{uuid :uuid} :params :as request}]
+  (let [authn-info    (auth/current-authentication request)
+        is-not-admin? (not (a/is-admin? authn-info))
+        current       (-> (str resource-type "/" uuid)
+                          (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                          (a/throw-cannot-edit request))
+        {updated-nb :body :as resp} (-> request
+                                        (cond-> is-not-admin? (assoc :body (-> request
+                                                                               (u/delete-attributes current)
+                                                                               (restricted-body current))))
+                                        edit-impl)]
+    (ka-crud/publish-on-edit resource-type resp)
+    (edit-subresources current updated-nb)
+    resp))
 
 
 (def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
