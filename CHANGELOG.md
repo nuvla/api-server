@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+## [5.20.0] - 2021-12-09
+
 ### Added
 
   - System group `group/nuvla-vpn`
