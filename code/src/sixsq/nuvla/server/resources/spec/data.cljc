@@ -50,9 +50,25 @@
              :json-schema/order 24)))
 
 
-(s/def ::type #{"Polygon" "Point"})
+(s/def ::type
+  (-> (st/spec #{"Polygon" "Point"})
+      (assoc :name "type"
+             :json-schema/type "string"
+             :json-schema/display-name "type"
+             :json-schema/description "Type of the coordinates: Polygon or Point."
+             :json-schema/value-scope {:values ["Polygon" "Point"]})))
+
+
+(s/def ::coordinates
+  (-> (st/spec vector?)
+      (assoc :name "coordinates"
+             :json-schema/type "array"
+             :json-schema/display-name "coordinates"
+             :json-schema/description "List of closed polygons [[longitude, latitude[, altitude], ...], ...] or :location")))
+
+
 (s/def ::coordinates-polygon (s/coll-of (s/coll-of ::location :min-count 4)))
-(s/def ::coordinates (s/spec vector?))
+
 
 (defn valid-coordinates?
   [v]
@@ -61,11 +77,13 @@
     "Point" (s/valid? ::location (:coordinates v))
     false))
 
+
 (defn polygons-closed?
   [v]
   (case (:type v)
     "Polygon" (every? true? (map #(= (first %) (last %)) (:coordinates v)))
     true))
+
 
 (s/def ::geometry
   (-> (st/spec (s/and (su/only-keys :req-un [::type ::coordinates])

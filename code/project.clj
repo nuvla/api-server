@@ -77,7 +77,9 @@
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
-                               [org.apache.curator/curator-test]]
+                               [org.apache.curator/curator-test]
+                               [org.locationtech.spatial4j/spatial4j "0.8"]
+                               [org.locationtech.jts/jts-core "1.18.2"]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key "test-resources/session.key"
                                :nuvla-session-crt "test-resources/session.crt"}
