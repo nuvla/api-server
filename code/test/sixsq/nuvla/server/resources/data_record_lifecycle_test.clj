@@ -592,6 +592,8 @@
 
           valid-polygons (for [shape dts/valid-polygons]
                                      (assoc valid-entry-minimal :geometry {:type "Polygon" :coordinates shape}))
+          valid-multipolygons (for [shape dts/valid-multipolygons]
+                           (assoc valid-entry-minimal :geometry {:type "MultiPolygon" :coordinates shape}))
           invalid-polygons (for [shape (concat dts/invalid-polygons dts/valid-points)]
                                        (assoc valid-entry-minimal :geometry {:type "Polygon" :coordinates shape}))
           valid-points (for [shape dts/valid-points]
@@ -600,7 +602,7 @@
                                      (assoc valid-entry-minimal :geometry {:type "Point" :coordinates shape}))]
 
       ;; valid shapes
-      (doseq [shape (concat valid-polygons valid-points)]
+      (doseq [shape (concat valid-polygons valid-multipolygons valid-points)]
         (let [uri (-> session-user
                       (request base-uri
                                :request-method :post
@@ -609,11 +611,12 @@
                       (ltu/is-status 201)
                       (ltu/location))
               abs-uri (str p/service-context uri)]
-          (-> session-user
+          (if uri
+            (-> session-user
               (request abs-uri
                        :request-method :delete)
               (ltu/body->edn)
-              (ltu/is-status 200))))
+              (ltu/is-status 200)))))
 
       ;; invalid shapes
       (doseq [shape (concat invalid-polygons invalid-points)]

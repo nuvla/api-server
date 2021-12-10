@@ -51,12 +51,12 @@
 
 
 (s/def ::type
-  (-> (st/spec #{"Polygon" "Point"})
+  (-> (st/spec #{"Polygon" "MultiPolygon" "Point"})
       (assoc :name "type"
              :json-schema/type "string"
              :json-schema/display-name "type"
-             :json-schema/description "Type of the coordinates: Polygon or Point."
-             :json-schema/value-scope {:values ["Polygon" "Point"]})))
+             :json-schema/description "Type of the coordinates: Polygon, MultiPolygon, or Point."
+             :json-schema/value-scope {:values ["Polygon" "MultiPolygon" "Point"]})))
 
 
 (s/def ::coordinates
@@ -68,20 +68,28 @@
 
 
 (s/def ::coordinates-polygon (s/coll-of (s/coll-of ::location :min-count 4)))
+(s/def ::coordinates-multi-polygon (s/coll-of ::coordinates-polygon))
 
 
 (defn valid-coordinates?
   [v]
   (case (:type v)
     "Polygon" (s/valid? ::coordinates-polygon (:coordinates v))
+    "MultiPolygon" (s/valid? ::coordinates-multi-polygon (:coordinates v))
     "Point" (s/valid? ::location (:coordinates v))
     false))
 
-
+(defn closed-polygons?
+  [v]
+  (every? true? (map #(= (first %) (last %)) v)))
+(defn closed-multi-polygons?
+  [v]
+  (every? true? (map #(closed-polygons? %) v)))
 (defn polygons-closed?
   [v]
   (case (:type v)
-    "Polygon" (every? true? (map #(= (first %) (last %)) (:coordinates v)))
+    "Polygon" (closed-polygons? (:coordinates v))
+    "MultiPolygon" (closed-multi-polygons? (:coordinates v))
     true))
 
 
@@ -92,6 +100,6 @@
       (assoc :name "geometry"
              :json-schema/type "geo-shape"
              :json-schema/display-name "geometry"
-             :json-schema/description "An area associated with data as map of :type and :coordinates. The latter is a list of closed polygons as [[longitude, latitude[, altitude], ...], ...]. The former is \"Polygon\" or \"Point\". See https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6"
+             :json-schema/description "An area associated with data as map of :type and :coordinates. The latter is a list of closed polygons as [[longitude, latitude[, altitude], ...], ...]. The former is \"Polygon\", \"MultiPolygon\", or \"Point\". See https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6"
 
              :json-schema/order 25)))
