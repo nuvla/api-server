@@ -53,10 +53,10 @@
   {:range {term {:lt value}}})
 
 
-(defn in
-  [term value]
+(defn geo-shape
+  [term op value]
   {:geo_shape {term {:shape    value
-                     :relation "intersects"}}})
+                     :relation op}}})
 
 
 (defn and
