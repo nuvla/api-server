@@ -8,6 +8,7 @@
 
 ### Added
 
+  - Middleware - support content-encoding gzip when sent by http client
   - System group `group/nuvla-vpn`
 
 ### Changed
