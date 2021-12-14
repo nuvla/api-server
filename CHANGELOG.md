@@ -4,11 +4,16 @@
 
 ### Changed
 
-## [5.20.0] - 2021-12-09
+## [5.21.0] - 2021-12-14
 
 ### Added
 
   - Middleware - support content-encoding gzip when sent by http client
+
+## [5.20.0] - 2021-12-09
+
+### Added
+
   - System group `group/nuvla-vpn`
 
 ### Changed

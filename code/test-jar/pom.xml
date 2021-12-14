@@ -5,14 +5,14 @@
 
   <artifactId>code-test-jar-dep</artifactId>
   <packaging>pom</packaging>
-  <version>5.20.1-SNAPSHOT</version>
+  <version>5.21.0-SNAPSHOT</version>
   <name>server/code/test-jar</name>
   <url>http://sixsq.com</url>
 
   <parent>
     <groupId>sixsq.nuvla.server</groupId>
     <artifactId>code-dep</artifactId>
-    <version>5.20.1-SNAPSHOT</version>
+    <version>5.21.0-SNAPSHOT</version>
   </parent>
 
   <licenses>
