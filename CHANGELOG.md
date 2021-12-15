@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-### Changed
+### Added
+
+  - ES - Support for `geo-shape` queries
+  - Data - Support for `geo-shape` type
+
+### Upddated
+
+  - Data-record - New `geometry` attribute of type `geo-shape`
 
 ## [5.21.0] - 2021-12-14
 

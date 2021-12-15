@@ -56,32 +56,6 @@
   [:Value (time/date-from-str s)])
 
 
-(defmethod convert :EnvelopeValue [[_ [long1 lat1] [long2 lat2]]]
-  [:Value {:type        "envelope"
-           :coordinates [[(min long1 long2) (max lat1 lat2)]
-                         [(max long1 long2) (min lat1 lat2)]]}])
-
-
-(defmethod convert :PolygonValue [[_ & args]]
-  [:Value {:type        "polygon"
-           :coordinates [(vec args)]}])
-
-
-(defmethod convert :PointValue [[_ longitude latitude]]
-  [longitude latitude])
-
-
-(defmethod convert :LatitudeValue [[_ ^String latitude]]
-  (Double/parseDouble latitude))
-
-
-(defmethod convert :LongitudeValue [[_ ^String longitude]]
-  (Double/parseDouble longitude))
-
-(defmethod convert :PointValue [[_ longitude latitude]]
-  [longitude latitude])
-
-
 (defmethod convert :NullValue [[_ ^String _]]
   [:Value nil])
 

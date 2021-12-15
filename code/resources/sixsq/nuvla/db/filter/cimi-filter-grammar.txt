@@ -35,7 +35,7 @@ WktValue        ::= StringValue
 BoolValue       ::= WS ('true' | 'false') WS
 NullValue       ::= WS 'null' WS
 
-<WS>              ::= <#'\s*'>
+<WS>            ::= <#'\s*'>
 
 DoubleQuoteString ::= #"\"[^\"\\]*(?:\\.[^\"\\]*)*\""
 SingleQuoteString ::= #"'[^'\\]*(?:\\.[^'\\]*)*'"
