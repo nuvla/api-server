@@ -29,19 +29,6 @@ resources.
 
 
 ;;
-;; multimethod to modify an edit request
-;;
-
-(defmethod nb-status/pre-edit schema-version
-  [{:keys [parent] :as resource}]
-
-  ;; overwrites the next-heartbeat time based on the refresh-interval
-  (let [next-heartbeat (status-utils/get-next-heartbeat parent)]
-    (cond-> resource
-            next-heartbeat (assoc :next-heartbeat next-heartbeat))))
-
-
-;;
 ;; initialization
 ;;
 

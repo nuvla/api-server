@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Changed
+
+## [5.21.0] - 2021-12-14
+
+### Added
+
+  - Middleware - support content-encoding gzip when sent by http client
+
+## [5.20.0] - 2021-12-09
+
+### Added
+
+  - System group `group/nuvla-vpn`
+
+### Changed
+
+  - Nuvlabox status - Update heartbeat even if NuvlaBox encounter a spec
+    validation issue
   - Nuvlabox-status - Use delete attributes
   - Job - Use delete-attributes
   - Nuvlabox - Delete location possible

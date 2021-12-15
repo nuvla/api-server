@@ -13,11 +13,12 @@
     (log/error msg "\n" (st/pst-str e))
     response))
 
-(defn wrap-exceptions [f]
+(defn wrap-exceptions [handler]
   (fn [request]
-    (try (f request)
-         (catch Exception e
-           (let [response (ex-data e)]
-             (if (r/response? response)
-               response
-               (treat-unexpected-exception e)))))))
+    (try
+      (handler request)
+      (catch Exception e
+        (let [response (ex-data e)]
+          (if (r/response? response)
+            response
+            (treat-unexpected-exception e)))))))
