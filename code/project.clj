@@ -57,7 +57,15 @@
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [io.netty/netty]]]
-   ]
+   [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
+                                     [org.locationtech.spatial4j/spatial4j]
+                                     [org.wololo/jts2geojson]]]
+   ;; spatial4j and jts-core are needed for factual/geo and for elasticsearch mock test instance
+   ;; issue in Factual geo https://github.com/Factual/geo/issues/74
+   [org.locationtech.spatial4j/spatial4j "0.8"]
+   [org.locationtech.jts/jts-core "1.18.2"]
+   ;; need for Factual geo wkt polygon to geojson
+   [org.wololo/jts2geojson "0.15.0"]]
 
   :aot [sixsq.nuvla.server.app.main]
 

@@ -53,6 +53,12 @@
   {:range {term {:lt value}}})
 
 
+(defn geo-shape
+  [term op value]
+  {:geo_shape {term {:shape    value
+                     :relation op}}})
+
+
 (defn and
   [clauses]
   {:bool {:filter (vec clauses)}})

@@ -38,4 +38,5 @@
                                 ::data/bytes
                                 ::data/content-type
                                 ::data/md5sum
+                                ::data/geometry
                                 ::container/mount]}))

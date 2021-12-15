@@ -34,6 +34,7 @@
     "array" (treat-array description)
     "map" (treat-map description)
     "geo-point" (treat-map description)
+    "geo-shape" (treat-map description)
     nil))
 
 

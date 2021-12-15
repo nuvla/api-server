@@ -11,12 +11,15 @@ Comp            ::= Attribute EqOp Value
                     | StringValue PrefixOp Attribute
                     | Attribute FullTextOp StringValue
                     | StringValue FullTextOp Attribute
+                    | Attribute  GeoOp WktValue
                     | WS <'('> Filter <')'> WS
 
 FullTextOp      ::= '=='
 PrefixOp        ::= '^='
 EqOp            ::= '=' | '!='
 RelOp           ::= '<' | '<=' | '>=' | '>'
+GeoOp           ::= 'intersects' | 'disjoint' | 'within' | 'contains'
+
 
 Attribute       ::= WS NamespaceTerm ('/' NamespaceTerm)* WS
 
@@ -27,6 +30,7 @@ Attribute       ::= WS NamespaceTerm ('/' NamespaceTerm)* WS
 <Value>         ::= OrdinalValue | NominalValue
 IntValue        ::= WS #'\d+' WS
 DateValue       ::= WS #'\d+-\d+(-\d+)?(T\d+:\d+:\d+(\.\d+)?(Z|[+-]\d+:\d+))?' WS
+WktValue        ::= StringValue
 <StringValue>   ::= WS (DoubleQuoteString | SingleQuoteString) WS
 BoolValue       ::= WS ('true' | 'false') WS
 NullValue       ::= WS 'null' WS

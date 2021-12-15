@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.data-record-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is join-fixtures use-fixtures]]
+    [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -9,7 +9,8 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.data-record :as t]
     [sixsq.nuvla.server.resources.data-record-key-prefix :as sn]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.spec.data-test :as dts]))
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -42,6 +43,10 @@
 
 (def ns2 {:prefix ns2-prefix
           :uri    (str "https://example.org/" ns2-prefix)})
+
+
+(def valid-entry-minimal
+  {:infrastructure-service  "infrastructure-service/1-2-3-4-5"})
 
 
 (def valid-entry
@@ -544,3 +549,80 @@
     (ltu/verify-405-status [[base-uri :options]
                             [resource-uri :options]
                             [resource-uri :post]])))
+
+
+(deftest location-as-geo-point
+  (testing ":location as geo-point"
+    (let [session-anon  (-> (session (ltu/ring-app))
+                            (content-type "application/json"))
+          session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          valid-locations (for [p dts/valid-points] (assoc valid-entry-minimal :location p))
+          invalid-locations (for [p dts/invalid-points] (assoc valid-entry-minimal :location p))]
+
+      (doseq [loc valid-locations]
+        (let [uri (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str loc))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
+              abs-uri (str p/service-context uri)]
+          (-> session-user
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200))))
+
+      (doseq [loc invalid-locations]
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str loc))
+            (ltu/body->edn)
+            (ltu/is-status 400))))))
+
+
+(deftest geometry-as-geo-shape
+  (testing ":geometry as geo-shape"
+    (let [session-anon  (-> (session (ltu/ring-app))
+                            (content-type "application/json"))
+          session-user  (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          valid-polygons (for [shape dts/valid-polygons]
+                                     (assoc valid-entry-minimal :geometry {:type "Polygon" :coordinates shape}))
+          valid-multipolygons (for [shape dts/valid-multipolygons]
+                           (assoc valid-entry-minimal :geometry {:type "MultiPolygon" :coordinates shape}))
+          invalid-polygons (for [shape (concat dts/invalid-polygons dts/valid-points)]
+                                       (assoc valid-entry-minimal :geometry {:type "Polygon" :coordinates shape}))
+          valid-points (for [shape dts/valid-points]
+                                   (assoc valid-entry-minimal :geometry {:type "Point" :coordinates shape}))
+          invalid-points (for [shape (concat dts/invalid-points dts/valid-polygons)]
+                                     (assoc valid-entry-minimal :geometry {:type "Point" :coordinates shape}))]
+
+      ;; valid shapes
+      (doseq [shape (concat valid-polygons valid-multipolygons valid-points)]
+        (let [uri (-> session-user
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str shape))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))
+              abs-uri (str p/service-context uri)]
+          (if uri
+            (-> session-user
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200)))))
+
+      ;; invalid shapes
+      (doseq [shape (concat invalid-polygons invalid-points)]
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str shape))
+            (ltu/body->edn)
+            (ltu/is-status 400))))))

@@ -158,3 +158,40 @@
              "a:"
              "schema-org:a:b"
              "schema-org:a/"))
+
+
+(deftest check-invalid-wkt
+  (are [arg] ((fails-fn :WktValue) arg)
+             "2012"
+             "2012-01-99T13:14:25.6ZZ"
+             "2012-01-02T13:14:25.6Q"
+             "2012-01:02T25:14:25.6-01:15"
+             "2012-01-02T13:14:25.6+02-30"))
+
+
+(deftest check-valid-wkt-filter
+  (are [expected v] (= expected (t/parse-cimi-filter v))
+                    [:Filter
+                     [:AndExpr
+                      [:Comp
+                       [:Attribute "attr"]
+                       [:GeoOp "intersects"]
+                       [:WktValue [:SingleQuoteString "'POINT(1 2)'"]]]]]
+                    "attr intersects 'POINT(1 2)'"
+
+                    [:Filter
+                     [:AndExpr
+                      [:Comp
+                       [:Attribute "attr"]
+                       [:GeoOp "within"]
+                       [:WktValue [:DoubleQuoteString "\"POINT(1 2)\""]]]]]
+                    "attr within \"POINT(1 2)\""
+
+                    [:Filter
+                     [:AndExpr
+                      [:Comp
+                       [:Attribute "attr"]
+                       [:GeoOp "disjoint"]
+                       [:WktValue [:SingleQuoteString "'any string is ok'"]]]]]
+                    "attr disjoint 'any string is ok'"
+                    ))
