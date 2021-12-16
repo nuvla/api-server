@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.22.0] - 2021-12-16
+
 ### Added
 
   - ES - Support for `geo-shape` queries
