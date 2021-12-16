@@ -34,15 +34,6 @@
       (log/info parent "update online attribute failed!" ex))))
 
 
-(defn set-online
-  [{:keys [parent] :as resource}]
-  (let [next-heartbeat   (get-next-heartbeat parent)
-        updated-resource (cond-> (assoc resource :online true)
-                                 next-heartbeat (assoc :next-heartbeat next-heartbeat))]
-    (set-nuvlabox-online updated-resource)
-    updated-resource))
-
-
 (defn set-inferred-location
   [{:keys [parent inferred-location] :as resource}]
   (try
@@ -55,4 +46,3 @@
     (catch Exception ex
       (log/info parent "update inferred-location attribute failed!" ex)))
   resource)
-
