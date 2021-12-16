@@ -244,5 +244,5 @@
 
   Closeable
   (close [_]
-    (spandex/close! client)
-    (spandex/close! sniffer)))
+    (spandex/close! sniffer)
+    (spandex/close! client)))

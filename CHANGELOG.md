@@ -7,9 +7,10 @@
   - ES - Support for `geo-shape` queries
   - Data - Support for `geo-shape` type
 
-### Upddated
+### Updated
 
   - Data-record - New `geometry` attribute of type `geo-shape`
+  - ES - reversed close order of ES client and sniffer
 
 ## [5.21.0] - 2021-12-14
 
