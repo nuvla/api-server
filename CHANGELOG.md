@@ -9,6 +9,7 @@
 
 ### Upddated
 
+  - Nuvlabox-status - Bug fix related to online flag
   - Data-record - New `geometry` attribute of type `geo-shape`
 
 ## [5.21.0] - 2021-12-14

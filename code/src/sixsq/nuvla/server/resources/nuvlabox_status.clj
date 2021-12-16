@@ -132,12 +132,20 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           editable-body            (select-keys body (-> body keys (a/editable-keys rights)))
           is-nuvlabox?             (-> (auth/current-active-claim request)
                                        (str/starts-with? "nuvlabox/"))
+          online                   (or is-nuvlabox? (:online body))
           online-prev              (:online current)
+          propagate-online?        (and (some? online)
+                                        (not= online online-prev))
+          edit-fn                  #(do
+                                      (when propagate-online?
+                                        (status-utils/set-nuvlabox-online %1))
+                                      (db/edit %1 request))
           minimal-update           #(-> %
                                         (u/update-timestamps)
                                         (u/set-updated-by request)
-                                        (cond-> is-nuvlabox? (status-utils/set-online)
-                                                (some? online-prev) (assoc :online-prev online-prev)))
+                                        (cond-> (some? online) (assoc :online online
+                                                                      :next-heartbeat (status-utils/get-next-heartbeat parent)))
+                                        (cond-> (some? online-prev) (assoc :online-prev online-prev)))
           new-status               (-> current-without-selected
                                        (merge editable-body)
                                        (minimal-update)
@@ -156,10 +164,10 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
             (-> current
                 (minimal-update)
                 (crud/validate)
-                (db/edit request))
+                (edit-fn))
             (log/errorf "Nuvlabox got a spec issue while sending telemetry: %s" parent))
           (throw spec-exception))
-        (db/edit new-status request)))
+        (edit-fn new-status)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
