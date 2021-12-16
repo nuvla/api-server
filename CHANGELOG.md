@@ -9,6 +9,7 @@
 
 ### Updated
 
+  - Nuvlabox-status - Bug fix related to online flag
   - Data-record - New `geometry` attribute of type `geo-shape`
   - ES - reversed close order of ES client and sniffer
 
