@@ -34,7 +34,6 @@
       :json-schema/order 33)))
 
 
-
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
     {:req-un [::common/parent
