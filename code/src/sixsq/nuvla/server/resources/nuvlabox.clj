@@ -134,6 +134,13 @@ particular NuvlaBox release.
                                    :type "string"}
                                   {:name "payload"
                                    :type "string"}]}
+
+              {:name           "assemble-playbooks"
+               :uri            "assemble-playbooks"
+               :description    "assemble the nuvlabox playbooks for execution"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
               ])
 
 
@@ -817,6 +824,7 @@ particular NuvlaBox release.
         revoke-ssh-key-op  (u/action-map id :revoke-ssh-key)
         update-nuvlabox-op (u/action-map id :update-nuvlabox)
         cluster-nb-op      (u/action-map id :cluster-nuvlabox)
+        assemble-pb-op     (u/action-map id :assemble-playbooks)
         ops                (cond-> []
                                    (a/can-edit? resource request) (conj edit-op)
                                    (and (a/can-delete? resource request)
@@ -844,7 +852,10 @@ particular NuvlaBox release.
                                         (#{state-commissioned} state)
                                         (>= (:version resource) 2)) (conj cluster-nb-op)
                                    (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj reboot-op))]
+                                        (#{state-commissioned} state)) (conj reboot-op)
+                                   (and (a/can-manage? resource request)
+                                        (not= state state-new)
+                                        (not= state state-decommissioned)) (conj assemble-pb-op))]
     (assoc resource :operations ops)))
 
 ;;
