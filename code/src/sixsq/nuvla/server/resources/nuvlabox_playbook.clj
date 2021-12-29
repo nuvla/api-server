@@ -51,8 +51,8 @@ NuvlaBox Engine software
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)]
       (assoc resource
-             :acl (cond-> (utils/set-acl-nuvlabox-view-only nuvlabox-acl {:owners [nuvlabox-id]})
-                    (not-empty view-acl) (assoc :manage view-acl))))))
+             :acl (cond-> (:acl resource)
+                    (not-empty view-acl) (assoc :view-acl view-acl))))))
 
 
 ;;
