@@ -27,7 +27,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-username-password]
-    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -78,7 +77,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} _request]
   (assoc resource :acl {:owners    ["group/nuvla-admin"]
-                        :view-meta ["group/nuvla-user"]
                         :edit-acl  [id]}))
 
 
@@ -89,8 +87,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def ^:const initial-state "NEW")
 
 (def user-attrs-defaults
-  {:state   initial-state
-   :deleted false})
+  {:state           initial-state
+   :deleted         false
+   :auth-method-2fa "none"})
 
 (defn merge-with-defaults
   [resource]
@@ -170,23 +169,18 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (query-impl request))
 
 
-(defn throw-no-id
-  [body]
-  (when-not (contains? body :id)
-    (logu/log-and-throw-400 "id is not provided in the document.")))
-
-
 (defn edit-impl
   "Returns edited document or exception data in case of an error."
-  [{body :body :as request}]
-  (throw-no-id body)
+  [{body :body {uuid :uuid} :params :as request}]
   (try
-    (let [current (-> (:id body)
-                      (db/retrieve request)
-                      (a/throw-cannot-edit request))
-          merged  (->> (dissoc body :name)
-                       (merge current))]
-      (-> merged
+    (let [id         (str resource-type "/" uuid)
+          authn-info (auth/current-authentication request)
+          is-user?   (not (a/is-admin? authn-info))]
+      (-> id
+          (db/retrieve request)
+          (a/throw-cannot-edit request)
+          (merge (cond-> body
+                         is-user? (dissoc :name :state :auth-method-2fa)))
           (dissoc :href)
           (u/update-timestamps)
           (u/set-updated-by request)
@@ -199,6 +193,30 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (defmethod crud/edit resource-type
   [request]
   (edit-impl request))
+
+
+(defn set-resource-ops
+  [{:keys [id auth-method-2fa] :as resource} request]
+  (let [can-manage?   (a/can-manage? resource request)
+        disabled-2fa? (or (= auth-method-2fa "none")
+                          (nil? auth-method-2fa))
+        ops           (cond-> []
+                              (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                              (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                              (and can-manage?
+                                   disabled-2fa?) (conj (u/action-map id :enable-2fa))
+                              (and can-manage?
+                                   (not disabled-2fa?)) (conj (u/action-map id :disable-2fa)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
+      (dissoc resource :operations))))
+
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (if (u/is-collection? resource-type)
+    (crud/set-standard-collection-operations resource request)
+    (set-resource-ops resource request)))
 
 
 ;;
