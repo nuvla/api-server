@@ -65,7 +65,7 @@
       ;; user collection query should succeed but be empty for all users
       (doseq [session [session-anon session-user session-admin]]
         (-> session
-            (request base-uri)
+            (request (str base-uri "?filter=name!='super'"))
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-count zero?)
@@ -123,7 +123,6 @@
         ;; verify the ACL of the user
         (let [user-acl (:acl user)]
           (is (some #{"group/nuvla-admin"} (:owners user-acl)))
-          (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
 
           ;; user should have all rights
           (doseq [right [:view-meta :view-data :view-acl

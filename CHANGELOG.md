@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+  - User - Two factor authentication support
+
+### Changed
+
+  - User - Authenticated-user view-meta on user resource removed from default ACL
+  - User - User is not allowed to edit his state
+
 ## [5.22.0] - 2021-12-16
 
 ### Added
