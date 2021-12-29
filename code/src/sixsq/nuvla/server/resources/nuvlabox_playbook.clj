@@ -66,13 +66,10 @@ NuvlaBox Engine software
 
 (defmethod crud/add resource-type
   [{{:keys [parent] :as body} :body :as request}]
-  (try
-    (let [nuvlabox     (-> parent
-                         (db/retrieve request)
-                         (a/throw-cannot-edit request))]
-      (add-impl request))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
+  (-> parent
+    (db/retrieve request)
+    (a/throw-cannot-edit request))
+  (add-impl request))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))

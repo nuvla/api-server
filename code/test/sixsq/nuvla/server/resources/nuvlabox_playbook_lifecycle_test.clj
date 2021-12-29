@@ -5,7 +5,9 @@
    [clojure.test :refer [deftest use-fixtures]]
    [peridot.core :refer [content-type header request session]]
    [ring.util.codec :as rc]
-   [sixsq.nuvla.server.app.params :as p]
+    [clojure.pprint :refer [pprint]]
+
+    [sixsq.nuvla.server.app.params :as p]
    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
    [sixsq.nuvla.server.resources.common.utils :as u]
    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
