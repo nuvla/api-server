@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
     [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
+    [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -691,19 +692,18 @@
       )))
 
 
-(defn get-nuvlabox-peripherals-ids
-  [id]
+(defn get-nuvlabox-children
+  [id resource-type]
   (let [filter  (format "parent='%s'" id)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
-    (->> (crud/query-as-admin nb-peripheral/resource-type options)
-         second
-         (map :id))))
+                               :select ["id" "acl"]}}]
+    (->> (crud/query-as-admin resource-type options)
+         second)))
 
 
 (defn update-peripherals
   [nuvlabox-id nuvlabox-acl]
-  (when-let [ids (get-nuvlabox-peripherals-ids nuvlabox-id)]
+  (when-let [ids (map :id (get-nuvlabox-children nuvlabox-id nb-peripheral/resource-type))]
     (doseq [id ids]
       (let [request {:params      {:uuid          (u/id->uuid id)
                                    :resource-name nb-peripheral/resource-type}
@@ -716,4 +716,21 @@
         (if (= 200 status)
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))))))
+
+
+(defn update-playbooks
+  [nuvlabox-id nuvlabox-acl]
+  (when-let [playbooks (get-nuvlabox-children nuvlabox-id nb-playbook/resource-type)]
+    (doseq [playbook playbooks]
+      (let [request {:params      {:uuid          (u/id->uuid (:id playbook))
+                                   :resource-name nb-playbook/resource-type}
+                     :body        {:acl (-> (:acl playbook)
+                                          (assoc :edit-acl (:edit-acl nuvlabox-acl))
+                                          (assoc :view-acl (into [] (distinct (merge (:view-acl nuvlabox-acl) nuvlabox-id)))))}
+                     :nuvla/authn auth/internal-identity}
+            {status :status :as _resp} (crud/edit request)]
+        (if (= 200 status)
+          (log/info "nuvlabox playbook" (:id playbook) "updated")
+          (let [msg (str "cannot update nuvlabox playbook for " nuvlabox-id)]
             (throw (ex-info msg (r/map-response msg 400 "")))))))))

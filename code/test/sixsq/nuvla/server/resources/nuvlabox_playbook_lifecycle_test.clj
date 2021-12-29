@@ -82,7 +82,15 @@
           (ltu/body->edn)
           (ltu/is-status 403))
 
-     ;; users can create a nuvlabox-playbook resource
+      ;; users who cannot edit a NB cannot create a playbook for it
+      (-> session-user
+        (request base-uri
+          :request-method :post
+          :body (json/write-str (assoc valid-playbook :parent nuvlabox-id)))
+        (ltu/body->edn)
+        (ltu/is-status 403))
+
+     ;; nuvlabox owners can create a nuvlabox-playbook resource
      ;; use the default ACL
       (when-let [playbook-url (-> session-owner
                                   (request base-uri
@@ -163,10 +171,7 @@
             (request playbook-url
                      :request-method :delete)
             (ltu/body->edn)
-            (ltu/is-status 200)))
-
-
-      )))
+            (ltu/is-status 200))))))
 
 
 (deftest bad-methods

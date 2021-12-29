@@ -46,13 +46,15 @@ NuvlaBox Engine software
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource _request]
+  [resource request]
   (when-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
-          view-acl (:view-acl nuvlabox-acl)]
+          view-acl (:view-acl nuvlabox-acl)
+          edit-acl (:edit-acl nuvlabox-acl)]
       (assoc resource
-             :acl (cond-> (:acl resource)
-                    (not-empty view-acl) (assoc :view-acl view-acl))))))
+             :acl (cond-> (or (:acl resource) (a/default-acl (auth/current-authentication request)))
+                    (not-empty view-acl) (assoc :view-acl (into [] (distinct (merge view-acl nuvlabox-id))))
+                    (not-empty edit-acl) (assoc :edit-acl edit-acl))))))
 
 
 ;;
@@ -63,8 +65,14 @@ NuvlaBox Engine software
 
 
 (defmethod crud/add resource-type
-  [request]
-  (add-impl request))
+  [{{:keys [parent] :as body} :body :as request}]
+  (try
+    (let [nuvlabox     (-> parent
+                         (db/retrieve request)
+                         (a/throw-cannot-edit request))]
+      (add-impl request))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
