@@ -129,7 +129,7 @@ nuvlabox.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource _request]
+  [resource request]
   (if-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)]
