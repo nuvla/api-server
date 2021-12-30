@@ -234,12 +234,13 @@
               (ltu/is-status 404))
 
           ;; ensure that user is not created and all child resources are cleaned up
+          ;; admin credential dependent of execution speed this is why <= 1
 
           (-> session-admin
               (request (str p/service-context credential/resource-type))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-count 1))
+              (ltu/is-count #(<= %1 1)))
 
           ; identifier cleanup
           (-> session-admin
