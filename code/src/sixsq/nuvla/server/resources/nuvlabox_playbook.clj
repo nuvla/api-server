@@ -16,6 +16,7 @@ NuvlaBox Engine software
    [sixsq.nuvla.server.resources.resource-metadata :as md]
    [sixsq.nuvla.server.resources.spec.nuvlabox-playbook :as nb-playbook]
    [sixsq.nuvla.server.util.log :as logu]
+    [clojure.pprint :refer [pprint]]
    [sixsq.nuvla.server.util.metadata :as gen-md]
    [sixsq.nuvla.server.util.response :as r]))
 
@@ -47,15 +48,15 @@ NuvlaBox Engine software
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (when-let [nuvlabox-id (:parent resource)]
+  (if-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)
           edit-acl (:edit-acl nuvlabox-acl)]
       (assoc resource
              :acl (cond-> (or (:acl resource) (a/default-acl (auth/current-authentication request)))
                     (not-empty view-acl) (assoc :view-acl (into [] (distinct (merge view-acl nuvlabox-id))))
-                    (not-empty edit-acl) (assoc :edit-acl edit-acl))))))
-
+                    (not-empty edit-acl) (assoc :edit-acl edit-acl))))
+    (a/add-acl resource request)))
 
 ;;
 ;; CRUD operations
@@ -69,15 +70,19 @@ NuvlaBox Engine software
   (some-> parent
     (db/retrieve request)
     (a/throw-cannot-edit request))
-  (add-impl request))
+  (-> request
+    (update-in [:body] dissoc :output)
+    (add-impl)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
 (defmethod crud/edit resource-type
-  [request]
-  (edit-impl request))
+  [{:keys [body] :as request}]
+  (if-let [updated-output (:output body)]
+    (edit-impl (assoc request :body (assoc body :output (subs updated-output 0 (min (count updated-output) 1000)))))
+    (edit-impl request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

@@ -5,9 +5,7 @@
    [clojure.test :refer [deftest use-fixtures]]
    [peridot.core :refer [content-type header request session]]
    [ring.util.codec :as rc]
-    [clojure.pprint :refer [pprint]]
-
-    [sixsq.nuvla.server.app.params :as p]
+   [sixsq.nuvla.server.app.params :as p]
    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
    [sixsq.nuvla.server.resources.common.utils :as u]
    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -92,6 +90,14 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
+      ;; missing parent causes a 400
+      (-> session-owner
+        (request base-uri
+          :request-method :post
+          :body (json/write-str {}))
+        (ltu/body->edn)
+        (ltu/is-status 400))
+
      ;; nuvlabox owners can create a nuvlabox-playbook resource
      ;; use the default ACL
       (when-let [playbook-url (-> session-owner
@@ -125,7 +131,7 @@
         (-> session-nb
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:name "new name"}))
+                     :body (json/write-str {:output "new output"}))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -133,17 +139,26 @@
         (-> session-owner
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:name "new playbook"}))
+                     :body (json/write-str {:output "new output"}))
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value :name "new playbook"))
+            (ltu/is-key-value :output "new output"))
 
        ;; verify that the update was written to disk
         (-> session-nb
             (request playbook-url)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value :name "new playbook"))
+            (ltu/is-key-value :output "new output"))
+
+        ;; very long outputs get truncated
+        (-> session-owner
+          (request playbook-url
+            :request-method :put
+            :body (json/write-str {:output (apply str (repeat 1050 "f"))}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value (comp count) :output 1000))
 
        ;; nuvlabox identity cannot delete the playbook
         (-> session-nb

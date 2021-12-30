@@ -34,9 +34,18 @@
       :json-schema/order 33)))
 
 
+(s/def ::output
+  (-> (st/spec string?)
+    (assoc :name "output"
+      :json-schema/description "truncated output from previous executions of this playbook"
+
+      :json-schema/order 33)))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
     {:req-un [::common/parent
               ::run
               ::type
-              ::enabled]}))
+              ::enabled]
+     :opt-un [::output]}))

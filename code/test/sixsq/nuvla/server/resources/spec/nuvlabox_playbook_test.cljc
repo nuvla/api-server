@@ -21,7 +21,8 @@
                            :type          "EMERGENCY"
                            :run           "echo hello world"
                            :parent        "nuvlabox/123-abc"
-                           :enabled       true}]
+                           :enabled       true
+                           :output        "foo"}]
 
     (stu/is-valid ::nuvlabox-playbook/schema nuvlabox-playbook)
 
@@ -30,5 +31,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :run :parent :enabled :type}]
       (stu/is-invalid ::nuvlabox-playbook/schema (dissoc nuvlabox-playbook attr)))
 
-    (doseq [attr #{:name :description}]
+    (doseq [attr #{:name :description :output}]
       (stu/is-valid ::nuvlabox-playbook/schema (dissoc nuvlabox-playbook attr)))))
