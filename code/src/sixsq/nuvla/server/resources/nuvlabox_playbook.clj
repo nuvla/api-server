@@ -66,7 +66,7 @@ NuvlaBox Engine software
 
 (defmethod crud/add resource-type
   [{{:keys [parent] :as body} :body :as request}]
-  (-> parent
+  (some-> parent
     (db/retrieve request)
     (a/throw-cannot-edit request))
   (add-impl request))
