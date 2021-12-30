@@ -20,6 +20,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -499,6 +500,7 @@
                                        (ltu/is-operation-present :revoke-ssh-key)
                                        (ltu/is-operation-present :update-nuvlabox)
                                        (ltu/is-operation-present :cluster-nuvlabox)
+                                       (ltu/is-operation-present :assemble-playbooks)
                                        (ltu/is-key-value :state "COMMISSIONED")
                                        (ltu/get-op-url :cluster-nuvlabox))]
 
@@ -1229,8 +1231,72 @@
                                     :view-data [nuvlabox-id "user/alpha"],
                                     :manage    [nuvlabox-id "user/alpha"],
                                     :edit-meta [nuvlabox-id "user/alpha"]})))
-
       )))
+
+
+(deftest create-activate-assemble-playbooks-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+
+      #_{:clj-kondo/ignore [:redundant-let]}
+      (let [nuvlabox-id  (-> session-owner
+                           (request base-uri
+                             :request-method :post
+                             :body (json/write-str valid-nuvlabox))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+          (request activate-url
+            :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+        (let [session-nuvlabox (header session authn-info-header
+                                 (str nuvlabox-id " " nuvlabox-id
+                                   " group/nuvla-nuvlabox group/nuvla-anon"))]
+          ;; assemble-playbooks
+          ;(let [assemble-playbooks-url (-> session-owner
+          ;                               (request nuvlabox-url)
+          ;                               (ltu/body->edn)
+          ;                               (ltu/is-status 200)
+          ;                               (ltu/get-op-url :assemble-playbooks))]
+          ;
+          ;  (-> session-owner
+          ;    (request assemble-playbooks-url :request-method :post)
+          ;    (ltu/body->edn)
+          ;    (ltu/is-status 200)
+          ;    (pprint)))
+          (let [assemble-playbooks-url      (-> session-owner
+                                              (request nuvlabox-url)
+                                              (ltu/body->edn)
+                                              (ltu/is-status 200)
+                                              (ltu/get-op-url :assemble-playbooks))]
+
+            (-> session-nuvlabox
+              (request assemble-playbooks-url)
+              (pprint)
+              (ltu/body->edn)
+              (pprint)
+              (ltu/is-status 200)))
+
+          )))))
 
 
 (deftest create-activate-commission-get-context-lifecycle

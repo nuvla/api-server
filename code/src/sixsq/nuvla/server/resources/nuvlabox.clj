@@ -6,6 +6,7 @@ particular NuvlaBox release.
 "
   (:require
     [clojure.data.json :as json]
+    [clojure.pprint :refer [pprint]]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -792,6 +793,42 @@ particular NuvlaBox release.
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (update-nuvlabox nuvlabox-release payload)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Assemble NuvlaBox playbooks and prepare them for execution on the edge device
+;;
+
+
+(defn assemble-playbooks
+  [{:keys [id state acl] :as nuvlabox}]
+  (if (or (not= state state-decommissioned) (not= state state-new))
+    (do
+      (pprint "assemble")
+      (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
+      (try
+        (if-let [emergency-playbooks (utils/get-playbooks id "EMERGENCY")]
+          (do
+            (log/warn "Running emergency playbooks for NuvlaBox " id)
+            (r/json-response "ok emergency")
+            )
+          (r/json-response "normal"))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "invalid state for getting and assembling NuvlaBox playbooks: " state))))
+
+
+(defmethod crud/do-action [resource-type "assemble-playbooks"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (pprint body)
+    (let [id (str resource-type "/" uuid)]
+      (pprint id)
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (assemble-playbooks)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

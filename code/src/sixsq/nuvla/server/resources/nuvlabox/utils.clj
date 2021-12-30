@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -106,3 +107,20 @@
 (defn get-execution-mode
   [nuvlabox]
   (if (has-pull-support? nuvlabox) "pull" "push"))
+
+(defn get-playbooks
+  [nuvlabox-id type]
+  (if-not (or (empty? nuvlabox-id) (empty? type))
+    (->> {:params      {:resource-name "nuvlabox-playbook"}
+          :cimi-params {:filter (parser/parse-cimi-filter
+                                  (format "enabled='true' and parent='%s' and type='%s'" nuvlabox-id type))
+                        :select ["run"]
+                        :last 1000}
+          :nuvla/authn auth/internal-identity}
+      crud/query
+      :body
+      :resources
+      (map :run)
+      (remove nil?)
+      (into []))
+    []))
