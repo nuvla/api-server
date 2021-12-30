@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Updated
+
+  - NuvlaBox Peripheral - fix default ACL for schema validation when payload is empty
+
 ## [5.22.0] - 2021-12-16
 
 ### Added
