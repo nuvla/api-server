@@ -181,6 +181,15 @@
                   (ltu/body->edn)
                   (ltu/is-key-value :auth-method-2fa "email"))
 
+              ;; user should not be able to remove :auth-method by edit
+              (-> session-created-user
+                  (request (str user-url "?select=id,auth-method-2fa")
+                           :request-method :put
+                           :body (json/write-str {}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :auth-method-2fa "email"))
+
               )
 
             )

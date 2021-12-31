@@ -199,7 +199,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (-> request
+      (update-in [:cimi-params :select] #(vec (remove #{"auth-method-2fa"} %1)))
+      (edit-impl)))
 
 
 (defn enable-2fa?
