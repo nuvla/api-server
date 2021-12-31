@@ -7,7 +7,8 @@ Allow a user to activate or deactivate two factor authentication.
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.callback.utils :as utils]))
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
+    [clojure.string :as str]))
 
 
 (def ^:const action-name "2fa-activation")
@@ -20,7 +21,9 @@ Allow a user to activate or deactivate two factor authentication.
 (defmethod token-is-valid? :default
   [{{user-token :token} :body :as _request}
    {{:keys [token]} :data :as _callback}]
-  (= user-token token))
+  (and
+    (not (str/blank? user-token))
+    (= user-token token)))
 
 
 (defmethod callback/execute action-name
@@ -30,11 +33,11 @@ Allow a user to activate or deactivate two factor authentication.
    request]
   (try
     (if (token-is-valid? request callback)
-      (r/map-response "could not validate 2FA token" 400)
       (let [msg (str "Two factor authentication with method '" method "' " (if enable "activated" "disabled")
                      " for " user-id ". Callback successfully executed.")]
         (user-utils/update-user user-id {:auth-method-2fa method})
         (log/info msg)
-        (r/map-response msg 200 user-id)))
+        (r/map-response msg 200 user-id))
+      (r/map-response "wrong 2FA token!" 400))
     (catch Exception e
       (or (ex-data e) (throw e)))))

@@ -242,7 +242,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defn throw-action-2fa-authorized
   [resource request can-2fa?-fn]
-  (if (can-2fa?-fn request request)
+  (if (can-2fa?-fn resource request)
     resource
     (throw
       (r/ex-response
@@ -262,7 +262,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     (body-valid-fn body)))
 
 
-(defmulti method-2fa :method)
+(defmulti method-2fa (fn [body _user _token] (:method body)))
 
 
 (defmethod method-2fa :default
@@ -274,10 +274,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [_body {:keys [id] :as _user} token]
   (if-let [email-address (some-> id auth-password/user-id->email)]
     (email-utils/send-email-token-2fa token email-address)
-    (logu/log-and-throw-400 "User have to set an email for his account.")))
+    (logu/log-and-throw-400 "User doesn't have a validated email.")))
 
 
-(defmulti token-2fa :method)
+(defmulti token-2fa (fn [body _user] (:method body)))
 
 (defmethod token-2fa :default
   [_body _user]
@@ -288,7 +288,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   [_body {:keys [id] :as _user} token]
   (if-let [email-address (some-> id auth-password/user-id->email)]
     (email-utils/send-email-token-2fa token email-address)
-    (logu/log-and-throw-400 "User have to set an email for his account.")))
+    (logu/log-and-throw-400 "User have a validated email for his account.")))
 
 
 

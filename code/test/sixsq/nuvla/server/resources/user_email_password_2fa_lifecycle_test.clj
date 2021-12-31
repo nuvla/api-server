@@ -11,7 +11,8 @@
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [ring.util.codec :as codec]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -25,12 +26,12 @@
 
 
 (deftest lifecycle
-  (let [validation-link (atom nil)
-        session         (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-anon    (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+  (let [email-body    (atom nil)
+        session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
     (with-redefs [email-utils/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
@@ -41,10 +42,7 @@
 
                   ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (->> body second :content
-                                                       (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
-                                                       second)]
-                                          (reset! validation-link url))
+                                        (reset! email-body body)
                                         {:code 0, :error :SUCCESS, :message "OK"})]
 
       (let [href               (str user-tpl/resource-type "/" email-password/registration-method)
@@ -68,39 +66,124 @@
                                        (ltu/body->edn)
                                        (ltu/is-status 201))
               user-id              (ltu/body-resource-id resp)
-              session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))]
+              user-url             (str p/service-context user-id)
+              session-created-user (header session authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon"))
 
-          (let [enable-2fa-url (-> session-created-user
-                                   (request (str p/service-context user-id))
-                                   (ltu/body->edn)
-                                   (ltu/is-operation-present :enable-2fa)
-                                   (ltu/is-operation-absent :disable-2fa)
-                                   (ltu/get-op-url :enable-2fa))
-                callback-url (-> session-created-user
-                                 (request enable-2fa-url
-                                          :request-method :post
-                                          :body (json/write-str {:token "afv"
-                                                                 :method "eemail"}))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 403)
-                                 #_(ltu/dump)
-                                 #_(ltu/location-url))]
+              enable-2fa-url       (-> session-created-user
+                                       (request user-url)
+                                       (ltu/body->edn)
+                                       (ltu/is-operation-present :enable-2fa)
+                                       (ltu/is-operation-absent :disable-2fa)
+                                       (ltu/get-op-url :enable-2fa))
+
+              validation-link      (->> @email-body second :content
+                                        (re-matches #"(?s).*visit:\n\n\s+(.*?)\n.*")
+                                        second)]
+
+          ;; user should provide method and redirect-url
+          (-> session-created-user
+              (request enable-2fa-url
+                       :request-method :post
+                       :body (json/write-str {}))
+              (ltu/body->edn)
+              (ltu/message-matches "resource does not satisfy defined schema")
+              (ltu/is-status 400))
+
+          ;; user should have a validated email
+          (-> session-created-user
+              (request enable-2fa-url
+                       :request-method :post
+                       :body (json/write-str {:method       "email"
+                                              :redirect-url "https://nuvla/ui/somewhere"}))
+              (ltu/body->edn)
+              (ltu/is-status 400)
+              (ltu/message-matches "User have a validated email for his account."))
+
+          ;; check validation of resource
+          (is (not (nil? validation-link)))
+
+          (-> session-admin
+              (request (str p/service-context user-id))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (is (re-matches #"^email.*successfully validated$" (-> session-anon
+                                                                 (request validation-link)
+                                                                 (ltu/body->edn)
+                                                                 (ltu/is-status 200)
+                                                                 (ltu/body)
+                                                                 :message)))
+
+          (let [location (-> session-created-user
+                             (request enable-2fa-url
+                                      :request-method :post
+                                      :body (json/write-str {:method       "email"
+                                                             :redirect-url "https://nuvla/ui/somewhere"}))
+                             (ltu/body->edn)
+                             (ltu/is-status 303)
+                             (ltu/location))]
+            ;; user 2FA method should not be set until 2FA callback successfully activated
+            (-> session-created-user
+                (request user-url)
+                (ltu/body->edn)
+                (ltu/is-key-value :auth-method-2fa nil))
+
+
+            (is (re-matches #"https:\/\/nuvla\/ui\/somewhere\?callback=http.*execute" location))
+            (let [callback-url      (->> location
+                                         codec/url-decode
+                                         (re-matches #"https:\/\/nuvla\/ui\/somewhere\?callback=.*(\/api.*)\/execute")
+                                         second)
+                  callback-exec-url (str callback-url "/execute")
+                  user-token        (->> @email-body second :content
+                                         (re-find #"\d+"))]
+
+              (-> session-admin
+                  (request callback-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :method :data "email")
+                  (ltu/is-key-value :token :data user-token))
+
+              ; user should not be able to see callback data
+              (-> session-created-user
+                  (request callback-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 403))
+
+              ;; user should be able to execute callback multiple times
+              (-> session-created-user
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-created-user
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token "wrong"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-created-user
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token user-token}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+
+              ;; user 2FA method should be set
+              (-> session-created-user
+                  (request user-url)
+                  (ltu/body->edn)
+                  (ltu/is-key-value :auth-method-2fa "email"))
+
+              )
+
             )
-
-          ;;; check validation of resource
-          ;(is (not (nil? @validation-link)))
-          ;
-          ;(-> session-admin
-          ;    (request (str p/service-context user-id))
-          ;    (ltu/body->edn)
-          ;    (ltu/is-status 200))
-          ;
-          ;(is (re-matches #"^email.*successfully validated$" (-> session-anon
-          ;                                                       (request @validation-link)
-          ;                                                       (ltu/body->edn)
-          ;                                                       (ltu/is-status 200)
-          ;                                                       (ltu/body)
-          ;                                                       :message)))
           ;
           ;(let [{:keys [state]} (-> session-created-user
           ;                          (request (str p/service-context user-id))

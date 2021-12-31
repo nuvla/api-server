@@ -1,13 +1,14 @@
 (ns sixsq.nuvla.server.resources.spec.user-2fa
   (:require
-    [clojure.spec.alpha :as s]))
+    [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.util.spec :as su]))
 
 (s/def ::method #{"email"})
 
 (s/def ::enable-2fa-body-schema
-  {:req-un [::method
-            ::redirect-url]})
+  (su/only-keys :req-un [::method
+                         ::redirect-url]))
 
 (s/def ::disable-2fa-body-schema
-  {:req-un [::redirect-url]})
+  (su/only-keys :req-un [::redirect-url]))
 
