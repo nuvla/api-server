@@ -3,12 +3,11 @@
 Allow a user to activate or deactivate two factor authentication.
 "
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.callback.utils :as utils]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "2fa-activation")
@@ -16,7 +15,7 @@ Allow a user to activate or deactivate two factor authentication.
 (def create-callback (partial callback/create action-name))
 
 
-(defmulti token-is-valid? :method)
+(defmulti token-is-valid? (fn [_request callback] (-> callback :data :method)))
 
 (defmethod token-is-valid? :default
   [{{user-token :token} :body :as _request}

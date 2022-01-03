@@ -8,11 +8,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-2fa]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -28,13 +30,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-username-password]
+    [sixsq.nuvla.server.resources.user.utils :as utils]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-2fa]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
-    [sixsq.nuvla.auth.password :as auth-password]
-    [ring.util.codec :as codec]
-    [sixsq.nuvla.server.util.log :as logu]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -263,37 +261,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
                         validate-disable-2fa-body-fn)]
     (body-valid-fn body)))
 
-
-(defmulti method-2fa (fn [body _user _token] (:method body)))
-
-
-(defmethod method-2fa :default
-  [{:keys [method] :as _body} _user _token]
-  (logu/log-and-throw-400 (str "Unknwn 2FA method: " method)))
-
-
-(defmethod method-2fa "email"
-  [_body {:keys [id] :as _user} token]
-  (if-let [email-address (some-> id auth-password/user-id->email)]
-    (email-utils/send-email-token-2fa token email-address)
-    (logu/log-and-throw-400 "User doesn't have a validated email.")))
-
-
-(defmulti token-2fa (fn [body _user] (:method body)))
-
-(defmethod token-2fa :default
-  [_body _user]
-  (format "%04d" (u/secure-rand-int 0 9999)))
-
-
-(defmethod method-2fa "email"
-  [_body {:keys [id] :as _user} token]
-  (if-let [email-address (some-> id auth-password/user-id->email)]
-    (email-utils/send-email-token-2fa token email-address)
-    (logu/log-and-throw-400 "User have a validated email for his account.")))
-
-
-
 (defn enable-disable-2fa
   [{base-uri :base-uri {uuid :uuid} :params {:keys [method redirect-url] :as body} :body :as request} enable?]
   (try
@@ -301,10 +268,11 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           user (db/retrieve id request)]
       (throw-action-2fa-authorized user request (if enable? can-enable-2fa? can-disable-2fa?))
       (throw-body-incomplete request enable?)
-      (let [token        (token-2fa body user)
+      (let [method       (:method body)
+            token        (utils/token-2fa method user)
             callback-url (callback-2fa/create-callback
                            base-uri id :data {:method method :token token} :expires (u/ttl->timestamp 120))]
-        (method-2fa body user token)
+        (utils/method-2fa method user token)
         (if redirect-url
           (r/map-response "Authorization code" 303 id (str redirect-url "?callback=" (codec/url-encode callback-url)))
           (r/map-response "Authorization code" 200 id))))
