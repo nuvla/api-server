@@ -36,6 +36,14 @@
       (r/content-type "application/json")))
 
 
+(defn text-response
+  "Provides a simple 200 response with the content type header set to plain text."
+  [body]
+  (-> body
+    (r/response)
+    (r/content-type "text/plain")))
+
+
 (defn map-response
   "Provides a generic map response with the given message, status, resource
    ID, and location. Only the message and status are required."

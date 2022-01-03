@@ -20,6 +20,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template-vpn :as infra-srvc-tpl-vpn]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
+    [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -29,6 +30,9 @@
 
 
 (def base-uri (str p/service-context nb/resource-type))
+
+
+(def playbook-base-uri (str p/service-context nb-playbook/resource-type))
 
 
 (def isg-collection-uri (str p/service-context isg/resource-type))
@@ -1268,21 +1272,18 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
+        ;; create playbook
+        (-> session-owner
+          (request playbook-base-uri
+            :request-method :post
+            :body (json/write-str {:parent nuvlabox-id :type "MANAGEMENT" :run "foo" :enabled true}))
+          (ltu/body->edn)
+          (ltu/is-status 201))
+
         (let [session-nuvlabox (header session authn-info-header
                                  (str nuvlabox-id " " nuvlabox-id
                                    " group/nuvla-nuvlabox group/nuvla-anon"))]
-          ;; assemble-playbooks
-          ;(let [assemble-playbooks-url (-> session-owner
-          ;                               (request nuvlabox-url)
-          ;                               (ltu/body->edn)
-          ;                               (ltu/is-status 200)
-          ;                               (ltu/get-op-url :assemble-playbooks))]
-          ;
-          ;  (-> session-owner
-          ;    (request assemble-playbooks-url :request-method :post)
-          ;    (ltu/body->edn)
-          ;    (ltu/is-status 200)
-          ;    (pprint)))
+
           (let [assemble-playbooks-url      (-> session-owner
                                               (request nuvlabox-url)
                                               (ltu/body->edn)
@@ -1291,11 +1292,9 @@
 
             (-> session-nuvlabox
               (request assemble-playbooks-url)
-              (pprint)
-              (ltu/body->edn)
-              (pprint)
-              (ltu/is-status 200)))
-
+              (ltu/is-status 200)
+              (ltu/body)
+              (string?)))
           )))))
 
 

@@ -108,19 +108,65 @@
   [nuvlabox]
   (if (has-pull-support? nuvlabox) "pull" "push"))
 
+
 (defn get-playbooks
-  [nuvlabox-id type]
-  (if-not (or (empty? nuvlabox-id) (empty? type))
-    (->> {:params      {:resource-name "nuvlabox-playbook"}
-          :cimi-params {:filter (parser/parse-cimi-filter
-                                  (format "enabled='true' and parent='%s' and type='%s'" nuvlabox-id type))
-                        :select ["run"]
-                        :last 1000}
-          :nuvla/authn auth/internal-identity}
-      crud/query
-      :body
-      :resources
-      (map :run)
-      (remove nil?)
-      (into []))
-    []))
+  ([nuvlabox-id] (get-playbooks nuvlabox-id "MANAGEMENT"))
+  ([nuvlabox-id type]
+   (if-not (or (empty? nuvlabox-id) (empty? type))
+     (->> {:params      {:resource-name "nuvlabox-playbook"}
+           :cimi-params {:filter (parser/parse-cimi-filter
+                                   (format "enabled='true' and parent='%s' and type='%s'" nuvlabox-id type))
+                         :select ["run", "id"]
+                         :last 1000}
+           :nuvla/authn auth/internal-identity}
+       crud/query
+       :body
+       :resources)
+     [])))
+
+
+(defn get-nuvlabox-playbook-filename
+  [id]
+  (str "/tmp/nuvlabox-playbook-" (last (str/split id #"/"))))
+
+
+(defn get-nuvlabox-playbook-output-filename
+  [id]
+  (str (get-nuvlabox-playbook-filename (last (str/split id #"/"))) ".output"))
+
+
+(defn wrap-playbook-run
+  [playbook]
+  (let [id  (last (str/split (:id playbook) #"/"))
+        nuvlabox-playbook-file (get-nuvlabox-playbook-filename id)
+        nuvlabox-playbook-out  (get-nuvlabox-playbook-output-filename id)]
+  (str
+    "cat > " nuvlabox-playbook-file " <<'EOF'\n"
+    (:run playbook)
+    "\nEOF\n"
+    "echo '' > " nuvlabox-playbook-out
+    "\nsh " nuvlabox-playbook-file
+    " 2>&1 | while IFS= read -r line; do printf '[%s] %s\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
+    nuvlabox-playbook-out " || true")))
+
+
+(defn wrap-and-pipe-playbooks
+  [playbooks]
+  (let [wrapped-runs      (for [playbook playbooks] (wrap-playbook-run playbook))
+        exec-wrapped-runs (str/join "\n#-- end of playbook --#\n" wrapped-runs)
+        nuvla-login-script  (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/session "
+                              "-H content-type:application/json "
+                              "-c /tmp/nuvla-cookie "
+                              "-d '{\"template\": {\"href\": \"session-template/api-key\",\"key\": \"$NUVLABOX_API_KEY\", \"secret\": \"$NUVLABOX_API_SECRET\"}}'")
+        save-outputs      (for [playbook playbooks]
+                            (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
+                              "-H content-type:application/json "
+                              "-b /tmp/nuvla-cookie "
+                              " -d '{\"output\": \"$(cat "
+                              (get-nuvlabox-playbook-output-filename (:id playbook)) ")\"'"))]
+    (str "#!/bin/sh\n\n"
+      exec-wrapped-runs
+      "\n\n"
+      nuvla-login-script
+      "\n\n"
+      (str/join "\n" save-outputs))))
