@@ -89,7 +89,7 @@
                                                :password plaintext-password}}]
 
 
-          ;; user should provide method and redirect-url
+          ;; user should provide method
           (-> session-created-user
               (request enable-2fa-url
                        :request-method :post
@@ -278,6 +278,91 @@
                              :body (json/write-str {:token user-token}))
                     (ltu/body->edn)
                     (ltu/is-status 409)
-                    (ltu/message-matches "cannot re-execute callback"))
-                ))))))))
+                    (ltu/message-matches "cannot re-execute callback")))))
+
+          ;; user should be able to disable 2fa
+          (let [disable-2fa-url (-> session-created-user
+                                    (request user-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-operation-absent :enable-2fa)
+                                    (ltu/is-operation-present :disable-2fa)
+                                    (ltu/get-op-url :disable-2fa))
+                location        (-> session-created-user
+                                    (request disable-2fa-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/location))]
+
+            ;; user should not be able to disable 2FA until callback get successfully activated
+            (-> session-created-user
+                (request user-url)
+                (ltu/body->edn)
+                (ltu/is-key-value :auth-method-2fa "email"))
+
+
+            (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
+            (let [callback-url      (->> location
+                                         codec/url-decode
+                                         (re-matches #"http.*(\/api.*)\/execute")
+                                         second)
+                  callback-exec-url (str callback-url "/execute")
+                  user-token        (->> @email-body second :content
+                                         (re-find #"\d+"))]
+
+              (-> session-admin
+                  (request callback-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :method :data "none")
+                  (ltu/is-key-value :token :data user-token))
+
+              ; user should not be able to see callback data
+              (-> session-created-user
+                  (request callback-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 403))
+
+              ;; user should be able to execute callback multiple times
+              (-> session-created-user
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-anon
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token "wrong"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-anon
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token user-token}))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
+
+              ;; user 2FA method should be set to none
+              (-> session-created-user
+                  (request user-url)
+                  (ltu/body->edn)
+                  (ltu/is-key-value :auth-method-2fa "none"))
+
+              ;; user is re-able to get session without 2FA
+              (-> session-anon
+                  (request session-base-url
+                           :request-method :post
+                           :body (json/write-str valid-session-create))
+                  (ltu/body->edn)
+                  (ltu/is-set-cookie)
+                  (ltu/is-status 201))
+
+              ))
+          ))
+
+      )))
 

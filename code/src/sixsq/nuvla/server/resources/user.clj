@@ -263,11 +263,14 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           user (db/retrieve id request)]
       (throw-action-2fa-authorized user request (if enable? can-enable-2fa? can-disable-2fa?))
       (throw-body-incomplete request enable?)
-      (let [token        (utils/token-2fa method user)
-            callback-url (callback-2fa/create-callback
-                           base-uri id :data {:method method :token token} :expires (u/ttl->timestamp 120))]
-        (utils/method-2fa method user token)
-        (r/map-response "Authorization code" 200 id callback-url)))
+      (let [token           (utils/token-2fa method user)
+            method-callback (if enable? method "none")
+            callback-url    (callback-2fa/create-callback
+                              base-uri id :data {:method method-callback :token token}
+                              :expires (u/ttl->timestamp 120))
+            method-2fa      (if enable? method (:auth-method-2fa user))]
+        (utils/method-2fa method-2fa user token)
+        (r/map-response "Authorization code requested" 200 id callback-url)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -279,7 +282,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/do-action [resource-type "disable-2fa"]
   [request]
-  (enable-disable-2fa (assoc-in request [:body :method] "none") false))
+  (enable-disable-2fa request false))
 
 
 ;;

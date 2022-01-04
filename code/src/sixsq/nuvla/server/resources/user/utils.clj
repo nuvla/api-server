@@ -172,7 +172,7 @@
 
 (defmethod method-2fa :default
   [method _user _token]
-  (logu/log-and-throw-400 (str "Unknwn 2FA method: " method)))
+  (logu/log-and-throw-400 (str "Unknown 2FA method: " method)))
 
 
 (defmethod method-2fa "email"
