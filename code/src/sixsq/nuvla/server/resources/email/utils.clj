@@ -179,7 +179,8 @@
    {:type    "text/html; charset=utf-8"
     :content (render-email
                {:title            "Nuvla authorization code"
-                :text-1           (str "Code: <b>" token "</b>")
+                :text-strong-1    "Code: "
+                :text-strong-2    token
                 :warning-initiate true})}])
 
 
