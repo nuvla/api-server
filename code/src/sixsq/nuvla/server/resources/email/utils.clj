@@ -173,13 +173,13 @@
     :content (format
                (str/join "\n"
                          ["Code:"
-                          "\n   <b>%s</b> \n"
+                          "\n    %s\n"
                           warning-initiate])
                token)}
    {:type    "text/html; charset=utf-8"
     :content (render-email
                {:title            "Nuvla authorization code"
-                :text-1           (str "Authorization code: " token)
+                :text-1           (str "Code: <b>" token "</b>")
                 :warning-initiate true})}])
 
 
