@@ -150,24 +150,39 @@
     nuvlabox-playbook-out "; done || true")))
 
 
+(def ^:const nuvla-login-script (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/session "
+                                  "-H content-type:application/json "
+                                  "-c /tmp/nuvla-cookie "
+                                  "-d \"{\\\"template\\\": {\\\"href\\\": \\\"session-template/api-key\\\",\\\"key\\\": \\\"$NUVLABOX_API_KEY\\\", \\\"secret\\\": \\\"$NUVLABOX_API_SECRET\\\"}}\""))
+
+
 (defn wrap-and-pipe-playbooks
   [playbooks]
-  (let [wrapped-runs      (for [playbook playbooks] (wrap-playbook-run playbook))
-        exec-wrapped-runs (str/join "\n#-- end of playbook --#\n" wrapped-runs)
-        nuvla-login-script  (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/session "
-                              "-H content-type:application/json "
-                              "-c /tmp/nuvla-cookie "
-                              "-d '{\"template\": {\"href\": \"session-template/api-key\",\"key\": \"$NUVLABOX_API_KEY\", \"secret\": \"$NUVLABOX_API_SECRET\"}}'")
-        save-outputs      (for [playbook playbooks]
-                            (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
-                              "-H content-type:application/json "
-                              "-b /tmp/nuvla-cookie "
-                              " -d \"{\\\"output\\\": \\\"$(cat "
-                              (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))]
-    (str "#!/bin/sh\n\n"
-      exec-wrapped-runs
-      "\n\n"
-      nuvla-login-script
-      "\n\n"
-      (str/join "\n" save-outputs)
-      "\n")))
+  (if (empty? playbooks)
+    ""
+    (let [wrapped-runs      (for [playbook playbooks] (wrap-playbook-run playbook))
+          exec-wrapped-runs (str/join "\n#-- end of playbook --#\n" wrapped-runs)
+          save-outputs      (for [playbook playbooks]
+                              (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
+                                "-H content-type:application/json "
+                                "-b /tmp/nuvla-cookie "
+                                " -d \"{\\\"output\\\": \\\"$(cat "
+                                (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))]
+      (str "#!/bin/sh\n\n"
+        exec-wrapped-runs
+        "\n\n"
+        nuvla-login-script
+        "\n\n"
+        (str/join "\n" save-outputs)
+        "\n"))))
+
+
+(defn compose-cronjob
+  [credential-api-key nuvlabox-id]
+  (str "* 0 * * * export NUVLABOX_API_KEY="
+    (:api-key credential-api-key)
+    " NUVLABOX_API_SECRET="
+    (:secret-key credential-api-key)
+    " NUVLA_ENDPOINT=https://nuvla.io && "
+    nuvla-login-script
+    " && curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/nuvlabox/" nuvlabox-id "/assemble-playbooks -b /tmp/nuvla-cookie | sh -"))

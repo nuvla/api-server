@@ -8,6 +8,7 @@ particular NuvlaBox release.
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
+    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -366,7 +367,7 @@ particular NuvlaBox release.
           [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
                                                    (activate)
                                                    u/update-timestamps
-                                                   (wf-utils/create-nuvlabox-api-key))]
+                                                   (wf-utils/create-nuvlabox-api-key ""))]
 
 
       (db/edit nuvlabox-activated request)
@@ -829,6 +830,70 @@ particular NuvlaBox release.
 
 
 ;;
+;; Enables the nuvlabox-playbooks and provides the mechanism for host-level management
+;;
+
+
+(defn enable-host-level-management
+  [{:keys [id host-level-management-api-key] :as nuvlabox} request]
+  (if host-level-management-api-key
+    (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
+    (try
+      (let [[_ credential]      (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
+            updated_nuvlabox    (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
+        (db/edit updated_nuvlabox request)
+
+        (r/text-response (utils/compose-cronjob credential id)))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "enable-host-level-management"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (enable-host-level-management request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Disables the nuvlabox-playbooks
+;;
+
+
+(defn disable-host-level-management
+  [{:keys [id host-level-management-api-key] :as nuvlabox}]
+  (if host-level-management-api-key
+    (do
+      (log/warn "Disabling host-level management for NuvlaBox " id)
+      (try
+        (wf-utils/delete-resource host-level-management-api-key auth/internal-identity)
+        (-> {:cimi-params {:select ["host-level-management-api-key"]}
+             :params      {:uuid          (u/id->uuid id)
+                           :resource-name "nuvlabox"}
+             :body        {}
+             :nuvla/authn auth/internal-identity}
+          (crud/edit))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "host-level management is already disabled for NuvlaBox " id))))
+
+
+(defmethod crud/do-action [resource-type "disable-host-level-management"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (disable-host-level-management)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -857,6 +922,8 @@ particular NuvlaBox release.
         update-nuvlabox-op (u/action-map id :update-nuvlabox)
         cluster-nb-op      (u/action-map id :cluster-nuvlabox)
         assemble-pb-op     (u/action-map id :assemble-playbooks)
+        enable-host-mgmt   (u/action-map id :enable-host-level-management)
+        disable-host-mgmt  (u/action-map id :disable-host-level-management)
         ops                (cond-> []
                                    (a/can-edit? resource request) (conj edit-op)
                                    (and (a/can-delete? resource request)
@@ -887,7 +954,9 @@ particular NuvlaBox release.
                                         (#{state-commissioned} state)) (conj reboot-op)
                                    (and (a/can-manage? resource request)
                                         (not= state state-new)
-                                        (not= state state-decommissioned)) (conj assemble-pb-op))]
+                                        (not= state state-decommissioned)) (conj assemble-pb-op)
+                                   (a/can-manage? resource request) (conj enable-host-mgmt)
+                                   (a/can-manage? resource request) (conj disable-host-mgmt))]
     (assoc resource :operations ops)))
 
 ;;

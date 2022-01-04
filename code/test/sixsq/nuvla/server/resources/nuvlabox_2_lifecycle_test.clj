@@ -1298,6 +1298,89 @@
           )))))
 
 
+(deftest create-enable-host-level-management-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+
+      #_{:clj-kondo/ignore [:redundant-let]}
+      (let [nuvlabox-id  (-> session-owner
+                           (request base-uri
+                             :request-method :post
+                             :body (json/write-str valid-nuvlabox))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            enable-url   (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :enable-host-level-management))
+
+            disable-url  (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :disable-host-level-management))]
+
+        ;; confirm host-level mgmt is not enabled
+        (-> session-owner
+          (request nuvlabox-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :host-level-management-api-key nil))
+
+        ;; enable it
+        (-> session-owner
+          (request enable-url
+            :request-method :post)
+          (ltu/is-status 200)
+          (ltu/body)
+          (string?))
+
+        ;; confirm host-level mgmt is now enabled, and api key exists
+        (let [credential-id (-> session-owner
+                              (request nuvlabox-url)
+                              (ltu/body->edn)
+                              (ltu/is-status 200)
+                              :response
+                              :body
+                              :host-level-management-api-key)
+
+              credential-url  (str p/service-context credential-id)]
+
+          (-> session-owner
+            (request credential-url)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+          ;; disable it
+          (-> session-owner
+            (request disable-url
+              :request-method :post)
+            (ltu/is-status 200))
+
+          ;; confirm api key is gone
+          (-> session-owner
+            (request credential-url)
+            (ltu/body->edn)
+            (ltu/is-status 404))
+
+          (-> session-owner
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :host-level-management-api-key nil)))))))
+
+
 (deftest create-activate-commission-get-context-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)

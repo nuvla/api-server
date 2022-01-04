@@ -55,7 +55,8 @@
                :monitored                    true
                :ssh-keys                     []
                :capabilities                 []
-               :online                       true})
+               :online                       true
+               :host-level-management-api-key "credential/123-abc"})
 
 
 (deftest check-nuvlabox
@@ -92,5 +93,6 @@
                  :monitored
                  :ssh-keys
                  :capabilities
-                 :online}]
+                 :online
+                 :host-level-management-api-key}]
     (stu/is-valid ::nb-0/schema (dissoc valid-nb attr))))
