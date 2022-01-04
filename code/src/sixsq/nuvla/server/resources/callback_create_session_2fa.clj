@@ -8,6 +8,7 @@ Allow a user to validate session with two factor authentication.
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-2fa-activation]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -20,6 +21,7 @@ Allow a user to validate session with two factor authentication.
 (defmethod callback/execute action-name
   [{{session-id :href} :target-resource
     {:keys [headers]}  :data
+    callback-id        :id
     :as                callback}
    request]
   (try
@@ -41,6 +43,7 @@ Allow a user to validate session with two factor authentication.
         (if (not= status 200)
           resp
           (let [cookie-tuple [authn-info/authn-cookie cookie]]
+            (utils/callback-succeeded! callback-id)
             (r/response-created session-id cookie-tuple))))
       (r/map-response "wrong 2FA token!" 400))
     (catch Exception e

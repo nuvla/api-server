@@ -251,31 +251,23 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (def validate-enable-2fa-body-fn (u/create-spec-validation-fn ::user-2fa/enable-2fa-body-schema))
 
-(def validate-disable-2fa-body-fn (u/create-spec-validation-fn ::user-2fa/disable-2fa-body-schema))
-
 
 (defn throw-body-incomplete
   [{body :body :as _request} enable?]
-  (let [body-valid-fn (if enable?
-                        validate-enable-2fa-body-fn
-                        validate-disable-2fa-body-fn)]
-    (body-valid-fn body)))
+  (when enable? (validate-enable-2fa-body-fn body)))
 
 (defn enable-disable-2fa
-  [{base-uri :base-uri {uuid :uuid} :params {:keys [method redirect-url] :as body} :body :as request} enable?]
+  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request} enable?]
   (try
     (let [id   (str resource-type "/" uuid)
           user (db/retrieve id request)]
       (throw-action-2fa-authorized user request (if enable? can-enable-2fa? can-disable-2fa?))
       (throw-body-incomplete request enable?)
-      (let [method       (:method body)
-            token        (utils/token-2fa method user)
+      (let [token        (utils/token-2fa method user)
             callback-url (callback-2fa/create-callback
                            base-uri id :data {:method method :token token} :expires (u/ttl->timestamp 120))]
         (utils/method-2fa method user token)
-        (if redirect-url
-          (r/map-response "Authorization code" 303 id (str redirect-url "?callback=" (codec/url-encode callback-url)))
-          (r/map-response "Authorization code" 200 id))))
+        (r/map-response "Authorization code" 200 id callback-url)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

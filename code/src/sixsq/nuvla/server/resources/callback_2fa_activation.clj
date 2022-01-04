@@ -6,6 +6,7 @@ Allow a user to activate or deactivate two factor authentication.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.server.resources.callback :as callback]
+    [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -26,9 +27,10 @@ Allow a user to activate or deactivate two factor authentication.
 
 
 (defmethod callback/execute action-name
-  [{{user-id :href}  :target-resource
+  [{{user-id :href}         :target-resource
     {:keys [method enable]} :data
-    :as              callback}
+    callback-id             :id
+    :as                     callback}
    request]
   (try
     (if (token-is-valid? request callback)
@@ -36,6 +38,7 @@ Allow a user to activate or deactivate two factor authentication.
                      " for " user-id ". Callback successfully executed.")]
         (user-utils/update-user user-id {:auth-method-2fa method})
         (log/info msg)
+        (utils/callback-succeeded! callback-id)
         (r/map-response msg 200 user-id))
       (r/map-response "wrong 2FA token!" 400))
     (catch Exception e

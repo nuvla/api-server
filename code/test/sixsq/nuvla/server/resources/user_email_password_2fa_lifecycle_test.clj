@@ -52,7 +52,7 @@
             description-attr   "description"
             tags-attr          ["one", "two"]
             plaintext-password "Plaintext-password-1"
-            jane-email "jane@example.org"
+            jane-email         "jane@example.org"
 
             href-create        {:description description-attr
                                 :tags        tags-attr
@@ -102,8 +102,7 @@
           (-> session-created-user
               (request enable-2fa-url
                        :request-method :post
-                       :body (json/write-str {:method       "email"
-                                              :redirect-url "https://nuvla/ui/somewhere"}))
+                       :body (json/write-str {:method "email"}))
               (ltu/body->edn)
               (ltu/is-status 400)
               (ltu/message-matches "User should have a validated email."))
@@ -135,23 +134,22 @@
           (let [location (-> session-created-user
                              (request enable-2fa-url
                                       :request-method :post
-                                      :body (json/write-str {:method       "email"
-                                                             :redirect-url "https://nuvla/ui/somewhere"}))
+                                      :body (json/write-str {:method "email"}))
                              (ltu/body->edn)
-                             (ltu/is-status 303)
+                             (ltu/is-status 200)
                              (ltu/location))]
 
-            ;; user 2FA method should not be set until 2FA callback successfully activated
+            ;; user should not be able to enable 2FA until callback get successfully activated
             (-> session-created-user
                 (request user-url)
                 (ltu/body->edn)
                 (ltu/is-key-value :auth-method-2fa nil))
 
 
-            (is (re-matches #"https:\/\/nuvla\/ui\/somewhere\?callback=http.*execute" location))
+            (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
             (let [callback-url      (->> location
                                          codec/url-decode
-                                         (re-matches #"https:\/\/nuvla\/ui\/somewhere\?callback=.*(\/api.*)\/execute")
+                                         (re-matches #"http.*(\/api.*)\/execute")
                                          second)
                   callback-exec-url (str callback-url "/execute")
                   user-token        (->> @email-body second :content
@@ -259,18 +257,27 @@
 
               ;; session is created when token is valid
               (let [session-url (-> session-anon
-                                   (request callback-exec-url
-                                            :request-method :put
-                                            :body (json/write-str {:token user-token}))
-                                   (ltu/body->edn)
-                                   (ltu/is-set-cookie)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
+                                    (request callback-exec-url
+                                             :request-method :put
+                                             :body (json/write-str {:token user-token}))
+                                    (ltu/body->edn)
+                                    (ltu/is-set-cookie)
+                                    (ltu/is-status 201)
+                                    (ltu/location-url))]
                 (-> session-admin
                     (request session-url)
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :user user-id)
                     (ltu/is-key-value :identifier jane-email))
+
+                ;; after a successful execution of callback, callback is no more executable
+                (-> session-anon
+                    (request callback-exec-url
+                             :request-method :put
+                             :body (json/write-str {:token user-token}))
+                    (ltu/body->edn)
+                    (ltu/is-status 409)
+                    (ltu/message-matches "cannot re-execute callback"))
                 ))))))))
 

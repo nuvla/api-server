@@ -6,9 +6,5 @@
 (s/def ::method #{"email"})
 
 (s/def ::enable-2fa-body-schema
-  (su/only-keys :req-un [::method
-                         ::redirect-url]))
-
-(s/def ::disable-2fa-body-schema
-  (su/only-keys :req-un [::redirect-url]))
+  (su/only-keys :req-un [::method]))
 

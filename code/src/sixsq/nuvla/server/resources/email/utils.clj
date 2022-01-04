@@ -172,8 +172,8 @@
    {:type    "text/plain"
     :content (format
                (str/join "\n"
-                         ["Authorization code:"
-                          "\n    %s\n"
+                         ["Code:"
+                          "\n   <b>%s</b> \n"
                           warning-initiate])
                token)}
    {:type    "text/html; charset=utf-8"
