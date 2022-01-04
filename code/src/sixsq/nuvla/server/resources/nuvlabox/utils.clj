@@ -147,7 +147,7 @@
     "echo '' > " nuvlabox-playbook-out
     "\nsh " nuvlabox-playbook-file
     " 2>&1 | while IFS= read -r line; do printf '[%s] %s\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
-    nuvlabox-playbook-out " || true")))
+    nuvlabox-playbook-out "; done || true")))
 
 
 (defn wrap-and-pipe-playbooks
@@ -162,11 +162,11 @@
                             (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
                               "-H content-type:application/json "
                               "-b /tmp/nuvla-cookie "
-                              " -d '{\"output\": \"$(cat "
-                              (get-nuvlabox-playbook-output-filename (:id playbook)) ")\"'"))]
+                              " -d \"{\\\"output\\\": \\\"$(cat "
+                              (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))]
     (str "#!/bin/sh\n\n"
       exec-wrapped-runs
       "\n\n"
       nuvla-login-script
       "\n\n"
-      (str/join "\n" save-outputs))))
+      (str/join "\n" save-outputs "\n"))))
