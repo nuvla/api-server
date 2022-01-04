@@ -169,4 +169,5 @@
       "\n\n"
       nuvla-login-script
       "\n\n"
-      (str/join "\n" save-outputs "\n"))))
+      (str/join "\n" save-outputs)
+      "\n")))
