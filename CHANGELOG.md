@@ -8,6 +8,7 @@
 
 ### Changed
 
+  - Callback - Support for multiple tries
   - Routes - Remove special user resource route
   - User - Authenticated-user view-meta on user resource removed from default ACL
   - User - User is not allowed to edit his state

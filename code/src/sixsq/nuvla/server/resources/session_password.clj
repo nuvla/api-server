@@ -59,7 +59,9 @@ password.
         callback-url (callback-2fa/create-callback
                        base-uri session-id :data {:method  method
                                                   :token   token
-                                                  :headers headers} :expires (u/ttl->timestamp 120))]
+                                                  :headers headers}
+                       :expires (u/ttl->timestamp 120)
+                       :tries-left 3)]
     (user-utils/method-2fa method user token)
     [(r/map-response "Authorization code requested" 200 session-id callback-url) session]))
 

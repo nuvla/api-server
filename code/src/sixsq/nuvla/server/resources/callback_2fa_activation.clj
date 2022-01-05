@@ -33,6 +33,7 @@ Allow a user to activate or deactivate two factor authentication.
     :as                     callback}
    request]
   (try
+    (utils/callback-dec-tries callback-id)
     (if (token-is-valid? request callback)
       (let [msg (str "Two factor authentication with method '" method "' " (if enable "activated" "disabled")
                      " for " user-id ". Callback successfully executed.")]

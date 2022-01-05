@@ -280,6 +280,64 @@
                     (ltu/is-status 409)
                     (ltu/message-matches "cannot re-execute callback")))))
 
+          ;; create session will not be possible after 3 faillures, even with right token at 4th try
+          (let [location (-> session-anon
+                             (request session-base-url
+                                      :request-method :post
+                                      :body (json/write-str valid-session-create))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/location))]
+            (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
+
+            (let [callback-url      (->> location
+                                         codec/url-decode
+                                         (re-matches #"http.*(\/api.*)\/execute")
+                                         second)
+                  callback-exec-url (str callback-url "/execute")
+                  user-token        (->> @email-body second :content
+                                         (re-find #"\d+"))]
+
+              (-> session-admin
+                  (request callback-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :method :data "email")
+                  (ltu/is-key-value :token :data user-token))
+
+              ;; user should be able to execute callback 3 times
+              (-> session-created-user
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-anon
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token "wrong"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              (-> session-anon
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token "wrong"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 400)
+                  (ltu/message-matches "wrong 2FA token!"))
+
+              ;; 4th try with right token will fail
+              (-> session-anon
+                  (request callback-exec-url
+                           :request-method :put
+                           :body (json/write-str {:token user-token}))
+                  (ltu/body->edn)
+                  (ltu/is-status 409))))
+
           ;; user should be able to disable 2fa
           (let [disable-2fa-url (-> session-created-user
                                     (request user-url)

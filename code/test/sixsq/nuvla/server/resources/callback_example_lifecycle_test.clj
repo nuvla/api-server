@@ -98,3 +98,57 @@
         (request trigger-succeeds)
         (ltu/body->edn)
         (ltu/is-status 404))))
+
+
+(deftest lifecycle-tries-left
+  (let [session                  (-> (ltu/ring-app)
+                                     session
+                                     (content-type "application/json"))
+        session-admin            (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-anon             (header session authn-info-header "group/nuvla-anon")
+
+        create-callback-succeeds {:action          example/action-name
+                                  :target-resource {:href "example/resource-x"}
+                                  :data            {:ok?           true
+                                                    :change-state? false}
+                                  :tries-left      2}
+
+        uri-succeeds             (str p/service-context (-> session-admin
+                                                            (request base-uri
+                                                                     :request-method :post
+                                                                     :body (json/write-str create-callback-succeeds))
+                                                            (ltu/body->edn)
+                                                            (ltu/is-status 201)
+                                                            (ltu/body)
+                                                            :resource-id))
+
+        trigger-succeeds         (str p/service-context (-> session-admin
+                                                            (request uri-succeeds)
+                                                            (ltu/body->edn)
+                                                            (ltu/is-status 200)
+                                                            (ltu/get-op "execute")))]
+
+    ;; anon should be able to trigger the callbacks
+    (-> session-anon
+        (request trigger-succeeds)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+    (-> session-admin
+        (request uri-succeeds)
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :state "WAITING")
+        (ltu/is-key-value :tries-left 1))
+
+    ;; retriggering the callbacks a second time should succeed
+    (-> session-anon
+        (request trigger-succeeds)
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+    ;; retriggering the callback a third time should fail
+    (-> session-anon
+        (request trigger-succeeds)
+        (ltu/body->edn)
+        (ltu/is-status 409))))

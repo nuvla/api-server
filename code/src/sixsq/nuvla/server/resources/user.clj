@@ -267,7 +267,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
             method-callback (if enable? method "none")
             callback-url    (callback-2fa/create-callback
                               base-uri id :data {:method method-callback :token token}
-                              :expires (u/ttl->timestamp 120))
+                              :expires (u/ttl->timestamp 120)
+                              :tries-left 3)
             method-2fa      (if enable? method (:auth-method-2fa user))]
         (utils/method-2fa method-2fa user token)
         (r/map-response "Authorization code requested" 200 id callback-url)))

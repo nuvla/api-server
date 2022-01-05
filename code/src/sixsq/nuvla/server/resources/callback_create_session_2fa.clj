@@ -25,6 +25,7 @@ Allow a user to validate session with two factor authentication.
     :as                callback}
    request]
   (try
+    (utils/callback-dec-tries callback-id)
     (if (callback-2fa-activation/token-is-valid? request callback)
       (let [{user-id :user :as current-session} (crud/retrieve-by-id-as-admin session-id)
             cookie-info     (cookies/create-cookie-info user-id
