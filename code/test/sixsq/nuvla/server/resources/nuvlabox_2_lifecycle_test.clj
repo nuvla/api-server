@@ -1262,7 +1262,6 @@
                            (request nuvlabox-url)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/is-operation-present :assemble-playbooks)
                            (ltu/get-op-url :activate))]
 
         ;; activate nuvlabox
@@ -1288,6 +1287,7 @@
                                               (request nuvlabox-url)
                                               (ltu/body->edn)
                                               (ltu/is-status 200)
+                                              (ltu/is-operation-present :assemble-playbooks)
                                               (ltu/get-op-url :assemble-playbooks))]
 
             (-> session-nuvlabox
