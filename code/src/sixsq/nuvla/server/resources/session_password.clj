@@ -55,12 +55,13 @@ password.
         session      (-> (sutils/create-session username user-id {:href href} headers authn-method redirect-url)
                          (assoc :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 120))))
         token        (user-utils/token-2fa method user)
+        session-id   (:id session)
         callback-url (callback-2fa/create-callback
-                       base-uri (:id session) :data {:method  method
-                                                     :token   token
-                                                     :headers headers} :expires (u/ttl->timestamp 120))]
+                       base-uri session-id :data {:method  method
+                                                  :token   token
+                                                  :headers headers} :expires (u/ttl->timestamp 120))]
     (user-utils/method-2fa method user token)
-    [{:status 303, :headers {"Location" (str redirect-url "?callback=" (codec/url-encode callback-url))}} session]))
+    [(r/map-response "Authorization code requested" 200 session-id callback-url) session]))
 
 (defmethod create-session-password-for-user :default
   [{:keys [href username] :as _resource} {:keys [headers] :as _request} user]

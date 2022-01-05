@@ -207,19 +207,19 @@
                   (ltu/is-status 200)
                   (ltu/is-key-value :auth-method-2fa "email"))))
 
-          ;; create session should now redirect to ui with callback to validate token
+          ;; create session should now return callback to validate token
           (let [location (-> session-anon
                              (request session-base-url
                                       :request-method :post
-                                      :body (json/write-str (assoc-in valid-session-create [:template :redirect-url] "https://nuvla.io/ui/sign-in/2fa")))
+                                      :body (json/write-str valid-session-create))
                              (ltu/body->edn)
-                             (ltu/is-status 303)
+                             (ltu/is-status 200)
                              (ltu/location))]
-            (is (re-matches #"https:\/\/nuvla\.io\/ui\/sign-in\/2fa\?callback=http.*execute" location))
+            (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))
 
             (let [callback-url      (->> location
                                          codec/url-decode
-                                         (re-matches #"https:\/\/nuvla\.io\/ui\/sign-in\/2fa\?callback=.*(\/api.*)\/execute")
+                                         (re-matches #"http.*(\/api.*)\/execute")
                                          second)
                   callback-exec-url (str callback-url "/execute")
                   user-token        (->> @email-body second :content
@@ -360,9 +360,7 @@
                   (ltu/body->edn)
                   (ltu/is-set-cookie)
                   (ltu/is-status 201))
-
               ))
           ))
-
       )))
 
