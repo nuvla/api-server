@@ -21,7 +21,6 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
-    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -1263,6 +1262,7 @@
                            (request nuvlabox-url)
                            (ltu/body->edn)
                            (ltu/is-status 200)
+                           (ltu/is-operation-present :assemble-playbooks)
                            (ltu/get-op-url :activate))]
 
         ;; activate nuvlabox
@@ -1323,13 +1323,9 @@
                            (request nuvlabox-url)
                            (ltu/body->edn)
                            (ltu/is-status 200)
-                           (ltu/get-op-url :enable-host-level-management))
-
-            disable-url  (-> session-owner
-                           (request nuvlabox-url)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/get-op-url :disable-host-level-management))]
+                           (ltu/is-operation-present :enable-host-level-management)
+                           (ltu/is-operation-absent :disable-host-level-management)
+                           (ltu/get-op-url :enable-host-level-management))]
 
         ;; confirm host-level mgmt is not enabled
         (-> session-owner
@@ -1347,7 +1343,15 @@
           (string?))
 
         ;; confirm host-level mgmt is now enabled, and api key exists
-        (let [credential-id (-> session-owner
+        (let [disable-url  (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-operation-present :disable-host-level-management)
+                             (ltu/is-operation-absent :enable-host-level-management)
+                             (ltu/get-op-url :disable-host-level-management))
+
+              credential-id (-> session-owner
                               (request nuvlabox-url)
                               (ltu/body->edn)
                               (ltu/is-status 200)

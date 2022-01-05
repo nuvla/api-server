@@ -8,7 +8,6 @@ particular NuvlaBox release.
     [clojure.data.json :as json]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    [clojure.pprint :refer [pprint]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -139,6 +138,20 @@ particular NuvlaBox release.
               {:name           "assemble-playbooks"
                :uri            "assemble-playbooks"
                :description    "assemble the nuvlabox playbooks for execution"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "enable-host-level-management"
+               :uri            "enable-host-level-management"
+               :description    "enables the use of nuvlabox playbooks for host level management"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "disable-host-level-management"
+               :uri            "disable-host-level-management"
+               :description    "disables the use of nuvlabox playbooks for host level management"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
@@ -955,8 +968,10 @@ particular NuvlaBox release.
                                    (and (a/can-manage? resource request)
                                         (not= state state-new)
                                         (not= state state-decommissioned)) (conj assemble-pb-op)
-                                   (a/can-manage? resource request) (conj enable-host-mgmt)
-                                   (a/can-manage? resource request) (conj disable-host-mgmt))]
+                                   (and (a/can-manage? resource request)
+                                        (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt)
+                                   (and (a/can-manage? resource request)
+                                        (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt))]
     (assoc resource :operations ops)))
 
 ;;
