@@ -106,3 +106,8 @@
 (defn get-execution-mode
   [nuvlabox]
   (if (has-pull-support? nuvlabox) "pull" "push"))
+
+(defn limit-string-size
+  [limit s]
+  (cond-> s
+    (> (count s) limit) (subs 0 limit)))
