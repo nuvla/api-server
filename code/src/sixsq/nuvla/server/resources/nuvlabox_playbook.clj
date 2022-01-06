@@ -48,13 +48,14 @@ NuvlaBox Engine software
 
 (defmethod crud/add-acl resource-type
   [resource request]
-  (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
-        view-acl (:view-acl nuvlabox-acl)
-        edit-acl (:edit-acl nuvlabox-acl)]
-    (cond-> (a/add-acl resource request)
-      nuvlabox-id (assoc-in [:acl :manage] [nuvlabox-id])
-      (not-empty view-acl) (assoc-in [:acl :view-acl] (into [] (distinct (merge view-acl nuvlabox-id))))
-      (not-empty edit-acl) (assoc-in [:acl :edit-acl] edit-acl)))))
+    (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
+          view-acl (:view-acl nuvlabox-acl)
+          edit-acl (:edit-acl nuvlabox-acl)]
+      (cond-> (a/add-acl resource request)
+        ;true        (assoc :acl (a/default-acl (auth/current-authentication request)))
+        nuvlabox-id (assoc-in [:acl :manage] [nuvlabox-id])
+        (not-empty view-acl) (assoc-in [:acl :view-acl] (into [] (distinct (merge view-acl nuvlabox-id))))
+        (not-empty edit-acl) (assoc-in [:acl :edit-acl] edit-acl))))
 
 ;;
 ;; CRUD operations
