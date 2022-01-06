@@ -54,7 +54,7 @@ NuvlaBox Engine software
     (cond-> (a/add-acl resource request)
       nuvlabox-id (assoc-in [:acl :manage] [nuvlabox-id])
       (not-empty view-acl) (assoc-in [:acl :view-acl] (into [] (distinct (merge view-acl nuvlabox-id))))
-      (not-empty edit-acl) (assoc-in [:acl :edit-acl] edit-acl)))))
+      (not-empty edit-acl) (assoc-in [:acl :edit-acl] edit-acl))))
 
 ;;
 ;; CRUD operations
