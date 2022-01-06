@@ -48,14 +48,15 @@ NuvlaBox Engine software
 
 (defmethod crud/add-acl resource-type
   [resource request]
+  (if-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)
           edit-acl (:edit-acl nuvlabox-acl)]
-      (cond-> (a/add-acl resource request)
-        ;true        (assoc :acl (a/default-acl (auth/current-authentication request)))
-        nuvlabox-id (assoc-in [:acl :manage] [nuvlabox-id])
-        (not-empty view-acl) (assoc-in [:acl :view-acl] (into [] (distinct (merge view-acl nuvlabox-id))))
-        (not-empty edit-acl) (assoc-in [:acl :edit-acl] edit-acl))))
+      (assoc resource
+        :acl (cond-> (assoc (or (:acl resource) (a/default-acl (auth/current-authentication request))) :manage [nuvlabox-id])
+               (not-empty view-acl) (assoc :view-acl (into [] (distinct (merge view-acl nuvlabox-id))))
+               (not-empty edit-acl) (assoc :edit-acl edit-acl))))
+    (a/add-acl resource request)))
 
 ;;
 ;; CRUD operations
@@ -78,10 +79,10 @@ NuvlaBox Engine software
 
 
 (defmethod crud/edit resource-type
-  [{:keys [body] :as request}]
-  (if-let [updated-output (:output body)]
-    (edit-impl (assoc request :body (assoc body :output (subs updated-output 0 (min (count updated-output) 1000)))))
-    (edit-impl request)))
+  [{{:keys [output]} :body :as request}]
+  (-> request
+    (cond-> output (assoc-in [:body :output] (utils/limit-string-size 1000 output)))
+    edit-impl))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -147,11 +148,10 @@ NuvlaBox Engine software
 
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id state] :as resource} request]
-  (let [save-output-op     (u/action-map id :save-output)
-        ops                (cond-> []
-                             (a/can-manage? resource request) (conj save-output-op))]
-    (assoc resource :operations ops)))
+  [{:keys [id] :as resource} request]
+  (let [save-output-op     (u/action-map id :save-output)]
+    (cond-> (crud/set-standard-operations resource request)
+      (a/can-manage? resource request) (update :operations conj save-output-op))))
 
 
 ;;

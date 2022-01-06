@@ -108,7 +108,6 @@
   [nuvlabox]
   (if (has-pull-support? nuvlabox) "pull" "push"))
 
-
 (defn get-playbooks
   ([nuvlabox-id] (get-playbooks nuvlabox-id "MANAGEMENT"))
   ([nuvlabox-id type]
@@ -186,3 +185,9 @@
     " NUVLA_ENDPOINT=https://nuvla.io && "
     nuvla-login-script
     " && curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/nuvlabox/" nuvlabox-id "/assemble-playbooks -b /tmp/nuvla-cookie | sh -"))
+
+
+(defn limit-string-size
+  [limit s]
+  (cond-> s
+    (> (count s) limit) (subs 0 limit)))
