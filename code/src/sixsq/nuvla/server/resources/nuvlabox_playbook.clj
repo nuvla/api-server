@@ -79,10 +79,10 @@ NuvlaBox Engine software
 
 
 (defmethod crud/edit resource-type
-  [{:keys [body] :as request}]
-  (if-let [updated-output (:output body)]
-    (edit-impl (assoc request :body (assoc body :output (subs updated-output 0 (min (count updated-output) 1000)))))
-    (edit-impl request)))
+  [{{:keys [output]} :body :as request}]
+  (-> request
+    (cond-> output (assoc-in [:body :output] (utils/limit-string-size 1000 output)))
+    edit-impl))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -148,11 +148,10 @@ NuvlaBox Engine software
 
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id state] :as resource} request]
-  (let [save-output-op     (u/action-map id :save-output)
-        ops                (cond-> []
-                             (a/can-manage? resource request) (conj save-output-op))]
-    (assoc resource :operations ops)))
+  [{:keys [id] :as resource} request]
+  (let [save-output-op     (u/action-map id :save-output)]
+    (cond-> (crud/set-standard-operations resource request)
+      (a/can-manage? resource request) (update :operations conj save-output-op))))
 
 
 ;;
