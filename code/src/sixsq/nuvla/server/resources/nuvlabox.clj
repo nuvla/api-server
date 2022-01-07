@@ -257,7 +257,10 @@ particular NuvlaBox release.
         (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
 
       (when (value-changed? current-nb updated-nb :acl)
-        (wf-utils/update-peripherals id acl)))))
+        (wf-utils/update-peripherals id acl))
+
+      (when (value-changed? current-nb updated-nb :acl)
+        (wf-utils/update-playbooks id acl)))))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
