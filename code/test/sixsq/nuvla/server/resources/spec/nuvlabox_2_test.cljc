@@ -56,7 +56,7 @@
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
-               :host-level-management-api-key "credential/123-abc"})
+               :host-level-management-api-key  "credential/123-abc"})
 
 
 (deftest check-nuvlabox

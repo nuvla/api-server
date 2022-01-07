@@ -825,7 +825,7 @@ particular NuvlaBox release.
         (when emergency-playbooks
           (log/warn "Running emergency playbooks for NuvlaBox " id))
         (r/text-response (utils/wrap-and-pipe-playbooks (or emergency-playbooks
-                                                          (utils/get-playbooks id)))))
+                                                            (utils/get-playbooks id)))))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -835,8 +835,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (assemble-playbooks)))
+          (a/throw-cannot-manage request)
+          (assemble-playbooks)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -851,8 +851,8 @@ particular NuvlaBox release.
   (if host-level-management-api-key
     (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
     (try
-      (let [[_ credential]      (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
-            updated_nuvlabox    (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
+      (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
+            updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
         (db/edit updated_nuvlabox request)
 
         (r/text-response (utils/compose-cronjob credential id)))
@@ -865,8 +865,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (enable-host-level-management request)))
+          (a/throw-cannot-manage request)
+          (enable-host-level-management request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -888,7 +888,7 @@ particular NuvlaBox release.
                            :resource-name "nuvlabox"}
              :body        {}
              :nuvla/authn auth/internal-identity}
-          (crud/edit))
+            (crud/edit))
         (catch Exception e
           (or (ex-data e) (throw e)))))
     (logu/log-and-throw-400 (str "host-level management is already disabled for NuvlaBox " id))))
@@ -899,8 +899,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (disable-host-level-management)))
+          (a/throw-cannot-manage request)
+          (disable-host-level-management)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

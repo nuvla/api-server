@@ -40,8 +40,8 @@
   "Provides a simple 200 response with the content type header set to plain text."
   [body]
   (-> body
-    (r/response)
-    (r/content-type "text/plain")))
+      (r/response)
+      (r/content-type "text/plain")))
 
 
 (defn map-response
