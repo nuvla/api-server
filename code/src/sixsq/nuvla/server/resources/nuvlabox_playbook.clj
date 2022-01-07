@@ -12,7 +12,6 @@ NuvlaBox Engine software
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-playbook :as nb-playbook]
@@ -53,9 +52,10 @@ NuvlaBox Engine software
           view-acl (:view-acl nuvlabox-acl)
           edit-acl (:edit-acl nuvlabox-acl)]
       (assoc resource
-        :acl (cond-> (assoc (or (:acl resource) (a/default-acl (auth/current-authentication request))) :manage [nuvlabox-id])
-                            (not-empty view-acl) (assoc :view-acl (into [] (distinct (merge view-acl nuvlabox-id))))
-                            (not-empty edit-acl) (assoc :edit-acl edit-acl))))
+        :acl (cond-> (assoc (or (:acl resource)
+                                (a/default-acl (auth/current-authentication request))) :manage [nuvlabox-id])
+                     (not-empty view-acl) (assoc :view-acl (into [] (distinct (merge view-acl nuvlabox-id))))
+                     (not-empty edit-acl) (assoc :edit-acl edit-acl))))
     (a/add-acl resource request)))
 
 ;;
@@ -68,11 +68,11 @@ NuvlaBox Engine software
 (defmethod crud/add resource-type
   [{{:keys [parent] :as body} :body :as request}]
   (some-> parent
-    (db/retrieve request)
-    (a/throw-cannot-edit request))
+          (db/retrieve request)
+          (a/throw-cannot-edit request))
   (-> request
-    (update-in [:body] dissoc :output)
-    (add-impl)))
+      (update-in [:body] dissoc :output)
+      (add-impl)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -81,8 +81,8 @@ NuvlaBox Engine software
 (defmethod crud/edit resource-type
   [{{:keys [output]} :body :as request}]
   (-> request
-    (cond-> output (assoc-in [:body :output] (utils/limit-string-size 1000 output)))
-    edit-impl))
+      (cond-> output (assoc-in [:body :output] (utils/limit-string-size 1000 output)))
+      edit-impl))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -138,20 +138,20 @@ NuvlaBox Engine software
 (defmethod crud/do-action [resource-type "save-output"]
   [{{uuid :uuid} :params body :body :as request}]
   (try
-    (let [id          (str resource-type "/" uuid)
-          new-output  (:output body)]
+    (let [id         (str resource-type "/" uuid)
+          new-output (:output body)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (save-output new-output)))
+          (a/throw-cannot-manage request)
+          (save-output new-output)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [save-output-op     (u/action-map id :save-output)]
+  (let [save-output-op (u/action-map id :save-output)]
     (cond-> (crud/set-standard-operations resource request)
-      (a/can-manage? resource request) (update :operations conj save-output-op))))
+            (a/can-manage? resource request) (update :operations conj save-output-op))))
 
 
 ;;
