@@ -70,15 +70,15 @@
 
 (defn create-nuvlabox-api-key
   "Create api key that allow NuvlaBox to update it's own state."
-  [{:keys [id name acl] :as nuvlabox}]
+  [{:keys [id name acl] :as nuvlabox} name-prefix]
   (let [identity  {:user-id      id
                    :active-claim id
                    :claims       #{id "group/nuvla-user" "group/nuvla-anon" "group/nuvla-nuvlabox"}}
 
         cred-acl  (utils/set-acl-nuvlabox-view-only acl)
 
-        cred-tmpl {:name        (utils/format-nb-name name (utils/short-nb-id id))
-                   :description (str/join " " ["Generated API Key for "
+        cred-tmpl {:name        (str name-prefix (utils/format-nb-name name (utils/short-nb-id id)))
+                   :description (str/join " " [name-prefix "Generated API Key for "
                                                (utils/format-nb-name name id)])
                    :parent      id
                    :acl         cred-acl

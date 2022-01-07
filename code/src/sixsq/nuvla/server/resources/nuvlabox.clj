@@ -134,6 +134,27 @@ particular NuvlaBox release.
                                    :type "string"}
                                   {:name "payload"
                                    :type "string"}]}
+
+              {:name           "assemble-playbooks"
+               :uri            "assemble-playbooks"
+               :description    "assemble the nuvlabox playbooks for execution"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "enable-host-level-management"
+               :uri            "enable-host-level-management"
+               :description    "enables the use of nuvlabox playbooks for host level management"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "disable-host-level-management"
+               :uri            "disable-host-level-management"
+               :description    "disables the use of nuvlabox playbooks for host level management"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
               ])
 
 
@@ -359,7 +380,7 @@ particular NuvlaBox release.
           [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
                                                    (activate)
                                                    u/update-timestamps
-                                                   (wf-utils/create-nuvlabox-api-key))]
+                                                   (wf-utils/create-nuvlabox-api-key ""))]
 
 
       (db/edit nuvlabox-activated request)
@@ -790,6 +811,101 @@ particular NuvlaBox release.
 
 
 ;;
+;; Assemble NuvlaBox playbooks and prepare them for execution on the edge device
+;;
+
+
+(defn assemble-playbooks
+  [{:keys [id state] :as nuvlabox}]
+  (if (#{state-decommissioned state-new} state)
+    (logu/log-and-throw-400 (str "invalid state for getting and assembling NuvlaBox playbooks: " state))
+    (try
+      (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
+      (let [emergency-playbooks (seq (utils/get-playbooks id "EMERGENCY"))]
+        (when emergency-playbooks
+          (log/warn "Running emergency playbooks for NuvlaBox " id))
+        (r/text-response (utils/wrap-and-pipe-playbooks (or emergency-playbooks
+                                                            (utils/get-playbooks id)))))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "assemble-playbooks"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (assemble-playbooks)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Enables the nuvlabox-playbooks and provides the mechanism for host-level management
+;;
+
+
+(defn enable-host-level-management
+  [{:keys [id host-level-management-api-key] :as nuvlabox} request]
+  (if host-level-management-api-key
+    (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
+    (try
+      (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
+            updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
+        (db/edit updated_nuvlabox request)
+
+        (r/text-response (utils/compose-cronjob credential id)))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "enable-host-level-management"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (enable-host-level-management request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Disables the nuvlabox-playbooks
+;;
+
+
+(defn disable-host-level-management
+  [{:keys [id host-level-management-api-key] :as nuvlabox}]
+  (if host-level-management-api-key
+    (do
+      (log/warn "Disabling host-level management for NuvlaBox " id)
+      (try
+        (wf-utils/delete-resource host-level-management-api-key auth/internal-identity)
+        (-> {:cimi-params {:select ["host-level-management-api-key"]}
+             :params      {:uuid          (u/id->uuid id)
+                           :resource-name "nuvlabox"}
+             :body        {}
+             :nuvla/authn auth/internal-identity}
+            (crud/edit))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "host-level management is already disabled for NuvlaBox " id))))
+
+
+(defmethod crud/do-action [resource-type "disable-host-level-management"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (disable-host-level-management)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -817,6 +933,9 @@ particular NuvlaBox release.
         revoke-ssh-key-op  (u/action-map id :revoke-ssh-key)
         update-nuvlabox-op (u/action-map id :update-nuvlabox)
         cluster-nb-op      (u/action-map id :cluster-nuvlabox)
+        assemble-pb-op     (u/action-map id :assemble-playbooks)
+        enable-host-mgmt   (u/action-map id :enable-host-level-management)
+        disable-host-mgmt  (u/action-map id :disable-host-level-management)
         ops                (cond-> []
                                    (a/can-edit? resource request) (conj edit-op)
                                    (and (a/can-delete? resource request)
@@ -844,7 +963,14 @@ particular NuvlaBox release.
                                         (#{state-commissioned} state)
                                         (>= (:version resource) 2)) (conj cluster-nb-op)
                                    (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj reboot-op))]
+                                        (#{state-commissioned} state)) (conj reboot-op)
+                                   (and (a/can-manage? resource request)
+                                        (not= state state-new)
+                                        (not= state state-decommissioned)) (conj assemble-pb-op)
+                                   (and (a/can-manage? resource request)
+                                        (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt)
+                                   (and (a/can-manage? resource request)
+                                        (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt))]
     (assoc resource :operations ops)))
 
 ;;
