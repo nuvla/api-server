@@ -823,7 +823,15 @@ particular NuvlaBox release.
       (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
       (let [emergency-playbooks (seq (utils/get-playbooks id "EMERGENCY"))]
         (when emergency-playbooks
-          (log/warn "Running emergency playbooks for NuvlaBox " id))
+          (log/warn "Running one-off emergency playbooks for NuvlaBox " id " and disabling them")
+          (doall
+            (map (fn [playbook-id]
+                   (-> {:params      {:uuid          (u/id->uuid playbook-id)
+                                      :resource-name "nuvlabox-playbook"}
+                        :body        {:enabled false}
+                        :nuvla/authn auth/internal-identity}
+                     (crud/edit)))
+              (map :id emergency-playbooks))))
         (r/text-response (utils/wrap-and-pipe-playbooks (or emergency-playbooks
                                                             (utils/get-playbooks id)))))
       (catch Exception e
@@ -906,6 +914,41 @@ particular NuvlaBox release.
 
 
 ;;
+;; Enable the emergency playbooks so that the next host management cycle can do a one-off disaster recovery
+;;
+
+
+(defn enable-emergency-playbooks
+  [{:keys [id state] :as nuvlabox} emergency-playbooks-ids current-authn]
+  (if (#{state-decommissioned state-new} state)
+    (logu/log-and-throw-400 (str "invalid state for enabling emergency NuvlaBox playbooks: " state))
+    (try
+      (log/warn "Enabling emergency playbooks for one-off execution, for NuvlaBox " id)
+      (doall (map (fn [playbook-id]
+                     (do
+                       (-> {:params      {:uuid          (u/id->uuid playbook-id)
+                                          :resource-name "nuvlabox-playbook"}
+                            :body        {:enabled true}
+                            :nuvla/authn current-authn}
+                         (crud/edit))))
+                emergency-playbooks-ids))
+      (r/json-response {:enable-emergency-playbooks emergency-playbooks-ids})
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "enable-emergency-playbooks"]
+  [{{uuid :uuid} :params {:keys [emergency-playbooks-ids]} :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (enable-emergency-playbooks emergency-playbooks-ids (auth/current-authentication request))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -934,8 +977,9 @@ particular NuvlaBox release.
         update-nuvlabox-op (u/action-map id :update-nuvlabox)
         cluster-nb-op      (u/action-map id :cluster-nuvlabox)
         assemble-pb-op     (u/action-map id :assemble-playbooks)
-        enable-host-mgmt   (u/action-map id :enable-host-level-management)
-        disable-host-mgmt  (u/action-map id :disable-host-level-management)
+        enable-host-mgmt-op   (u/action-map id :enable-host-level-management)
+        disable-host-mgmt-op  (u/action-map id :disable-host-level-management)
+        enable-emergency-op   (u/action-map id :enable-emergency-playbooks)
         ops                (cond-> []
                                    (a/can-edit? resource request) (conj edit-op)
                                    (and (a/can-delete? resource request)
@@ -968,9 +1012,12 @@ particular NuvlaBox release.
                                         (not= state state-new)
                                         (not= state state-decommissioned)) (conj assemble-pb-op)
                                    (and (a/can-manage? resource request)
-                                        (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt)
+                                        (not= state state-new)
+                                        (not= state state-decommissioned)) (conj enable-emergency-op)
                                    (and (a/can-manage? resource request)
-                                        (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt))]
+                                        (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt-op)
+                                   (and (a/can-manage? resource request)
+                                        (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op))]
     (assoc resource :operations ops)))
 
 ;;
