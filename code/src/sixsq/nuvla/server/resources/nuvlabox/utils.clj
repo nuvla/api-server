@@ -112,7 +112,7 @@
   ([nuvlabox-id] (get-playbooks nuvlabox-id "MANAGEMENT"))
   ([nuvlabox-id type]
    (if-not (or (empty? nuvlabox-id) (empty? type))
-     (->> {:params      {:resource-name "nuvlabox-playbook"}
+     (-> {:params      {:resource-name "nuvlabox-playbook"}
            :cimi-params {:filter (parser/parse-cimi-filter
                                    (format "enabled='true' and parent='%s' and type='%s'" nuvlabox-id type))
                          :select ["run", "id"]
@@ -159,14 +159,15 @@
   [playbooks]
   (if (empty? playbooks)
     ""
-    (let [wrapped-runs      (for [playbook playbooks] (wrap-playbook-run playbook))
+    (let [wrapped-runs      (map (fn [playbook] (wrap-playbook-run playbook)) playbooks)
           exec-wrapped-runs (str/join "\n#-- end of playbook --#\n" wrapped-runs)
-          save-outputs      (for [playbook playbooks]
-                              (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
-                                "-H content-type:application/json "
-                                "-b /tmp/nuvla-cookie "
-                                " -d \"{\\\"output\\\": \\\"$(cat "
-                                (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))]
+          save-outputs      (map (fn [playbook]
+                                   (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
+                                     "-H content-type:application/json "
+                                     "-b /tmp/nuvla-cookie "
+                                     " -d \"{\\\"output\\\": \\\"$(cat "
+                                     (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))
+                              playbooks)]
       (str "#!/bin/sh\n\n"
         exec-wrapped-runs
         "\n\n"

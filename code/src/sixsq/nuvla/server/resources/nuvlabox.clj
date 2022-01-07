@@ -816,19 +816,18 @@ particular NuvlaBox release.
 
 
 (defn assemble-playbooks
-  [{:keys [id state acl] :as nuvlabox}]
-  (if (or (not= state state-decommissioned) (not= state state-new))
-    (do
+  [{:keys [id state] :as nuvlabox}]
+  (if (#{state-decommissioned state-new} state)
+    (logu/log-and-throw-400 (str "invalid state for getting and assembling NuvlaBox playbooks: " state))
+    (try
       (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
-      (try
-        (if-let [emergency-playbooks (not-empty (utils/get-playbooks id "EMERGENCY"))]
-          (do
-            (log/warn "Running emergency playbooks for NuvlaBox " id)
-            (r/text-response (utils/wrap-and-pipe-playbooks emergency-playbooks)))
-          (r/text-response (utils/wrap-and-pipe-playbooks (utils/get-playbooks id))))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))
-    (logu/log-and-throw-400 (str "invalid state for getting and assembling NuvlaBox playbooks: " state))))
+      (let [emergency-playbooks (seq (utils/get-playbooks id "EMERGENCY"))]
+        (when emergency-playbooks
+          (log/warn "Running emergency playbooks for NuvlaBox " id))
+        (r/text-response (utils/wrap-and-pipe-playbooks (or emergency-playbooks
+                                                          (utils/get-playbooks id)))))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
 
 
 (defmethod crud/do-action [resource-type "assemble-playbooks"]
