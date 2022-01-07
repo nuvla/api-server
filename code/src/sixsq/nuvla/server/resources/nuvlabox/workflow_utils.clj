@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.infrastructure-service-group :as isg]
     [sixsq.nuvla.server.resources.nuvlabox-cluster :as nb-cluster]
     [sixsq.nuvla.server.resources.nuvlabox-peripheral :as nb-peripheral]
+    [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -120,7 +121,7 @@
                   :acl         cred-acl}
 
         {:keys [status body] :as _resp} (credential/update-credential
-                                         cred-id body auth/internal-identity)]
+                                          cred-id body auth/internal-identity)]
     (if (= 200 status)
       nuvlabox
       (let [msg (str "updating credential api-secret resource failed:" status (:message body))]
@@ -476,19 +477,19 @@
   (let [filter  (format "cluster-id='%s'" cluster-id)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)}}]
     (-> (crud/query-as-admin nb-cluster/resource-type options)
-      second
-      first)))
+        second
+        first)))
 
 
 (defn get-nuvlabox-cluster-id-from-worker-id
   "Searches for an nuvlabox cluster, given one of the worker IDs"
   [node-id]
   (let [filter  (format "workers='%s'" node-id)
-        options {:cimi-params {:filter (parser/parse-cimi-filter filter)
+        options {:cimi-params {:filter  (parser/parse-cimi-filter filter)
                                :orderby [["updated" :desc]]}}]
     (-> (crud/query-as-admin nb-cluster/resource-type options)
-      second
-      first)))
+        second
+        first)))
 
 
 (defn create-minio-cred
@@ -553,53 +554,53 @@
   (when-let [cluster (if cluster-worker-id
                        (get-nuvlabox-cluster-id-from-worker-id cluster-worker-id)
                        (get-nuvlabox-cluster cluster-id))]
-    (let [resource-id  (:id cluster)
-          body  (if cluster-worker-id
-                  (cond->
-                    {}
-                    (some #{cluster-worker-id} (:workers cluster)) (assoc :workers (:workers cluster)))
-                  (cond->
-                    {}
-                    cluster-managers (assoc :managers cluster-managers)
-                    cluster-workers (assoc :workers cluster-workers)))
-          request {:params      {:uuid          (u/id->uuid resource-id)
-                                 :resource-name nb-cluster/resource-type}
-                   :body        body
-                   :nuvla/authn auth/internal-identity}
+    (let [resource-id (:id cluster)
+          body        (if cluster-worker-id
+                        (cond->
+                          {}
+                          (some #{cluster-worker-id} (:workers cluster)) (assoc :workers (:workers cluster)))
+                        (cond->
+                          {}
+                          cluster-managers (assoc :managers cluster-managers)
+                          cluster-workers (assoc :workers cluster-workers)))
+          request     {:params      {:uuid          (u/id->uuid resource-id)
+                                     :resource-name nb-cluster/resource-type}
+                       :body        body
+                       :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
       (if (= 200 status)
         (do
           (log/info "nuvlabox cluster " resource-id "updated")
           resource-id)
         (let [msg (str "cannot update nuvlabox cluster "
-                    resource-id " with ID to " cluster-id
-                    ", from NuvlaBox commissioning in " nuvlabox-id)]
+                       resource-id " with ID to " cluster-id
+                       ", from NuvlaBox commissioning in " nuvlabox-id)]
           (throw (ex-info msg (r/map-response msg 400 ""))))))))
 
 
 (defn create-nuvlabox-cluster
   [nuvlabox-id nuvlabox-name cluster-id cluster-orchestrator cluster-managers cluster-workers]
-    (let [request {:params      {:resource-name nb-cluster/resource-type}
-                   :body        {:name        (str "Cluster-" cluster-id)
-                                 :description (str "NuvlaBox cluster created by "
-                                                (or nuvlabox-name nuvlabox-id))
-                                 :orchestrator (or cluster-orchestrator "swarm")
-                                 :cluster-id  cluster-id
-                                 :managers    cluster-managers
-                                 :workers     (if cluster-workers
-                                                cluster-workers
-                                                [])
-                                 :version     2}
-                   :nuvla/authn auth/internal-identity}
-          {{:keys [resource-id]} :body status :status} (crud/add request)]
+  (let [request {:params      {:resource-name nb-cluster/resource-type}
+                 :body        {:name         (str "Cluster-" cluster-id)
+                               :description  (str "NuvlaBox cluster created by "
+                                                  (or nuvlabox-name nuvlabox-id))
+                               :orchestrator (or cluster-orchestrator "swarm")
+                               :cluster-id   cluster-id
+                               :managers     cluster-managers
+                               :workers      (if cluster-workers
+                                               cluster-workers
+                                               [])
+                               :version      2}
+                 :nuvla/authn auth/internal-identity}
+        {{:keys [resource-id]} :body status :status} (crud/add request)]
 
-      (if (= 201 status)
-        (do
-          (log/info "NuvlaBox cluster " resource-id "created")
-          resource-id)
-        (let [msg (str "cannot create NuvlaBox cluster "
-                    cluster-id " from NuvlaBox " nuvlabox-id)]
-          (throw (ex-info msg (r/map-response msg 400 "")))))))
+    (if (= 201 status)
+      (do
+        (log/info "NuvlaBox cluster " resource-id "created")
+        resource-id)
+      (let [msg (str "cannot create NuvlaBox cluster "
+                     cluster-id " from NuvlaBox " nuvlabox-id)]
+        (throw (ex-info msg (r/map-response msg 400 "")))))))
 
 
 (defn commission
@@ -691,19 +692,18 @@
       )))
 
 
-(defn get-nuvlabox-peripherals-ids
-  [id]
+(defn get-nuvlabox-children
+  [id resource-type]
   (let [filter  (format "parent='%s'" id)
         options {:cimi-params {:filter (parser/parse-cimi-filter filter)
-                               :select ["id"]}}]
-    (->> (crud/query-as-admin nb-peripheral/resource-type options)
-         second
-         (map :id))))
+                               :select ["id" "acl"]}}]
+    (->> (crud/query-as-admin resource-type options)
+         second)))
 
 
 (defn update-peripherals
   [nuvlabox-id nuvlabox-acl]
-  (when-let [ids (get-nuvlabox-peripherals-ids nuvlabox-id)]
+  (when-let [ids (map :id (get-nuvlabox-children nuvlabox-id nb-peripheral/resource-type))]
     (doseq [id ids]
       (let [request {:params      {:uuid          (u/id->uuid id)
                                    :resource-name nb-peripheral/resource-type}
@@ -716,4 +716,21 @@
         (if (= 200 status)
           (log/info "nuvlabox peripheral" id "updated")
           (let [msg (str "cannot update nuvlabox peripheral for " nuvlabox-id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))))))
+
+
+(defn update-playbooks
+  [nuvlabox-id nuvlabox-acl]
+  (when-let [playbooks (get-nuvlabox-children nuvlabox-id nb-playbook/resource-type)]
+    (doseq [playbook playbooks]
+      (let [request {:params      {:uuid          (u/id->uuid (:id playbook))
+                                   :resource-name nb-playbook/resource-type}
+                     :body        {:acl (-> (:acl playbook)
+                                            (assoc :edit-acl (:edit-acl nuvlabox-acl))
+                                            (assoc :view-acl (into [] (distinct (merge (:view-acl nuvlabox-acl) nuvlabox-id)))))}
+                     :nuvla/authn auth/internal-identity}
+            {status :status :as _resp} (crud/edit request)]
+        (if (= 200 status)
+          (log/info "nuvlabox playbook" (:id playbook) "updated")
+          (let [msg (str "cannot update nuvlabox playbook for " nuvlabox-id)]
             (throw (ex-info msg (r/map-response msg 400 "")))))))))
