@@ -6,6 +6,7 @@
 
   - NuvlaBox Playbooks - new `nuvlabox-playbook` resource for remote management of the NuvlaBox device
   - NuvlaBox - new operation `assemble-playbooks` for staging playbooks for execution
+  - NuvlaBox - new operation `enable-emergency-playboks` for enabling the one-off execution of emergency playbooks
 
 ### Updated
 
