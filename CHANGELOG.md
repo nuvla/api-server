@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Updated
+
+  - NuvlaBox Peripheral - fix default ACL for schema validation when payload is empty
+  
 ### Added
 
   - NuvlaBox Playbooks - new `nuvlabox-playbook` resource for remote management of the NuvlaBox device
