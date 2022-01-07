@@ -129,13 +129,14 @@ nuvlabox.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource _request]
-  (when-let [nuvlabox-id (:parent resource)]
+  [resource request]
+  (if-let [nuvlabox-id (:parent resource)]
     (let [{nuvlabox-acl :acl} (crud/retrieve-by-id-as-admin nuvlabox-id)
           view-acl (:view-acl nuvlabox-acl)]
       (assoc resource
         :acl (cond-> (utils/set-acl-nuvlabox-view-only nuvlabox-acl {:owners [nuvlabox-id]})
-                     (not-empty view-acl) (assoc :manage view-acl))))))
+                     (not-empty view-acl) (assoc :manage view-acl))))
+    (a/add-acl resource request)))
 
 
 ;;

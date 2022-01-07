@@ -1,19 +1,17 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-playbook-lifecycle-test
   (:require
-   [clojure.data.json :as json]
-   [clojure.string :as str]
-   [clojure.test :refer [deftest use-fixtures]]
-   [peridot.core :refer [content-type header request session]]
-   [ring.util.codec :as rc]
-   [sixsq.nuvla.server.app.params :as p]
-   [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-   [sixsq.nuvla.server.resources.common.utils :as u]
+    [clojure.data.json :as json]
     [clojure.pprint :refer [pprint]]
-   [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-   [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-   [sixsq.nuvla.server.resources.nuvlabox :as nb]
-   [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
-   [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [clojure.test :refer [deftest use-fixtures]]
+    [peridot.core :refer [content-type header request session]]
+    [sixsq.nuvla.server.app.params :as p]
+    [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [sixsq.nuvla.server.resources.nuvlabox :as nb]
+    [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -39,15 +37,15 @@
 (def valid-nuvlabox {:owner nuvlabox-owner})
 
 
-(def valid-playbook {:id                          (str nb-playbook/resource-type "/uuid")
-                     :resource-type               nb-playbook/resource-type
-                     :name                        "my nuvlabox-playbook"
-                     :description                 "description of my nuvlabox-playbook"
-                     :created                     timestamp
-                     :updated                     timestamp
-                     :type                        "EMERGENCY"
-                     :run                         "echo hello world"
-                     :enabled                     true})
+(def valid-playbook {:id            (str nb-playbook/resource-type "/uuid")
+                     :resource-type nb-playbook/resource-type
+                     :name          "my nuvlabox-playbook"
+                     :description   "description of my nuvlabox-playbook"
+                     :created       timestamp
+                     :updated       timestamp
+                     :type          "EMERGENCY"
+                     :run           "echo hello world"
+                     :enabled       true})
 
 
 (deftest check-metadata
@@ -75,7 +73,7 @@
 
           session-nb    (header session authn-info-header (str nuvlabox-id " " nuvlabox-id " group/nuvla-user group/nuvla-anon"))]
 
-     ;; anonymous users cannot create a nuvlabox-playbook resource
+      ;; anonymous users cannot create a nuvlabox-playbook resource
       (-> session-anon
           (request base-uri
                    :request-method :post
@@ -85,38 +83,38 @@
 
       ;; users who cannot edit a NB cannot create a playbook for it
       (-> session-user
-        (request base-uri
-          :request-method :post
-          :body (json/write-str (assoc valid-playbook :parent nuvlabox-id)))
-        (ltu/body->edn)
-        (ltu/is-status 403))
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-playbook :parent nuvlabox-id)))
+          (ltu/body->edn)
+          (ltu/is-status 403))
 
       ;; missing parent causes a 400
       (-> session-owner
-        (request base-uri
-          :request-method :post
-          :body (json/write-str {}))
-        (ltu/body->edn)
-        (ltu/is-status 400))
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str {}))
+          (ltu/body->edn)
+          (ltu/is-status 400))
 
-     ;; nuvlabox owners can create a nuvlabox-playbook resource
-     ;; use the default ACL
+      ;; nuvlabox owners can create a nuvlabox-playbook resource
+      ;; use the default ACL
       (when-let [playbook-url (-> session-owner
                                   (request base-uri
                                            :request-method :post
                                            :body (json/write-str (assoc valid-playbook
-                                                                        :parent nuvlabox-id)))
+                                                                   :parent nuvlabox-id)))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
                                   (ltu/location-url))]
 
-       ;; other users can't see the playbook
+        ;; other users can't see the playbook
         (-> session-user
             (request playbook-url)
             (ltu/body->edn)
             (ltu/is-status 403))
 
-       ;; owners can see the playbook
+        ;; owners can see the playbook
         (-> session-owner
             (request playbook-url)
             (ltu/body->edn)
@@ -130,7 +128,7 @@
             (ltu/is-operation-present :save-output)
             (ltu/is-status 200))
 
-       ;; nuvlabox user is not able to update nuvlabox-playbook
+        ;; nuvlabox user is not able to update nuvlabox-playbook
         (-> session-nb
             (request playbook-url
                      :request-method :put
@@ -147,21 +145,21 @@
             (ltu/is-status 200)
             (ltu/is-key-value :output "new output"))
 
-       ;; verify that the update was written to disk
+        ;; verify that the update was written to disk
         (-> session-nb
             (request playbook-url)
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-key-value :output "new output"))
 
-       ;; nuvlabox identity cannot delete the playbook
+        ;; nuvlabox identity cannot delete the playbook
         (-> session-nb
             (request playbook-url
                      :request-method :delete)
             (ltu/body->edn)
             (ltu/is-status 403))
 
-       ;; share nuvlabox with user beta
+        ;; share nuvlabox with user beta
         (-> session-owner
             (request (str p/service-context nuvlabox-id)
                      :request-method :put
@@ -170,7 +168,7 @@
             (ltu/body->edn)
             (ltu/is-status 200))
 
-       ;; now user beta can also see the playbook
+        ;; now user beta can also see the playbook
         (-> session-user
             (request playbook-url)
             (ltu/body->edn)
@@ -178,55 +176,55 @@
 
         ;; save-output operation tests
         (let [save-output-op-url (-> session-owner
-                                   (request playbook-url)
-                                   (ltu/body->edn)
-                                   (ltu/is-status 200)
-                                   (ltu/is-operation-present :save-output)
-                                   (ltu/get-op-url :save-output))]
+                                     (request playbook-url)
+                                     (ltu/body->edn)
+                                     (ltu/is-status 200)
+                                     (ltu/is-operation-present :save-output)
+                                     (ltu/get-op-url :save-output))]
           ;; the nb can save new output through the save-output op
           (-> session-nb
-            (request save-output-op-url
-              :request-method :post
-              :body (json/write-str {:output "newest stdout"}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
+              (request save-output-op-url
+                       :request-method :post
+                       :body (json/write-str {:output "newest stdout"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
           ;; confirm the op saved the output
           (-> session-nb
-            (request playbook-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value :output "newest stdout\n\nnew output"))
+              (request playbook-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :output "newest stdout\n\nnew output"))
 
           ;; output saved via the op must be truncated
           (-> session-nb
-            (request save-output-op-url
-              :request-method :post
-              :body (json/write-str {:output (apply str (repeat 1250 "g"))}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
+              (request save-output-op-url
+                       :request-method :post
+                       :body (json/write-str {:output (apply str (repeat 1250 "g"))}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
 
           (-> session-nb
-            (request playbook-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-key-value count :output 1000)))
+              (request playbook-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value count :output 1000)))
 
         ;; very long outputs get truncated via edit as well
         (-> session-owner
-          (request playbook-url
-            :request-method :put
-            :body (json/write-str {:output (apply str (repeat 1050 "f"))}))
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-key-value count :output 1000))
+            (request playbook-url
+                     :request-method :put
+                     :body (json/write-str {:output (apply str (repeat 1050 "f"))}))
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value count :output 1000))
 
         ;; nuvlabox owner can delete the playbook
         (-> session-owner
-          (request playbook-url
-            :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200))))))
+            (request playbook-url
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))))))
 
 
 (deftest bad-methods
