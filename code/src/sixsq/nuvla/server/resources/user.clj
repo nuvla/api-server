@@ -16,6 +16,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cred-tmpl-pass]
     [sixsq.nuvla.server.resources.email :as email]
@@ -105,7 +106,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (try
     (let [authn-info   (auth/current-authentication request)
           body         (if (u/is-form? headers) (u/convert-form :template form-params) body)
-          redirect-url (get-in body [:template :redirect-url])
+          redirect-url (-> body
+                           (get-in [:template :redirect-url])
+                           (config-nuvla/throw-is-not-authorised-redirect-url))
           desc-attrs   (u/select-desc-keys body)
           [frag user] (-> body
                           (assoc :resource-type create-type)

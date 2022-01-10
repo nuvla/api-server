@@ -13,27 +13,28 @@
 
 (deftest check-configuration-template-nuvla
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        cfg       {:id            (str ct/resource-type "/" nuvla/service)
-                   :resource-type nuvla/service
-                   :created       timestamp
-                   :updated       timestamp
-                   :acl           valid-acl
+        cfg       {:id                          (str ct/resource-type "/" nuvla/service)
+                   :resource-type               nuvla/service
+                   :created                     timestamp
+                   :updated                     timestamp
+                   :acl                         valid-acl
 
-                   :service       nuvla/service
+                   :service                     nuvla/service
 
-                   :smtp-username "username"
-                   :smtp-password "password"
-                   :smtp-host     "host"
-                   :smtp-port     465
-                   :smtp-ssl      true
-                   :smtp-debug    true
+                   :smtp-username               "username"
+                   :smtp-password               "password"
+                   :smtp-host                   "host"
+                   :smtp-port                   465
+                   :smtp-ssl                    true
+                   :smtp-debug                  true
 
-                   :support-email "admin@example.org"
+                   :support-email               "admin@example.org"
 
-                   :stripe-api-key "sk_test_xxx"
-                   :external-vulnerabilities-db  "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"
+                   :stripe-api-key              "sk_test_xxx"
+                   :external-vulnerabilities-db "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"
 
-                   :conditions-url "https://nuvla.io/terms/tos"}]
+                   :conditions-url              "https://nuvla.io/terms/tos"
+                   :authorized-redirect-urls    ["https://nuvla.io"]}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
 
@@ -43,5 +44,6 @@
 
     ;; optional keys
     (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
-                :support-email :stripe-api-key :external-vulnerabilities-db :conditions-url}]
+                :support-email :stripe-api-key :external-vulnerabilities-db :conditions-url
+                :authorized-redirect-urls}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))

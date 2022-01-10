@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -161,6 +162,16 @@
                       (ltu/body->edn)
                       (ltu/is-status 200)
                       (ltu/message-matches (str "successfully invited to " id)))
+
+                  (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
+                    (-> session
+                       (request invite-url
+                                :request :put
+                                :body (json/write-str {:username     "jane@example.com"
+                                                       :redirect-url "https://phishing.com"}))
+                       (ltu/body->edn)
+                       (ltu/is-status 400)
+                       (ltu/message-matches "server configuration do not authorize following rediect-url:")))
 
                   (is (= users updated-users))
                   (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl))))))))

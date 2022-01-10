@@ -108,6 +108,16 @@
              :json-schema/order 30)))
 
 
+(s/def ::authorized-redirect-urls
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+      (assoc :name "authorized-redirect-urls"
+             :json-schema/type "array"
+             :json-schema/display-name "List of authorized urls"
+             :json-schema/description "List of authorized urls that redirects begin with, this is a very important security setting for production server"
+
+             :json-schema/order 31)))
+
+
 (def configuration-template-keys-spec
   {:opt-un [::smtp-username
             ::smtp-password
@@ -119,7 +129,8 @@
             ::stripe-api-key
             ::stripe-client-id
             ::external-vulnerabilities-db
-            ::conditions-url]})
+            ::conditions-url
+            ::authorized-redirect-urls]})
 
 
 ;; Defines the contents of the nuvla configuration-template resource itself.

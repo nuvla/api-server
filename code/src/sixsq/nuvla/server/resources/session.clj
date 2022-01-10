@@ -91,6 +91,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
@@ -267,6 +268,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (try
     (let [authn-info (auth/current-authentication request)
           body       (if (u/is-form? headers) (u/convert-form :template form-params) body)
+          _          (-> body :redirect-url config-nuvla/throw-is-not-authorised-redirect-url)
           desc-attrs (u/select-desc-keys body)
           [cookie-header {:keys [id] :as body}]
           (-> body

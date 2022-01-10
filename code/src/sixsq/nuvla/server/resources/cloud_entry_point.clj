@@ -361,10 +361,11 @@ include aggregating values over a collection of resources.
 
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
-  (r/response (-> (db/retrieve resource-type {})
-                  (assoc :base-uri base-uri
-                         :collections resource-links)
-                  (crud/set-operations request))))
+  (-> (db/retrieve resource-type {})
+      (assoc :base-uri base-uri
+             :collections resource-links)
+      (crud/set-operations request)
+      (r/response)))
 
 
 (defmethod crud/retrieve resource-type
@@ -379,8 +380,8 @@ include aggregating values over a collection of resources.
                     (a/throw-cannot-edit request))
         updated (-> body
                     (assoc :base-uri "http://example.org")
-                    (u/strip-service-attrs))
-        updated (-> (merge current updated)
+                    (u/strip-service-attrs)
+                    (->> (merge current))
                     (u/update-timestamps)
                     (assoc :collections resource-links)
                     (crud/set-operations request)
