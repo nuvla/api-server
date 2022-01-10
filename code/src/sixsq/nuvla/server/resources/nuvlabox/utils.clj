@@ -185,7 +185,7 @@
        (:secret-key credential-api-key)
        " NUVLA_ENDPOINT=https://nuvla.io && "
        nuvla-login-script
-       " && curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/nuvlabox/" nuvlabox-id "/assemble-playbooks -b /tmp/nuvla-cookie | sh -"))
+       " && curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" nuvlabox-id "/assemble-playbooks -b /tmp/nuvla-cookie | sh -"))
 
 
 (defn limit-string-size
