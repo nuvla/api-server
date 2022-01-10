@@ -860,7 +860,7 @@ particular NuvlaBox release.
             updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
         (db/edit updated_nuvlabox request)
 
-        (r/json-response {:cronjob (utils/compose-cronjob credential id)}))
+        (r/text-response (utils/compose-cronjob credential id)))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 

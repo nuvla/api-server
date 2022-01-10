@@ -1389,9 +1389,8 @@
         (-> session-owner
             (request enable-url
                      :request-method :post)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/has-key :cronjob))
+            (ltu/body)
+            (string?)))
 
         ;; confirm host-level mgmt is now enabled, and api key exists
         (let [disable-url    (-> session-owner
