@@ -1237,12 +1237,11 @@
       )))
 
 
-(deftest create-activate-assemble-playbooks-lifecycle
+(deftest create-activate-assemble-playbooks-emergency-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
           session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
@@ -1275,27 +1274,81 @@
         (-> session-owner
             (request playbook-base-uri
                      :request-method :post
-                     :body (json/write-str {:parent nuvlabox-id :type "MANAGEMENT" :run "foo" :enabled true}))
+                     :body (json/write-str {:parent nuvlabox-id :type "MANAGEMENT" :run "foo MGMT" :enabled true}))
             (ltu/body->edn)
             (ltu/is-status 201))
+
 
         (let [session-nuvlabox (header session authn-info-header
                                        (str nuvlabox-id " " nuvlabox-id
                                             " group/nuvla-nuvlabox group/nuvla-anon"))]
 
-          (let [assemble-playbooks-url (-> session-owner
+          (let [;; create emergency playbook
+                emergency-playbook-id  (-> session-owner
+                                           (request playbook-base-uri
+                                                    :request-method :post
+                                                    :body (json/write-str {:parent nuvlabox-id :type "EMERGENCY" :run "foo EMERGENCY" :enabled false}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/location))
+
+                assemble-playbooks-url (-> session-owner
                                            (request nuvlabox-url)
                                            (ltu/body->edn)
                                            (ltu/is-status 200)
                                            (ltu/is-operation-present :assemble-playbooks)
-                                           (ltu/get-op-url :assemble-playbooks))]
+                                           (ltu/get-op-url :assemble-playbooks))
 
+                enable-emergency-url   (-> session-owner
+                                           (request nuvlabox-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-operation-present :enable-emergency-playbooks)
+                                           (ltu/get-op-url :enable-emergency-playbooks))
+
+                ;; give back mgmt playbooks
+                assembled-playbooks    (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))
+
+                ;; enable emergency
+                _                      (-> session-owner
+                                           (request enable-emergency-url
+                                                    :request-method :post
+                                                    :body (json/write-str {:emergency-playbooks-ids [emergency-playbook-id]}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200))
+
+                ;; the playbook is now enabled
+                _                      (-> session-nuvlabox
+                                           (request (str p/service-context emergency-playbook-id))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-key-value :enabled true))
+
+                ;; now give back emergency playbooks
+                assembled-em-playbooks (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))
+
+                ;; emergency will be disabled automatically, so we expect mgmt again
+                reassembled-playbooks  (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))]
+
+            ;; and now emergency is re-disabled
             (-> session-nuvlabox
-                (request assemble-playbooks-url)
+                (request (str p/service-context emergency-playbook-id))
+                (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/body)
-                (string?)))
-          )))))
+                (ltu/is-key-value :enabled false))
+
+            (is (str/includes? assembled-playbooks "MGMT"))
+            (is (str/includes? assembled-em-playbooks "EMERGENCY"))
+            (is (str/includes? reassembled-playbooks "MGMT"))))))))
 
 
 (deftest create-enable-host-level-management-lifecycle
@@ -1303,10 +1356,8 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
 
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
 
       #_{:clj-kondo/ignore [:redundant-let]}
       (let [nuvlabox-id  (-> session-owner
