@@ -15,7 +15,7 @@
 
 (defn get-scheme
   "Get the scheme for the originating host, preferring the 'forwarded'
-   header, it it exists."
+   header, if it exists."
   [{:keys [headers scheme]}]
   (or (get headers "x-forwarded-proto")
       (name scheme)))
