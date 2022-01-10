@@ -143,9 +143,9 @@
       "cat > " nuvlabox-playbook-file " <<'EOF'\n"
       (:run playbook)
       "\nEOF\n"
-      "echo '' > " nuvlabox-playbook-out
-      "\nsh " nuvlabox-playbook-file
-      " 2>&1 | while IFS= read -r line; do printf '[%s] %s\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
+      "rm " nuvlabox-playbook-out " || true \n"
+      "sh " nuvlabox-playbook-file
+      " 2>&1 | while IFS= read -r line; do printf '[%s] %s\\\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
       nuvlabox-playbook-out "; done || true")))
 
 
@@ -164,9 +164,9 @@
           save-outputs      (map (fn [playbook]
                                    (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
                                         "-H content-type:application/json "
-                                        "-b /tmp/nuvla-cookie "
-                                        " -d \"{\\\"output\\\": \\\"$(cat "
-                                        (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\""))
+                                        "-b /tmp/nuvla-cookie -c /tmp/nuvla-cookie "
+                                        "-d \"{\\\"output\\\": \\\"$(cat "
+                                        (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\"}"))
                                  playbooks)]
       (str "#!/bin/sh\n\n"
            exec-wrapped-runs
