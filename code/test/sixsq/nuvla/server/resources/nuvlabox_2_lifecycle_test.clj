@@ -1390,7 +1390,7 @@
             (request enable-url
                      :request-method :post)
             (ltu/body)
-            (string?)))
+            (string?))
 
         ;; confirm host-level mgmt is now enabled, and api key exists
         (let [disable-url    (-> session-owner
