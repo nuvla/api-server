@@ -44,17 +44,19 @@ default values.
       (throw (ex-info error-msg (r/map-response error-msg 500))))))
 
 
-(defn is-not-authorized-url?
+(defn authorized-url?
   [redirect-url]
-  (not-any? (fn [authorized-redirect] (str/starts-with? redirect-url authorized-redirect)) *authorized-redirect-urls*))
+  (or (nil? (seq *authorized-redirect-urls*))
+      (->> *authorized-redirect-urls*
+           (some (fn [authorized-redirect] (str/starts-with? redirect-url authorized-redirect)))
+           boolean)))
 
+(def ^:const error-msg-not-authorised-redirect-url "server configuration do not authorize following rediect-url: " )
 
 (defn throw-is-not-authorised-redirect-url
   [redirect-url]
-  (if (and redirect-url
-             (seq *authorized-redirect-urls*)
-             (is-not-authorized-url? redirect-url))
-    (let [error-msg (str "server configuration do not authorize following rediect-url: " redirect-url)]
+  (if (and redirect-url (not (authorized-url? redirect-url)))
+    (let [error-msg (str error-msg-not-authorised-redirect-url redirect-url)]
       (throw (ex-info error-msg (r/map-response error-msg 400))))
     redirect-url))
 

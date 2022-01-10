@@ -171,7 +171,7 @@
                                                        :redirect-url "https://phishing.com"}))
                        (ltu/body->edn)
                        (ltu/is-status 400)
-                       (ltu/message-matches "server configuration do not authorize following rediect-url:")))
+                       (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
 
                   (is (= users updated-users))
                   (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl))))))))

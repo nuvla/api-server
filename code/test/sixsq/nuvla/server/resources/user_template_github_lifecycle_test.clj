@@ -9,6 +9,7 @@
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback.utils :as cbu]
     [sixsq.nuvla.server.resources.configuration :as configuration]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as ut]
@@ -141,6 +142,15 @@
                        (ltu/body->edn)
                        (ltu/is-status 303))
               uri2 (-> resp ltu/location)
+
+              ;; when configured nuvla will not authorize not configured redirect urls
+              _ (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
+                  (-> session-anon
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str href-create-redirect))
+                      (ltu/body->edn)
+                      (ltu/is-status 400)))
 
 
               uris [uri uri2]]
