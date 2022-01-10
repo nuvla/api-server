@@ -75,9 +75,11 @@ default values.
   (let [create-template {:resource-type p/create-type
                          :template      {:href tpl-instance-url}}]
     (std-crud/add-if-absent config-instance-url p/resource-type create-template)
-    (try
-      (let [nuvla-config (-> config-instance-url
-                             crud/retrieve-by-id-as-admin)]
+    (let [nuvla-config (-> config-instance-url
+                           crud/retrieve-by-id-as-admin)]
+      (when-let [authorized-redirect-urls (:authorized-redirect-urls nuvla-config)]
+        (alter-var-root #'*authorized-redirect-urls* (constantly authorized-redirect-urls)))
+      (try
         (when-let [stripe-api-key (or (:stripe-api-key nuvla-config)
                                       (env/env :stripe-api-key))]
           (let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
@@ -92,10 +94,8 @@ default values.
                                                 (env/env :stripe-client-id))]
                   (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
               (log/error "Stripe-api-key configured but no princing implementation found!"))))
-        (when-let [authorized-redirect-urls (:authorized-redirect-urls nuvla-config)]
-          (alter-var-root #'*authorized-redirect-urls* (constantly authorized-redirect-urls))))
-      (catch Exception e
-        (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
+       (catch Exception e
+         (log/error (str "Exception when loading Stripe api-key/client-id: " e)))))))
 
 
 ;;
