@@ -85,6 +85,11 @@
       (t/offset-date-time (t/zone-id "UTC"))))
 
 
+(defn unix-timestamp-from-date
+  [^OffsetDateTime date]
+  (.toEpochSecond date))
+
+
 (defn time-between-date-now
   [^String start-date unit]
   (-> start-date
