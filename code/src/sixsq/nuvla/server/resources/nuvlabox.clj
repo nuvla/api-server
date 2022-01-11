@@ -134,6 +134,27 @@ particular NuvlaBox release.
                                    :type "string"}
                                   {:name "payload"
                                    :type "string"}]}
+
+              {:name           "assemble-playbooks"
+               :uri            "assemble-playbooks"
+               :description    "assemble the nuvlabox playbooks for execution"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "enable-host-level-management"
+               :uri            "enable-host-level-management"
+               :description    "enables the use of nuvlabox playbooks for host level management"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "disable-host-level-management"
+               :uri            "disable-host-level-management"
+               :description    "disables the use of nuvlabox playbooks for host level management"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
               ])
 
 
@@ -257,7 +278,10 @@ particular NuvlaBox release.
         (wf-utils/update-nuvlabox-api-key credential-api-key nuvlabox))
 
       (when (value-changed? current-nb updated-nb :acl)
-        (wf-utils/update-peripherals id acl)))))
+        (wf-utils/update-peripherals id acl))
+
+      (when (value-changed? current-nb updated-nb :acl)
+        (wf-utils/update-playbooks id acl)))))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -356,7 +380,7 @@ particular NuvlaBox release.
           [nuvlabox-activated api-secret-info] (-> (db/retrieve id request)
                                                    (activate)
                                                    u/update-timestamps
-                                                   (wf-utils/create-nuvlabox-api-key))]
+                                                   (wf-utils/create-nuvlabox-api-key ""))]
 
 
       (db/edit nuvlabox-activated request)
@@ -553,7 +577,7 @@ particular NuvlaBox release.
 
 
 (defmethod crud/do-action [resource-type "reboot"]
-  [{{uuid :uuid} :params body :body :as request}]
+  [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
@@ -787,6 +811,138 @@ particular NuvlaBox release.
 
 
 ;;
+;; Assemble NuvlaBox playbooks and prepare them for execution on the edge device
+;;
+
+
+(defn assemble-playbooks
+  [{:keys [id state] :as _nuvlabox}]
+  (if (#{state-decommissioned state-new} state)
+    (logu/log-and-throw-400 (str "invalid state for getting and assembling NuvlaBox playbooks: " state))
+    (try
+      (log/warn "Assembling playbooks for execution, for NuvlaBox " id)
+      (let [emergency-playbooks (seq (utils/get-playbooks id "EMERGENCY"))]
+        (when emergency-playbooks
+          (log/warn "Running one-off emergency playbooks for NuvlaBox " id " and disabling them")
+          (doseq [{playbook-id :id} emergency-playbooks]
+            (crud/edit {:params      {:uuid          (u/id->uuid playbook-id)
+                                      :resource-name "nuvlabox-playbook"}
+                        :body        {:enabled false}
+                        :nuvla/authn auth/internal-identity})))
+        (r/text-response (utils/wrap-and-pipe-playbooks (or emergency-playbooks
+                                                            (utils/get-playbooks id)))))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "assemble-playbooks"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (assemble-playbooks)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Enables the nuvlabox-playbooks and provides the mechanism for host-level management
+;;
+
+
+(defn enable-host-level-management
+  [{:keys [id host-level-management-api-key] :as nuvlabox} request]
+  (if host-level-management-api-key
+    (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
+    (try
+      (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "[nuvlabox-playbook]")
+            updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
+        (db/edit updated_nuvlabox request)
+
+        (r/json-response {:cronjob (utils/compose-cronjob credential id)}))
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "enable-host-level-management"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (enable-host-level-management request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Disables the nuvlabox-playbooks
+;;
+
+
+(defn disable-host-level-management
+  [{:keys [id host-level-management-api-key] :as _nuvlabox}]
+  (if host-level-management-api-key
+    (do
+      (log/warn "Disabling host-level management for NuvlaBox " id)
+      (try
+        (wf-utils/delete-resource host-level-management-api-key auth/internal-identity)
+        (-> {:cimi-params {:select ["host-level-management-api-key"]}
+             :params      {:uuid          (u/id->uuid id)
+                           :resource-name "nuvlabox"}
+             :body        {}
+             :nuvla/authn auth/internal-identity}
+            (crud/edit))
+        (catch Exception e
+          (or (ex-data e) (throw e)))))
+    (logu/log-and-throw-400 (str "host-level management is already disabled for NuvlaBox " id))))
+
+
+(defmethod crud/do-action [resource-type "disable-host-level-management"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (disable-host-level-management)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
+;; Enable the emergency playbooks so that the next host management cycle can do a one-off disaster recovery
+;;
+
+
+(defn enable-emergency-playbooks
+  [{:keys [id state] :as _nuvlabox} emergency-playbooks-ids current-authn]
+  (if (#{state-decommissioned state-new} state)
+    (logu/log-and-throw-400 (str "invalid state for enabling emergency NuvlaBox playbooks: " state))
+    (try
+      (log/warn "Enabling emergency playbooks for one-off execution, for NuvlaBox " id)
+      (doseq [playbook-id emergency-playbooks-ids]
+        (crud/edit {:params      {:uuid          (u/id->uuid playbook-id)
+                                  :resource-name "nuvlabox-playbook"}
+                    :body        {:enabled true}
+                    :nuvla/authn current-authn}))
+      (r/json-response {:enable-emergency-playbooks emergency-playbooks-ids})
+      (catch Exception e
+        (or (ex-data e) (throw e))))))
+
+
+(defmethod crud/do-action [resource-type "enable-emergency-playbooks"]
+  [{{uuid :uuid} :params {:keys [emergency-playbooks-ids]} :body :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (enable-emergency-playbooks emergency-playbooks-ids (auth/current-authentication request))))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -803,45 +959,59 @@ particular NuvlaBox release.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id state] :as resource} request]
-  (let [edit-op            (u/operation-map id :edit)
-        delete-op          (u/operation-map id :delete)
-        activate-op        (u/action-map id :activate)
-        commission-op      (u/action-map id :commission)
-        decommission-op    (u/action-map id :decommission)
-        check-api-op       (u/action-map id :check-api)
-        reboot-op          (u/action-map id :reboot)
-        add-ssh-key-op     (u/action-map id :add-ssh-key)
-        revoke-ssh-key-op  (u/action-map id :revoke-ssh-key)
-        update-nuvlabox-op (u/action-map id :update-nuvlabox)
-        cluster-nb-op      (u/action-map id :cluster-nuvlabox)
-        ops                (cond-> []
-                                   (a/can-edit? resource request) (conj edit-op)
-                                   (and (a/can-delete? resource request)
-                                        (#{state-new
-                                           state-decommissioned
-                                           state-error} state)) (conj delete-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-new} state)) (conj activate-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-activated
-                                           state-commissioned} state)) (conj commission-op)
-                                   (and (a/can-manage? resource request)
-                                        (not= state state-new)
-                                        (not= state state-decommissioned)) (conj decommission-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)
-                                        (< (:version resource) 2)) (conj check-api-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj add-ssh-key-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj revoke-ssh-key-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj update-nuvlabox-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)
-                                        (>= (:version resource) 2)) (conj cluster-nb-op)
-                                   (and (a/can-manage? resource request)
-                                        (#{state-commissioned} state)) (conj reboot-op))]
+  (let [edit-op              (u/operation-map id :edit)
+        delete-op            (u/operation-map id :delete)
+        activate-op          (u/action-map id :activate)
+        commission-op        (u/action-map id :commission)
+        decommission-op      (u/action-map id :decommission)
+        check-api-op         (u/action-map id :check-api)
+        reboot-op            (u/action-map id :reboot)
+        add-ssh-key-op       (u/action-map id :add-ssh-key)
+        revoke-ssh-key-op    (u/action-map id :revoke-ssh-key)
+        update-nuvlabox-op   (u/action-map id :update-nuvlabox)
+        cluster-nb-op        (u/action-map id :cluster-nuvlabox)
+        assemble-pb-op       (u/action-map id :assemble-playbooks)
+        enable-host-mgmt-op  (u/action-map id :enable-host-level-management)
+        disable-host-mgmt-op (u/action-map id :disable-host-level-management)
+        enable-emergency-op  (u/action-map id :enable-emergency-playbooks)
+        ops                  (cond-> []
+                                     (a/can-edit? resource request) (conj edit-op)
+                                     (and (a/can-delete? resource request)
+                                          (#{state-new
+                                             state-decommissioned
+                                             state-error} state)) (conj delete-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-new} state)) (conj activate-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-activated
+                                             state-commissioned} state)) (conj commission-op)
+                                     (and (a/can-manage? resource request)
+                                          (not= state state-new)
+                                          (not= state state-decommissioned)) (conj decommission-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)
+                                          (< (:version resource) 2)) (conj check-api-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)) (conj add-ssh-key-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)) (conj revoke-ssh-key-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)) (conj update-nuvlabox-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)
+                                          (>= (:version resource) 2)) (conj cluster-nb-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)) (conj reboot-op)
+                                     (and (a/can-manage? resource request)
+                                          (not= state state-new)
+                                          (not= state state-decommissioned)) (conj assemble-pb-op)
+                                     (and (a/can-manage? resource request)
+                                          (not= state state-new)
+                                          (not= state state-decommissioned)) (conj enable-emergency-op)
+                                     (and (a/can-manage? resource request)
+                                          (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt-op)
+                                     (and (a/can-manage? resource request)
+                                          (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op))]
     (assoc resource :operations ops)))
 
 ;;
@@ -855,5 +1025,3 @@ particular NuvlaBox release.
   []
   (std-crud/initialize resource-type ::nuvlabox/schema)
   (md/register resource-metadata))
-
-

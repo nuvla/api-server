@@ -15,6 +15,7 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.core :as spec-core]
@@ -181,6 +182,7 @@ that start with 'nuvla-' are reserved for the server.
                         redirect-url     :redirect-url
                         set-password-url :set-password-url} :body {uuid :uuid} :params :as request}]
   (try
+    (config-nuvla/throw-is-not-authorised-redirect-url redirect-url)
     (let [id           (str resource-type "/" uuid)
           user-id      (auth-password/identifier->user-id username)
           _group       (-> (crud/retrieve-by-id-as-admin id)

@@ -1,12 +1,13 @@
 (ns sixsq.nuvla.server.resources.configuration-nuvla-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest use-fixtures]]
+    [clojure.test :refer [are deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.configuration :as cfg]
     [sixsq.nuvla.server.resources.configuration-lifecycle-test-utils :as test-utils]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as t]
     [sixsq.nuvla.server.resources.configuration-template :as ct]
     [sixsq.nuvla.server.resources.configuration-template-nuvla :as ct-nuvla]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
@@ -70,6 +71,40 @@
         (ltu/body->edn)
         (ltu/is-status 404))))
 
+
+(deftest test-is-not-authorized-url?
+  (binding [t/*authorized-redirect-urls* nil]
+    (are [result redirect-url] (= result (t/authorized-url? redirect-url))
+                               true "https://nuvla.io"
+                               true "https://nuvla.io/hello"
+                               true "https://nuvla.io/hello/anything"
+                               true "https://nuvla.io?param=1"
+                               true "https://nuvla.io/hello/anything?parm=1&param=2"
+                               true "http://nuvla.io"
+                               true "https://phishing.com"
+                               true "https://example.com  "
+                               true ""))
+  (binding [t/*authorized-redirect-urls* ["https://nuvla.io"]]
+    (are [result redirect-url] (= result (t/authorized-url? redirect-url))
+                               true "https://nuvla.io"
+                               true "https://nuvla.io/hello"
+                               true "https://nuvla.io/hello/anything"
+                               true "https://nuvla.io?param=1"
+                               true "https://nuvla.io/hello/anything?parm=1&param=2"
+                               false "http://nuvla.io"
+                               false "https://phishing.com"
+                               false "https://example.com  "
+                               false ""))
+  (binding [t/*authorized-redirect-urls* ["https://nuvla.io" "http://nuvla.io"]]
+    (are [result redirect-url] (= result (t/authorized-url? redirect-url))
+                               true "https://nuvla.io"
+                               true "https://nuvla.io/hello"
+                               true "https://nuvla.io/hello/anything"
+                               true "https://nuvla.io?param=1"
+                               true "https://nuvla.io/hello/anything?parm=1&param=2"
+                               true "http://nuvla.io"
+                               false "https://phishing.com"
+                               false "")))
 
 (deftest lifecycle-nuvla
   (check-existing-configuration ct-nuvla/service :support-email "admin@example.org")

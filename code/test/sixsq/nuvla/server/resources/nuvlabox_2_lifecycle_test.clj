@@ -21,6 +21,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
+    [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -28,6 +29,9 @@
 
 
 (def base-uri (str p/service-context nb/resource-type))
+
+
+(def playbook-base-uri (str p/service-context nb-playbook/resource-type))
 
 
 (def isg-collection-uri (str p/service-context isg/resource-type))
@@ -499,6 +503,7 @@
                                        (ltu/is-operation-present :revoke-ssh-key)
                                        (ltu/is-operation-present :update-nuvlabox)
                                        (ltu/is-operation-present :cluster-nuvlabox)
+                                       (ltu/is-operation-present :assemble-playbooks)
                                        (ltu/is-key-value :state "COMMISSIONED")
                                        (ltu/get-op-url :cluster-nuvlabox))]
 
@@ -1229,8 +1234,206 @@
                                     :view-data [nuvlabox-id "user/alpha"],
                                     :manage    [nuvlabox-id "user/alpha"],
                                     :edit-meta [nuvlabox-id "user/alpha"]})))
-
       )))
+
+
+(deftest create-activate-assemble-playbooks-emergency-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+
+      #_{:clj-kondo/ignore [:redundant-let]}
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        ;; create playbook
+        (-> session-owner
+            (request playbook-base-uri
+                     :request-method :post
+                     :body (json/write-str {:parent nuvlabox-id :type "MANAGEMENT" :run "foo MGMT" :enabled true}))
+            (ltu/body->edn)
+            (ltu/is-status 201))
+
+
+        (let [session-nuvlabox (header session authn-info-header
+                                       (str nuvlabox-id " " nuvlabox-id
+                                            " group/nuvla-nuvlabox group/nuvla-anon"))]
+
+          (let [;; create emergency playbook
+                emergency-playbook-id  (-> session-owner
+                                           (request playbook-base-uri
+                                                    :request-method :post
+                                                    :body (json/write-str {:parent nuvlabox-id :type "EMERGENCY" :run "foo EMERGENCY" :enabled false}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 201)
+                                           (ltu/location))
+
+                assemble-playbooks-url (-> session-owner
+                                           (request nuvlabox-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-operation-present :assemble-playbooks)
+                                           (ltu/get-op-url :assemble-playbooks))
+
+                enable-emergency-url   (-> session-owner
+                                           (request nuvlabox-url)
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-operation-present :enable-emergency-playbooks)
+                                           (ltu/get-op-url :enable-emergency-playbooks))
+
+                ;; give back mgmt playbooks
+                assembled-playbooks    (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))
+
+                ;; enable emergency
+                _                      (-> session-owner
+                                           (request enable-emergency-url
+                                                    :request-method :post
+                                                    :body (json/write-str {:emergency-playbooks-ids [emergency-playbook-id]}))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200))
+
+                ;; the playbook is now enabled
+                _                      (-> session-nuvlabox
+                                           (request (str p/service-context emergency-playbook-id))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200)
+                                           (ltu/is-key-value :enabled true))
+
+                ;; now give back emergency playbooks
+                assembled-em-playbooks (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))
+
+                ;; emergency will be disabled automatically, so we expect mgmt again
+                reassembled-playbooks  (-> session-nuvlabox
+                                           (request assemble-playbooks-url)
+                                           (ltu/is-status 200)
+                                           (ltu/body))]
+
+            ;; and now emergency is re-disabled
+            (-> session-nuvlabox
+                (request (str p/service-context emergency-playbook-id))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :enabled false))
+
+            (is (str/includes? assembled-playbooks "MGMT"))
+            (is (str/includes? assembled-em-playbooks "EMERGENCY"))
+            (is (str/includes? reassembled-playbooks "MGMT"))))))))
+
+
+(deftest create-enable-host-level-management-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")]
+
+      #_{:clj-kondo/ignore [:redundant-let]}
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            enable-url   (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/is-operation-present :enable-host-level-management)
+                             (ltu/is-operation-absent :disable-host-level-management)
+                             (ltu/get-op-url :enable-host-level-management))]
+
+        ;; confirm host-level mgmt is not enabled
+        (-> session-owner
+            (request nuvlabox-url)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :host-level-management-api-key nil))
+
+        ;; enable it
+        (-> session-owner
+            (request enable-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/has-key :cronjob))
+
+        ;; confirm host-level mgmt is now enabled, and api key exists
+        (let [disable-url    (-> session-owner
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/is-operation-present :disable-host-level-management)
+                                 (ltu/is-operation-absent :enable-host-level-management)
+                                 (ltu/get-op-url :disable-host-level-management))
+
+              credential-id  (-> session-owner
+                                 (request nuvlabox-url)
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 :response
+                                 :body
+                                 :host-level-management-api-key)
+
+              credential-url (str p/service-context credential-id)]
+
+          (-> session-owner
+              (request credential-url)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          ;; disable it
+          (-> session-owner
+              (request disable-url
+                       :request-method :post)
+              (ltu/is-status 200))
+
+          ;; confirm api key is gone
+          (-> session-owner
+              (request credential-url)
+              (ltu/body->edn)
+              (ltu/is-status 404))
+
+          (-> session-owner
+              (request nuvlabox-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :host-level-management-api-key nil)))))))
 
 
 (deftest create-activate-commission-get-context-lifecycle

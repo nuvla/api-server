@@ -72,11 +72,22 @@
              :json-schema/order 44)))
 
 
+(s/def ::host-level-management-api-key
+  (-> (st/spec ::credential-href)
+      (assoc :name "host-level-management-api-key"
+             :json-schema/type "string"
+             :json-schema/display-name "NuvlaBox credential api key for host level management operations"
+             :json-schema/description "when host level management is enabled, it points to the credential api key being used for that purpose"
+
+             :json-schema/order 45)))
+
+
 (def attributes {:req-un [::version
                           ::owner]
                  :opt-un [::nuvlabox-status
                           ::infrastructure-service-group
-                          ::credential-api-key]})
+                          ::credential-api-key
+                          ::host-level-management-api-key]})
 
 
 (s/def ::schema

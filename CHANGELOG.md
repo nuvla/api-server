@@ -5,6 +5,7 @@
 ### Added
 
   - User - Two factor authentication support
+  - NuvlaBox Playbooks - new `nuvlabox-playbook` resource for remote management of the NuvlaBox device
 
 ### Changed
 
@@ -12,6 +13,12 @@
   - Routes - Remove special user resource route
   - User - Authenticated-user view-meta on user resource removed from default ACL
   - User - User is not allowed to edit his state
+  - Configuration - Nuvla `authorized-redirect-urls` configuration
+  - NuvlaBox - new operation `assemble-playbooks` for staging playbooks for execution
+  - NuvlaBox - new operation `enable-emergency-playbooks` for enabling the one-off execution of emergency playbooks
+  - User, Session, Group - Check if redirect-url is authorized
+  - Cloud-entry-point - Minor changes
+  - NuvlaBox Peripheral - fix default ACL for schema validation when payload is empty
 
 ## [5.22.0] - 2021-12-16
 
@@ -20,7 +27,7 @@
   - ES - Support for `geo-shape` queries
   - Data - Support for `geo-shape` type
 
-### Updated
+### Changed
 
   - Nuvlabox-status - Bug fix related to online flag
   - Data-record - New `geometry` attribute of type `geo-shape`

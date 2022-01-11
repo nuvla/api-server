@@ -58,7 +58,8 @@
                :internal-data-gateway-endpoint "nb-data-gateway"
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
-               :online                         true})
+               :online                         true
+               :host-level-management-api-key  "credential/123-abc"})
 
 
 (deftest check-nuvlabox
@@ -97,5 +98,6 @@
                  :infrastructure-service-id
                  :ssh-keys
                  :capabilities
-                 :online}]
+                 :online
+                 :host-level-management-api-key}]
     (stu/is-valid ::nb-1/schema (dissoc valid-nb attr))))
