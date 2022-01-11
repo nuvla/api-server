@@ -145,7 +145,7 @@
       "\nEOF\n"
       "rm " nuvlabox-playbook-out " || true \n"
       "sh " nuvlabox-playbook-file
-      " 2>&1 | while IFS= read -r line; do printf '[%s] %s\\\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
+      " 2>&1 | while IFS= read -r line; do printf '[%s] %s\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$line\" >> "
       nuvlabox-playbook-out "; done || true")))
 
 
@@ -165,8 +165,8 @@
                                    (str "curl -X POST ${NUVLA_ENDPOINT:-https://nuvla.io}/api/" (:id playbook) "/save-output "
                                         "-H content-type:application/json "
                                         "-b /tmp/nuvla-cookie -c /tmp/nuvla-cookie "
-                                        "-d \"{\\\"output\\\": \\\"$(cat "
-                                        (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"}\""))
+                                        "-d \"{\\\"encoded-output\\\": \\\"$(cat "
+                                        (get-nuvlabox-playbook-output-filename (:id playbook)) " | base64 -w 0)\\\"}\""))
                                  playbooks)]
       (str "#!/bin/sh\n\n"
            exec-wrapped-runs
@@ -192,3 +192,7 @@
   [limit s]
   (cond-> s
           (> (count s) limit) (subs 0 limit)))
+
+
+(defn decode-base64 [to-decode]
+  (String. (.decode (java.util.Base64/getDecoder) to-decode)))

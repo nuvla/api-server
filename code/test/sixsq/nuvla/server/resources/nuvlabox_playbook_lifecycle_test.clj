@@ -185,7 +185,7 @@
           (-> session-nb
               (request save-output-op-url
                        :request-method :post
-                       :body (json/write-str {:output "newest stdout"}))
+                       :body (json/write-str {:encoded-output "Zm9vCg=="}))  ; "foo" in base64
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -194,7 +194,7 @@
               (request playbook-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :output "newest stdout\n\nnew output"))
+              (ltu/is-key-value :output "foo\n\nnew output"))
 
           ;; output saved via the op must be truncated
           (-> session-nb

@@ -119,7 +119,7 @@ NuvlaBox Engine software
   (if new-output
     (do
       (try
-        (let [concat-output (str new-output "\n\n" output)
+        (let [concat-output (str new-output "\n" output)
               request       {:params      {:uuid          (u/id->uuid id)
                                            :resource-name resource-type}
                              :body        {:output concat-output}
@@ -139,7 +139,9 @@ NuvlaBox Engine software
   [{{uuid :uuid} :params body :body :as request}]
   (try
     (let [id         (str resource-type "/" uuid)
-          new-output (:output body)]
+          new-output (if (:encoded-output body)
+                       (utils/decode-base64 (:encoded-output body))
+                       (:output body))]
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (save-output new-output)))
