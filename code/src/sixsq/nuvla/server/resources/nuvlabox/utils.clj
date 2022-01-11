@@ -166,7 +166,7 @@
                                         "-H content-type:application/json "
                                         "-b /tmp/nuvla-cookie -c /tmp/nuvla-cookie "
                                         "-d \"{\\\"output\\\": \\\"$(cat "
-                                        (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"\"}"))
+                                        (get-nuvlabox-playbook-output-filename (:id playbook)) ")\\\"}\""))
                                  playbooks)]
       (str "#!/bin/sh\n\n"
            exec-wrapped-runs
