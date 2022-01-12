@@ -249,21 +249,20 @@
 
 (defn throw-price-need-payment-method
   [{{:keys [price]} :module :as resource} request]
-  (if (and config-nuvla/*stripe-api-key* price)
-    (let [follow-trial? (boolean (:follow-customer-trial price))
-          active-claim  (auth/current-active-claim request)]
-      (if (or
-            (nil? config-nuvla/*stripe-api-key*)
-            (nil? price)
-            (or
-              (and follow-trial?
-                   (user-utils/customer-has-trialing-subscription? active-claim))
-              (-> request
-                  auth/current-active-claim
-                  user-utils/active-claim->customer
-                  has-defined-payment-methods?)))
-        resource
-        (throw (r/ex-response "Payment method is required!" 402))))))
+  (let [follow-trial? (boolean (:follow-customer-trial price))
+        active-claim  (auth/current-active-claim request)]
+    (if (or
+          (nil? config-nuvla/*stripe-api-key*)
+          (nil? price)
+          (or
+            (and follow-trial?
+                 (user-utils/customer-has-trialing-subscription? active-claim))
+            (-> request
+                auth/current-active-claim
+                user-utils/active-claim->customer
+                has-defined-payment-methods?)))
+      resource
+      (throw (r/ex-response "Payment method is required!" 402)))))
 
 
 (defn remove-delete
