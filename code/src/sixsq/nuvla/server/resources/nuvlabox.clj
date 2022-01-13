@@ -943,6 +943,32 @@ particular NuvlaBox release.
 
 
 ;;
+;; Allows for the creation of a NuvlaBox API key on-demand
+;;
+
+
+(defn create-new-api-key
+  [{:keys [id state] :as nuvlabox} request]
+  (if (#{state-decommissioned state-decommissioning} state)
+    (logu/log-and-throw-400 (str "invalid state for generating new API key: " state))
+    (do
+      (log/warn "generating new API key for nuvlabox:" id)
+      (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "")]
+        (r/json-response credential)))))
+
+
+(defmethod crud/do-action [resource-type "generate-new-api-key"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (create-new-api-key request)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -974,6 +1000,7 @@ particular NuvlaBox release.
         enable-host-mgmt-op  (u/action-map id :enable-host-level-management)
         disable-host-mgmt-op (u/action-map id :disable-host-level-management)
         enable-emergency-op  (u/action-map id :enable-emergency-playbooks)
+        generate-new-key-op  (u/action-map id :generate-new-api-key)
         ops                  (cond-> []
                                      (a/can-edit? resource request) (conj edit-op)
                                      (and (a/can-delete? resource request)
@@ -1011,7 +1038,10 @@ particular NuvlaBox release.
                                      (and (a/can-manage? resource request)
                                           (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt-op)
                                      (and (a/can-manage? resource request)
-                                          (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op))]
+                                          (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op)
+                                     (and (a/can-manage? resource request)
+                                          (not= state state-decommissioned)
+                                          (not= state state-decommissioning)) (conj generate-new-key-op))]
     (assoc resource :operations ops)))
 
 ;;

@@ -8,6 +8,7 @@
   - NuvlaBox Playbooks - new `nuvlabox-playbook` resource for remote management of the NuvlaBox device
   - NuvlaBox - new operation `assemble-playbooks` for staging playbooks for execution
   - NuvlaBox - new operation `enable-emergency-playbooks` for enabling the one-off execution of emergency playbooks
+  - NuvlaBox - new operation `generate-new-api-key` to generate a new API key during the lifetime of the NuvlaBox
 
 ### Updated
 
