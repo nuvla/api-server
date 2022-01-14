@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.23.0] - 2022-01-14
+
 ### Added
 
   - User - Two factor authentication support
