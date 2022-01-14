@@ -23,7 +23,7 @@
 
 (def warning-initiate
   (str/join "\n"
-            ["If you did not initiate this request, do NOT click on the link and report"
+            ["If you didn't initiate this request, do NOT click on any link and report"
              "this to the service administrator."]))
 
 (def conditions-acceptance
