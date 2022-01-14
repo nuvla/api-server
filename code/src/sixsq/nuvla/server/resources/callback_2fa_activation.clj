@@ -36,12 +36,12 @@ Allow a user to activate or deactivate two factor authentication.
   (try
     (utils/callback-dec-tries callback-id)
     (if (token-is-valid? request callback)
-      (let [msg (str "Two factor authentication with method '" method "' " (if enable "activated" "disabled")
+      (let [msg (str "2FA with method '" method "' " (if enable "activated" "disabled")
                      " for " user-id ". Callback successfully executed.")]
         (user-utils/update-user user-id {:auth-method-2fa method})
         (log/info msg)
         (utils/callback-succeeded! callback-id)
         (r/map-response msg 200 user-id))
-      (logu/log-and-throw-400 "wrong 2FA token!"))
+      (logu/log-and-throw-400 (str "Wrong 2FA token for " user-id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
