@@ -8,6 +8,7 @@ Allow a user to activate or deactivate two factor authentication.
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -41,6 +42,6 @@ Allow a user to activate or deactivate two factor authentication.
         (log/info msg)
         (utils/callback-succeeded! callback-id)
         (r/map-response msg 200 user-id))
-      (r/map-response "wrong 2FA token!" 400))
+      (logu/log-and-throw-400 "wrong 2FA token!"))
     (catch Exception e
       (or (ex-data e) (throw e)))))

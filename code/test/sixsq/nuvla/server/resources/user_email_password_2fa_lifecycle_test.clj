@@ -58,7 +58,6 @@
                                 :tags        tags-attr
                                 :template    {:href     href
                                               :password plaintext-password
-                                              ;:username "user/jane"
                                               :email    jane-email}}]
 
         ;; create user
