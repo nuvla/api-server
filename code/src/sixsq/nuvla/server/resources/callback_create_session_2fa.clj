@@ -47,6 +47,6 @@ Allow a user to validate session with two factor authentication.
             (let [cookie-tuple [authn-info/authn-cookie cookie]]
               (utils/callback-succeeded! callback-id)
               (r/response-created session-id cookie-tuple))))
-        (logu/log-and-throw-400 (str "Wrong 2FA token for " user-id))))
+        (logu/log-and-throw-400 (str callback-2fa-activation/msg-wrong-2fa-token " for " user-id))))
     (catch Exception e
       (or (ex-data e) (throw e)))))

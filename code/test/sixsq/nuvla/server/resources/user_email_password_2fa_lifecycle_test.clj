@@ -7,6 +7,7 @@
     [ring.util.codec :as codec]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.callback-2fa-activation :refer [msg-wrong-2fa-token]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
@@ -174,7 +175,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -182,7 +183,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -244,7 +245,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -252,7 +253,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               ;; session is created when token is valid
               (let [session-url (-> session-anon
@@ -311,7 +312,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -319,7 +320,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -327,7 +328,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               ;; 4th try with right token will fail
               (-> session-anon
@@ -386,7 +387,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -394,7 +395,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches "wrong 2FA token!"))
+                  (ltu/message-matches msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url

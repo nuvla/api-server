@@ -14,6 +14,8 @@ Allow a user to activate or deactivate two factor authentication.
 
 (def ^:const action-name "2fa-activation")
 
+(def ^:const msg-wrong-2fa-token "Wrong 2FA token")
+
 (def create-callback (partial callback/create action-name))
 
 
@@ -42,6 +44,6 @@ Allow a user to activate or deactivate two factor authentication.
         (log/info msg)
         (utils/callback-succeeded! callback-id)
         (r/map-response msg 200 user-id))
-      (logu/log-and-throw-400 (str "Wrong 2FA token for " user-id)))
+      (logu/log-and-throw-400 (str msg-wrong-2fa-token " for " user-id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
