@@ -7,9 +7,10 @@
 
 
 (defn executable?
-  [{:keys [state expires]}]
+  [{:keys [state expires tries-left] :or {tries-left 1}}]
   (and (= state "WAITING")
-       (u/not-expired? expires)))
+       (u/not-expired? expires)
+       (pos? tries-left)))
 
 
 (defn update-callback-state!
@@ -27,3 +28,13 @@
 
 
 (def callback-failed! (partial update-callback-state! "FAILED"))
+
+(defn callback-dec-tries
+  [callback-id]
+  (try
+    (-> (crud/retrieve-by-id-as-admin callback-id)
+        (u/update-timestamps)
+        (update :tries-left dec)
+        (db/edit {:nuvla/authn auth/internal-identity}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))

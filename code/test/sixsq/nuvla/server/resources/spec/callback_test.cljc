@@ -22,6 +22,7 @@
                    :state           "WAITING"
                    :target-resource {:href "email/1230958abdef"}
                    :expires         timestamp
+                   :tries-left      3
                    :data            {:some    "value"
                                      :another "value"}}]
 
@@ -33,5 +34,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :action :state}]
       (stu/is-invalid ::callback/schema (dissoc callback attr)))
 
-    (doseq [attr #{:target-resource :expires :data}]
+    (doseq [attr #{:target-resource :expires :data :tries-left}]
       (stu/is-valid ::callback/schema (dissoc callback attr)))))

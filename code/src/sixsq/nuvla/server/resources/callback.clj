@@ -160,12 +160,13 @@ appropriate users.
   "Creates a callback resource with the given action-name, base-uri, target
    resource, data (optional), expires (optional).
    Returns the URL to trigger the callback's action."
-  [action-name base-uri href & {:keys [data expires]}]
+  [action-name base-uri href & {:keys [data expires tries-left]}]
   (let [callback-request {:params      {:resource-name resource-type}
                           :body        (cond-> {:action          action-name
                                                 :target-resource {:href href}}
                                                data (assoc :data data)
-                                               expires (assoc :expires expires))
+                                               expires (assoc :expires expires)
+                                               tries-left (assoc :tries-left tries-left))
                           :nuvla/authn auth/internal-identity}
         {{:keys [resource-id]} :body status :status} (crud/add callback-request)]
 

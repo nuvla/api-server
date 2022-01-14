@@ -10,7 +10,7 @@
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.time :as time])
   (:import
-    (java.security MessageDigest)
+    (java.security MessageDigest SecureRandom)
     (java.util UUID)))
 
 
@@ -105,6 +105,18 @@
   (let [algorithm (MessageDigest/getInstance "MD5")
         raw       (.digest algorithm (.getBytes s))]
     (format "%032x" (BigInteger. 1 raw))))
+
+
+(defn secure-rand-int
+  "Returns a secure random integer between 0 (inclusive) and n (exclusive)."
+  ([n]
+   (let [random (SecureRandom.)]
+     (.nextInt random n)))
+  ([min max]
+   (-> (- max min)
+       (inc)
+       (secure-rand-int)
+       (+ min))))
 
 
 ;;

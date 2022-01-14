@@ -23,7 +23,7 @@
 
 (def warning-initiate
   (str/join "\n"
-            ["If you did not initiate this request, do NOT click on the link and report"
+            ["If you didn't initiate this request, do NOT click on any link and report"
              "this to the service administrator."]))
 
 (def conditions-acceptance
@@ -166,6 +166,24 @@
                 :warning-initiate true})}])
 
 
+(defn email-token-2fa
+  [token]
+  [:alternative
+   {:type    "text/plain"
+    :content (format
+               (str/join "\n"
+                         ["Code:"
+                          "\n    %s\n"
+                          warning-initiate])
+               token)}
+   {:type    "text/html; charset=utf-8"
+    :content (render-email
+               {:title            "Nuvla authorization code"
+                :text-strong-1    "Code: "
+                :text-strong-2    token
+                :warning-initiate true})}])
+
+
 (defn join-group-email-body
   [group invited-by callback-url conditions-url]
   (let [msg  (format "You have been invited by \"%s\" to join \"%s\" on Nuvla. " invited-by group)
@@ -215,6 +233,20 @@
         msg  {:from    (or smtp-username "administrator")
               :to      [address]
               :subject (format "You’re invited to join %s" group)
+              :body    body}]
+
+    (send-email nuvla-config msg)))
+
+
+(defn send-email-token-2fa [token address]
+  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
+                                                   config-nuvla/config-instance-url)
+
+        body (email-token-2fa token)
+
+        msg  {:from    (or smtp-username "administrator")
+              :to      [address]
+              :subject "Nuvla authorization code"
               :body    body}]
 
     (send-email nuvla-config msg)))
