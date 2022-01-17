@@ -8,11 +8,13 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-2fa]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -23,13 +25,15 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user :as user]
+    [sixsq.nuvla.server.resources.spec.user-2fa :as user-2fa]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-interface :as user-interface]
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-username-password]
-    [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.metadata :as gen-md]))
+    [sixsq.nuvla.server.resources.user.utils :as utils]
+    [sixsq.nuvla.server.util.metadata :as gen-md]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -78,9 +82,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/add-acl resource-type
   [{:keys [id] :as resource} _request]
-  (assoc resource :acl {:owners    ["group/nuvla-admin"]
-                        :view-meta ["group/nuvla-user"]
-                        :edit-acl  [id]}))
+  (assoc resource :acl {:owners   ["group/nuvla-admin"]
+                        :edit-acl [id]}))
 
 
 ;;
@@ -90,8 +93,9 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def ^:const initial-state "NEW")
 
 (def user-attrs-defaults
-  {:state   initial-state
-   :deleted false})
+  {:state           initial-state
+   :deleted         false
+   :auth-method-2fa "none"})
 
 (defn merge-with-defaults
   [resource]
@@ -173,23 +177,18 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (query-impl request))
 
 
-(defn throw-no-id
-  [body]
-  (when-not (contains? body :id)
-    (logu/log-and-throw-400 "id is not provided in the document.")))
-
-
 (defn edit-impl
   "Returns edited document or exception data in case of an error."
-  [{body :body :as request}]
-  (throw-no-id body)
+  [{body :body {uuid :uuid} :params :as request}]
   (try
-    (let [current (-> (:id body)
-                      (db/retrieve request)
-                      (a/throw-cannot-edit request))
-          merged  (->> (dissoc body :name)
-                       (merge current))]
-      (-> merged
+    (let [id         (str resource-type "/" uuid)
+          authn-info (auth/current-authentication request)
+          is-user?   (not (a/is-admin? authn-info))]
+      (-> id
+          (db/retrieve request)
+          (a/throw-cannot-edit request)
+          (merge (cond-> body
+                         is-user? (dissoc :name :state :auth-method-2fa)))
           (dissoc :href)
           (u/update-timestamps)
           (u/set-updated-by request)
@@ -201,7 +200,93 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-impl request))
+  (-> request
+      (update-in [:cimi-params :select] #(vec (remove #{"auth-method-2fa"} %1)))
+      (edit-impl)))
+
+
+(defn enable-2fa?
+  [{:keys [auth-method-2fa] :as _resource}]
+  (or (= auth-method-2fa "none")
+      (nil? auth-method-2fa)))
+
+(defn can-enable-2fa?
+  [resource request]
+  (and (a/can-manage? resource request)
+       (enable-2fa? resource)
+       (some? (:credential-password resource))))
+
+
+(defn can-disable-2fa?
+  [resource request]
+  (and (a/can-manage? resource request)
+       (not (enable-2fa? resource))
+       (some? (:credential-password resource))))
+
+
+(defn set-resource-ops
+  [{:keys [id] :as resource} request]
+  (let [ops (cond-> []
+                    (a/can-edit? resource request) (conj (u/operation-map id :edit))
+                    (a/can-delete? resource request) (conj (u/operation-map id :delete))
+                    (can-enable-2fa? resource request) (conj (u/action-map id :enable-2fa))
+                    (can-disable-2fa? resource request) (conj (u/action-map id :disable-2fa)))]
+    (if (seq ops)
+      (assoc resource :operations ops)
+      (dissoc resource :operations))))
+
+
+(defmethod crud/set-operations resource-type
+  [resource request]
+  (if (u/is-collection? resource-type)
+    (crud/set-standard-collection-operations resource request)
+    (set-resource-ops resource request)))
+
+
+(defn throw-action-2fa-authorized
+  [resource request can-2fa?-fn]
+  (if (can-2fa?-fn resource request)
+    resource
+    (throw
+      (r/ex-response
+        "You can't enable 2FA!" 403))))
+
+
+(def validate-enable-2fa-body-fn (u/create-spec-validation-fn ::user-2fa/enable-2fa-body-schema))
+
+
+(defn throw-body-incomplete
+  [{body :body :as _request} enable?]
+  (when enable? (validate-enable-2fa-body-fn body)))
+
+(defn enable-disable-2fa
+  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request} enable?]
+  (try
+    (let [id   (str resource-type "/" uuid)
+          user (db/retrieve id request)]
+      (throw-action-2fa-authorized user request (if enable? can-enable-2fa? can-disable-2fa?))
+      (throw-body-incomplete request enable?)
+      (let [token           (utils/token-2fa method user)
+            method-callback (if enable? method "none")
+            callback-url    (callback-2fa/create-callback
+                              base-uri id :data {:method method-callback :token token}
+                              :expires (u/ttl->timestamp 120)
+                              :tries-left 3)
+            method-2fa      (if enable? method (:auth-method-2fa user))]
+        (utils/method-2fa method-2fa user token)
+        (r/map-response "Authorization code requested" 200 id callback-url)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defmethod crud/do-action [resource-type "enable-2fa"]
+  [request]
+  (enable-disable-2fa request true))
+
+
+(defmethod crud/do-action [resource-type "disable-2fa"]
+  [request]
+  (enable-disable-2fa request false))
 
 
 ;;

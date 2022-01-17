@@ -4,13 +4,10 @@ Allow a user to set a new password when the execute URL is visited.
 "
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-user-email-validation :as user-email-validation]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]))
@@ -19,17 +16,6 @@ Allow a user to set a new password when the execute URL is visited.
 (def ^:const action-name "user-password-set")
 
 (def create-callback (partial callback/create action-name))
-
-
-(defn update-password!
-  [credential-id hash-password]
-  (try
-    (-> (crud/retrieve-by-id-as-admin credential-id)
-        (u/update-timestamps)
-        (assoc :hash hash-password)
-        (db/edit {:nuvla/authn auth/internal-identity}))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
 
 
 (defmethod callback/execute action-name

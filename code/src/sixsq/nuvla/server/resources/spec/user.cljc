@@ -65,11 +65,23 @@
              :json-schema/order 33)))
 
 
+(s/def ::auth-method-2fa
+  (-> (st/spec #{"none" "email"})
+      (assoc :name "auth method 2fa"
+             :json-schema/type "string"
+             :json-schema/description "Two factor authentication method"
+             :json-schema/value-scope {:values  ["email" "none"]
+                                       :default "none"}
+             :json-schema/server-managed true
+             :json-schema/order 34)))
+
+
 (def user-keys-spec
   {:req-un [::state]
    :opt-un [::method
+            ::email
             ::credential-password
-            ::email]})
+            ::auth-method-2fa]})
 
 
 (s/def ::schema
