@@ -290,7 +290,7 @@
                                          :customer-id)
        "items"                   [{"price" price-id}]
        "application_fee_percent" 20
-       "trial-end"               (time/unix-timestamp-from-date trial-end)
+       "trial_end"               (time/unix-timestamp-from-date trial-end)
        "coupon"                  coupon
        "transfer_data"           {"destination" account-id}})))
 
