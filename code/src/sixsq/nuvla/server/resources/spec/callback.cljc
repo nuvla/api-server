@@ -61,10 +61,22 @@
              :json-schema/order 14)))
 
 
+(s/def ::tries-left
+  (-> (st/spec (s/int-in 0 11))
+      (assoc :name "tries-left"
+             :json-schema/description "tries left"
+             :json-schema/type "integer"
+             :json-schema/order 15
+
+             :json-schema/value-scope {:minimum 1
+                                       :maximum 10})))
+
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::action
                                ::state]
                       :opt-un [::target-resource
                                ::data
-                               ::expires]}))
+                               ::expires
+                               ::tries-left]}))

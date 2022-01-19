@@ -47,7 +47,7 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
+                  ;; WARNING: This is a fragile! Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
                                         (let [url (->> body second :content
                                                        (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*")

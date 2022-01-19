@@ -55,21 +55,8 @@
       (r/map-response "unknown resource" 404 uri))))
 
 
-(def user-routes
-  (let-routes [uri (str p/service-context ":resource-name{user}/:uuid{.*}")]
-    (GET uri request
-      (crud/retrieve request))
-    (PUT uri request
-      (crud/edit request))
-    (DELETE uri request
-      (crud/delete request))
-    (ANY uri request
-      (throw (r/ex-bad-method request)))))
-
-
 (def final-routes
   [collection-routes
-   user-routes
    bulk-action-routes
    resource-routes
    action-routes

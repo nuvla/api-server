@@ -5,16 +5,19 @@ password.
 "
   (:require
     [clojure.tools.logging :as log]
+    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
+    [sixsq.nuvla.server.resources.callback-create-session-2fa :as callback-2fa]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.session :as p]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-password :as st-password]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -42,33 +45,51 @@ password.
 ;;
 
 
+(defmulti create-session-password-for-user (fn [_resource _request user] (:auth-method-2fa user)))
 
-(defn create-session-password
-  [username user headers href]
-  (if user
-    (let [user-id     (:id user)
-          session     (sutils/create-session username user-id {:href href} headers authn-method)
-          cookie-info (cookies/create-cookie-info user-id
-                                                  :session-id (:id session)
-                                                  :headers headers
-                                                  :client-ip (:client-ip session))
-          cookie      (cookies/create-cookie cookie-info)
-          expires     (ts/rfc822->iso8601 (:expires cookie))
-          claims      (:claims cookie-info)
-          groups      (:groups cookie-info)
-          session     (cond-> (assoc session :expiry expires)
-                              claims (assoc :roles claims)
-                              groups (assoc :groups groups))
-          cookies     {authn-info/authn-cookie cookie}]
-      (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
-      [{:cookies cookies} session])
-    (throw (r/ex-unauthorized username))))
+(defmethod create-session-password-for-user "email"
+  [{:keys [href username] :as _resource} {:keys [base-uri headers body] :as _request} {user-id :id
+                                                                                       method  :auth-method-2fa :as user}]
+  (let [redirect-url (-> body :template :redirect-url)
+        ;; fake session values will be replaced after callback execution
+        session      (-> (sutils/create-session username user-id {:href href} headers authn-method redirect-url)
+                         (assoc :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 120))))
+        token        (user-utils/token-2fa method user)
+        session-id   (:id session)
+        callback-url (callback-2fa/create-callback
+                       base-uri session-id :data {:method  method
+                                                  :token   token
+                                                  :headers headers}
+                       :expires (u/ttl->timestamp 120)
+                       :tries-left 3)]
+    (user-utils/method-2fa method user token)
+    [(r/map-response "Authorization code requested" 200 session-id callback-url) session]))
+
+(defmethod create-session-password-for-user :default
+  [{:keys [href username] :as _resource} {:keys [headers] :as _request} user]
+  (let [user-id     (:id user)
+        session     (sutils/create-session username user-id {:href href} headers authn-method)
+        cookie-info (cookies/create-cookie-info user-id
+                                                :session-id (:id session)
+                                                :headers headers
+                                                :client-ip (:client-ip session))
+        cookie      (cookies/create-cookie cookie-info)
+        expires     (ts/rfc822->iso8601 (:expires cookie))
+        claims      (:claims cookie-info)
+        groups      (:groups cookie-info)
+        session     (cond-> (assoc session :expiry expires)
+                            claims (assoc :roles claims)
+                            groups (assoc :groups groups))
+        cookies     {authn-info/authn-cookie cookie}]
+    (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
+    [{:cookies cookies} session]))
 
 
 (defmethod p/tpl->session authn-method
-  [{:keys [href username password] :as _resource} {:keys [headers] :as _request}]
-  (let [user (auth-password/valid-user-password username password)]
-    (create-session-password username user headers href)))
+  [{:keys [username password] :as resource} request]
+  (if-let [user (auth-password/valid-user-password username password)]
+    (create-session-password-for-user resource request user)
+    (throw (r/ex-unauthorized username))))
 
 
 ;;

@@ -171,7 +171,6 @@
 
       ;; verify the ACL of the user
       (is (some #{"group/nuvla-admin"} (:owners user-acl)))
-      (is (some #{"group/nuvla-user"} (:view-meta user-acl)))
       ;; user should have all rights
       (doseq [right [:view-meta :view-data :view-acl
                      :edit-meta :edit-data :edit-acl

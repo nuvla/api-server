@@ -948,7 +948,7 @@ particular NuvlaBox release.
 
 
 (defn create-new-api-key
-  [{:keys [id state] :as nuvlabox} request]
+  [{:keys [id state] :as nuvlabox}]
   (if (#{state-decommissioned state-decommissioning} state)
     (logu/log-and-throw-400 (str "invalid state for generating new API key: " state))
     (do
@@ -962,8 +962,8 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (create-new-api-key request)))
+          (a/throw-cannot-manage request)
+          (create-new-api-key)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

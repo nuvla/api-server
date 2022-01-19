@@ -85,7 +85,7 @@
         ;; user collection query should succeed but be empty for all users
         (doseq [session [session-anon session-user session-admin]]
           (-> session
-              (request base-uri)
+              (request (str base-uri "?filter=name!='super'"))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count zero?)
@@ -150,6 +150,15 @@
               (request (str p/service-context credential-id))
               (ltu/body->edn)
               (ltu/is-status 403))
+
+          ; user should not be able to change his state
+          (-> session-created-user
+              (request (str p/service-context user-id)
+                       :request-method :put
+                       :body (json/write-str {:state "SUSPENDED"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "NEW"))
 
           ; 1 identifier is visible for the created user one for email (username was not provided)
           (-> session-created-user
@@ -225,16 +234,17 @@
               (ltu/is-status 404))
 
           ;; ensure that user is not created and all child resources are cleaned up
+          ;; admin credential dependent of execution speed this is why <= 1
 
           (-> session-admin
               (request (str p/service-context credential/resource-type))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-count 0))
+              (ltu/is-count #(<= %1 1)))
 
           ; identifier cleanup
           (-> session-admin
-              (request (str p/service-context user-identifier/resource-type))
+              (request (str p/service-context user-identifier/resource-type "?filter=identifier!='super'"))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count 0))

@@ -27,6 +27,8 @@
 
                    :state               "ACTIVE"
 
+                   :auth-method-2fa     "none"
+
                    :acl                 valid-acl}]
 
     (stu/is-valid ::user/schema cfg)
@@ -35,5 +37,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :state}]
       (stu/is-invalid ::user/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:name :method :credential-password :email}]
+    (doseq [attr #{:name :method :credential-password :email :auth-method-2fa}]
       (stu/is-valid ::user/schema (dissoc cfg attr)))))
