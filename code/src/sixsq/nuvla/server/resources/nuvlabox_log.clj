@@ -5,6 +5,8 @@ These resources represent the logs of a nuvlabox.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [clojure.pprint :refer [pprint]]
+
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -118,6 +120,9 @@ These resources represent the logs of a nuvlabox.
   [job-type {:keys [nb-id nb-acl] :as nuvlabox} {{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
+      (pprint (-> nb-acl
+                (a/acl-append :edit-data nb-id)
+                (a/acl-append :manage nb-id)))
       (if-let [session-id (auth/current-session-id request)]
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id (str job-type "_nuvlabox_log")
@@ -170,23 +175,18 @@ These resources represent the logs of a nuvlabox.
 (defmethod job-interface/get-context ["nuvlabox-log" "fetch_nuvlabox_log"]
   [{:keys [target-resource] :as _resource}]
   (let [nuvlabox-log (some-> target-resource :href crud/retrieve-by-id-as-admin)
-        nuvlabox     (some-> nuvlabox-log :parent crud/retrieve-by-id-as-admin)
-        credential     (some-> nuvlabox :parent crud/retrieve-by-id-as-admin)
-        infra          (some-> credential :parent crud/retrieve-by-id-as-admin)]
+        nuvlabox     (some-> nuvlabox-log :parent crud/retrieve-by-id-as-admin)]
     (job-interface/get-context->response
-      nuvlabox
-      credential
-      infra)))
+      nuvlabox-log
+      nuvlabox)))
 
 ;;
 ;; internal crud
 ;;
 
 (defn create-log
-  [nuvlabox-id session-id & [{:keys [since lines]}]]
-  (let [acl            {:owners   ["group/nuvla-admin"]
-                        :edit-acl [session-id]}
-        log-map        (cond-> {:parent  nuvlabox-id
+  [nuvlabox-id acl & [{:keys [since lines]}]]
+  (let [log-map        (cond-> {:parent  nuvlabox-id
                                 :acl     acl}
                                since (assoc :since since)
                                lines (assoc :lines lines))
