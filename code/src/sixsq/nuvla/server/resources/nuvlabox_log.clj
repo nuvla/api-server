@@ -120,10 +120,11 @@ These resources represent the logs of a nuvlabox.
     (let [id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
         (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job id (str job-type "_nuvlabox_log")
+                job-status :status} :body} (job/create-job (:id nuvlabox) (str job-type "_nuvlabox_log")
                                              {:owners   ["group/nuvla-admin"]
                                               :view-acl [session-id]}
                                              :priority 50
+                                             :affected-resources [{:href id}]
                                              :execution-mode (nb-utils/get-execution-mode nuvlabox))
               job-msg (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
