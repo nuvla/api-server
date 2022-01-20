@@ -949,13 +949,9 @@ particular NuvlaBox release.
 ;;
 
 (defn create-log
-  [{:keys [id acl] :as _resource} {:keys [body] :as request}]
-  (let [session-id (auth/current-session-id request)
-        opts       (select-keys body [:since :lines])
-        nb-view-acl (:view-acl acl)
-        log-acl    (cond-> (utils/set-acl-nuvlabox-view-only acl {:owners [id]})
-                     (not-empty nb-view-acl) (assoc :manage nb-view-acl))]
-    (nuvlabox-log/create-log id log-acl opts)))
+  [nuvlabox {:keys [body] :as request}]
+  (let [opts       (select-keys body [:since :lines])]
+    (nuvlabox-log/create-log nuvlabox opts)))
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]

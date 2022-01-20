@@ -185,9 +185,13 @@ These resources represent the logs of a nuvlabox.
 ;;
 
 (defn create-log
-  [nuvlabox-id acl & [{:keys [since lines]}]]
-  (let [log-map        (cond-> {:parent  nuvlabox-id
-                                :acl     acl}
+  [{:keys [id acl] :as nuvlabox} & [{:keys [since lines]}]]
+  (let [nb-view-acl (:view-acl acl)
+        log-acl    (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
+                     (not-empty nb-view-acl) (assoc :manage nb-view-acl))
+
+        log-map        (cond-> {:parent  id
+                                :acl     log-acl}
                                since (assoc :since since)
                                lines (assoc :lines lines))
         create-request {:params      {:resource-name resource-type}

@@ -40,6 +40,7 @@
         session-jane  (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon" " " session-id))
         session-other (header session authn-info-header "user/other user/other group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+
         parent-id     (-> session-jane
                         (request nuvlabox-base-uri
                           :request-method :post
@@ -47,6 +48,17 @@
                         (ltu/body->edn)
                         (ltu/is-status 201)
                         (ltu/location))
+
+        nuvlabox     (-> session-jane
+                       (request (str p/service-context parent-id))
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/body))
+
+        session-nuvlabox  (header session authn-info-header
+                            (str parent-id " " parent-id
+                              " group/nuvla-nuvlabox group/nuvla-anon"))
+
         valid-entry   {:name    parameter-name
                        :parent  parent-id
                        :log     ["my-log-information"]
@@ -89,7 +101,7 @@
           (ltu/is-status 403)))
 
     ;; create a nuvlabox log as an admin user using internal utility function
-    (let [resp-test     {:response (t/create-log parent-id session-id)}
+    (let [resp-test     {:response (t/create-log nuvlabox)}
 
           id-test       (ltu/body-resource-id resp-test)
 
@@ -113,20 +125,21 @@
           (ltu/body->edn)
           (ltu/is-status 403))
 
-      ;; user can edit, but parent cannot be changed
+      ;; user can manage, but not edit directly
       (let [bad-id    "nuvlabox/324c6138-0484-34b5-bf35-af3ad15815db"
             resp      (-> session-jane
                           (request test-uri)
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-operation-present :fetch)
-                          (ltu/is-operation-present :edit)
-                          (ltu/is-operation-present :delete))
+                          (ltu/is-operation-absent :edit)
+                          (ltu/is-operation-absent :delete))
 
             fetch-url (ltu/get-op-url resp "fetch")
 
             original  (ltu/body resp)]
 
+        ;; user cannot edit
         (-> session-jane
             (request test-uri
                      :request-method :put
@@ -135,7 +148,18 @@
                                             :last-timestamp "1974-08-25T10:00:00.00Z"
                                             :log            ["OK!"]}))
             (ltu/body->edn)
-            (ltu/is-status 200))
+            (ltu/is-status 403))
+
+        ;; but the NB can
+        (-> session-nuvlabox
+          (request test-uri
+            :request-method :put
+            :body (json/write-str {:parent         bad-id
+                                   :name           "updated-name"
+                                   :last-timestamp "1974-08-25T10:00:00.00Z"
+                                   :log            ["OK!"]}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
         (let [{:keys [id name log last-timestamp]} (-> session-jane
                                                                (request test-uri)
