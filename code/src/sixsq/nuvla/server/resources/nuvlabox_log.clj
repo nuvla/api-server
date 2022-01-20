@@ -139,7 +139,7 @@ These resources represent the logs of a nuvlabox.
   [job-type {{uuid :uuid} :params :as _request}]
   (try
     (let [id               (str resource-type "/" uuid)
-          filter           (format "action='%s' and target-resource/href='%s' and %s"
+          filter           (format "action='%s' and affected-resources/href='%s' and %s"
                                    (str job-type "_nuvlabox_log")
                                    id
                                    "(state='QUEUED' or state='RUNNING')")
