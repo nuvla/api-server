@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+  - NuvlaBox Log - new `nuvlabox-log` resource for recording the NuvlaBox components' logs
+
 ## [5.23.0] - 2022-01-14
 
 ### Added

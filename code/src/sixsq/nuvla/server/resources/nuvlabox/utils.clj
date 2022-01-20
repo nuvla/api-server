@@ -197,7 +197,7 @@
 
 (defn can-create-log?
   [{:keys [state] :as _resource}]
-  (contains? #{"ACTIVATED" "COMISSIONED" "DECOMMISSIONING" "ERROR"} state))
+  (contains? #{"ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "ERROR"} state))
 
 
 (defn create-log
