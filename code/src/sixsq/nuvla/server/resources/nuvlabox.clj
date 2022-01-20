@@ -20,6 +20,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.nuvlabox-log :as nuvlabox-log]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -947,6 +948,12 @@ particular NuvlaBox release.
 ;; Create the NuvlaBox Log resource
 ;;
 
+(defn create-log
+  [{:keys [id] :as _resource} {:keys [body] :as request}]
+  (let [session-id (auth/current-session-id request)
+        opts       (select-keys body [:since :lines])]
+    (nuvlabox-log/create-log id session-id opts)))
+
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -954,7 +961,7 @@ particular NuvlaBox release.
       (-> (db/retrieve id request)
         (a/throw-cannot-manage request)
         (depl-utils/throw-can-not-do-action utils/can-create-log? "create-log")
-        (utils/create-log request)))
+        (create-log request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.nuvlabox-log :as nuvlabox-log]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -198,10 +197,3 @@
 (defn can-create-log?
   [{:keys [state] :as _resource}]
   (contains? #{"ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "ERROR"} state))
-
-
-(defn create-log
-  [{:keys [id] :as _resource} {:keys [body] :as request}]
-  (let [session-id (auth/current-session-id request)
-        opts       (select-keys body [:since :lines])]
-    (nuvlabox-log/create-log id session-id opts)))
