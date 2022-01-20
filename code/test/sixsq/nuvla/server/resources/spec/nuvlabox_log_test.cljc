@@ -11,7 +11,7 @@
 
 
 (deftest test-schema-check
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp "1974-08-25T10:00:00.00Z"
         root      {:id             (str t/resource-type "/uuid")
                    :resource-type  t/resource-type
                    :parent         "nuvlabox/7b1ad037-a65e-41e0-8fdf-e0e8db30bb0b"
@@ -19,7 +19,7 @@
                    :updated        timestamp
                    :acl            valid-acl
 
-                   :since          "1964-08-25T10:00:00.00Z"
+                   :since          "1974-08-25T10:00:00.00Z"
                    :last-timestamp "2019-08-25T10:00:00.00Z"
                    :lines          10
                    :log            ["some\nlong\nlog\ninformation\n"]}]

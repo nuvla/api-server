@@ -7,6 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-log :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -18,7 +19,7 @@
 (def base-uri (str p/service-context t/resource-type))
 
 
-(def parent-id "nuvlabox/324c6138-aaaa-bbbb-cccc-af3ad15815db")
+(def nuvlabox-base-uri (str p/service-context nb/resource-type))
 
 
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
@@ -26,13 +27,6 @@
 
 (def parameter-name "param1")
 
-
-(def valid-entry
-  {:name    parameter-name
-   :parent  parent-id
-   :log     ["my-log-information"]
-   :acl     {:owners   ["group/nuvla-admin"]
-             :edit-acl ["user/jane"]}})
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
@@ -45,7 +39,19 @@
         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-jane  (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon" " " session-id))
         session-other (header session authn-info-header "user/other user/other group/nuvla-user group/nuvla-anon")
-        session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+        session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        parent-id     (-> session-jane
+                        (request nuvlabox-base-uri
+                          :request-method :post
+                          :body (json/write-str {:owner "user/jane"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location))
+        valid-entry   {:name    parameter-name
+                       :parent  parent-id
+                       :log     ["my-log-information"]
+                       :acl     {:owners   ["group/nuvla-admin"]
+                                 :edit-acl ["user/jane"]}}]
 
     ;; admin nuvlabox-log collection query should succeed but be empty (no logs created yet)
     (-> session-admin
@@ -126,7 +132,7 @@
                      :request-method :put
                      :body (json/write-str {:parent         bad-id
                                             :name           "updated-name"
-                                            :last-timestamp "1964-08-25T10:00:00.00Z"
+                                            :last-timestamp "1974-08-25T10:00:00.00Z"
                                             :log            ["OK!"]}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -143,7 +149,7 @@
           (is (not= name (:name original)))
           (is (= name "updated-name"))
 
-          (is (= last-timestamp "1964-08-25T10:00:00.00Z"))
+          (is (= last-timestamp "1974-08-25T10:00:00.00Z"))
 
           (is (= log ["OK!"])))
 
