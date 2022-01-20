@@ -115,16 +115,16 @@ These resources represent the logs of a nuvlabox.
 
 
 (defn create-job
-  [job-type nuvlabox {{uuid :uuid} :params :as request}]
+  [job-type {:keys [nb-id nb-acl] :as nuvlabox} {{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
         (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job (:id nuvlabox) (str job-type "_nuvlabox_log")
-                                             {:owners   ["group/nuvla-admin"]
-                                              :view-acl [session-id]}
+                job-status :status} :body} (job/create-job id (str job-type "_nuvlabox_log")
+                                             (-> nb-acl
+                                               (a/acl-append :edit-data nb-id)
+                                               (a/acl-append :manage nb-id))
                                              :priority 50
-                                             :affected-resources [{:href id}]
                                              :execution-mode (nb-utils/get-execution-mode nuvlabox))
               job-msg (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
@@ -139,7 +139,7 @@ These resources represent the logs of a nuvlabox.
   [job-type {{uuid :uuid} :params :as _request}]
   (try
     (let [id               (str resource-type "/" uuid)
-          filter           (format "action='%s' and affected-resources/href='%s' and %s"
+          filter           (format "action='%s' and target-resource/href='%s' and %s"
                                    (str job-type "_nuvlabox_log")
                                    id
                                    "(state='QUEUED' or state='RUNNING')")
