@@ -11,6 +11,7 @@ These resources represent the logs of a nuvlabox.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-log :as nl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -114,15 +115,16 @@ These resources represent the logs of a nuvlabox.
 
 
 (defn create-job
-  [job-type {{uuid :uuid} :params :as request}]
+  [job-type nuvlabox {{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
         (let [{{job-id     :resource-id
                 job-status :status} :body} (job/create-job id (str job-type "_nuvlabox_log")
-                                                           {:owners   ["group/nuvla-admin"]
-                                                            :view-acl [session-id]}
-                                                           :priority 50)
+                                             {:owners   ["group/nuvla-admin"]
+                                              :view-acl [session-id]}
+                                             :priority 50
+                                             :execution-mode (nb-utils/get-execution-mode nuvlabox))
               job-msg (str "starting " id " with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response (format "unable to create async job to %s log" job-type) 500 id)))
@@ -155,11 +157,13 @@ These resources represent the logs of a nuvlabox.
   [{{uuid :uuid} :params :as request}]
   (let [id       (str resource-type "/" uuid)
         resource (crud/retrieve-by-id-as-admin id)
+        nuvlabox (crud/retrieve-by-id-as-admin (:parent resource))
         job-type "fetch"]
     (a/throw-cannot-manage resource request)
+    (a/throw-cannot-manage nuvlabox request)
     (if-let [response (already-job-exist job-type request)]
       response
-      (create-job job-type request))))
+      (create-job job-type nuvlabox request))))
 
 
 (defmethod job-interface/get-context ["nuvlabox-log" "fetch_nuvlabox_log"]
