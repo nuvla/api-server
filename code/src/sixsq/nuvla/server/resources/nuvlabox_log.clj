@@ -184,8 +184,10 @@ These resources represent the logs of a nuvlabox.
 (defn create-log
   [{:keys [id acl] :as nuvlabox} & [{:keys [since lines]}]]
   (let [nb-view-acl (:view-acl acl)
+        nb-delete-acl (:delete acl)
         log-acl    (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
-                     (not-empty nb-view-acl) (assoc :manage nb-view-acl))
+                     (not-empty nb-view-acl) (assoc :manage nb-view-acl)
+                     (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))
 
         log-map        (cond-> {:parent  id
                                 :acl     log-acl}

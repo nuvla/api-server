@@ -133,7 +133,7 @@
                           (ltu/is-status 200)
                           (ltu/is-operation-present :fetch)
                           (ltu/is-operation-absent :edit)
-                          (ltu/is-operation-absent :delete))
+                          (ltu/is-operation-present :delete))
 
             fetch-url (ltu/get-op-url resp "fetch")
 
@@ -212,19 +212,12 @@
           (ltu/body->edn)
           (ltu/is-status 200))
 
-      ;; logs cannot be deleted by user
+      ;; logs can be deleted by user
       (-> session-jane
           (request test-uri
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 403))
-
-      ;; but can by admin
-      (-> session-admin
-        (request test-uri
-          :request-method :delete)
-        (ltu/body->edn)
-        (ltu/is-status 200))
+          (ltu/is-status 200))
 
       ;; resource should be deleted
       (-> session-admin
