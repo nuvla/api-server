@@ -117,25 +117,22 @@ These resources represent the logs of a nuvlabox.
 
 
 (defn create-job
-  [job-type {:keys [nb-id nb-acl] :as nuvlabox} {{uuid :uuid} :params :as request}]
+  [job-type {:keys [id acl] :as nuvlabox} {{uuid :uuid} :params :as request}]
   (try
-    (let [id (str resource-type "/" uuid)]
-      (pprint (-> nb-acl
-                (a/acl-append :edit-data nb-id)
-                (a/acl-append :manage nb-id)))
+    (let [log-id (str resource-type "/" uuid)]
       (if-let [session-id (auth/current-session-id request)]
         (let [{{job-id     :resource-id
-                job-status :status} :body} (job/create-job id (str job-type "_nuvlabox_log")
-                                             (-> nb-acl
-                                               (a/acl-append :edit-data nb-id)
-                                               (a/acl-append :manage nb-id))
+                job-status :status} :body} (job/create-job log-id (str job-type "_nuvlabox_log")
+                                             (-> acl
+                                               (a/acl-append :edit-data id)
+                                               (a/acl-append :manage id))
                                              :priority 50
                                              :execution-mode (nb-utils/get-execution-mode nuvlabox))
-              job-msg (str "starting " id " with async " job-id)]
+              job-msg (str "starting " log-id " with async " job-id)]
           (when (not= job-status 201)
-            (throw (r/ex-response (format "unable to create async job to %s log" job-type) 500 id)))
-          (r/map-response job-msg 202 id job-id))
-        (throw (r/ex-response "current authentication has no session identifier" 500 id))))
+            (throw (r/ex-response (format "unable to create async job to %s log" job-type) 500 log-id)))
+          (r/map-response job-msg 202 log-id job-id))
+        (throw (r/ex-response "current authentication has no session identifier" 500 log-id))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
