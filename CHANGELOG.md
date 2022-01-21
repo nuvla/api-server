@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+  - NuvlaBox - new operation `generate-new-api-key` to generate a new API key
+    during the lifetime of the NuvlaBox
+
 ## [5.23.0] - 2022-01-14
 
 ### Added
