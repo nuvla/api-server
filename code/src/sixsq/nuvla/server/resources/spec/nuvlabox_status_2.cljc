@@ -80,6 +80,13 @@
 
            :json-schema/order 85)))
 
+(s/def ::components
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "cpmponents"
+           :json-schema/description "List of all the NuvlaBox components in the edge device"
+
+           :json-schema/order 86)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -117,5 +124,6 @@
                                ::cluster-join-address
                                ::status-notes
                                ::orchestrator
-                               ::nb-status-0/temperatures]}))
+                               ::nb-status-0/temperatures
+                               ::components]}))
 

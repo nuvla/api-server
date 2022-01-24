@@ -2,9 +2,13 @@
 
 ## Unreleased
 
-### Changed
+### Added
 
   - NuvlaBox Log - new `nuvlabox-log` resource for recording the NuvlaBox components' logs
+
+### Changed
+
+  - NuvlaBox Status - new optional attribute `components` for v2, to list all NuvlaBox components in the edge device
 
 ## [5.23.0] - 2022-01-14
 
