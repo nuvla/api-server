@@ -62,7 +62,7 @@
 
 
 (s/def ::components
-  (-> (s/coll-of ::core/nonblank-string :kind vector?)
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
     (assoc :name "components-names"
       :json-schema/display-name "components names"
       :json-schema/description "names of the NuvlaBox componets"
