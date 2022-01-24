@@ -950,8 +950,9 @@ particular NuvlaBox release.
 
 (defn create-log
   [nuvlabox {:keys [body] :as request}]
-  (let [opts       (select-keys body [:since :lines])]
-    (nuvlabox-log/create-log nuvlabox opts)))
+  (let [opts       (select-keys body [:since :lines])
+        components (:components body)]
+    (nuvlabox-log/create-log nuvlabox components opts)))
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]

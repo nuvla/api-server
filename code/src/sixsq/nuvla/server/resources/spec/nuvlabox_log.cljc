@@ -61,9 +61,19 @@
              :json-schema/indexed false)))
 
 
+(s/def ::components
+  (-> (s/coll-of ::core/nonblank-string :kind vector?)
+    (assoc :name "components-names"
+      :json-schema/display-name "components names"
+      :json-schema/description "names of the NuvlaBox componets"
+
+      :json-schema/editable false
+      :json-schema/order 21)))
+
+
 (def nuvlabox-log-keys-spec
   (su/merge-keys-specs [common/common-attrs
-                        {:req-un [::parent]
+                        {:req-un [::parent ::components]
                          :opt-un [::since ::last-timestamp ::lines ::log]}]))
 
 

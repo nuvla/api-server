@@ -61,6 +61,7 @@
 
         valid-entry   {:name    parameter-name
                        :parent  parent-id
+                       :components  []
                        :log     ["my-log-information"]
                        :acl     {:owners   ["group/nuvla-admin"]
                                  :edit-acl ["user/jane"]}}]
@@ -101,7 +102,7 @@
           (ltu/is-status 403)))
 
     ;; create a nuvlabox log as an admin user using internal utility function
-    (let [resp-test     {:response (t/create-log nuvlabox)}
+    (let [resp-test     {:response (t/create-log nuvlabox ["agent"])}
 
           id-test       (ltu/body-resource-id resp-test)
 

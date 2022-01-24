@@ -22,13 +22,14 @@
                    :since          "1974-08-25T10:00:00.00Z"
                    :last-timestamp "2019-08-25T10:00:00.00Z"
                    :lines          10
-                   :log            ["some\nlong\nlog\ninformation\n"]}]
+                   :log            ["some\nlong\nlog\ninformation\n"]
+                   :components     []}]
 
     (stu/is-valid ::nl/schema root)
     (stu/is-invalid ::nl/schema (assoc root :badKey "badValue"))
 
     ;; required attributes
-    (doseq [k #{:id :resource-type :parent :created :updated :acl}]
+    (doseq [k #{:id :resource-type :parent :created :updated :acl :components}]
       (stu/is-invalid ::nl/schema (dissoc root k)))
 
     ;; optional attributes
