@@ -22,7 +22,7 @@
                    :since          "1974-08-25T10:00:00.00Z"
                    :last-timestamp "2019-08-25T10:00:00.00Z"
                    :lines          10
-                   :log            {:c1 "log1" :c2 "log2"}
+                   :log            {:c1 ["log1" "log"] :c2 ["log2"]}
                    :components     []}]
 
     (stu/is-valid ::nl/schema root)

@@ -62,7 +62,7 @@
         valid-entry   {:name    parameter-name
                        :parent  parent-id
                        :components  []
-                       :log     {:c1 "log1" :c2 "log2"}
+                       :log     {:c1 ["log1"] :c2 ["log2" "log22"]}
                        :acl     {:owners   ["group/nuvla-admin"]
                                  :edit-acl ["user/jane"]}}]
 
@@ -147,7 +147,7 @@
                      :body (json/write-str {:parent         bad-id
                                             :name           "updated-name"
                                             :last-timestamp "1974-08-25T10:00:00.00Z"
-                                            :log            {:c3 "log3"}}))
+                                            :log            {:c3 ["log3"]}}))
             (ltu/body->edn)
             (ltu/is-status 403))
 
@@ -158,7 +158,7 @@
             :body (json/write-str {:parent         bad-id
                                    :name           "updated-name"
                                    :last-timestamp "1974-08-25T10:00:00.00Z"
-                                   :log            {:c3 "log3"}}))
+                                   :log            {:c3 ["log3"]}}))
           (ltu/body->edn)
           (ltu/is-status 200))
 

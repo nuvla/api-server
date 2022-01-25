@@ -52,7 +52,7 @@
 
 
 (s/def ::log
-  (-> (st/spec (s/map-of keyword? string?))
+  (-> (st/spec (s/map-of keyword? (s/coll-of ::log-line :type vector?)))
       (assoc :name "log"
              :json-schema/type "map"
              :json-schema/description "contents of log"
