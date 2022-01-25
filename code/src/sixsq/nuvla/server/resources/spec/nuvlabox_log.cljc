@@ -52,9 +52,9 @@
 
 
 (s/def ::log
-  (-> (st/spec (s/coll-of ::log-line :type vector?))
+  (-> (st/spec (s/map-of keyword? string?))
       (assoc :name "log"
-             :json-schema/type "array"
+             :json-schema/type "map"
              :json-schema/description "contents of log"
 
              :json-schema/order 24
