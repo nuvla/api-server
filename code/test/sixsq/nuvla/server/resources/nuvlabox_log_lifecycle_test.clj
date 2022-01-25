@@ -176,7 +176,7 @@
 
           (is (= last-timestamp "1974-08-25T10:00:00.00Z"))
 
-          (is (= log {:c3 "log3"})))
+          (is (= log {:c3 ["log3"]})))
 
         ;; check the actions
         (-> session-jane
