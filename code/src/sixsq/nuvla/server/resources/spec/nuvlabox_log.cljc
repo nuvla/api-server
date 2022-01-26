@@ -44,15 +44,9 @@
              :json-schema/order 23)))
 
 
-(s/def ::log-line
-  (-> (st/spec string?)
-      (assoc :name "lines"
-             :json-schema/type "string"
-             :json-schema/description "a single line from the log")))
-
 
 (s/def ::log
-  (-> (st/spec (s/map-of keyword? (s/coll-of ::log-line :type vector?)))
+  (-> (st/spec (s/map-of keyword? (s/coll-of string? :kind vector?)))
       (assoc :name "log"
              :json-schema/type "map"
              :json-schema/description "contents of log"
