@@ -5,7 +5,6 @@ password.
 "
   (:require
     [clojure.tools.logging :as log]
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
@@ -17,8 +16,8 @@ password.
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-password :as st-password]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]))
 
 
 (def ^:const authn-method "password")
@@ -54,15 +53,16 @@ password.
         ;; fake session values will be replaced after callback execution
         session      (-> (sutils/create-session username user-id {:href href} headers authn-method redirect-url)
                          (assoc :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 120))))
-        token        (user-utils/token-2fa method user)
+        token        (auth-2fa/generate-token method user)
         session-id   (:id session)
         callback-url (callback-2fa/create-callback
-                       base-uri session-id :data {:method  method
-                                                  :token   token
-                                                  :headers headers}
+                       base-uri session-id :data
+                       (cond-> {:method  method
+                                :headers headers}
+                               token (assoc :token token))
                        :expires (u/ttl->timestamp 120)
                        :tries-left 3)]
-    (user-utils/method-2fa method user token)
+    (auth-2fa/send-token method user token)
     [(r/map-response "Authorization code requested" 200 session-id callback-url) session]))
 
 (defmethod create-session-password-for-user :default

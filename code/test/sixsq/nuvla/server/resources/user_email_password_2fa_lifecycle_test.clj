@@ -14,6 +14,7 @@
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -102,7 +103,7 @@
           (-> session-created-user
               (request enable-2fa-url
                        :request-method :post
-                       :body (json/write-str {:method "email"}))
+                       :body (json/write-str {:method auth-2fa/method-email}))
               (ltu/body->edn)
               (ltu/is-status 400)
               (ltu/message-matches "User should have a validated email."))
@@ -134,7 +135,7 @@
           (let [location (-> session-created-user
                              (request enable-2fa-url
                                       :request-method :post
-                                      :body (json/write-str {:method "email"}))
+                                      :body (json/write-str {:method auth-2fa/method-email}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
                              (ltu/location))]
@@ -159,7 +160,7 @@
                   (request callback-url)
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/is-key-value :method :data "email")
+                  (ltu/is-key-value :method :data auth-2fa/method-email)
                   (ltu/is-key-value :token :data user-token))
 
               ; user should not be able to see callback data
@@ -196,7 +197,7 @@
               (-> session-created-user
                   (request user-url)
                   (ltu/body->edn)
-                  (ltu/is-key-value :auth-method-2fa "email"))
+                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-email))
 
               ;; user should not be able to remove :auth-method by edit
               (-> session-created-user
@@ -205,7 +206,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/is-key-value :auth-method-2fa "email"))))
+                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-email))))
 
           ;; create session should now return callback to validate token
           (let [location (-> session-anon
@@ -229,7 +230,7 @@
                   (request callback-url)
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/is-key-value :method :data "email")
+                  (ltu/is-key-value :method :data auth-2fa/method-email)
                   (ltu/is-key-value :token :data user-token))
 
               ; user should not be able to see callback data
@@ -302,7 +303,7 @@
                   (request callback-url)
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/is-key-value :method :data "email")
+                  (ltu/is-key-value :method :data auth-2fa/method-email)
                   (ltu/is-key-value :token :data user-token))
 
               ;; user should be able to execute callback 3 times
@@ -355,7 +356,7 @@
             (-> session-created-user
                 (request user-url)
                 (ltu/body->edn)
-                (ltu/is-key-value :auth-method-2fa "email"))
+                (ltu/is-key-value :auth-method-2fa auth-2fa/method-email))
 
 
             (is (re-matches #"http.*\/api\/callback\/.*\/execute" location))

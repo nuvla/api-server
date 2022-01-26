@@ -8,7 +8,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as password]
     [sixsq.nuvla.auth.utils :as auth]
@@ -33,7 +32,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-username-password]
     [sixsq.nuvla.server.resources.user.utils :as utils]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -252,29 +252,38 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
         "You can't enable 2FA!" 403))))
 
 
-(def validate-enable-2fa-body-fn (u/create-spec-validation-fn ::user-2fa/enable-2fa-body-schema))
+(def validate-enable-2fa-body-fn
+  (u/create-spec-validation-fn ::user-2fa/enable-2fa-body-schema))
 
 
 (defn throw-body-incomplete
   [{body :body :as _request} enable?]
   (when enable? (validate-enable-2fa-body-fn body)))
 
+
 (defn enable-disable-2fa
-  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request} enable?]
+  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request}
+   enable?]
   (try
     (let [id   (str resource-type "/" uuid)
           user (db/retrieve id request)]
-      (throw-action-2fa-authorized user request (if enable? can-enable-2fa? can-disable-2fa?))
+      (throw-action-2fa-authorized
+        user request (if enable? can-enable-2fa? can-disable-2fa?))
       (throw-body-incomplete request enable?)
-      (let [token           (utils/token-2fa method user)
+      (let [token           (auth-2fa/generate-token method user)
+            secret          (auth-2fa/generate-secret method user)
             method-callback (if enable? method "none")
             callback-url    (callback-2fa/create-callback
-                              base-uri id :data {:method method-callback :token token}
+                              base-uri id :data
+                              (cond-> {:method method-callback}
+                                      token (assoc :token token))
                               :expires (u/ttl->timestamp 120)
                               :tries-left 3)
             method-2fa      (if enable? method (:auth-method-2fa user))]
-        (utils/method-2fa method-2fa user token)
-        (r/map-response "Authorization code requested" 200 id callback-url)))
+        (auth-2fa/send-token method-2fa user token)
+        (cond-> (r/map-response
+                  "Authorization code requested" 200 id callback-url)
+                secret (assoc-in [:body :secret] secret))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
