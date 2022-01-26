@@ -9,6 +9,8 @@
 ### Changed
 
   - NuvlaBox Status - new optional attribute `components` for v2, to list all NuvlaBox components in the edge device
+  - NuvlaBox - new operation `generate-new-api-key` to generate a new API key
+    during the lifetime of the NuvlaBox
 
 ## [5.23.0] - 2022-01-14
 
