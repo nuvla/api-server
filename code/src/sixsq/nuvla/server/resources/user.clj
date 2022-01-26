@@ -188,7 +188,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
           (db/retrieve request)
           (a/throw-cannot-edit request)
           (merge (cond-> body
-                         is-user? (dissoc :name :state :auth-method-2fa)))
+                         is-user? (dissoc :name :state :auth-method-2fa
+                                          :credential-totp)))
           (dissoc :href)
           (u/update-timestamps)
           (u/set-updated-by request)
@@ -276,7 +277,8 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
             callback-url    (callback-2fa/create-callback
                               base-uri id :data
                               (cond-> {:method method-callback}
-                                      token (assoc :token token))
+                                      token (assoc :token token)
+                                      secret (assoc :secret secret))
                               :expires (u/ttl->timestamp 120)
                               :tries-left 3)
             method-2fa      (if enable? method (:auth-method-2fa user))]

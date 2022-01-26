@@ -19,17 +19,22 @@ Allow a user to activate or deactivate two factor authentication.
 (def create-callback (partial callback/create action-name))
 
 (defmethod callback/execute action-name
-  [{{user-id :href}         :target-resource
-    {:keys [method enable]} :data
-    callback-id             :id
-    :as                     callback}
+  [{{user-id :href}                :target-resource
+    {:keys [method enable secret]} :data
+    callback-id                    :id
+    :as                            callback}
    request]
   (try
     (utils/callback-dec-tries callback-id)
     (if (auth-2fa/is-valid-token? request callback)
-      (let [msg (str "2FA with method '" method "' " (if enable "activated" "disabled")
-                     " for " user-id ". Callback successfully executed.")]
-        (user-utils/update-user user-id {:auth-method-2fa method})
+      (let [msg     (str "2FA with method '" method "' "
+                         (if enable "activated" "disabled")
+                         " for " user-id ". Callback successfully executed.")
+            cred-id (when secret
+                      (user-utils/create-totp-credential user-id secret))]
+        (user-utils/update-user
+          user-id (cond-> {:auth-method-2fa method}
+                          cred-id (assoc :credential-totp cred-id)))
         (log/info msg)
         (utils/callback-succeeded! callback-id)
         (r/map-response msg 200 user-id))

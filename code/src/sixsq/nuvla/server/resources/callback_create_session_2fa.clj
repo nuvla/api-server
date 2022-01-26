@@ -33,10 +33,13 @@ Allow a user to validate session with two factor authentication.
           secret (when (= method auth-2fa/method-totp)
                    (some-> user-id
                            crud/retrieve-by-id-as-admin
-                           :credential-2fa-totp
-                           crud/retrieve-by-id-as-admin)
-                   )]
-      (if (auth-2fa/is-valid-token? request callback)
+                           :credential-totp
+                           crud/retrieve-by-id-as-admin
+                           :secret))]
+      (if (auth-2fa/is-valid-token? request
+                                    (assoc-in callback [:data
+                                                        :secret]
+                                              secret))
         (let [cookie-info     (cookies/create-cookie-info
                                 user-id
                                 :session-id session-id

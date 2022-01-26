@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-2fa-totp-lifecycle-test
+(ns sixsq.nuvla.server.resources.credential-totp-2fa-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-2fa-totp :as ct-2fa-totp]
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as ct-2fa-totp]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 

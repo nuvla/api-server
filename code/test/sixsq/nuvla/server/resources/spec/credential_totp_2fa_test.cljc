@@ -1,10 +1,10 @@
-(ns sixsq.nuvla.server.resources.spec.credential-2fa-totp-test
+(ns sixsq.nuvla.server.resources.spec.credential-totp-2fa-test
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
-    [sixsq.nuvla.server.resources.spec.credential-2fa-totp :as totp-spec]
+    [sixsq.nuvla.server.resources.spec.credential-totp-2fa :as totp-spec]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.resources.credential-template-2fa-totp :as tmpl-totp]))
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as tmpl-totp]))
 
 
 (def valid-acl

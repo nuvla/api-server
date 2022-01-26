@@ -68,7 +68,11 @@
 (defmethod is-valid-token? method-totp
   [{{user-token :token} :body :as _request}
    {data :data :as _callback}]
-  (let [secret (:secret data)]
+  (let [user-token (try
+                     (Integer/parseInt user-token)
+                     (catch Exception _))
+        secret (:secret data)]
     (and
-     (not (str/blank? user-token))
-     (ot/is-valid-totp-token? user-token secret))))
+      secret
+      (not (str/blank? user-token))
+      (ot/is-valid-totp-token? (read-string user-token) secret))))

@@ -66,14 +66,23 @@
 
 
 (s/def ::auth-method-2fa
-  (-> (st/spec #{"none" "email"})
+  (-> (st/spec #{"none" "email" "totp"})
       (assoc :name "auth method 2fa"
              :json-schema/type "string"
              :json-schema/description "Two factor authentication method"
-             :json-schema/value-scope {:values  ["email" "none"]
+             :json-schema/value-scope {:values  ["none" "email" "totp"]
                                        :default "none"}
              :json-schema/server-managed true
              :json-schema/order 34)))
+
+
+(s/def ::credential-totp
+  (-> cred-spec/credential-id-spec
+      (assoc :name "credential-totp"
+             :json-schema/type "resource-id"
+             :json-schema/description "identifier of 2FA totp credential"
+
+             :json-schema/order 35)))
 
 
 (def user-keys-spec
@@ -81,6 +90,7 @@
    :opt-un [::method
             ::email
             ::credential-password
+            ::credential-totp
             ::auth-method-2fa]})
 
 

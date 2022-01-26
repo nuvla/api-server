@@ -3,8 +3,8 @@
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as p]
     [sixsq.nuvla.server.resources.credential-template :as ct]
-    [sixsq.nuvla.server.resources.credential-template-2fa-totp :as tmpl-totp]
-    [sixsq.nuvla.server.resources.spec.credential-template-2fa-totp :as
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as tmpl-totp]
+    [sixsq.nuvla.server.resources.spec.credential-template-totp-2fa :as
      tmpl-totp-spec]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 

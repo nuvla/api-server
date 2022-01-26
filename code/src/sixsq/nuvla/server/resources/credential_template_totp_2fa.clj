@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.credential-template-2fa-totp
+(ns sixsq.nuvla.server.resources.credential-template-totp-2fa
   "
 This resource allows nuvla server to store generated TOTP secret in `credential`
 . A token allows server to authenticate a user.
@@ -8,7 +8,7 @@ This resource allows nuvla server to store generated TOTP secret in `credential`
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template :as p]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.credential-template-2fa-totp :as totp]
+    [sixsq.nuvla.server.resources.spec.credential-template-totp-2fa :as totp]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -18,7 +18,7 @@ This resource allows nuvla server to store generated TOTP secret in `credential`
 (def ^:const resource-url credential-subtype)
 
 
-(def ^:const method "totp-2fa")
+(def ^:const method credential-subtype)
 
 
 (def resource-acl (acl-utils/normalize-acl {:owners ["group/nuvla-admin"]}))
@@ -33,7 +33,7 @@ This resource allows nuvla server to store generated TOTP secret in `credential`
    :name              "Two factor authentication TOTP secret"
    :description       "stores a TOTP secret"
    :acl               resource-acl
-   :resource-metadata "resource-metadata/credential-template-2fa-totp"})
+   :resource-metadata "resource-metadata/credential-template-totp-2fa"})
 
 
 ;;

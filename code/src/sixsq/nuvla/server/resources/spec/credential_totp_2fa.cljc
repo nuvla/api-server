@@ -1,8 +1,8 @@
-(ns sixsq.nuvla.server.resources.spec.credential-2fa-totp
+(ns sixsq.nuvla.server.resources.spec.credential-totp-2fa
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.credential-template :as ps]
-    [sixsq.nuvla.server.resources.spec.credential-template-2fa-totp :as
+    [sixsq.nuvla.server.resources.spec.credential-template-totp-2fa :as
      tmpl-totp]
     [sixsq.nuvla.server.util.spec :as su]))
 

@@ -11,6 +11,7 @@
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as cttotp]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.util.response :as r]))
@@ -36,18 +37,34 @@
    :claims       #{user-id "group/nuvla-user"}})
 
 
-(defn create-hashed-password
-  [user-id password]
+(defn create-credential
+  [body authn]
   (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:template {:href     (str credential-template/resource-type
-                                                         "/" cthp/method)
-                                          :password password
-                                          :parent   user-id}}
-                 :nuvla/authn (user-id-identity user-id)}
+                 :body        body
+                 :nuvla/authn authn}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
       (throw (ex-info "" body)))))
+
+(defn create-hashed-password
+  [user-id password]
+  (create-credential
+    {:template {:href     (str credential-template/resource-type
+                               "/" cthp/method)
+                :password password
+                :parent   user-id}}
+    (user-id-identity user-id)))
+
+
+(defn create-totp-credential
+  [user-id secret]
+  (create-credential
+    {:template {:href   (str credential-template/resource-type
+                             "/" cttotp/method)
+                :secret secret
+                :parent user-id}}
+    auth/internal-identity))
 
 
 (defn create-email
