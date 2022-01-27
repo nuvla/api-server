@@ -2,9 +2,9 @@
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.credential :as cred]
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as tmpl-totp]
     [sixsq.nuvla.server.resources.spec.credential-totp-2fa :as totp-spec]
-    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]
-    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as tmpl-totp]))
+    [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
 (def valid-acl

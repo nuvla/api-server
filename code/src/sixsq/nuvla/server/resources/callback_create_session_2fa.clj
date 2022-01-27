@@ -7,13 +7,12 @@ Allow a user to validate session with two factor authentication.
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
     [sixsq.nuvla.server.resources.callback :as callback]
-    [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-activ]
     [sixsq.nuvla.server.resources.callback.utils :as utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.session.utils :as sutils]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const action-name "session-2fa-creation")
@@ -36,10 +35,8 @@ Allow a user to validate session with two factor authentication.
                            :credential-totp
                            crud/retrieve-by-id-as-admin
                            :secret))]
-      (if (auth-2fa/is-valid-token? request
-                                    (assoc-in callback [:data
-                                                        :secret]
-                                              secret))
+      (if (auth-2fa/is-valid-token?
+            method request (assoc-in callback [:data :secret] secret))
         (let [cookie-info     (cookies/create-cookie-info
                                 user-id
                                 :session-id session-id
@@ -60,7 +57,7 @@ Allow a user to validate session with two factor authentication.
             (let [cookie-tuple [authn-info/authn-cookie cookie]]
               (utils/callback-succeeded! callback-id)
               (r/response-created session-id cookie-tuple))))
-        (logu/log-and-throw-400 (str callback-activ/msg-wrong-2fa-token
+        (logu/log-and-throw-400 (str auth-2fa/msg-wrong-2fa-token
                                      " for " user-id))))
     (catch Exception e
       (or (ex-data e) (throw e)))))

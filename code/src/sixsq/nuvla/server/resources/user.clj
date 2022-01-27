@@ -13,7 +13,10 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.server.resources.callback-2fa-activation :as callback-2fa]
+    [sixsq.nuvla.server.resources.callback-2fa-activation
+     :as callback-2fa-activation]
+    [sixsq.nuvla.server.resources.callback-2fa-deactivation :as
+     callback-2fa-deactivation]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -25,6 +28,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user :as user]
     [sixsq.nuvla.server.resources.spec.user-2fa :as user-2fa]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
     [sixsq.nuvla.server.resources.user-interface :as user-interface]
     [sixsq.nuvla.server.resources.user-template :as p]
@@ -32,8 +36,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-username-password]
     [sixsq.nuvla.server.resources.user.utils :as utils]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -95,7 +98,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 (def user-attrs-defaults
   {:state           initial-state
    :deleted         false
-   :auth-method-2fa "none"})
+   :auth-method-2fa auth-2fa/method-none})
 
 (defn merge-with-defaults
   [resource]
@@ -208,7 +211,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 (defn enable-2fa?
   [{:keys [auth-method-2fa] :as _resource}]
-  (or (= auth-method-2fa "none")
+  (or (= auth-method-2fa auth-2fa/method-none)
       (nil? auth-method-2fa)))
 
 (defn can-enable-2fa?
@@ -257,31 +260,24 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
   (u/create-spec-validation-fn ::user-2fa/enable-2fa-body-schema))
 
 
-(defn throw-body-incomplete
-  [{body :body :as _request} enable?]
-  (when enable? (validate-enable-2fa-body-fn body)))
-
-
-(defn enable-disable-2fa
-  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request}
-   enable?]
+(defn enable-2fa
+  [{base-uri                  :base-uri {uuid :uuid} :params
+    {:keys [method] :as body} :body :as request}]
   (try
     (let [id   (str resource-type "/" uuid)
           user (db/retrieve id request)]
-      (throw-action-2fa-authorized
-        user request (if enable? can-enable-2fa? can-disable-2fa?))
-      (throw-body-incomplete request enable?)
-      (let [token           (auth-2fa/generate-token method user)
-            secret          (auth-2fa/generate-secret method user)
-            method-callback (if enable? method "none")
-            callback-url    (callback-2fa/create-callback
-                              base-uri id :data
-                              (cond-> {:method method-callback}
-                                      token (assoc :token token)
-                                      secret (assoc :secret secret))
-                              :expires (u/ttl->timestamp 120)
-                              :tries-left 3)
-            method-2fa      (if enable? method (:auth-method-2fa user))]
+      (throw-action-2fa-authorized user request can-enable-2fa?)
+      (validate-enable-2fa-body-fn body)
+      (let [token        (auth-2fa/generate-token method user)
+            secret       (auth-2fa/generate-secret method user)
+            callback-url (callback-2fa-activation/create-callback
+                           base-uri id :data
+                           (cond-> {:method method}
+                                   token (assoc :token token)
+                                   secret (assoc :secret secret))
+                           :expires (u/ttl->timestamp 120)
+                           :tries-left 3)
+            method-2fa   method]
         (auth-2fa/send-token method-2fa user token)
         (cond-> (r/map-response
                   "Authorization code requested" 200 id callback-url)
@@ -290,14 +286,35 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
       (or (ex-data e) (throw e)))))
 
 
+(defn disable-2fa
+  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request}]
+  (try
+    (let [id             (str resource-type "/" uuid)
+          user           (db/retrieve id request)
+          current-method (:auth-method-2fa user)]
+      (throw-action-2fa-authorized user request can-disable-2fa?)
+      (let [token        (auth-2fa/generate-token current-method user)
+            callback-url (callback-2fa-deactivation/create-callback
+                           base-uri id :data
+                           (cond-> {:method auth-2fa/method-none}
+                                   token (assoc :token token))
+                           :expires (u/ttl->timestamp 120)
+                           :tries-left 3)
+            method-2fa   (:auth-method-2fa user)]
+        (auth-2fa/send-token method-2fa user token)
+        (r/map-response "Authorization code requested" 200 id callback-url)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type "enable-2fa"]
   [request]
-  (enable-disable-2fa request true))
+  (enable-2fa request))
 
 
 (defmethod crud/do-action [resource-type "disable-2fa"]
   [request]
-  (enable-disable-2fa request false))
+  (disable-2fa request))
 
 
 ;;

@@ -1,24 +1,23 @@
 (ns sixsq.nuvla.server.resources.user-email-password-2fa-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is use-fixtures]]
+    [one-time.core :as ot]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.callback-2fa-activation :refer [msg-wrong-2fa-token]]
     [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as st]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
-    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.resources.user-template-email-password :as email-password]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [one-time.core :as ot]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -46,7 +45,7 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
+                  ;; WARNING: This is a fragile Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
                                         (reset! email-body body)
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -178,7 +177,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -186,7 +185,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -248,7 +247,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -256,7 +255,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               ;; session is created when token is valid
               (let [session-url (-> session-anon
@@ -315,7 +314,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -323,7 +322,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -331,7 +330,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               ;; 4th try with right token will fail
               (-> session-anon
@@ -390,7 +389,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -398,7 +397,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -441,7 +440,7 @@
                                                :user "admin"
                                                :pass "password"})
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
+                  ;; WARNING: This is a fragile Regex matching to recover callback URL.
                   postal/send-message (fn [_ {:keys [body]}]
                                         (reset! email-body body)
                                         {:code 0, :error :SUCCESS, :message "OK"})]
@@ -451,13 +450,13 @@
             description-attr   "description"
             tags-attr          ["one", "two"]
             plaintext-password "Plaintext-password-1"
-            jane-email         "jane@example.org"
+            tarzan-email       "tarzan@example.org"
 
             href-create        {:description description-attr
                                 :tags        tags-attr
                                 :template    {:href     href
                                               :password plaintext-password
-                                              :email    jane-email}}]
+                                              :email    tarzan-email}}]
 
         ;; create user
         (let [resp                 (-> session-anon
@@ -483,9 +482,10 @@
 
               session-base-url     (str p/service-context session/resource-type)
               valid-session-create {:template {:href     (str st/resource-type "/password")
-                                               :username jane-email
+                                               :username tarzan-email
                                                :password plaintext-password}}
-              secret               (atom nil)]
+              secret               (atom nil)
+              get-totp             (comp str ot/get-totp-token)]
 
 
           ;; user should provide method
@@ -536,8 +536,7 @@
                                          codec/url-decode
                                          (re-matches #"http.*(\/api.*)\/execute")
                                          second)
-                  callback-exec-url (str callback-url "/execute")
-                  user-token        (ot/get-totp-token @secret)]
+                  callback-exec-url (str callback-url "/execute")]
 
               (-> session-admin
                   (request callback-url)
@@ -558,7 +557,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -566,21 +565,20 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
                            :request-method :put
-                           :body (json/write-str {:token user-token}))
+                           :body (json/write-str {:token (get-totp @secret)}))
                   (ltu/body->edn)
-                  (ltu/dump)
                   (ltu/is-status 200))
 
               ;; user 2FA method should be set
               (-> session-created-user
                   (request user-url)
                   (ltu/body->edn)
-                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-email)
+                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-totp)
                   (ltu/is-key-value (comp not str/blank?) :credential-totp
                                     true))
 
@@ -592,7 +590,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-email)
+                  (ltu/is-key-value :auth-method-2fa auth-2fa/method-totp)
                   (ltu/is-key-value (comp not str/blank?) :credential-totp
                                     true))))
 
@@ -611,13 +609,12 @@
                                          (re-matches #"http.*(\/api.*)\/execute")
                                          second)
                   callback-exec-url (str callback-url "/execute")
-                  user-token        (ot/get-totp-token @secret)]
+                  user-token        (get-totp @secret)]
 
               (-> session-admin
                   (request callback-url)
                   (ltu/body->edn)
                   (ltu/is-status 200)
-                  (ltu/dump)
                   (ltu/is-key-value :method :data auth-2fa/method-totp))
 
               ; user should not be able to see callback data
@@ -633,7 +630,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -641,7 +638,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               ;; session is created when token is valid
               (let [session-url (-> session-anon
@@ -657,7 +654,7 @@
                     (ltu/body->edn)
                     (ltu/is-status 200)
                     (ltu/is-key-value :user user-id)
-                    (ltu/is-key-value :identifier jane-email))
+                    (ltu/is-key-value :identifier tarzan-email))
 
                 ;; after a successful execution of callback, callback is no more executable
                 (-> session-anon
@@ -682,8 +679,7 @@
                                          codec/url-decode
                                          (re-matches #"http.*(\/api.*)\/execute")
                                          second)
-                  callback-exec-url (str callback-url "/execute")
-                  user-token        (ot/get-totp-token @secret)]
+                  callback-exec-url (str callback-url "/execute")]
 
               (-> session-admin
                   (request callback-url)
@@ -698,7 +694,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -706,7 +702,7 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -714,13 +710,13 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               ;; 4th try with right token will fail
               (-> session-anon
                   (request callback-exec-url
                            :request-method :put
-                           :body (json/write-str {:token user-token}))
+                           :body (json/write-str {:token (get-totp @secret)}))
                   (ltu/body->edn)
                   (ltu/is-status 409))))
 
@@ -749,8 +745,7 @@
                                          codec/url-decode
                                          (re-matches #"http.*(\/api.*)\/execute")
                                          second)
-                  callback-exec-url (str callback-url "/execute")
-                  user-token        (ot/get-totp-token @secret)]
+                  callback-exec-url (str callback-url "/execute")]
 
               (-> session-admin
                   (request callback-url)
@@ -771,7 +766,7 @@
                            :body (json/write-str {}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
@@ -779,12 +774,12 @@
                            :body (json/write-str {:token "wrong"}))
                   (ltu/body->edn)
                   (ltu/is-status 400)
-                  (ltu/message-matches msg-wrong-2fa-token))
+                  (ltu/message-matches auth-2fa/msg-wrong-2fa-token))
 
               (-> session-anon
                   (request callback-exec-url
                            :request-method :put
-                           :body (json/write-str {:token user-token}))
+                           :body (json/write-str {:token (get-totp @secret)}))
                   (ltu/body->edn)
                   (ltu/is-status 200))
 

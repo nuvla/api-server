@@ -1,11 +1,15 @@
 (ns sixsq.nuvla.server.resources.two-factor-auth.utils
-  (:require [sixsq.nuvla.server.util.log :as logu]
-            [sixsq.nuvla.server.resources.email.utils :as email-utils]
-            [sixsq.nuvla.server.resources.common.utils :as u]
+  (:require [clojure.string :as str]
             [one-time.core :as ot]
             [sixsq.nuvla.auth.password :as auth-password]
-            [clojure.string :as str]))
+            [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.email.utils :as email-utils]
+            [sixsq.nuvla.server.util.log :as logu]))
 
+
+(def ^:const msg-wrong-2fa-token "Wrong 2FA token")
+
+(def ^:const method-none "none")
 
 (def ^:const method-email "email")
 
@@ -17,7 +21,7 @@
 
 (defmulti generate-secret (fn [method _user] method))
 
-(defmulti is-valid-token? (fn [_request callback] (-> callback :data :method)))
+(defmulti is-valid-token? (fn [method _request _callback] method))
 
 
 (defmethod send-token :default
@@ -39,10 +43,15 @@
 
 (defmethod generate-token :default
   [_method _user]
-  (format "%04d" (u/secure-rand-int 0 9999)))
+  (format "%04d" (u/secure-rand-int 0 999999)))
 
 
 (defmethod generate-token method-totp
+  [_method _user]
+  nil)
+
+
+(defmethod generate-token method-none
   [_method _user]
   nil)
 
@@ -58,7 +67,7 @@
 
 
 (defmethod is-valid-token? :default
-  [{{user-token :token} :body :as _request}
+  [_method {{user-token :token} :body :as _request}
    {{:keys [token]} :data :as _callback}]
   (and
     (not (str/blank? user-token))
@@ -66,13 +75,12 @@
 
 
 (defmethod is-valid-token? method-totp
-  [{{user-token :token} :body :as _request}
+  [_method {{user-token :token} :body :as _request}
    {data :data :as _callback}]
-  (let [user-token (try
-                     (Integer/parseInt user-token)
-                     (catch Exception _))
-        secret (:secret data)]
-    (and
-      secret
-      (not (str/blank? user-token))
-      (ot/is-valid-totp-token? (read-string user-token) secret))))
+  (let [user-token (cond-> user-token
+                           (string? user-token) (try
+                                                  (Integer/parseInt user-token)
+                                                  (catch Exception _)))
+        secret     (:secret data)]
+    (and secret user-token
+         (ot/is-valid-totp-token? user-token secret))))
