@@ -77,6 +77,12 @@
      (esrb/create-client endpoints))))
 
 
+(defn load-es-client
+  []
+  (-> (create-es-client)
+      wait-for-cluster))
+
+
 (defn create-es-sniffer
   "Creates a sniffer connected to an Elasticsearch cluster. The 1-arity
   version takes Elasticsearch `client` and creates the sniffer using
@@ -93,3 +99,11 @@
   ([client options]
    (log/info "creating elasticsearch sniffer:" options)
    (esrb/create-sniffer client (or options {}))))
+
+
+(defn load-es-sniffer
+  "Conditionally creates and returns Elasticsearch sniffer. For the sniffer to
+  be loaded, ES_SNIFFER_INIT environment variable must be set to 'yes'."
+  [client]
+  (when (eu/env-get-as-boolean :es-sniffer-init)
+    (create-es-sniffer client)))

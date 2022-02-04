@@ -89,6 +89,7 @@
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key "test-resources/session.key"
                                :nuvla-session-crt "test-resources/session.crt"
+                               :es-sniffer-init "no"
                                :kafka-producer-init "yes"
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
