@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.utils.env
   "General utilities for dealing with environment."
   (:require
-    [environ.core :as env]
-    [sixsq.nuvla.utils.clj :as c]))
+    [environ.core :as env]))
 
 (def ^:const env-vals-true #{"True" "true" "Yes" "yes" "On" "on" "1" 1})
 
