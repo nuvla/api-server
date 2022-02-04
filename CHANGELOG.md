@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.23.2] - 2022-02-04
+
 ### Changed
 
 - OIDC user register regression redirect url mismatch bugfix
