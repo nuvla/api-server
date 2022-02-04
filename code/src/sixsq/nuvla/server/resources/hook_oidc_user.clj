@@ -18,7 +18,7 @@ Stripe oidc user.
 
 (defn register-user
   [{:keys [base-uri params] :as request} redirect-ui-url]
-  (let [instance (get params :instance (oidc-utils/geant-instance))
+  (let [instance (get params :instance oidc-utils/geant-instance)
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)
         redirect-hook-url (cond-> (str base-uri "hook" "/" action)

@@ -4,6 +4,7 @@
 
 ### Changed
 
+  - OIDC user register regression fix
   - NuvlaBox - new operation `generate-new-api-key` to generate a new API key
     during the lifetime of the NuvlaBox
 
