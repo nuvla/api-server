@@ -88,7 +88,9 @@
                                [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key "test-resources/session.key"
-                               :nuvla-session-crt "test-resources/session.crt"}
+                               :nuvla-session-crt "test-resources/session.crt"
+                               :kafka-producer-init "yes"
+                               :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]
               :dependencies [

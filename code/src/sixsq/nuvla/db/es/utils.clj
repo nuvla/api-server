@@ -5,7 +5,7 @@
     [environ.core :as env]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.db.es.binding :as esrb]
-    [sixsq.nuvla.db.utils.common :as cu]))
+    [sixsq.nuvla.utils.env :as eu]))
 
 
 (def ^:private ok-health-statuses #{"green" "yellow"})
@@ -86,8 +86,8 @@
   be empty (then defaults will be used) or contain sniffer initialisation
   options."
   ([client]
-   (let [interval (cu/env-get-as-int :es-sniff-interval esrb/sniff-interval-mills)
-         delay (cu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
+   (let [interval (eu/env-get-as-int :es-sniff-interval esrb/sniff-interval-mills)
+         delay (eu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
      (create-es-sniffer client {:sniff-interval interval
                                 :sniff-after-failure-delay delay})))
   ([client options]

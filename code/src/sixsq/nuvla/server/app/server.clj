@@ -94,7 +94,7 @@
       (throw e)))
 
   (try
-    (kafka/set-producer! (kafka/create-producer))
+    (kafka/load-and-set-producer)
     (catch Exception e
       (log/error "error creating kafka producer:" (str e))
       (throw e)))

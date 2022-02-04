@@ -12,6 +12,15 @@
 (use-fixtures :once ltu/with-test-kafka-fixture)
 
 
+(deftest client-params-from-env-test
+  (is (= {} (k/client-params-from-env {} ":foo-bar-")))
+  (is (= {} (k/client-params-from-env {:env-var 1} ":foo-bar-")))
+  (is (= {:param.one "one" :param.two "two"}
+         (k/client-params-from-env {:foo-bar-param-one "one"
+                                    :foo-bar-param-two "two"
+                                    :bar-baz-param-one "baz"} ":foo-bar-"))))
+
+
 (deftest producer-lifecycle
   (k/close-producer!)
   (is (nil? k/*producer*))
