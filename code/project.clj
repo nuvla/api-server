@@ -29,7 +29,7 @@
 
   :dependencies
   [[buddy/buddy-core]
-   [spootnik/kinsky "0.1.23"]
+   [spootnik/kinsky "0.1.25"]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex "0.7.5" :exclusions [org.clojure/clojure]]
