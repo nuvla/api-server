@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.23.1] - 2022-02-04
+
 ### Changed
 
   - OIDC user register regression fix
