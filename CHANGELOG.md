@@ -4,11 +4,23 @@
 
 ### Added
 
-- Two factor authentication - Bigger email token to 6 digit
+- Two factor authentication - Support method TOTP
 
 ### Changed
 
-- Two factor authentication - Support method TOTP
+- Two factor authentication - Bigger email token (6 digits)
+
+## [5.23.2] - 2022-02-04
+
+### Changed
+
+- OIDC user register regression redirect url mismatch bugfix
+
+## [5.23.1] - 2022-02-04
+
+### Changed
+
+- OIDC user register regression fix
 - NuvlaBox - new operation `generate-new-api-key` to generate a new API key
   during the lifetime of the NuvlaBox
 

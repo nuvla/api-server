@@ -27,8 +27,9 @@ Stripe oidc session.
   (let [session-id        (-> cookies
                               (get authn-info/future-session-cookie)
                               :value)
-        redirect-hook-url (str base-uri "hook" "/" action)
-        instance (get params :instance oidc-utils/geant-instance)
+        instance          (get params :instance oidc-utils/geant-instance)
+        redirect-hook-url (cond-> (str base-uri "hook" "/" action)
+                                  (not= instance oidc-utils/geant-instance) (str "/" instance))
         {:keys [client-id client-secret
                 public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
     (log/info "hook-oidc-session redirect request:" request)
@@ -45,7 +46,7 @@ Stripe oidc session.
               (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)
                       {session-id :id
-                       :as current-session} (crud/retrieve-by-id-as-admin session-id)
+                       :as        current-session} (crud/retrieve-by-id-as-admin session-id)
                       cookie-info     (cookies/create-cookie-info matched-user-id
                                                                   :session-id session-id
                                                                   :roles-ext roles)
