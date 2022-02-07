@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- NuvlaBox Cluster - improved cluster update workflow, with added status notes for clarity
+
 ## [5.23.2] - 2022-02-04
 
 ### Changed

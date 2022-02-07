@@ -70,7 +70,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
                       (utils/get-matching-nuvlaboxes workers)
                       [])
         nb-managers (utils/get-matching-nuvlaboxes managers)]
-    (utils/complete-cluster-details add-impl nb-workers nb-managers request)))
+    (utils/complete-cluster-details add-impl nb-workers nb-managers nil request)))
 
 
 (def edit-impl (std-crud/edit-fn resource-type))
@@ -81,13 +81,16 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
   (let [current     (-> (str resource-type "/" uuid)
                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
                         (a/throw-cannot-edit request))
-        nb-workers  (if workers
-                      (utils/get-matching-nuvlaboxes workers)
-                      (utils/get-matching-nuvlaboxes (:workers current)))
-        nb-managers (if managers
-                      (utils/get-matching-nuvlaboxes managers)
-                      (utils/get-matching-nuvlaboxes (:managers current)))]
-    (utils/complete-cluster-details edit-impl nb-workers nb-managers request)))
+        cluster-managers  (or managers (:managers current))
+        cluster-workers   (or workers (:workers current))
+        nb-workers        (utils/get-matching-nuvlaboxes cluster-workers)
+        nb-managers       (utils/get-matching-nuvlaboxes cluster-managers)
+        total-nodes       (+ (count cluster-managers) (count cluster-workers))
+        total-nb-nodes    (+ (count nb-managers) (count nb-workers))
+        status-notes      (cond-> (get current :status-notes [])
+                            (> total-nb-nodes total-nb-nodes) (conj "WARNING: there are more NuvlaBox instances than actual nodes")
+                            )]
+    (utils/complete-cluster-details edit-impl nb-workers nb-managers status-notes request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
