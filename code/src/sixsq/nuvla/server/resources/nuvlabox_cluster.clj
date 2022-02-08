@@ -87,7 +87,7 @@ The `nuvlabox-cluster` resource represents a cluster of at least one NuvlaBox
         nb-managers       (utils/get-matching-nuvlaboxes cluster-managers)
         total-nodes       (+ (count cluster-managers) (count cluster-workers))
         total-nb-nodes    (+ (count nb-managers) (count nb-workers))
-        status-notes      (cond-> (get current :status-notes [])
+        status-notes      (cond-> []
                             (> total-nb-nodes total-nb-nodes) (conj "WARNING: there are more NuvlaBox instances than actual nodes")
                             )]
     (utils/complete-cluster-details edit-impl nb-workers nb-managers status-notes request)))
