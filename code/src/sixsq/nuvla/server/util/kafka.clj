@@ -30,10 +30,10 @@
   (->> env-vars
        (filter #(str/starts-with? (-> % first str) prefix))
        (map (fn [[k v]]
-              (vector (-> (str k)
-                          (str/replace (re-pattern prefix) "")
-                          (str/replace #"-" ".")
-                          keyword) v)))
+              [(-> (str k)
+                   (str/replace (re-pattern prefix) "")
+                   (str/replace #"-" ".")
+                   keyword) v]))
        (into {})))
 
 
