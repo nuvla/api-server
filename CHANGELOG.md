@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+
+- Kafka - Allow loading Kafka producer conditionally based on
+  KAFKA_PRODUCER_INIT env var. Added an option to configure Kafka client from
+  env vars. Bumped up Kafka client's version to 0.1.25.
+- Elasticsearch - load sniffer conditionally based on env var ES_SNIFFER_INIT.
+
 ## [5.23.2] - 2022-02-04
 
 ### Changed

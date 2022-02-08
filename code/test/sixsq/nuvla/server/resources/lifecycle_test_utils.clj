@@ -504,7 +504,7 @@
                         ::ke/kafka-log-dir      (str k-dir)
                         ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
         ;; Create and set kafka producer.
-        (ka/set-producer! (ka/create-producer (format "%s:%s" kafka-host kafka-port)))
+        (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
         (f))
       (catch Throwable t
         (throw t))
