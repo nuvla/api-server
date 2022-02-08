@@ -65,14 +65,14 @@
   is used."
   ([]
    (let [env-endpoints (env/env :es-endpoints)
-         endpoints (-> (or (when-not (str/blank? env-endpoints) env-endpoints) ES_HOST)
-                       (clojure.string/split #","))
-         es-endpoints (->> endpoints
-                       (map #(if-not (.contains % ":") (str % ":" ES_PORT) %))
-                       distinct)]
+         endpoints     (-> (or (when-not (str/blank? env-endpoints) env-endpoints) ES_HOST)
+                           (clojure.string/split #","))
+         es-endpoints  (->> endpoints
+                            (map #(if-not (.contains % ":") (str % ":" ES_PORT) %))
+                            distinct)]
      (create-es-client es-endpoints)))
   ([es-endpoints]
-   (let [endpoints   {:hosts (if (empty? es-endpoints) [ES_HOST] es-endpoints)}]
+   (let [endpoints {:hosts (if (empty? es-endpoints) [ES_HOST] es-endpoints)}]
      (log/info "creating elasticsearch client:" es-endpoints)
      (esrb/create-client endpoints))))
 
@@ -93,8 +93,8 @@
   options."
   ([client]
    (let [interval (eu/env-get-as-int :es-sniff-interval esrb/sniff-interval-mills)
-         delay (eu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
-     (create-es-sniffer client {:sniff-interval interval
+         delay    (eu/env-get-as-int :es-sniff-after-failure-delay esrb/sniff-after-failure-delay-mills)]
+     (create-es-sniffer client {:sniff-interval            interval
                                 :sniff-after-failure-delay delay})))
   ([client options]
    (log/info "creating elasticsearch sniffer:" options)

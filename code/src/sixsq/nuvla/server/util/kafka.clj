@@ -3,11 +3,11 @@
   example to set 'delivery.timeout.ms' to 12345, provide it as the following
   environment variable: KAFKA_CLIENT_CONF_DELIVERY_TIMEOUT_MS=12345"
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]
     [kinsky.client :as kc]
-    [sixsq.nuvla.utils.env :as eu]
-    [clojure.string :as str]))
+    [sixsq.nuvla.utils.env :as eu]))
 
 
 (def ^:dynamic *producer* nil)
@@ -29,12 +29,11 @@
   [env-vars prefix]
   (->> env-vars
        (filter #(str/starts-with? (-> % first str) prefix))
-       (map #(identity [(-> %
-                            (first)
-                            str
-                            (clojure.string/replace (re-pattern prefix) "")
-                            (clojure.string/replace #"-" ".")
-                            keyword) (second %)]))
+       (map (fn [[k v]]
+              (vector (-> (str k)
+                          (str/replace (re-pattern prefix) "")
+                          (str/replace #"-" ".")
+                          keyword) v)))
        (into {})))
 
 

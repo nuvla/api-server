@@ -11,6 +11,6 @@
    These default to 'localhost:9200' if not specified. Also, conditionally
    creates Elasticsearch Sniffer."
   []
-  (let [client (esru/load-es-client)
+  (let [client  (esru/load-es-client)
         sniffer (esru/load-es-sniffer client)]
     (esrb/->ElasticsearchRestBinding client sniffer)))
