@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-log
+(ns sixsq.nuvla.server.resources.spec.resource-log
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
@@ -7,10 +7,11 @@
     [spec-tools.core :as st]))
 
 
-(def ^:const nuvlabox-id-regex #"^nuvlabox/[0-9a-f]+(-[0-9a-f]+)*$")
+(def ^:const resource-id-regex #"^(nuvlabox|deployment)/[0-9a-f]+(-[0-9a-f]+)*$")
 
 
-(s/def ::parent (-> (st/spec (s/and string? #(re-matches nuvlabox-id-regex %)))
+(s/def ::parent (-> (st/spec (s/and string?
+                                    #(re-matches resource-id-regex %)))
                     (assoc :name "parent"
                            :json-schema/type "resource-id"
                            :json-schema/description "reference to parent nuvlabox resource"
@@ -18,6 +19,16 @@
                            :json-schema/section "meta"
                            :json-schema/editable false
                            :json-schema/order 6)))
+
+
+(s/def ::components
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+      (assoc :name "components-names"
+             :json-schema/display-name "components names"
+             :json-schema/description "names of the components"
+
+             :json-schema/editable false
+             :json-schema/order 20)))
 
 
 (s/def ::since
@@ -49,20 +60,10 @@
   (-> (st/spec (s/map-of keyword? (s/coll-of string? :kind vector?)))
       (assoc :name "log"
              :json-schema/type "map"
-             :json-schema/description "contents of log"
+             :json-schema/description "contents of log by component"
 
              :json-schema/order 24
              :json-schema/indexed false)))
-
-
-(s/def ::components
-  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
-    (assoc :name "components-names"
-      :json-schema/display-name "components names"
-      :json-schema/description "names of the NuvlaBox componets"
-
-      :json-schema/editable false
-      :json-schema/order 21)))
 
 
 (def nuvlabox-log-keys-spec

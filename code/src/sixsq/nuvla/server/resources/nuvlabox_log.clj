@@ -13,7 +13,7 @@ These resources represent the logs of a nuvlabox.
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.nuvlabox-log :as nl]
+    [sixsq.nuvla.server.resources.spec.resource-log :as rl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -45,7 +45,7 @@ These resources represent the logs of a nuvlabox.
   (a/add-acl resource request))
 
 
-(def validate-fn (u/create-spec-validation-fn ::nl/schema))
+(def validate-fn (u/create-spec-validation-fn ::rl/schema))
 
 
 (defmethod crud/validate resource-type
@@ -202,10 +202,10 @@ These resources represent the logs of a nuvlabox.
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::nl/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::rl/schema))
 
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::nl/schema)
+  (std-crud/initialize resource-type ::rl/schema)
   (md/register resource-metadata))
