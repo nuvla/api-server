@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.nuvlabox-log-test
+(ns sixsq.nuvla.server.resources.spec.resource-log-test
   (:require
     [clojure.test :refer [deftest]]
     [sixsq.nuvla.server.resources.nuvlabox-log :as t]
