@@ -1,7 +1,7 @@
 (def parent-version "6.7.5")
 (def nuvla-ring-version "2.0.2")
 
-(defproject sixsq.nuvla.server/api-jar "5.23.1-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "5.23.3-SNAPSHOT"
 
   :description "core api server"
 
@@ -29,7 +29,7 @@
 
   :dependencies
   [[buddy/buddy-core]
-   [spootnik/kinsky "0.1.23"]
+   [spootnik/kinsky "0.1.25"]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex "0.7.5" :exclusions [org.clojure/clojure]]
@@ -88,7 +88,10 @@
                                [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key "test-resources/session.key"
-                               :nuvla-session-crt "test-resources/session.crt"}
+                               :nuvla-session-crt "test-resources/session.crt"
+                               :es-sniffer-init "no"
+                               :kafka-producer-init "yes"
+                               :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]
               :dependencies [

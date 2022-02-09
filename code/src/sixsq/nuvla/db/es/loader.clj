@@ -8,9 +8,9 @@
 (defn load
   "Creates an Elasticsearch client based on the Elasticsearch Java API. Takes
    the configuration parameters from the environmental variable ES_ENDPOINTS.
-   These default to 'localhost:9200' if not specified."
+   These default to 'localhost:9200' if not specified. Also, conditionally
+   creates Elasticsearch Sniffer."
   []
-  (let [client (-> (esru/create-es-client)
-                    esru/wait-for-cluster)
-        sniffer (esru/create-es-sniffer client)]
+  (let [client  (esru/load-es-client)
+        sniffer (esru/load-es-sniffer client)]
     (esrb/->ElasticsearchRestBinding client sniffer)))
