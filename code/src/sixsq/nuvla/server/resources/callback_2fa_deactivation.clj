@@ -32,11 +32,11 @@ Allow a user to deactivate two factor authentication.
                                    :credential-totp
                                    crud/retrieve-by-id-as-admin
                                    :secret))
-          callback (cond-> callback
-                           secret (assoc-in [:data :secret] secret))]
+          callback       (cond-> callback
+                                 secret (assoc-in [:data :secret] secret))]
       (if (auth-2fa/is-valid-token? current-method request callback)
-        (let [msg  (str "2FA with method '" method "' deactivated for " user-id
-                        ". Callback successfully executed.")]
+        (let [msg (str "2FA with method '" current-method "' deactivated for "
+                       user-id ". Callback successfully executed.")]
           (user-utils/update-user user-id {:auth-method-2fa method})
           (log/info msg)
           (utils/callback-succeeded! callback-id)
