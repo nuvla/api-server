@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.resource-log-test
   (:require
     [clojure.test :refer [deftest]]
-    [sixsq.nuvla.server.resources.nuvlabox-log :as t]
+    [sixsq.nuvla.server.resources.resource-log :as t]
     [sixsq.nuvla.server.resources.spec.resource-log :as rl]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 

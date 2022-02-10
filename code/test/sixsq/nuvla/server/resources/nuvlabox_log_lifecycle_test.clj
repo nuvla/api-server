@@ -2,14 +2,14 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is are use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
-    [sixsq.nuvla.server.resources.nuvlabox-log :as t]
+    [sixsq.nuvla.server.resources.resource-log :as t]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -30,6 +30,12 @@
 
 (deftest check-metadata
   (mdtu/check-metadata-exists t/resource-type))
+
+
+(deftest test-parent->action-name
+  (are [result parent] (= result (t/parent->action-name {:parent parent}))
+                       t/fetch-nuvlabox-log "nuvlabox/9e8214b0-625b-49be-b857-06e60c97c053"
+                       t/fetch-deployment-log "deployment/9e8214b0-625b-49be-b857-06e60c97c054"))
 
 
 (deftest lifecycle
