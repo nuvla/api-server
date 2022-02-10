@@ -287,7 +287,7 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
 
 
 (defn disable-2fa
-  [{base-uri :base-uri {uuid :uuid} :params {:keys [method]} :body :as request}]
+  [{base-uri :base-uri {uuid :uuid} :params :as request}]
   (try
     (let [id             (str resource-type "/" uuid)
           user           (db/retrieve id request)
