@@ -20,9 +20,10 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
-    [sixsq.nuvla.server.resources.nuvlabox-log :as nuvlabox-log]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
+    [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
@@ -949,10 +950,15 @@ particular NuvlaBox release.
 ;;
 
 (defn create-log
-  [nuvlabox {:keys [body] :as request}]
-  (let [opts       (select-keys body [:since :lines])
-        components (:components body)]
-    (nuvlabox-log/create-log nuvlabox components opts)))
+  [{:keys [id acl] :as _nuvlabox} {:keys [body] :as _request}]
+  (let [opts          (select-keys body [:since :lines])
+        components    (:components body)
+        nb-view-acl   (:view-acl acl)
+        nb-delete-acl (:delete acl)
+        log-acl       (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
+                              (not-empty nb-view-acl) (assoc :manage nb-view-acl)
+                              (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))]
+    (resource-log/create-log id components log-acl opts)))
 
 
 (defmethod crud/do-action [resource-type "create-log"]
@@ -960,9 +966,9 @@ particular NuvlaBox release.
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-        (a/throw-cannot-manage request)
-        (depl-utils/throw-can-not-do-action utils/can-create-log? "create-log")
-        (create-log request)))))
+          (a/throw-cannot-manage request)
+          (depl-utils/throw-can-not-do-action utils/can-create-log? "create-log")
+          (create-log request)))))
 
 ;;
 ;; Allows for the creation of a NuvlaBox API key on-demand

@@ -3,6 +3,7 @@
 These resources represent the logs of a deployment or of a nuvlabox.
 "
   (:require
+    [clojure.string :as str]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -15,8 +16,7 @@ These resources represent the logs of a deployment or of a nuvlabox.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.resource-log :as rl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.string :as str]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -131,8 +131,9 @@ These resources represent the logs of a deployment or of a nuvlabox.
     "deployment" fetch-deployment-log))
 
 
-(defmulti create-specific-job (fn [_resource parent-resource _request]
-                                (parent->action-name parent-resource)))
+(defmulti create-specific-job
+          (fn [resource-log _parent-resource _request]
+            (parent->action-name resource-log)))
 
 
 (defmethod create-specific-job fetch-nuvlabox-log
@@ -204,11 +205,16 @@ These resources represent the logs of a deployment or of a nuvlabox.
       (or (ex-data e) (throw e)))))
 
 
+(defn retrieve-parent-resource
+  [{:keys [parent] :as _resource-log}]
+  (crud/retrieve-by-id-as-admin parent))
+
+
 (defmethod crud/do-action [resource-type fetch]
   [{{uuid :uuid} :params :as request}]
   (let [id              (str resource-type "/" uuid)
         resource-log    (crud/retrieve-by-id-as-admin id)
-        parent-resource (crud/retrieve-by-id-as-admin (:parent resource-log))]
+        parent-resource (retrieve-parent-resource resource-log)]
     (a/throw-cannot-manage resource-log request)
     (a/throw-cannot-manage parent-resource request)
     (if-let [response (already-job-exist resource-log request)]
@@ -241,7 +247,7 @@ These resources represent the logs of a deployment or of a nuvlabox.
 ;;
 
 (defn create-log
-  [parent components acl {:keys [since lines]}]
+  [parent components acl & [{:keys [since lines]}]]
   (let [log-map        (cond-> {:parent     parent
                                 :components components
                                 :acl        acl}
