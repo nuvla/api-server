@@ -11,13 +11,13 @@
   (try
     (when (= 201 (:status add-response))
       (let [resource-id (-> add-response :body :resource-id)
-            resource (db/retrieve resource-id {})
-            msg-key (if (= key "resource-id")
-                      resource-id
-                      ((keyword key) resource))]
+            resource    (db/retrieve resource-id {})
+            msg-key     (if (= key "resource-id")
+                          resource-id
+                          ((keyword key) resource))]
         (ka/publish-async topic msg-key resource)))
     (catch Exception e
-      (log/warn "Failed publishing to Kafka on add: " (str e)))) )
+      (log/warn "Failed publishing to Kafka on add: " (str e)))))
 
 
 (defn publish-on-edit
@@ -25,7 +25,7 @@
   [topic edit-response & {:keys [key] :or {key "id"}}]
   (try
     (when (= 200 (int (:status edit-response)))
-      (let [msg-key (-> edit-response :body (get (keyword key)))
+      (let [msg-key  (-> edit-response :body (get (keyword key)))
             resource (:body edit-response)]
         (ka/publish-async topic msg-key resource)))
     (catch Exception e
