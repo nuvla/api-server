@@ -504,6 +504,7 @@
                                        (ltu/is-operation-present :update-nuvlabox)
                                        (ltu/is-operation-present :cluster-nuvlabox)
                                        (ltu/is-operation-present :assemble-playbooks)
+                                       (ltu/is-operation-present :ssh)
                                        (ltu/is-key-value :state "COMMISSIONED")
                                        (ltu/get-op-url :cluster-nuvlabox))]
 
@@ -1621,6 +1622,26 @@
                 (request get-context-url)
                 (ltu/body->edn)
                 (ltu/is-status 403)))
+
+
+          (let [ssh      (-> session-owner
+                           (request nuvlabox-url)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :ssh))
+                job-url  (-> session-owner
+                           (request ssh
+                             :request-method :post
+                             :body (json/write-str {:token "xyz"}))
+                           (ltu/body->edn)
+                           (ltu/is-status 202)
+                           (ltu/location-url))]
+
+            (-> session-admin
+              (request job-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :payload "{\"token\":\"xyz\"}")))
 
           )))))
 
