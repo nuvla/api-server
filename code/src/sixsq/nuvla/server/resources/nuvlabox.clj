@@ -984,7 +984,7 @@ particular NuvlaBox release.
         (try
           (let [{{job-id     :resource-id
                   job-status :status} :body} (job/create-job
-                                               id "nuvlabox_sssh"
+                                               id "nuvlabox_ssh"
                                                (-> acl
                                                  (a/acl-append :edit-data id)
                                                  (a/acl-append :manage id))
