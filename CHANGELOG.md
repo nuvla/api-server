@@ -2,8 +2,13 @@
 
 ## Unreleased
 
+### Added
+
+- Two factor authentication - Support method TOTP
+
 ### Changed
 
+- Two factor authentication - Bigger email token (6 digits)
 - NuvlaBox Cluster - improved cluster update workflow, with added status
   notes for clarity.
 - Kafka - Allow loading Kafka producer conditionally based on
