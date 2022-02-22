@@ -12,7 +12,14 @@
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
-            [lein-environ "1.1.0"]]
+            [lein-environ "1.1.0"]
+            [lein-parent "0.3.5"]
+            [lein-ancient "1.0.0-RC3"]
+            [jonase/eastwood "1.2.2"]
+            [lein-cloverage "1.2.2"]
+            [lein-kibit "0.1.8"]
+            [com.github.clj-kondo/lein-clj-kondo "0.1.3"]
+            [lein-nvd "1.9.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
@@ -65,7 +72,9 @@
    [org.locationtech.spatial4j/spatial4j "0.8"]
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
-   [org.wololo/jts2geojson "0.15.0"]]
+   [org.wololo/jts2geojson "0.15.0"]
+   [clj-kondo "RELEASE"]
+   ]
 
   :aot [sixsq.nuvla.server.app.main]
 
@@ -94,6 +103,7 @@
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]
+              :cloverage {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               :dependencies [
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
