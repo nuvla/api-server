@@ -13,7 +13,6 @@
 
   :plugins [[lein-parent "0.3.5"]
             [lein-environ "1.1.0"]
-            [lein-parent "0.3.5"]
             [lein-ancient "1.0.0-RC3"]
             [jonase/eastwood "1.2.2"]
             [lein-cloverage "1.2.2"]
