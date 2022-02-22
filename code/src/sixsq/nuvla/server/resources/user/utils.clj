@@ -1,22 +1,19 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.callback.email-utils :as callback-email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
     [sixsq.nuvla.server.resources.credential-template-hashed-password :as cthp]
+    [sixsq.nuvla.server.resources.credential-template-totp-2fa :as cttotp]
     [sixsq.nuvla.server.resources.email :as email]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -40,18 +37,34 @@
    :claims       #{user-id "group/nuvla-user"}})
 
 
-(defn create-hashed-password
-  [user-id password]
+(defn create-credential
+  [body authn]
   (let [request {:params      {:resource-name credential/resource-type}
-                 :body        {:template {:href     (str credential-template/resource-type
-                                                         "/" cthp/method)
-                                          :password password
-                                          :parent   user-id}}
-                 :nuvla/authn (user-id-identity user-id)}
+                 :body        body
+                 :nuvla/authn authn}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
     (if (= status 201)
       resource-id
       (throw (ex-info "" body)))))
+
+(defn create-hashed-password
+  [user-id password]
+  (create-credential
+    {:template {:href     (str credential-template/resource-type
+                               "/" cthp/method)
+                :password password
+                :parent   user-id}}
+    (user-id-identity user-id)))
+
+
+(defn create-totp-credential
+  [user-id secret]
+  (create-credential
+    {:template {:href   (str credential-template/resource-type
+                             "/" cttotp/method)
+                :secret secret
+                :parent user-id}}
+    auth/internal-identity))
 
 
 (defn create-email
@@ -165,26 +178,3 @@
     (when (and config-nuvla/*stripe-api-key*
                (not (customer-has-active-subscription? active-claim)))
       (throw (r/ex-response "An active subscription is required!" 402)))))
-
-
-(defmulti method-2fa (fn [method _user _token] method))
-
-
-(defmethod method-2fa :default
-  [method _user _token]
-  (logu/log-and-throw-400 (str "Unknown 2FA method: " method)))
-
-
-(defmethod method-2fa "email"
-  [_method {:keys [id] :as _user} token]
-  (if-let [email-address (some-> id auth-password/user-id->email)]
-    (email-utils/send-email-token-2fa token email-address)
-    (logu/log-and-throw-400 "User should have a validated email.")))
-
-
-(defmulti token-2fa (fn [method _user] method))
-
-
-(defmethod token-2fa :default
-  [_method _user]
-  (format "%04d" (u/secure-rand-int 0 9999)))

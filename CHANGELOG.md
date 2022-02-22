@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- Two factor authentication - Support method TOTP
+
 ### Changed
 
+- Two factor authentication - Bigger email token (6 digits)
+- NuvlaBox Cluster - improved cluster update workflow, with added status
+  notes for clarity.
 - Kafka - Allow loading Kafka producer conditionally based on
   KAFKA_PRODUCER_INIT env var. Added an option to configure Kafka client from
   env vars. Bumped up Kafka client's version to 0.1.25.

@@ -52,6 +52,13 @@
 
            :json-schema/order 16)))
 
+(s/def ::status-notes
+  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    (assoc :name "status-notes"
+      :json-schema/description "List of notes related with the status of the cluster"
+
+      :json-schema/order 83)))
+
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
     nb-cluster/attributes
@@ -60,4 +67,5 @@
               ::managers]
      :opt-un [::workers
               ::nuvlabox-workers
-              ::nuvlabox-managers]}))
+              ::nuvlabox-managers
+              ::status-notes]}))
