@@ -4,11 +4,13 @@
 
 ### Added
 
-- NuvlaBox Log - new `nuvlabox-log` resource for recording the NuvlaBox
-  components' logs
+- Nuvlabox - Use resource log resource
+- Deployment - Use resource log resource
+- Resource Log - new `resource-log` for recording logs
 
 ### Changed
 
+- Deployment log - Resource removed and replace by resource-log
 - NuvlaBox Status - new optional attribute `components` for v2, to list all
   NuvlaBox components in the edge device
 - Kafka - Allow loading Kafka producer conditionally based on
