@@ -49,7 +49,7 @@ jobs:
           scanMetadataReportFile: code/.scannerwork/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - uses: s4u/maven-settings-action@v2.2.0
         with:
