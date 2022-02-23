@@ -1,4 +1,4 @@
-(def parent-version "6.7.5")
+(def parent-version "6.7.6")
 (def nuvla-ring-version "2.0.2")
 
 (defproject sixsq.nuvla.server/api-jar "5.23.3-SNAPSHOT"
@@ -12,13 +12,7 @@
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
-            [lein-environ "1.1.0"]
-            [lein-ancient "1.0.0-RC3"]
-            [jonase/eastwood "1.2.2"]
-            [lein-cloverage "1.2.2"]
-            [lein-kibit "0.1.8"]
-            [com.github.clj-kondo/lein-clj-kondo "0.1.3"]
-            [lein-nvd "1.9.0"]]
+            [lein-environ "1.1.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
@@ -72,7 +66,6 @@
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
    [org.wololo/jts2geojson "0.15.0"]
-   [clj-kondo "RELEASE"]
    [one-time "0.7.0"]]
 
   :aot [sixsq.nuvla.server.app.main]
@@ -112,4 +105,5 @@
                                            jline
                                            org.apache.yetus/audience-annotations
                                            org.slf4j/slf4j-log4j12
-                                           log4j]]]}})
+                                           log4j]
+                              [clj-kondo "RELEASE"]]]}})
