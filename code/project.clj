@@ -105,5 +105,5 @@
                                            jline
                                            org.apache.yetus/audience-annotations
                                            org.slf4j/slf4j-log4j12
-                                           log4j]
-                              [clj-kondo "RELEASE"]]]}})
+                                           log4j]]
+                             [clj-kondo "RELEASE"]]}})
