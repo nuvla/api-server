@@ -5,12 +5,7 @@
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
 
-;; issue with es 7 when only 1 digit millis in date example 2015-01-01T12:10:30.2Z
-;; will fail but not 2015-01-01T12:10:30.20Z
-;(def iso8601-formatter (t/formatter :iso-offset-date-time))
-
-(def iso8601-formatter (t/formatter "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"))
-
+(def iso8601-formatter (t/formatter :iso-offset-date-time))
 
 (def utc-clock (t/system-clock "UTC"))
 
