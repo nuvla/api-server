@@ -67,9 +67,7 @@
   [^String string]
   (when (string? string)
     (try
-      (t/with-clock
-        utc-clock
-        (t/offset-date-time iso8601-formatter string))
+      (t/offset-date-time iso8601-formatter string)
       (catch Exception _
         nil))))
 
