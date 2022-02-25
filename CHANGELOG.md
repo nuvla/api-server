@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Fix date convertion from utc string [#650](https://github.com/nuvla/api-server/issues/650)
 - Cleaned up dead code server
   start [#648](https://github.com/nuvla/api-server/issues/648)
 - Two factor authentication - Bigger email token (6 digits)
