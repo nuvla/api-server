@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.util.time
   (:require [java-time :as t])
-  (:import (java.time Instant OffsetDateTime ZonedDateTime)))
+  (:import (java.time Instant OffsetDateTime)))
 
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
 
-#_(def iso8601-formatter (t/formatter :iso-offset-date-time))
-(def iso8601-formatter (t/formatter "yyyy-MM-dd'T'HH:mm:ss[.SSS]XXXXX"))
+(def iso8601-formatter (t/formatter "uuuu-MM-dd'T'HH:mm:ss[.SSS]XXXXX"
+                                    {:resolver-style :strict}))
 
 (def utc-clock (t/system-clock "UTC"))
 
