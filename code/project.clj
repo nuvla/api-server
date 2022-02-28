@@ -95,7 +95,8 @@
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
    :dev      {:resource-paths ["test-resources"]
-              :cloverage {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage {:test-ns-regex [#""]              ;; don't run tests
+                          :ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               :dependencies [
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
