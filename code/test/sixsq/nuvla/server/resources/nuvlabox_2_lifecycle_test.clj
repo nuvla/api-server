@@ -125,7 +125,7 @@
       )))
 
 
-(deftest create-activate-decommission-delete-lifecycle
+(deftest create-activate-create-log-decommission-delete-lifecycle
   (binding [config-nuvla/*stripe-api-key* nil]
     (let [session       (-> (ltu/ring-app)
                             session
@@ -219,7 +219,7 @@
                 (ltu/is-operation-absent :edit)
                 (ltu/is-operation-absent :delete)))
 
-          (let [decommission-url (-> session
+          (let [response          (-> session
                                      (request nuvlabox-url)
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
@@ -227,9 +227,27 @@
                                      (ltu/is-operation-absent :delete)
                                      (ltu/is-operation-absent :activate)
                                      (ltu/is-operation-present :commission)
+                                     (ltu/is-operation-present :create-log)
                                      (ltu/is-operation-present :decommission)
-                                     (ltu/is-key-value :state "ACTIVATED")
-                                     (ltu/get-op-url :decommission))]
+                                     (ltu/is-key-value :state "ACTIVATED"))
+                decommission-url (ltu/get-op-url response "decommission")
+                create-log-url   (ltu/get-op-url response "create-log")]
+
+            ;; check create-log operation
+            (let [log-url (-> session
+                            (request create-log-url
+                              :request-method :post
+                              :body (json/write-str {:components ["agent" "security"]}))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location-url))]
+
+              ;; verify that the log resource exists
+              (-> session
+                (request log-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :components ["agent" "security"])))
 
             (-> session
                 (request decommission-url
@@ -274,6 +292,7 @@
               (ltu/is-operation-absent :edit)
               (ltu/is-operation-absent :activate)
               (ltu/is-operation-absent :commission)
+              (ltu/is-operation-absent :create-log)
               (ltu/is-operation-absent :decommission)
               (ltu/is-key-value :state "DECOMMISSIONED")
               (ltu/is-status 200))

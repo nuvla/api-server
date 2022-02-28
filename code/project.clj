@@ -68,8 +68,6 @@
    [org.wololo/jts2geojson "0.15.0"]
    [one-time "0.7.0"]]
 
-  :aot [sixsq.nuvla.server.app.main]
-
   :profiles
   {
    :provided {:dependencies [[org.clojure/clojure]

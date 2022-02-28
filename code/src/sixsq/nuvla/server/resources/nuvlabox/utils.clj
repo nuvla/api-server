@@ -194,3 +194,8 @@
   [limit s]
   (cond-> s
           (> (count s) limit) (subs 0 limit)))
+
+
+(defn can-create-log?
+  [{:keys [state] :as _resource}]
+  (contains? #{"ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "ERROR"} state))
