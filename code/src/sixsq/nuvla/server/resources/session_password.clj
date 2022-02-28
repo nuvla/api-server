@@ -5,7 +5,6 @@ password.
 "
   (:require
     [clojure.tools.logging :as log]
-    [ring.util.codec :as codec]
     [sixsq.nuvla.auth.cookies :as cookies]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils.timestamp :as ts]
@@ -17,7 +16,7 @@ password.
     [sixsq.nuvla.server.resources.session.utils :as sutils]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.resources.spec.session-template-password :as st-password]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.resources.two-factor-auth.utils :as auth-2fa]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -45,30 +44,35 @@ password.
 ;;
 
 
-(defmulti create-session-password-for-user (fn [_resource _request user] (:auth-method-2fa user)))
-
-(defmethod create-session-password-for-user "email"
-  [{:keys [href username] :as _resource} {:keys [base-uri headers body] :as _request} {user-id :id
-                                                                                       method  :auth-method-2fa :as user}]
+(defn create-session-password-for-user-2fa
+  [{:keys [href username] :as _resource}
+   {:keys [base-uri headers body] :as _request}
+   {user-id :id method :auth-method-2fa :as user}]
   (let [redirect-url (-> body :template :redirect-url)
         ;; fake session values will be replaced after callback execution
-        session      (-> (sutils/create-session username user-id {:href href} headers authn-method redirect-url)
-                         (assoc :expiry (ts/rfc822->iso8601 (ts/expiry-later-rfc822 120))))
-        token        (user-utils/token-2fa method user)
+        session      (-> (sutils/create-session
+                           username user-id {:href href} headers authn-method
+                           redirect-url)
+                         (assoc :expiry (ts/rfc822->iso8601
+                                          (ts/expiry-later-rfc822 120))))
+        token        (auth-2fa/generate-token method user)
         session-id   (:id session)
         callback-url (callback-2fa/create-callback
-                       base-uri session-id :data {:method  method
-                                                  :token   token
-                                                  :headers headers}
+                       base-uri session-id :data
+                       (cond-> {:method  method
+                                :headers headers}
+                               token (assoc :token token))
                        :expires (u/ttl->timestamp 120)
                        :tries-left 3)]
-    (user-utils/method-2fa method user token)
-    [(r/map-response "Authorization code requested" 200 session-id callback-url) session]))
+    (auth-2fa/send-token method user token)
+    [(r/map-response "Authorization code requested"
+                     200 session-id callback-url) session]))
 
-(defmethod create-session-password-for-user :default
+(defn create-session-password-for-user
   [{:keys [href username] :as _resource} {:keys [headers] :as _request} user]
   (let [user-id     (:id user)
-        session     (sutils/create-session username user-id {:href href} headers authn-method)
+        session     (sutils/create-session
+                      username user-id {:href href} headers authn-method)
         cookie-info (cookies/create-cookie-info user-id
                                                 :session-id (:id session)
                                                 :headers headers
@@ -81,14 +85,17 @@ password.
                             claims (assoc :roles claims)
                             groups (assoc :groups groups))
         cookies     {authn-info/authn-cookie cookie}]
-    (log/debug "password cookie token claims for" (u/id->uuid href) ":" cookie-info)
+    (log/debug "password cookie token claims for"
+               (u/id->uuid href) ":" cookie-info)
     [{:cookies cookies} session]))
 
 
 (defmethod p/tpl->session authn-method
   [{:keys [username password] :as resource} request]
   (if-let [user (auth-password/valid-user-password username password)]
-    (create-session-password-for-user resource request user)
+    (if (#{auth-2fa/method-totp auth-2fa/method-email} (:auth-method-2fa user))
+      (create-session-password-for-user-2fa resource request user)
+      (create-session-password-for-user resource request user))
     (throw (r/ex-unauthorized username))))
 
 

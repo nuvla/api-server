@@ -65,9 +65,8 @@
    [org.locationtech.spatial4j/spatial4j "0.8"]
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
-   [org.wololo/jts2geojson "0.15.0"]]
-
-  :aot [sixsq.nuvla.server.app.main]
+   [org.wololo/jts2geojson "0.15.0"]
+   [one-time "0.7.0"]]
 
   :profiles
   {
