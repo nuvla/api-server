@@ -4,14 +4,20 @@
 
 ### Added
 
-- Two factor authentication - Support method TOTP
+- Nuvlabox - Use resource log resource
+- Deployment - Use resource log resource
+- Resource Log - new `resource-log` for recording logs
 
 ### Changed
 
+- Deployment log - Resource removed and replace by resource-log
+- NuvlaBox Status - new optional attribute `components` for v2, to list all
+  NuvlaBox components in the edge device
 - Fix date convertion from utc string [#650](https://github.com/nuvla/api-server/issues/650)
 - Cleaned up dead code server
   start [#648](https://github.com/nuvla/api-server/issues/648)
 - Two factor authentication - Bigger email token (6 digits)
+- Two factor authentication - Support method TOTP
 - NuvlaBox Cluster - improved cluster update workflow, with added status notes
   for clarity.
 - Kafka - Allow loading Kafka producer conditionally based on
