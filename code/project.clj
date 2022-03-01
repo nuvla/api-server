@@ -92,7 +92,9 @@
                                :kafka-producer-init "yes"
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
-   :dev      {:resource-paths ["test-resources"]
+   :dev      {:plugins [[test2junit "1.4.2"]]
+              :test2junit-output-dir "target/junit"
+              :resource-paths ["test-resources"]
               :cloverage {:test-ns-regex [#""]              ;; don't run tests
                           :ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               :dependencies [
