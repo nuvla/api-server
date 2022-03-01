@@ -87,7 +87,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action/composite@v1
         if: always()
         with:
-          files: target/junit/xml/*.xml
+          files: code/target/junit/xml/*.xml
 
   job-notify:
     if: always()
