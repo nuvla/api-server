@@ -84,10 +84,10 @@ jobs:
         run: mvn deploy
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
-          files: code/target/junit/xml/*.xml
+          files: code/test-reports/TEST-*.xml
 
   job-notify:
     if: always()
