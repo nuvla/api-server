@@ -50,7 +50,7 @@
                 <configuration>
                   <executable>lein</executable>
                   <arguments>
-                    <argument>test2junit</argument>
+                    <argument>test</argument>
                   </arguments>
                 </configuration>
               </execution>
