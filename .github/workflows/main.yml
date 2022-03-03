@@ -87,7 +87,7 @@ jobs:
         if: always()
         run: |
           ls -lrt code/test-reports/TEST-*.xml
-          apt-get install -y libxml2-utils
+          sudo apt-get install -y libxml2-utils
           for f in test-reports/TEST-*.xml; do xmllint --xpath "string(//testsuite/@time)" $f; echo ;done
 
       - name: Publish Unit Test Results
