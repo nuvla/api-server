@@ -81,14 +81,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SIXSQ_DOCKER_USERNAME: ${{ secrets.SIXSQ_DOCKER_USERNAME }}
           SIXSQ_DOCKER_PASSWORD: ${{ secrets.SIXSQ_DOCKER_PASSWORD }}
-        run: mvn deploy -X
-
-      - name: Check test reports
-        if: always()
-        run: |
-          ls -lrt code/test-reports/TEST-*.xml
-          sudo apt-get install -y libxml2-utils
-          for f in test-reports/TEST-*.xml; do xmllint --xpath "string(//testsuite/@time)" $f; echo ;done
+        run: mvn deploy
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
