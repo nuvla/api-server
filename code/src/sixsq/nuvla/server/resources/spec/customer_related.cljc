@@ -72,6 +72,12 @@
              :json-schema/description "subscription plan item id"
              :json-schema/type "string")))
 
+(s/def ::trial-days
+  (-> (st/spec (s/int-in 0 101))
+      (assoc :name "trial-days"
+             :json-schema/type "integer"
+             :json-schema/editable false
+             :json-schema/server-managed true)))
 
 (s/def ::plan-item-ids
   (-> (st/spec (s/coll-of ::plan-item-id))
@@ -97,7 +103,8 @@
 
 (s/def ::subscription
   (-> (st/spec (su/only-keys-maps {:req-un [::plan-id
-                                            ::plan-item-ids]}))
+                                            ::plan-item-ids]
+                                   :opt-un [::trial-days]}))
       (assoc :name "subscription"
              :json-schema/type "map")))
 

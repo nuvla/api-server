@@ -10,6 +10,7 @@
   (delete-customer [this customer])
   (delete-discount-customer [this customer])
   (get-customer-subscriptions [this customer])
+  (list-subscriptions [this params])
   (create-subscription [this params])
   (list-products [this products])
   (list-prices [this params])
