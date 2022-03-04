@@ -32,6 +32,9 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      - name: debug lein cloverage, --codecov
+        run: lein cloverage --codecov
+
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
