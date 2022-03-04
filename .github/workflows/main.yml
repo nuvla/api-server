@@ -33,6 +33,7 @@ jobs:
           java-version: '11'
 
       - name: debug lein cloverage, --codecov
+        working-directory: code
         run: lein cloverage --codecov
 
       - name: Setup Sonar Scanner
