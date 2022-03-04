@@ -59,6 +59,10 @@ jobs:
         run: |
           sudo apt-get install -y libxml2-utils
           echo "Found ${{ steps.tests.outputs.path_count }} test report(s)"
+          if [[ ${{ steps.tests.outputs.path_count }} < 1 ]]; then
+             echo "ERROR: No unit test reports collected."
+             exit 1
+          fi
           for f in ${{ steps.tests.outputs.paths }}; do
             echo "=== $f ==="
             if [[ $(xmllint --xpath "string(//testsuite/@failures)" $f) > 1 ]]; then
