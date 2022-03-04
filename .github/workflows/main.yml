@@ -46,6 +46,31 @@ jobs:
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
 
+      - name: Get list of tests
+        if: always()
+        id: tests
+        uses: Rishabh510/Path-lister-action@master
+        with:
+          path: "code/test-reports"
+          type: ".xml"
+
+      - name: Fail on failed tests
+        if: always()
+        run: |
+          sudo apt-get install -y libxml2-utils
+          echo "Found ${{ steps.tests.outputs.path_count }} test report(s)"
+          for f in ${{ steps.tests.outputs.paths }}; do
+            echo "=== $f ==="
+            if [[ $(xmllint --xpath "string(//testsuite/@failures)" $f) > 1 ]]; then
+               echo TEST FAILED: $f
+               exit 1
+            fi
+            if [[ $(xmllint --xpath "string(//testsuite/@errors)" $f) > 1 ]]; then
+               echo TEST ERRORED: $f
+               exit 1
+            fi
+          done
+
       - name: SonarQube Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
         # Force to fail step after specific time
@@ -81,7 +106,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SIXSQ_DOCKER_USERNAME: ${{ secrets.SIXSQ_DOCKER_USERNAME }}
           SIXSQ_DOCKER_PASSWORD: ${{ secrets.SIXSQ_DOCKER_PASSWORD }}
-        run: mvn deploy
+        run: mvn deploy -DskipTests=true
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1

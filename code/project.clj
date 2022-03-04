@@ -96,8 +96,7 @@
               :source-paths   ["test"]
               :test-report-junit-xml {:output-dir "test-reports"}
               :resource-paths ["test-resources"]
-              :cloverage {:test-ns-regex [#""]              ;; don't run tests
-                          :ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               :dependencies [
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
