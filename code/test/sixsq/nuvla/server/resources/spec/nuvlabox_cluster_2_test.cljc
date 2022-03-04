@@ -29,7 +29,7 @@
               :nuvlabox-workers         ["nuvlabox/123-456-abc-def-worker"]
               :nuvlabox-managers        ["nuvlabox/123-456-abc-def-manager"]
               :orchestrator  "swarm"
-              :status-notes  ["message 1" "comment A"]})
+              :status-notes  ["message 1" "comment A" ""]})
 
 
 (deftest check-nuvlabox-cluster

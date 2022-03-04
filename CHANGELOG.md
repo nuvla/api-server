@@ -10,6 +10,7 @@
 
 ### Changed
 
+- Nuvlabox - status-notes for cluster and status spec accept empty strings
 - Deployment log - Resource removed and replace by resource-log
 - NuvlaBox Status - new optional attribute `components` for v2, to list all
   NuvlaBox components in the edge device
