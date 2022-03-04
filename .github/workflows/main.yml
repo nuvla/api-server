@@ -44,7 +44,7 @@ jobs:
         working-directory: code
         run: sonar-scanner
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X
 
       - name: Get list of tests
         if: always()
