@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.common.user-utils-test
   (:require
     [clojure.data.json :as json]
-    [peridot.core :refer [content-type header request session]]
+    [peridot.core :refer [content-type header request session]
+     :rename {session session-base}]
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -16,47 +17,42 @@
 (def base-uri (str p/service-context user/resource-type))
 
 
-(def user-id! (atom nil))
+(def session (-> (ltu/ring-app)
+                 session-base
+                 (content-type "application/json")))
+
+(def session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon"))
+
+(def ^:dynamic *user-ids* {})
 
 
-(defn with-existing-user
-  [user-email f]
-  (let [validation-link (atom nil)
+(defn create-user [user-email]
+  (with-redefs
+    [email-utils/extract-smtp-cfg
+                         (fn [_]
+                           {:host "smtp@example.com"
+                            :port 465
+                            :ssl  true
+                            :user "admin"
+                            :pass "password"})
 
-        session         (-> (ltu/ring-app)
-                            session
-                            (content-type "application/json"))
-        session-admin   (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+     postal/send-message (fn [_ _]
+                           {:code 0, :error :SUCCESS, :message "OK"})]
 
-    (with-redefs [email-utils/extract-smtp-cfg
-                                      (fn [_]
-                                        {:host "smtp@example.com"
-                                         :port 465
-                                         :ssl  true
-                                         :user "admin"
-                                         :pass "password"})
+    (let [href        (str user-tpl/resource-type "/" minimum/registration-method)
 
-                  ;; WARNING: This is a fragile!  Regex matching to recover callback URL.
-                  postal/send-message (fn [_ {:keys [body]}]
-                                        (let [url (->> body
-                                                       (re-matches #"(?s).*link:\n\n\s+(.*?)\n.*")
-                                                       (second))]
-                                          (reset! validation-link url))
-                                        {:code 0, :error :SUCCESS, :message "OK"})]
+          href-create {:template {:href  href
+                                  :email user-email}}]
+      [user-email (-> session-admin
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str href-create))
+                      (ltu/is-status 201)
+                      (ltu/location))])))
 
-      (let [href          (str user-tpl/resource-type "/" minimum/registration-method)
-
-            href-create   {:template {:href  href
-                                      :email user-email}}
-            user-response (-> session-admin
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str href-create))
-                              (ltu/is-status 201))
-            user-href     (ltu/location user-response)]
-        (reset! user-id! user-href)
-        (f)
-        (-> session-admin
-            (request (ltu/location-url user-response) :request-method :delete)
-            (ltu/is-status 200))
-        (reset! user-id! nil)))))
+(defn with-existing-users
+  [user-emails f]
+  (binding [*user-ids* (->> user-emails
+                            (map create-user)
+                            (into {}))]
+    (f)))

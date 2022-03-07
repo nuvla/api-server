@@ -19,7 +19,7 @@
 (def tarzan-email "tarzan@example.com")
 
 (use-fixtures :once ltu/with-test-server-fixture
-              (partial user-utils-test/with-existing-user tarzan-email))
+              (partial user-utils-test/with-existing-users [tarzan-email]))
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -117,7 +117,7 @@
               (is (= [] users))
 
               ;; actually add some users to the group
-              (let [users      [@user-utils-test/user-id!
+              (let [users      [(get user-utils-test/*user-ids* tarzan-email)
                                 "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
                                 "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
 
