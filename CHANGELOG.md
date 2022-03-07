@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.24.0] - 2022-03-07
+
 ### Added
 
 - Nuvlabox - Use resource log resource
