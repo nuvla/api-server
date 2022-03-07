@@ -44,7 +44,7 @@
            :json-schema/order 80)))
 
 (s/def ::status-notes
-  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (-> (st/spec (s/coll-of string? :kind vector?))
     (assoc :name "status-notes"
            :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
 
