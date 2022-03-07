@@ -33,13 +33,13 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
-      - name: debug lein test
-        working-directory: code
-        run: |
-          lscpu
-          free
-          df -h .
-          lein test
+#      - name: debug lein test
+#        working-directory: code
+#        run: |
+#          lscpu
+#          free
+#          df -h .
+#          lein test
 
       - name: debug lein cloverage --codecov
         working-directory: code
@@ -47,7 +47,9 @@ jobs:
           lscpu
           free
           df -h .
-          export JAVA_OPTS="-Xms3g -Xmx3g"
+          export JAVA_OPTS="-Xms6g -Xmx6g"
+          echo ">>> JAVA_OPTS=$JAVA_OPTS"
+          export JAVA_OPTS="-Xms6g -Xmx6g"
           echo ">>> JAVA_OPTS=$JAVA_OPTS"
           lein cloverage --codecov
 

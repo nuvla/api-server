@@ -7,13 +7,17 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-example :as example]
-    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
+    [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
+    [environ.core :as env]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context callback/resource-type))
 
 (deftest lifecycle
+  (println "ENV ENV ENV")
+  (clojure.pprint/pprint env/env)
+  (println "ENV ENV ENV")
   (let [session                  (-> (ltu/ring-app)
                                      session
                                      (content-type "application/json"))
