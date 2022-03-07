@@ -330,7 +330,8 @@
                 (let [log-url (-> session-user
                                   (request create-log-url
                                            :request-method :post
-                                           :body (json/write-str {:service "my-service"}))
+                                           :body (json/write-str
+                                                   {:components ["my-service"]}))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
                                   (ltu/location-url))]

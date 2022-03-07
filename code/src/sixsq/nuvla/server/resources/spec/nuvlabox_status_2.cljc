@@ -44,7 +44,7 @@
            :json-schema/order 80)))
 
 (s/def ::status-notes
-  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (-> (st/spec (s/coll-of string? :kind vector?))
     (assoc :name "status-notes"
            :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
 
@@ -79,6 +79,13 @@
            :json-schema/description "If manager, this is the advertised address to be used by other nodes to join"
 
            :json-schema/order 85)))
+
+(s/def ::components
+  (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
+    (assoc :name "cpmponents"
+           :json-schema/description "List of all the NuvlaBox components in the edge device"
+
+           :json-schema/order 86)))
 
 
 (s/def ::schema
@@ -117,5 +124,6 @@
                                ::cluster-join-address
                                ::status-notes
                                ::orchestrator
-                               ::nb-status-0/temperatures]}))
+                               ::nb-status-0/temperatures
+                               ::components]}))
 

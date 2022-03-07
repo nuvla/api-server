@@ -102,7 +102,7 @@
             :online                      true
             :host-user-home           "/home/user"
             :cluster-node-role        "manager"
-            :status-notes             ["Lost quorum", "Swap disabled"]
+            :status-notes             ["Lost quorum", "Swap disabled", ""]
             :cluster-nodes            ["syz", "xyz", "1dsdr3"]
             :cluster-managers         ["syz"]
             :cluster-join-address     "194.182.171.166:2377"
@@ -110,7 +110,8 @@
             :temperatures             [{:thermal-zone      "acpitz"
                                        :value             15.4}
                                       {:thermal-zone      "Tboard_tegra"
-                                       :value             1.5}]})
+                                       :value             1.5}]
+            :components               ["agent", "vpn-client"]})
 
 
 (deftest check-nuvlabox-status
@@ -129,5 +130,5 @@
                  :container-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
-                 :cluster-join-address :temperatures}]
+                 :cluster-join-address :temperatures :components}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))

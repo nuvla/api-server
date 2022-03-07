@@ -237,13 +237,21 @@
              :json-schema/description "cent amount by day")))
 
 
+(s/def ::follow-customer-trial
+  (-> (st/spec boolean?)
+      (assoc :name "follow customer trial"
+             :json-schema/type "boolean"
+             :json-schema/description "follow customer trial?")))
+
+
 (s/def ::price
   (-> (st/spec (su/only-keys
                  :req-un [::product-id
                           ::price-id
                           ::account-id
                           ::currency
-                          ::cent-amount-daily]))
+                          ::cent-amount-daily]
+                 :opt-un [::follow-customer-trial]))
       (assoc :name "price"
              :json-schema/type "map"
              :json-schema/order 38)))

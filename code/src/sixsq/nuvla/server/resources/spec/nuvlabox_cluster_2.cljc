@@ -53,7 +53,7 @@
            :json-schema/order 16)))
 
 (s/def ::status-notes
-  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+  (-> (st/spec (s/coll-of string? :kind vector?))
     (assoc :name "status-notes"
       :json-schema/description "List of notes related with the status of the cluster"
 
