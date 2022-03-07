@@ -38,8 +38,8 @@ jobs:
           lscpu
           free
           df -h .
-          export ES_JAVA_OPTS="-Xms3g -Xmx3g"
-          echo ">>> ES_JAVA_OPTS=$ES_JAVA_OPTS"
+          export JAVA_OPTS="-Xms3g -Xmx3g"
+          echo ">>> JAVA_OPTS=$JAVA_OPTS"
           lein cloverage --codecov
 
       - name: Setup Sonar Scanner
