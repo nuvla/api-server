@@ -43,16 +43,16 @@
 
           href-create {:template {:href  href
                                   :email user-email}}]
-      [user-email (-> session-admin
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str href-create))
-                      (ltu/is-status 201)
-                      (ltu/location))])))
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str href-create))
+          (ltu/is-status 201)
+          (ltu/location)))))
 
-(defn with-existing-users
-  [user-emails f]
-  (binding [*user-ids* (->> user-emails
-                            (map create-user)
-                            (into {}))]
-    (f)))
+
+(defn create-users
+  [user-emails]
+  (->> user-emails
+       (map (juxt identity create-user))
+       (into {})))

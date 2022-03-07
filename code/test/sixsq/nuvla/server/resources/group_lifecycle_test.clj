@@ -13,13 +13,11 @@
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.tools.logging :as log]))
 
 
-(def tarzan-email "tarzan@example.com")
-
-(use-fixtures :once ltu/with-test-server-fixture
-              (partial user-utils-test/with-existing-users [tarzan-email]))
+(use-fixtures :once ltu/with-test-server-fixture)
 
 
 (def base-uri (str p/service-context t/resource-type))
@@ -54,7 +52,10 @@
         valid-create-no-href    {:name        name-attr
                                  :description description-attr
                                  :tags        tags-attr
-                                 :template    {:group-identifier valid-create-no-href-id}}]
+                                 :template    {:group-identifier valid-create-no-href-id}}
+
+        tarzan-email            "tarzan@example.com"
+        user-tarzan-id          (user-utils-test/create-user tarzan-email)]
 
     ;; admin query should succeed and have 5 entries
     (let [entries (-> session-admin
@@ -117,9 +118,9 @@
               (is (= [] users))
 
               ;; actually add some users to the group
-              (let [users      [(get user-utils-test/*user-ids* tarzan-email)
-                                "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                                "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
+              (let [users [user-tarzan-id
+                           "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                           "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
 
                 (-> session
                     (request abs-uri
@@ -163,13 +164,13 @@
 
                   (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
                     (-> session
-                       (request invite-url
-                                :request :put
-                                :body (json/write-str {:username     "jane@example.com"
-                                                       :redirect-url "https://phishing.com"}))
-                       (ltu/body->edn)
-                       (ltu/is-status 400)
-                       (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
+                        (request invite-url
+                                 :request :put
+                                 :body (json/write-str {:username     "jane@example.com"
+                                                        :redirect-url "https://phishing.com"}))
+                        (ltu/body->edn)
+                        (ltu/is-status 400)
+                        (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
 
                   (is (= users updated-users))
                   (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl))))))))
