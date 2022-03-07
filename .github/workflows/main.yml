@@ -32,7 +32,15 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
-      - name: debug lein cloverage, --codecov
+      - name: debug lein test
+        working-directory: code
+        run: |
+          lscpu
+          free
+          df -h .
+          lein test
+
+      - name: debug lein cloverage --codecov
         working-directory: code
         run: |
           lscpu
