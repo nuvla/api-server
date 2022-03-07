@@ -49,8 +49,8 @@ jobs:
           df -h .
           export JAVA_OPTS="-Xms6g -Xmx6g"
           echo ">>> JAVA_OPTS=$JAVA_OPTS"
-          export JAVA_OPTS="-Xms6g -Xmx6g"
-          echo ">>> JAVA_OPTS=$JAVA_OPTS"
+          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
+          echo ">>> ES_JAVA_OPTS=$JAVA_OPTS"
           lein cloverage --codecov
 
       - name: Setup Sonar Scanner
