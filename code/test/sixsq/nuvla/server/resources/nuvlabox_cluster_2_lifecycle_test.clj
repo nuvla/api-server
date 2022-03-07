@@ -61,7 +61,8 @@
 
                     :cluster-id    "1234abcdcluster"
                     :managers      [node-1-id]
-                    :orchestrator  "swarm"})
+                    :orchestrator  "swarm"
+                    :status-notes  []})
 
 
 (deftest check-metadata
@@ -247,7 +248,8 @@
         (-> session-admin
             (request cluster-url
                      :request-method :put
-                     :body (json/write-str {:managers [node-1-id node-2-id]}))
+                     :body (json/write-str {:managers [node-1-id node-2-id]
+                                            :status-notes ["test"]}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
@@ -255,7 +257,8 @@
         (-> session-user
             (request cluster-url)
             (ltu/body->edn)
-            (ltu/is-status 200))
+            (ltu/is-status 200)
+            (ltu/is-key-value :status-notes ["test"]))
 
         ;; nuvlabox can delete the cluster
         (-> session-nb

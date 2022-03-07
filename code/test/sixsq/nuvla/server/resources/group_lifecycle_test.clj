@@ -18,8 +18,6 @@
 
 (def tarzan-email "tarzan@example.com")
 
-(use-fixtures :once ltu/with-test-server-fixture)
-
 (use-fixtures :once ltu/with-test-server-fixture
               (partial user-utils-test/with-existing-user tarzan-email))
 

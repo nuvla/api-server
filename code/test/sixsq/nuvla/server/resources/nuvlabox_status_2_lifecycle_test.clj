@@ -97,7 +97,8 @@
                   :cluster-managers            ["syz"]
                   :cluster-join-address        "194.182.171.166:2377"
                   :orchestrator                "kubernetes"
-                  :temperatures                []})
+                  :temperatures                []
+                  :components                  ["agent"]})
 
 
 (def resources-updated {:cpu   {:capacity 10

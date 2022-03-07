@@ -14,10 +14,10 @@
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-api-key]
-    [sixsq.nuvla.server.resources.deployment-log :as deployment-log]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
@@ -78,7 +78,7 @@
    logged but otherwise ignored."
   [deployment-id]
   (doseq [resource-name #{credential/resource-type "deployment-parameter"
-                          deployment-log/resource-type}]
+                          resource-log/resource-type}]
     (delete-child-resources resource-name deployment-id)))
 
 
@@ -198,8 +198,10 @@
   [{:keys [id] :as _resource} {:keys [body] :as request}]
   (let [session-id (auth/current-session-id request)
         opts       (select-keys body [:since :lines])
-        service    (:service body)]
-    (deployment-log/create-log id session-id service opts)))
+        components (:components body)
+        acl        {:owners   ["group/nuvla-admin"]
+                    :edit-acl [session-id]}]
+    (resource-log/create-log id components acl opts)))
 
 
 (defn throw-can-not-do-action

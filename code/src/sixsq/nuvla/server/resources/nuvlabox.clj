@@ -16,11 +16,14 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential.vpn-utils :as vpn-utils]
+    [sixsq.nuvla.server.resources.deployment.utils :as depl-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
+    [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
@@ -943,6 +946,56 @@ particular NuvlaBox release.
 
 
 ;;
+;; Create the NuvlaBox Log resource
+;;
+
+(defn create-log
+  [{:keys [id acl] :as _nuvlabox} {:keys [body] :as _request}]
+  (let [opts          (select-keys body [:since :lines])
+        components    (:components body)
+        nb-view-acl   (:view-acl acl)
+        nb-delete-acl (:delete acl)
+        log-acl       (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
+                              (not-empty nb-view-acl) (assoc :manage nb-view-acl)
+                              (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))]
+    (resource-log/create-log id components log-acl opts)))
+
+
+(defmethod crud/do-action [resource-type "create-log"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (depl-utils/throw-can-not-do-action utils/can-create-log? "create-log")
+          (create-log request)))))
+
+;;
+;; Allows for the creation of a NuvlaBox API key on-demand
+;;
+
+(defn create-new-api-key
+  [{:keys [id state] :as nuvlabox}]
+  (if (#{state-decommissioned state-decommissioning} state)
+    (logu/log-and-throw-400 (str "invalid state for generating new API key: " state))
+    (do
+      (log/warn "generating new API key for nuvlabox:" id)
+      (let [[_ credential] (wf-utils/create-nuvlabox-api-key nuvlabox "")]
+        (r/json-response credential)))))
+
+
+(defmethod crud/do-action [resource-type "generate-new-api-key"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (create-new-api-key)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -974,6 +1027,8 @@ particular NuvlaBox release.
         enable-host-mgmt-op  (u/action-map id :enable-host-level-management)
         disable-host-mgmt-op (u/action-map id :disable-host-level-management)
         enable-emergency-op  (u/action-map id :enable-emergency-playbooks)
+        create-log-op        (u/action-map id :create-log)
+        generate-new-key-op  (u/action-map id :generate-new-api-key)
         ops                  (cond-> []
                                      (a/can-edit? resource request) (conj edit-op)
                                      (and (a/can-delete? resource request)
@@ -1011,7 +1066,15 @@ particular NuvlaBox release.
                                      (and (a/can-manage? resource request)
                                           (nil? (:host-level-management-api-key resource))) (conj enable-host-mgmt-op)
                                      (and (a/can-manage? resource request)
-                                          (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op))]
+                                          (contains? resource :host-level-management-api-key)) (conj disable-host-mgmt-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-activated
+                                             state-commissioned
+                                             state-decommissioning
+                                             state-error} state)) (conj create-log-op)
+                                     (and (a/can-manage? resource request)
+                                          (not= state state-decommissioned)
+                                          (not= state state-decommissioning)) (conj generate-new-key-op))]
     (assoc resource :operations ops)))
 
 ;;

@@ -78,7 +78,7 @@
             manage    (distinct (concat (apply concat (mapv :manage acls)) edit-acl))
             view-data (distinct (concat (apply concat (mapv :view-data acls)) edit-acl))
             acl       {:owners    ["group/nuvla-admin"]
-                       :delete    (into [] (concat ["group/nuvla-admin"] nuvlabox-ids))
+                       :delete    (into [] (distinct (concat ["group/nuvla-admin"] nuvlabox-ids)))
                        :edit-acl  ["group/nuvla-admin"]
                        :manage    (into [] manage)
                        :view-data (into [] view-data)
@@ -88,13 +88,15 @@
 
 
 (defn complete-cluster-details
-  [action nb-workers nb-managers {body :body :as request}]
+  [action nb-workers nb-managers status-notes {body :body :as request}]
   (let [dyn-body (apply assoc body
                         (apply concat
                                (filter second
                                        (partition 2 [:nuvlabox-workers nb-workers
                                                      :nuvlabox-managers nb-managers]))))
-        new-body (set-nuvlabox-cluster-acls dyn-body)]
+        body-acl (set-nuvlabox-cluster-acls dyn-body)
+        new-body (cond-> body-acl
+                   (not-empty status-notes) (assoc :status-notes status-notes))]
     (action (assoc request :body new-body))))
 
 
@@ -192,3 +194,8 @@
   [limit s]
   (cond-> s
           (> (count s) limit) (subs 0 limit)))
+
+
+(defn can-create-log?
+  [{:keys [state] :as _resource}]
+  (contains? #{"ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "ERROR"} state))

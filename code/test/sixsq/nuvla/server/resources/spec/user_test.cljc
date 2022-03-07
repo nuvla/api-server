@@ -21,6 +21,8 @@
 
                    :credential-password "credential/d3167d53-0138-4754-b8fd-df8119474e7f"
 
+                   :credential-totp     "credential/e3167d53-0138-4754-b8fd-df8119474e7f"
+
                    :email               "email/uuid"
 
                    :method              "direct"
@@ -37,5 +39,6 @@
     (doseq [attr #{:id :resource-type :created :updated :acl :state}]
       (stu/is-invalid ::user/schema (dissoc cfg attr)))
 
-    (doseq [attr #{:name :method :credential-password :email :auth-method-2fa}]
+    (doseq [attr #{:name :method :credential-password
+                   :credential-totp :email :auth-method-2fa}]
       (stu/is-valid ::user/schema (dissoc cfg attr)))))

@@ -28,7 +28,8 @@
               :managers      ["absafhwe"]
               :nuvlabox-workers         ["nuvlabox/123-456-abc-def-worker"]
               :nuvlabox-managers        ["nuvlabox/123-456-abc-def-manager"]
-              :orchestrator  "swarm"})
+              :orchestrator  "swarm"
+              :status-notes  ["message 1" "comment A" ""]})
 
 
 (deftest check-nuvlabox-cluster
@@ -42,5 +43,5 @@
     (stu/is-invalid ::nb-cluster-2/schema (dissoc cluster attr)))
 
   ;; optional
-  (doseq [attr #{:workers :nuvlabox-workers :nuvlabox-managers}]
+  (doseq [attr #{:workers :nuvlabox-workers :nuvlabox-managers :status-notes}]
     (stu/is-valid ::nb-cluster-2/schema (dissoc cluster attr))))
