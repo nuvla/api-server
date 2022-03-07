@@ -33,25 +33,17 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
-#      - name: debug lein test
+#      - name: debug lein cloverage --codecov
 #        working-directory: code
 #        run: |
 #          lscpu
 #          free
 #          df -h .
-#          lein test
-
-      - name: debug lein cloverage --codecov
-        working-directory: code
-        run: |
-          lscpu
-          free
-          df -h .
-          export JAVA_OPTS="-Xms6g -Xmx6g"
-          echo ">>> JAVA_OPTS=$JAVA_OPTS"
-          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          echo ">>> ES_JAVA_OPTS=$JAVA_OPTS"
-          lein cloverage --codecov
+#          export JAVA_OPTS="-Xms6g -Xmx6g"
+#          echo ">>> JAVA_OPTS=$JAVA_OPTS"
+#          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
+#          echo ">>> ES_JAVA_OPTS=$JAVA_OPTS"
+#          lein cloverage --codecov
 
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
@@ -63,9 +55,10 @@ jobs:
           # provide GITHUB_TOKEN to get access to secrets.SONAR_TOKEN
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: code
-        run: sonar-scanner
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X
+        run: |
+          export JAVA_OPTS="-Xms6g -Xmx6g"
+          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X
 
       - name: Get list of tests
         if: always()
