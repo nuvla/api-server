@@ -35,10 +35,10 @@ jobs:
       - name: debug lein cloverage, --codecov
         working-directory: code
         run: |
-        lscpu
-        free
-        df -h .
-        lein cloverage --codecov
+          lscpu
+          free
+          df -h .
+          lein cloverage --codecov
 
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
