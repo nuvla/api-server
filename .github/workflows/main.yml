@@ -11,7 +11,7 @@ jobs:
 
   job-build:
     # runs-on: ubuntu-latest
-    runs-on: self-hosted
+    runs-on: ks-dev-machine
     steps:
       - uses: actions/checkout@v2
         with:
