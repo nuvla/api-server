@@ -158,18 +158,36 @@
           first))
 
 
-(defn customer-has-active-subscription?
+(defn active-claim->subscription-map
   [active-claim]
+  (try
+    (some-> active-claim
+            active-claim->customer
+            :subscription-id
+            pricing-impl/retrieve-subscription
+            pricing-impl/subscription->map)
+    (catch Exception _)))
+
+
+(defn customer-has-subscription-in-states?
+  [active-claim pred-fn]
   (boolean
     (try
       (some-> active-claim
-              active-claim->customer
-              :subscription-id
-              pricing-impl/retrieve-subscription
-              pricing-impl/subscription->map
+              active-claim->subscription-map
               :status
-              (#{"active" "trialing" "past_due"}))
+              (pred-fn))
       (catch Exception _))))
+
+
+(defn customer-has-active-subscription?
+  [active-claim]
+  (customer-has-subscription-in-states? active-claim #{"active" "trialing" "past_due"}))
+
+
+(defn customer-has-trialing-subscription?
+  [active-claim]
+  (customer-has-subscription-in-states? active-claim #{"trialing"}))
 
 
 (defn throw-user-hasnt-active-subscription

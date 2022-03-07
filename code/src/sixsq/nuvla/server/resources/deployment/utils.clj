@@ -20,7 +20,8 @@
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn generate-api-key-secret
@@ -239,20 +240,31 @@
   (+ (count cards) (count bank-accounts)))
 
 
+(defn has-defined-payment-methods?
+  [{:keys [customer-id] :as _customer}]
+  (-> customer-id
+      pricing-impl/retrieve-customer
+      pricing-impl/list-payment-methods-customer
+      count-payment-methods
+      pos?))
+
+
 (defn throw-price-need-payment-method
   [{{:keys [price]} :module :as resource} request]
-  (if price
-    (let [count-pm (-> request
-                       auth/current-active-claim
-                       user-utils/active-claim->customer
-                       :customer-id
-                       pricing-impl/retrieve-customer
-                       pricing-impl/list-payment-methods-customer
-                       count-payment-methods)]
-      (if (pos? count-pm)
-        resource
-        (throw (r/ex-response "Payment method is required!" 402))))
-    resource))
+  (let [follow-trial? (boolean (:follow-customer-trial price))
+        active-claim  (auth/current-active-claim request)]
+    (if (or
+          (nil? config-nuvla/*stripe-api-key*)
+          (nil? price)
+          (or
+            (and follow-trial?
+                 (user-utils/customer-has-trialing-subscription? active-claim))
+            (-> request
+                auth/current-active-claim
+                user-utils/active-claim->customer
+                has-defined-payment-methods?)))
+      resource
+      (throw (r/ex-response "Payment method is required!" 402)))))
 
 
 (defn remove-delete
@@ -261,16 +273,28 @@
 
 
 (defn create-stripe-subscription
-  [active-claim {:keys [account-id price-id] :as _price} coupon]
-  (pricing-impl/create-subscription
-    {"customer"                (some-> active-claim
-                                       user-utils/active-claim->customer
-                                       :customer-id)
-     "items"                   [{"price" price-id}]
-     "application_fee_percent" 20
-     "trial_period_days"       1
-     "coupon"                  coupon
-     "transfer_data"           {"destination" account-id}}))
+  [active-claim {:keys [account-id price-id follow-customer-trial] :as _price} coupon]
+  (let [customer-trial-end (when (and follow-customer-trial
+                                      (user-utils/customer-has-trialing-subscription? active-claim))
+                             (some-> active-claim
+                                     user-utils/active-claim->subscription-map
+                                     :trial-end
+                                     time/date-from-str))
+        one-day-trial      (time/from-now 24 :hours)
+        trial-end          (if (and
+                                 customer-trial-end
+                                 (time/after? customer-trial-end one-day-trial))
+                             customer-trial-end
+                             one-day-trial)]
+    (pricing-impl/create-subscription
+      {"customer"                (some-> active-claim
+                                         user-utils/active-claim->customer
+                                         :customer-id)
+       "items"                   [{"price" price-id}]
+       "application_fee_percent" 20
+       "trial_end"               (time/unix-timestamp-from-date trial-end)
+       "coupon"                  coupon
+       "transfer_data"           {"destination" account-id}})))
 
 
 (defn some-id->resource
