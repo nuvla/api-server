@@ -15,9 +15,6 @@
 (def base-uri (str p/service-context callback/resource-type))
 
 (deftest lifecycle
-  (println "ENV ENV ENV")
-  (clojure.pprint/pprint env/env)
-  (println "ENV ENV ENV")
   (let [session                  (-> (ltu/ring-app)
                                      session
                                      (content-type "application/json"))

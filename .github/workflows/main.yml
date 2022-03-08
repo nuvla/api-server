@@ -11,7 +11,6 @@ jobs:
 
   job-build:
     runs-on: ubuntu-latest
-    # runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -32,18 +31,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '11'
-
-#      - name: debug lein cloverage --codecov
-#        working-directory: code
-#        run: |
-#          lscpu
-#          free
-#          df -h .
-#          export JAVA_OPTS="-Xms6g -Xmx6g"
-#          echo ">>> JAVA_OPTS=$JAVA_OPTS"
-#          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-#          echo ">>> ES_JAVA_OPTS=$JAVA_OPTS"
-#          lein cloverage --codecov
 
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
