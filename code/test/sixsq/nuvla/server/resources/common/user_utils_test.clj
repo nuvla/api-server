@@ -23,9 +23,6 @@
 
 (def session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon"))
 
-(def ^:dynamic *user-ids* {})
-
-
 (defn create-user [user-email]
   (with-redefs
     [email-utils/extract-smtp-cfg
@@ -49,10 +46,3 @@
                    :body (json/write-str href-create))
           (ltu/is-status 201)
           (ltu/location)))))
-
-
-(defn create-users
-  [user-emails]
-  (->> user-emails
-       (map (juxt identity create-user))
-       (into {})))
