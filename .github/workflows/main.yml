@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - master
-  pull_request:
+  # ATM the run takes ~30 min. So, it was disabled. Run it manually against
+  # your branch from https://github.com/nuvla/api-server/actions/workflows/main.yml
+  # Select: Workflows -> BUILD -> Run workflows -> Branch: <your branch> -> Run
+  #pull_request:
   workflow_dispatch:
 
 jobs:
