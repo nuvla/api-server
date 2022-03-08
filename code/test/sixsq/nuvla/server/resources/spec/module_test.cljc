@@ -24,8 +24,8 @@
                                                 :author "someone"
                                                 :commit "wip"}
                                                nil
-                                               {:href "module-component/abc"
-                                                :author "someone"
+                                               {:href      "module-component/abc"
+                                                :author    "someone"
                                                 :published true}]
                    :logo-url                  "https://example.org/logo"
 
@@ -34,11 +34,12 @@
                    :compatibility             "swarm"
                    :valid                     false
                    :validation-message        "docker-compose error"
-                   :price                     {:product-id        "prod_xyz"
-                                               :price-id          "price_xyz"
-                                               :cent-amount-daily 10
-                                               :currency          "EUR"
-                                               :account-id        "acct_xyz"}
+                   :price                     {:product-id            "prod_xyz"
+                                               :price-id              "price_xyz"
+                                               :cent-amount-daily     10
+                                               :currency              "EUR"
+                                               :account-id            "acct_xyz"
+                                               :follow-customer-trial true}
                    :license                   {:name "SixSq Licence"
                                                :url  "https://sixsq.com/app-licence"}}]
 

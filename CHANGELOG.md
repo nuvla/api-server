@@ -4,16 +4,25 @@
 
 ### Added
 
+- Module - follow-customer-trial attribute added. This attribute will allow
+  vendor to request module trial period to be same as nuvla trial period
+
+## [5.24.0] - 2022-03-07
+
+### Added
+
 - Nuvlabox - Use resource log resource
 - Deployment - Use resource log resource
 - Resource Log - new `resource-log` for recording logs
 
 ### Changed
 
+- Nuvlabox - status-notes for cluster and status spec accept empty strings
 - Deployment log - Resource removed and replace by resource-log
 - NuvlaBox Status - new optional attribute `components` for v2, to list all
   NuvlaBox components in the edge device
-- Fix date convertion from utc string [#650](https://github.com/nuvla/api-server/issues/650)
+- Fix date convertion from utc
+  string [#650](https://github.com/nuvla/api-server/issues/650)
 - Cleaned up dead code server
   start [#648](https://github.com/nuvla/api-server/issues/648)
 - Two factor authentication - Bigger email token (6 digits)
