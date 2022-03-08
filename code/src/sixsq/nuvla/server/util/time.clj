@@ -41,7 +41,13 @@
     :seconds (t/seconds n)
     :minutes (t/minutes n)
     :hours (t/hours n)
+    :days (t/days n)
     :weeks (t/weeks n)))
+
+
+(defn time-between
+  [start end unit]
+  (t/time-between start end unit))
 
 
 (defn from-now
