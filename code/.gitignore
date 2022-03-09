@@ -35,3 +35,5 @@ sscljdb*
 dependency-reduced-pom.xml
 project.clj.bck
 
+.scannerwork
+.eastwood
