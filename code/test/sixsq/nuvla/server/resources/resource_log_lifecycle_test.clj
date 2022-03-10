@@ -196,12 +196,26 @@
           (is (= log {:c3 ["log3"]})))
 
         ;; check the actions
-        (-> session-jane
-            (request fetch-url
-                     :request-method :post)
-            (ltu/body->edn)
-            (ltu/is-status 202)
-            (ltu/is-key-value #(-> % (str/split #" ") first) :message "starting"))
+        (let [job-url         (-> session-jane
+                                  (request fetch-url
+                                           :request-method :post)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 202)
+                                  (ltu/is-key-value #(-> % (str/split #" ") first) :message "starting")
+                                  (ltu/location-url))
+              get-context-url (-> session-admin
+                                  (request job-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-operation-present :get-context)
+                                  (ltu/get-op-url :get-context))
+              context-keys    (-> session-admin
+                                  (request get-context-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/body)
+                                  keys)]
+          (is (every? #{(keyword (:id nuvlabox)) (keyword (:id original))} context-keys)))
 
         (-> session-other
             (request fetch-url
@@ -357,12 +371,24 @@
             (is (= log {:s1 ["log1"]})))
 
           ;; check the actions
-          (-> session-jane
-              (request fetch-url
-                       :request-method :post)
-              (ltu/body->edn)
-              (ltu/is-status 202)
-              (ltu/is-key-value #(-> % (str/split #" ") first) :message "starting"))
+          (let [job-url         (-> session-jane
+                                    (request fetch-url
+                                             :request-method :post)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 202)
+                                    (ltu/is-key-value #(-> % (str/split #" ") first) :message "starting")
+                                    (ltu/location-url))
+                get-context-url (-> session-admin
+                                    (request job-url)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :get-context)
+                                    (ltu/get-op-url :get-context))]
+            ;; since it's a fake deployment get-context will fail with not-found
+            (-> session-admin
+                (request get-context-url)
+                (ltu/body->edn)
+                (ltu/is-status 404)))
 
           (-> session-other
               (request fetch-url
