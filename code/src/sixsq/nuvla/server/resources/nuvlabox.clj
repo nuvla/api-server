@@ -996,6 +996,53 @@ particular NuvlaBox release.
 
 
 ;;
+;; Setup a websocket connection to the NB
+;;
+
+
+
+(defn create-websocket
+  [{:keys [id state acl] :as nuvlabox} websocket-token]
+  (if (= state state-commissioned)
+    (if (nil? websocket-token)
+      (logu/log-and-throw-400 "Cannot create a websocket without a secure token")
+      (do
+        (log/warn "Starting an SSH session via a websocket, with the authn token " websocket-token " for NuvlaBox " id)
+        (try
+          (let [{{job-id     :resource-id
+                  job-status :status} :body} (job/create-job
+                                               id "nuvlabox_ssh"
+                                               (-> acl
+                                                 (a/acl-append :edit-data id)
+                                                 (a/acl-append :manage id))
+                                               :payload (json/write-str {:token websocket-token})
+                                               :priority 50
+                                               :execution-mode (utils/get-execution-mode nuvlabox))
+                job-msg (str "starting SSH websocket session with token " websocket-token
+                          " for NuvlaBox " id " with async " job-id)]
+            (when (not= job-status 201)
+              (throw (r/ex-response
+                       "unable to create async job to SSH to NuvlaBox" 500 id)))
+            (event-utils/create-event id job-msg acl)
+            (r/map-response job-msg 202 id job-id))
+          (catch Exception e
+            (or (ex-data e) (throw e))))))
+    (logu/log-and-throw-400 (str "invalid state for NuvlaBox SSH action: " state))))
+
+
+(defmethod crud/do-action [resource-type "ssh"]
+  [{{uuid :uuid} :params body :body :as request}]
+  (try
+    (let [id          (str resource-type "/" uuid)
+          token       (:token body)]
+      (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (create-websocket token)))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+;;
 ;; Set operation
 ;;
 
@@ -1029,6 +1076,7 @@ particular NuvlaBox release.
         enable-emergency-op  (u/action-map id :enable-emergency-playbooks)
         create-log-op        (u/action-map id :create-log)
         generate-new-key-op  (u/action-map id :generate-new-api-key)
+        ssh-op               (u/action-map id :ssh)
         ops                  (cond-> []
                                      (a/can-edit? resource request) (conj edit-op)
                                      (and (a/can-delete? resource request)
@@ -1074,7 +1122,9 @@ particular NuvlaBox release.
                                              state-error} state)) (conj create-log-op)
                                      (and (a/can-manage? resource request)
                                           (not= state state-decommissioned)
-                                          (not= state state-decommissioning)) (conj generate-new-key-op))]
+                                          (not= state state-decommissioning)) (conj generate-new-key-op)
+                                     (and (a/can-manage? resource request)
+                                          (#{state-commissioned} state)) (conj ssh-op))]
     (assoc resource :operations ops)))
 
 ;;
