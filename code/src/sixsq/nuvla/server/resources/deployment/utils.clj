@@ -7,6 +7,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
+    [sixsq.nuvla.pricing.payment :refer [has-defined-payment-methods?]]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -233,20 +234,6 @@
                                 403 id))
           resource))
       resource)))
-
-
-(defn count-payment-methods
-  [{:keys [cards bank-accounts]}]
-  (+ (count cards) (count bank-accounts)))
-
-
-(defn has-defined-payment-methods?
-  [{:keys [customer-id] :as _customer}]
-  (-> customer-id
-      pricing-impl/retrieve-customer
-      pricing-impl/list-payment-methods-customer
-      count-payment-methods
-      pos?))
 
 
 (defn throw-price-need-payment-method
