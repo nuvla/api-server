@@ -14,12 +14,15 @@
   (:import (java.util Date)))
 
 (def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
+(def trial-html (slurp (io/resource "sixsq/nuvla/html-template/trial.html")))
 
 (defn render-email
-  [values-map]
+  [{:keys [template] :as context-map}]
   (tmpl/render
-    base-html
-    (assoc values-map :now (Date.))))
+    (case template 
+      :trial trial-html
+      base-html)
+    (assoc context-map :now (Date.))))
 
 (def warning-initiate
   (str/join "\n"
@@ -251,6 +254,11 @@
 
     (send-email nuvla-config msg)))
 
+(defn email-render [{:keys [subject] :as content}]
+  {:subject subject
+   :body [:alternative
+          {:type "text/html; charset=utf-8"
+           :content (render-email content)}]})
 
 (defn send-text-email [address email-data]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
