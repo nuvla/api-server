@@ -1,4 +1,4 @@
-(def parent-version "6.7.5")
+(def parent-version "6.7.6")
 (def nuvla-ring-version "2.0.2")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
@@ -92,8 +92,7 @@
                                :kafka-producer-init "yes"
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
-   :dev      {:resource-paths ["test-resources"]
-              :dependencies [
+   :dev      {:dependencies [
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
                              [org.apache.kafka/kafka_2.12 "2.4.0"]
@@ -102,4 +101,27 @@
                                            jline
                                            org.apache.yetus/audience-annotations
                                            org.slf4j/slf4j-log4j12
-                                           log4j]]]}})
+                                           log4j]]
+                             [clj-kondo "RELEASE"]
+                             ;; for running linters
+                             [me.raynes/fs]
+                             [peridot]
+                             [org.apache.curator/curator-test]
+                             [org.elasticsearch.test/framework]
+                             [org.elasticsearch.client/transport]
+                             [org.apache.logging.log4j/log4j-core]]
+              :plugins [[lein-test-report-junit-xml "0.2.0"]]
+              ;; paths
+              :source-paths   ["test"]
+              :resource-paths ["test-resources"]
+              ;; reporters
+              :test-report-junit-xml {:output-dir "test-reports"}
+              ;; linters
+              :eastwood {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
+              :env            {:nuvla-session-key "test-resources/session.key"
+                               :nuvla-session-crt "test-resources/session.crt"
+                               :es-sniffer-init "no"
+                               :kafka-producer-init "yes"}
+              ;; code coverage
+              :cloverage {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              }})
