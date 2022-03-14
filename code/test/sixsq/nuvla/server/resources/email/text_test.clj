@@ -12,10 +12,10 @@
 
 (comment
   (-> #_(t/trial-ending {:trial-days-left 5})
-      t/trial-ended
+      (t/trial-ended true )
 
       u/email-render
       :body 
       last
      :content
-      (write "test-resources/export.html")))
+      (write "test-resources/email-trial-ended.html")))

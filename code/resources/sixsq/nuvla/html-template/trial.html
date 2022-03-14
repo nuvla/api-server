@@ -121,7 +121,6 @@
         font-size: 35px;
         font-weight: 300;
         text-align: center;
-        text-transform: capitalize;
       }
 
       p,
@@ -368,11 +367,13 @@
                                 <tr>
                                     <td>
                                         <p>{{text-1}}</p>
+                                        <p>We froze the follwing resources:</p>
 
-                                        {% if any text-strong-1 %}
-                                        <p class="align-center">{{text-strong-1}}<strong>{{text-strong-2}}</strong></p>
-                                        {% endif %}
 
+																					<a href="https://nuvla.io/ui/deployment/873ab926-4865-41ca-84bd-d6e1b1913320">Deployment: Nginx simple app (873ab926)</a></p>
+
+                                        <p>{{text-2}}</p>
+																				<p>Add your payment method to use your resources:</p>
                                         {% if any button-text %}
                                         <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
                                             <tbody>
@@ -391,7 +392,6 @@
                                         </table>
                                         {% endif %}
 
-                                        <p>{{text-2}}</p>
                                         <p>{{text-3}}</p>
 
                                         {% if any warning-initiate %}
