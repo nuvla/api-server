@@ -204,7 +204,7 @@ jobs:
     if: always()
     name: Post Workflow Status To Slack
     needs:
-      - job-build
+      - build-deploy
     runs-on: ubuntu-latest
     steps:
       - uses: Gamesight/slack-workflow-status@master
