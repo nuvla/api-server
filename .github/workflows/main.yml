@@ -93,7 +93,7 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms5g -Xmx5g"
           export ES_JAVA_OPTS="-Xms5g -Xmx5g"
-          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X -Dsonar.clojure.cloverage.enabled=false -Dsonar.clojure.nvd.enabled=true -Dsonar.clojure.ancient.enabled=true
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X -Dsonar.clojure.cloverage.enabled=true -Dsonar.clojure.nvd.enabled=true -Dsonar.clojure.ancient.enabled=true
 
       - name: SonarQube Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
