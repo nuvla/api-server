@@ -9,7 +9,7 @@ on:
 
 jobs:
 
-  job-build:
+  analysis-kibit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -45,7 +45,65 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.clojure.kibit.enabled=true
+
+      - name: SonarQube Quality Gate check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
+        # Force to fail step after specific time
+        timeout-minutes: 5
+        with:
+          scanMetadataReportFile: code/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  analysis-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting for sonar
+          fetch-depth: 0
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+            - name: Cache local Maven repository
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Setup Sonar Scanner
+        uses: warchant/setup-sonar-scanner@v3
+        with:
+          version: 4.6.2.2472
+
+      - name: Run Sonar Scanner
+        env:
+          # provide GITHUB_TOKEN to get access to secrets.SONAR_TOKEN
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: code
+        run: |
+          export JAVA_OPTS="-Xms5g -Xmx5g"
+          export ES_JAVA_OPTS="-Xms5g -Xmx5g"
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.clojure.cloverage.enabled=true -Dsonar.clojure.nvd.enabled=true -Dsonar.clojure.ancient.enabled=true
+
+      - name: SonarQube Quality Gate check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
+        # Force to fail step after specific time
+        timeout-minutes: 5
+        with:
+          scanMetadataReportFile: code/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Get list of tests
         if: always()
@@ -86,6 +144,35 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: code/test-reports/TEST-*.xml
+
+  build-deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - analysis-coverage
+      - analysis-kibit
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+            - name: Cache local Maven repository
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
       - uses: s4u/maven-settings-action@v2.2.0
         with:
           githubServer: false
@@ -113,17 +200,11 @@ jobs:
           SIXSQ_DOCKER_PASSWORD: ${{ secrets.SIXSQ_DOCKER_PASSWORD }}
         run: mvn deploy -DskipTests=true
 
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: code/test-reports/TEST-*.xml
-
   job-notify:
     if: always()
     name: Post Workflow Status To Slack
     needs:
-      - job-build
+      - build-deploy
     runs-on: ubuntu-latest
     steps:
       - uses: Gamesight/slack-workflow-status@master
