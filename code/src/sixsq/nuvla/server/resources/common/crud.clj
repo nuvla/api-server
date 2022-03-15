@@ -117,6 +117,18 @@
   (throw (r/ex-bad-action request (resource-name-and-action-dispatch request))))
 
 
+(defn do-action-as-admin
+  ([resource-id action-name]
+   (do-action-as-admin resource-id action-name nil))
+  ([resource-id action-name body]
+   (let [[resource-type uuid] (u/parse-id resource-id)]
+     (do-action (cond-> {:params      {:resource-name resource-type
+                                       :uuid          uuid
+                                       :action        action-name}
+                         :nuvla/authn auth/internal-identity}
+                        body (assoc :body body))))))
+
+
 ;;
 ;; Resource schema validation.
 ;;

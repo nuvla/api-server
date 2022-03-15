@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.email.text :as email-text]
     [sixsq.nuvla.server.util.response :as r])
   (:import (java.util Date)))
 
@@ -19,7 +20,7 @@
 (defn render-email
   [{:keys [template] :as context-map}]
   (tmpl/render
-    (case template 
+    (case template
       :trial trial-html
       base-html)
     (assoc context-map :now (Date.))))
@@ -110,7 +111,8 @@
      :pass smtp-password}))
 
 
-(defn send-email [nuvla-config email-data]
+(defn send-email
+  [nuvla-config email-data]
   (try
     (let [smtp-config (extract-smtp-cfg nuvla-config)
           resp        (postal/send-message smtp-config email-data)]
@@ -122,7 +124,8 @@
         (throw (ex-info error-msg (r/map-response error-msg 500)))))))
 
 
-(defn send-validation-email [callback-url address]
+(defn send-validation-email
+  [callback-url address]
   (let [{:keys [smtp-username conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
@@ -136,7 +139,8 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-invitation-email [set-password-url address {:keys [name id] :as _user}]
+(defn send-invitation-email
+  [set-password-url address {:keys [name id] :as _user}]
   (let [{:keys [smtp-username conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
@@ -212,8 +216,42 @@
                                     "To accept the invitation, click the following button:")
                   :conditions-url conditions-url})}]))
 
+(defn get-body
+  [context]
+  {:type    "text/html; charset=utf-8"
+   :content (render-email context)})
 
-(defn send-password-set-email [set-password-url address]
+
+(defn send-trial-ended-email
+  [opts]
+  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
+                                                   config-nuvla/config-instance-url)
+        context (email-text/trial-ended opts)
+
+        msg     {:from    (or smtp-username "administrator")
+                 :to      [(:email opts)]
+                 :subject (:subject context)
+                 :body    (get-body context)}]
+
+    (send-email nuvla-config msg)))
+
+
+(defn send-trial-ending-email
+  [opts]
+  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
+                                                   config-nuvla/config-instance-url)
+        context (email-text/trial-ending opts)
+
+        msg     {:from    (or smtp-username "administrator")
+                 :to      [(:email opts)]
+                 :subject (:subject context)
+                 :body    (get-body context)}]
+
+    (send-email nuvla-config msg)))
+
+
+(defn send-password-set-email
+  [set-password-url address]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                    config-nuvla/config-instance-url)
 
@@ -227,7 +265,8 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-join-group-email [group invited-by callback-url address]
+(defn send-join-group-email
+  [group invited-by callback-url address]
   (let [{:keys [smtp-username conditions-url] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                                   config-nuvla/config-instance-url)
 
@@ -241,7 +280,8 @@
     (send-email nuvla-config msg)))
 
 
-(defn send-email-token-2fa [token address]
+(defn send-email-token-2fa
+  [token address]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                    config-nuvla/config-instance-url)
 
@@ -253,16 +293,3 @@
               :body    body}]
 
     (send-email nuvla-config msg)))
-
-(defn email-render [{:keys [subject] :as content}]
-  {:subject subject
-   :body [:alternative
-          {:type "text/html; charset=utf-8"
-           :content (render-email content)}]})
-
-(defn send-text-email [address email-data]
-  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
-                                                   config-nuvla/config-instance-url)]
-    (send-email nuvla-config (assoc email-data 
-                                    :from (or smtp-username "administrator")
-                                    :to [address]))))
