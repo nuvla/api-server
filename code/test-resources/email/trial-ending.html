@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>{{title}}</title>
+    <title>Your Nuvla trial is ending</title>
     <style>
       /* -------------------------------------
           GLOBAL RESETS
@@ -332,7 +332,7 @@
     </style>
 </head>
 <body class="">
-<span class="preheader">{{title}}</span>
+<span class="preheader">Your Nuvla trial is ending</span>
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="body">
     <tr>
         <td>&nbsp;</td>
@@ -358,7 +358,7 @@
                     </tr>
                     <tr>
                         <td>
-                            <h1>{{title}}</h1>
+                            <h1>Your Nuvla trial is ending</h1>
                         </td>
                     </tr>
                     <tr>
@@ -366,20 +366,20 @@
 												<table role="presentation" border="0" cellpadding="0" cellspacing="0">
 													<tr>
 														<td>
-															<p>{{text-1}}</p>
+															<p>Your Nuvla.io trial will end in 6 days. Make sure you have a payement method set, to avoid that your resources are frozen when the trial ends.</p>
 
-															{% for resource in resources %}
-															{% if forloop.first %}
-															<p>{{resources-title}}</p>
-															{% endif %}
-                                                            <p><a href={{resource.url}}>{{resource.kind}}: {{resource.title}} ({{resource.id}})</a></p>
-															{% endfor %}
+															
+															
+															<p>The following resources will be frozen: </p>
+															
+                                                            <p><a href=https://nuvla.io/ui/deployment/61467019-2931-463d-b32c-c60a73c205e5>Deployment: Nginx simple app (61467019)</a></p>
+															
 
 															<p></p>
-															<p>{{text-2}}</p>
+															<p>You’re also going to lose access to any data you have in Nuvla. You no longer will be able to receive data from your Nuvla Edge devices on Nuvla.io. Do not worry! We keep it safe with us for when you set your payment method.</p>
 
-															{% if any button-text %}
-															<p>{{button-intro}}</p>
+															
+															<p>Add your payment method to use your resources:</p>
 															<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
 																<tbody>
 																	<tr>
@@ -387,7 +387,7 @@
 																			<table role="presentation" border="0" cellpadding="0" cellspacing="0">
 																				<tbody>
 																					<tr>
-																						<td> <a href="{{button-url}}" target="_blank">{{button-text}}</a> </td>
+																						<td> <a href="https://nuvla.io" target="_blank">Add your payment methods</a> </td>
 																					</tr>
 																				</tbody>
 																			</table>
@@ -395,17 +395,13 @@
 																	</tr>
 																</tbody>
 															</table>
-															{% endif %}
+															
 
-															<p>{{text-3}}</p>
+															<p>By entering an payment method, you will ensure your data flows stays active. Just add a payment method in your Nulva.io account. Luckily you still have 6 days.</p>
 
-															{% if any warning-initiate %}
-															<p>If you didn't initiate this request, do NOT click on the link and report this to the service administrator.</p>
-															{% endif %}
+															
 
-															{% if any conditions-url %}
-															<p>By clicking the button above, you accept the <a href="{{conditions-url}}">Terms and Conditions</a></p>
-															{% endif %}
+															
 
 															<p>Don't forget that we're here to help if you have any question.</p>
 
@@ -428,7 +424,7 @@
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                         <tr>
                             <td class="content-block">
-                                <span class="apple-link">Copyright © {{now|date:yyyy}} SixSq SA. All rights reserved.</span>
+                                <span class="apple-link">Copyright © 2022 SixSq SA. All rights reserved.</span>
                             </td>
                         </tr>
                     </table>
