@@ -362,55 +362,60 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="wrapper">
-                            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                <tr>
-                                    <td>
-                                        <p>{{text-1}}</p>
-                                        <p>We froze the follwing resources:</p>
+											<td class="wrapper">
+												<table role="presentation" border="0" cellpadding="0" cellspacing="0">
+													<tr>
+														<td>
+															<p>{{text-1}}</p>
 
+															{% for resource in resources %}
+															{% if forloop.first %}
+															<p>{{resources-title}}</p>
+															{% endif %}
+															<a href={{resource.url}}>{{resource.kind}}: {{resource.title}} ({{resource.id}})</a>
+															{% endfor %}
 
-																					<a href="https://nuvla.io/ui/deployment/873ab926-4865-41ca-84bd-d6e1b1913320">Deployment: Nginx simple app (873ab926)</a></p>
+															<p></p>
+															<p>{{text-2}}</p>
 
-                                        <p>{{text-2}}</p>
-																				<p>Add your payment method to use your resources:</p>
-                                        {% if any button-text %}
-                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
-                                            <tbody>
-                                            <tr>
-                                                <td align="center">
-                                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                                        <tbody>
-                                                        <tr>
-                                                            <td> <a href="{{button-url}}" target="_blank">{{button-text}}</a> </td>
-                                                        </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                        {% endif %}
+															{% if any button-text %}
+															<p>{{button-intro}}</p>
+															<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+																<tbody>
+																	<tr>
+																		<td align="center">
+																			<table role="presentation" border="0" cellpadding="0" cellspacing="0">
+																				<tbody>
+																					<tr>
+																						<td> <a href="{{button-url}}" target="_blank">{{button-text}}</a> </td>
+																					</tr>
+																				</tbody>
+																			</table>
+																		</td>
+																	</tr>
+																</tbody>
+															</table>
+															{% endif %}
 
-                                        <p>{{text-3}}</p>
+															<p>{{text-3}}</p>
 
-                                        {% if any warning-initiate %}
-                                        <p>If you didn't initiate this request, do NOT click on the link and report this to the service administrator.</p>
-                                        {% endif %}
+															{% if any warning-initiate %}
+															<p>If you didn't initiate this request, do NOT click on the link and report this to the service administrator.</p>
+															{% endif %}
 
-                                        {% if any conditions-url %}
-                                        <p>By clicking the button above, you accept the <a href="{{conditions-url}}">Terms and Conditions</a></p>
-                                        {% endif %}
+															{% if any conditions-url %}
+															<p>By clicking the button above, you accept the <a href="{{conditions-url}}">Terms and Conditions</a></p>
+															{% endif %}
 
-                                        <p>Don't forget that we're here to help if you have any question.</p>
+															<p>Don't forget that we're here to help if you have any question.</p>
 
-                                        <br/>
-                                        <p>Kind regards,</p>
-                                        <p>SixSq Team</p>
+															<br/>
+															<p>Kind regards,</p>
+															<p>SixSq Team</p>
 
-                                    </td>
-                                </tr>
-                            </table>
+														</td>
+													</tr>
+												</table>
                         </td>
                     </tr>
 
