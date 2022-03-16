@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.email.text)
+(ns sixsq.nuvla.server.resources.email.content)
 
 ;TODO Configurable nuvla.io url and service name. Split long lines
 
@@ -9,7 +9,7 @@
    :button-intro    "Add your payment method to use your resources:"
    :button-text     "Add your payment methods"
    :button-url      "https://nuvla.io"
-   :text-1          (format "Your Nuvla.io trial will end in %d days. Make sure you have a payement method set, to avoid that your resources are frozen when the trial ends."
+   :text-1          (format "Your Nuvla.io trial will end in %d days. Make sure you have a payment method set, to avoid that your resources are frozen when the trial ends."
                             days-left)
    :resources-title "The following resources will be frozen: "
    :resources       resources

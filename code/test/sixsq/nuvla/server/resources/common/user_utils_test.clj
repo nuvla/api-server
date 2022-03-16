@@ -6,7 +6,7 @@
     [postal.core :as postal]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-template :as user-tpl]
@@ -25,7 +25,7 @@
 
 (defn create-user [user-email]
   (with-redefs
-    [email-utils/extract-smtp-cfg
+    [email-sending/extract-smtp-cfg
                          (fn [_]
                            {:host "smtp@example.com"
                             :port 465

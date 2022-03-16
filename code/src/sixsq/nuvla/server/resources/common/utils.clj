@@ -101,6 +101,11 @@
   (second (parse-id resource-id)))
 
 
+(defn uuid->short-uuid
+  [uuid]
+  (-> uuid (str/split #"-") first))
+
+
 (defn md5 [^String s]
   (let [algorithm (MessageDigest/getInstance "MD5")
         raw       (.digest algorithm (.getBytes s))]
