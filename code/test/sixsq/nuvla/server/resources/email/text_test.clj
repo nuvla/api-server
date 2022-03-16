@@ -18,30 +18,38 @@
 
 (def resources [resource-1])
 
-
-(deftest trial-emails
-  (testing "trail ending email content should match fixed end result"
-    (is (= (u/render-email
-             (t/trial-ending {:days-left 6
-                              :resources resources}))
-           (slurp "test-resources/email/trial-ending.html"))))
-  (testing "trail end email content should match fixed end result"
-    (is (= (u/render-email (t/trial-ended {:resources resources}))
-           (slurp "test-resources/email/trial-ended.html"))))
-
-  (testing "trail end email with more than one resource email"
-    (is (= (u/render-email (t/trial-ended {:resources (conj resources resource-2)}))
-           (slurp "test-resources/email/trial-ended-multi.html")))))
-
 (comment
   ; use this tool to create the end result for the test
   (defn write [input location]
     (with-open [w (writer location)]
       (.write w input)))
 
-  (-> #_(t/trial-ending {:days-left 6
-                         :resources resources})
-    (t/trial-ended {:resources (conj resources resource-2)})
-    u/render-email
-    (write "test-resources/email/trial-ended-multi.html")))
+  ; use this tool to create the end result html or txt
+  (let [plain?     false
+        file       "trial-ended-multi"
+        f          t/trial-ended
+        email-data {:resources (conj resources resource-2)}]
+    (-> (f (assoc email-data :plain? plain?))
+        u/email-render
+        :body
+        (cond-> 
+          plain? second
+          (not plain?) last)
+        :content
+        (write (str "test-resources/email/" file "." (if plain? "txt" "html"))))))
 
+(deftest trial-emails
+  (testing "trial ending email content should match pre-rendered html"
+    (is (= (u/render-email (t/trial-ending {:days-left 6 :resources resources}))
+           (slurp "test-resources/email/trial-ending.html"))))
+  (testing "trial end email content should match pre-rendered html"
+    (is (= (u/render-email (t/trial-ended {:resources resources}))
+           (slurp "test-resources/email/trial-ended.html"))))
+  (testing "trial end email with mutliple resources should match pre-rendered html"
+    (is (= (u/render-email (t/trial-ended {:resources (conj resources resource-2)}))
+           (slurp "test-resources/email/trial-ended-multi.html"))))
+  (testing "trial ended email plain content with mulitple resources should match pre-rendered text"
+    (is (= (u/render-email (assoc (t/trial-ended 
+                                    {:resources (conj resources resource-2)})
+                                  :plain? true))
+           (slurp "test-resources/email/trial-ended-multi.txt")))))

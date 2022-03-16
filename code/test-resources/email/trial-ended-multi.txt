@@ -1,0 +1,32 @@
+Your Nuvla trial ended
+
+Your Nuvla trail expired today. If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page.
+
+
+
+The following resources are now frozen: 
+
+Deployment: Nginx simple app (61467019) - url: https://nuvla.io/ui/deployment/61467019-2931-463d-b32c-c60a73c205e5
+
+
+NuvlaBox: My first NuvlaBox (71467019) - url: https://nuvla.io/ui/edge/71467019-2931-463d-b32c-c60a73c205e5
+
+
+
+
+Add your payment method to use your resources:
+https://nuvla.io/profile
+
+
+Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you.
+
+
+
+
+
+Don't forget that we're here to help if you have any question.
+
+Kind regards,
+SixSq Team
+
+Copyright © 2022 SixSq SA. All rights reserved.

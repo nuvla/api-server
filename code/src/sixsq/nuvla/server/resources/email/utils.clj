@@ -16,12 +16,13 @@
 
 (def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
 (def trial-html (slurp (io/resource "sixsq/nuvla/html-template/trial.html")))
+(def trial-txt (slurp (io/resource "sixsq/nuvla/txt-template/trial.txt")))
 
 (defn render-email
-  [{:keys [template] :as context-map}]
+  [{:keys [template plain?] :as context-map}]
   (tmpl/render
     (case template
-      :trial trial-html
+      :trial (if plain? trial-txt trial-html)
       base-html)
     (assoc context-map :now (Date.))))
 
@@ -222,33 +223,6 @@
    :content (render-email context)})
 
 
-(defn send-trial-ended-email
-  [opts]
-  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
-                                                   config-nuvla/config-instance-url)
-        context (email-text/trial-ended opts)
-
-        msg     {:from    (or smtp-username "administrator")
-                 :to      [(:email opts)]
-                 :subject (:subject context)
-                 :body    (get-body context)}]
-
-    (send-email nuvla-config msg)))
-
-
-(defn send-trial-ending-email
-  [opts]
-  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
-                                                   config-nuvla/config-instance-url)
-        context (email-text/trial-ending opts)
-
-        msg     {:from    (or smtp-username "administrator")
-                 :to      [(:email opts)]
-                 :subject (:subject context)
-                 :body    (get-body context)}]
-
-    (send-email nuvla-config msg)))
-
 
 (defn send-password-set-email
   [set-password-url address]
@@ -293,3 +267,19 @@
               :body    body}]
 
     (send-email nuvla-config msg)))
+
+(defn email-render [{:keys [subject] :as content}]
+  {:subject subject
+   :body [:alternative
+          {:type    "text/plain"
+           :content (render-email (assoc content :plain? true))}
+          {:type    "text/html; charset=utf-8"
+           :content (render-email content)}]})
+
+(defn send-text-email [email email-data]
+  "send email to an email-address using a map from resources.email.text .e.g. email.text/trial-ending"
+  (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
+                                                   config-nuvla/config-instance-url)]
+    (send-email nuvla-config (assoc email-data 
+                                    :from (or smtp-username "administrator")
+                                    :to   [email]))))
