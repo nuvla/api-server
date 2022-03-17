@@ -8,7 +8,7 @@
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.user-utils-test :as user-utils-test]
+    [sixsq.nuvla.server.resources.common.resource-creation :as resource-creation]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.group :as t]
@@ -55,7 +55,7 @@
                                  :template    {:group-identifier valid-create-no-href-id}}
 
         tarzan-email            "tarzan@example.com"
-        user-tarzan-id          (user-utils-test/create-user tarzan-email)]
+        user-tarzan-id          (resource-creation/create-user tarzan-email)]
 
     ;; admin query should succeed and have 5 entries
     (let [entries (-> session-admin
