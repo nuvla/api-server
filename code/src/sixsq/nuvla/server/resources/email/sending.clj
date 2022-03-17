@@ -47,8 +47,8 @@
     (assoc context-map :now (Date.))))
 
 (defn send-email
-  [to email-data]
   "send email to an email-address using a map from resources.email.text .e.g. email.text/trial-ending"
+  [to email-data]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)]
     (dispatch nuvla-config (assoc email-data
                              :subject (:subject email-data)
