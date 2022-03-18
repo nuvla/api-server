@@ -37,7 +37,7 @@
         sending/render-content
         (write (str "test-resources/email/" file "." (if plain? "txt" "html"))))))
 
-(deftest trial-emails
+(deftest email-content
   (testing "trial ending email content should match pre-rendered html"
     (is (= (sending/render-content (t/trial-ending {:days-left 6 :resources resources}))
            (slurp "test-resources/email/trial-ending.html"))))
@@ -51,5 +51,4 @@
     (is (= (sending/render-content (assoc (t/trial-ended
                                             {:resources (conj resources resource-2)})
                                      :plain? true))
-           (slurp "test-resources/email/trial-ended-multi.txt"))))
-  )
+           (slurp "test-resources/email/trial-ended-multi.txt")))))
