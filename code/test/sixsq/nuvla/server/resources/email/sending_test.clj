@@ -24,7 +24,7 @@
                                           (is (some? (seq smtp)) "should have smtp"))
                                         {:error :ERROR})
                   crud/retrieve-by-id-as-admin (fn [_] {:smtp-host "host"})]
-      (is (thrown-with-msg? ExceptionInfo (re-pattern "server configuration for SMTP is missing")
+      (is (thrown-with-msg? ExceptionInfo (re-pattern "email dispatch failed!")
                             (t/send-email "test@example.com" (content/trial-ended {}))))
       (try 
         (t/send-email "test@example.com" (content/trial-ended {}))

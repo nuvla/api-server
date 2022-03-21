@@ -33,11 +33,10 @@
     (let [smtp-config (extract-smtp-cfg nuvla-config)
           resp        (postal/send-message smtp-config email-data)]
       (when-not (= :SUCCESS (:error resp))
-        (let [msg (str "cannot send verification email: " (:message resp))]
-          (log/error "Dispatch email failed: " resp)
-          (throw (r/ex-bad-request msg)))))
-    (catch Exception _
-      (let [error-msg "server configuration for SMTP is missing"]
+        (throw (ex-info "sending email failed:" {:causes resp}))))
+    (catch Exception ex
+      (let [error-msg "email dispatch failed!"]
+        (log/error error-msg (ex-data ex))
         (throw (ex-info error-msg (r/map-response error-msg 500)))))))
 
 (defn render-content
@@ -52,12 +51,12 @@
   "send email to an email-address using a map from resources.email.text .e.g. email.text/trial-ending"
   [to email-data]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)]
-    (dispatch nuvla-config (assoc email-data
-                             :subject (:subject email-data)
-                             :body [:alternative
-                                    {:type    "text/plain"
-                                     :content (render-content (assoc email-data :plain? true))}
-                                    {:type    "text/html; charset=utf-8"
-                                     :content (render-content email-data)}]
-                             :from (or smtp-username "administrator")
-                             :to [to]))))
+    (dispatch nuvla-config
+              {:subject (:subject email-data)
+               :body    [:alternative
+                         {:type    "text/plain"
+                          :content (render-content (assoc email-data :plain? true))}
+                         {:type    "text/html; charset=utf-8"
+                          :content (render-content email-data)}]
+               :from    (or smtp-username "administrator")
+               :to      [to]})))
