@@ -5,7 +5,8 @@
     [postal.core :as postal]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla])
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [clojure.tools.logging :as log])
   (:import
     (java.util Date)))
 
@@ -33,6 +34,7 @@
           resp        (postal/send-message smtp-config email-data)]
       (when-not (= :SUCCESS (:error resp))
         (let [msg (str "cannot send verification email: " (:message resp))]
+          (log/error "Dispatch email failed: " resp)
           (throw (r/ex-bad-request msg)))))
     (catch Exception _
       (let [error-msg "server configuration for SMTP is missing"]
