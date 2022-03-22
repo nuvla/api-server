@@ -28,3 +28,12 @@
    :resources       resources
    :text-1          (str "Your Nuvla trail expired today. " (when (seq resources) "If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page."))
    :text-3          "Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you."})
+
+(defn trial-ended-with-payment [{:keys [resources]}]
+  {:template        :trial
+   :subject         "Nuvla trial ended"
+   :title           "Your Nuvla trial ended"
+   :resources-title "You are using the following resources: "
+   :resources       resources
+   :text-1          "Your Nuvla trail ended today. "
+   :text-3          "Thank you for using Nuvla. "})

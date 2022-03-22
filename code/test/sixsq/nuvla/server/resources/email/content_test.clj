@@ -30,9 +30,9 @@
 
   ; use this tool to create the end result html or txt
   (let [plain?     false
-        file       "trial-ended-multi"
+        file       "trial-ended-with-payment"
         f          t/trial-ended
-        email-data {:resources (conj resources resource-2 resource-3)}]
+        email-data {:resources resources}]
     (-> (f (assoc email-data :plain? plain?))
         sending/render-content
         (write (str "test-resources/email/" file "." (if plain? "txt" "html"))))))
@@ -51,4 +51,7 @@
     (is (= (sending/render-content (assoc (t/trial-ended
                                             {:resources (conj resources resource-2)})
                                      :plain? true))
-           (slurp "test-resources/email/trial-ended-multi.txt")))))
+           (slurp "test-resources/email/trial-ended-multi.txt"))))
+  (testing "trial end with payment email content should match pre-rendered html"
+    (is (= (sending/render-content (t/trial-ended-with-payment {:resources resources}))
+           (slurp "test-resources/email/trial-ended-with-payment.html")))))
