@@ -7,114 +7,114 @@
 
 
 (s/def ::fullname
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "fullname"
-             :json-schema/display-name "Fullname")))
+  (assoc (st/spec ::core/nonblank-string)
+    :name "fullname"
+    :json-schema/display-name "Fullname"))
 
 
 (def payment-method-id-regex #"^pm_[a-zA-Z0-9]+$")
 
 (s/def ::payment-method
-  (-> (st/spec (s/and string? #(re-matches payment-method-id-regex %)))
-      (assoc :name "payment-method"
-             :json-schema/display-name "Payment method"
-             :json-schema/type "string")))
+  (assoc (st/spec (s/and string? #(re-matches payment-method-id-regex %)))
+    :name "payment-method"
+    :json-schema/display-name "Payment method"
+    :json-schema/type "string"))
 
 
 (s/def ::coupon
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "coupon"
-             :json-schema/display-name "Coupon"
-             :json-schema/type "string")))
+  (assoc (st/spec ::core/nonblank-string)
+    :name "coupon"
+    :json-schema/display-name "Coupon"
+    :json-schema/type "string"))
 
 
 (s/def ::street-address
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "street address"
-             :json-schema/display-name "Street address")))
+  (assoc (st/spec ::core/nonblank-string)
+    :name "street address"
+    :json-schema/display-name "Street address"))
 
 (def country-regex #"^[A-Z]{2}$")
 
 (s/def ::country
-  (-> (st/spec (s/and string? #(re-matches country-regex %)))
-      (assoc :name "country"
-             :json-schema/display-name "Country"
-             :json-schema/description "Two-letter country code (ISO 3166-1 alpha-2)"
-             :json-schema/type "string")))
+  (assoc (st/spec (s/and string? #(re-matches country-regex %)))
+    :name "country"
+    :json-schema/display-name "Country"
+    :json-schema/description "Two-letter country code (ISO 3166-1 alpha-2)"
+    :json-schema/type "string"))
 
 
 (s/def ::postal-code
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "postal-code"
-             :json-schema/display-name "Zip/Postal Code")))
+  (assoc (st/spec ::core/nonblank-string)
+    :name "postal-code"
+    :json-schema/display-name "Zip/Postal Code"))
 
 
 (s/def ::city
-  (-> (st/spec ::core/nonblank-string)
-      (assoc :name "city"
-             :json-schema/display-name "City")))
+  (assoc (st/spec ::core/nonblank-string)
+    :name "city"
+    :json-schema/display-name "City"))
 
 
 (def price-id-regex #"^price_.+$")
 
 (s/def ::plan-id
-  (-> (st/spec (s/and string? #(re-matches price-id-regex %)))
-      (assoc :name "plan-id"
-             :json-schema/display-name "plan id"
-             :json-schema/description "subscription plan id"
-             :json-schema/type "string")))
+  (assoc (st/spec (s/and string? #(re-matches price-id-regex %)))
+    :name "plan-id"
+    :json-schema/display-name "plan id"
+    :json-schema/description "subscription plan id"
+    :json-schema/type "string"))
 
 
 (s/def ::plan-item-id
-  (-> (st/spec (s/and string? #(re-matches price-id-regex %)))
-      (assoc :name "plan-item-id"
-             :json-schema/display-name "plan item id"
-             :json-schema/description "subscription plan item id"
-             :json-schema/type "string")))
+  (assoc (st/spec (s/and string? #(re-matches price-id-regex %)))
+    :name "plan-item-id"
+    :json-schema/display-name "plan item id"
+    :json-schema/description "subscription plan item id"
+    :json-schema/type "string"))
 
 (s/def ::trial-days
-  (-> (st/spec (s/int-in 0 101))
-      (assoc :name "trial-days"
-             :json-schema/type "integer"
-             :json-schema/editable false
-             :json-schema/server-managed true)))
+  (assoc (st/spec (s/int-in 0 101))
+    :name "trial-days"
+    :json-schema/type "integer"
+    :json-schema/editable false
+    :json-schema/server-managed true))
 
 (s/def ::plan-item-ids
-  (-> (st/spec (s/coll-of ::plan-item-id))
-      (assoc :name "plan-item-ids"
-             :json-schema/type "array"
-             :json-schema/display-name "plan item ids"
-             :json-schema/description "List of subscription plan item ids.")))
+  (assoc (st/spec (s/coll-of ::plan-item-id))
+    :name "plan-item-ids"
+    :json-schema/type "array"
+    :json-schema/display-name "plan item ids"
+    :json-schema/description "List of subscription plan item ids."))
 
 
 (s/def ::address
-  (-> (st/spec (su/only-keys-maps {:req-un [::street-address
-                                            ::country
-                                            ::postal-code
-                                            ::city]}))
-      (assoc :name "address"
-             :json-schema/type "map"
-             :json-schema/description "address")))
+  (assoc (st/spec (su/only-keys-maps {:req-un [::street-address
+                                               ::country
+                                               ::postal-code
+                                               ::city]}))
+    :name "address"
+    :json-schema/type "map"
+    :json-schema/description "address"))
 
 (s/def ::email
-  (-> (st/spec ::core/email)
-     (assoc :name "email")))
+  (assoc (st/spec ::core/email)
+    :name "email"))
 
 
 (s/def ::subscription
-  (-> (st/spec (su/only-keys-maps {:req-un [::plan-id
-                                            ::plan-item-ids]
-                                   :opt-un [::trial-days]}))
-      (assoc :name "subscription"
-             :json-schema/type "map")))
+  (assoc (st/spec (su/only-keys-maps {:req-un [::plan-id
+                                               ::plan-item-ids]
+                                      :opt-un [::trial-days]}))
+    :name "subscription"
+    :json-schema/type "map"))
 
 
 (s/def ::customer
-  (-> (st/spec (su/only-keys-maps {:req-un [::fullname
-                                            ::address]
-                                   :opt-un [::subscription
-                                            ::payment-method
-                                            ::coupon
-                                            ::email]}))
-      (assoc :name "customer"
-             :json-schema/type "map")))
+  (assoc (st/spec (su/only-keys-maps {:req-un [::fullname
+                                               ::address]
+                                      :opt-un [::subscription
+                                               ::payment-method
+                                               ::coupon
+                                               ::email]}))
+    :name "customer"
+    :json-schema/type "map"))
