@@ -1,4 +1,4 @@
-(def parent-version "6.7.6")
+(def parent-version "6.7.7-SNAPSHOT")
 (def nuvla-ring-version "2.0.2")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
@@ -29,10 +29,10 @@
 
   :dependencies
   [[buddy/buddy-core]
-   [spootnik/kinsky "0.1.25"]
+   [spootnik/kinsky "0.1.26"]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex "0.7.5" :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-commons/clj-yaml]
@@ -44,8 +44,8 @@
    [expound]
    [instaparse]
    [metosin/spec-tools]
-   [org.bouncycastle/bcpkix-jdk15on "1.62"]
-   [selmer "1.12.31"]
+   [org.bouncycastle/bcpkix-jdk15on "1.70"]
+   [selmer "1.12.50"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
@@ -65,7 +65,7 @@
    [org.locationtech.spatial4j/spatial4j "0.8"]
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
-   [org.wololo/jts2geojson "0.15.0"]
+   [org.wololo/jts2geojson "0.17.0"]
    [one-time "0.7.0"]]
 
   :profiles
@@ -96,7 +96,7 @@
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
                              [org.apache.kafka/kafka_2.12 "2.4.0"]
-                             [org.apache.zookeeper/zookeeper "3.5.6"
+                             [org.apache.zookeeper/zookeeper
                               :exclusions [io.netty/netty
                                            jline
                                            org.apache.yetus/audience-annotations
