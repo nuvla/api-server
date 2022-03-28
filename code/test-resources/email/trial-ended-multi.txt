@@ -1,6 +1,6 @@
 Your Nuvla trial ended
 
-Your Nuvla trail expired today. If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page.
+Your Nuvla trail expired today. If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page. Your frozen resources will be deleted after 30 days.
 
 
 
@@ -15,7 +15,7 @@ NuvlaBox: My first NuvlaBox (71467019) - url: https://nuvla.io/ui/edge/71467019-
 
 
 Add your payment method to use your resources:
-https://nuvla.io/profile
+https://nuvla.io/ui/sign-in?redirect=profile
 
 
 Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you.
@@ -29,4 +29,4 @@ Don't forget that we're here to help if you have any question.
 Kind regards,
 SixSq Team
 
-Copyright © 2022 SixSq SA. All rights reserved.
+Copyright © 2022 SixSq SA. All rights reserved. SixSq is an Ekinops Company.

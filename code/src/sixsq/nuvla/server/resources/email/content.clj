@@ -8,7 +8,7 @@
    :title           "Your Nuvla trial is ending"
    :button-intro    "Add your payment method to use your resources:"
    :button-text     "Add your payment methods"
-   :button-url      "https://nuvla.io"
+   :button-url      "https://nuvla.io/ui/sign-in?redirect=profile"
    :text-1          (format "Your Nuvla.io trial will end in %d days. Make sure you have a payment method set, to avoid that your resources are frozen when the trial ends."
                             days-left)
    :resources-title "The following resources will be frozen: "
@@ -23,17 +23,16 @@
    :title           "Your Nuvla trial ended"
    :button-intro    "Add your payment method to use your resources:"
    :button-text     "Add your payment methods"
-   :button-url      "https://nuvla.io/profile"
+   :button-url      "https://nuvla.io/ui/sign-in?redirect=profile"
    :resources-title "The following resources are now frozen: "
    :resources       resources
-   :text-1          (str "Your Nuvla trail expired today. " (when (seq resources) "If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page."))
+   :text-1          (str "Your Nuvla trail expired today. " (when (seq resources) "If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page. Your frozen resources will be deleted after 30 days."))
    :text-3          "Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you."})
 
 (defn trial-ended-with-payment [{:keys [resources]}]
   {:template        :trial
-   :subject         "Nuvla trial ended"
    :title           "Your Nuvla trial ended"
    :resources-title "You are using the following resources: "
    :resources       resources
-   :text-1          "Your Nuvla trail ended today. "
-   :text-3          "Thank you for using Nuvla. "})
+   :text-1          "Your Nuvla setup was successful. Your account is now a full paid account, since your trial ended today.  "
+   :text-3          "We are glad that you are using Nuvla. We are sure you will continue to accomplish amazing things with Nuvla. Thank you. "})
