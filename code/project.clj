@@ -1,5 +1,5 @@
-(def parent-version "6.7.7")
-(def nuvla-ring-version "2.0.5")
+(def parent-version "6.7.8")
+(def nuvla-ring-version "2.0.6")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -52,11 +52,7 @@
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
-   [zookeeper-clj :exclusions [[jline]
-                               [org.clojure/clojure]
-                               [org.slf4j/slf4j-api]
-                               [org.slf4j/slf4j-log4j12]
-                               [io.netty/netty]]]
+   [zookeeper-clj]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
                                      [org.locationtech.spatial4j/spatial4j]
                                      [org.wololo/jts2geojson]]]
@@ -97,12 +93,7 @@
                              ;; for kafka embedded
                              [org.apache.kafka/kafka-clients "2.4.0"]
                              [org.apache.kafka/kafka_2.12 "2.4.0"]
-                             [org.apache.zookeeper/zookeeper
-                              :exclusions [io.netty/netty
-                                           jline
-                                           org.apache.yetus/audience-annotations
-                                           org.slf4j/slf4j-log4j12
-                                           log4j]]
+                             [org.apache.zookeeper/zookeeper]
                              [clj-kondo "RELEASE"]
                              ;; for running linters
                              [me.raynes/fs]
