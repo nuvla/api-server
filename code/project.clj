@@ -1,4 +1,4 @@
-(def parent-version "6.7.7-SNAPSHOT")
+(def parent-version "6.7.7")
 (def nuvla-ring-version "2.0.2")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
@@ -29,7 +29,7 @@
 
   :dependencies
   [[buddy/buddy-core]
-   [spootnik/kinsky "0.1.26"]
+   [spootnik/kinsky "0.1.25"]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
@@ -65,7 +65,8 @@
    [org.locationtech.spatial4j/spatial4j "0.8"]
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
-   [org.wololo/jts2geojson "0.17.0"]
+   ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
+   [org.wololo/jts2geojson "0.15.0"]
    [one-time "0.7.0"]]
 
   :profiles
