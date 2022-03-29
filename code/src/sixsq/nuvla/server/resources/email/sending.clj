@@ -33,7 +33,7 @@
     (let [smtp-config (extract-smtp-cfg nuvla-config)
           resp        (postal/send-message smtp-config email-data)]
       (if (= :SUCCESS (:error resp))
-        true
+        {:success? true}
         (throw (ex-info "sending email failed:" {:causes resp}))))
     (catch Exception ex
       (let [error-msg "email dispatch failed!"]
