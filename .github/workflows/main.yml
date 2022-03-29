@@ -32,6 +32,11 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      # Ubuntu Repos on Azure fail often. Attempt to install before other
+      # long-running operations.
+      - name: Install xmllinter (for "Fail on failed tests")
+        run: sudo apt-get install -y libxml2-utils
+
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
@@ -58,7 +63,6 @@ jobs:
       - name: Fail on failed tests
         if: always()
         run: |
-          sudo apt-get install -y libxml2-utils
           echo "Found ${{ steps.tests.outputs.path_count }} test report(s)"
           if [[ ${{ steps.tests.outputs.path_count }} < 1 ]]; then
              echo "ERROR: No unit test reports collected."
