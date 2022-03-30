@@ -49,11 +49,6 @@
 ;; resource ID utilities
 ;;
 
-(defn random-uuid
-  "Provides the string representation of a pseudo-random UUID."
-  []
-  (str (UUID/randomUUID)))
-
 
 (defn from-data-uuid
   "Provides the string representation of a UUID generated from an input."

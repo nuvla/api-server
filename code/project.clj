@@ -1,5 +1,5 @@
-(def parent-version "6.7.8")
-(def nuvla-ring-version "2.0.6")
+(def parent-version "6.7.10")
+(def nuvla-ring-version "2.0.7-SNAPSHOT")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -68,7 +68,18 @@
   :profiles
   {
    :provided {:dependencies [[org.clojure/clojure]
-                             [sixsq.nuvla.ring/code ~nuvla-ring-version]]}
+                             [sixsq.nuvla.ring/code ~nuvla-ring-version
+                              ; fix netty conflicts with elasticsearch test dependencies
+                              :exclusions [io.netty/netty
+                                           io.netty/netty-buffer
+                                           io.netty/netty-codec
+                                           io.netty/netty-handler
+                                           io.netty/netty-resolver
+                                           io.netty/netty-transport
+                                           io.netty/netty-codec-http
+                                           io.netty/netty-handler-proxy
+                                           io.netty/netty-resolver-dns
+                                           io.netty/netty-transport-native-epoll]]]}
 
 
    :test     {:dependencies   [[me.raynes/fs]
@@ -76,44 +87,44 @@
                                [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
                                [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
                                [org.clojure/test.check]
-                               [org.elasticsearch.client/transport]
                                [org.elasticsearch.test/framework]
+                               [org.elasticsearch.client/transport]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]]
               :resource-paths ["test-resources"]
-              :env            {:nuvla-session-key "test-resources/session.key"
-                               :nuvla-session-crt "test-resources/session.crt"
-                               :es-sniffer-init "no"
-                               :kafka-producer-init "yes"
+              :env            {:nuvla-session-key           "test-resources/session.key"
+                               :nuvla-session-crt           "test-resources/session.crt"
+                               :es-sniffer-init             "no"
+                               :kafka-producer-init         "yes"
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all}
-   :dev      {:dependencies [
-                             ;; for kafka embedded
-                             [org.apache.kafka/kafka-clients "2.4.0"]
-                             [org.apache.kafka/kafka_2.12 "2.4.0"]
-                             [org.apache.zookeeper/zookeeper]
-                             [clj-kondo "RELEASE"]
-                             ;; for running linters
-                             [me.raynes/fs]
-                             [peridot]
-                             [org.apache.curator/curator-test]
-                             [org.elasticsearch.test/framework]
-                             [org.elasticsearch.client/transport]
-                             [org.apache.logging.log4j/log4j-core]]
-              :plugins [[lein-test-report-junit-xml "0.2.0"]]
+   :dev      {:dependencies          [
+                                      ;; for kafka embedded
+                                      [org.apache.kafka/kafka-clients "2.4.0"]
+                                      [org.apache.kafka/kafka_2.12 "2.4.0"]
+                                      [org.apache.zookeeper/zookeeper]
+                                      [clj-kondo "RELEASE"]
+                                      ;; for running linters
+                                      [me.raynes/fs]
+                                      [peridot]
+                                      [org.apache.curator/curator-test]
+                                      [org.elasticsearch.test/framework]
+                                      [org.elasticsearch.client/transport]
+                                      [org.apache.logging.log4j/log4j-core]]
+              :plugins               [[lein-test-report-junit-xml "0.2.0"]]
               ;; paths
-              :source-paths   ["test"]
-              :resource-paths ["test-resources"]
+              :source-paths          ["test"]
+              :resource-paths        ["test-resources"]
               ;; reporters
               :test-report-junit-xml {:output-dir "test-reports"}
               ;; linters
-              :eastwood {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
-              :env            {:nuvla-session-key "test-resources/session.key"
-                               :nuvla-session-crt "test-resources/session.crt"
-                               :es-sniffer-init "no"
-                               :kafka-producer-init "yes"}
+              :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
+              :env                   {:nuvla-session-key   "test-resources/session.key"
+                                      :nuvla-session-crt   "test-resources/session.crt"
+                                      :es-sniffer-init     "no"
+                                      :kafka-producer-init "yes"}
               ;; code coverage
-              :cloverage {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               }})
