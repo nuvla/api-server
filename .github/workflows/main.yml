@@ -37,7 +37,7 @@ jobs:
       - name: Install xmllinter (for "Fail on failed tests")
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxml2-utils
+          sudo apt-get install -y libxml2-utils jq
 
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
@@ -81,6 +81,11 @@ jobs:
                exit 1
             fi
           done
+
+      - name: jq for SonarQube Quality Gate check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: SonarQube Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
