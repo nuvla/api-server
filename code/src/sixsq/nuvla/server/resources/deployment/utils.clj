@@ -190,10 +190,6 @@
   [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "UPDATING" "ERROR"} state))
 
-(defn can-fetch-module?
-  [{:keys [state] :as _resource}]
-  (contains? #{"CREATED" "STOPPED"} state))
-
 
 (defn create-log
   [{:keys [id] :as _resource} {:keys [body] :as request}]

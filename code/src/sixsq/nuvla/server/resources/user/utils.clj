@@ -14,7 +14,8 @@
     [sixsq.nuvla.server.resources.credential-template-totp-2fa :as cttotp]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.auth.acl-resource :as a]))
 
 
 (def ^:const resource-url "user")
@@ -194,5 +195,6 @@
   [request]
   (let [active-claim (auth/current-active-claim request)]
     (when (and config-nuvla/*stripe-api-key*
+               (not (a/is-admin? (auth/current-authentication request)))
                (not (customer-has-active-subscription? active-claim)))
       (throw (r/ex-response "An active subscription is required!" 402)))))
