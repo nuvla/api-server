@@ -10,7 +10,7 @@ on:
 jobs:
 
   job-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -52,7 +52,7 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -X
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
 
       - name: Get list of tests
         if: always()
