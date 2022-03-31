@@ -12,7 +12,8 @@
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
-            [lein-environ "1.1.0"]]
+            [lein-environ "1.1.0"]
+            [lein-project-version "0.1.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
