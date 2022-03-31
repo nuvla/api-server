@@ -7,6 +7,11 @@
 - Module - follow-customer-trial attribute added. This attribute will allow
   vendor to request module trial period to be same as nuvla trial period
 
+### Changed
+
+- Dependencies - Update to parent 6.7.10
+- Dependencies - Update to ring 2.0.7-SNAPSHOT
+
 ## [5.24.0] - 2022-03-07
 
 ### Added

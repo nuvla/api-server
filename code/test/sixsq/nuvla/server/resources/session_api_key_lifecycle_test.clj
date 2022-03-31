@@ -8,7 +8,6 @@
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-cookie authn-info-header]]
-    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential-template-api-key :as api-key-tpl]
     [sixsq.nuvla.server.resources.credential.key-utils :as key-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -34,7 +33,7 @@
                                :acl         st/resource-acl})
 
 (deftest check-uuid->id
-  (let [uuid       (u/random-uuid)
+  (let [uuid       (str (random-uuid))
         correct-id (str "credential/" uuid)]
     (is (= correct-id (t/uuid->id uuid)))
     (is (= correct-id (t/uuid->id correct-id)))))
@@ -83,7 +82,7 @@
 
   (let [[secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
-        uuid                (u/random-uuid)
+        uuid                (str (random-uuid))
         valid-api-key       {:id      (str "credential/" uuid)
                              :subtype api-key-tpl/credential-subtype
                              :method  api-key-tpl/method
