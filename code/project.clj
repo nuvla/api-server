@@ -99,7 +99,10 @@
                                :es-sniffer-init             "no"
                                :kafka-producer-init         "yes"
                                :kafka-client-conf-client-id "test-nuvla-server"}
-              :aot            :all}
+              :aot            :all
+              :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
+              :test-report-sonar {:output-dir "test-reports"
+                                  :emit-junit-xml true}}
    :dev      {:dependencies          [
                                       ;; for kafka embedded
                                       [org.apache.kafka/kafka-clients "2.4.0"]
@@ -113,12 +116,9 @@
                                       [org.elasticsearch.test/framework]
                                       [org.elasticsearch.client/transport]
                                       [org.apache.logging.log4j/log4j-core]]
-              :plugins               [[lein-test-report-junit-xml "0.2.0"]]
               ;; paths
               :source-paths          ["test"]
               :resource-paths        ["test-resources"]
-              ;; reporters
-              :test-report-junit-xml {:output-dir "test-reports"}
               ;; linters
               :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
               :env                   {:nuvla-session-key   "test-resources/session.key"
