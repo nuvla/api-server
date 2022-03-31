@@ -399,6 +399,7 @@
   ;; reset to the current value because swap! is used.  Unfortunately,
   ;; compare-and-set! can't be used because we want to avoid unnecessary
   ;; creation of ring application instances.
+  (log/error (str "state of es-node-client-cache: " es-node-client-cache))
   (swap! es-node-client-cache (fn [current] (or current (create-es-node-client)))))
 
 
@@ -432,7 +433,13 @@
          client#  (second cache#)
          sniffer# (nth cache# 2)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
-     (esu/reset-index client# (str escu/default-index-prefix "*"))
+     ;;(log/error "resetting ES indices...")
+     ;;(esu/reset-index client# (str escu/default-index-prefix "*"))
+     ;;(log/error "resetting ES indices... done")
+     (log/error "cleaning up ES indices...")
+     (println (esu/cleanup-index client# (str escu/default-index-prefix "*")))
+     (println (esu/list-indices client#))
+     (log/error "cleaning up ES indices... done")
      ~@body))
 
 ;;
@@ -466,6 +473,7 @@
   ;; reset to the current value because swap! is used.  Unfortunately,
   ;; compare-and-set! can't be used because we want to avoid unnecessary
   ;; creation of ring application instances.
+  (log/error (str "state of ring-app-cache: " ring-app-cache))
   (swap! ring-app-cache (fn [current] (or current
                                           (make-ring-app (concat-routes [(routes/get-main-routes)]))))))
 
@@ -493,9 +501,10 @@
 (defn with-test-kafka-fixture
   [f]
   (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
-        k-dir (ke/create-tmp-dir "kafka-log-dir")]
+        k-dir (ke/create-tmp-dir "kafka-log-dir")
+        ts (System.)]
     (try
-      (log/info "starting kafka")
+      (log/error "----> starting kafka")
       (with-open [_k (ke/start-embedded-kafka
                        {::ke/host               kafka-host
                         ::ke/kafka-port         kafka-port
@@ -505,6 +514,7 @@
                         ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
         ;; Create and set kafka producer.
         (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
+        (log/error "----> kafka started")
         (f))
       (catch Throwable t
         (throw t))
@@ -524,12 +534,14 @@
    servers and application are cached to eliminate unnecessary instance
    creation."
   [f]
-  (log/debug "executing with-test-server-fixture")
+  (log/error "executing with-test-server-fixture")
   (set-zk-client-server-cache)                              ;; always setup the zookeeper client and server
   (with-test-es-client
+    (log/error "---> force initialization of ring application")
     (ring-app)
-    (log/info "forced initialization of ring application")
+    (log/error "---> force initialization of indices")
     (dyn/initialize)                                        ;; must always reinitialize after database has been cleared
+    (log/error "---> start running test")
     (f)))
 
 

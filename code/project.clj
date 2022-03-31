@@ -1,5 +1,6 @@
 (def parent-version "6.7.6")
 (def nuvla-ring-version "2.0.2")
+(def es-version "7.11.1")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -79,8 +80,11 @@
                                [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
                                [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
                                [org.clojure/test.check]
-                               [org.elasticsearch.client/transport]
-                               [org.elasticsearch.test/framework]
+                               [org.elasticsearch.plugin/transport-netty4-client ~es-version]
+                               [org.elasticsearch/elasticsearch ~es-version]
+                               [org.elasticsearch.test/framework ~es-version
+                                :exclusions [com.carrotsearch.randomizedtesting/randomizedtesting-runner]]
+                               [org.elasticsearch.client/transport ~es-version]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
@@ -107,8 +111,11 @@
                              [me.raynes/fs]
                              [peridot]
                              [org.apache.curator/curator-test]
-                             [org.elasticsearch.test/framework]
-                             [org.elasticsearch.client/transport]
+                             [org.elasticsearch.plugin/transport-netty4-client ~es-version]
+                             [org.elasticsearch/elasticsearch ~es-version]
+                             [org.elasticsearch.test/framework ~es-version
+                              :exclusions [com.carrotsearch.randomizedtesting/randomizedtesting-runner]]
+                             [org.elasticsearch.client/transport ~es-version]
                              [org.apache.logging.log4j/log4j-core]]
               :plugins [[lein-test-report-junit-xml "0.2.0"]]
               ;; paths

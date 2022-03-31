@@ -51,6 +51,20 @@
     (spandex/request client {:url    [index-name]
                              :method :delete})))
 
+(defn cleanup-index
+  [client index-name]
+  (when (index-exists? client index-name)
+    (log/error (str "cleaning up index: " index-name))
+    (spandex/request client {:url          [index-name :_delete_by_query]
+                             :query-string {:refresh true}
+                             :method       :post
+                             :body         {:query {:match_all {}}}})))
+
+(defn list-indices
+  [client]
+  (log/error "listing indices...")
+  (spandex/request client {:url    "/_cat/indices"
+                           :method :get}))
 
 (def ^:const ES_PORT "9200")
 (def ^:const ES_HOST (str "localhost:" ES_PORT))

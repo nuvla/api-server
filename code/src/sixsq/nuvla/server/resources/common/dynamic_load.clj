@@ -36,6 +36,7 @@
 (defn- initialize-resource
   "Run a resource's initialization function if it exists."
   [resource-ns]
+  (log/error (str ">>> initialising " resource-ns))
   (when-let [fvar (dyn/resolve "initialize" resource-ns)]
     (try
       ((deref fvar))
@@ -62,9 +63,18 @@
        (map get-resource-link)
        (remove nil?)))
 
+(def ^:private initialised (atom "false"))
 
 (defn initialize
   "Runs the initialize function for all resources that define it."
   []
-  (doseq [resource-namespace (resource-namespaces)]
-    (initialize-resource resource-namespace)))
+  (log/error (str "state of initialised: " @initialised))
+  (if (= "true" @initialised)
+    (log/error "CIMI resources already initialised. Skipping initialisation.")
+    (do
+      (log/error "CIMI resources must be initialised.")
+      (doseq [resource-namespace (resource-namespaces)]
+        (initialize-resource resource-namespace))
+      (log/error "CIMI resources initialised.")
+      (reset! initialised "true")
+      )))
