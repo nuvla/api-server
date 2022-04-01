@@ -10,7 +10,7 @@
 ### Changed
 
 - Dependencies - Update to parent 6.7.10
-- Dependencies - Update to ring 2.0.7-SNAPSHOT
+- Dependencies - Update to ring 2.0.7
 
 ## [5.24.0] - 2022-03-07
 
