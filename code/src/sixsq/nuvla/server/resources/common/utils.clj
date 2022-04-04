@@ -8,7 +8,8 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.time :as time])
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.server.util.response :as r])
   (:import
     (java.security MessageDigest SecureRandom)
     (java.util UUID)))
@@ -289,3 +290,27 @@
         current-without-selected (apply dissoc current dissoc-keys)
         editable-body            (select-keys body (-> body keys (a/editable-keys rights)))]
     (merge current-without-selected editable-body)))
+
+
+(defn is-state-within?
+  [states resource]
+  (contains? (set states) (:state resource)))
+
+
+(def is-state-besides? (complement is-state-within?))
+
+
+(defn is-state?
+  [state resource]
+  (= (:state resource) state))
+
+(def is-not-in-state? (complement is-state?))
+
+
+(defn throw-can-not-do-action
+  [{:keys [id] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response
+             (format "operation '%s' not allowed on " action id)
+             409 id))))

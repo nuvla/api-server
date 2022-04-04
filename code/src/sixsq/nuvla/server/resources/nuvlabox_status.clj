@@ -16,6 +16,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.nuvlabox.status-utils :as status-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -116,12 +117,13 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
        :resources
        (mapv :id)))
 
-
 (defn edit-impl [{{select :select} :cimi-params {uuid :uuid} :params body :body :as request}]
   (try
     (let [{:keys [parent acl] :as current} (-> (str resource-type "/" uuid)
                                                (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                                               (a/throw-cannot-edit request))
+                                               (a/throw-cannot-edit request)
+                                               (utils/throw-parent-nuvlabox-is-suspended))
+
           jobs                     (get-jobs current)
           rights                   (a/extract-rights (auth/current-authentication request) acl)
           dissoc-keys              (-> (map keyword select)

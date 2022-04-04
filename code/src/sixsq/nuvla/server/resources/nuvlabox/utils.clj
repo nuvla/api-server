@@ -8,6 +8,91 @@
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
+(def ^:const state-new "NEW")
+(def ^:const state-activated "ACTIVATED")
+(def ^:const state-commissioned "COMMISSIONED")
+(def ^:const state-decommissioning "DECOMMISSIONING")
+(def ^:const state-decommissioned "DECOMMISSIONED")
+(def ^:const state-suspended "SUSPENDED")
+(def ^:const state-error "ERROR")
+
+(defn is-version-before-2?
+  [nuvlabox]
+  (< (:version nuvlabox) 2))
+
+(def is-state-commissioned? (partial u/is-state? state-commissioned))
+
+(def can-delete? (partial u/is-state-within?
+                          #{state-new
+                            state-decommissioned
+                            state-error}))
+
+(def can-activate? (partial u/is-state? state-new))
+
+(def can-commission? (partial u/is-state-within? #{state-activated
+                                                 state-commissioned}))
+
+(def can-decommission? (partial u/is-state-besides? #{state-new
+                                                    state-decommissioned}))
+
+(defn can-check-api?
+  [nuvlabox]
+  (and (is-state-commissioned? nuvlabox)
+       (is-version-before-2? nuvlabox)))
+
+(def can-add-ssh-key? is-state-commissioned?)
+
+(def can-revoke-ssh-key? is-state-commissioned?)
+
+(def can-update-nuvlabox? is-state-commissioned?)
+
+(def state-not-in-decommissioned-decommissioning-suspended?
+  (partial u/is-state-besides?
+           #{state-decommissioned state-decommissioning state-suspended}))
+
+(defn can-cluster-nuvlabox?
+  [nuvlabox]
+  (and (is-state-commissioned? nuvlabox)
+       (not (is-version-before-2? nuvlabox))))
+
+(def can-reboot? is-state-commissioned?)
+
+(def is-state-not-in-new-decommissioned-suspended?
+  (partial u/is-state-besides? #{state-new state-decommissioned state-suspended}))
+
+(def can-assemble-playbooks? is-state-not-in-new-decommissioned-suspended?)
+
+(def can-enable-emergency-playbooks?
+  is-state-not-in-new-decommissioned-suspended?)
+
+(defn can-enable-host-level-management?
+  [nuvlabox]
+  (and (not (u/is-state? nuvlabox state-suspended))
+       (nil? (:host-level-management-api-key nuvlabox))))
+
+(defn can-disable-host-level-management?
+  [nuvlabox]
+  (some? (:host-level-management-api-key nuvlabox)))
+
+(def can-create-log? state-not-in-decommissioned-decommissioning-suspended?)
+
+(def can-generate-new-api-key?
+  state-not-in-decommissioned-decommissioning-suspended?)
+
+(defn throw-nuvlabox-is-suspended
+  [{:keys [id] :as nuvlabox}]
+  (if (u/is-state? state-suspended nuvlabox)
+    (throw (r/ex-response
+             (str (format "Call on %s was rejected" id)
+                  " because Nuvlabox is in suspended state!")
+             409 id))
+    nuvlabox))
+
+(defn throw-parent-nuvlabox-is-suspended
+  [{:keys [parent] :as resource}]
+  (let [nuvlabox (crud/retrieve-by-id-as-admin parent)]
+    (throw-nuvlabox-is-suspended nuvlabox)
+    resource))
 
 (defn set-acl-nuvlabox-view-only
   ([nuvlabox-acl]
@@ -96,7 +181,7 @@
                                                      :nuvlabox-managers nb-managers]))))
         body-acl (set-nuvlabox-cluster-acls dyn-body)
         new-body (cond-> body-acl
-                   (not-empty status-notes) (assoc :status-notes status-notes))]
+                         (not-empty status-notes) (assoc :status-notes status-notes))]
     (action (assoc request :body new-body))))
 
 
@@ -194,8 +279,3 @@
   [limit s]
   (cond-> s
           (> (count s) limit) (subs 0 limit)))
-
-
-(defn can-create-log?
-  [{:keys [state] :as _resource}]
-  (contains? #{"ACTIVATED" "COMMISSIONED" "DECOMMISSIONING" "ERROR"} state))

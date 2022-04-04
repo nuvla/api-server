@@ -4,8 +4,16 @@
 
 ### Added
 
+- Nuvlabox - suspended state
 - Module - follow-customer-trial attribute added. This attribute will allow
   vendor to request module trial period to be same as nuvla trial period
+
+### Changed
+
+- Nuvlabox - call is executed only when operation is available
+- Nuvlabox status - edit is rejected when parent nuvlabox is in suspended state
+- Nuvlabox peripheral - add, edit and operations are rejected when parent
+  nuvlabox is in suspended state
 
 ## [5.24.0] - 2022-03-07
 
@@ -17,7 +25,8 @@
 
 ### Changed
 
-- Fix date convertion from utc string [#650](https://github.com/nuvla/api-server/issues/650)
+- Fix date convertion from utc
+  string [#650](https://github.com/nuvla/api-server/issues/650)
 - Cleaned up dead code server
   start [#648](https://github.com/nuvla/api-server/issues/648)
 - Two factor authentication - Bigger email token (6 digits)
