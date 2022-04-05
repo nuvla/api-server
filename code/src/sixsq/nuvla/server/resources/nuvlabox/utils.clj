@@ -30,10 +30,10 @@
 (def can-activate? (partial u/is-state? state-new))
 
 (def can-commission? (partial u/is-state-within? #{state-activated
-                                                 state-commissioned}))
+                                                   state-commissioned}))
 
 (def can-decommission? (partial u/is-state-besides? #{state-new
-                                                    state-decommissioned}))
+                                                      state-decommissioned}))
 
 (defn can-check-api?
   [nuvlabox]
@@ -67,7 +67,7 @@
 
 (defn can-enable-host-level-management?
   [nuvlabox]
-  (and (not (u/is-state? nuvlabox state-suspended))
+  (and (not (u/is-state? state-suspended nuvlabox))
        (nil? (:host-level-management-api-key nuvlabox))))
 
 (defn can-disable-host-level-management?
@@ -78,6 +78,8 @@
 
 (def can-generate-new-api-key?
   state-not-in-decommissioned-decommissioning-suspended?)
+
+(def can-unsuspend? (partial u/is-state? state-suspended))
 
 (defn throw-nuvlabox-is-suspended
   [{:keys [id] :as nuvlabox}]

@@ -22,7 +22,9 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (use-fixtures :each ltu/with-test-server-fixture)
@@ -219,7 +221,7 @@
                 (ltu/is-operation-absent :edit)
                 (ltu/is-operation-absent :delete)))
 
-          (let [response          (-> session
+          (let [response         (-> session
                                      (request nuvlabox-url)
                                      (ltu/body->edn)
                                      (ltu/is-status 200)
@@ -235,19 +237,19 @@
 
             ;; check create-log operation
             (let [log-url (-> session
-                            (request create-log-url
-                              :request-method :post
-                              :body (json/write-str {:components ["agent" "security"]}))
-                            (ltu/body->edn)
-                            (ltu/is-status 201)
-                            (ltu/location-url))]
+                              (request create-log-url
+                                       :request-method :post
+                                       :body (json/write-str {:components ["agent" "security"]}))
+                              (ltu/body->edn)
+                              (ltu/is-status 201)
+                              (ltu/location-url))]
 
               ;; verify that the log resource exists
               (-> session
-                (request log-url)
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-key-value :components ["agent" "security"])))
+                  (request log-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :components ["agent" "security"])))
 
             (-> session
                 (request decommission-url
@@ -1642,6 +1644,103 @@
                 (ltu/is-status 403)))
 
           )))))
+
+
+(deftest create-activate-commission-suspend-lifecycle
+  (binding [config-nuvla/*stripe-api-key* nil]
+    (let [session       (-> (ltu/ring-app)
+                            session
+                            (content-type "application/json"))
+          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+
+          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
+
+      #_{:clj-kondo/ignore [:redundant-let]}
+      (let [nuvlabox-id  (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-nuvlabox))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+            nuvlabox-url (str p/service-context nuvlabox-id)
+
+            activate-url (-> session-owner
+                             (request nuvlabox-url)
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/get-op-url :activate))]
+
+        ;; activate nuvlabox
+        (-> session-anon
+            (request activate-url
+                     :request-method :post)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (let [session-nuvlabox (header session authn-info-header
+                                       (str nuvlabox-id " " nuvlabox-id
+                                            " group/nuvla-nuvlabox group/nuvla-anon"))
+              commission       (-> session-owner
+                                   (request nuvlabox-url)
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/get-op-url :commission))]
+
+          (-> session-nuvlabox
+              (request commission
+                       :request-method :post)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (-> session-owner
+              (request nuvlabox-url
+                       :request-method :put
+                       :body (json/write-str {"state" "SUSPENDED"}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :state "COMMISSIONED"))
+
+          (-> session-admin
+              (request nuvlabox-url
+                       :request-method :put
+                       :body (json/write-str {"state" "SUSPENDED"}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          (let [unsuspend-url (-> session-owner
+                                  (request nuvlabox-url)
+                                  (ltu/body->edn)
+                                  (ltu/is-status 200)
+                                  (ltu/is-key-value :state "SUSPENDED")
+                                  (ltu/is-operation-absent :activate)
+                                  (ltu/is-operation-absent :enable-host-level-management)
+                                  (ltu/is-operation-absent :commission)
+                                  (ltu/is-operation-present :unsuspend)
+                                  (ltu/is-operation-present :decommission)
+                                  (ltu/get-op-url :unsuspend))]
+            ;; owner will not able to unsuspend without an active subscription
+            (with-redefs [user-utils/throw-user-hasnt-active-subscription (fn [_req]
+                                                                            (throw (r/ex-response "An active subscription is required!" 402)))]
+              (-> session-owner
+                  (request unsuspend-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 402)))
+
+            ;; owner will be able to unsuspend when no exception thrown
+            (-> session-owner
+                (request unsuspend-url)
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-owner
+                (request nuvlabox-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-key-value :state "COMMISSIONED"))
+            ))))))
 
 
 (deftest should-propagate-changes-test

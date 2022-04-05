@@ -139,6 +139,13 @@ particular NuvlaBox release.
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
+
+              {:name           "unsuspend"
+               :uri            "unsuspend"
+               :description    "unsuspend the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
               ])
 
 
@@ -963,6 +970,23 @@ particular NuvlaBox release.
       (or (ex-data e) (throw e)))))
 
 
+(defmethod crud/do-action [resource-type "unsuspend"]
+  [{{uuid :uuid} :params :as request}]
+  (try
+    (let [id (str resource-type "/" uuid)]
+      (user-utils/throw-user-hasnt-active-subscription request)
+      (-> (db/retrieve id request)
+          (a/throw-cannot-manage request)
+          (a/throw-cannot-edit request)
+          (u/throw-can-not-do-action utils/can-unsuspend? "unsuspend"))
+      (crud/edit {:params      {:uuid          (u/id->uuid id)
+                                :resource-name resource-type}
+                  :body        {:state utils/state-commissioned}
+                  :nuvla/authn auth/internal-identity}))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 ;;
 ;; Set operation
 ;;
@@ -970,14 +994,14 @@ particular NuvlaBox release.
 ;;
 ;; operations for states for owner are:
 ;;
-;;                edit delete activate commission decommission ...
+;;                edit delete activate commission decommission unsuspend ...
 ;; NEW             Y     Y       Y
 ;; ACTIVATED       Y                       Y           Y
 ;; COMMISSIONED    Y                       Y           Y
 ;; DECOMMISSIONING Y                                   Y
 ;; DECOMMISSIONED  Y     Y
 ;; ERROR           Y     Y                             Y
-;; SUSPENDED       Y                                   Y
+;; SUSPENDED       Y                                   Y          Y
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
@@ -998,6 +1022,7 @@ particular NuvlaBox release.
         enable-emergency-op  (u/action-map id :enable-emergency-playbooks)
         create-log-op        (u/action-map id :create-log)
         generate-new-key-op  (u/action-map id :generate-new-api-key)
+        unsuspend-op         (u/action-map id :unsuspend)
         can-manage?          (a/can-manage? resource request)]
     (assoc resource
       :operations
@@ -1021,6 +1046,7 @@ particular NuvlaBox release.
                       (utils/can-disable-host-level-management? resource) (conj disable-host-mgmt-op)
                       (utils/can-create-log? resource) (conj create-log-op)
                       (utils/can-generate-new-api-key? resource) (conj generate-new-key-op)
+                      (utils/can-unsuspend? resource) (conj unsuspend-op)
                       )))))
 
 ;;
