@@ -10,7 +10,7 @@ on:
 jobs:
 
   job-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -32,6 +32,20 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      # Ubuntu Repos on Azure fail often. Attempt to install before other
+      # long-running operations.
+      - name: Install xmllinter (for "Fail on failed tests")
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils
+
+      - name: Project version
+        working-directory: code
+        run: |
+          VERSION=$( lein project-version )
+          echo "::set-output name=version::$VERSION"
+        id: project_version
+
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
@@ -45,21 +59,19 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.projectVersion=${{ steps.project_version.outputs.version }}
 
       - name: Get list of tests
         if: always()
         id: tests
         uses: Rishabh510/Path-lister-action@master
         with:
-          path: "code/test-reports"
+          path: "code/test-reports/xml"
           type: ".xml"
 
       - name: Fail on failed tests
         if: always()
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-utils
           echo "Found ${{ steps.tests.outputs.path_count }} test report(s)"
           if [[ ${{ steps.tests.outputs.path_count }} < 1 ]]; then
              echo "ERROR: No unit test reports collected."
@@ -76,6 +88,11 @@ jobs:
                exit 1
             fi
           done
+
+      - name: jq for SonarQube Quality Gate check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: SonarQube Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
@@ -118,7 +135,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
-          files: code/test-reports/TEST-*.xml
+          files: code/test-reports/xml/TEST-*.xml
 
   job-notify:
     if: always()
