@@ -27,6 +27,7 @@
       :body
       :status))
 
+
 (defn wait-for-cluster
   "Waits for the cluster to reach a healthy state. Throws if the cluster does
    not reach a healthy state before the timeout. Returns the client on success."
@@ -38,11 +39,51 @@
 
 (defn index-exists?
   [client index-name]
+  (try
+    (-> client
+        (spandex/request {:url    [index-name]
+                          :method :head})
+        :status
+        (= 200))
+    (catch Exception e
+      false)))
+
+
+(defn cleanup-index
+  [client index-name]
+  (when (index-exists? client index-name)
+    (log/debug (str "cleaning up index: " index-name))
+    (spandex/request client {:url          [index-name :_delete_by_query]
+                             :query-string {:refresh true}
+                             :method       :post
+                             :body         {:query {:match_all {}}}})))
+
+
+(defn cleanup-indices
+  [client indices-to-cleanup]
+  (doseq [index indices-to-cleanup]
+    (cleanup-index client index)))
+
+
+(defn list-indices
+  [client]
+  (spandex/request client {:url    "/_cat/indices"
+                           :method :get}))
+
+(defn index-content
+  [client index-name]
   (-> client
       (spandex/request {:url    [index-name]
                         :method :get})
-      :status
-      (= 200)))
+      :body))
+
+
+(defn get-document
+  [client doc-path]
+  (-> client
+      (spandex/request {:url    doc-path
+                        :method :get})
+      :body))
 
 
 (defn reset-index

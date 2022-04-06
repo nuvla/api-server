@@ -401,16 +401,27 @@ include aggregating values over a collection of resources.
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::cep/resource))
 
-(defn initialize
-  []
-  (std-crud/initialize resource-type ::cep/resource)
-  (md/register resource-metadata)
 
+(defn add-cloud-entry-point
+  []
   (try
     (add)
     (log/info "Created" resource-type "resource")
     (catch Exception e
       (log/warn resource-type "resource not created; may already exist; message: " (str e)))))
+
+
+(defn initialize-data
+  []
+  (add-cloud-entry-point))
+
+
+(defn initialize
+  []
+  (std-crud/initialize resource-type ::cep/resource)
+  (md/register resource-metadata)
+
+  (initialize-data))
 
 
 ;;

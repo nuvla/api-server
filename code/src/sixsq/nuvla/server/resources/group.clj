@@ -239,35 +239,62 @@ that start with 'nuvla-' are reserved for the server.
 (def resource-metadata (gen-md/generate-metadata ::ns ::group/schema))
 
 
+(def default-acl {:owners    ["group/nuvla-admin"]
+                  :view-meta ["group/nuvla-user"]})
+
+
+(def default-groups-users
+  [
+   [(str resource-type "/nuvla-admin")
+    resource-type
+    {:name        "Nuvla Administrator Group"
+     :description "group of users with server administration rights"
+     :template    {:group-identifier "nuvla-admin"
+                   :acl              default-acl}}]
+
+   [(str resource-type "/nuvla-user")
+    resource-type
+    {:name        "Nuvla Authenticated Users"
+     :description "pseudo-group of users that have been authenticated"
+     :template    {:group-identifier "nuvla-user"
+                   :acl              default-acl}}]
+
+   [(str resource-type "/nuvla-anon")
+    resource-type
+    {:name        "Nuvla Anonymous Users"
+     :description "pseudo-group of all users authenticated or not"
+     :template    {:group-identifier "nuvla-anon"
+                   :acl              default-acl}}]
+
+   [(str resource-type "/nuvla-nuvlabox")
+    resource-type
+    {:name        "Nuvla NuvlaBox Systems"
+     :description "pseudo-group of all NuvlaBox systems"
+     :template    {:group-identifier "nuvla-nuvlabox"
+                   :acl              default-acl}}]
+
+   [(str resource-type "/nuvla-vpn") resource-type
+    {:name        "Nuvla VPN Systems"
+     :description "pseudo-group of all VPN systems"
+     :template    {:group-identifier "nuvla-vpn"
+                   :acl              default-acl}}]
+   ])
+
+
+(defn add-default-groups-users
+  []
+  (doseq [v default-groups-users]
+    (apply std-crud/add-if-absent v)))
+
+
+(defn initialize-data
+  []
+  (add-default-groups-users))
+
+
 (defn initialize
   []
   (std-crud/initialize resource-type ::group/schema)
   (md/register resource-metadata)
 
-  (let [default-acl {:owners    ["group/nuvla-admin"]
-                     :view-meta ["group/nuvla-user"]}]
-    (std-crud/add-if-absent (str resource-type "/nuvla-admin") resource-type
-                            {:name        "Nuvla Administrator Group"
-                             :description "group of users with server administration rights"
-                             :template    {:group-identifier "nuvla-admin"
-                                           :acl              default-acl}})
-    (std-crud/add-if-absent (str resource-type "/nuvla-user") resource-type
-                            {:name        "Nuvla Authenticated Users"
-                             :description "pseudo-group of users that have been authenticated"
-                             :template    {:group-identifier "nuvla-user"
-                                           :acl              default-acl}})
-    (std-crud/add-if-absent (str resource-type "/nuvla-anon") resource-type
-                            {:name        "Nuvla Anonymous Users"
-                             :description "pseudo-group of all users authenticated or not"
-                             :template    {:group-identifier "nuvla-anon"
-                                           :acl              default-acl}})
-    (std-crud/add-if-absent (str resource-type "/nuvla-nuvlabox") resource-type
-                            {:name        "Nuvla NuvlaBox Systems"
-                             :description "pseudo-group of all NuvlaBox systems"
-                             :template    {:group-identifier "nuvla-nuvlabox"
-                                           :acl              default-acl}})
-    (std-crud/add-if-absent (str resource-type "/nuvla-vpn") resource-type
-                            {:name        "Nuvla VPN Systems"
-                             :description "pseudo-group of all VPN systems"
-                             :template    {:group-identifier "nuvla-vpn"
-                                           :acl              default-acl}})))
+  (initialize-data))
