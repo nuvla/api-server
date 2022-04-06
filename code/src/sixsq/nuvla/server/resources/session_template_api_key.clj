@@ -44,11 +44,24 @@ pair.
 (def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::st-api-key/schema-create "create"))
 
 
+(defn add-session-template
+  []
+  (std-crud/add-if-absent
+    (str "session-template/" authn-method)
+    p/resource-type
+    default-template))
+
+
+(defn initialize-data
+  []
+  (add-session-template))
+
+
 (defn initialize
   []
   (p/register authn-method)
   (std-crud/initialize p/resource-type ::st-api-key/schema)
-  (std-crud/add-if-absent (str "session-template/" authn-method) p/resource-type default-template)
+  (initialize-data)
 
   (md/register resource-metadata)
   (md/register resource-metadata-create))

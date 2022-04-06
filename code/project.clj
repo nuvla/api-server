@@ -1,6 +1,5 @@
 (def parent-version "6.7.10")
 (def nuvla-ring-version "2.0.7-SNAPSHOT")
-(def es-version "7.11.1")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -118,7 +117,8 @@
                                       [org.elasticsearch.client/transport]
                                       [org.apache.logging.log4j/log4j-core]]
               ;; paths
-              :source-paths          ["test"]
+              :source-paths          ["src"]
+              :test-paths            ["test"]
               :resource-paths        ["test-resources"]
               ;; linters
               :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}

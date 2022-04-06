@@ -2,7 +2,7 @@
   "Utilities for loading information from CIMI resources dynamically."
   (:require
     [clojure.tools.logging :as log]
-    [sixsq.nuvla.server.util.namespace-utils :as dyn]))
+    [sixsq.nuvla.server.util.namespace-utils :as ns-util]))
 
 
 (defn resource?
@@ -21,7 +21,7 @@
 (defn resource-namespaces
   "Returns sequence of the resource namespaces on the classpath."
   []
-  (dyn/load-filtered-namespaces resource?))
+  (ns-util/load-filtered-namespaces resource?))
 
 
 (defn get-resource-link
@@ -29,18 +29,29 @@
    keyword associated with the relative URL for the resource. Function returns
    nil if 'resource-type' cannot be found in the resource."
   [resource-ns]
-  (when-let [vtag (dyn/resolve "resource-type" resource-ns)]
+  (when-let [vtag (ns-util/resolve "resource-type" resource-ns)]
     [(keyword (deref vtag)) {:href (deref vtag)}]))
 
 
-(defn- initialize-resource
-  "Run a resource's initialization function if it exists."
+(def ^:private initialize-data-fns (atom []))
+
+
+(defn cache-initialize-data-fn
   [resource-ns]
-  (log/error (str ">>> initialising " resource-ns))
-  (when-let [fvar (dyn/resolve "initialize" resource-ns)]
+  (when-let [fvar (ns-util/resolve "initialize-data" resource-ns)]
+    (log/debug (str "caching data init function: " fvar))
+    (swap! initialize-data-fns conj (deref fvar))))
+
+
+(defn- initialize-resource
+  "Run a resource's initialization function if it exists.
+  Collect data initialization function for future use in re-initialization."
+  [resource-ns]
+  (when-let [fvar (ns-util/resolve "initialize" resource-ns)]
     (try
       ((deref fvar))
       (log/info "initialized resource" (ns-name resource-ns))
+      (cache-initialize-data-fn resource-ns)
       (catch Exception e
         (log/error "initializing" (ns-name resource-ns) "failed:" (.getMessage e))))))
 
@@ -50,7 +61,7 @@
    discovered on the classpath."
   []
   (->> (resource-namespaces)
-       (map (partial dyn/resolve "routes"))
+       (map (partial ns-util/resolve "routes"))
        (remove nil?)
        (map deref)))
 
@@ -63,18 +74,21 @@
        (map get-resource-link)
        (remove nil?)))
 
-(def ^:private initialised (atom "false"))
+
+(defn initialize-data
+  "Helper function. Runs previously cached initialize-data functions to
+  populate the DB with the required default data."
+  []
+  (doseq [f @initialize-data-fns]
+    (try
+      (f)
+      (log/debug "initialized data for resource via " f)
+      (catch Exception e
+        (log/error "initializing data for resource via " f " failed:" (.getMessage e))))))
+
 
 (defn initialize
   "Runs the initialize function for all resources that define it."
   []
-  (log/error (str "state of initialised: " @initialised))
-  (if (= "true" @initialised)
-    (log/error "CIMI resources already initialised. Skipping initialisation.")
-    (do
-      (log/error "CIMI resources must be initialised.")
-      (doseq [resource-namespace (resource-namespaces)]
-        (initialize-resource resource-namespace))
-      (log/error "CIMI resources initialised.")
-      (reset! initialised "true")
-      )))
+  (doseq [resource-namespace (resource-namespaces)]
+    (initialize-resource resource-namespace)))

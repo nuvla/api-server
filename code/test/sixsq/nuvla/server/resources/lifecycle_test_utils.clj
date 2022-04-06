@@ -16,7 +16,6 @@
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
     [sixsq.nuvla.db.es.binding :as esb]
-    [sixsq.nuvla.db.es.common.utils :as escu]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.app.params :as p]
@@ -388,6 +387,18 @@
 
 (def ^:private es-node-client-cache (atom nil))
 
+(defn es-node
+  []
+  (first @es-node-client-cache))
+
+(defn es-client
+  []
+  (second @es-node-client-cache))
+
+(defn es-sniffer
+  []
+  (nth @es-node-client-cache 2))
+
 
 (defn set-es-node-client-cache
   "Sets the value of the cached Elasticsearch node and client. If the current
@@ -399,7 +410,6 @@
   ;; reset to the current value because swap! is used.  Unfortunately,
   ;; compare-and-set! can't be used because we want to avoid unnecessary
   ;; creation of ring application instances.
-  (log/error (str "state of es-node-client-cache: " es-node-client-cache))
   (swap! es-node-client-cache (fn [current] (or current (create-es-node-client)))))
 
 
@@ -424,22 +434,23 @@
         (catch Exception _)))))
 
 
+(defn profile
+  [msg f & rest]
+  (let [ts (System/currentTimeMillis)]
+    (log/debug (str "--->: " msg))
+    (if rest
+      (apply f rest)
+      (f))
+    (log/debug (str "--->: " msg " done in: " (- (System/currentTimeMillis) ts)))))
+
+
 (defmacro with-test-es-client
   "Creates an Elasticsearch test client, executes the body with the created
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [cache#   (set-es-node-client-cache)
-         client#  (second cache#)
-         sniffer# (nth cache# 2)]
+  `(let [[_# client# sniffer#]  (set-es-node-client-cache)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
-     ;;(log/error "resetting ES indices...")
-     ;;(esu/reset-index client# (str escu/default-index-prefix "*"))
-     ;;(log/error "resetting ES indices... done")
-     (log/error "cleaning up ES indices...")
-     (println (esu/cleanup-index client# (str escu/default-index-prefix "*")))
-     (println (esu/list-indices client#))
-     (log/error "cleaning up ES indices... done")
      ~@body))
 
 ;;
@@ -473,7 +484,6 @@
   ;; reset to the current value because swap! is used.  Unfortunately,
   ;; compare-and-set! can't be used because we want to avoid unnecessary
   ;; creation of ring application instances.
-  (log/error (str "state of ring-app-cache: " ring-app-cache))
   (swap! ring-app-cache (fn [current] (or current
                                           (make-ring-app (concat-routes [(routes/get-main-routes)]))))))
 
@@ -501,27 +511,37 @@
 (defn with-test-kafka-fixture
   [f]
   (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
-        k-dir (ke/create-tmp-dir "kafka-log-dir")
-        ts (System.)]
-    (try
-      (log/error "----> starting kafka")
-      (with-open [_k (ke/start-embedded-kafka
-                       {::ke/host               kafka-host
-                        ::ke/kafka-port         kafka-port
-                        ::ke/zk-port            kafka-zk-port
-                        ::ke/zookeeper-data-dir (str z-dir)
-                        ::ke/kafka-log-dir      (str k-dir)
-                        ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
-        ;; Create and set kafka producer.
+        k-dir (ke/create-tmp-dir "kafka-log-dir")]
+    (let [kafka (ke/start-embedded-kafka
+                     {::ke/host               kafka-host
+                      ::ke/kafka-port         kafka-port
+                      ::ke/zk-port            kafka-zk-port
+                      ::ke/zookeeper-data-dir (str z-dir)
+                      ::ke/kafka-log-dir      (str k-dir)
+                      ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
+      (try
         (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
-        (log/error "----> kafka started")
-        (f))
-      (catch Throwable t
-        (throw t))
-      (finally
-        (ka/close-producer!)
-        (ke/delete-dir z-dir)
-        (ke/delete-dir k-dir)))))
+        (f)
+        (catch Throwable t
+          (throw t))
+        (finally
+          (ka/close-producer!)
+          (.close kafka)
+          (ke/delete-dir z-dir)
+          (ke/delete-dir k-dir))))))
+
+
+(def ^:private resources-initialised (atom "false"))
+
+
+(defn initialize-indices
+  []
+  (if (= "false" @resources-initialised)
+    (do
+      (dyn/initialize)
+      (reset! resources-initialised "true"))
+    (dyn/initialize-data)))
+
 
 ;;
 ;; test fixture to ensure that all parts of the test server are started
@@ -532,17 +552,15 @@
   "This fixture will ensure that Elasticsearch and zookeeper instances are
    running. It will also create a ring application and initialize it. The
    servers and application are cached to eliminate unnecessary instance
-   creation."
+   creation for the subsequent tests."
   [f]
-  (log/error "executing with-test-server-fixture")
-  (set-zk-client-server-cache)                              ;; always setup the zookeeper client and server
+  (log/debug "executing with-test-server-fixture")
+  (profile "start zookeeper" set-zk-client-server-cache)
   (with-test-es-client
-    (log/error "---> force initialization of ring application")
-    (ring-app)
-    (log/error "---> force initialization of indices")
-    (dyn/initialize)                                        ;; must always reinitialize after database has been cleared
-    (log/error "---> start running test")
-    (f)))
+    (profile "start ring app" ring-app)
+    (profile "cleanup indices" esu/cleanup-index (es-client) "nuvla-*")
+    (profile "initialize indices" initialize-indices)
+    (profile "run test" f)))
 
 
 (def with-test-server-kafka-fixture (join-fixtures [with-test-server-fixture

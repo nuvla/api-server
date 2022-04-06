@@ -9,7 +9,7 @@ creating new accounts without email addresses or email address validation.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.user-template-minimum :as spec-minimum]
-    [sixsq.nuvla.server.resources.user-template :as p]
+    [sixsq.nuvla.server.resources.user-template :as user-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -34,7 +34,7 @@ creating new accounts without email addresses or email address validation.
    :instance          registration-method
    :name              "Registration with minimum information"
    :description       "allows user registration with only the minimum information"
-   :resource-metadata (str "resource-metadata/" p/resource-type "-" registration-method)
+   :resource-metadata (str "resource-metadata/" user-tpl/resource-type "-" registration-method)
    :order             0
    :icon              "user"
    :acl               resource-acl})
@@ -44,21 +44,34 @@ creating new accounts without email addresses or email address validation.
 ;; initialization: register this user template
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::p/ns ::spec-minimum/schema))
+(def resource-metadata (gen-md/generate-metadata ::ns ::user-tpl/ns ::spec-minimum/schema))
 
 
-(def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-minimum/schema-create "create"))
+(def resource-metadata-create (gen-md/generate-metadata ::ns ::user-tpl/ns ::spec-minimum/schema-create "create"))
+
+
+(defn add-min-reg-resource
+  []
+  (std-crud/add-if-absent
+    (str user-tpl/resource-type "/" registration-method)
+    user-tpl/resource-type
+    resource))
+
+
+(defn initialize-data
+  []
+  (add-min-reg-resource))
 
 
 (defn initialize
   []
-  (p/register registration-method)
-  (std-crud/initialize p/resource-type ::spec-minimum/schema)
+  (user-tpl/register registration-method)
+  (std-crud/initialize user-tpl/resource-type ::spec-minimum/schema)
 
   (md/register resource-metadata)
   (md/register resource-metadata-create)
 
-  (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
+  (initialize-data))
 
 
 ;;
@@ -68,6 +81,6 @@ creating new accounts without email addresses or email address validation.
 (def validate-fn (u/create-spec-validation-fn ::spec-minimum/schema))
 
 
-(defmethod p/validate-subtype registration-method
+(defmethod user-tpl/validate-subtype registration-method
   [resource]
   (validate-fn resource))
