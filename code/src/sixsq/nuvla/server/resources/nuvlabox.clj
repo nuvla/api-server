@@ -979,10 +979,7 @@ particular NuvlaBox release.
           (a/throw-cannot-manage request)
           (a/throw-cannot-edit request)
           (u/throw-can-not-do-action utils/can-unsuspend? "unsuspend"))
-      (crud/edit {:params      {:uuid          (u/id->uuid id)
-                                :resource-name resource-type}
-                  :body        {:state utils/state-commissioned}
-                  :nuvla/authn auth/internal-identity}))
+      (crud/edit-by-id-as-admin id {:state utils/state-commissioned}))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

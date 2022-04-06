@@ -129,6 +129,15 @@
                         body (assoc :body body))))))
 
 
+(defn edit-by-id-as-admin
+  [resource-id body]
+  (let [[resource-type uuid] (u/parse-id resource-id)]
+    (edit {:params      {:resource-name resource-type
+                         :uuid          uuid}
+           :body        body
+           :nuvla/authn auth/internal-identity})))
+
+
 ;;
 ;; Resource schema validation.
 ;;
