@@ -531,16 +531,16 @@
           (ke/delete-dir k-dir))))))
 
 
-(def ^:private resources-initialised (atom "false"))
+(def ^:private resources-initialised (atom false))
 
 
 (defn initialize-indices
   []
-  (if (= "false" @resources-initialised)
+  (if @resources-initialised
+    (dyn/initialize-data)
     (do
       (dyn/initialize)
-      (reset! resources-initialised "true"))
-    (dyn/initialize-data)))
+      (reset! resources-initialised true))))
 
 
 ;;
