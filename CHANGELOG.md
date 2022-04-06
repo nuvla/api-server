@@ -6,6 +6,7 @@
 
 - Module - follow-customer-trial attribute added. This attribute will allow
   vendor to request module trial period to be same as nuvla trial period
+- Tests - optimise tests runtime
 
 ### Changed
 
