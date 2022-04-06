@@ -1,5 +1,5 @@
 (def parent-version "6.7.10")
-(def nuvla-ring-version "2.0.7-SNAPSHOT")
+(def nuvla-ring-version "2.0.7")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -12,7 +12,8 @@
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.5"]
-            [lein-environ "1.1.0"]]
+            [lein-environ "1.1.0"]
+            [lein-project-version "0.1.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
                    :inherit [:plugins
@@ -127,5 +128,5 @@
                                       :es-sniffer-init     "no"
                                       :kafka-producer-init "yes"}
               ;; code coverage
-              :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}}
-   })
+              :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              }})

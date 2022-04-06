@@ -39,6 +39,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
 
+      - name: Project version
+        working-directory: code
+        run: |
+          VERSION=$( lein project-version )
+          echo "::set-output name=version::$VERSION"
+        id: project_version
+
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
@@ -52,7 +59,7 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.projectVersion=${{ steps.project_version.outputs.version }}
 
       - name: Get list of tests
         if: always()
