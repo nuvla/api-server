@@ -82,7 +82,6 @@
                                            io.netty/netty-resolver-dns
                                            io.netty/netty-transport-native-epoll]]]}
 
-
    :test     {:dependencies   [[me.raynes/fs]
                                [peridot]
                                [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
@@ -104,6 +103,7 @@
               :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
               :test-report-sonar {:output-dir "test-reports"
                                   :emit-junit-xml true}}
+
    :dev      {:dependencies          [
                                       ;; for kafka embedded
                                       [org.apache.kafka/kafka-clients "2.4.0"]
@@ -118,7 +118,8 @@
                                       [org.elasticsearch.client/transport]
                                       [org.apache.logging.log4j/log4j-core]]
               ;; paths
-              :source-paths          ["test"]
+              :source-paths          ["src"]
+              :test-paths            ["test"]
               :resource-paths        ["test-resources"]
               ;; linters
               :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}

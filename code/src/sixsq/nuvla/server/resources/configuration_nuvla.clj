@@ -65,6 +65,20 @@ default values.
 ;; initialization: create initial service configuration if necessary
 ;;
 
+(def create-template {:resource-type p/create-type
+                      :template      {:href tpl-instance-url}})
+
+
+(defn add-template
+  []
+  (std-crud/add-if-absent config-instance-url p/resource-type create-template))
+
+
+(defn initialize-data
+  []
+  (add-template))
+
+
 (defn initialize
   []
   ;; FIXME: this is a nasty hack to ensure configuration template is available
@@ -72,30 +86,29 @@ default values.
 
   (std-crud/initialize p/resource-type ::ct-nuvla/schema)
 
-  (let [create-template {:resource-type p/create-type
-                         :template      {:href tpl-instance-url}}]
-    (std-crud/add-if-absent config-instance-url p/resource-type create-template)
-    (let [nuvla-config (-> config-instance-url
-                           crud/retrieve-by-id-as-admin)]
-      (when-let [authorized-redirect-urls (:authorized-redirect-urls nuvla-config)]
-        (alter-var-root #'*authorized-redirect-urls* (constantly authorized-redirect-urls)))
-      (try
-        (when-let [stripe-api-key (or (:stripe-api-key nuvla-config)
-                                      (env/env :stripe-api-key))]
-          (let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
-            (if (some? pricing-instance)
-              (do
-                (pricing-impl/set-impl! pricing-instance)
-                (pricing-impl/set-api-key! stripe-api-key)
-                (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
-                (when-let [stripe-client-id (or (-> config-instance-url
-                                                    crud/retrieve-by-id-as-admin
-                                                    :stripe-client-id)
-                                                (env/env :stripe-client-id))]
-                  (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
-              (log/error "Stripe-api-key configured but no princing implementation found!"))))
-       (catch Exception e
-         (log/error (str "Exception when loading Stripe api-key/client-id: " e)))))))
+  (initialize-data)
+
+  (let [nuvla-config (-> config-instance-url
+                         crud/retrieve-by-id-as-admin)]
+    (when-let [authorized-redirect-urls (:authorized-redirect-urls nuvla-config)]
+      (alter-var-root #'*authorized-redirect-urls* (constantly authorized-redirect-urls)))
+    (try
+      (when-let [stripe-api-key (or (:stripe-api-key nuvla-config)
+                                    (env/env :stripe-api-key))]
+        (let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
+          (if (some? pricing-instance)
+            (do
+              (pricing-impl/set-impl! pricing-instance)
+              (pricing-impl/set-api-key! stripe-api-key)
+              (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
+              (when-let [stripe-client-id (or (-> config-instance-url
+                                                  crud/retrieve-by-id-as-admin
+                                                  :stripe-client-id)
+                                              (env/env :stripe-client-id))]
+                (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
+            (log/error "Stripe-api-key configured but no princing implementation found!"))))
+      (catch Exception e
+        (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
 
 
 ;;

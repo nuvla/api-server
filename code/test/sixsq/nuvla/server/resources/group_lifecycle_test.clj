@@ -56,12 +56,12 @@
                                  :tags        tags-attr
                                  :template    {:group-identifier valid-create-no-href-id}}]
 
-    ;; admin query should succeed and have 5 entries
+    ;; admin query should succeed and contains predefined number of entries
     (let [entries (-> session-admin
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 5)
+                      (ltu/is-count (count t/default-groups-users))
                       (ltu/entries))]
       (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
                "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))

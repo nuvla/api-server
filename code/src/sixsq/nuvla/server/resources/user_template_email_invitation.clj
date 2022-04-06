@@ -50,6 +50,18 @@ use a Nuvla service.
 (def resource-metadata-create (gen-md/generate-metadata ::ns ::p/ns ::spec-email-invitation/schema-create "create"))
 
 
+(defn add-resource []
+  (std-crud/add-if-absent
+    (str p/resource-type "/" registration-method)
+    p/resource-type
+    resource))
+
+
+(defn initialize-data
+  []
+  (add-resource))
+
+
 (defn initialize
   []
   (p/register registration-method)
@@ -58,7 +70,7 @@ use a Nuvla service.
   (md/register resource-metadata)
   (md/register resource-metadata-create)
 
-  (std-crud/add-if-absent (str p/resource-type "/" registration-method) p/resource-type resource))
+  (initialize-data))
 
 
 ;;
