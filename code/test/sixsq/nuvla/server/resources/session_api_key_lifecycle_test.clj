@@ -15,7 +15,8 @@
     [sixsq.nuvla.server.resources.session-api-key :as t]
     [sixsq.nuvla.server.resources.session-template :as st]
     [sixsq.nuvla.server.resources.session-template-api-key :as api-key]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.server.resources.common.utils :as u]))
 
 (use-fixtures :once ltu/with-test-server-fixture)
 
@@ -33,7 +34,7 @@
                                :acl         st/resource-acl})
 
 (deftest check-uuid->id
-  (let [uuid       (str (random-uuid))
+  (let [uuid       (u/random-uuid)
         correct-id (str "credential/" uuid)]
     (is (= correct-id (t/uuid->id uuid)))
     (is (= correct-id (t/uuid->id correct-id)))))
@@ -82,7 +83,7 @@
 
   (let [[secret digest] (key-utils/generate)
         [_ bad-digest] (key-utils/generate)
-        uuid                (str (random-uuid))
+        uuid                (u/random-uuid)
         valid-api-key       {:id      (str "credential/" uuid)
                              :subtype api-key-tpl/credential-subtype
                              :method  api-key-tpl/method
