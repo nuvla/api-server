@@ -4,6 +4,10 @@
 
 ### Added
 
+- Test helper - Resource creation
+- Event - New `email` category
+- Crud - Helper do-action-as-admin and edit-by-id-as-admin
+- Pricing - New list subscription added to the protocol
 - Nuvlabox - suspended state and unsuspend operation
 - Module - follow-customer-trial attribute added. This attribute will allow
   vendor to request module trial period to be same as nuvla trial period
@@ -11,6 +15,13 @@
 
 ### Changed
 
+- Subscription active check is done on most of deployment and nuvlabox actions
+- Nuvlabox - Operations map and actions reuse same logic. Fix existing
+  divergence.
+- Email utils - send-email error message mismatch in some cases with the real
+  error
+- Test fixture with-existing-user deleted and replaced by a function
+- Email - New way to build html and text email
 - Configuration - Nuvla config load of stripe enhanced
 - Dependencies - Update to parent 6.7.11
 - Dependencies - Update to ring 2.0.8

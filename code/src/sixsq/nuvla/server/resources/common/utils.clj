@@ -8,8 +8,8 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
-    [sixsq.nuvla.server.util.time :as time]
-    [sixsq.nuvla.server.util.response :as r])
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest SecureRandom)
     (java.util UUID)))

@@ -4,8 +4,8 @@
     [clojure.test :refer [deftest is testing]]
     [postal.core :as postal]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.email.sending :as t]
-    [sixsq.nuvla.server.resources.email.content :as content])
+    [sixsq.nuvla.server.resources.email.content :as content]
+    [sixsq.nuvla.server.resources.email.sending :as t])
   (:import (clojure.lang ExceptionInfo)))
 
 (deftest send-email

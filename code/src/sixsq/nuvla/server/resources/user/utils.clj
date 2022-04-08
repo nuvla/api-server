@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
@@ -14,8 +15,7 @@
     [sixsq.nuvla.server.resources.credential-template-totp-2fa :as cttotp]
     [sixsq.nuvla.server.resources.email :as email]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.auth.acl-resource :as a]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-url "user")

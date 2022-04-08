@@ -1,12 +1,12 @@
 (ns sixsq.nuvla.server.resources.email.sending
   (:require
     [clojure.java.io :as io]
-    [selmer.parser :as tmpl]
+    [clojure.tools.logging :as log]
     [postal.core :as postal]
-    [sixsq.nuvla.server.util.response :as r]
+    [selmer.parser :as tmpl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [clojure.tools.logging :as log])
+    [sixsq.nuvla.server.util.response :as r])
   (:import
     (java.util Date)))
 

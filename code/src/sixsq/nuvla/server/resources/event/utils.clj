@@ -2,9 +2,9 @@
   (:require
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.event :as event]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.util.time :as time]))
 
 

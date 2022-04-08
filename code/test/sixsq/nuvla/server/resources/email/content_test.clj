@@ -2,8 +2,8 @@
   (:require
     [clojure.java.io :refer [reader writer]]
     [clojure.test :refer [deftest is testing]]
-    [sixsq.nuvla.server.resources.email.sending :as sending]
-    [sixsq.nuvla.server.resources.email.content :as t]))
+    [sixsq.nuvla.server.resources.email.content :as t]
+    [sixsq.nuvla.server.resources.email.sending :as sending]))
 
 
 (def resource-1 {:id    "61467019"

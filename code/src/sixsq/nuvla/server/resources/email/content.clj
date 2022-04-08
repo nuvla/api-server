@@ -1,7 +1,5 @@
 (ns sixsq.nuvla.server.resources.email.content)
 
-;TODO Configurable nuvla.io url and service name. Split long lines
-
 (defn trial-ending [{:keys [days-left resources]}]
   {:template        :trial
    :subject         "Nuvla trial ending"
