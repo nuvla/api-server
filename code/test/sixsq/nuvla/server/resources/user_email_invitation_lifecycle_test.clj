@@ -9,7 +9,7 @@
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
     [sixsq.nuvla.server.resources.user-identifier :as user-identifier]
@@ -40,7 +40,7 @@
         session-user    (header session authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon    (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
-    (with-redefs [email-utils/extract-smtp-cfg
+    (with-redefs [email-sending/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
                                                :port 465
                                                :ssl  true

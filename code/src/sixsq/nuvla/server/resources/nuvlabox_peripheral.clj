@@ -84,6 +84,7 @@ nuvlabox.
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
+          (utils/throw-parent-nuvlabox-is-suspended)
           (throw-doesnt-have-video-capability)
           (throw-data-gateway-already-enabled)
           (create-job request "enable-stream")))
@@ -147,7 +148,12 @@ nuvlabox.
 
 
 (defmethod crud/add resource-type
-  [request]
+  [{:keys [body] :as request}]
+  (-> body
+      :parent
+      (crud/retrieve-by-id-as-admin)
+      (a/can-view? request)
+      (utils/throw-nuvlabox-is-suspended))
   (add-impl request))
 
 
@@ -161,8 +167,9 @@ nuvlabox.
           resource (db/retrieve id request)]
       (when (and (has-video-capability? body) (:data-gateway-enabled resource))
         (-> resource
-          (a/throw-cannot-manage request)
-          (create-job request "restart-stream"))))
+            (a/throw-cannot-manage request)
+            (utils/throw-parent-nuvlabox-is-suspended)
+            (create-job request "restart-stream"))))
     (catch Exception e
       (or (ex-data e) (throw e))))
   (edit-impl request))

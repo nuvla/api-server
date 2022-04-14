@@ -1,25 +1,14 @@
 (ns sixsq.nuvla.server.resources.email.utils
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as str]
-    [postal.core :as postal]
-    [selmer.parser :as tmpl]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.callback :as callback]
     [sixsq.nuvla.server.resources.callback-email-validation :as email-callback]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r])
-  (:import (java.util Date)))
-
-(def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
-
-(defn render-email
-  [values-map]
-  (tmpl/render
-    base-html
-    (assoc values-map :now (Date.))))
+    [sixsq.nuvla.server.resources.email.sending :as sending]
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def warning-initiate
   (str/join "\n"
@@ -45,12 +34,12 @@
                        callback-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
-    :content (render-email {:title            "Nuvla email validation"
-                            :button-text      "Validate"
-                            :button-url       callback-url
-                            :text-1           "To validate your email address click the validate button."
-                            :conditions-url   conditions-url
-                            :warning-initiate true})}])
+    :content (sending/render-content {:title          "Nuvla email validation"
+                                    :button-text      "Validate"
+                                    :button-url       callback-url
+                                    :text-1           "To validate your email address click the validate button."
+                                    :conditions-url   conditions-url
+                                    :warning-initiate true})}])
 
 
 (defn invitation-email-body
@@ -63,7 +52,7 @@
                                         "\n    %s\n"]) name set-password-url)
                      conditions-url (str (conditions-acceptance conditions-url)))}
    {:type    "text/html; charset=utf-8"
-    :content (render-email
+    :content (sending/render-content
                {:title          "Nuvla invitation"
                 :button-text    "Accept invitation"
                 :button-url     set-password-url
@@ -93,33 +82,8 @@
         (throw (ex-info msg (r/map-response msg 500 email-id)))))))
 
 
-(defn extract-smtp-cfg
-  "Extracts the SMTP configuration from the server's configuration resource.
-   Note that this assumes a standard URL for the configuration resource."
-  [nuvla-config]
-  (when-let [{:keys [smtp-host smtp-port
-                     smtp-ssl
-                     smtp-username smtp-password]} nuvla-config]
-    {:host smtp-host
-     :port smtp-port
-     :ssl  smtp-ssl
-     :user smtp-username
-     :pass smtp-password}))
-
-
-(defn send-email [nuvla-config email-data]
-  (try
-    (let [smtp-config (extract-smtp-cfg nuvla-config)
-          resp        (postal/send-message smtp-config email-data)]
-      (when-not (= :SUCCESS (:error resp))
-        (let [msg (str "cannot send verification email: " (:message resp))]
-          (throw (r/ex-bad-request msg)))))
-    (catch Exception _
-      (let [error-msg "server configuration for SMTP is missing"]
-        (throw (ex-info error-msg (r/map-response error-msg 500)))))))
-
-
-(defn send-validation-email [callback-url address]
+(defn send-validation-email
+  [callback-url address]
   (let [{:keys [smtp-username conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
@@ -130,10 +94,11 @@
               :subject "Validation email for Nuvla service"
               :body    body}]
 
-    (send-email nuvla-config msg)))
+    (sending/dispatch nuvla-config msg)))
 
 
-(defn send-invitation-email [set-password-url address {:keys [name id] :as _user}]
+(defn send-invitation-email
+  [set-password-url address {:keys [name id] :as _user}]
   (let [{:keys [smtp-username conditions-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin config-nuvla/config-instance-url)
 
@@ -144,7 +109,7 @@
               :subject "Invitation by email for Nuvla service"
               :body    body}]
 
-    (send-email nuvla-config msg)))
+    (sending/dispatch nuvla-config msg)))
 
 
 (defn password-set-email-body
@@ -158,7 +123,7 @@
                           warning-initiate])
                set-password-url)}
    {:type    "text/html; charset=utf-8"
-    :content (render-email
+    :content (sending/render-content
                {:title            "Nuvla set password"
                 :button-text      "Set new password"
                 :button-url       set-password-url
@@ -177,7 +142,7 @@
                           warning-initiate])
                token)}
    {:type    "text/html; charset=utf-8"
-    :content (render-email
+    :content (sending/render-content
                {:title            "Nuvla authorization code"
                 :text-strong-1    "Code: "
                 :text-strong-2    token
@@ -199,7 +164,7 @@
                          callback-url)
                        conditions-url (str (conditions-acceptance conditions-url)))}
      {:type    "text/html; charset=utf-8"
-      :content (render-email
+      :content (sending/render-content
                  {:title          (format "You’re invited to join %s" group)
                   :button-text    "Accept invitation"
                   :button-url     callback-url
@@ -209,8 +174,15 @@
                                     "To accept the invitation, click the following button:")
                   :conditions-url conditions-url})}]))
 
+(defn get-body
+  [context]
+  {:type    "text/html; charset=utf-8"
+   :content (sending/render-content context)})
 
-(defn send-password-set-email [set-password-url address]
+
+
+(defn send-password-set-email
+  [set-password-url address]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                    config-nuvla/config-instance-url)
 
@@ -221,10 +193,11 @@
               :subject "Set password for Nuvla service"
               :body    body}]
 
-    (send-email nuvla-config msg)))
+    (sending/dispatch nuvla-config msg)))
 
 
-(defn send-join-group-email [group invited-by callback-url address]
+(defn send-join-group-email
+  [group invited-by callback-url address]
   (let [{:keys [smtp-username conditions-url] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                                   config-nuvla/config-instance-url)
 
@@ -235,10 +208,11 @@
               :subject (format "You’re invited to join %s" group)
               :body    body}]
 
-    (send-email nuvla-config msg)))
+    (sending/dispatch nuvla-config msg)))
 
 
-(defn send-email-token-2fa [token address]
+(defn send-email-token-2fa
+  [token address]
   (let [{:keys [smtp-username] :as nuvla-config} (crud/retrieve-by-id-as-admin
                                                    config-nuvla/config-instance-url)
 
@@ -249,4 +223,5 @@
               :subject "Nuvla authorization code"
               :body    body}]
 
-    (send-email nuvla-config msg)))
+    (sending/dispatch nuvla-config msg)))
+

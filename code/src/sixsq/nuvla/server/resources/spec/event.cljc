@@ -8,11 +8,12 @@
 
 
 (s/def ::category
-  (-> (st/spec #{"state" "alarm" "action" "system", "user"})
+  (-> (st/spec #{"state" "alarm" "action" "system" "user" "email"})
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
-             :json-schema/value-scope {:values ["state", "alarm", "action", "system", "user"]}
+             :json-schema/value-scope {:values ["state" "alarm" "action" "system" "user"
+                                                "email"]}
 
              :json-schema/order 30)))
 

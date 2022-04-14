@@ -51,7 +51,7 @@ default values.
            (some (fn [authorized-redirect] (str/starts-with? redirect-url authorized-redirect)))
            boolean)))
 
-(def ^:const error-msg-not-authorised-redirect-url "server configuration do not authorize following rediect-url: " )
+(def ^:const error-msg-not-authorised-redirect-url "server configuration do not authorize following rediect-url: ")
 
 (defn throw-is-not-authorised-redirect-url
   [redirect-url]
@@ -95,18 +95,17 @@ default values.
     (try
       (when-let [stripe-api-key (or (:stripe-api-key nuvla-config)
                                     (env/env :stripe-api-key))]
-        (let [pricing-instance (some-> "sixsq.nuvla.pricing.stripe.stripe" dyn/load-ns pricing-impl/set-impl!)]
-          (if (some? pricing-instance)
-            (do
-              (pricing-impl/set-impl! pricing-instance)
-              (pricing-impl/set-api-key! stripe-api-key)
-              (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
-              (when-let [stripe-client-id (or (-> config-instance-url
-                                                  crud/retrieve-by-id-as-admin
-                                                  :stripe-client-id)
-                                              (env/env :stripe-client-id))]
-                (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
-            (log/error "Stripe-api-key configured but no princing implementation found!"))))
+        (if-let [pricing-instance (dyn/load-ns "sixsq.nuvla.pricing.stripe.stripe")]
+          (do
+            (pricing-impl/set-impl! pricing-instance)
+            (pricing-impl/set-api-key! stripe-api-key)
+            (alter-var-root #'*stripe-api-key* (constantly stripe-api-key))
+            (when-let [stripe-client-id (or (-> config-instance-url
+                                                crud/retrieve-by-id-as-admin
+                                                :stripe-client-id)
+                                            (env/env :stripe-client-id))]
+              (alter-var-root #'*stripe-client-id* (constantly stripe-client-id))))
+          (log/error "Stripe-api-key configured but no princing implementation found!")))
       (catch Exception e
         (log/error (str "Exception when loading Stripe api-key/client-id: " e))))))
 

@@ -4,19 +4,31 @@
 
 ### Added
 
+- Test helper - Resource creation
+- Event - New `email` category
+- Crud - Helper do-action-as-admin and edit-by-id-as-admin
+- Pricing - New list subscription added to the protocol
+- Nuvlabox - suspended state and unsuspend operation
 - Module - follow-customer-trial attribute added. This attribute will allow
   vendor to request module trial period to be same as nuvla trial period
 - Tests - optimise tests runtime
 
 ### Changed
 
+- Subscription active check is done on most of deployment and nuvlabox actions
+- Nuvlabox - Operations map and actions reuse same logic. Fix existing
+  divergence.
+- Email utils - send-email error message mismatch in some cases with the real
+  error
+- Test fixture with-existing-user deleted and replaced by a function
+- Email - New way to build html and text email
+- Configuration - Nuvla config load of stripe enhanced
 - Dependencies - Update to parent 6.7.11
 - Dependencies - Update to ring 2.0.8
-
-### Changed
-
-- Dependencies - Update to parent 6.7.10
-- Dependencies - Update to ring 2.0.7
+- Nuvlabox - call is executed only when operation is available
+- Nuvlabox status - edit is rejected when parent nuvlabox is in suspended state
+- Nuvlabox peripheral - add, edit and operations are rejected when parent
+  nuvlabox is in suspended state
 
 ## [5.24.0] - 2022-03-07
 
@@ -28,10 +40,6 @@
 
 ### Changed
 
-- Nuvlabox - status-notes for cluster and status spec accept empty strings
-- Deployment log - Resource removed and replace by resource-log
-- NuvlaBox Status - new optional attribute `components` for v2, to list all
-  NuvlaBox components in the edge device
 - Fix date convertion from utc
   string [#650](https://github.com/nuvla/api-server/issues/650)
 - Cleaned up dead code server

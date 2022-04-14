@@ -8,7 +8,7 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.email :as t]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
@@ -132,7 +132,7 @@
         (is validate-url)
 
         (let [validation-link (atom nil)]
-          (with-redefs [email-utils/extract-smtp-cfg
+          (with-redefs [email-sending/extract-smtp-cfg
                                             (fn [_] {:host "smtp@example.com"
                                                      :port 465
                                                      :ssl  true

@@ -9,7 +9,7 @@
     [ring.util.codec :as codec]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.session :as session]
     [sixsq.nuvla.server.resources.session-template :as st]
@@ -38,7 +38,7 @@
         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
-    (with-redefs [email-utils/extract-smtp-cfg
+    (with-redefs [email-sending/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
                                                :port 465
                                                :ssl  true
@@ -433,7 +433,7 @@
         session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
-    (with-redefs [email-utils/extract-smtp-cfg
+    (with-redefs [email-sending/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
                                                :port 465
                                                :ssl  true
