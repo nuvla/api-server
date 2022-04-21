@@ -163,7 +163,7 @@
   (try
     (some-> active-claim
             active-claim->customer
-            :customer-id
+            :id
             (crud/do-action-as-admin "get-subscription")
             :body)
     (catch Exception _)))
