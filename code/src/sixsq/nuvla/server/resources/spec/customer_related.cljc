@@ -75,6 +75,19 @@
     :json-schema/type "boolean"
     :json-schema/description "add a subscription on creation?"))
 
+(s/def ::balance
+  (assoc (st/spec integer?)
+         :name "balance"
+         :json-schema/type "integer"
+         :json-schema/description "Current balance, if any, being stored on the customer. If negative, the customer has credit to apply to their next invoice."
+         :json-schema/server-managed true))
+
+(s/def ::currency
+  (assoc (st/spec ::core/nonblank-string)
+         :name "currency"
+         :json-schema/type "string"
+         :json-schema/description "Three-letter ISO code for the currency the customer can be charged in for recurring billing purposes."
+         :json-schema/server-managed true))
 
 (s/def ::customer
   (assoc (st/spec (su/only-keys-maps {:req-un [::fullname
@@ -82,6 +95,8 @@
                                       :opt-un [::subscription?
                                                ::payment-method
                                                ::coupon
+                                               ::balance
+                                               ::currency
                                                ::email]}))
     :name "customer"
     :json-schema/type "map"))
