@@ -56,7 +56,7 @@ jobs:
         run: |
           export JAVA_OPTS="-Xms6g -Xmx6g"
           export ES_JAVA_OPTS="-Xms6g -Xmx6g"
-          lein cloverage --codecov
+          lein cloverage --codecov -d
           echo $?
           cat test-reports/sonar/testExecutions.xml
 
