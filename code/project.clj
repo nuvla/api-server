@@ -1,5 +1,6 @@
 (def parent-version "6.7.10")
 (def nuvla-ring-version "2.0.7")
+(def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "5.24.1-SNAPSHOT"
 
@@ -30,7 +31,7 @@
 
   :dependencies
   [[buddy/buddy-core]
-   [spootnik/kinsky "0.1.26"]
+   [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
@@ -80,7 +81,8 @@
                                            io.netty/netty-codec-http
                                            io.netty/netty-handler-proxy
                                            io.netty/netty-resolver-dns
-                                           io.netty/netty-transport-native-epoll]]]}
+                                           io.netty/netty-transport-native-epoll]]
+                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies   [[me.raynes/fs]
                                [peridot]
@@ -92,23 +94,20 @@
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
-                               [org.apache.curator/curator-test]]
+                               [org.apache.curator/curator-test]
+                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"
                                :es-sniffer-init             "no"
-                               :kafka-producer-init         "yes"
+                               :kafka-producer-init         "no"
                                :kafka-client-conf-client-id "test-nuvla-server"}
               :aot            :all
               :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
               :test-report-sonar {:output-dir "test-reports"
                                   :emit-junit-xml true}}
 
-   :dev      {:dependencies          [
-                                      ;; for kafka embedded
-                                      [org.apache.kafka/kafka-clients "2.4.0"]
-                                      [org.apache.kafka/kafka_2.12 "2.4.0"]
-                                      [org.apache.zookeeper/zookeeper]
+   :dev      {:dependencies          [[org.apache.zookeeper/zookeeper]
                                       [clj-kondo "RELEASE"]
                                       ;; for running linters
                                       [me.raynes/fs]
@@ -126,7 +125,7 @@
               :env                   {:nuvla-session-key   "test-resources/session.key"
                                       :nuvla-session-crt   "test-resources/session.crt"
                                       :es-sniffer-init     "no"
-                                      :kafka-producer-init "yes"}
+                                      :kafka-producer-init "no"}
               ;; code coverage
               :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               }})

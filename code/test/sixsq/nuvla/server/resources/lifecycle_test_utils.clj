@@ -27,7 +27,7 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.kafka :as ka]
-    [sixsq.nuvla.server.util.kafka-embeded :as ke]
+    [kinsky.embedded-kraft :as ke]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
   (:import
@@ -505,20 +505,17 @@
 
 (def kafka-host "127.0.0.1")
 (def kafka-port 9093)
-(def kafka-zk-port 22183)
 
 
 (defn with-test-kafka-fixture
   [f]
-  (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
-        k-dir (ke/create-tmp-dir "kafka-log-dir")]
+  (let [log-dir (ke/create-tmp-dir "kraft-combined-logs")]
     (let [kafka (ke/start-embedded-kafka
-                     {::ke/host               kafka-host
-                      ::ke/kafka-port         kafka-port
-                      ::ke/zk-port            kafka-zk-port
-                      ::ke/zookeeper-data-dir (str z-dir)
-                      ::ke/kafka-log-dir      (str k-dir)
-                      ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
+                     {::ke/host          kafka-host
+                      ::ke/port          kafka-port
+                      ::ke/log-dirs      (str log-dir)
+                      ::ke/server-config {"auto.create.topics.enable" "true"
+                                          "transaction.timeout.ms" "5000"}})]
       (try
         (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
         (f)
@@ -527,8 +524,7 @@
         (finally
           (ka/close-producer!)
           (.close kafka)
-          (ke/delete-dir z-dir)
-          (ke/delete-dir k-dir))))))
+          (ke/delete-dir log-dir))))))
 
 
 (def ^:private resources-initialised (atom false))
