@@ -34,6 +34,9 @@
 (defn get-customer-subscriptions [customer]
   (protocol/get-customer-subscriptions *impl* customer))
 
+(defn list-subscriptions [params]
+  (protocol/list-subscriptions *impl* params))
+
 (defn create-subscription [params]
   (protocol/create-subscription *impl* params))
 

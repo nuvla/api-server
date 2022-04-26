@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
@@ -194,5 +195,6 @@
   [request]
   (let [active-claim (auth/current-active-claim request)]
     (when (and config-nuvla/*stripe-api-key*
+               (not (a/is-admin? (auth/current-authentication request)))
                (not (customer-has-active-subscription? active-claim)))
       (throw (r/ex-response "An active subscription is required!" 402)))))

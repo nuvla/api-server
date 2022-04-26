@@ -11,7 +11,7 @@
     [sixsq.nuvla.server.middleware.authn-info
      :refer [authn-cookie authn-info-header wrap-authn-info]]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.email.utils :as email-utils]
+    [sixsq.nuvla.server.resources.email.sending :as email-sending]
     [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
@@ -38,7 +38,7 @@
                                     :username username
                                     :email    email}}]
 
-    (with-redefs [email-utils/extract-smtp-cfg
+    (with-redefs [email-sending/extract-smtp-cfg
                                       (fn [_] {:host "smtp@example.com"
                                                :port 465
                                                :ssl  true

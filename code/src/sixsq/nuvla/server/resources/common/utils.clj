@@ -8,6 +8,7 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
+    [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest SecureRandom)
@@ -48,6 +49,11 @@
 ;;
 ;; resource ID utilities
 ;;
+
+(defn random-uuid
+  "Provides the string representation of a pseudo-random UUID."
+  []
+  (str (UUID/randomUUID)))
 
 
 (defn from-data-uuid
@@ -94,6 +100,11 @@
    document id will be nil. For any invalid argument, nil is returned."
   [resource-id]
   (second (parse-id resource-id)))
+
+
+(defn uuid->short-uuid
+  [uuid]
+  (-> uuid (str/split #"-") first))
 
 
 (defn md5 [^String s]
@@ -279,3 +290,27 @@
         current-without-selected (apply dissoc current dissoc-keys)
         editable-body            (select-keys body (-> body keys (a/editable-keys rights)))]
     (merge current-without-selected editable-body)))
+
+
+(defn is-state-within?
+  [states resource]
+  (contains? (set states) (:state resource)))
+
+
+(def is-state-besides? (complement is-state-within?))
+
+
+(defn is-state?
+  [state resource]
+  (= (:state resource) state))
+
+(def is-not-in-state? (complement is-state?))
+
+
+(defn throw-can-not-do-action
+  [{:keys [id] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response
+             (format "operation '%s' not allowed on " action id)
+             409 id))))

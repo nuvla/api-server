@@ -55,3 +55,7 @@
                      nil 47
                      {:resource-name "resource", :uuid "uuid"} "resource/uuid"
                      {:resource-name "cloud-entry-point"} "cloud-entry-point"))
+
+
+(deftest uuid->short-uuid
+  (is (= "39d6acef" (u/uuid->short-uuid "39d6acef-4693-46bc-a04f-85cd3cae79e"))))
