@@ -25,16 +25,16 @@
 
 
 (deftest check-customer
-  (let [address      {:street-address "Av. quelque chose"
-                      :city           "Meyrin"
-                      :country        "CH"
-                      :postal-code    "1217"}
-        customer     {:fullname       "toto"
-                      :address        address
-                      :subscription?  true
-                      :coupon         "some-coupon-code"
-                      :payment-method "pm_something"
-                      :email          "a@example.com"}]
+  (let [address  {:street-address "Av. quelque chose"
+                  :city           "Meyrin"
+                  :country        "CH"
+                  :postal-code    "1217"}
+        customer {:fullname       "toto"
+                  :address        address
+                  :subscription?  true
+                  :coupon         "some-coupon-code"
+                  :payment-method "pm_something"
+                  :email          "a@example.com"}]
 
     (stu/is-valid ::t/customer customer)
 
@@ -46,6 +46,6 @@
     (doseq [attr #{:fullname :address}]
       (stu/is-invalid ::t/customer (dissoc customer attr)))
 
-    ;optional
-    (doseq [attr #{:subscription :payment-method :coupon :email :balance :currency}]
+    ; optional
+    (doseq [attr #{:subscription :payment-method :coupon :email}]
       (stu/is-valid ::t/customer (dissoc customer attr)))))
