@@ -4,7 +4,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.callback.email-utils :as callback-email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
@@ -164,9 +163,9 @@
   (try
     (some-> active-claim
             active-claim->customer
-            :subscription-id
-            pricing-impl/retrieve-subscription
-            pricing-impl/subscription->map)
+            :id
+            (crud/do-action-as-admin "get-subscription")
+            :body)
     (catch Exception _)))
 
 
