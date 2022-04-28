@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [are deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -22,7 +22,7 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -1721,13 +1721,13 @@
                                   (ltu/is-operation-present :unsuspend)
                                   (ltu/is-operation-present :decommission)
                                   (ltu/get-op-url :unsuspend))]
-            ;; owner will not able to unsuspend without an active subscription
-            (with-redefs [user-utils/throw-user-hasnt-active-subscription (fn [_req]
-                                                                            (throw (r/ex-response "An active subscription is required!" 402)))]
-              (-> session-owner
-                  (request unsuspend-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 402)))
+            (testing "owner will not able to unsuspend when payment is required"
+                     (with-redefs [utils/throw-when-payment-required (fn [_req]
+                                                               (throw (r/ex-response "" 402)))]
+               (-> session-owner
+                   (request unsuspend-url)
+                   (ltu/body->edn)
+                   (ltu/is-status 402))))
 
             ;; owner will be able to unsuspend when no exception thrown
             (-> session-owner

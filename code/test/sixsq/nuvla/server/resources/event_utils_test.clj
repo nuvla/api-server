@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.event-utils-test
   (:require
     [clojure.test :refer [deftest is use-fixtures]]
-    [sixsq.nuvla.server.resources.event.test-utils :as tu]
     [sixsq.nuvla.server.resources.event.utils :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.time :as time]))

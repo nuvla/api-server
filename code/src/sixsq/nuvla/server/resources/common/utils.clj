@@ -312,5 +312,5 @@
   (if (pred resource)
     resource
     (throw (r/ex-response
-             (format "operation '%s' not allowed on " action id)
+             (format "operation '%s' not allowed on %s" action id)
              409 id))))

@@ -46,8 +46,8 @@
       (Files/delete dir)
       FileVisitResult/CONTINUE)))
 
-(defn ^Path create-tmp-dir
-  [prefix]
+(defn create-tmp-dir
+  ^Path [prefix]
   (Files/createTempDirectory
     (Paths/get (System/getProperty "java.io.tmpdir")
                (make-array String 0))

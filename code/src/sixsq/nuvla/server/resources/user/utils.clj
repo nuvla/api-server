@@ -1,12 +1,9 @@
 (ns sixsq.nuvla.server.resources.user.utils
   (:require
     [clojure.string :as str]
-    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.callback.email-utils :as callback-email-utils]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-hashed-password :as hashed-password]
     [sixsq.nuvla.server.resources.credential-template :as credential-template]
@@ -18,8 +15,6 @@
 
 
 (def ^:const resource-url "user")
-
-(def ^:const customer-resource-url "customer")
 
 
 (defn check-password-constraints
@@ -96,7 +91,7 @@
 
 (defn create-customer
   [user-id customer]
-  (let [request {:params      {:resource-name customer-resource-url}
+  (let [request {:params      {:resource-name "customer"}
                  :body        (assoc customer :parent user-id)
                  :nuvla/authn auth/internal-identity}
         {{:keys [status resource-id] :as body} :body} (crud/add request)]
@@ -145,55 +140,3 @@
 
   (when customer
     (create-customer user-id customer)))
-
-
-(defn active-claim->customer
-  [active-claim]
-  (some-> customer-resource-url
-          (crud/query-as-admin
-            {:cimi-params
-             {:filter (parser/parse-cimi-filter
-                        (format "parent='%s'" active-claim))}})
-          second
-          first))
-
-
-(defn active-claim->subscription-map
-  [active-claim]
-  (try
-    (some-> active-claim
-            active-claim->customer
-            :id
-            (crud/do-action-as-admin "get-subscription")
-            :body)
-    (catch Exception _)))
-
-
-(defn customer-has-subscription-in-states?
-  [active-claim pred-fn]
-  (boolean
-    (try
-      (some-> active-claim
-              active-claim->subscription-map
-              :status
-              (pred-fn))
-      (catch Exception _))))
-
-
-(defn customer-has-active-subscription?
-  [active-claim]
-  (customer-has-subscription-in-states? active-claim #{"active" "trialing" "past_due"}))
-
-
-(defn customer-has-trialing-subscription?
-  [active-claim]
-  (customer-has-subscription-in-states? active-claim #{"trialing"}))
-
-
-(defn throw-user-hasnt-active-subscription
-  [request]
-  (let [active-claim (auth/current-active-claim request)]
-    (when (and config-nuvla/*stripe-api-key*
-               (not (a/is-admin? (auth/current-authentication request)))
-               (not (customer-has-active-subscription? active-claim)))
-      (throw (r/ex-response "An active subscription is required!" 402)))))

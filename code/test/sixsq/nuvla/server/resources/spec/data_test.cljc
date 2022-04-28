@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.data-test
   (:require
-    [clojure.test :refer :all]
+    [clojure.test :refer [deftest testing]]
     [sixsq.nuvla.server.resources.spec.data :as t]
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 

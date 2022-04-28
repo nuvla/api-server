@@ -18,7 +18,6 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -130,7 +129,6 @@ a container orchestration engine.
 (defn create-deployment
   [{:keys [base-uri] {:keys [owner]} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (user-utils/throw-user-hasnt-active-subscription request)
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (a/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
@@ -141,7 +139,7 @@ a container orchestration engine.
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
                                    :owner dep-owner)
-                            (utils/throw-price-need-payment-method request))
+                            (utils/throw-when-payment-required request))
         ;; FIXME: Correct the value passed to the python API.
 
         create-response (add-impl (assoc request :body deployment))
@@ -304,8 +302,8 @@ a container orchestration engine.
     (let [id             (str resource-type "/" uuid)
           deployment     (-> (crud/retrieve-by-id-as-admin id)
                              (utils/throw-can-not-do-action utils/can-start? "start")
+                             (utils/throw-when-payment-required request)
                              (utils/throw-can-not-access-registries-creds request))
-          _              (user-utils/throw-user-hasnt-active-subscription request)
           stopped?       (= (:state deployment) "STOPPED")
           price          (get-in deployment [:module :price])
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
@@ -350,11 +348,11 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
   (try
-    (user-utils/throw-user-hasnt-active-subscription request)
     (-> (str resource-type "/" uuid)
         (crud/retrieve-by-id-as-admin)
         (a/throw-cannot-manage request)
         (utils/throw-can-not-do-action utils/can-create-log? "create-log")
+        (utils/throw-when-payment-required request)
         (utils/create-log request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -377,7 +375,6 @@ a container orchestration engine.
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-view-data request))
-      (user-utils/throw-user-hasnt-active-subscription request)
       (create-deployment (assoc-in request [:body :deployment :href] id)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -395,7 +392,8 @@ a container orchestration engine.
                               (crud/retrieve-by-id-as-admin)
                               (a/throw-cannot-manage request)
                               (utils/throw-can-not-do-action
-                                utils/can-update? "update_deployment"))
+                                utils/can-update? "update_deployment")
+                              (utils/throw-when-payment-required request))
           current-subs-id (when config-nuvla/*stripe-api-key* (:subscription-id current))
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
@@ -420,7 +418,6 @@ a container orchestration engine.
 
 (defmethod crud/do-action [resource-type "update"]
   [request]
-  (user-utils/throw-user-hasnt-active-subscription request)
   (update-deployment-impl request))
 
 
@@ -486,10 +483,10 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "fetch-module"]
   [{{uuid :uuid} :params body :body :as request}]
   (let [id          (str resource-type "/" uuid)
-        deployment  (crud/retrieve-by-id-as-admin id)
+        deployment  (-> (crud/retrieve-by-id-as-admin id)
+                        (a/throw-cannot-edit request)
+                        (utils/throw-when-payment-required request))
         module-href (:module-href body)]
-    (a/throw-cannot-edit deployment request)
-    (user-utils/throw-user-hasnt-active-subscription request)
     (when (or (not (string? module-href))
               (str/blank? module-href)
               (not (str/starts-with? module-href (-> deployment

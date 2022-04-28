@@ -471,61 +471,60 @@
         ))))
 
 (deftest get-peers-test
-  (let [app           (ltu/ring-app)
-        session-json  (content-type (session app) "application/json")
-        session-user  (header session-json authn-info-header "user group/nuvla-user")
-        session-anon  (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
+  (let [app                (ltu/ring-app)
+        session-json       (content-type (session app) "application/json")
+        session-user       (header session-json authn-info-header "user group/nuvla-user")
+        session-anon       (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin      (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        href               (str st/resource-type "/password")
+        username           "user/jack"
+        plaintext-password "JackJack-0"
 
-    (let [href               (str st/resource-type "/password")
-          username           "user/jack"
-          plaintext-password "JackJack-0"
+        valid-create       {:template {:href     href
+                                       :username username
+                                       :password plaintext-password}}]
+    (create-user session-admin
+                 :username username
+                 :password plaintext-password
+                 :activated? true
+                 :email "jack@example.org")
 
-          valid-create       {:template {:href     href
-                                         :username username
-                                         :password plaintext-password}}]
-      (create-user session-admin
-                   :username username
-                   :password plaintext-password
-                   :activated? true
-                   :email "jack@example.org")
-
-      ; anonymous create must succeed
-      (let [resp    (-> session-anon
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create))
-                        (ltu/body->edn)
-                        (ltu/is-set-cookie)
-                        (ltu/is-status 201))
-            id      (ltu/body-resource-id resp)
-            uri     (ltu/location resp)
-            abs-uri (str p/service-context uri)]
+    ; anonymous create must succeed
+    (let [resp    (-> session-anon
+                      (request base-uri
+                               :request-method :post
+                               :body (json/write-str valid-create))
+                      (ltu/body->edn)
+                      (ltu/is-set-cookie)
+                      (ltu/is-status 201))
+          id      (ltu/body-resource-id resp)
+          uri     (ltu/location resp)
+          abs-uri (str p/service-context uri)]
 
 
-        ; user should be able to see session with session role
-        (-> (session app)
-            (header authn-info-header (str "user/user group/nuvla-user " id))
-            (request abs-uri)
+      ; user should be able to see session with session role
+      (-> (session app)
+          (header authn-info-header (str "user/user group/nuvla-user " id))
+          (request abs-uri)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-id id)
+          (ltu/is-operation-present :delete)
+          (ltu/is-operation-absent :edit)
+          (ltu/is-operation-absent :switch-group)
+          (ltu/is-operation-present :get-peers))
+
+      ; check contents of session
+      (let [get-peers-url (-> session-user
+                              (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                              (request abs-uri)
+                              (ltu/body->edn)
+                              (ltu/get-op-url :get-peers))]
+        (-> session-user
+            (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+            (request get-peers-url)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-id id)
-            (ltu/is-operation-present :delete)
-            (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group)
-            (ltu/is-operation-present :get-peers))
-
-        ; check contents of session
-        (let [get-peers-url (-> session-user
-                                (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                (request abs-uri)
-                                (ltu/body->edn)
-                                (ltu/get-op-url :get-peers))]
-          (-> session-user
-              (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-              (request get-peers-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/body)
-              (= {})
-              (is "Get peers body should be empty")))))))
+            (ltu/body)
+            (= {})
+            (is "Get peers body should be empty"))))))
