@@ -19,10 +19,10 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.time :as time]
+    [sixsq.nuvla.pricing.payment :as payment]))
 
 
 (defn generate-api-key-secret
@@ -232,24 +232,6 @@
       resource)))
 
 
-(defn throw-price-need-payment-method
-  [{{:keys [price]} :module :as resource} request]
-  (let [follow-trial? (boolean (:follow-customer-trial price))
-        active-claim  (auth/current-active-claim request)]
-    (if (or
-          (nil? config-nuvla/*stripe-api-key*)
-          (nil? price)
-          (or
-            (and follow-trial?
-                 (user-utils/customer-has-trialing-subscription? active-claim))
-            (-> request
-                auth/current-active-claim
-                user-utils/active-claim->customer
-                has-defined-payment-methods?)))
-      resource
-      (throw (r/ex-response "Payment method is required!" 402)))))
-
-
 (defn remove-delete
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
@@ -258,9 +240,9 @@
 (defn create-stripe-subscription
   [active-claim {:keys [account-id price-id follow-customer-trial] :as _price} coupon]
   (let [customer-trial-end (when (and follow-customer-trial
-                                      (user-utils/customer-has-trialing-subscription? active-claim))
+                                      (= (:status (payment/active-claim->subscription active-claim)) "trialing"))
                              (some-> active-claim
-                                     user-utils/active-claim->subscription-map
+                                     payment/active-claim->subscription
                                      :trial-end
                                      time/date-from-str))
         one-day-trial      (time/from-now 24 :hours)
@@ -271,7 +253,7 @@
                              one-day-trial)]
     (pricing-impl/create-subscription
       {"customer"                (some-> active-claim
-                                         user-utils/active-claim->customer
+                                         payment/active-claim->customer
                                          :customer-id)
        "items"                   [{"price" price-id}]
        "application_fee_percent" 20
@@ -367,3 +349,21 @@
             :subscription-id
             pricing-impl/retrieve-subscription
             (pricing-impl/cancel-subscription {"invoice_now" true}))))
+
+(defn throw-when-payment-required
+  [{{:keys [price]} :module :as resource} request]
+  (if (or (nil? config-nuvla/*stripe-api-key*)
+          (a/is-admin? (auth/current-authentication request))
+          (let [active-claim (auth/current-active-claim request)
+                subs-status  (:status (payment/active-claim->subscription active-claim))
+                s-customer   (payment/active-claim->s-customer active-claim)
+                follow-trial? (boolean (:follow-customer-trial price))
+                can-pay? (payment/can-pay? s-customer)]
+            (or (and (#{"active" "past_due"} subs-status) can-pay?)
+                (and (= subs-status "trialing")
+                     (or (nil? price)
+                         follow-trial?
+                         can-pay?)))))
+    resource
+    (payment/throw-payment-required)))
+

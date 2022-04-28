@@ -25,7 +25,6 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -205,7 +204,7 @@ particular NuvlaBox release.
       (let [vpn-service (vpn-utils/get-service vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
-    (user-utils/throw-user-hasnt-active-subscription request)
+    (utils/throw-when-payment-required request)
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
                                      (auth/current-active-claim request))
@@ -974,7 +973,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (user-utils/throw-user-hasnt-active-subscription request)
+      (utils/throw-when-payment-required request)
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (a/throw-cannot-edit request)
