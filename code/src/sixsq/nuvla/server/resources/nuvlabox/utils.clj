@@ -1,15 +1,15 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
     [clojure.string :as str]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.pricing.payment :as payment]
-    [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const state-new "NEW")
 (def ^:const state-activated "ACTIVATED")

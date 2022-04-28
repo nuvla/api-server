@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.pricing.payment-test
   (:require
-    [clojure.test :refer [deftest is testing]]
+    [clojure.test :refer [deftest is]]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as t]
     [sixsq.nuvla.server.resources.common.crud :as crud]))
@@ -21,16 +21,16 @@
   (with-redefs [pricing-impl/customer->map (constantly {})]
     (is (false? (t/has-credit? {})))))
 
-(defn can-pay?
-  [s-customer]
-  (or
-    (has-defined-payment-methods? s-customer)
-    (has-credit? s-customer)))
-
 (deftest can-pay?
   (with-redefs [t/has-defined-payment-methods? (constantly true)
                 t/has-credit?                  (constantly false)]
-    (is (true? (t/can-pay? {})))))
+    (is (true? (t/can-pay? {}))))
+  (with-redefs [t/has-defined-payment-methods? (constantly false)
+                t/has-credit?                  (constantly true)]
+    (is (true? (t/can-pay? {}))))
+  (with-redefs [t/has-defined-payment-methods? (constantly false)
+                t/has-credit?                  (constantly false)]
+    (is (false? (t/can-pay? {})))))
 
 (deftest active-claim->customer
   (with-redefs [crud/query-as-admin (constantly [nil [:a]])]

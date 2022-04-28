@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.middleware.gzip-test
   (:require
-    [clojure.string :as str]
     [clojure.test :refer [deftest is]]
     [peridot.request :as pr]
     [sixsq.nuvla.server.middleware.gzip :as t]))

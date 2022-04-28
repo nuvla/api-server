@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.resources.deployment.utils-test
   (:require
     [clojure.test :refer [deftest is testing]]
-    [sixsq.nuvla.server.resources.deployment.utils :as t]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.auth.acl-resource :as a])
+    [sixsq.nuvla.server.resources.deployment.utils :as t])
   (:import (clojure.lang ExceptionInfo)))
 
 

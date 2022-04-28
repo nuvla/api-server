@@ -66,7 +66,7 @@ NuvlaBox Engine software
 
 
 (defmethod crud/add resource-type
-  [{{:keys [parent] :as body} :body :as request}]
+  [{{:keys [parent]} :body :as request}]
   (some-> parent
           (db/retrieve request)
           (a/throw-cannot-edit request))
@@ -115,23 +115,22 @@ NuvlaBox Engine software
 
 
 (defn save-output
-  [{:keys [id output] :as nuvlabox-playbook} new-output]
+  [{:keys [id output] :as _nuvlabox-playbook} new-output]
   (if new-output
-    (do
-      (try
-        (let [concat-output (str new-output "\n\n" output)
-              request       {:params      {:uuid          (u/id->uuid id)
-                                           :resource-name resource-type}
-                             :body        {:output concat-output}
-                             :nuvla/authn auth/internal-identity}
-              {status :status :as _resp} (crud/edit request)]
-          (if (= 200 status)
-            (log/info "the output from the nuvlabox playbook " id " has been updated")
-            (let [msg (str "cannot update nuvlabox playbook output for " id)]
-              (throw (ex-info msg (r/map-response msg 400 "")))))
-          (r/map-response "playbook output saved successfully" 200))
-        (catch Exception e
-          (or (ex-data e) (throw e)))))
+    (try
+      (let [concat-output (str new-output "\n\n" output)
+            request       {:params      {:uuid          (u/id->uuid id)
+                                         :resource-name resource-type}
+                           :body        {:output concat-output}
+                           :nuvla/authn auth/internal-identity}
+            {status :status :as _resp} (crud/edit request)]
+        (if (= 200 status)
+          (log/info "the output from the nuvlabox playbook " id " has been updated")
+          (let [msg (str "cannot update nuvlabox playbook output for " id)]
+            (throw (ex-info msg (r/map-response msg 400 "")))))
+        (r/map-response "playbook output saved successfully" 200))
+      (catch Exception e
+        (or (ex-data e) (throw e))))
     (logu/log-and-throw-400 "The provided playbook execution output is empty")))
 
 

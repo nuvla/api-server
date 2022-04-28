@@ -7,8 +7,7 @@
 
 (defn set-impl!
   [impl]
-  (let []
-    (alter-var-root #'*impl* (constantly impl))))
+  (alter-var-root #'*impl* (constantly impl)))
 
 (defn set-api-key! [api-key]
   (protocol/set-api-key! *impl* api-key))

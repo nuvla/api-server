@@ -511,24 +511,24 @@
 (defn with-test-kafka-fixture
   [f]
   (let [z-dir (ke/create-tmp-dir "zookeeper-data-dir")
-        k-dir (ke/create-tmp-dir "kafka-log-dir")]
-    (let [kafka (ke/start-embedded-kafka
-                     {::ke/host               kafka-host
-                      ::ke/kafka-port         kafka-port
-                      ::ke/zk-port            kafka-zk-port
-                      ::ke/zookeeper-data-dir (str z-dir)
-                      ::ke/kafka-log-dir      (str k-dir)
-                      ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
-      (try
-        (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
-        (f)
-        (catch Throwable t
-          (throw t))
-        (finally
-          (ka/close-producer!)
-          (.close kafka)
-          (ke/delete-dir z-dir)
-          (ke/delete-dir k-dir))))))
+        k-dir (ke/create-tmp-dir "kafka-log-dir")
+        kafka (ke/start-embedded-kafka
+                {::ke/host               kafka-host
+                 ::ke/kafka-port         kafka-port
+                 ::ke/zk-port            kafka-zk-port
+                 ::ke/zookeeper-data-dir (str z-dir)
+                 ::ke/kafka-log-dir      (str k-dir)
+                 ::ke/broker-config      {"auto.create.topics.enable" "true"}})]
+    (try
+      (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
+      (f)
+      (catch Throwable t
+        (throw t))
+      (finally
+        (ka/close-producer!)
+        (.close kafka)
+        (ke/delete-dir z-dir)
+        (ke/delete-dir k-dir)))))
 
 
 (def ^:private resources-initialised (atom false))

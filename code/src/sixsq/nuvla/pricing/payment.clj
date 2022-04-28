@@ -1,8 +1,8 @@
 (ns sixsq.nuvla.pricing.payment
-  (:require [sixsq.nuvla.pricing.impl :as pricing-impl]
-            [sixsq.nuvla.server.util.response :as r]
+  (:require [sixsq.nuvla.db.filter.parser :as parser]
+            [sixsq.nuvla.pricing.impl :as pricing-impl]
             [sixsq.nuvla.server.resources.common.crud :as crud]
-            [sixsq.nuvla.db.filter.parser :as parser]))
+            [sixsq.nuvla.server.util.response :as r]))
 
 (defn has-defined-payment-methods?
   [s-customer]
@@ -37,10 +37,10 @@
 
 (defn active-claim->s-customer
   [active-claim]
-  (-> active-claim
-      active-claim->customer
-     :customer-id
-     pricing-impl/retrieve-customer))
+  (some-> active-claim
+          active-claim->customer
+          :customer-id
+          pricing-impl/retrieve-customer))
 
 (defn active-claim->subscription
   [active-claim]

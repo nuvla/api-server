@@ -7,7 +7,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
-    [sixsq.nuvla.pricing.payment :refer [has-defined-payment-methods?]]
+    [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -21,8 +21,7 @@
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]
-    [sixsq.nuvla.pricing.payment :as payment]))
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (defn generate-api-key-secret

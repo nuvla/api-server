@@ -20,7 +20,6 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -929,7 +928,7 @@ particular NuvlaBox release.
         components    (:components body)
         nb-view-acl   (:view-acl acl)
         nb-delete-acl (:delete acl)
-        log-acl       (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
+        log-acl       (cond-> (utils/set-acl-nuvlabox-view-only acl {:owners [id]})
                               (not-empty nb-view-acl) (assoc :manage nb-view-acl)
                               (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))]
     (resource-log/create-log id components log-acl opts)))
@@ -937,12 +936,11 @@ particular NuvlaBox release.
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-create-log? "create-log")
-          (create-log request)))))
+  (let [id (str resource-type "/" uuid)]
+    (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-create-log? "create-log")
+        (create-log request))))
 
 ;;
 ;; Allows for the creation of a NuvlaBox API key on-demand

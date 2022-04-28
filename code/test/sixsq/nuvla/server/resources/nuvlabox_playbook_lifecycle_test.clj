@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-playbook-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.pprint :refer [pprint]]
     [clojure.test :refer [deftest use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -58,7 +57,6 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
           session-user  (header session authn-info-header (str user-beta " " user-beta " group/nuvla-user group/nuvla-anon"))
           session-owner (header session authn-info-header (str nuvlabox-owner " " nuvlabox-owner " group/nuvla-user group/nuvla-anon"))
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")

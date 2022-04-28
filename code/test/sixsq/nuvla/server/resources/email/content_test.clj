@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.email.content-test
   (:require
-    [clojure.java.io :refer [reader writer]]
+    [clojure.java.io :refer [writer]]
     [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.server.resources.email.content :as t]
     [sixsq.nuvla.server.resources.email.sending :as sending]))

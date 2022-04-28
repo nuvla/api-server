@@ -45,7 +45,7 @@
                           :method :head})
         :status
         (= 200))
-    (catch Exception e
+    (catch Exception _
       false)))
 
 
