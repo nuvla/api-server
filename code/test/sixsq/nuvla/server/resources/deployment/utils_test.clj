@@ -17,7 +17,7 @@
     (with-redefs [config-nuvla/*stripe-api-key* "123"
                   a/is-admin?                   (constantly true)]
       (is (= (t/throw-when-payment-required {} {}) {}))))
-  (testing "customer active and has payment"
+  (testing "customer active and can pay"
     (with-redefs [config-nuvla/*stripe-api-key*      "123"
                   a/is-admin?                        (constantly false)
                   payment/active-claim->s-customer   (constantly nil)
@@ -37,37 +37,43 @@
                   payment/active-claim->s-customer   (constantly nil)
                   payment/active-claim->subscription (constantly {:status "past_due"})
                   payment/can-pay?                   (constantly false)]
-      (is (thrown-with-msg? ExceptionInfo
-                            #"Valid subscription and payment method are needed!"
-                            (t/throw-when-payment-required {} {})))))
-  (testing "customer trialing with module price set and follow trial"
+      (is (= {} (t/throw-when-payment-required {} {})))))
+  (testing "customer active and price set but can't pay"
     (with-redefs [config-nuvla/*stripe-api-key*      "123"
                   a/is-admin?                        (constantly false)
                   payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "trialing"})
+                  payment/active-claim->subscription (constantly {:status "active"})
                   payment/can-pay?                   (constantly false)]
-      (is (= (t/throw-when-payment-required {:module {:price {:price-id              "price_id"
-                                                              :follow-customer-trial true}}} {})
-             {:module {:price {:price-id              "price_id"
-                               :follow-customer-trial true}}}))))
-  (testing "customer trialing with module price set and follow trial is not set"
-    (with-redefs [config-nuvla/*stripe-api-key*      "123"
-                  a/is-admin?                        (constantly false)
-                  payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "trialing"})
-                  payment/can-pay?                   (constantly false)]
-      (is (thrown-with-msg? ExceptionInfo
-                            #"Valid subscription and payment method are needed!"
-                            (t/throw-when-payment-required {:module {:price {:price-id "price_id"}}} {})))))
-  (testing "customer trialing with module price set and follow trial is not set but can pay"
-    (with-redefs [config-nuvla/*stripe-api-key*      "123"
-                  a/is-admin?                        (constantly false)
-                  payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "trialing"})
-                  payment/can-pay?                   (constantly true)]
-      (is (= (t/throw-when-payment-required {:module {:price {:price-id              "price_id"
-                                                              :follow-customer-trial false}}} {})
-             {:module {:price {:price-id              "price_id"
-                               :follow-customer-trial false}}}))))
+      (is (= {} (t/throw-when-payment-required {} {})))))
+  (let [billable-deployment-follow     {:module {:price {:price-id              "price_id"
+                                                         :follow-customer-trial true}}}
+        billable-deployment-not-follow {:module {:price {:price-id              "price_id"
+                                                         :follow-customer-trial false}}}]
+    (testing "customer trialing with module price set and follow trial"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/is-admin?                        (constantly false)
+                    payment/active-claim->s-customer   (constantly nil)
+                    payment/active-claim->subscription (constantly {:status "trialing"})
+                    payment/can-pay?                   (constantly false)]
+        (is (= (t/throw-when-payment-required billable-deployment-follow {})
+               billable-deployment-follow))))
+    (testing "customer trialing with module price set and follow trial is not set"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/is-admin?                        (constantly false)
+                    payment/active-claim->s-customer   (constantly nil)
+                    payment/active-claim->subscription (constantly {:status "trialing"})
+                    payment/can-pay?                   (constantly false)]
+        (is (thrown-with-msg? ExceptionInfo
+                              #"Valid subscription and payment method are needed!"
+                              (t/throw-when-payment-required billable-deployment-not-follow {})))))
 
+    (testing "customer trialing with module price set and follow trial is not set but can pay"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/is-admin?                        (constantly false)
+                    payment/active-claim->s-customer   (constantly nil)
+                    payment/active-claim->subscription (constantly {:status "trialing"})
+                    payment/can-pay?                   (constantly true)]
+        (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
+               billable-deployment-not-follow))))
+    )
   )

@@ -4,8 +4,7 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as t])
-  (:import (clojure.lang ExceptionInfo)))
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as t]))
 
 
 (deftest check-short-nb-id
@@ -28,36 +27,18 @@
     (with-redefs [config-nuvla/*stripe-api-key* "123"
                   a/is-admin?                   (constantly true)]
       (is (= (t/throw-when-payment-required {}) {}))))
-  (testing "customer active and has payment"
+  (testing "customer is active"
     (with-redefs [config-nuvla/*stripe-api-key*      "123"
                   a/is-admin?                        (constantly false)
-                  payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "active"})
-                  payment/can-pay?                   (constantly true)]
+                  payment/active-claim->subscription (constantly {:status "active"})]
       (is (= (t/throw-when-payment-required {}) {}))))
   (testing "customer is trialing"
     (with-redefs [config-nuvla/*stripe-api-key*      "123"
                   a/is-admin?                        (constantly false)
-                  payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "trialing"})
-                  payment/can-pay?                   (constantly false)]
+                  payment/active-claim->subscription (constantly {:status "trialing"})]
       (is (= (t/throw-when-payment-required {}) {}))))
-  (testing "customer past_due and has not payment"
+  (testing "customer past_due"
     (with-redefs [config-nuvla/*stripe-api-key*      "123"
                   a/is-admin?                        (constantly false)
-                  payment/active-claim->s-customer   (constantly nil)
-                  payment/active-claim->subscription (constantly {:status "past_due"})
-                  payment/can-pay?                   (constantly false)]
-      (is (thrown-with-msg? ExceptionInfo
-                            #"Valid subscription and payment method are needed!"
-                            (t/throw-when-payment-required {}))))))
-;; Nuvlabox case applied for actions: Nuvlabox [add | unsuspend]
-;; authorize WHEN
-;;  stripe is disabled
-;;      OR
-;;  admin user is doing the action
-;;      OR
-;;  customer is in state [active | past_due] AND (has payment-method OR credit)
-;;      OR
-;;  customer is in state [trialing]
-;; Refuse all other cases
+                  payment/active-claim->subscription (constantly {:status "past_due"})]
+      (is (= (t/throw-when-payment-required {}) {})))))

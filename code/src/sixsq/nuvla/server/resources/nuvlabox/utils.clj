@@ -291,10 +291,8 @@
   (if (or (nil? config-nuvla/*stripe-api-key*)
           (a/is-admin? (auth/current-authentication request))
           (let [active-claim (auth/current-active-claim request)
-                subs-status  (:status (payment/active-claim->subscription active-claim))
-                s-customer   (payment/active-claim->s-customer active-claim)]
-            (or (and (#{"active" "past_due"} subs-status)
-                     (payment/can-pay? s-customer))
-                (= subs-status "trialing"))))
+                subs-status  (:status (payment/active-claim->subscription
+                                        active-claim))]
+            (#{"active" "past_due" "trialing"} subs-status)))
     request
     (payment/throw-payment-required)))

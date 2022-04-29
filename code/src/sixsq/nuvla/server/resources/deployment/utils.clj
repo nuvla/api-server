@@ -353,16 +353,15 @@
   [{{:keys [price]} :module :as resource} request]
   (if (or (nil? config-nuvla/*stripe-api-key*)
           (a/is-admin? (auth/current-authentication request))
-          (let [active-claim (auth/current-active-claim request)
-                subs-status  (:status (payment/active-claim->subscription active-claim))
-                s-customer   (payment/active-claim->s-customer active-claim)
-                follow-trial? (boolean (:follow-customer-trial price))
-                can-pay? (payment/can-pay? s-customer)]
-            (or (and (#{"active" "past_due"} subs-status) can-pay?)
-                (and (= subs-status "trialing")
-                     (or (nil? price)
-                         follow-trial?
-                         can-pay?)))))
+          (let [active-claim  (auth/current-active-claim request)
+                subs-status   (:status (payment/active-claim->subscription
+                                         active-claim))
+                follow-trial? (boolean (:follow-customer-trial price))]
+            (or
+              (and (#{"active" "past_due" "trialing"} subs-status) (nil? price))
+              (and (= subs-status "trialing")
+                   (or follow-trial? (-> active-claim
+                                         (payment/active-claim->s-customer)
+                                         (payment/can-pay?)))))))
     resource
     (payment/throw-payment-required)))
-
