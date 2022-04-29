@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [5.25.0] - 2022-04-29
+
 ### Added
 
 - Test helper - Resource creation
