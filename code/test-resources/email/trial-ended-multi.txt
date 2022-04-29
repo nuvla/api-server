@@ -1,6 +1,7 @@
 Your Nuvla trial ended
 
-Your Nuvla trial expired today. If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page. Your frozen resources will be deleted after 30 days.
+Your Nuvla trial expired today. However, you have not defined a payment method. This is why we have frozen the following resources:
+
 
 
 
@@ -14,17 +15,16 @@ NuvlaBox: My first NuvlaBox (71467019) - url: https://nuvla.io/ui/edge/71467019-
 
 
 
-Add your payment method to use your resources:
+
+
 https://nuvla.io/ui/sign-in?redirect=profile
 
 
-Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you.
+We will keep your resources frozen for 30 days. After this time, they will be removed permanently, unless you add a payment method within that time.
+If you have feedback on what you liked and disliked about Nuvla during the trial, we would love to hear it.  Please send us an email or drop the feedback in the chat bot.
 
 
-
-
-
-Don't forget that we're here to help if you have any question.
+Don't forget that we're here to help if you have any questions.
 
 Kind regards,
 SixSq Team

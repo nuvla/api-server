@@ -23,32 +23,30 @@
 (def resources [resource-1])
 
 (comment
-  ; use this tool to create the end result for the test
-  (defn write [input location]
-    (with-open [w (writer location)]
-      (.write w input)))
-
   ; use this tool to create the end result html or txt
-  (doseq [{:keys [plain? file f email-data]} [{:file "trial-ending" 
-                                               :email-data {:days-left 6 :resources resources} 
-                                               :f t/trial-ending}
-                                              {:file "trial-ended" 
-                                               :email-data {:resources resources} 
-                                               :f t/trial-ended}
-                                              {:file "trial-ended-multi" 
-                                               :email-data {:resources (conj resources resource-2 resource-3)} 
-                                               :f t/trial-ended}
-                                              {:file "trial-ended-multi" 
-                                               :email-data {:resources (conj resources resource-2)} 
-                                               :f t/trial-ended
-                                               :plain? true}
-                                              {:file "trial-ended-with-payment" 
-                                               :email-data {:resources resources} 
-                                               :f t/trial-ended-with-payment}]]
-    (-> (f email-data)
-        (assoc :plain? plain?)
-        sending/render-content
-        (write (str "test-resources/email/" file "." (if plain? "txt" "html"))))))
+    (let [write (fn [input location]
+                (with-open [w (writer location)]
+                  (.write w input)))]
+    (doseq [{:keys [plain? file f email-data]} [{:file       "trial-ending"
+                                                :email-data {:days-left 6 :resources resources}
+                                                :f          t/trial-ending}
+                                               {:file       "trial-ended"
+                                                :email-data {:resources resources}
+                                                :f          t/trial-ended}
+                                               {:file       "trial-ended-multi"
+                                                :email-data {:resources (conj resources resource-2 resource-3)}
+                                                :f          t/trial-ended}
+                                               {:file       "trial-ended-multi"
+                                                :email-data {:resources (conj resources resource-2)}
+                                                :f          t/trial-ended
+                                                :plain?     true}
+                                               {:file       "trial-ended-with-payment"
+                                                :email-data {:resources resources}
+                                                :f          t/trial-ended-with-payment}]]
+     (-> (f email-data)
+         (assoc :plain? plain?)
+         sending/render-content
+         (write (str "test-resources/email/" file "." (if plain? "txt" "html")))))))
 
 (deftest email-content
   (testing "trial ending email content should match pre-rendered html"
