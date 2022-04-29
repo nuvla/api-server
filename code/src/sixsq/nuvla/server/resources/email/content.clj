@@ -24,7 +24,7 @@
    :button-url      "https://nuvla.io/ui/sign-in?redirect=profile"
    :resources-title "The following resources are now frozen: "
    :resources       resources
-   :text-1          (str "Your Nuvla trail expired today. " (when (seq resources) "If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page. Your frozen resources will be deleted after 30 days."))
+   :text-1          (str "Your Nuvla trial expired today. " (when (seq resources) "If you want to unfreeze your resources login to Nuvla.io and unfreeze them from your profile page. Your frozen resources will be deleted after 30 days."))
    :text-3          "Would you mind sharing briefly with us what kept your from adopting Nuvla.io? Feel free to reach us in the live chat in Nuvla.io. Would really love to hear your feedback. Thank you."})
 
 (defn trial-ended-with-payment [{:keys [resources]}]
