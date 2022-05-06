@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Nuvlabox - normalize acl on edit
+
 ## [5.25.0] - 2022-04-29
 
 ### Added

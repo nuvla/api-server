@@ -286,14 +286,16 @@ particular NuvlaBox release.
           ssh-keys (assoc :ssh-keys ssh-keys)
           capabilities (assoc :capabilities capabilities)
           acl (assoc
-                :acl (merge
-                       (select-keys acl [:view-meta :edit-data :edit-meta :delete])
-                       {:owners    ["group/nuvla-admin"]
-                        :edit-acl  (vec (distinct (concat (:edit-acl acl) [owner])))
-                        :view-acl  (vec (distinct (concat (:view-acl acl) (when vpn-server-id
-                                                                            [vpn-server-id]))))
-                        :view-data (vec (distinct (concat (:view-data acl) [id])))
-                        :manage    (vec (distinct (concat (:manage acl) [id])))}))))
+                :acl (-> acl
+                         (select-keys [:view-meta :edit-data :edit-meta :delete])
+                         (merge
+                           {:owners    ["group/nuvla-admin"]
+                            :edit-acl  (vec (distinct (concat (:edit-acl acl) [owner])))
+                            :view-acl  (vec (distinct (concat (:view-acl acl) (when vpn-server-id
+                                                                                [vpn-server-id]))))
+                            :view-data (vec (distinct (concat (:view-data acl) [id])))
+                            :manage    (vec (distinct (concat (:manage acl) [id])))})
+                         (acl-utils/normalize-acl)))))
 
 
 (defmethod crud/edit resource-type

@@ -1722,12 +1722,12 @@
                                   (ltu/is-operation-present :decommission)
                                   (ltu/get-op-url :unsuspend))]
             (testing "owner will not able to unsuspend when payment is required"
-                     (with-redefs [utils/throw-when-payment-required (fn [_req]
-                                                               (throw (r/ex-response "" 402)))]
-               (-> session-owner
-                   (request unsuspend-url)
-                   (ltu/body->edn)
-                   (ltu/is-status 402))))
+              (with-redefs [utils/throw-when-payment-required (fn [_req]
+                                                                (throw (r/ex-response "" 402)))]
+                (-> session-owner
+                    (request unsuspend-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 402))))
 
             ;; owner will be able to unsuspend when no exception thrown
             (-> session-owner
