@@ -767,7 +767,7 @@
                        :body (json/write-str {:acl {:edit-acl [user-beta]}}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :edit-acl :acl [user-beta nuvlabox-owner]))
+              (ltu/is-key-value :edit-acl :acl [nuvlabox-owner user-beta]))
 
           ;; check that services exist are visible for invited user beta
           (let [services (-> session-beta
