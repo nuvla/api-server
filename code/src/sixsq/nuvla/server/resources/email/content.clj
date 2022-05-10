@@ -33,5 +33,20 @@
    :resources-title "You are using the following resources: "
    :resources       resources
    :text-3          "From now on, you will be invoiced for all paying resources you consume on Nuvla. You can track your consumption, access your invoices or change your payment method via your profile in Nuvla."
-   :text-4          "We thank you for continuing your journey to the edge with us. We would also love to hear about the amazing things you plan to accomplish with Nuvla."
-   })
+   :text-4          "We thank you for continuing your journey to the edge with us. We would also love to hear about the amazing things you plan to accomplish with Nuvla."})
+
+(defn coupon-ending [{:keys [days-left]}]
+  {:template        :trial
+   :id              :coupon-ending
+   :subject         "Nuvla coupon ending"
+   :title           "Your Nuvla coupon is ending"
+   :text-1          (format "Your coupon will end in %d days." days-left)
+   :text-4          "If you are working within an organisation, get in touch with them to see, if you are eligible for another coupon."})
+
+(defn coupon-ended [_]
+  {:template        :trial
+   :id              :coupon-ended
+   :subject         "Nuvla coupon ended"
+   :title           "Your Nuvla coupon ended"
+   :text-1          "Your Nuvla coupon expired today."
+   :text-4          "If you are working within an organisation, get in touch with them to see, if you are eligible for another coupon."})

@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+ 
+### Added
+
+- Email - Add email content for coupons expiry
 
 ### Changed
 
