@@ -42,7 +42,8 @@
     :minutes (t/minutes n)
     :hours (t/hours n)
     :days (t/days n)
-    :weeks (t/weeks n)))
+    :weeks (t/weeks n)
+    :months (t/months n)))
 
 
 (defn time-between
