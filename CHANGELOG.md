@@ -1,7 +1,9 @@
 # Changelog
 
 ## Unreleased
- 
+
+## [5.25.1] - 2022-05-12
+
 ### Added
 
 - Email - Add email content for coupons expiry
