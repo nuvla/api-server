@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.25.2] - 2022-05-12
+
+### Changed
+
+- Time - support months duration-unit function
+
 ## [5.25.1] - 2022-05-12
 
 ### Added
