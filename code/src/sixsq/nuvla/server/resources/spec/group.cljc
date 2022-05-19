@@ -5,28 +5,44 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-
-;; FIXME: Make a general macro for identifiers with a fixed prefix.
 (def user-id-regex #"^user/[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
-
+(def group-id-regex #"^group/([a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?)?$")
 
 (s/def ::user-id
-  (-> (st/spec (s/and string? #(re-matches user-id-regex %)))
-      (assoc :name "user-id"
-             :json-schema/type "string"
-             :json-schema/display-name "user ID"
-             :json-schema/description "user identifier")))
+  (assoc (st/spec (s/and string? #(re-matches user-id-regex %)))
+    :name "user-id"
+    :json-schema/type "string"
+    :json-schema/display-name "user ID"
+    :json-schema/description "user identifier"))
+
+
+(s/def ::group-id
+  (assoc (st/spec (s/and string? #(re-matches group-id-regex %)))
+    :name "group-id"
+    :json-schema/type "string"
+    :json-schema/display-name "group ID"
+    :json-schema/description "group identifier"))
 
 
 (s/def ::users
-  (-> (st/spec (s/coll-of ::user-id :kind vector? :distinct true))
-      (assoc :name "users"
-             :json-schema/type "array"
-             :json-schema/description "list of users in this group"
+  (assoc (st/spec (s/coll-of ::user-id :distinct true))
+    :name "users"
+    :json-schema/type "array"
+    :json-schema/description "list of users in this group"
 
-             :json-schema/order 20)))
+    :json-schema/order 20))
+
+
+(s/def ::parents
+  (assoc (st/spec (s/coll-of ::group-id :distinct true))
+    :name "parents"
+    :json-schema/type "array"
+    :json-schema/description "list of parents groups"
+    :json-schema/server-managed true
+    :json-schema/order 30))
 
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::users]}))
+                     {:req-un [::users]
+                      :opt-un [::parents]}))
