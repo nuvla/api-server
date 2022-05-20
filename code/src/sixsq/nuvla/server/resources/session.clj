@@ -401,43 +401,53 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (-> (str resource-type "/" uuid)
       (db/retrieve request)))
 
+(defn query-group
+  [filter-str]
+  (->> (crud/query-as-admin
+         group/resource-type
+         {:cimi-params {:filter (parser/parse-cimi-filter
+                                  filter-str)
+                        :last   10000
+                        :select ["id" "parents"]}})
+       second))
+
+(declare children)
+
+(defn list-children [list-subgroups groups]
+  (map #(children list-subgroups (first %)) groups))
+
 
 (defn children [list-subgroups id]
-  (let [childs (filter (comp #{id} last :parents) list-subgroups)]
+  (let [childs (filter (comp #{id} second) list-subgroups)]
     (if (seq childs)
-      (mapv (fn [{:keys [id]}] 
-             [id (children list-subgroups id)]) 
-           childs)
-      [id []])))
+      (concat [id] (list-children list-subgroups childs))
+      (list id))))
 
 (defmethod crud/do-action [resource-type "get-groups"]
   [request]
   (try
+    ;; get user groups
+    ;; get subgroups
+    ;; remove from user groups duplicates
+    ;; build group hierarchy for user groups
     (let [{:keys [user]} (-> request
                              retrieve-session
                              (a/throw-cannot-manage request))
-          groups                (->> user
-                                     cookies/collect-groups-for-user
-                                     (map :id))
-          _                     (prn "filter " (->> groups
-                                                    (map #(str "parents='" % "'"))
-                                                    (str/join " or ")))
-          list-subgroups        (when (seq groups)
-                                  (->> (crud/query-as-admin
-                                         group/resource-type
-                                         {:cimi-params {:filter (parser/parse-cimi-filter (->> groups
-                                                                                               (map #(str "parents='" % "'"))
-                                                                                               (str/join " or ")))
-                                                        :last 10000
-                                                        :select ["id" "parents"]}})
-                                       second))
-          tree                  (mapv (partial children list-subgroups) groups)
-          _                     (prn 1111 tree)
-          _                     []                          ;; search on group that the user is part of
-          list-subgroups        []                          ;; search on group with filter each of group of the user in parents
-          list-groups-hierarchy []
-          ]
-      (r/json-response list-groups-hierarchy))
+          id-parent-fn    (juxt :id (comp last :parents))
+          user-groups     (->> (str "users='" user "'")
+                               query-group
+                               (map id-parent-fn))
+          user-groups-ids (set (map first user-groups))
+          subgroups       (when (seq user-groups-ids)
+                            (->> user-groups-ids
+                                 (map #(str "parents='" % "'"))
+                                 (str/join " or ")
+                                 query-group
+                                 (map id-parent-fn)))
+          user-groups     (remove (comp (set/union user-groups-ids
+                                                   (set (map first subgroups)))
+                                        second) user-groups)]
+      (r/json-response (list-children subgroups user-groups)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

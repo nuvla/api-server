@@ -561,6 +561,12 @@
                  :body (json/write-str (valid-create-grp "b")))
         (ltu/body->edn)
         (ltu/is-status 201))
+    (-> session-group-a
+        (request grp-base-uri
+                 :request-method :post
+                 :body (json/write-str (valid-create-grp "b1")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
     (-> session-group-b
         (request grp-base-uri
                  :request-method :post
@@ -569,20 +575,20 @@
         (ltu/is-status 201))
 
     ; anonymous create must succeed
-    (let [resp    (-> session-anon
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str {:template {:href     href
-                                                                 :username "jane"
-                                                                 :password "JaneJane-0"}}))
-                      (ltu/body->edn)
-                      (ltu/is-set-cookie)
-                      (ltu/is-status 201))
-          id          (ltu/body-resource-id resp)
-          abs-uri     (ltu/location-url resp)]
+    (let [resp            (-> session-anon
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str {:template {:href     href
+                                                                         :username "jane"
+                                                                         :password "JaneJane-0"}}))
+                              (ltu/body->edn)
+                              (ltu/is-set-cookie)
+                              (ltu/is-status 201))
+          id              (ltu/body-resource-id resp)
+          abs-uri         (ltu/location-url resp)
+          session-with-id (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon " id))]
       ; user should be able to see session with session role
-      (-> (session app)
-          (header authn-info-header (str user-id user-id " group/nuvla-user " id))
+      (-> session-with-id
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)
@@ -595,20 +601,13 @@
 
       ; check contents of session
       (let [get-groups-url (-> session-user
-                               (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
+                               (header authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon " id))
                                (request abs-uri)
                                (ltu/body->edn)
                                (ltu/get-op-url :get-groups))]
 
-        ;; case to test
-        ;; user without being part of groups
-        ;; user part of root group
-        ;; user part of leaf group, root group and intermediate grp
-
-
         (testing "user is not in any group should get empty list of groups hierarchy"
-          (-> session-user
-              (header authn-info-header (str "user/52b13630-3fee-4dd8-bb51-3452693d994c user/52b13630-3fee-4dd8-bb51-3452693d994c group/nuvla-user " id))
+          (-> session-with-id
               (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
@@ -616,6 +615,7 @@
               (= [])
               (is "Get groups body should contain ")))
 
+        ;; TODO fix test order because it is taken into account
         (testing "when user is part of a root group he should get the full hierarchy"
           (-> session-admin
               (request (str p/service-context "group/a")
@@ -623,12 +623,46 @@
                        :body (json/write-str {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
-          (-> session-user
-              (header authn-info-header (str "user/52b13630-3fee-4dd8-bb51-3452693d994c user/52b13630-3fee-4dd8-bb51-3452693d994c group/nuvla-user " id))
+          (-> session-with-id
               (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= ["groups"])
-              (is "Get groups body should contain ")))
+              (= [["group/a"
+                   ["group/b1"]
+                   ["group/b"
+                    ["group/c"]]]])
+              (is "Get groups body should contain tree of groups")))
+
+        (testing "when user is part of a root group he should get the full hierarchy"
+          (-> session-admin
+              (request (str p/service-context "group/b")
+                       :request-method :put
+                       :body (json/write-str {:users [user-id]}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          (-> session-admin
+              (request grp-base-uri
+                       :request-method :post
+                       :body (json/write-str (valid-create-grp "z")))
+              (ltu/body->edn)
+              (ltu/is-status 201))
+          (-> session-admin
+              (request (str p/service-context "group/z")
+                       :request-method :put
+                       :body (json/write-str {:users [user-id]}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          (-> session-with-id
+              (request get-groups-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/body)
+              (= [["group/a"
+                   ["group/b1"]
+                   ["group/b"
+                    ["group/c"]]]
+                  ["group/z"]])
+              (is "Get groups should not contain group/b since group/b is already in a bigger tree"))
+          )
         ))))
