@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+
 ### Added
 
 - Group - Group able to create a subgroup
