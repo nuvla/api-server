@@ -578,12 +578,11 @@
                       (ltu/body->edn)
                       (ltu/is-set-cookie)
                       (ltu/is-status 201))
-          id      (ltu/body-resource-id resp)
-          uri     (ltu/location resp)
-          abs-uri (str p/service-context uri)]
+          id          (ltu/body-resource-id resp)
+          abs-uri     (ltu/location-url resp)]
       ; user should be able to see session with session role
       (-> (session app)
-          (header authn-info-header (str "user/52b13630-3fee-4dd8-bb51-3452693d994c user/52b13630-3fee-4dd8-bb51-3452693d994c group/nuvla-user " id))
+          (header authn-info-header (str user-id user-id " group/nuvla-user " id))
           (request abs-uri)
           (ltu/body->edn)
           (ltu/is-status 200)

@@ -402,6 +402,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
       (db/retrieve request)))
 
 
+(defn children [list-subgroups id]
+  (let [childs (filter (comp #{id} last :parents) list-subgroups)]
+    (if (seq childs)
+      (mapv (fn [{:keys [id]}] 
+             [id (children list-subgroups id)]) 
+           childs)
+      [id []])))
+
 (defmethod crud/do-action [resource-type "get-groups"]
   [request]
   (try
@@ -422,9 +430,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
                                                                                                (str/join " or ")))
                                                         :last 10000
                                                         :select ["id" "parents"]}})
-                                       second
-                                       (map #(select-keys % [:id :parents]))))
-          _                     (prn list-subgroups)
+                                       second))
+          tree                  (mapv (partial children list-subgroups) groups)
+          _                     (prn 1111 tree)
           _                     []                          ;; search on group that the user is part of
           list-subgroups        []                          ;; search on group with filter each of group of the user in parents
           list-groups-hierarchy []
