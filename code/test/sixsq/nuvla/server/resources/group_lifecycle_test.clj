@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.set :as set]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -61,10 +62,12 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count (count t/default-groups-users))
+                      (ltu/is-count #(>= % (count t/default-groups-users)))
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
-               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
+      (is (= (set/intersection #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+                               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries)))
+             #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"}))
       (is (every? #(not (nil? %)) (set (map :name entries))))
       (is (every? #(not (nil? %)) (set (map :description entries)))))
 
@@ -74,11 +77,13 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 5)
+                      (ltu/is-count #(>= % (count t/default-groups-users)))
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
-               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
-      (is (= [nil nil nil nil nil] (map :users entries))))
+      (is (= (set/intersection #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+                                 "group/nuvla-anon" "group/nuvla-vpn"}
+                               (set (map :id entries)))
+             #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"})))
 
     ;; anon query should see nothing
     (-> session-anon
