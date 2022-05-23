@@ -413,7 +413,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn children [subgroups {:keys [id] :as group}]
-  (let [childs (filter (comp #{id} last :parents) subgroups)]
+  (let [childs (->> subgroups 
+                    (filter (comp #{id} last :parents))
+                    (sort-by (juxt :name :id)))]
     (cond-> (select-keys group [:id :name])
             (seq childs) (assoc :childs (map #(children subgroups %) childs)))))
 
@@ -424,7 +426,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [{:keys [user]} (-> request
                              retrieve-session
                              (a/throw-cannot-manage request))
-          root-groups     (query-group (str "users='" user "'"))
+          root-groups     (-> (query-group (str "users='" user "'"))
+                              (map (assoc % :parents [:root])))
           user-groups-ids (set (map :id root-groups))
           subgroups       (when (seq user-groups-ids)
                             (->> user-groups-ids
@@ -434,8 +437,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
           root-groups     (remove (comp (set/union user-groups-ids
                                                    (set (map :id subgroups)))
                                         last :parents) root-groups)]
-      (r/json-response
-        (map #(children subgroups %) root-groups)))
+      (r/json-response (children subgroups {:id :root})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

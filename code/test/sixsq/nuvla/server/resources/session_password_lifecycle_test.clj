@@ -536,10 +536,10 @@
         session-anon     (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
         session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         user-id          (create-user session-admin
-                                      :username "jane"
+                                      :username "tarzan"
                                       :password "JaneJane-0"
                                       :activated? true
-                                      :email "jane@example.org")
+                                      :email "tarzan@example.org")
         session-user     (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
         session-group-a  (header session-json authn-info-header "user/x group/a user/x group/nuvla-user group/nuvla-anon group/a")
         session-group-b  (header session-json authn-info-header "user/x group/b user/x group/nuvla-user group/nuvla-anon group/b")
@@ -580,7 +580,7 @@
                               (request base-uri
                                        :request-method :post
                                        :body (json/write-str {:template {:href     href
-                                                                         :username "jane"
+                                                                         :username "tarzan"
                                                                          :password "JaneJane-0"}}))
                               (ltu/body->edn)
                               (ltu/is-set-cookie)
@@ -639,7 +639,7 @@
                              :name "Group b1"}]}])
               (is "Get groups body should contain tree of groups")))
 
-        (testing "when user is part of a root group he should get the full hierarchy"
+        #_(testing "when user is part of a root group he should get the full hierarchy"
           (-> session-admin
               (request (str p/service-context "group/b")
                        :request-method :put
