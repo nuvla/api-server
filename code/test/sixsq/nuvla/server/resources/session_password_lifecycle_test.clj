@@ -537,7 +537,7 @@
         session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         user-id          (create-user session-admin
                                       :username "tarzan"
-                                      :password "JaneJane-0"
+                                      :password "TarzanTarzan-0"
                                       :activated? true
                                       :email "tarzan@example.org")
         session-user     (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
@@ -581,7 +581,7 @@
                                        :request-method :post
                                        :body (json/write-str {:template {:href     href
                                                                          :username "tarzan"
-                                                                         :password "JaneJane-0"}}))
+                                                                         :password "TarzanTarzan-0"}}))
                               (ltu/body->edn)
                               (ltu/is-set-cookie)
                               (ltu/is-status 201))
@@ -613,13 +613,15 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [])
-              (is "Get groups body should contain ")))
+              (= {:id "root"})
+              (is "Get groups body should have no childs")))
 
-        ;; TODO fix test order because it is taken into account
-        (testing "when user is part of a root group he should get the full hierarchy"
+
+        (testing
+          "when user is part of a group he should get
+           the subgroups"
           (-> session-admin
-              (request (str p/service-context "group/a")
+              (request (str p/service-context "group/b")
                        :request-method :put
                        :body (json/write-str {:users [user-id]}))
               (ltu/body->edn)
@@ -629,19 +631,18 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [{:id     "group/a"
-                   :name   "Group a"
-                   :childs [{:id     "group/b"
-                             :name   "Group b"
-                             :childs [{:id   "group/c"
-                                       :name "Group c"}]}
-                            {:id   "group/b1"
-                             :name "Group b1"}]}])
-              (is "Get groups body should contain tree of groups")))
+              (= {:childs [{:childs [{:id   "group/c"
+                                      :name "Group c"}]
+                            :id     "group/b"
+                            :name   "Group b"}]
+                  :id     "root"})
+              (is "User get group/b and subgroup group/c")))
 
-        #_(testing "when user is part of a root group he should get the full hierarchy"
+        (testing
+          "when user is part of a root group he should get
+           the full group hierarchy and group/b is not duplicated"
           (-> session-admin
-              (request (str p/service-context "group/b")
+              (request (str p/service-context "group/a")
                        :request-method :put
                        :body (json/write-str {:users [user-id]}))
               (ltu/body->edn)
@@ -658,21 +659,22 @@
                        :body (json/write-str {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
+          (prn "====")
           (-> session-with-id
               (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [{:id     "group/a"
-                   :name   "Group a"
-                   :childs [{:id   "group/b1"
-                             :name "Group b1"}
-                            {:childs [{:id   "group/c"
-                                       :name "Group c"}]
-                             :id     "group/b"
-                             :name   "Group b"}]}
-                  {:id   "group/z"
-                   :name "Group z"}])
-              (is "Get groups should not contain group/b since group/b is already in a bigger tree"))
-          )
+              (= {:childs [{:childs [{:childs [{:id   "group/c"
+                                                :name "Group c"}]
+                                      :id     "group/b"
+                                      :name   "Group b"}
+                                     {:id   "group/b1"
+                                      :name "Group b1"}]
+                            :id     "group/a"
+                            :name   "Group a"}
+                           {:id   "group/z"
+                            :name "Group z"}]
+                  :id     "root"})
+              (is "Get groups body should contain tree of groups")))
         ))))

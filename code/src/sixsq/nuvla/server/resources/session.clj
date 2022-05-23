@@ -412,12 +412,10 @@ status, a 'set-cookie' header, and a 'location' header with the created
        second))
 
 
-(defn children [subgroups {:keys [id] :as group}]
-  (let [childs (->> subgroups 
-                    (filter (comp #{id} last :parents))
-                    (sort-by (juxt :name :id)))]
+(defn children [{:keys [id] :as group} subgroups]
+  (let [childs (filter (comp #{id} last :parents) subgroups)]
     (cond-> (select-keys group [:id :name])
-            (seq childs) (assoc :childs (map #(children subgroups %) childs)))))
+            (seq childs) (assoc :childs (map #(children % subgroups) childs)))))
 
 
 (defmethod crud/do-action [resource-type "get-groups"]
@@ -426,18 +424,21 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [{:keys [user]} (-> request
                              retrieve-session
                              (a/throw-cannot-manage request))
-          root-groups     (-> (query-group (str "users='" user "'"))
-                              (map (assoc % :parents [:root])))
-          user-groups-ids (set (map :id root-groups))
-          subgroups       (when (seq user-groups-ids)
-                            (->> user-groups-ids
-                                 (map #(str "parents='" % "'"))
-                                 (str/join " or ")
-                                 query-group))
-          root-groups     (remove (comp (set/union user-groups-ids
-                                                   (set (map :id subgroups)))
-                                        last :parents) root-groups)]
-      (r/json-response (children subgroups {:id :root})))
+          root-groups (query-group (str "users='" user "'"))
+          subgroups   (when (seq root-groups)
+                        (->> root-groups
+                             (map #(str "parents='" (:id %) "'"))
+                             (str/join " or ")
+                             query-group))]
+      (->> root-groups
+           (remove (comp (set/union (set (map :id subgroups))
+                                    (set (map :id root-groups)))
+                         last :parents))
+           (map #(assoc % :parents [:root]))
+           (concat subgroups)
+           (sort-by (juxt :name :id))
+           (children {:id :root})
+           r/json-response))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
