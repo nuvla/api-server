@@ -408,12 +408,12 @@ status, a 'set-cookie' header, and a 'location' header with the created
             {:cimi-params {:filter (parser/parse-cimi-filter
                                      filter-str)
                            :last   10000
-                           :select ["id" "name" "parents"]}})))
+                           :select ["id" "name" "description" "parents"]}})))
 
 
 (defn group-hierarchy [{:keys [id] :as group} subgroups]
   (let [childs (filter (comp #{id} last :parents) subgroups)]
-    (cond-> (select-keys group [:id :name :children])
+    (cond-> (select-keys group [:id :name :description :children])
             (seq childs) (assoc :children
                                 (map #(group-hierarchy % subgroups) childs)))))
 

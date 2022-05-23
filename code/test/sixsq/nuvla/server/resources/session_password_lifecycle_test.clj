@@ -548,7 +548,8 @@
         grp-base-uri     (str p/service-context "group")
         valid-create-grp (fn [group-id] {:template {:href             "group-template/generic"
                                                     :group-identifier group-id
-                                                    :name             (str "Group " group-id)}})]
+                                                    :name             (str "Group " group-id)
+                                                    :description (str "Group " group-id " description") }})]
 
     (-> session-admin
         (request grp-base-uri
@@ -631,10 +632,12 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [{:children [{:id   "group/c"
-                               :name "Group c"}]
-                   :id       "group/b"
-                   :name     "Group b"}])
+              (= [{:children    [{:description "Group c description"
+                                  :id          "group/c"
+                                  :name        "Group c"}]
+                   :description "Group b description"
+                   :id          "group/b"
+                   :name        "Group b"}])
               (is "User get group/b and subgroup group/c")))
 
         (testing
@@ -663,14 +666,19 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [{:children [{:children [{:id   "group/c"
-                                           :name "Group c"}]
-                               :id       "group/b"
-                               :name     "Group b"}
-                              {:id   "group/b1"
-                               :name "Group b1"}]
-                   :id       "group/a"
-                   :name     "Group a"}
-                  {:id   "group/z"
-                   :name "Group z"}])
+              (= [{:children    [{:children    [{:description "Group c description"
+                                                 :id          "group/c"
+                                                 :name        "Group c"}]
+                                  :description "Group b description"
+                                  :id          "group/b"
+                                  :name        "Group b"}
+                                 {:description "Group b1 description"
+                                  :id          "group/b1"
+                                  :name        "Group b1"}]
+                   :description "Group a description"
+                   :id          "group/a"
+                   :name        "Group a"}
+                  {:description "Group z description"
+                   :id          "group/z"
+                   :name        "Group z"}])
               (is "Get groups body should contain tree of groups")))))))
