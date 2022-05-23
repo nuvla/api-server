@@ -398,18 +398,17 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defn retrieve-session
   [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      (db/retrieve request)))
+  (db/retrieve (str resource-type "/" uuid) request))
+
 
 (defn query-group
   [filter-str]
-  (->> (crud/query-as-admin
-         group/resource-type
-         {:cimi-params {:filter (parser/parse-cimi-filter
-                                  filter-str)
-                        :last   10000
-                        :select ["id" "name" "parents"]}})
-       second))
+  (second (crud/query-as-admin
+            group/resource-type
+            {:cimi-params {:filter (parser/parse-cimi-filter
+                                     filter-str)
+                           :last   10000
+                           :select ["id" "name" "parents"]}})))
 
 
 (defn group-hierarchy [{:keys [id] :as group} subgroups]
