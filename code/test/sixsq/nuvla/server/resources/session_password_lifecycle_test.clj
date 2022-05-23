@@ -607,13 +607,13 @@
                                (ltu/body->edn)
                                (ltu/get-op-url :get-groups))]
 
-        (testing "user is not in any group should get empty list of groups hierarchy"
+        (testing "user who is not in any group should get empty list of groups"
           (-> session-with-id
               (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= {:id "root"})
+              (= [])
               (is "Get groups body should have no childs")))
 
 
@@ -631,11 +631,10 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= {:childs [{:childs [{:id   "group/c"
-                                      :name "Group c"}]
-                            :id     "group/b"
-                            :name   "Group b"}]
-                  :id     "root"})
+              (= [{:children [{:id   "group/c"
+                               :name "Group c"}]
+                   :id       "group/b"
+                   :name     "Group b"}])
               (is "User get group/b and subgroup group/c")))
 
         (testing
@@ -659,22 +658,19 @@
                        :body (json/write-str {:users [user-id]}))
               (ltu/body->edn)
               (ltu/is-status 200))
-          (prn "====")
           (-> session-with-id
               (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= {:childs [{:childs [{:childs [{:id   "group/c"
-                                                :name "Group c"}]
-                                      :id     "group/b"
-                                      :name   "Group b"}
-                                     {:id   "group/b1"
-                                      :name "Group b1"}]
-                            :id     "group/a"
-                            :name   "Group a"}
-                           {:id   "group/z"
-                            :name "Group z"}]
-                  :id     "root"})
-              (is "Get groups body should contain tree of groups")))
-        ))))
+              (= [{:children [{:children [{:id   "group/c"
+                                           :name "Group c"}]
+                               :id       "group/b"
+                               :name     "Group b"}
+                              {:id   "group/b1"
+                               :name "Group b1"}]
+                   :id       "group/a"
+                   :name     "Group a"}
+                  {:id   "group/z"
+                   :name "Group z"}])
+              (is "Get groups body should contain tree of groups")))))))

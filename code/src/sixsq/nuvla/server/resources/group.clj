@@ -36,9 +36,9 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"
-                                   "group/nuvla-user"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"
+                             "group/nuvla-user"]})
 
 
 ;;
@@ -84,9 +84,10 @@ that start with 'nuvla-' are reserved for the server.
         inherit?     (and
                        (not= "group/nuvla-admin" active-claim)
                        (str/starts-with? active-claim "group/"))
-        {parent-id    :id parents
-         :parents :as _group} (when inherit?
-                                (crud/retrieve-by-id-as-admin active-claim))]
+        {parent-id :id
+         parents   :parents
+         :as       _group} (when inherit?
+                             (crud/retrieve-by-id-as-admin active-claim))]
     (-> resource
         (dissoc :group-identifier)
         (assoc :id id
@@ -160,7 +161,9 @@ that start with 'nuvla-' are reserved for the server.
   (if (-> (crud/query-as-admin
             resource-type {:cimi-params
                            {:last   0
-                            :filter (parser/parse-cimi-filter (str "parents='" (str resource-type "/" uuid) "'"))}})
+                            :filter (parser/parse-cimi-filter
+                                      (str "parents='"
+                                           resource-type "/" uuid "'"))}})
           first
           :count
           pos?)

@@ -250,7 +250,7 @@
             (ltu/is-status 200)
             (ltu/is-key-value :parents ["group/a" "group/b"]))
 
-        (testing "parents field is cannot be updated"
+        (testing "parents field cannot be updated"
           (-> session-admin
               (request abs-uri
                        :request-method :put
@@ -264,24 +264,21 @@
                        :body (json/write-str {}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :parents ["group/a" "group/b"])))
-        ))
+              (ltu/is-key-value :parents ["group/a" "group/b"])))))
 
     (testing "delete group that have children is not allowed"
       (-> session-admin
           (request (str p/service-context t/resource-type "/b")
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 409))
-      )
+          (ltu/is-status 409)))
 
-    (testing "delete subgroup without subgroups is possible"
+    (testing "delete subgroup without subgroups is allowed"
       (-> session-admin
           (request (str p/service-context t/resource-type "/c")
                    :request-method :delete)
           (ltu/body->edn)
-          (ltu/is-status 200)))
-    ))
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods

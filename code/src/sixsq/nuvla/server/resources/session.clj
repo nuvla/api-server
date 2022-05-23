@@ -412,10 +412,11 @@ status, a 'set-cookie' header, and a 'location' header with the created
        second))
 
 
-(defn children [{:keys [id] :as group} subgroups]
+(defn group-hierarchy [{:keys [id] :as group} subgroups]
   (let [childs (filter (comp #{id} last :parents) subgroups)]
-    (cond-> (select-keys group [:id :name])
-            (seq childs) (assoc :childs (map #(children % subgroups) childs)))))
+    (cond-> (select-keys group [:id :name :children])
+            (seq childs) (assoc :children
+                                (map #(group-hierarchy % subgroups) childs)))))
 
 
 (defmethod crud/do-action [resource-type "get-groups"]
@@ -424,20 +425,21 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (let [{:keys [user]} (-> request
                              retrieve-session
                              (a/throw-cannot-manage request))
-          root-groups (query-group (str "users='" user "'"))
-          subgroups   (when (seq root-groups)
-                        (->> root-groups
-                             (map #(str "parents='" (:id %) "'"))
-                             (str/join " or ")
-                             query-group))]
+          root-groups  (query-group (str "users='" user "'"))
+          subgroups    (when (seq root-groups)
+                         (->> root-groups
+                              (map #(str "parents='" (:id %) "'"))
+                              (str/join " or ")
+                              query-group))
+          all-grps-ids (set/union (set (map :id subgroups))
+                                  (set (map :id root-groups)))]
       (->> root-groups
-           (remove (comp (set/union (set (map :id subgroups))
-                                    (set (map :id root-groups)))
-                         last :parents))
+           (remove (comp all-grps-ids last :parents))
            (map #(assoc % :parents [:root]))
            (concat subgroups)
            (sort-by (juxt :name :id))
-           (children {:id :root})
+           (group-hierarchy {:id :root :children []})
+           :children
            r/json-response))
     (catch Exception e
       (or (ex-data e) (throw e)))))
