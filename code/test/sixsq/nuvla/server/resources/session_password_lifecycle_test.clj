@@ -547,7 +547,8 @@
 
         grp-base-uri     (str p/service-context "group")
         valid-create-grp (fn [group-id] {:template {:href             "group-template/generic"
-                                                    :group-identifier group-id}})]
+                                                    :group-identifier group-id
+                                                    :name             (str "Group " group-id)}})]
 
     (-> session-admin
         (request grp-base-uri
@@ -628,10 +629,14 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [["group/a"
-                   ["group/b1"]
-                   ["group/b"
-                    ["group/c"]]]])
+              (= [{:id     "group/a"
+                   :name   "Group a"
+                   :childs [{:id     "group/b"
+                             :name   "Group b"
+                             :childs [{:id   "group/c"
+                                       :name "Group c"}]}
+                            {:id   "group/b1"
+                             :name "Group b1"}]}])
               (is "Get groups body should contain tree of groups")))
 
         (testing "when user is part of a root group he should get the full hierarchy"
@@ -658,11 +663,16 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= [["group/a"
-                   ["group/b1"]
-                   ["group/b"
-                    ["group/c"]]]
-                  ["group/z"]])
+              (= [{:id     "group/a"
+                   :name   "Group a"
+                   :childs [{:id   "group/b1"
+                             :name "Group b1"}
+                            {:childs [{:id   "group/c"
+                                       :name "Group c"}]
+                             :id     "group/b"
+                             :name   "Group b"}]}
+                  {:id   "group/z"
+                   :name "Group z"}])
               (is "Get groups should not contain group/b since group/b is already in a bigger tree"))
           )
         ))))

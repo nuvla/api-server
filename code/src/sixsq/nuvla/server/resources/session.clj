@@ -408,46 +408,34 @@ status, a 'set-cookie' header, and a 'location' header with the created
          {:cimi-params {:filter (parser/parse-cimi-filter
                                   filter-str)
                         :last   10000
-                        :select ["id" "parents"]}})
+                        :select ["id" "name" "parents"]}})
        second))
 
-(declare children)
 
-(defn list-children [list-subgroups groups]
-  (map #(children list-subgroups (first %)) groups))
+(defn children [subgroups {:keys [id] :as group}]
+  (let [childs (filter (comp #{id} last :parents) subgroups)]
+    (cond-> (select-keys group [:id :name])
+            (seq childs) (assoc :childs (map #(children subgroups %) childs)))))
 
-
-(defn children [list-subgroups id]
-  (let [childs (filter (comp #{id} second) list-subgroups)]
-    (if (seq childs)
-      (concat [id] (list-children list-subgroups childs))
-      (list id))))
 
 (defmethod crud/do-action [resource-type "get-groups"]
   [request]
   (try
-    ;; get user groups
-    ;; get subgroups
-    ;; remove from user groups duplicates
-    ;; build group hierarchy for user groups
     (let [{:keys [user]} (-> request
                              retrieve-session
                              (a/throw-cannot-manage request))
-          id-parent-fn    (juxt :id (comp last :parents))
-          user-groups     (->> (str "users='" user "'")
-                               query-group
-                               (map id-parent-fn))
-          user-groups-ids (set (map first user-groups))
+          root-groups     (query-group (str "users='" user "'"))
+          user-groups-ids (set (map :id root-groups))
           subgroups       (when (seq user-groups-ids)
                             (->> user-groups-ids
                                  (map #(str "parents='" % "'"))
                                  (str/join " or ")
-                                 query-group
-                                 (map id-parent-fn)))
-          user-groups     (remove (comp (set/union user-groups-ids
-                                                   (set (map first subgroups)))
-                                        second) user-groups)]
-      (r/json-response (list-children subgroups user-groups)))
+                                 query-group))
+          root-groups     (remove (comp (set/union user-groups-ids
+                                                   (set (map :id subgroups)))
+                                        last :parents) root-groups)]
+      (r/json-response
+        (map #(children subgroups %) root-groups)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
