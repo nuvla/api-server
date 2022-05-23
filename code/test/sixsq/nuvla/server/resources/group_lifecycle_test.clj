@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.group-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.auth.password :as auth-password]
@@ -13,7 +13,8 @@
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
+    [clojure.set :as set]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -61,10 +62,12 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count (count t/default-groups-users))
+                      (ltu/is-count #(>= % (count t/default-groups-users)))
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
-               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
+      (is (= (set/intersection #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+                               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries)))
+             #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"}))
       (is (every? #(not (nil? %)) (set (map :name entries))))
       (is (every? #(not (nil? %)) (set (map :description entries)))))
 
@@ -74,11 +77,13 @@
                       (request base-uri)
                       (ltu/body->edn)
                       (ltu/is-status 200)
-                      (ltu/is-count 5)
+                      (ltu/is-count #(>= % (count t/default-groups-users)))
                       (ltu/entries))]
-      (is (= #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
-               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries))))
-      (is (= [nil nil nil nil nil] (map :users entries))))
+      (is (= (set/intersection #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+                                 "group/nuvla-anon" "group/nuvla-vpn"}
+                               (set (map :id entries)))
+             #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
+               "group/nuvla-anon" "group/nuvla-vpn"})))
 
     ;; anon query should see nothing
     (-> session-anon
@@ -180,6 +185,100 @@
                          :request-method :delete)
                 (ltu/body->edn)
                 (ltu/is-status 200))))))))
+
+
+(deftest lifecycle-subgroup-creation
+
+  (let [app              (ltu/ring-app)
+        session-json     (content-type (session app) "application/json")
+        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        session-group-a  (header session-json authn-info-header "user/jane group/a user/jane group/nuvla-user group/nuvla-anon group/a")
+        session-group-b  (header session-json authn-info-header "user/jane group/b user/jane group/nuvla-user group/nuvla-anon group/b")
+
+        href             (str group-tpl/resource-type "/generic")
+
+        name-attr        "name"
+        description-attr "description"
+        tags-attr        ["one", "two"]
+
+        valid-create     (fn [group-id] {:name        name-attr
+                                         :description description-attr
+                                         :tags        tags-attr
+                                         :template    {:href             href
+                                                       :group-identifier group-id}})]
+
+    (testing "A user should be able to create a group and see it"
+      (let [abs-uri (-> session-user
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (valid-create "a")))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location-url))]
+        (-> session-user
+            (request abs-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :parents nil))))
+
+    (testing "A group should be able to create a subgroup and see it"
+      (let [abs-uri (-> session-group-a
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (valid-create "b")))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location-url))]
+        (-> session-group-a
+            (request abs-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :parents ["group/a"]))))
+
+    (testing "A group should be able to create a subgroup and see it with all parents"
+      (let [abs-uri (-> session-group-b
+                        (request base-uri
+                                 :request-method :post
+                                 :body (json/write-str (valid-create "c")))
+                        (ltu/body->edn)
+                        (ltu/is-status 201)
+                        (ltu/location-url))]
+        (-> session-group-b
+            (request abs-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :parents ["group/a" "group/b"]))
+
+        (testing "parents field cannot be updated"
+          (-> session-admin
+              (request abs-uri
+                       :request-method :put
+                       :body (json/write-str {:parents ["change-not-allowed"]}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :parents ["group/a" "group/b"]))
+          (-> session-admin
+              (request (str abs-uri "?select=parents")
+                       :request-method :put
+                       :body (json/write-str {}))
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/is-key-value :parents ["group/a" "group/b"])))))
+
+    (testing "delete group that have children is not allowed"
+      (-> session-admin
+          (request (str p/service-context t/resource-type "/b")
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 409)))
+
+    (testing "delete subgroup without subgroups is allowed"
+      (-> session-admin
+          (request (str p/service-context t/resource-type "/c")
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods

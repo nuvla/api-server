@@ -22,7 +22,9 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [clojure.string :as str]
+    [sixsq.nuvla.db.filter.parser :as parser]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -34,10 +36,9 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"
-                                   "group/nuvla-user"]
-                     :bulk-delete ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"
+                             "group/nuvla-user"]})
 
 
 ;;
@@ -77,12 +78,21 @@ that start with 'nuvla-' are reserved for the server.
 
 (defn tpl->group
   [{:keys [group-identifier]
-    :as   resource}]
-  (let [id (str resource-type "/" group-identifier)]
+    :as   resource} request]
+  (let [id           (str resource-type "/" group-identifier)
+        active-claim (auth/current-active-claim request)
+        inherit?     (and
+                       (not= "group/nuvla-admin" active-claim)
+                       (str/starts-with? active-claim "group/"))
+        {parent-id :id
+         parents   :parents
+         :as       _group} (when inherit?
+                             (crud/retrieve-by-id-as-admin active-claim))]
     (-> resource
         (dissoc :group-identifier)
         (assoc :id id
-               :users []))))
+               :users [])
+        (cond-> inherit? (assoc :parents (conj parents parent-id))))))
 
 
 ;; modified to retain id and not call new-identifier
@@ -115,7 +125,7 @@ that start with 'nuvla-' are reserved for the server.
                        (update-in [:template] merge desc-attrs) ;; validate desc attrs
                        (crud/validate)
                        :template
-                       tpl->group)]
+                       (tpl->group request))]
     (add-impl (assoc request :body body))))
 
 
@@ -138,15 +148,35 @@ that start with 'nuvla-' are reserved for the server.
     (-> request
         (assoc-in [:body :acl] acl)
         (update-in [:body :acl :view-meta] (comp vec set concat) (conj users id))
+        (update :body dissoc :parents)
+        (update-in [:cimi-params :select] disj "parents")
         (edit-impl))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
+(defn throw-when-have-child
+  [{{uuid :uuid} :params :as request}]
+  (if (-> (crud/query-as-admin
+            resource-type {:cimi-params
+                           {:last   0
+                            :filter (parser/parse-cimi-filter
+                                      (str "parents='"
+                                           resource-type "/" uuid "'"))}})
+          first
+          :count
+          pos?)
+    (throw (r/ex-response
+             "Group cannot be deleted because it has subgroups!" 409))
+    request))
+
+
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (-> request
+      throw-when-have-child
+      delete-impl))
 
 
 ;;
@@ -222,14 +252,6 @@ that start with 'nuvla-' are reserved for the server.
 (defmethod crud/query resource-type
   [request]
   (query-impl request))
-
-
-(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
-
-
-(defmethod crud/bulk-delete resource-type
-  [request]
-  (bulk-delete-impl request))
 
 
 ;;

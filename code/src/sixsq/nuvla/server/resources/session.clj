@@ -97,7 +97,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.log :as log-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.group :as group]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -193,7 +194,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
       [(u/operation-map id :add)])
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
-            (a/can-manage? resource request) (conj (u/action-map id :get-peers))
+            (a/can-manage? resource request) (conj (u/action-map id :get-peers)
+                                                   (u/action-map id :get-groups))
             (can-switch-group? request) (conj (u/action-map id :switch-group)))))
 
 
@@ -394,6 +396,54 @@ status, a 'set-cookie' header, and a 'location' header with the created
         (assoc-in [:cookies authn-info/authn-cookie] cookie))))
 
 
+(defn retrieve-session
+  [{{uuid :uuid} :params :as request}]
+  (db/retrieve (str resource-type "/" uuid) request))
+
+
+(defn query-group
+  [filter-str]
+  (second (crud/query-as-admin
+            group/resource-type
+            {:cimi-params {:filter (parser/parse-cimi-filter
+                                     filter-str)
+                           :last   10000
+                           :select ["id" "name" "description" "parents"]}})))
+
+
+(defn group-hierarchy [{:keys [id] :as group} subgroups]
+  (let [childs (filter (comp #{id} last :parents) subgroups)]
+    (cond-> (select-keys group [:id :name :description :children])
+            (seq childs) (assoc :children
+                                (map #(group-hierarchy % subgroups) childs)))))
+
+
+(defmethod crud/do-action [resource-type "get-groups"]
+  [request]
+  (try
+    (let [{:keys [user]} (-> request
+                             retrieve-session
+                             (a/throw-cannot-manage request))
+          root-groups  (query-group (str "users='" user "'"))
+          subgroups    (when (seq root-groups)
+                         (->> root-groups
+                              (map #(str "parents='" (:id %) "'"))
+                              (str/join " or ")
+                              query-group))
+          all-grps-ids (set/union (set (map :id subgroups))
+                                  (set (map :id root-groups)))]
+      (->> root-groups
+           (remove (comp all-grps-ids last :parents))
+           (map #(assoc % :parents [:root]))
+           (concat subgroups)
+           (sort-by (juxt :name :id))
+           (group-hierarchy {:id :root :children []})
+           :children
+           r/json-response))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
 (defmethod crud/do-action [resource-type "switch-group"]
   [{{uuid :uuid} :params :as request}]
   (try
@@ -409,10 +459,14 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "get-peers"]
   [request]
   (try
+    (-> request
+        retrieve-session
+        (a/throw-cannot-manage request))
     (let [user-id       (auth/current-user-id request)
           is-admin?     (a/is-admin? (auth/current-authentication request))
           peers-ids     (when-not is-admin?
-                          (->> (cookies/collect-groups-for-user user-id :with-users? true)
+                          (->> (cookies/collect-groups-for-user
+                                 user-id :with-users? true)
                                (map :users)
                                (reduce set/union #{})
                                seq))

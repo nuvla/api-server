@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Group - Group able to create a subgroup
+
+### Changed
+
+- Group - Bulk delete removed not needed
+
 ## [5.25.2] - 2022-05-12
 
 ### Changed
