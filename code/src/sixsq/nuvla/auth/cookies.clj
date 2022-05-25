@@ -68,18 +68,13 @@
 
 (defn create-cookie-info
   [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
-  (let [server               (:nuvla-ssl-server-name headers)
-        collected-groups-set (collect-groups-set-for-user user-id)
-        groups               (-> collected-groups-set
-                                 sort
-                                 seq)]
+  (let [server               (:nuvla-ssl-server-name headers)]
     (cond-> {:user-id user-id
              :claims  (or (some->> claims seq sort (str/join " "))
                           (->> [user-id "group/nuvla-user" "group/nuvla-anon"]
                                (remove nil?)
                                sort
                                (str/join " ")))}
-            groups (assoc :groups (str/join " " groups))
             roles-ext (update :claims #(str % " " (str/join " " roles-ext)))
             server (assoc :server server)
             session-id (assoc :session session-id)

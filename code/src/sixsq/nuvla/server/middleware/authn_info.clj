@@ -54,10 +54,9 @@
 
 (defn cookie-info->authn-info
   "Returns authn-nuvla map based on provided cookie info map."
-  [{:keys [user-id active-claim claims groups session]}]
+  [{:keys [user-id active-claim claims session]}]
   (when user-id
-    (cond-> {:claims (split-claims claims)
-             :groups (split-claims groups)}
+    (cond-> {:claims (split-claims claims)}
             user-id (assoc :user-id user-id)
             (or active-claim user-id) (assoc :active-claim (or active-claim user-id))
             session (assoc :session session))))

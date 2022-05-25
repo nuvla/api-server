@@ -26,7 +26,6 @@
 (def cookie-id-roles (serialize-cookie-value
                        (cookies/create-cookie {:user-id "user/uname2"
                                                :claims  (str "group/nuvla-user user/uname2 " session-a)
-                                               :groups  "group/alpha-role"
                                                :session session-a})))
 
 
@@ -77,30 +76,24 @@
     nil nil
     nil {}
     {:claims       #{}
-     :groups       #{}
      :user-id      "user"
      :active-claim "user"} {:user-id "user"}
     {:claims       #{}
-     :groups       #{}
      :session      "session"
      :user-id      "user"
      :active-claim "user"} {:user-id "user", :session "session"}
     {:claims       #{"role1"}
-     :groups       #{}
      :user-id      "user"
      :active-claim "user"} {:user-id "user", :claims "role1"}
     {:claims       #{"role1", "role2"}
-     :groups       #{}
      :user-id      "user"
      :active-claim "user"} {:user-id "user", :claims "role1 role2"}
     {:claims       #{"role1"}
-     :groups       #{}
      :session      "session"
      :user-id      "user"
      :active-claim "user"} {:user-id "user", :claims "role1",
                             :session "session"}
     {:claims       #{"role1", "role2"}
-     :groups       #{}
      :session      "session"
      :user-id      "user"
      :active-claim "user"} {:user-id "user"
@@ -110,12 +103,9 @@
      :claims       #{"group/nuvla-anon"
                      "group/nuvla-user"
                      "user"}
-     :groups       #{"group/a"
-                     "group/b"}
      :session      "session"
      :user-id      "user"} {:user-id      "user",
                             :claims       "group/nuvla-anon group/nuvla-user user",
-                            :groups       "group/a group/b",
                             :session      "session"
                             :active-claim "role2"}))
 
@@ -145,13 +135,11 @@
 
       {:active-claim "user/uname2"
        :claims       #{"group/nuvla-anon", "user/uname2", "group/nuvla-user"}
-       :groups       #{}
        :user-id      "user/uname2"} {:cookies {t/authn-cookie cookie-id}}
 
       {:active-claim "user/uname2"
        :claims       #{"group/nuvla-user", session-a,
                        "group/nuvla-anon", "user/uname2"}
-       :groups       #{"group/alpha-role"}
        :user-id      "user/uname2"} {:cookies {t/authn-cookie cookie-id-roles}}
 
       {:active-claim "user/uname"

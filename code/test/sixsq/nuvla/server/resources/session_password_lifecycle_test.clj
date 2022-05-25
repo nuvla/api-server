@@ -206,7 +206,7 @@
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group))
+            (ltu/is-operation-present :switch-group))
 
         ; check contents of session
         (let [{:keys [name description tags]} (-> session-user
@@ -343,7 +343,7 @@
             (ltu/is-id session-1-id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group))
+            (ltu/is-operation-present :switch-group))
 
         ;; add user to group/alpha
         (-> session-admin
@@ -419,7 +419,6 @@
                                     "group/nuvla-user"
                                     session-2-id
                                     group-alpha}
-                    :groups       #{"group/alpha"}
                     :user-id      user-id}
                    (-> {:cookies cookie-claim}
                        handler
@@ -511,7 +510,7 @@
           (ltu/is-id id)
           (ltu/is-operation-present :delete)
           (ltu/is-operation-absent :edit)
-          (ltu/is-operation-absent :switch-group)
+          (ltu/is-operation-present :switch-group)
           (ltu/is-operation-present :get-peers))
 
       ; check contents of session
@@ -597,7 +596,7 @@
           (ltu/is-id id)
           (ltu/is-operation-present :delete)
           (ltu/is-operation-absent :edit)
-          (ltu/is-operation-absent :switch-group)
+          (ltu/is-operation-present :switch-group)
           (ltu/is-operation-present :get-peers)
           (ltu/is-operation-present :get-groups))
 

@@ -40,13 +40,11 @@
                       cookie          (cookies/create-cookie cookie-info)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims          (:claims cookie-info)
-                      groups          (:groups cookie-info)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
                                                 :identifier (or identifier matched-user-id)
                                                 :expiry expires)
-                                              claims (assoc :roles claims)
-                                              groups (assoc :groups groups))
+                                              claims (assoc :roles claims))
                       {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
                   (log/debug "github cookie token claims for" instance ":" cookie-info)
                   (if (not= status 200)
