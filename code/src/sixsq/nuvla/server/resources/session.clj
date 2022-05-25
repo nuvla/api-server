@@ -173,11 +173,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (or acl (create-acl id))))
 
 
-(defn can-switch-group?
-  [request]
-  (-> (auth/current-groups request) seq boolean))
-
-
 (defn dispatch-conversion
   "Dispatches on the Session authentication method for multimethods
    that take the resource and request as arguments."
@@ -195,8 +190,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
             (a/can-manage? resource request) (conj (u/action-map id :get-peers)
-                                                   (u/action-map id :get-groups))
-            (can-switch-group? request) (conj (u/action-map id :switch-group)))))
+                                                   (u/action-map id :get-groups)
+                                                   (u/action-map id :switch-group)))))
 
 
 ;; Sets the operations for the given resources.  This is a
@@ -356,18 +351,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
           (throw e)))))
 
 
-(defn throw-switch-group-not-authorized
-  [resource {{:keys [claim]} :body :as request}]
-  (let [groups  (auth/current-groups request)
-        user-id (auth/current-user-id request)]
-    (if (or (= claim user-id)
-            (contains? groups claim))
-      resource
-      (throw
-        (r/ex-response
-          (format "Switch group cannot be done to requested group: %s!" claim) 403)))))
-
-
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn update-cookie-session
@@ -388,7 +371,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
         expires        (ts/rfc822->iso8601 (:expires cookie))
         session        (assoc session :expiry expires
                                       :active-claim claim
-                                      :groups (:groups cookie-info)
                                       :roles updated-roles)]
     (-> request
         (assoc :body session)
@@ -411,37 +393,64 @@ status, a 'set-cookie' header, and a 'location' header with the created
                            :select ["id" "name" "description" "parents"]}})))
 
 
-(defn group-hierarchy [{:keys [id] :as group} subgroups]
+(defn resolve-user-groups
+  [user-id]
+  (let [root-groups (query-group (str "users='" user-id "'"))
+        subgroups   (if (seq root-groups)
+                      (->> root-groups
+                           (map #(str "parents='" (:id %) "'"))
+                           (str/join " or ")
+                           query-group)
+                      [])]
+    {:root-groups  root-groups
+     :subgroups    subgroups
+     :all-grps-ids (set/union (set (map :id subgroups))
+                              (set (map :id root-groups)))}))
+
+
+(defn children [{:keys [id] :as group} subgroups]
   (let [childs (filter (comp #{id} last :parents) subgroups)]
     (cond-> (select-keys group [:id :name :description :children])
             (seq childs) (assoc :children
-                                (map #(group-hierarchy % subgroups) childs)))))
+                                (map #(children % subgroups) childs)))))
+
+
+(defn build-group-hierarchy
+  [{:keys [root-groups
+           subgroups
+           all-grps-ids]}]
+  (->> root-groups
+       (remove (comp all-grps-ids last :parents))
+       (map #(assoc % :parents [:root]))
+       (concat subgroups)
+       (sort-by (juxt :name :id))
+       (children {:id :root :children []})
+       :children))
 
 
 (defmethod crud/do-action [resource-type "get-groups"]
   [request]
   (try
-    (let [{:keys [user]} (-> request
-                             retrieve-session
-                             (a/throw-cannot-manage request))
-          root-groups  (query-group (str "users='" user "'"))
-          subgroups    (when (seq root-groups)
-                         (->> root-groups
-                              (map #(str "parents='" (:id %) "'"))
-                              (str/join " or ")
-                              query-group))
-          all-grps-ids (set/union (set (map :id subgroups))
-                                  (set (map :id root-groups)))]
-      (->> root-groups
-           (remove (comp all-grps-ids last :parents))
-           (map #(assoc % :parents [:root]))
-           (concat subgroups)
-           (sort-by (juxt :name :id))
-           (group-hierarchy {:id :root :children []})
-           :children
-           r/json-response))
+    (-> request
+        retrieve-session
+        (a/throw-cannot-manage request)
+        :user
+        resolve-user-groups
+        build-group-hierarchy
+        r/json-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
+
+
+(defn throw-switch-group-not-authorized
+  [resource {{:keys [claim]} :body :as request}]
+  (let [user-id (auth/current-user-id request)]
+    (if (or (= claim user-id)
+            ((:all-grps-ids (resolve-user-groups user-id)) claim))
+      resource
+      (throw
+        (r/ex-response
+          (format "Switch group cannot be done to requested group: %s!" claim) 403)))))
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
