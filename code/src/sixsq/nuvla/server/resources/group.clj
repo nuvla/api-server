@@ -66,10 +66,11 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
+  [{:keys [id] :as resource} request]
   (-> resource
       (a/add-acl request)
-      (a/acl-append-resource :view-data "group/nuvla-vpn")))
+      (a/acl-append-resource :view-data "group/nuvla-vpn")
+      (a/acl-append-resource :view-acl id)))
 
 
 ;;

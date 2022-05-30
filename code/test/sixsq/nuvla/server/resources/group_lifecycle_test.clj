@@ -234,7 +234,12 @@
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value :parents ["group/a"]))))
+            (ltu/is-key-value :parents ["group/a"]))
+        (testing "subgroup is able to see himself"
+          (-> session-group-b
+             (request abs-uri)
+             (ltu/body->edn)
+             (ltu/is-status 200)))))
 
     (testing "A group should be able to create a subgroup and see it with all parents"
       (let [abs-uri (-> session-group-b
