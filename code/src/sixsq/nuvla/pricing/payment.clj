@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.pricing.payment
-  (:require [sixsq.nuvla.db.filter.parser :as parser]
+  (:require [clojure.string :as str]
+            [sixsq.nuvla.db.filter.parser :as parser]
             [sixsq.nuvla.pricing.impl :as pricing-impl]
             [sixsq.nuvla.server.resources.common.crud :as crud]
             [sixsq.nuvla.server.util.response :as r]))
@@ -25,15 +26,23 @@
     (has-defined-payment-methods? s-customer)
     (has-credit? s-customer)))
 
-(defn active-claim->customer
-  [active-claim]
-  (-> (crud/query-as-admin
-        "customer"
-        {:cimi-params
-         {:filter (parser/parse-cimi-filter
-                    (format "parent='%s'" active-claim))}})
+
+(defn- get-customer [claim]
+  (-> (crud/query-as-admin "customer"
+                           {:cimi-params
+                            {:filter (parser/parse-cimi-filter
+                                       (format "parent='%s'" claim))}})
       second
       first))
+
+(defn active-claim->customer
+  [active-claim]
+  (or (get-customer active-claim)
+      (and (str/starts-with? active-claim "group/")
+           (some-> (crud/retrieve-by-id-as-admin active-claim)
+                   :parents
+                   first
+                   get-customer))))
 
 (defn active-claim->s-customer
   [active-claim]
