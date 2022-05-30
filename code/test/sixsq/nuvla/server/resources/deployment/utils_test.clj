@@ -49,6 +49,14 @@
                                                          :follow-customer-trial true}}}
         billable-deployment-not-follow {:module {:price {:price-id              "price_id"
                                                          :follow-customer-trial false}}}]
+    (testing "customer active with module price set and can pay"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/is-admin?                        (constantly false)
+                    payment/active-claim->subscription (constantly {:status "active"})
+                    payment/active-claim->s-customer   (constantly nil)
+                    payment/can-pay?                   (constantly true)]
+        (is (= billable-deployment-follow
+               (t/throw-when-payment-required billable-deployment-follow {})))))
     (testing "customer trialing with module price set and follow trial"
       (with-redefs [config-nuvla/*stripe-api-key*      "123"
                     a/is-admin?                        (constantly false)
@@ -74,6 +82,5 @@
                     payment/active-claim->subscription (constantly {:status "trialing"})
                     payment/can-pay?                   (constantly true)]
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
-               billable-deployment-not-follow))))
-    )
-  )
+               billable-deployment-not-follow))))))
+
