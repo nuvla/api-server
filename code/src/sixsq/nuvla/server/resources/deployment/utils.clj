@@ -355,10 +355,7 @@
           (a/is-admin? (auth/current-authentication request))
           (let [active-claim (auth/current-active-claim request)]
             (case (:status (payment/active-claim->subscription active-claim))
-              ("active" "past_due") (or (nil? price)
-                                        (-> active-claim
-                                            payment/active-claim->s-customer
-                                            payment/can-pay?))
+              ("active" "past_due") true
               "trialing" (or (nil? price)
                              (:follow-customer-trial price)
                              (-> active-claim

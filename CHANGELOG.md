@@ -8,7 +8,7 @@
 
 ### Changed
 
-- Resources - Fix interacting with non-free resources
+- Deployment - Fix interacting with non-free resources
 - Group - Bulk delete removed not needed
 - Session - Deprecate groups attribute in session and cookie
 - Session - New operation `get-groups` added. This operation allow user to get

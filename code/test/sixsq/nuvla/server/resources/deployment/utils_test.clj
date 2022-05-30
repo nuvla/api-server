@@ -49,12 +49,16 @@
                                                          :follow-customer-trial true}}}
         billable-deployment-not-follow {:module {:price {:price-id              "price_id"
                                                          :follow-customer-trial false}}}]
-    (testing "customer active with module price set and can pay"
+    (testing "customer is active"
       (with-redefs [config-nuvla/*stripe-api-key*      "123"
                     a/is-admin?                        (constantly false)
-                    payment/active-claim->subscription (constantly {:status "active"})
-                    payment/active-claim->s-customer   (constantly nil)
-                    payment/can-pay?                   (constantly true)]
+                    payment/active-claim->subscription (constantly {:status "active"})]
+        (is (= billable-deployment-follow
+               (t/throw-when-payment-required billable-deployment-follow {})))))
+    (testing "customer is past_due"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/is-admin?                        (constantly false)
+                    payment/active-claim->subscription (constantly {:status "past_due"})]
         (is (= billable-deployment-follow
                (t/throw-when-payment-required billable-deployment-follow {})))))
     (testing "customer trialing with module price set and follow trial"
