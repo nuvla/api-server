@@ -385,12 +385,13 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 (defn query-group
   [filter-str]
-  (second (crud/query-as-admin
-            group/resource-type
-            {:cimi-params {:filter (parser/parse-cimi-filter
-                                     filter-str)
-                           :last   10000
-                           :select ["id" "name" "description" "parents"]}})))
+  (second
+    (crud/query-as-admin
+      group/resource-type
+      {:cimi-params {:filter (parser/parse-cimi-filter
+                               filter-str)
+                     :last   10000
+                     :select ["id" "name" "description" "parents" "users"]}})))
 
 
 (defn resolve-user-groups
@@ -468,32 +469,31 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "get-peers"]
   [request]
   (try
-    (-> request
-        retrieve-session
-        (a/throw-cannot-manage request))
-    (let [user-id       (auth/current-user-id request)
-          is-admin?     (a/is-admin? (auth/current-authentication request))
-          peers-ids     (when-not is-admin?
-                          (->> (cookies/collect-groups-for-user
-                                 user-id :with-users? true)
-                               (map :users)
-                               (reduce set/union #{})
-                               seq))
-          filter-emails (if peers-ids
-                          (->> peers-ids
-                               (map #(format "parent='%s'" %))
-                               (str/join " or ")
-                               (format "(%s) and validated=true"))
-                          (when is-admin? "validated=true"))
-          peers         (when filter-emails
-                          (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
-                                              :select ["id", "address", "parent"]
-                                              :last   10000}}
-                               (crud/query-as-admin email/resource-type)
-                               second
-                               (map (juxt :parent :address))
-                               (into {})))]
-      (r/json-response (or peers {})))
+    (let [user-id       (-> request
+                            retrieve-session
+                            (a/throw-cannot-manage request)
+                            :user)
+          filter-emails (if (a/is-admin? (auth/current-authentication request))
+                          "validated=true"
+                          (let [{:keys [root-groups
+                                        subgroups]} (resolve-user-groups user-id)]
+                            (some->> (concat root-groups subgroups)
+                                     (mapcat :users)
+                                     distinct
+                                     seq
+                                     (map #(format "parent='%s'" %))
+                                     (str/join " or ")
+                                     (format "(%s) and validated=true"))))]
+      (r/json-response
+        (if filter-emails
+          (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
+                              :select ["id", "address", "parent"]
+                              :last   10000}}
+               (crud/query-as-admin email/resource-type)
+               second
+               (map (juxt :parent :address))
+               (into {}))
+          {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
