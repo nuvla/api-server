@@ -557,7 +557,6 @@
               (= [])
               (is "Get groups body should have no childs")))
 
-
         (testing
           "when user is part of a group he should get
            the subgroups"
@@ -630,10 +629,10 @@
         session-anon     (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
         session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         user-id          (create-user session-admin
-                                      :username "tarzan"
-                                      :password "TarzanTarzan-0"
+                                      :username "peer0"
+                                      :password "Peer0Peer-0"
                                       :activated? true
-                                      :email "tarzan@example.org")
+                                      :email "peer-0@example.org")
         peer-1           (create-user session-admin
                                       :username "peer1"
                                       :password "Peer1Peer-1"
@@ -650,7 +649,7 @@
                                       :activated? true
                                       :email "peer-3@example.org")
         session-user     (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
-        session-group-a  (header session-json authn-info-header "user/x group/a user/x group/nuvla-user group/nuvla-anon group/a")
+        session-group-a  (header session-json authn-info-header "user/x group/peers-test-a user/x group/nuvla-user group/nuvla-anon group/peers-test-a")
         href             (str st/resource-type "/password")
 
         grp-base-uri     (str p/service-context "group")
@@ -662,8 +661,8 @@
                              (request base-uri
                                       :request-method :post
                                       :body (json/write-str {:template {:href     href
-                                                                        :username "tarzan"
-                                                                        :password "TarzanTarzan-0"}}))
+                                                                        :username "peer0"
+                                                                        :password "Peer0Peer-0"}}))
                              (ltu/body->edn)
                              (ltu/is-set-cookie)
                              (ltu/is-status 201))
@@ -684,7 +683,7 @@
           (ltu/body)
           vals
           set
-          (= #{"tarzan@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
           (is "Get peers body should contain all users with validated emails")))
 
     (testing "user who is not in any group should get empty map of peers"
@@ -700,7 +699,7 @@
         (request (-> session-admin
                      (request grp-base-uri
                               :request-method :post
-                              :body (json/write-str (valid-create-grp "a")))
+                              :body (json/write-str (valid-create-grp "peers-test-a")))
                      (ltu/body->edn)
                      (ltu/is-status 201)
                      (ltu/location-url))
@@ -717,7 +716,7 @@
           (ltu/body)
           vals
           set
-          (= #{"tarzan@example.org" "peer-1@example.org"})
+          (= #{"peer-0@example.org" "peer-1@example.org"})
           (is "Get peers body should be himself and peer-1")))
 
     (testing "user should get peers of subgroup also"
@@ -725,7 +724,7 @@
           (request (-> session-group-a
                        (request grp-base-uri
                                 :request-method :post
-                                :body (json/write-str (valid-create-grp "b")))
+                                :body (json/write-str (valid-create-grp "peers-test-b")))
                        (ltu/body->edn)
                        (ltu/is-status 201)
                        (ltu/location-url))
@@ -740,5 +739,5 @@
           (ltu/body)
           vals
           set
-          (= #{"tarzan@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
           (is "Get peers body should contain peer-3")))))
