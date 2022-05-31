@@ -469,65 +469,6 @@
 
         ))))
 
-(deftest get-peers-lifecycle-test
-  (let [app                (ltu/ring-app)
-        session-json       (content-type (session app) "application/json")
-        session-user       (header session-json authn-info-header "user group/nuvla-user")
-        session-anon       (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin      (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        href               (str st/resource-type "/password")
-        username           "user/jack"
-        plaintext-password "JackJack-0"
-
-        valid-create       {:template {:href     href
-                                       :username username
-                                       :password plaintext-password}}]
-    (create-user session-admin
-                 :username username
-                 :password plaintext-password
-                 :activated? true
-                 :email "jack@example.org")
-
-    ; anonymous create must succeed
-    (let [resp    (-> session-anon
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str valid-create))
-                      (ltu/body->edn)
-                      (ltu/is-set-cookie)
-                      (ltu/is-status 201))
-          id      (ltu/body-resource-id resp)
-          uri     (ltu/location resp)
-          abs-uri (str p/service-context uri)]
-
-
-      ; user should be able to see session with session role
-      (-> (session app)
-          (header authn-info-header (str "user/user group/nuvla-user " id))
-          (request abs-uri)
-          (ltu/body->edn)
-          (ltu/is-status 200)
-          (ltu/is-id id)
-          (ltu/is-operation-present :delete)
-          (ltu/is-operation-absent :edit)
-          (ltu/is-operation-present :switch-group)
-          (ltu/is-operation-present :get-peers))
-
-      ; check contents of session
-      (let [get-peers-url (-> session-user
-                              (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                              (request abs-uri)
-                              (ltu/body->edn)
-                              (ltu/get-op-url :get-peers))]
-        (-> session-user
-            (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-            (request get-peers-url)
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/body)
-            (= {})
-            (is "Get peers body should be empty"))))))
-
 
 (deftest get-groups-lifecycle-test
   (let [app              (ltu/ring-app)
@@ -548,7 +489,7 @@
         valid-create-grp (fn [group-id] {:template {:href             "group-template/generic"
                                                     :group-identifier group-id
                                                     :name             (str "Group " group-id)
-                                                    :description (str "Group " group-id " description") }})]
+                                                    :description      (str "Group " group-id " description")}})]
 
     (-> session-admin
         (request grp-base-uri
@@ -616,7 +557,6 @@
               (= [])
               (is "Get groups body should have no childs")))
 
-
         (testing
           "when user is part of a group he should get
            the subgroups"
@@ -681,3 +621,123 @@
                    :id          "group/z"
                    :name        "Group z"}])
               (is "Get groups body should contain tree of groups")))))))
+
+
+(deftest get-peers-lifecycle-test
+  (let [app              (ltu/ring-app)
+        session-json     (content-type (session app) "application/json")
+        session-anon     (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        user-id          (create-user session-admin
+                                      :username "peer0"
+                                      :password "Peer0Peer-0"
+                                      :activated? true
+                                      :email "peer-0@example.org")
+        peer-1           (create-user session-admin
+                                      :username "peer1"
+                                      :password "Peer1Peer-1"
+                                      :activated? true
+                                      :email "peer-1@example.org")
+        peer-2           (create-user session-admin
+                                      :username "peer2"
+                                      :password "Peer2Peer-2"
+                                      :activated? false
+                                      :email "peer-2@example.org")
+        peer-3           (create-user session-admin
+                                      :username "peer3"
+                                      :password "Peer3Peer-3"
+                                      :activated? true
+                                      :email "peer-3@example.org")
+        session-user     (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
+        session-group-a  (header session-json authn-info-header "user/x group/peers-test-a user/x group/nuvla-user group/nuvla-anon group/peers-test-a")
+        href             (str st/resource-type "/password")
+
+        grp-base-uri     (str p/service-context "group")
+        valid-create-grp (fn [group-id] {:template {:href             "group-template/generic"
+                                                    :group-identifier group-id
+                                                    :name             (str "Group " group-id)
+                                                    :description      (str "Group " group-id " description")}})
+        resp             (-> session-anon
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str {:template {:href     href
+                                                                        :username "peer0"
+                                                                        :password "Peer0Peer-0"}}))
+                             (ltu/body->edn)
+                             (ltu/is-set-cookie)
+                             (ltu/is-status 201))
+        id               (ltu/body-resource-id resp)
+        abs-uri          (ltu/location-url resp)
+        session-with-id  (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon " id))
+        get-peers-url    (-> session-user
+                             (header authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon " id))
+                             (request abs-uri)
+                             (ltu/body->edn)
+                             (ltu/get-op-url :get-peers))]
+
+    (testing "admin should get all users with validated emails"
+      (-> session-admin
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (is "Get peers body should contain all users with validated emails")))
+
+    (testing "user who is not in any group should get empty map of peers"
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          (= {})
+          (is "Get peers body should be empty")))
+
+    (-> session-admin
+        (request (-> session-admin
+                     (request grp-base-uri
+                              :request-method :post
+                              :body (json/write-str (valid-create-grp "peers-test-a")))
+                     (ltu/body->edn)
+                     (ltu/is-status 201)
+                     (ltu/location-url))
+                 :request-method :put
+                 :body (json/write-str {:users [peer-1 user-id peer-2]}))
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+    (testing "user should get peers of the group when email is validated only"
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org"})
+          (is "Get peers body should be himself and peer-1")))
+
+    (testing "user should get peers of subgroup also"
+      (-> session-admin
+          (request (-> session-group-a
+                       (request grp-base-uri
+                                :request-method :post
+                                :body (json/write-str (valid-create-grp "peers-test-b")))
+                       (ltu/body->edn)
+                       (ltu/is-status 201)
+                       (ltu/location-url))
+                   :request-method :put
+                   :body (json/write-str {:users [peer-3 user-id peer-2]}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (is "Get peers body should contain peer-3")))))
