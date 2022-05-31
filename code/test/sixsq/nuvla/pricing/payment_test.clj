@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.pricing.payment-test
   (:require
-    [clojure.test :refer [deftest is]]
+    [clojure.walk :as walk]
+    [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as t]
     [sixsq.nuvla.server.resources.common.crud :as crud]))
@@ -33,15 +34,30 @@
     (is (false? (t/can-pay? {})))))
 
 (deftest active-claim->customer
-  (with-redefs [crud/query-as-admin (constantly [nil [:a]])]
-    (is (= :a (t/active-claim->customer {})))))
+  (testing "should return customer"
+   (with-redefs [crud/query-as-admin (constantly [nil [:a]])]
+    (is (= :a (t/active-claim->customer "user/a")))))
+  (testing "should return group customer"
+    (with-redefs [crud/query-as-admin          (fn [_ params] 
+                                                 [nil [(case (:filter 
+                                                               (walk/postwalk 
+                                                                 (fn [x] 
+                                                                   (if (and (vector? x) 
+                                                                            (not= (first x) :filter)) 
+                                                                     (last x) 
+                                                                     x))
+                                                                 params))
+                                                         "'group/a'" nil
+                                                         "'group/root'" :root)]])
+                  crud/retrieve-by-id-as-admin (constantly {:parents ["group/root" "group/parent"]})]
+      (is (= :root (t/active-claim->customer "group/a"))))))
 
 (deftest active-claim->s-customer
-  (with-redefs [t/active-claim->customer         (constantly {:customer-id 1})
+  (with-redefs [t/active-claim->customer      (constantly {:customer-id 1})
                 pricing-impl/retrieve-customer (constantly :a)]
     (is (= :a (t/active-claim->s-customer "")))))
 
 (deftest active-claim->subscription
   (with-redefs [t/active-claim->customer (constantly {:id 1})
-                crud/do-action-as-admin (constantly {:body :a})]
+                crud/do-action-as-admin  (constantly {:body :a})]
     (is (= :a (t/active-claim->subscription "")))))
