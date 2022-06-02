@@ -275,9 +275,8 @@
                    :request-method :post
                    :body (json/write-str valid-create))
           (ltu/body->edn)
-          (ltu/is-status 403)))
+          (ltu/is-status 403)))))
 
-    ))
 
 (deftest switch-group-lifecycle-test
 
@@ -295,179 +294,117 @@
                                         :password plaintext-password
                                         :activated? true
                                         :email "bob@example.org")]
-
-
-    ;; anon with valid activated user can create session
-    #_{:clj-kondo/ignore [:redundant-let]}
     (let [username           "user/bob"
           plaintext-password "BobBob-0"
 
           valid-create       {:template {:href     href
                                          :username username
-                                         :password plaintext-password}}]
+                                         :password plaintext-password}}
+          session-user       (-> session-anon
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str valid-create))
+                                 (ltu/body->edn)
+                                 (ltu/is-set-cookie)
+                                 (ltu/is-status 201))
+          session-user-id    (ltu/body-resource-id session-user)
+          sesssion-user-url  (ltu/location-url session-user)
+          handler            (wrap-authn-info identity)
+          authn-session-user (-> session-user
+                                 :response
+                                 (select-keys [:cookies])
+                                 handler
+                                 seq
+                                 flatten)
+          group-identifier   "alpha"
+          group-alpha        (str group/resource-type "/" group-identifier)
+          switch-op-url      (-> (apply request session-json (concat [sesssion-user-url] authn-session-user))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 200)
+                                 (ltu/get-op-url :switch-group))]
 
-      ; anonymous create must succeed
-      (let [session-1          (-> session-anon
-                                   (request base-uri
-                                            :request-method :post
-                                            :body (json/write-str valid-create))
-                                   (ltu/body->edn)
-                                   (ltu/is-set-cookie)
-                                   (ltu/is-status 201))
-            session-1-id       (ltu/body-resource-id session-1)
-
-            session-1-uri      (ltu/location session-1)
-            sesssion-1-abs-uri (str p/service-context session-1-uri)
-            handler            (wrap-authn-info identity)
-            authn-session-1    (-> {:cookies (get-in session-1 [:response :cookies])}
-                                   handler
-                                   seq
-                                   flatten)
-
-            group-identifier   "alpha"
-            group-alpha        (str group/resource-type "/" group-identifier)
-            group-create       {:template {:href             (str group-tpl/resource-type "/generic")
-                                           :group-identifier group-identifier}}
-            group-url          (-> session-admin
-                                   (request (str p/service-context group/resource-type)
-                                            :request-method :post
-                                            :body (json/write-str group-create))
-                                   (ltu/body->edn)
-                                   (ltu/is-status 201)
-                                   (ltu/location-url))]
-
-        ; user without additional group should not have operation claim
-        (-> (apply request session-json (concat [sesssion-1-abs-uri] authn-session-1))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-id session-1-id)
-            (ltu/is-operation-present :delete)
-            (ltu/is-operation-absent :edit)
-            (ltu/is-operation-present :switch-group))
-
-        ;; add user to group/alpha
+      (testing "Switch group op is available when user is part of a group"
         (-> session-admin
-            (request group-url
+            (request (-> session-admin
+                         (request (str p/service-context group/resource-type)
+                                  :request-method :post
+                                  :body (json/write-str
+                                          {:template
+                                           {:href             (str group-tpl/resource-type "/generic")
+                                            :group-identifier group-identifier}}))
+                         (ltu/body->edn)
+                         (ltu/is-status 201)
+                         (ltu/location-url))
                      :request-method :put
                      :body (json/write-str {:users [user-id]}))
             (ltu/body->edn)
             (ltu/is-status 200))
 
-        ;; check claim operation present
-        (let [session-2         (-> session-anon
-                                    (request base-uri
-                                             :request-method :post
-                                             :body (json/write-str valid-create))
-                                    (ltu/body->edn)
-                                    (ltu/is-set-cookie)
-                                    (ltu/is-status 201))
-              session-2-id      (ltu/body-resource-id session-2)
-
-              session-2-uri     (ltu/location session-2)
-              session-2-abs-uri (str p/service-context session-2-uri)
-
-              authn-session-2   (-> {:cookies (get-in session-2 [:response :cookies])}
-                                    handler
-                                    seq
-                                    flatten)
-
-              claim-op-url      (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/get-op-url :switch-group))]
-
-          (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-id session-2-id)
-              (ltu/is-operation-present :delete)
-              (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :switch-group)
-              (ltu/is-operation-present :get-peers))
-
-          ;; claiming group-beta should fail
+        (testing "User cannot switch to a group that he is not part of."
           (-> (apply request session-json
-                     (concat [claim-op-url :body (json/write-str {:claim "group/beta"})
-                              :request-method :post] authn-session-2))
+                     (concat [switch-op-url :body (json/write-str {:claim "group/beta"})
+                              :request-method :post] authn-session-user))
               (ltu/body->edn)
               (ltu/is-status 403)
-              (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
+              (ltu/message-matches #"Switch group cannot be done to requested group:.*")))
 
-          ;; claim with old session fail because wasn't in group/alpha
-          (-> (apply request session-json
-                     (concat [claim-op-url :body (json/write-str {:claim group-alpha})
-                              :request-method :post] authn-session-1))
-              (ltu/body->edn)
-              (ltu/is-status 403))
-
-          ;; claim group-alpha
-          (let [cookie-claim        (-> (apply request session-json
-                                               (concat [claim-op-url :body (json/write-str
-                                                                             {:claim group-alpha})
-                                                        :request-method :post] authn-session-2))
+        (testing "User can switch to a group that he is part of."
+          (let [response            (-> (apply request session-json
+                                               (concat [switch-op-url :body (json/write-str {:claim group-alpha})
+                                                        :request-method :post] authn-session-user))
                                         (ltu/body->edn)
                                         (ltu/is-status 200)
                                         (ltu/is-set-cookie)
-                                        :response
-                                        :cookies)
-                authn-session-claim (-> {:cookies cookie-claim}
+                                        :response)
+                authn-session-group (-> response
+                                        (select-keys [:cookies])
                                         handler
                                         seq
                                         flatten)]
-            (is (= {:active-claim group-alpha
-                    :claims       #{"group/nuvla-anon"
-                                    "group/nuvla-user"
-                                    session-2-id
-                                    group-alpha}
-                    :user-id      user-id}
-                   (-> {:cookies cookie-claim}
-                       handler
-                       auth/current-authentication)))
-
-            (-> (apply request session-json (concat [session-2-abs-uri] authn-session-claim))
-                (ltu/body->edn)
-                (ltu/is-status 200)
-                (ltu/is-id session-2-id)
-                (ltu/is-operation-present :delete)
-                (ltu/is-operation-absent :edit)
-                (ltu/is-operation-present :switch-group))
-
-            ;; try create NuvlaBox and check who is the owner
-            (binding [config-nuvla/*stripe-api-key* nil]
-              (let [nuvlabox-url (-> (apply request session-json
-                                            (concat [(str p/service-context nuvlabox/resource-type)
-                                                     :body (json/write-str {})
-                                                     :request-method :post] authn-session-claim))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201)
-                                     (ltu/location-url))]
-
-                (-> session-admin
-                    (request nuvlabox-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200))
-
-                (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-key-value :owner group-alpha))))
-
-            (let [cookie-claim-back (-> (apply request session-json
-                                               (concat [claim-op-url :body (json/write-str
-                                                                             {:claim user-id})
-                                                        :request-method :post] authn-session-claim))
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-set-cookie)
-                                        :response
-                                        :cookies)]
-              (is (= user-id
-                     (-> {:cookies cookie-claim-back}
+            (testing "Cookie is set and claims correspond to group alpha"
+              (is (= {:active-claim group-alpha
+                      :claims       #{"group/nuvla-anon"
+                                      "group/nuvla-user"
+                                      session-user-id
+                                      group-alpha}
+                      :user-id      user-id}
+                     (-> response
                          handler
-                         auth/current-authentication
-                         :user-id))))))
+                         auth/current-authentication))))
 
-        ))))
+            (testing "Nuvlabox owner is set correctly to the active-claim"
+              (binding [config-nuvla/*stripe-api-key* nil]
+                (let [nuvlabox-url (-> (apply request session-json
+                                              (concat [(str p/service-context nuvlabox/resource-type)
+                                                       :body (json/write-str {})
+                                                       :request-method :post] authn-session-group))
+                                       (ltu/body->edn)
+                                       (ltu/is-status 201)
+                                       (ltu/location-url))]
+
+                  (-> session-admin
+                      (request nuvlabox-url)
+                      (ltu/body->edn)
+                      (ltu/is-status 200))
+
+                  (-> (apply request session-json (concat [nuvlabox-url] authn-session-group))
+                      (ltu/body->edn)
+                      (ltu/is-status 200)
+                      (ltu/is-key-value :owner group-alpha))))
+
+              (testing "switch back to user is possible"
+                (is (= user-id
+                       (-> (apply request session-json
+                                  (concat [switch-op-url :body (json/write-str {:claim user-id})
+                                           :request-method :post] authn-session-group))
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/is-set-cookie)
+                           :response
+                           (select-keys [:cookies])
+                           handler
+                           auth/current-authentication
+                           :active-claim)))))))))))
 
 
 (deftest get-groups-lifecycle-test
