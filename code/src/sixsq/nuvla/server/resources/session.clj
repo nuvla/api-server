@@ -354,24 +354,30 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn update-cookie-session
-  [{:keys [id user roles active-claim client-ip] :as session}
-   {headers :headers {:keys [claim]} :body :as request}]
-  (let [updated-claims (-> roles
-                           authn-info/split-claims
-                           (disj (or active-claim user))
-                           (conj claim))
-        updated-roles  (->> updated-claims sort (str/join " "))
+  [{:keys [id user user-groups client-ip] :as session}
+   {headers :headers {:keys [claim extended]} :body :as request}]
+  (let [extended-claim (when extended
+                         (->> user-groups
+                              :subgroups
+                              (filter #((set (:parents %)) claim))
+                              (map :id)
+                              set))
+        claims         (cond-> #{id claim "group/nuvla-anon" "group/nuvla-user"}
+                               (seq extended-claim) (set/union extended-claim))
+        roles          (->> claims sort (str/join " "))
         cookie-info    (cookies/create-cookie-info user
                                                    :session-id id
-                                                   :claims updated-claims
+                                                   :claims claims
                                                    :active-claim claim
                                                    :headers headers
                                                    :client-ip client-ip)
         cookie         (cookies/create-cookie cookie-info)
         expires        (ts/rfc822->iso8601 (:expires cookie))
-        session        (assoc session :expiry expires
-                                      :active-claim claim
-                                      :roles updated-roles)]
+        session        (-> session
+                           (dissoc :user-groups)
+                           (assoc :expiry expires
+                                  :active-claim claim
+                                  :roles roles))]
     (-> request
         (assoc :body session)
         (edit-impl)
@@ -395,18 +401,20 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn resolve-user-groups
-  [user-id]
-  (let [root-groups (query-group (str "users='" user-id "'"))
+  [{:keys [user] :as session}]
+  (let [root-groups (query-group (str "users='" user "'"))
         subgroups   (if (seq root-groups)
                       (->> root-groups
                            (map #(str "parents='" (:id %) "'"))
                            (str/join " or ")
                            query-group)
                       [])]
-    {:root-groups  root-groups
-     :subgroups    subgroups
-     :all-grps-ids (set/union (set (map :id subgroups))
-                              (set (map :id root-groups)))}))
+    (assoc session
+      :user-groups
+      {:root-groups  root-groups
+       :subgroups    subgroups
+       :all-grps-ids (set/union (set (map :id subgroups))
+                                (set (map :id root-groups)))})))
 
 
 (defn children [{:keys [id] :as group} subgroups]
@@ -435,8 +443,8 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (-> request
         retrieve-session
         (a/throw-cannot-manage request)
-        :user
         resolve-user-groups
+        :user-groups
         build-group-hierarchy
         r/json-response)
     (catch Exception e
@@ -444,14 +452,13 @@ status, a 'set-cookie' header, and a 'location' header with the created
 
 
 (defn throw-switch-group-not-authorized
-  [resource {{:keys [claim]} :body :as request}]
-  (let [user-id (auth/current-user-id request)]
-    (if (or (= claim user-id)
-            ((:all-grps-ids (resolve-user-groups user-id)) claim))
-      resource
-      (throw
-        (r/ex-response
-          (format "Switch group cannot be done to requested group: %s!" claim) 403)))))
+  [{:keys [user user-groups] :as resource} {{:keys [claim]} :body :as _request}]
+  (if (or (= claim user)
+          ((:all-grps-ids user-groups) claim))
+    resource
+    (throw
+      (r/ex-response
+        (format "Switch group cannot be done to requested group: %s!" claim) 403))))
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
@@ -459,8 +466,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-          (throw-switch-group-not-authorized request)
           (a/throw-cannot-edit request)
+          (resolve-user-groups)
+          (throw-switch-group-not-authorized request)
           (update-cookie-session request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -469,14 +477,15 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "get-peers"]
   [request]
   (try
-    (let [user-id       (-> request
+    (let [user-groups   (-> request
                             retrieve-session
                             (a/throw-cannot-manage request)
-                            :user)
+                            resolve-user-groups
+                            :user-groups)
           filter-emails (if (a/is-admin? (auth/current-authentication request))
                           "validated=true"
                           (let [{:keys [root-groups
-                                        subgroups]} (resolve-user-groups user-id)]
+                                        subgroups]} user-groups]
                             (some->> (concat root-groups subgroups)
                                      (mapcat :users)
                                      distinct
