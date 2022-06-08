@@ -76,10 +76,28 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
+(defn throw-when-has-max-subgroups
+  [{{:keys [parents]} :body :as request}]
+  (let [query-group (fn [filter-str]
+                      (second
+                        (crud/query-as-admin
+                          resource-type
+                          {:cimi-params {:filter (parser/parse-cimi-filter filter-str)
+                                         :last   10000
+                                         :select ["id"]}})))
+        root-groups parents
+        subgroups   (if (seq root-groups)
+                      (->> root-groups
+                           (map #(str "parents='" % "'"))
+                           (str/join " or ")
+                           query-group)
+                      [])]
+    (if (<= 19 (+ (count root-groups) (count subgroups)))
+      (throw (r/ex-response "A group cannot have 19 subgroups!" 409))
+      request)))
 
 (defn tpl->group
-  [{:keys [group-identifier]
-    :as   resource} request]
+  [{:keys [group-identifier] :as   resource} request]
   (let [id           (str resource-type "/" group-identifier)
         active-claim (auth/current-active-claim request)
         inherit?     (and
@@ -91,15 +109,15 @@ that start with 'nuvla-' are reserved for the server.
                              (crud/retrieve-by-id-as-admin active-claim))]
     (-> resource
         (dissoc :group-identifier)
-        (assoc :id id
-               :users [])
+        (assoc :id id :users [])
         (cond-> inherit? (assoc :parents (conj parents parent-id))))))
 
 
-;; modified to retain id and not call new-identifier
+
 (defn add-impl [{:keys [body]
                  :as   request}]
   (a/throw-cannot-add collection-acl request)
+  (throw-when-has-max-subgroups request)
   (let [id (:id body)]
     (db/add
       resource-type
@@ -321,3 +339,4 @@ that start with 'nuvla-' are reserved for the server.
   (md/register resource-metadata)
 
   (initialize-data))
+

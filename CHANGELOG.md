@@ -9,6 +9,7 @@
 ### Changed
 
 - Session - Get peers get also users of subgroups
+- Groups - Limit sub-groups of a root group to 18
 - Subscription of root group is reused in sub-group
 - Deployment - Fix interacting with non-free resources
 - Group - Bulk delete removed not needed

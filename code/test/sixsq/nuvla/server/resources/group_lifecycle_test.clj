@@ -271,6 +271,30 @@
               (ltu/is-status 200)
               (ltu/is-key-value :parents ["group/a" "group/b"])))))
 
+    (testing "A user should not be able to create the 19th group of a group"
+      (let [session-group-d  (header session-json authn-info-header 
+                                     "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")
+            group-d-url      (-> session-user
+                                 (request base-uri
+                                          :request-method :post
+                                          :body (json/write-str (valid-create "d")))
+                                 ltu/body->edn
+                                 (ltu/is-status 201)
+                                 ltu/location-url)] 
+        (doseq [group-idx (range 18)]
+          (-> session-group-d
+              (request base-uri
+                       :request-method :post
+                       :body (json/write-str (valid-create (str "d-" group-idx))))
+              ltu/body->edn
+              (ltu/is-status 201)))
+        (-> session-group-d
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (valid-create "d-unwanted")))
+            ltu/body->edn
+            (ltu/is-status 409))))
+
     (testing "delete group that have children is not allowed"
       (-> session-admin
           (request (str p/service-context t/resource-type "/b")
