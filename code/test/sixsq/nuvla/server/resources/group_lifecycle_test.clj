@@ -272,22 +272,30 @@
               (ltu/is-key-value :parents ["group/a" "group/b"])))))
 
     (testing "A user should not be able to create the 19th group of a group"
-      (let [session-group-d  (header session-json authn-info-header 
+      (let [session-group-d     (header session-json authn-info-header 
                                      "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")
-            group-d-url      (-> session-user
-                                 (request base-uri
-                                          :request-method :post
-                                          :body (json/write-str (valid-create "d")))
-                                 ltu/body->edn
-                                 (ltu/is-status 201)
-                                 ltu/location-url)] 
-        (doseq [group-idx (range 18)]
+            session-subgroup-d0 (header session-json authn-info-header 
+                                     "user/jane group/d0 user/jane group/nuvla-user group/nuvla-anon group/d0")
+            group-d-url         (-> session-user
+                                    (request base-uri
+                                             :request-method :post
+                                             :body (json/write-str (valid-create "d")))
+                                    ltu/body->edn
+                                    (ltu/is-status 201)
+                                    ltu/location-url)] 
+        (doseq [group-idx (range 17)]
           (-> session-group-d
               (request base-uri
                        :request-method :post
-                       :body (json/write-str (valid-create (str "d-" group-idx))))
+                       :body (json/write-str (valid-create (str "d" group-idx))))
               ltu/body->edn
               (ltu/is-status 201)))
+        (-> session-subgroup-d0
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (valid-create "d-sub-sub-group")))
+            ltu/body->edn
+            (ltu/is-status 201))
         (-> session-group-d
             (request base-uri
                      :request-method :post

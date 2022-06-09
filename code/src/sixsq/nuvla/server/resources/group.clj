@@ -76,28 +76,27 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
-(defn throw-when-has-max-subgroups
+(defn throw-subgroups-limit-reached
   [{{:keys [parents]} :body :as request}]
-  (let [query-group (fn [filter-str]
-                      (second
-                        (crud/query-as-admin
-                          resource-type
-                          {:cimi-params {:filter (parser/parse-cimi-filter filter-str)
-                                         :last   10000
-                                         :select ["id"]}})))
-        root-groups parents
-        subgroups   (if (seq root-groups)
-                      (->> root-groups
-                           (map #(str "parents='" % "'"))
-                           (str/join " or ")
-                           query-group)
-                      [])]
-    (if (<= 19 (+ (count root-groups) (count subgroups)))
-      (throw (r/ex-response "A group cannot have 19 subgroups!" 409))
-      request)))
+  (if (and (seq parents)
+           (<= 19 (->> (crud/query-as-admin
+                         resource-type
+                         {:cimi-params {:filter (parser/parse-cimi-filter  
+                                                  (->> parents
+                                                       (map #(str "parents='" % "'"))
+                                                       (str/join " or ")))
+                                        :last   10000
+                                        :select ["id"]}})
+                       second
+                       (map :id)
+                       (concat parents)
+                       set
+                       count)))
+    (throw (r/ex-response "A group cannot have 19 subgroups!" 409))
+    request))
 
 (defn tpl->group
-  [{:keys [group-identifier] :as   resource} request]
+  [{:keys [group-identifier] :as resource} request]
   (let [id           (str resource-type "/" group-identifier)
         active-claim (auth/current-active-claim request)
         inherit?     (and
@@ -114,10 +113,10 @@ that start with 'nuvla-' are reserved for the server.
 
 
 
-(defn add-impl [{:keys [body]
-                 :as   request}]
+(defn add-impl 
+  [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
-  (throw-when-has-max-subgroups request)
+  (throw-subgroups-limit-reached request)
   (let [id (:id body)]
     (db/add
       resource-type
@@ -133,8 +132,7 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/add resource-type
-  [{:keys [body]
-    :as   request}]
+  [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
