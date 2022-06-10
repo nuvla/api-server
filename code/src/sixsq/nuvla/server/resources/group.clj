@@ -76,10 +76,22 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
+(defn throw-subgroups-limit-reached
+  [{{:keys [parents]} :body :as request}]
+  (if (and (seq parents)
+           (>= (-> (crud/query-as-admin
+                    resource-type
+                    {:cimi-params {:filter (parser/parse-cimi-filter
+                                             (format "parents='%s'" (first parents)))
+                                   :last   0}})
+                  first
+                  :count) 19))
+    (throw (r/ex-response "A group cannot have more than 19 subgroups!" 409))
+    request))
+
 
 (defn tpl->group
-  [{:keys [group-identifier]
-    :as   resource} request]
+  [{:keys [group-identifier] :as resource} request]
   (let [id           (str resource-type "/" group-identifier)
         active-claim (auth/current-active-claim request)
         inherit?     (and
@@ -91,15 +103,15 @@ that start with 'nuvla-' are reserved for the server.
                              (crud/retrieve-by-id-as-admin active-claim))]
     (-> resource
         (dissoc :group-identifier)
-        (assoc :id id
-               :users [])
+        (assoc :id id :users [])
         (cond-> inherit? (assoc :parents (conj parents parent-id))))))
 
 
-;; modified to retain id and not call new-identifier
-(defn add-impl [{:keys [body]
-                 :as   request}]
+
+(defn add-impl
+  [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
+  (throw-subgroups-limit-reached request)
   (let [id (:id body)]
     (db/add
       resource-type
@@ -115,8 +127,7 @@ that start with 'nuvla-' are reserved for the server.
 
 
 (defmethod crud/add resource-type
-  [{:keys [body]
-    :as   request}]
+  [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
@@ -321,3 +332,4 @@ that start with 'nuvla-' are reserved for the server.
   (md/register resource-metadata)
 
   (initialize-data))
+
