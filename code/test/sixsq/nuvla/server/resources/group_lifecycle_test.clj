@@ -65,7 +65,7 @@
                       (ltu/is-count #(>= % (count t/default-groups-users)))
                       (ltu/entries))]
       (is (= (set/intersection #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
-                               "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries)))
+                                 "group/nuvla-anon" "group/nuvla-vpn"} (set (map :id entries)))
              #{"group/nuvla-admin" "group/nuvla-user" "group/nuvla-nuvlabox"
                "group/nuvla-anon" "group/nuvla-vpn"}))
       (is (every? #(not (nil? %)) (set (map :name entries))))
@@ -237,9 +237,9 @@
             (ltu/is-key-value :parents ["group/a"]))
         (testing "subgroup is able to see himself"
           (-> session-group-b
-             (request abs-uri)
-             (ltu/body->edn)
-             (ltu/is-status 200)))))
+              (request abs-uri)
+              (ltu/body->edn)
+              (ltu/is-status 200)))))
 
     (testing "A group should be able to create a subgroup and see it with all parents"
       (let [abs-uri (-> session-group-b
@@ -272,36 +272,34 @@
               (ltu/is-key-value :parents ["group/a" "group/b"])))))
 
     (testing "A user should not be able to create the 19th group of a group"
-      (let [session-group-d     (header session-json authn-info-header 
-                                     "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")
-            session-subgroup-d0 (header session-json authn-info-header 
-                                     "user/jane group/d0 user/jane group/nuvla-user group/nuvla-anon group/d0")
-            group-d-url         (-> session-user
-                                    (request base-uri
-                                             :request-method :post
-                                             :body (json/write-str (valid-create "d")))
-                                    ltu/body->edn
-                                    (ltu/is-status 201)
-                                    ltu/location-url)] 
-        (doseq [group-idx (range 17)]
+      (let [session-group-d     (header session-json authn-info-header
+                                        "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")]
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (valid-create "d")))
+            ltu/body->edn
+            (ltu/is-status 201))
+        (doseq [group-idx (range 19)]
           (-> session-group-d
               (request base-uri
                        :request-method :post
                        :body (json/write-str (valid-create (str "d" group-idx))))
               ltu/body->edn
               (ltu/is-status 201)))
-        (-> session-subgroup-d0
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str (valid-create "d-sub-sub-group")))
+        (-> session-group-d
+            (request (str base-uri "?filter=parents='group/d'&last=0")
+                     :request-method :put)
             ltu/body->edn
-            (ltu/is-status 201))
+            (ltu/is-status 200)
+            (ltu/dump))
         (-> session-group-d
             (request base-uri
                      :request-method :post
-                     :body (json/write-str (valid-create "d-unwanted")))
+                     :body (json/write-str (valid-create "d-unwanted1")))
             ltu/body->edn
-            (ltu/is-status 409))))
+            (ltu/is-status 409)
+            (ltu/message-matches "A group cannot have more than 19 subgroups!"))))
 
     (testing "delete group that have children is not allowed"
       (-> session-admin

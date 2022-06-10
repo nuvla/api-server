@@ -79,21 +79,16 @@ that start with 'nuvla-' are reserved for the server.
 (defn throw-subgroups-limit-reached
   [{{:keys [parents]} :body :as request}]
   (if (and (seq parents)
-           (<= 19 (->> (crud/query-as-admin
-                         resource-type
-                         {:cimi-params {:filter (parser/parse-cimi-filter  
-                                                  (->> parents
-                                                       (map #(str "parents='" % "'"))
-                                                       (str/join " or ")))
-                                        :last   10000
-                                        :select ["id"]}})
-                       second
-                       (map :id)
-                       (concat parents)
-                       set
-                       count)))
-    (throw (r/ex-response "A group cannot have 19 subgroups!" 409))
+           (>= (-> (crud/query-as-admin
+                    resource-type
+                    {:cimi-params {:filter (parser/parse-cimi-filter
+                                             (format "parents='%s'" (first parents)))
+                                   :last   0}})
+                  first
+                  :count) 19))
+    (throw (r/ex-response "A group cannot have more than 19 subgroups!" 409))
     request))
+
 
 (defn tpl->group
   [{:keys [group-identifier] :as resource} request]
@@ -113,7 +108,7 @@ that start with 'nuvla-' are reserved for the server.
 
 
 
-(defn add-impl 
+(defn add-impl
   [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
   (throw-subgroups-limit-reached request)
