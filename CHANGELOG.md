@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Time - Helper truncate to days
 - Session - Get peers get also users of subgroups
 - Subscription of root group is reused in sub-group
 - Deployment - Fix interacting with non-free resources

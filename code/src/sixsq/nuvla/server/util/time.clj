@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.util.time
   (:require [java-time :as t])
-  (:import (java.time Instant OffsetDateTime)))
+  (:import (java.time Instant OffsetDateTime)
+           (java.time.temporal ChronoUnit)))
 
 
 (def rfc822-formatter (t/formatter :rfc-1123-date-time))
@@ -102,3 +103,7 @@
   (-> timestamp
       date-from-unix-timestamp
       to-str))
+
+(defn truncated-to-days
+  [^OffsetDateTime date]
+  (.truncatedTo date ChronoUnit/DAYS))

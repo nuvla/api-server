@@ -1,10 +1,10 @@
 (ns sixsq.nuvla.server.util.time-test
   (:require
     [clojure.test :refer [are deftest]]
-    [sixsq.nuvla.server.util.time :refer [date-from-str]]))
+    [sixsq.nuvla.server.util.time :as t]))
 
 (deftest test-date-from-str
-  (are [expect arg] (= expect (some-> arg date-from-str .toString))
+  (are [expect arg] (= expect (some-> arg t/date-from-str .toString))
                     nil nil
                     nil 1
                     nil "wrong-value"
@@ -18,3 +18,10 @@
                     "1964-08-25T10:00Z" "1964-08-25T10:00:00.00Z"
                     "2000-08-25T10:00:00.010Z" "2000-08-25T10:00:00.01Z"
                     "1964-12-25T10:00+01:00" "1964-12-25T10:00:00.00+01:00"))
+
+(deftest truncated-to-days-test
+  (are [expect arg] (= expect (-> arg t/date-from-str
+                                  t/truncated-to-days .toString))
+                    "2015-04-14T00:00Z" "2015-04-14T11:07:36Z"
+                    "2022-02-25T00:00Z" "2022-02-25T08:40:18.224Z"
+                    "1964-08-25T00:00Z" "1964-08-25T00:00:00.00Z"))
