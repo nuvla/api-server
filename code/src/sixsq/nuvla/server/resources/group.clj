@@ -80,12 +80,12 @@ that start with 'nuvla-' are reserved for the server.
   [{{:keys [parents]} :body :as request}]
   (if (and (seq parents)
            (>= (-> (crud/query-as-admin
-                    resource-type
-                    {:cimi-params {:filter (parser/parse-cimi-filter
-                                             (format "parents='%s'" (first parents)))
-                                   :last   0}})
-                  first
-                  :count) 19))
+                     resource-type
+                     {:cimi-params {:filter (parser/parse-cimi-filter
+                                              (format "parents='%s'" (first parents)))
+                                    :last   0}})
+                   first
+                   :count) 19))
     (throw (r/ex-response "A group cannot have more than 19 subgroups!" 409))
     request))
 
@@ -100,30 +100,31 @@ that start with 'nuvla-' are reserved for the server.
         {parent-id :id
          parents   :parents
          :as       _group} (when inherit?
-                             (crud/retrieve-by-id-as-admin active-claim))]
+                             (crud/retrieve-by-id-as-admin active-claim))
+        user-id      (auth/current-user-id request)]
     (-> resource
         (dissoc :group-identifier)
-        (assoc :id id :users [])
+        (assoc :id id :users (cond-> []
+                                     (not= "internal" user-id) (conj user-id)))
         (cond-> inherit? (assoc :parents (conj parents parent-id))))))
 
 
 
 (defn add-impl
-  [{:keys [body] :as request}]
+  [{{:keys [id] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (throw-subgroups-limit-reached request)
-  (let [id (:id body)]
-    (db/add
-      resource-type
-      (-> body
-          u/strip-service-attrs
-          (assoc :id id
-                 :resource-type resource-type)
-          u/update-timestamps
-          (u/set-created-by request)
-          (crud/add-acl request)
-          crud/validate)
-      {})))
+  (db/add
+    resource-type
+    (-> body
+        u/strip-service-attrs
+        (assoc :id id
+               :resource-type resource-type)
+        u/update-timestamps
+        (u/set-created-by request)
+        (crud/add-acl request)
+        crud/validate)
+    {}))
 
 
 (defmethod crud/add resource-type

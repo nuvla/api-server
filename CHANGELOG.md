@@ -8,6 +8,7 @@
 
 ### Changed
 
+- Group - By default add connected user into created group members
 - Time - Helper truncate to days
 - Session - Get peers get also users of subgroups
 - Subscription of root group is reused in sub-group

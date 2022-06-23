@@ -31,7 +31,7 @@
 
   (let [app                     (ltu/ring-app)
         session-json            (content-type (session app) "application/json")
-        session-admin           (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin           (header session-json authn-info-header "user/jane group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user            (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon            (header session-json authn-info-header "group/nuvla-anon")
 
@@ -96,30 +96,27 @@
                   postal/send-message      (fn [_ _] {:code 0, :error :SUCCESS, :message "OK"})]
       (doseq [session [session-user session-admin]]
         (doseq [tpl [valid-create valid-create-no-href]]
-          (let [resp        (-> session
+          (let [abs-uri     (-> session
                                 (request base-uri
                                          :request-method :post
                                          :body (json/write-str tpl))
                                 (ltu/body->edn)
-                                (ltu/is-status 201))
-
-                abs-uri     (->> resp
-                                 ltu/location
-                                 (str p/service-context))
+                                (ltu/is-status 201)
+                                (ltu/location-url))
 
                 expected-id (str "group/" (get-in tpl [:template :group-identifier]))]
 
             ;; check contents of resource
-            (let [{:keys [id name description tags users]
-                   :as   body} (-> session
-                                   (request abs-uri)
-                                   (ltu/body->edn)
-                                   (ltu/body))]
-              (is (= id expected-id))
-              (is (= name name-attr))
-              (is (= description description-attr))
-              (is (= tags tags-attr))
-              (is (= [] users))
+            (let [{:keys [id] :as body} (-> session
+                                            (request abs-uri)
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            (ltu/is-key-value :id expected-id)
+                                            (ltu/is-key-value :name name-attr)
+                                            (ltu/is-key-value :description description-attr)
+                                            (ltu/is-key-value :tags tags-attr)
+                                            (ltu/is-key-value :users ["user/jane"])
+                                            (ltu/body))]
 
               ;; actually add some users to the group
               (let [users [user-tarzan-id
@@ -272,8 +269,8 @@
               (ltu/is-key-value :parents ["group/a" "group/b"])))))
 
     (testing "A user should not be able to create the 19th group of a group"
-      (let [session-group-d     (header session-json authn-info-header
-                                        "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")]
+      (let [session-group-d (header session-json authn-info-header
+                                    "user/jane group/d user/jane group/nuvla-user group/nuvla-anon group/d")]
         (-> session-user
             (request base-uri
                      :request-method :post
@@ -291,8 +288,7 @@
             (request (str base-uri "?filter=parents='group/d'&last=0")
                      :request-method :put)
             ltu/body->edn
-            (ltu/is-status 200)
-            (ltu/dump))
+            (ltu/is-status 200))
         (-> session-group-d
             (request base-uri
                      :request-method :post

@@ -5,7 +5,7 @@
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
-(def user-id-regex #"^user/[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$")
+(def user-id-regex #"^user/[a-zA-Z0-9-]+$")
 (def group-id-regex #"^group/([a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?)?$")
 
 (s/def ::user-id
