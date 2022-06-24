@@ -31,7 +31,7 @@
 
   (let [app                     (ltu/ring-app)
         session-json            (content-type (session app) "application/json")
-        session-admin           (header session-json authn-info-header "user/jane group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin           (header session-json authn-info-header "user/jane group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
         session-user            (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-anon            (header session-json authn-info-header "group/nuvla-anon")
 
@@ -188,7 +188,7 @@
 
   (let [app              (ltu/ring-app)
         session-json     (content-type (session app) "application/json")
-        session-admin    (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin    (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
         session-user     (header session-json authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
         session-group-a  (header session-json authn-info-header "user/jane group/a user/jane group/nuvla-user group/nuvla-anon group/a")
         session-group-b  (header session-json authn-info-header "user/jane group/b user/jane group/nuvla-user group/nuvla-anon group/b")
