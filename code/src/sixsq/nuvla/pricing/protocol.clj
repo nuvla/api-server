@@ -8,7 +8,7 @@
   (retrieve-customer [this customer-id])
   (update-customer [this customer params])
   (delete-customer [this customer])
-  (delete-discount-customer [this customer])
+  (delete-discount [this obj])
   (get-customer-subscriptions [this customer])
   (list-subscriptions [this params])
   (create-subscription [this params])
