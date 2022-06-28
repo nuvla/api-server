@@ -8,6 +8,8 @@
 
 ### Changed
 
+- Pricing - Add method to `delete-discount` and
+  remove `delete-discount-customer`
 - Group - By default add connected user into created group members
 - Time - Helper truncate to days
 - Session - Get peers get also users of subgroups
@@ -17,8 +19,8 @@
 - Session - Deprecate groups attribute in session and cookie
 - Session - New operation `get-groups` added. This operation allow user to get
   all groups hierarchies that he is part of
-- Session - Operation `switch-group` allow user to switch to subgroups
-  that he is implicitly part of
+- Session - Operation `switch-group` allow user to switch to subgroups that he
+  is implicitly part of
 
 ## [5.25.2] - 2022-05-12
 
