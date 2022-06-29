@@ -2,23 +2,24 @@
 
 ## Unreleased
 
+## [6.0.0] - 2022-06-29
+
 ### Added
 
 - Group - Allow group to create subgroups
+- Time - Helper truncate to days
+- Subscription of root group is inherited in sub-group
+- Session - New operation `get-groups` added. This operation allow user to get
+  all groups hierarchies that he is part of
 
 ### Changed
 
-- Pricing - Add method to `delete-discount` and
-  remove `delete-discount-customer`
+- Pricing - Rename method `delete-discount-customer` to `delete-discount`
 - Group - By default add connected user into created group members
-- Time - Helper truncate to days
 - Session - Get peers get also users of subgroups
-- Subscription of root group is reused in sub-group
 - Deployment - Fix interacting with non-free resources
 - Group - Bulk delete removed not needed
 - Session - Deprecate groups attribute in session and cookie
-- Session - New operation `get-groups` added. This operation allow user to get
-  all groups hierarchies that he is part of
 - Session - Operation `switch-group` allow user to switch to subgroups that he
   is implicitly part of
 

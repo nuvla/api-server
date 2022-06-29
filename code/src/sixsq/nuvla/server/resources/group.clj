@@ -6,10 +6,12 @@ that start with 'nuvla-' are reserved for the server.
 "
   (:require
     [clojure.spec.alpha :as s]
+    [clojure.string :as str]
     [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -22,9 +24,7 @@ that start with 'nuvla-' are reserved for the server.
     [sixsq.nuvla.server.resources.spec.group :as group]
     [sixsq.nuvla.server.resources.spec.group-template :as group-tpl]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [clojure.string :as str]
-    [sixsq.nuvla.db.filter.parser :as parser]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

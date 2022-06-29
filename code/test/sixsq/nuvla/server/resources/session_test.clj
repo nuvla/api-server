@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.session-test
   (:require
-    [clojure.test :refer [deftest are]]
+    [clojure.test :refer [are deftest]]
     [sixsq.nuvla.server.resources.session :as t]))
 
 (deftest build-group-hierarchy

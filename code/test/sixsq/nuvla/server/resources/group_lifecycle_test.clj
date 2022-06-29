@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.resources.group-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.set :as set]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.auth.password :as auth-password]
@@ -13,8 +14,7 @@
     [sixsq.nuvla.server.resources.group :as t]
     [sixsq.nuvla.server.resources.group-template :as group-tpl]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [clojure.set :as set]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -116,65 +116,63 @@
                                             (ltu/is-key-value :description description-attr)
                                             (ltu/is-key-value :tags tags-attr)
                                             (ltu/is-key-value :users ["user/jane"])
-                                            (ltu/body))]
+                                            (ltu/body))
+                  ;; actually add some users to the group
+                  users [user-tarzan-id
+                         "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
+                         "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
+              (-> session
+                  (request abs-uri
+                           :request-method :put
+                           :body (json/write-str (assoc body :users users)))
+                  (ltu/body->edn)
+                  (ltu/is-status 200))
 
-              ;; actually add some users to the group
-              (let [users [user-tarzan-id
-                           "user/bb2f41a3-c54c-fce8-32d2-0324e1c32e22"
-                           "user/cc2f41a3-c54c-fce8-32d2-0324e1c32e22"]]
+              (let [response   (-> session
+                                   (request abs-uri)
+                                   (ltu/body->edn))
+                    {updated-users :users
+                     acl           :acl} (ltu/body response)
+                    invite-url (-> response
+                                   (ltu/is-operation-present :invite)
+                                   (ltu/get-op-url :invite))]
 
                 (-> session
-                    (request abs-uri
-                             :request-method :put
-                             :body (json/write-str (assoc body :users users)))
+                    (request invite-url
+                             :request :put
+                             :body (json/write-str {:username "notexistandnotemail"}))
                     (ltu/body->edn)
-                    (ltu/is-status 200))
+                    (ltu/is-status 400)
+                    (ltu/message-matches "invalid email"))
 
-                (let [response   (-> session
-                                     (request abs-uri)
-                                     (ltu/body->edn))
-                      {updated-users :users
-                       acl           :acl} (ltu/body response)
-                      invite-url (-> response
-                                     (ltu/is-operation-present :invite)
-                                     (ltu/get-op-url :invite))]
+                (-> session
+                    (request invite-url
+                             :request :put
+                             :body (json/write-str {:username tarzan-email}))
+                    (ltu/body->edn)
+                    (ltu/is-status 400)
+                    (ltu/message-matches "user already in group"))
 
+                (-> session
+                    (request invite-url
+                             :request :put
+                             :body (json/write-str {:username "max@example.com"}))
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/message-matches (str "successfully invited to " id)))
+
+                (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
                   (-> session
                       (request invite-url
                                :request :put
-                               :body (json/write-str {:username "notexistandnotemail"}))
+                               :body (json/write-str {:username     "jane@example.com"
+                                                      :redirect-url "https://phishing.com"}))
                       (ltu/body->edn)
                       (ltu/is-status 400)
-                      (ltu/message-matches "invalid email"))
+                      (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
 
-                  (-> session
-                      (request invite-url
-                               :request :put
-                               :body (json/write-str {:username tarzan-email}))
-                      (ltu/body->edn)
-                      (ltu/is-status 400)
-                      (ltu/message-matches "user already in group"))
-
-                  (-> session
-                      (request invite-url
-                               :request :put
-                               :body (json/write-str {:username "max@example.com"}))
-                      (ltu/body->edn)
-                      (ltu/is-status 200)
-                      (ltu/message-matches (str "successfully invited to " id)))
-
-                  (binding [config-nuvla/*authorized-redirect-urls* ["https://nuvla.io"]]
-                    (-> session
-                        (request invite-url
-                                 :request :put
-                                 :body (json/write-str {:username     "jane@example.com"
-                                                        :redirect-url "https://phishing.com"}))
-                        (ltu/body->edn)
-                        (ltu/is-status 400)
-                        (ltu/message-matches config-nuvla/error-msg-not-authorised-redirect-url)))
-
-                  (is (= users updated-users))
-                  (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl))))))))
+                (is (= users updated-users))
+                (is (= (set (conj users id)) (set (remove #{"group/nuvla-admin" "group/nuvla-vpn"} (:view-meta acl)))))))
 
             ;; delete should work
             (-> session
