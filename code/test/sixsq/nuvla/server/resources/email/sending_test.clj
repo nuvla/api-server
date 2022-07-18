@@ -31,23 +31,3 @@
         (catch Exception ex
           (let [{:keys [status]} (ex-data ex)]
             (is (= 500 status))))))))
-
-(deftest fire
-  (with-redefs [postal/send-message (fn [smtp data]
-                                      (testing "should call postal send-message"
-                                        (is (some? (:subject data)) "should have data with subject")
-                                        (is (some? (seq smtp)) "should have smtp"))
-                                      {:error :SUCCESS})
-                crud/retrieve-by-id-as-admin (fn [_] {:smtp-host "host"})]
-    (is (= {:success? true} (t/fire "test@example.com" (content/trial-ending {})))
-        "should return success"))
-
-  (testing "should return error if unable to send"
-    (with-redefs [postal/send-message (fn [smtp data]
-                                        (testing "should call postal send-message"
-                                          (is (some? (:subject data)) "should have data with subject")
-                                          (is (some? (seq smtp)) "should have smtp"))
-                                        {:error :ERROR})
-                  crud/retrieve-by-id-as-admin (fn [_] {:smtp-host "host"})]
-      (is (= {:error "email dispatch failed!"} (t/fire "test@example.com" (content/trial-ended {})))))))
-
