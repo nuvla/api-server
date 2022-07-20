@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.app.routes
   (:require
-    [compojure.core :refer [ANY DELETE GET let-routes PATCH POST PUT routes]]
+    [compojure.core :refer [ANY DELETE GET let-routes PATCH POST PUT OPTIONS routes]]
     [compojure.route :as route]
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
@@ -62,12 +62,17 @@
    action-routes
    (not-found)])
 
+(def cors-preflight-check-route
+  (OPTIONS "*" []
+    (r/map-response "preflight complete" 204)))
+
 
 (defn get-main-routes
   "Returns all of the routes defined for the server.  This uses
    dynamic loading to discover all of the defined resources on the
    classpath."
   []
-  (apply routes (doall (concat [(route/resources (str p/service-context "static"))]
+  (apply routes (doall (concat [cors-preflight-check-route
+                                (route/resources (str p/service-context "static"))]
                                (dyn/resource-routes)
                                final-routes))))
