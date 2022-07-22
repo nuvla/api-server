@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [6.0.1] - 2022-07-22
+
+### Added
+
+- Routing - HTTP CORS preflight checks support
+
 ### Changed
 
 - Email sending - Enhance logging when error occur
