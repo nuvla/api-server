@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.cloud-entry-point-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest use-fixtures]]
+    [clojure.test :refer [deftest use-fixtures testing]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -78,12 +78,18 @@
         (ltu/is-status 200)
         (ltu/is-resource-uri t/resource-type)
         (ltu/is-operation-absent :edit)
-        (ltu/is-key-value :name "dummy"))))
+        (ltu/is-key-value :name "dummy"))
+
+    (testing "cors preflight check should be authorized"
+             (-> session-anon
+                 (request base-uri
+                          :request-method :options)
+                 (ltu/body->edn)
+                 (ltu/is-status 204)))))
 
 
 (deftest bad-methods
-  (ltu/verify-405-status [[base-uri :options]
-                          [base-uri :delete]
+  (ltu/verify-405-status [[base-uri :delete]
                           [base-uri :post]]))
 
 
