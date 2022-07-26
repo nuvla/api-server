@@ -111,7 +111,12 @@
                                        :value             15.4}
                                       {:thermal-zone      "Tboard_tegra"
                                        :value             1.5}]
-            :components               ["agent", "vpn-client"]})
+            :components               ["agent", "vpn-client"]
+            :network                  {:foo "bar"
+                                       :default-gw "eth0"
+                                       :interfaces {:eth0 {:ip "1.2.3.4"
+                                                           :baz "bar"}
+                                                    :eth1 {:ip "2.3.4.5"}}}})
 
 
 (deftest check-nuvlabox-status
@@ -130,5 +135,5 @@
                  :container-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
                  :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
-                 :cluster-join-address :temperatures :components}]
+                 :cluster-join-address :temperatures :components :network}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))
