@@ -98,7 +98,12 @@
                   :cluster-join-address        "194.182.171.166:2377"
                   :orchestrator                "kubernetes"
                   :temperatures                []
-                  :components                  ["agent"]})
+                  :components                  ["agent"]
+                  :network                     {:foo "bar"
+                                                :default-gw "eth0"
+                                                :interfaces {:eth0 {:ip "1.2.3.4"
+                                                                    :baz "bar"}
+                                                             :eth1 {:ip "2.3.4.5"}}}})
 
 
 (def resources-updated {:cpu   {:capacity 10
