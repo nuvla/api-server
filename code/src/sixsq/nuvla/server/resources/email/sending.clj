@@ -55,7 +55,7 @@
   "send email to an email-address using a map from resources.email.text
   e.g. email.text/trial-ending"
   [to email-data]
-  (let [{:keys [smtp-username]
+  (let [{:keys [smtp-username email-header-img-url]
          :as   nuvla-config} (crud/retrieve-by-id-as-admin
                                config-nuvla/config-instance-url)]
     (dispatch nuvla-config
@@ -65,6 +65,8 @@
                           :content (render-content
                                      (assoc email-data :plain? true))}
                          {:type    "text/html; charset=utf-8"
-                          :content (render-content email-data)}]
+                          :content (render-content
+                                     (assoc email-data
+                                       :header-img email-header-img-url))}]
                :from    (or smtp-username "administrator")
                :to      [to]})))

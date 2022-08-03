@@ -108,6 +108,14 @@
              :json-schema/order 30)))
 
 
+(s/def ::email-header-img-url
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "email-header-img-url"
+             :json-schema/display-name "Email header image url"
+             :json-schema/description "Email header image url"
+
+             :json-schema/order 31)))
+
 (s/def ::authorized-redirect-urls
   (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
       (assoc :name "authorized-redirect-urls"
@@ -115,7 +123,7 @@
              :json-schema/display-name "List of authorized urls"
              :json-schema/description "List of authorized urls that redirects begin with, this is a very important security setting for production server"
 
-             :json-schema/order 31)))
+             :json-schema/order 32)))
 
 
 (def configuration-template-keys-spec
@@ -130,6 +138,7 @@
             ::stripe-client-id
             ::external-vulnerabilities-db
             ::conditions-url
+            ::email-header-img-url
             ::authorized-redirect-urls]})
 
 
