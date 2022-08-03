@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [6.0.2] - 2022-08-03
+
+### Added
+
+- Nuvla Config - Make email header image configurable
+
 ## [6.0.1] - 2022-07-22
 
 ### Added
