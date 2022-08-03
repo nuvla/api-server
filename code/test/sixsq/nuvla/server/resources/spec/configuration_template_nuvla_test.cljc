@@ -34,6 +34,7 @@
                    :external-vulnerabilities-db "https://github.com/nuvla/vuln-db/blob/main/databases/all.aggregated.json.gz?raw=true"
 
                    :conditions-url              "https://nuvla.io/terms/tos"
+                   :email-header-img-url        "https://nuvla.io/ui/images/email-header.png"
                    :authorized-redirect-urls    ["https://nuvla.io"]}]
 
     (stu/is-valid ::ct-nuvla/schema cfg)
@@ -45,5 +46,5 @@
     ;; optional keys
     (doseq [k #{:smtp-username :smtp-password :smtp-host :smtp-port :smtp-ssl :smtp-debug
                 :support-email :stripe-api-key :external-vulnerabilities-db :conditions-url
-                :authorized-redirect-urls}]
+                :email-header-img-url :authorized-redirect-urls}]
       (stu/is-valid ::ct-nuvla/schema (dissoc cfg k)))))
