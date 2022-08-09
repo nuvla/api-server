@@ -21,22 +21,25 @@
 
    :state         "CREATED"
 
-   :spec          {:targets ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                             "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
+   :spec          {:targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                  "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
                    :applications ["module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                  "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]}})
+                                  "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]}
+   :job           "job/e2dc1733-ac2c-45b1-b68a-0ec02653bc0c"})
 
 
 (deftest test-schema-check
   (stu/is-valid ::t/deployment-fleet valid-deployment-fleet)
   (stu/is-invalid ::t/deployment-fleet (assoc valid-deployment-fleet :badKey "badValue"))
   (stu/is-invalid ::t/deployment-fleet (assoc valid-deployment-fleet :state "wrong"))
-  (stu/is-invalid ::t/deployment-fleet (assoc-in valid-deployment-fleet [:spec :applications] "must-be-href"))
+  (stu/is-invalid ::t/deployment-fleet (assoc-in valid-deployment-fleet [:spec :applications] ["must-be-href"]))
+  (stu/is-invalid ::t/deployment-fleet (assoc-in valid-deployment-fleet [:spec :applications] []))
+  (stu/is-invalid ::t/deployment-fleet (assoc-in valid-deployment-fleet [:spec :targets] []))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state :spec}]
     (stu/is-invalid ::t/deployment-fleet (dissoc valid-deployment-fleet k)))
 
   ;; optional attributes
-  (doseq [k #{}]
+  (doseq [k #{:job}]
     (stu/is-valid ::t/deployment-fleet (dissoc valid-deployment-fleet k))))

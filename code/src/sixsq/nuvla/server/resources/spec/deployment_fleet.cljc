@@ -8,24 +8,24 @@
     [spec-tools.core :as st]))
 
 (s/def ::state
-  (-> (st/spec #{"CREATING", "CREATED",
-                 "STARTING", "STARTED",
-                 "STOPPING", "STOPPED"})
-      (assoc :name "state"
-             :json-schema/type "string"
-             :json-schema/description "state of deployment fleet"
+  (assoc (st/spec #{"CREATING", "CREATED",
+                    "STARTING", "STARTED",
+                    "STOPPING", "STOPPED"})
+    :name "state"
+    :json-schema/type "string"
+    :json-schema/description "state of deployment fleet"
 
-             :json-schema/value-scope {:values  ["CREATING", "CREATED",
-                                                 "STARTING", "STARTED",
-                                                 "STOPPING", "STOPPED"]})))
+    :json-schema/value-scope {:values ["CREATING", "CREATED",
+                                       "STARTING", "STARTED",
+                                       "STOPPING", "STOPPED"]}))
 
 (s/def ::targets
-  (-> (st/spec (s/coll-of ::cred-spec/credential-id))
-      (assoc :name "targets"
-             :json-schema/type "array"
+  (assoc (st/spec (s/coll-of ::cred-spec/credential-id :min-count 1))
+    :name "targets"
+    :json-schema/type "array"
 
-             :json-schema/display-name "targets"
-             :json-schema/description "List of targeted credentials ids.")))
+    :json-schema/display-name "targets"
+    :json-schema/description "List of targeted credentials ids."))
 
 
 (def ^:const module-id-regex #"^module/[0-9a-f]+(-[0-9a-f]+)*(_\d+)*$")
@@ -33,27 +33,38 @@
 (s/def ::module-id (s/and string? module-id?))
 
 (s/def ::applications
-  (-> (st/spec (s/coll-of ::module-id))
-      (assoc :name "applications"
-             :json-schema/type "array"
+  (assoc (st/spec (s/coll-of ::module-id :min-count 1))
+    :name "applications"
+    :json-schema/type "array"
 
-             :json-schema/display-name "applications"
-             :json-schema/description "List of applications ids to deploy on targets.")))
+    :json-schema/display-name "applications"
+    :json-schema/description "List of applications ids to deploy on targets."))
 
 (s/def ::spec
-  (-> (st/spec (su/only-keys :req-un [::targets
-                                      ::applications]))
-      (assoc :name "spec"
-             :json-schema/type "map"
+  (assoc (st/spec (su/only-keys :req-un [::targets
+                                         ::applications]))
+    :name "spec"
+    :json-schema/type "map"
 
-             :json-schema/display-name "Spec"
-             :json-schema/description "Deployment fleet spec")))
+    :json-schema/display-name "Spec"
+    :json-schema/description "Deployment fleet spec"))
+
+(def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
+(s/def ::job-id (-> (st/spec (s/and string? #(re-matches job-regex %)))))
+
+(s/def ::job
+  (-> (st/spec ::job-id)
+      (assoc :name "job"
+             :json-schema/type "resource-id"
+
+             :json-schema/display-name "job"
+             :json-schema/description "last job id linked to the deployment-fleet")))
 
 (def deployment-fleet-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::spec
                                   ::state]
-                         :opt-un []}]))
+                         :opt-un [::job]}]))
 
 
 (s/def ::deployment-fleet (su/only-keys-maps deployment-fleet-keys-spec))
