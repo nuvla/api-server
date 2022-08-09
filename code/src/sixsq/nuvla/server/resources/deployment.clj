@@ -127,7 +127,7 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [base-uri] {:keys [owner]} :body :as request}]
+  [{:keys [base-uri] {:keys [owner deployment-fleet]} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (a/is-admin? authn-info)
@@ -139,6 +139,8 @@ a container orchestration engine.
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
                                    :owner dep-owner)
+                            (cond-> deployment-fleet (assoc :deployment-fleet
+                                                            deployment-fleet))
                             (utils/throw-when-payment-required request))
         ;; FIXME: Correct the value passed to the python API.
 

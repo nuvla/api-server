@@ -22,7 +22,7 @@
 
    :state                  "STARTED"
 
-   :api-credentials        {:api-key    "credential/uuid"
+   :api-credentials        {:api-key    "credential/e2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
                             :api-secret "api secret"}
    :api-endpoint           "http://blah.example.com"
 
@@ -42,7 +42,8 @@
    :owner                  "user/jane"
    :infrastructure-service "infrastructure-service/something"
    :subscription-id        "sub_something"
-   :coupon                 "coupon-code-xyz"})
+   :coupon                 "coupon-code-xyz"
+   :deployment-fleet       "deployment-fleet/f2dc1733-ac2c-45b1-b68a-0ec02653bc0c"})
 
 
 (deftest test-schema-check
@@ -65,5 +66,5 @@
 
   ;; optional attributes
   (doseq [k #{:data :api-credentials :credential-id :registries-credentials :owner
-              :infrastructure-service :subscription-id :coupon}]
+              :infrastructure-service :subscription-id :coupon :deployment-fleet}]
     (stu/is-valid ::ds/deployment (dissoc valid-deployment k))))

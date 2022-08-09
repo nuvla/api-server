@@ -10,7 +10,9 @@
 (def ^:const credential-id-regex #"^credential/[0-9a-f]+(-[0-9a-f]+)*$")
 
 
-(def credential-id-spec (-> (st/spec (s/and string? #(re-matches credential-id-regex %)))
+(s/def ::credential-id (s/and string? #(re-matches credential-id-regex %)))
+
+(def credential-id-spec (-> (st/spec ::credential-id)
                             (assoc :name "credential-id"
                                    :json-schema/type "resource-id"
                                    :json-schema/description "reference to credential resource")))
