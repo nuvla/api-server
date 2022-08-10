@@ -13,7 +13,8 @@ These resources represent a deployment fleet that regroups deployments.
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.auth.utils :as auth]))
+    [sixsq.nuvla.auth.utils :as auth]
+    [clojure.data.json :as json]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -80,7 +81,8 @@ These resources represent a deployment fleet that regroups deployments.
                                        id action
                                        {:owners   ["group/nuvla-admin"]
                                         :edit-acl [active-claim]}
-                                       :payload {:authn-info authn-info})
+                                       :payload (json/write-str
+                                                  {:authn-info authn-info}))
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
@@ -99,20 +101,30 @@ These resources represent a deployment fleet that regroups deployments.
     (when (not= status 200)
       (throw (ex-info (str "Unable to add job to " id) body)))))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
-(defmethod crud/add resource-type
-  [request]
-  (let [resource (-> request
-                     (update :body assoc :state "CREATING")
-                     add-impl
-                     (get-in [:body :resource-id])
-                     (crud/retrieve-by-id-as-admin))
+(defn create
+  [id request]
+  (let [resource (-> (crud/retrieve-by-id-as-admin id)
+                     (a/throw-cannot-manage request))
         response (create-job resource request "create_deployment_fleet")]
     (-> resource
         (assoc :job (get-in response [:body :location]))
         edit-deployment-fleet)
     response))
+
+(defmethod crud/do-action [resource-type "create"]
+  [{{uuid :uuid} :params :as request}]
+  (create (str resource-type "/" uuid) request))
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+
+(defmethod crud/add resource-type
+  [request]
+  (-> request
+      (update :body assoc :state "CREATING")
+      add-impl
+      (get-in [:body :resource-id])
+      (create request)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
