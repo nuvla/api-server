@@ -24,7 +24,14 @@ These resources represent a deployment fleet that regroups deployments.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
-(def actions [{:name           "start"
+(def actions [{:name           "create"
+               :uri            "create"
+               :description    "create deployments"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "start"
                :uri            "start"
                :description    "start deployment fleet"
                :method         "POST"
@@ -66,12 +73,14 @@ These resources represent a deployment fleet that regroups deployments.
 (defn create-job
   [{:keys [id] :as resource} request action]
   (a/throw-cannot-manage resource request)
-  (let [active-claim (auth/current-active-claim request)
+  (let [authn-info   (auth/current-authentication request)
+        active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
                                        id action
                                        {:owners   ["group/nuvla-admin"]
-                                        :edit-acl [active-claim]})
+                                        :edit-acl [active-claim]}
+                                       :payload {:authn-info authn-info})
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
@@ -90,10 +99,6 @@ These resources represent a deployment fleet that regroups deployments.
     (when (not= status 200)
       (throw (ex-info (str "Unable to add job to " id) body)))))
 
-;; create deployment for module, avoid multiple resolution of module
-;;
-
-
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
@@ -103,7 +108,7 @@ These resources represent a deployment fleet that regroups deployments.
                      add-impl
                      (get-in [:body :resource-id])
                      (crud/retrieve-by-id-as-admin))
-        response (create-job resource request "create")]
+        response (create-job resource request "create_deployment_fleet")]
     (-> resource
         (assoc :job (get-in response [:body :location]))
         edit-deployment-fleet)
@@ -143,12 +148,16 @@ These resources represent a deployment fleet that regroups deployments.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
-  (let [start-op    (u/action-map id :start)
+  (let [create-op   (u/action-map id :create)
+        start-op    (u/action-map id :start)
         stop-op     (u/action-map id :stop)
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
-            (and can-manage? (can-start? resource)) (update :operations conj start-op)
+            can-manage? (update :operations conj create-op)
+
+            (and can-manage? (can-start? resource))
+            (update :operations conj start-op)
 
             (and can-manage? (can-stop? resource))
             (update :operations conj stop-op))))
