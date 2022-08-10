@@ -135,12 +135,17 @@
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
 
-(defn create-deployment
-  [{:keys [body] :as request}]
-  (cond
-    (get-in body [:module :href]) (assoc body :module (resolve-module request))
-    (get-in body [:deployment :href]) (resolve-deployment request)
-    :else (logu/log-and-throw-400 "Request body is missing a module or a deployment href map!")))
+(defn resolve-from-module
+  [request]
+  (if (get-in request [:body :module :href])
+    (assoc-in request [:body :module] (resolve-module request))
+    (logu/log-and-throw-400 "Request body is missing a module href!")))
+
+(defn resolve-from-deployment
+  [request]
+  (if (get-in request [:body :deployment :href])
+    (assoc request :body (resolve-deployment request))
+    (logu/log-and-throw-400 "Request body is missing a deployment href!")))
 
 
 (defn create-job

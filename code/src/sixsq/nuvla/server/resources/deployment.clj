@@ -127,14 +127,12 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [base-uri] {:keys [owner deployment-fleet]} :body :as request}]
-  (a/throw-cannot-add collection-acl request)
+  [{:keys [base-uri] {:keys [owner deployment-fleet] :as body} :body :as request}]
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (a/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
                                       (auth/current-active-claim request))
-        deployment      (-> request
-                            (utils/create-deployment)
+        deployment      (-> body
                             (assoc :resource-type resource-type
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
@@ -142,9 +140,8 @@ a container orchestration engine.
                             (cond-> deployment-fleet (assoc :deployment-fleet
                                                             deployment-fleet))
                             (utils/throw-when-payment-required request))
-        ;; FIXME: Correct the value passed to the python API.
-
         create-response (add-impl (assoc request :body deployment))
+        ;; FIXME: Correct the value passed to the python API.
 
         deployment-id   (get-in create-response [:body :resource-id])
 
@@ -156,7 +153,10 @@ a container orchestration engine.
 
 (defmethod crud/add resource-type
   [request]
-  (create-deployment request))
+  (a/throw-cannot-add collection-acl request)
+  (-> request
+      utils/resolve-from-module
+      create-deployment))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -374,10 +374,14 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "clone"]
   [{{uuid :uuid} :params :as request}]
   (try
+    (a/throw-cannot-add collection-acl request)
     (let [id (str resource-type "/" uuid)]
       (-> (crud/retrieve-by-id-as-admin id)
           (a/throw-cannot-view-data request))
-      (create-deployment (assoc-in request [:body :deployment :href] id)))
+      (-> request
+          (assoc-in [:body :deployment :href] id)
+          utils/resolve-from-deployment
+          create-deployment))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

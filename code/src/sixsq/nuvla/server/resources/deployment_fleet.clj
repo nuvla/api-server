@@ -90,6 +90,10 @@ These resources represent a deployment fleet that regroups deployments.
     (when (not= status 200)
       (throw (ex-info (str "Unable to add job to " id) body)))))
 
+;; create deployment for module, avoid multiple resolution of module
+;;
+
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
