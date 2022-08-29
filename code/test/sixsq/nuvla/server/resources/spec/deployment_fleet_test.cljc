@@ -30,6 +30,7 @@
 
 (deftest test-schema-check
   (stu/is-valid ::t/deployment-fleet valid-deployment-fleet)
+  (stu/is-valid ::t/deployment-fleet (assoc-in  valid-deployment-fleet [:spec :start] true))
   (stu/is-invalid ::t/deployment-fleet (assoc valid-deployment-fleet :badKey "badValue"))
   (stu/is-invalid ::t/deployment-fleet (assoc valid-deployment-fleet :state "wrong"))
   (stu/is-invalid ::t/deployment-fleet (assoc-in valid-deployment-fleet [:spec :applications] ["must-be-href"]))

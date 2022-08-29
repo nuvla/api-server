@@ -2,7 +2,6 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.util.spec :as su]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [spec-tools.core :as st]))
@@ -27,7 +26,6 @@
     :json-schema/display-name "targets"
     :json-schema/description "List of targeted credentials ids."))
 
-
 (def ^:const module-id-regex #"^module/[0-9a-f]+(-[0-9a-f]+)*(_\d+)*$")
 (defn module-id? [s] (re-matches module-id-regex s))
 (s/def ::module-id (s/and string? module-id?))
@@ -40,9 +38,17 @@
     :json-schema/display-name "applications"
     :json-schema/description "List of applications ids to deploy on targets."))
 
+(s/def ::start
+  (assoc (st/spec boolean?)
+    :name "start"
+    :json-schema/type "boolean"
+    :json-schema/display-name "start"
+    :json-schema/description "Start deployment automatically directly after creation"))
+
 (s/def ::spec
   (assoc (st/spec (su/only-keys :req-un [::targets
-                                         ::applications]))
+                                         ::applications]
+                                :opt-un [::start]))
     :name "spec"
     :json-schema/type "map"
 
