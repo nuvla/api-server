@@ -109,7 +109,7 @@
               (request (str p/service-context location))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :action "create")
+              (ltu/is-key-value :action "create_deployment_fleet")
               (ltu/is-key-value :href :target-resource resource-id)))))
     ))
 
