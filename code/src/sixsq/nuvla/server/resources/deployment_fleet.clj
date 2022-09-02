@@ -71,6 +71,14 @@ These resources represent a deployment fleet that regroups deployments.
 ;; CRUD operations
 ;;
 
+(defn can-start?
+  [{:keys [state] :as _resource}]
+  (contains? #{"CREATED" "STOPPED"} state))
+
+(defn can-stop?
+  [{:keys [state] :as _resource}]
+  (contains? #{"STARTED"} state))
+
 (defn create-job
   [{:keys [id] :as resource} request action]
   (a/throw-cannot-manage resource request)
@@ -115,8 +123,41 @@ These resources represent a deployment fleet that regroups deployments.
   [{{uuid :uuid} :params :as request}]
   (create (str resource-type "/" uuid) request))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn throw-can-not-do-action
+  [{:keys [id state] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response (format "invalid state (%s) for %s on %s"
+                                  state action id) 409 id))))
+
+(defmethod crud/do-action [resource-type "start"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (-> (crud/retrieve-by-id-as-admin id)
+        (a/throw-cannot-manage request)
+        (throw-can-not-do-action can-start? "start"))
+    (crud/bulk-action
+      {:headers     {"bulk" true}
+       :params      {:resource-name "deployment"
+                     :action        "bulk-update"}
+       :nuvla/authn (:nuvla/authn request)
+       :body        {:filter (str "deployment-fleet='" id "'")}})))
+
+(defmethod crud/do-action [resource-type "stop"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id (str resource-type "/" uuid)]
+    (-> (crud/retrieve-by-id-as-admin id)
+        (a/throw-cannot-manage request)
+        (throw-can-not-do-action can-stop? "stop"))
+    (crud/bulk-action
+      {:headers     {"bulk" true}
+       :params      {:resource-name "deployment"
+                     :action        "bulk-stop"}
+       :nuvla/authn (:nuvla/authn request)
+       :body        {:filter (str "deployment-fleet='" id "'")}})))
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
   [request]
@@ -150,14 +191,6 @@ These resources represent a deployment fleet that regroups deployments.
   [request]
   (query-impl request))
 
-(defn can-start?
-  [{:keys [state] :as _resource}]
-  (contains? #{"CREATED" "STOPPED"} state))
-
-(defn can-stop?
-  [{:keys [state] :as _resource}]
-  (contains? #{"STARTED"} state))
-
 (defmethod crud/set-operations resource-type
   [{:keys [id] :as resource} request]
   (let [create-op   (u/action-map id :create)
@@ -174,14 +207,11 @@ These resources represent a deployment fleet that regroups deployments.
             (and can-manage? (can-stop? resource))
             (update :operations conj stop-op))))
 
-
-
 ;;
 ;; initialization
 ;;
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::spec/deployment-fleet))
-
 
 (defn initialize
   []
