@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.deployment-fleet-lifecycle-test
+(ns sixsq.nuvla.server.resources.deployment-set-lifecycle-test
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
@@ -7,7 +7,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.deployment-fleet :as t]
+    [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
@@ -21,16 +21,16 @@
   (mdtu/check-metadata-exists t/resource-type))
 
 (deftest lifecycle
-  (let [session-anon           (-> (ltu/ring-app)
-                                   session
-                                   (content-type "application/json"))
-        session-admin          (header session-anon authn-info-header
-                                       (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
-        session-user           (header session-anon authn-info-header
-                                       (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+  (let [session-anon         (-> (ltu/ring-app)
+                                 session
+                                 (content-type "application/json"))
+        session-admin        (header session-anon authn-info-header
+                                     (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+        session-user         (header session-anon authn-info-header
+                                     (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
-        valid-deployment-fleet {:spec {:targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
-                                       :applications ["module/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}}]
+        valid-deployment-set {:spec {:targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
+                                     :applications ["module/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}}]
 
     (testing "admin/user query succeeds but is empty"
       (doseq [session [session-admin session-user]]
@@ -64,19 +64,19 @@
              :response} (-> session-user
                             (request base-uri
                                      :request-method :post
-                                     :body (json/write-str valid-deployment-fleet))
+                                     :body (json/write-str valid-deployment-set))
                             (ltu/body->edn)
                             (ltu/is-status 202))
 
-            dep-fleet-url (str p/service-context resource-id)
-            job-payload   {"authn-info" {"active-claim" "user/jane"
-                                         "claims"       ["group/nuvla-anon"
-                                                         "user/jane"
-                                                         "group/nuvla-user"
-                                                         session-id]
-                                         "user-id"      "user/jane"}
-                           "filter"     (str "deployment-fleet='"
-                                             resource-id "'")}]
+            dep-set-url (str p/service-context resource-id)
+            job-payload {"authn-info" {"active-claim" "user/jane"
+                                       "claims"       ["group/nuvla-anon"
+                                                       "user/jane"
+                                                       "group/nuvla-user"
+                                                       session-id]
+                                       "user-id"      "user/jane"}
+                         "filter"     (str "deployment-set='"
+                                           resource-id "'")}]
 
         (testing "user query should see one document"
           (-> session-user
@@ -88,7 +88,7 @@
 
         (testing "user retrieve should work and contain job"
           (-> session-user
-              (request dep-fleet-url)
+              (request dep-set-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state "CREATING")
@@ -100,15 +100,15 @@
               (request (str p/service-context location))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :action "create_deployment_fleet")
+              (ltu/is-key-value :action "create_deployment_set")
               (ltu/is-key-value :href :target-resource resource-id)))
 
         (testing "start will create a bulk_update deployment action"
           (-> session-user
-              (request dep-fleet-url
+              (request dep-set-url
                        :request-method :put
                        :body (-> session-user
-                                 (request dep-fleet-url)
+                                 (request dep-set-url)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (ltu/body)
@@ -118,7 +118,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :state "CREATED"))
           (let [job-url (-> session-user
-                            (request (str dep-fleet-url "/start"))
+                            (request (str dep-set-url "/start"))
                             (ltu/body->edn)
                             (ltu/is-status 202)
                             (ltu/location-url))]
@@ -126,21 +126,22 @@
                 (request job-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :action "bulk_update_deployment")
+                (ltu/is-key-value :href :target-resource resource-id)
+                (ltu/is-key-value :action "start_deployment_set")
                 (ltu/is-key-value json/read-str :payload job-payload))))
 
         (testing "stop will not be possible in state CREATED"
           (-> session-user
-              (request (str dep-fleet-url "/stop"))
+              (request (str dep-set-url "/stop"))
               (ltu/body->edn)
               (ltu/is-status 409)))
 
         (testing "stop will create a bulk_stop deployment action"
           (-> session-user
-              (request dep-fleet-url
+              (request dep-set-url
                        :request-method :put
                        :body (-> session-user
-                                 (request dep-fleet-url)
+                                 (request dep-set-url)
                                  (ltu/body->edn)
                                  (ltu/is-status 200)
                                  (ltu/body)
@@ -150,7 +151,7 @@
               (ltu/is-status 200)
               (ltu/is-key-value :state "STARTED"))
           (let [job-url (-> session-user
-                            (request (str dep-fleet-url "/stop"))
+                            (request (str dep-set-url "/stop"))
                             (ltu/body->edn)
                             (ltu/is-status 202)
                             (ltu/location-url))]
@@ -158,7 +159,8 @@
                 (request job-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :action "bulk_stop_deployment")
+                (ltu/is-key-value :href :target-resource resource-id)
+                (ltu/is-key-value :action "stop_deployment_set")
                 (ltu/is-key-value json/read-str :payload job-payload)))
           )
         ))

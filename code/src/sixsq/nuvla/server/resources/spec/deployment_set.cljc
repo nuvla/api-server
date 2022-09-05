@@ -1,4 +1,4 @@
-(ns sixsq.nuvla.server.resources.spec.deployment-fleet
+(ns sixsq.nuvla.server.resources.spec.deployment-set
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
@@ -12,7 +12,7 @@
                     "STOPPING", "STOPPED"})
     :name "state"
     :json-schema/type "string"
-    :json-schema/description "state of deployment fleet"
+    :json-schema/description "state of deployment set"
 
     :json-schema/value-scope {:values ["CREATING", "CREATED",
                                        "STARTING", "STARTED",
@@ -53,7 +53,7 @@
     :json-schema/type "map"
 
     :json-schema/display-name "Spec"
-    :json-schema/description "Deployment fleet spec"))
+    :json-schema/description "Deployment set spec"))
 
 (def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
 (s/def ::job-id (-> (st/spec (s/and string? #(re-matches job-regex %)))))
@@ -64,13 +64,13 @@
              :json-schema/type "resource-id"
 
              :json-schema/display-name "job"
-             :json-schema/description "last job id linked to the deployment-fleet")))
+             :json-schema/description "last job id linked to the deployment-set")))
 
-(def deployment-fleet-keys-spec
+(def deployment-set-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::spec
                                   ::state]
                          :opt-un [::job]}]))
 
 
-(s/def ::deployment-fleet (su/only-keys-maps deployment-fleet-keys-spec))
+(s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))

@@ -127,7 +127,7 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [base-uri] {:keys [owner deployment-fleet] :as body} :body :as request}]
+  [{:keys [base-uri] {:keys [owner deployment-set] :as body} :body :as request}]
   (let [authn-info      (auth/current-authentication request)
         is-admin?       (a/is-admin? authn-info)
         dep-owner       (if is-admin? (or owner "group/nuvla-admin")
@@ -137,8 +137,8 @@ a container orchestration engine.
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
                                    :owner dep-owner)
-                            (cond-> deployment-fleet (assoc :deployment-fleet
-                                                            deployment-fleet))
+                            (cond-> deployment-set (assoc :deployment-set
+                                                          deployment-set))
                             (utils/throw-when-payment-required request))
         create-response (add-impl (assoc request :body deployment))
         ;; FIXME: Correct the value passed to the python API.

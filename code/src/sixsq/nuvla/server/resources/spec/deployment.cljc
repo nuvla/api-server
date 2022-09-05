@@ -301,15 +301,15 @@
 
 
 
-(def ^:const deployment-fleet-id-regex #"^deployment-fleet/[0-9a-f]+(-[0-9a-f]+)*$")
-(defn deployment-fleet-id? [s] (re-matches deployment-fleet-id-regex s))
-(s/def ::deployment-fleet-id (s/and string? deployment-fleet-id?))
+(def ^:const deployment-set-id-regex #"^deployment-set/[0-9a-f]+(-[0-9a-f]+)*$")
+(defn deployment-set-id? [s] (re-matches deployment-set-id-regex s))
+(s/def ::deployment-set-id (s/and string? deployment-set-id?))
 
-(s/def ::deployment-fleet
-  (assoc (st/spec ::deployment-fleet-id)
-    :name "deployment-fleet"
+(s/def ::deployment-set
+  (assoc (st/spec ::deployment-set-id)
+    :name "deployment-set"
     :json-schema/type "resource-id"
-    :json-schema/description "reference to a deployment-fleet"
+    :json-schema/description "reference to a deployment-set"
 
     :json-schema/section "meta"))
 
@@ -333,7 +333,7 @@
                                   ::nuvlabox-name
                                   ::credential-name
                                   ::infrastructure-service-name
-                                  ::deployment-fleet]}]))
+                                  ::deployment-set]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

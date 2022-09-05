@@ -1,6 +1,6 @@
-(ns sixsq.nuvla.server.resources.deployment-fleet
+(ns sixsq.nuvla.server.resources.deployment-set
   "
-These resources represent a deployment fleet that regroups deployments.
+These resources represent a deployment set that regroups deployments.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
@@ -8,7 +8,7 @@ These resources represent a deployment fleet that regroups deployments.
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
-    [sixsq.nuvla.server.resources.spec.deployment-fleet :as spec]
+    [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.resources.job :as job]
@@ -34,23 +34,23 @@ These resources represent a deployment fleet that regroups deployments.
 
               {:name           "start"
                :uri            "start"
-               :description    "start deployment fleet"
+               :description    "start deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
 
               {:name           "stop"
                :uri            "stop"
-               :description    "stop deployment fleet"
+               :description    "stop deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}])
 
 ;;
-;; validate deployment fleet
+;; validate deployment set
 ;;
 
-(def validate-fn (u/create-spec-validation-fn ::spec/deployment-fleet))
+(def validate-fn (u/create-spec-validation-fn ::spec/deployment-set))
 
 
 (defmethod crud/validate resource-type
@@ -94,11 +94,11 @@ These resources represent a deployment fleet that regroups deployments.
         job-msg      (str action " " id " with async " job-id)]
     (when (not= job-status 201)
       (throw (r/ex-response
-               (format "unable to create async job to %s deployment fleet" action) 500 id)))
+               (format "unable to create async job to %s deployment set" action) 500 id)))
     (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
-(defn edit-deployment-fleet
+(defn edit-deployment-set
   [{:keys [id] :as resource}]
   (let [request {:params         {:uuid          (u/id->uuid id)
                                   :resource-name resource-type}
@@ -113,16 +113,15 @@ These resources represent a deployment fleet that regroups deployments.
   [id request]
   (let [resource (-> (crud/retrieve-by-id-as-admin id)
                      (a/throw-cannot-manage request))
-        response (create-job resource request "create_deployment_fleet")]
+        response (create-job resource request "create_deployment_set")]
     (-> resource
         (assoc :job (get-in response [:body :location]))
-        edit-deployment-fleet)
+        edit-deployment-set)
     response))
 
 (defmethod crud/do-action [resource-type "create"]
   [{{uuid :uuid} :params :as request}]
   (create (str resource-type "/" uuid) request))
-
 
 (defn throw-can-not-do-action
   [{:keys [id state] :as resource} pred action]
@@ -131,31 +130,26 @@ These resources represent a deployment fleet that regroups deployments.
     (throw (r/ex-response (format "invalid state (%s) for %s on %s"
                                   state action id) 409 id))))
 
+(defn action-bulk
+  [{{uuid :uuid} :params :as request} action can-action?]
+  (let [{:keys [id]} (-> (str resource-type "/" uuid)
+                         crud/retrieve-by-id-as-admin
+                         (a/throw-cannot-manage request)
+                         (throw-can-not-do-action can-action? action))
+        authn-info (auth/current-authentication request)
+        acl {:owners   ["group/nuvla-admin"]
+             :view-acl [(auth/current-active-claim request)]}
+        payload {:filter (str "deployment-set='" id "'")}]
+    (std-crud/create-bulk-job
+      (str action "_deployment_set") id authn-info acl payload)))
+
 (defmethod crud/do-action [resource-type "start"]
-  [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (-> (crud/retrieve-by-id-as-admin id)
-        (a/throw-cannot-manage request)
-        (throw-can-not-do-action can-start? "start"))
-    (crud/bulk-action
-      {:headers     {"bulk" true}
-       :params      {:resource-name "deployment"
-                     :action        "bulk-update"}
-       :nuvla/authn (:nuvla/authn request)
-       :body        {:filter (str "deployment-fleet='" id "'")}})))
+  [request]
+  (action-bulk request "start" can-start?))
 
 (defmethod crud/do-action [resource-type "stop"]
-  [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)]
-    (-> (crud/retrieve-by-id-as-admin id)
-        (a/throw-cannot-manage request)
-        (throw-can-not-do-action can-stop? "stop"))
-    (crud/bulk-action
-      {:headers     {"bulk" true}
-       :params      {:resource-name "deployment"
-                     :action        "bulk-stop"}
-       :nuvla/authn (:nuvla/authn request)
-       :body        {:filter (str "deployment-fleet='" id "'")}})))
+  [request]
+  (action-bulk request "stop" can-stop?))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -211,9 +205,9 @@ These resources represent a deployment fleet that regroups deployments.
 ;; initialization
 ;;
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::spec/deployment-fleet))
+(def resource-metadata (gen-md/generate-metadata ::ns ::spec/deployment-set))
 
 (defn initialize
   []
-  (std-crud/initialize resource-type ::spec/deployment-fleet)
+  (std-crud/initialize resource-type ::spec/deployment-set)
   (md/register resource-metadata))

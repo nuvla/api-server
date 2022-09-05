@@ -752,7 +752,7 @@
                                           :other  "hello"}))
                         (ltu/body->edn)
                         (ltu/is-status 202)
-                        (ltu/message-matches "starting bulk-update with async job")
+                        (ltu/message-matches "starting bulk_update_deployment with async job")
                         (ltu/location-url))]
         (-> session-user
             (request job-url)
@@ -778,7 +778,7 @@
                                           :other  "hello"}))
                         (ltu/body->edn)
                         (ltu/is-status 202)
-                        (ltu/message-matches "starting bulk-stop with async job")
+                        (ltu/message-matches "starting bulk_stop_deployment with async job")
                         (ltu/location-url))]
         (-> session-user
             (request job-url)
@@ -808,9 +808,7 @@
       (-> session-user
           (request (str p/service-context module-id)
                    :request-method :delete)
-          (ltu/is-status 200))
-
-      )))
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods
