@@ -145,8 +145,8 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           minimal-update           #(-> %
                                         (u/update-timestamps)
                                         (u/set-updated-by request)
-                                        (cond-> (some? online) (assoc :online online
-                                                                      :next-heartbeat (status-utils/get-next-heartbeat parent)))
+                                        (cond-> (some? online) (assoc :online online))
+                                        (cond-> online (assoc :next-heartbeat (status-utils/get-next-heartbeat parent)))
                                         (cond-> (some? online-prev) (assoc :online-prev online-prev)))
           new-status               (-> current-without-selected
                                        (merge editable-body)
