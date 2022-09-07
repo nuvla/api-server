@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Nuvlabox resource log - shared acl users with view-acl only cannot delete
+  resource log bugfix. Simplify resource log acl
 - Nuvlabox status - next-heartbeat should not be changed when online is set to
   false by admin
 

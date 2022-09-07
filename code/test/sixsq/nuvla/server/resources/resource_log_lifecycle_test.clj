@@ -46,7 +46,7 @@
                  (content-type "application/json")))
 
 (def session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon"))
-(def session-jane (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon" " " session-id)))
+(def session-jane (header session authn-info-header (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id)))
 (def session-other (header session authn-info-header "user/other user/other group/nuvla-user group/nuvla-anon"))
 (def session-anon (header session authn-info-header "user/unknown user/unknown group/nuvla-anon"))
 
@@ -119,7 +119,8 @@
           (ltu/is-status 403)))
 
     ;; create a nuvlabox log as an admin user using internal utility function
-    (let [resp-test     {:response (nb/create-log nuvlabox {:body {:components ["agent"]}})}
+    (let [resp-test     {:response (nb/create-log nuvlabox {:nuvla/authn {:claims [session-id]}
+                                                            :body        {:components ["agent"]}})}
 
           id-test       (ltu/body-resource-id resp-test)
 
