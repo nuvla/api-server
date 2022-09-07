@@ -5,7 +5,9 @@
 ### Changed
 
 - Nuvlabox resource log - shared acl users with view-acl only cannot delete
-  resource log bugfix, reduce acl to only session-id in view-acl and delete, and for nuvlabox id in owners
+  resource log bugfix. Simplify resource log acl
+- Nuvlabox status - next-heartbeat should not be changed when online is set to
+  false by admin
 
 ## [6.0.2] - 2022-08-03
 
