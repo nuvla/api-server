@@ -26,29 +26,23 @@
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.util.response :as r]))
 
-
 (use-fixtures :each ltu/with-test-server-fixture)
-
 
 (def base-uri (str p/service-context nb/resource-type))
 
-
 (def playbook-base-uri (str p/service-context nb-playbook/resource-type))
-
 
 (def isg-collection-uri (str p/service-context isg/resource-type))
 
-
 (def infra-service-collection-uri (str p/service-context infra-service/resource-type))
-
 
 (def credential-collection-uri (str p/service-context credential/resource-type))
 
-
 (def timestamp "1964-08-25T10:00:00Z")
 
-
 (def nuvlabox-owner "user/alpha")
+
+(def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
 
 
 (def valid-nuvlabox {:created          timestamp
@@ -132,9 +126,8 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+          session-owner (header session authn-info-header (str "user/alpha user/alpha group/nuvla-user group/nuvla-anon " session-id))
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (doseq [session [session-admin session-owner]]
@@ -244,12 +237,16 @@
                               (ltu/is-status 201)
                               (ltu/location-url))]
 
-              ;; verify that the log resource exists
-              (-> session
-                  (request log-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :components ["agent" "security"])))
+              (testing "verify that the log resource exists and acl is owned by
+              nuvlabox id and edit-acl is set for the session id"
+                (-> session
+                    (request log-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :components ["agent" "security"])
+                    (ltu/is-key-value :owners :acl [nuvlabox-id])
+                    (ltu/is-key-value :delete :acl ["group/nuvla-admin" session-id])
+                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin" session-id]))))
 
             (-> session
                 (request decommission-url

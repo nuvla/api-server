@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Nuvlabox resource log - shared acl users with view-acl only cannot delete
+  resource log bugfix, reduce acl to only session-id in view-acl and delete, and for nuvlabox id in owners
+
 ## [6.0.2] - 2022-08-03
 
 ### Added

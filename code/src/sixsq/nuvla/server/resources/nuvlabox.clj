@@ -925,14 +925,14 @@ particular NuvlaBox release.
 ;;
 
 (defn create-log
-  [{:keys [id acl] :as _nuvlabox} {:keys [body] :as _request}]
-  (let [opts          (select-keys body [:since :lines])
-        components    (:components body)
-        nb-view-acl   (:view-acl acl)
-        nb-delete-acl (:delete acl)
-        log-acl       (cond-> (utils/set-acl-nuvlabox-view-only acl {:owners [id]})
-                              (not-empty nb-view-acl) (assoc :manage nb-view-acl)
-                              (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))]
+  [{:keys [id] :as _nuvlabox} {:keys [body] :as request}]
+  (let [opts       (select-keys body [:since :lines])
+        components (:components body)
+        session-id (auth/current-session-id request)
+        log-acl    {:owners   [id]
+                    :view-acl [session-id]
+                    :manage   [session-id]
+                    :delete   [session-id]}]
     (resource-log/create-log id components log-acl opts)))
 
 
