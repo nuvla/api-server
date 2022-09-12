@@ -262,7 +262,7 @@
                     bad-claims  {}
                     bad-token   (sign/sign-cookie-info bad-claims)]
 
-                (with-redefs [auth-oidc/get-access-token (fn [_ _ _ oauth-code _]
+                (with-redefs [auth-oidc/get-id-token (fn [_ _ _ oauth-code _]
                                                            (case oauth-code
                                                              "GOOD" good-token
                                                              "BAD" bad-token

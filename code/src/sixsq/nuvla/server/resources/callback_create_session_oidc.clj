@@ -22,35 +22,51 @@
 
 
 (defn validate-session
-  [{{session-id :href} :target-resource callback-id :id :as _callback-resource} {:keys [base-uri] :as request}]
+  [{{session-id :href} :target-resource callback-id :id
+    :as                _callback-resource} {:keys [base-uri] :as request}]
 
-  (let [{:keys [redirect-url] {:keys [href]} :template :as current-session} (crud/retrieve-by-id-as-admin session-id)
+  (let [{:keys [redirect-url] {:keys [href]} :template
+         :as   current-session} (crud/retrieve-by-id-as-admin session-id)
         {:keys [instance]} (crud/retrieve-by-id-as-admin href)
-        {:keys [client-id client-secret public-key token-url]} (oidc-utils/config-oidc-params redirect-url instance)]
+        {:keys [client-id client-secret token-url jwks-url]
+         } (oidc-utils/config-oidc-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
+      (if-let [id-token (auth-oidc/get-id-token
+                          client-id client-secret token-url code
+                          (str base-uri (or callback-id "unknown-id")
+                               "/execute"))]
         (try
-          (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token public-key)
-                roles (concat (oidc-utils/extract-roles claims)
-                              (oidc-utils/extract-groups claims)
-                              (oidc-utils/extract-entitlements claims))]
-            (log/debug "OIDC access token claims for" instance ":" (pr-str claims))
+          (let [public-key (->> id-token
+                                auth-oidc/get-kid-from-id-token
+                                (auth-oidc/get-public-key jwks-url))
+                {:keys [sub] :as claims} (sign/unsign-cookie-info
+                                           id-token public-key)
+                roles      (concat (oidc-utils/extract-roles claims)
+                                   (oidc-utils/extract-groups claims)
+                                   (oidc-utils/extract-entitlements claims))]
+            (log/debug "OIDC access token claims for" instance ":"
+                       (pr-str claims))
             (if sub
-              (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
+              (if-let [matched-user-id (uiu/user-identifier->user-id
+                                         :oidc instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)
-                      cookie-info     (cookies/create-cookie-info matched-user-id
-                                                                  :session-id session-id
-                                                                  :roles-ext roles)
+                      cookie-info     (cookies/create-cookie-info
+                                        matched-user-id
+                                        :session-id session-id
+                                        :roles-ext roles)
                       cookie          (cookies/create-cookie cookie-info)
                       expires         (ts/rfc822->iso8601 (:expires cookie))
                       claims          (:claims cookie-info)
                       updated-session (cond-> (assoc current-session
                                                 :user matched-user-id
-                                                :identifier (or identifier matched-user-id)
+                                                :identifier (or identifier
+                                                                matched-user-id)
                                                 :expiry expires)
                                               claims (assoc :roles claims))
-                      {:keys [status] :as resp} (sutils/update-session session-id updated-session)]
-                  (log/debug "OIDC cookie token claims for" instance ":" (pr-str cookie-info))
+                      {:keys [status] :as resp} (sutils/update-session
+                                                  session-id updated-session)]
+                  (log/debug "OIDC cookie token claims for" instance ":"
+                             (pr-str cookie-info))
                   (if (not= status 200)
                     resp
                     (let [cookie-tuple [authn-info/authn-cookie cookie]]

@@ -28,20 +28,29 @@ Stripe oidc session.
                               (get authn-info/future-session-cookie)
                               :value)
         instance          (get params :instance oidc-utils/geant-instance)
-        redirect-hook-url (cond-> (str base-uri "hook" "/" action)
-                                  (not= instance oidc-utils/geant-instance) (str "/" instance))
+        redirect-hook-url (cond->
+                            (str base-uri "hook" "/" action)
+                            (not= instance
+                                  oidc-utils/geant-instance) (str "/" instance))
         {:keys [client-id client-secret
-                public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)]
+                jwks-url token-url]} (oidc-utils/config-oidc-params
+                                       redirect-ui-url instance)]
     (log/info "hook-oidc-session redirect request:" request)
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
-                                                        code redirect-hook-url)]
+      (if-let [id-token (auth-oidc/get-id-token
+                          client-id client-secret token-url
+                          code redirect-hook-url)]
         (try
-          (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token public-key)
-                roles (concat (oidc-utils/extract-roles claims)
-                              (oidc-utils/extract-groups claims)
-                              (oidc-utils/extract-entitlements claims))]
-            (log/debug "OIDC access token claims for" instance ":" (pr-str claims))
+          (let [public-key (->> id-token
+                                auth-oidc/get-kid-from-id-token
+                                (auth-oidc/get-public-key jwks-url))
+                {:keys [sub] :as claims} (sign/unsign-cookie-info
+                                           id-token public-key)
+                roles      (concat (oidc-utils/extract-roles claims)
+                                   (oidc-utils/extract-groups claims)
+                                   (oidc-utils/extract-entitlements claims))]
+            (log/debug "OIDC access token claims for" instance ":"
+                       (pr-str claims))
             (if sub
               (if-let [matched-user-id (uiu/user-identifier->user-id :oidc instance sub)]
                 (let [{identifier :name} (ex/get-user matched-user-id)

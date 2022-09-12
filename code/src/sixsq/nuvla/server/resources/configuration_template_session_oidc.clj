@@ -20,7 +20,7 @@
    :authorize-url         "http://auth.example.com"
    :token-url             "http://token.example.com"
    :client-id             "server-assigned-client-id"
-   :public-key            "ABCDEF..."
+   :jwks-url              "http://jwks.example.com"
    :redirect-url-resource "callback"})
 
 

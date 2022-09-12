@@ -19,16 +19,23 @@ Stripe oidc user.
 (defn register-user
   [{:keys [base-uri params] :as request} redirect-ui-url]
   (let [instance          (get params :instance oidc-utils/geant-instance)
-        {:keys [client-id client-secret
-                public-key token-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)
-        redirect-hook-url (cond-> (str base-uri "hook" "/" action)
-                                  (not= instance oidc-utils/geant-instance) (str "/" instance))]
+        {:keys [client-id client-secret jwks-url
+                token-url]} (oidc-utils/config-oidc-params
+                              redirect-ui-url instance)
+        redirect-hook-url (cond->
+                            (str base-uri "hook" "/" action)
+                            (not= instance oidc-utils/geant-instance) (str "/" instance))]
     (log/info "hook-oidc-user redirect request:" request)
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token
-                              client-id client-secret token-url code redirect-hook-url)]
+      (if-let [id-token (auth-oidc/get-id-token
+                          client-id client-secret token-url
+                          code redirect-hook-url)]
         (try
-          (let [{:keys [sub email] :as claims} (sign/unsign-cookie-info access-token public-key)]
+          (let [public-key (->> id-token
+                                auth-oidc/get-kid-from-id-token
+                                (auth-oidc/get-public-key jwks-url))
+                {:keys [sub email] :as claims} (sign/unsign-cookie-info
+                                                 id-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
               (or

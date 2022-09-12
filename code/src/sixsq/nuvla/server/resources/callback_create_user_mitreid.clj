@@ -22,7 +22,7 @@
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
         {:keys [client-id client-secret public-key token-url user-profile-url]} (oidc-utils/config-mitreid-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
-      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
+      (if-let [access-token (auth-oidc/get-id-token client-id client-secret token-url code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
           (let [{:keys [sub] :as claims} (sign/unsign-cookie-info access-token public-key)]
             (log/debugf "MITREid access token claims for %s: %s" instance (pr-str claims))

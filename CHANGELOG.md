@@ -4,6 +4,8 @@
 
 ### Changed
 
+- OIDC - Deprecate public key from config and use instead jwks-url to search for
+  corresponding public-key depending on kid #704
 - Nuvlabox resource log - shared acl users with view-acl only cannot delete
   resource log bugfix. Simplify resource log acl
 - Nuvlabox status - next-heartbeat should not be changed when online is set to
