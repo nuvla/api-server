@@ -10,7 +10,7 @@
   "Perform an HTTP POST to the OIDC/MitreID server to recover a token.
    This method will log exceptions but then return nil to indicate that the
    token could not be retrieved."
-  [token-key client-id client-secret tokenURL oidc-code redirect-uri]
+  [client-id client-secret tokenURL oidc-code redirect-uri]
   (try
     (-> (http/post tokenURL
                    {:headers     {"Accept" "application/json"}
@@ -20,8 +20,7 @@
                                   :client_id     client-id
                                   :client_secret client-secret}})
         :body
-        (json/read-str :key-fn keyword)
-        token-key)
+        (json/read-str :key-fn keyword))
     (catch Exception e
       (let [client-secret? (str (boolean client-secret))]
         (if-let [{:keys [status] :as data} (ex-data e)]
@@ -30,9 +29,15 @@
           (log/errorf "unexpected error when getting access token from %s with client_id %s, code %s, and client_secret %s\n%s"
                       tokenURL client-id oidc-code client-secret? (str e)))))))
 
-(def get-access-token (partial get-token :access_token))
+(defn get-access-token
+  [client-id client-secret tokenURL oidc-code redirect-uri]
+  (:access_token
+    (get-token client-id client-secret tokenURL oidc-code redirect-uri)))
 
-(def get-id-token (partial get-token :id_token))
+(defn get-id-token
+  [client-id client-secret tokenURL oidc-code redirect-uri]
+  (:id_token
+    (get-token client-id client-secret tokenURL oidc-code redirect-uri)))
 
 (defn get-kid-from-id-token
   [id-token]
