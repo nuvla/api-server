@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.resources.callback-create-user-oidc
-  "Creates a new OIDC user resource presumably after external authentication
-  has succeeded."
+  "Creates a new OIDC user resource presumably after external authentication has succeeded."
   (:require
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.external :as ex]
@@ -18,32 +17,21 @@
 
 
 (defn register-user
-  [{{href :href} :target-resource {:keys [redirect-url]} :data callback-id :id
-    :as          _callback-resource}
+  [{{href :href} :target-resource {:keys [redirect-url]} :data callback-id :id :as _callback-resource}
    {:keys [base-uri] :as request}]
   (let [{:keys [instance]} (crud/retrieve-by-id-as-admin href)
-        {:keys [client-id client-secret jwks-url token-url]
-         } (oidc-utils/config-oidc-params redirect-url instance)]
+        {:keys [client-id client-secret public-key token-url]} (oidc-utils/config-oidc-params redirect-url instance)]
     (if-let [code (uh/param-value request :code)]
-      (if-let [id-token (auth-oidc/get-id-token
-                          client-id client-secret token-url code
-                          (str base-uri (or callback-id "unknown-id")
-                               "/execute"))]
+      (if-let [access-token (auth-oidc/get-access-token client-id client-secret token-url
+                                                        code (str base-uri (or callback-id "unknown-id") "/execute"))]
         (try
-          (let [public-key (->> id-token
-                                auth-oidc/get-kid-from-id-token
-                                (auth-oidc/get-public-key jwks-url))
-                {:keys [sub email] :as claims} (sign/unsign-cookie-info
-                                                 id-token public-key)]
-            (log/debugf "oidc access token claims for %s: %s" instance
-                        (pr-str claims))
+          (let [{:keys [sub email] :as claims} (sign/unsign-cookie-info access-token public-key)]
+            (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
               (or
-                (ex/create-user!
-                  :oidc
-                  {:instance       instance
-                   :external-id    sub
-                   :external-email (or email (str sub "@fake-email.com"))})
+                (ex/create-user! :oidc {:instance       instance
+                                        :external-id    sub
+                                        :external-email (or email (str sub "@fake-email.com"))})
                 (oidc-utils/throw-user-exists redirect-url))
               (oidc-utils/throw-no-subject redirect-url)))
           (catch Exception e
@@ -60,8 +48,7 @@
       (do
         (utils/callback-succeeded! callback-id)
         (if redirect-url
-          (r/map-response (format "'%s' created" user-id) 303
-                          callback-id redirect-url)
+          (r/map-response (format "'%s' created" user-id) 303 callback-id redirect-url)
           (r/map-response (format "'%s' created" user-id) 201)))
       (do
         (utils/callback-failed! callback-id)
