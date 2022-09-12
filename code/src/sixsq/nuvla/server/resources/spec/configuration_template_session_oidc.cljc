@@ -71,7 +71,7 @@
              :json-schema/hidden false
              :json-schema/sensitive false)))
 
-
+; deprecated
 (s/def ::redirect-url-resource
   (-> (st/spec #{"hook", "callback"})
       (assoc :name "redirect url resource"
@@ -87,13 +87,13 @@
 
 (def configuration-template-keys-spec-req
   {:req-un [::ps/instance ::client-id ::jwks-url
-            ::authorize-url ::token-url ::redirect-url-resource]
-   :opt-un [::client-secret ::public-key]})
+            ::authorize-url ::token-url]
+   :opt-un [::client-secret ::public-key ::redirect-url-resource]})
 
 (def configuration-template-keys-spec-create
   {:req-un [::ps/instance ::client-id ::jwks-url
-            ::authorize-url ::token-url ::redirect-url-resource]
-   :opt-un [::client-secret]})
+            ::authorize-url ::token-url]
+   :opt-un [::client-secret ::redirect-url-resource]})
 
 ;; Defines the contents of the OIDC authentication configuration-template resource itself.
 (s/def ::schema
