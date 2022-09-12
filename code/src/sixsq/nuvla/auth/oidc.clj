@@ -6,11 +6,11 @@
     [clojure.pprint :refer [pprint]]
     [clojure.tools.logging :as log]))
 
-(defn get-id-token
-  "Perform an HTTP POST to the OIDC/MitreID server to recover an access token.
+(defn get-token
+  "Perform an HTTP POST to the OIDC/MitreID server to recover a token.
    This method will log exceptions but then return nil to indicate that the
-   access token could not be retrieved."
-  [client-id client-secret tokenURL oidc-code redirect-uri]
+   token could not be retrieved."
+  [token-key client-id client-secret tokenURL oidc-code redirect-uri]
   (try
     (-> (http/post tokenURL
                    {:headers     {"Accept" "application/json"}
@@ -21,7 +21,7 @@
                                   :client_secret client-secret}})
         :body
         (json/read-str :key-fn keyword)
-        :id_token)
+        token-key)
     (catch Exception e
       (let [client-secret? (str (boolean client-secret))]
         (if-let [{:keys [status] :as data} (ex-data e)]
@@ -29,6 +29,10 @@
                       status tokenURL client-id oidc-code client-secret? (with-out-str (pprint data)))
           (log/errorf "unexpected error when getting access token from %s with client_id %s, code %s, and client_secret %s\n%s"
                       tokenURL client-id oidc-code client-secret? (str e)))))))
+
+(def get-access-token (partial get-token :access_token))
+
+(def get-id-token (partial get-token :id_token))
 
 (defn get-kid-from-id-token
   [id-token]
