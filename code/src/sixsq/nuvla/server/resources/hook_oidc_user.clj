@@ -19,23 +19,18 @@ Stripe oidc user.
 (defn register-user
   [{:keys [base-uri params] :as request} redirect-ui-url]
   (let [instance          (get params :instance oidc-utils/geant-instance)
-        {:keys [client-id client-secret jwks-url
-                token-url]} (oidc-utils/config-oidc-params
-                              redirect-ui-url instance)
-        redirect-hook-url (cond->
-                            (str base-uri "hook" "/" action)
-                            (not= instance oidc-utils/geant-instance) (str "/" instance))]
+        {:keys [client-id client-secret token-url jwks-url]} (oidc-utils/config-oidc-params redirect-ui-url instance)
+        redirect-hook-url (cond-> (str base-uri "hook" "/" action)
+                                  (not= instance oidc-utils/geant-instance) (str "/" instance))]
     (log/info "hook-oidc-user redirect request:" request)
     (if-let [code (uh/param-value request :code)]
       (if-let [id-token (auth-oidc/get-id-token
-                          client-id client-secret token-url
-                          code redirect-hook-url)]
+                          client-id client-secret token-url code redirect-hook-url)]
         (try
           (let [public-key (->> id-token
                                 auth-oidc/get-kid-from-id-token
                                 (auth-oidc/get-public-key jwks-url))
-                {:keys [sub email] :as claims} (sign/unsign-cookie-info
-                                                 id-token public-key)]
+                {:keys [sub email] :as claims} (sign/unsign-cookie-info id-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub
               (or
