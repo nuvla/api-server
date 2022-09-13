@@ -13,7 +13,9 @@
     (is (= (t/get-id-token nil nil nil nil nil) "a"))))
 
 (deftest get-token
-  (with-redefs [http/post (fn [] (throw (ex-info "" {})))]
+  (with-redefs [http/post (fn [& _args] (throw (ex-info "" nil)))]
+    (is (nil? (t/get-token nil nil nil nil nil))))
+  (with-redefs [http/post (fn [& _args] (throw (ex-info "" {:status 400})))]
     (is (nil? (t/get-token nil nil nil nil nil)))))
 
 (deftest get-kid-from-id-token
@@ -27,5 +29,7 @@
            "{\"kty\":\"EC\",\"use\":\"sig\",\"kid\":\"TE5pM2lq\",\"crv\":\"P-256\",\"x\":\"FDxML-lNMpkPAjXDSX-fIClbNkfSe3wChL9OqAVOIGs\",\"y\":\"znt4S_unJJwOg9iaOMIdiepKvd-2s_bj5bG4L-wWCo8\"}"))
     (is (= (t/get-public-key "https://jwks-url" "YXRIVkpk")
            "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"YXRIVkpk\",\"n\":\"2lJ04IzyohRpv9cziO8XlOp17osnmTeFFyzrrNEO6xPtKZcAnroP42gG5Tid61yb5rkM0NMQrnMxZCH3UevLQJFy-T7tzKPctaxAERo8SsWw1rOt2g9GnhUKB9aQkaYzmTLm4_WnshPQjw-KG2X5A-HWshfYunekpMsMsscuRCC4v7H59C-eoAY3SadzFe6WHnuaqtECsIrQfc5_o7uvkD2-q29WqUyVc1CCjaT5h8jipGFVJl7BajlPkwbETkdIxNRLPx6kI5dN4zlw6TzJTI1tZfaMtSSJAulDR9HtWLawoqw5k51K9K3SEPMaXJjjw7Qzsxk_e3ePjCmaQ6Iezw\",\"e\":\"AQAB\"}")))
-  (with-redefs [http/get (fn [] (throw (ex-info "" {})))]
+  (with-redefs [http/get (fn [& _args] (throw (ex-info "" nil)))]
+    (is (nil? (t/get-public-key "https://jwks-url" "TE5pM2lq"))))
+  (with-redefs [http/get (fn [& _args] (throw (ex-info "" {:status 400})))]
     (is (nil? (t/get-public-key "https://jwks-url" "TE5pM2lq")))))

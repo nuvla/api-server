@@ -49,8 +49,7 @@
 
 (defn get-public-key
   [jwks-url kid]
-  (log/debugf "getting public key from jwks-url='%s' with kid='%s'"
-              jwks-url kid)
+  (log/debugf "getting public key from jwks-url='%s' with kid='%s'" jwks-url kid)
   (try
     (-> (http/get jwks-url {:headers {"Accept" "application/json"}})
         :body
