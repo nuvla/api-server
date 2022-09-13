@@ -36,9 +36,7 @@ Stripe oidc session.
       (if-let [id-token (auth-oidc/get-id-token client-id client-secret token-url
                                                 code redirect-hook-url)]
         (try
-          (let [public-key (->> id-token
-                                auth-oidc/get-kid-from-id-token
-                                (auth-oidc/get-public-key jwks-url))
+          (let [public-key (auth-oidc/get-public-key id-token jwks-url)
                 {:keys [sub] :as claims} (sign/unsign-cookie-info id-token public-key)
                 roles (concat (oidc-utils/extract-roles claims)
                               (oidc-utils/extract-groups claims)

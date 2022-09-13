@@ -27,9 +27,7 @@ Stripe oidc user.
       (if-let [id-token (auth-oidc/get-id-token
                           client-id client-secret token-url code redirect-hook-url)]
         (try
-          (let [public-key (->> id-token
-                                auth-oidc/get-kid-from-id-token
-                                (auth-oidc/get-public-key jwks-url))
+          (let [public-key (auth-oidc/get-public-key id-token jwks-url)
                 {:keys [sub email] :as claims} (sign/unsign-cookie-info id-token public-key)]
             (log/debugf "oidc access token claims for %s: %s" instance (pr-str claims))
             (if sub

@@ -47,7 +47,7 @@
       (log/errorf "OIDC extraction of kid from id-token failed: %s (%s)"
                   id-token (str e)))))
 
-(defn get-public-key
+(defn get-public-key-by-kid
   [jwks-url kid]
   (log/debugf "getting public key from jwks-url='%s' with kid='%s'" jwks-url kid)
   (try
@@ -64,3 +64,9 @@
         (log/errorf
           "OIDC unexpected error when getting public key from %s \n%s"
           jwks-url (str e))))))
+
+(defn get-public-key
+  [id-token jwks-url]
+  (->> id-token
+       get-kid-from-id-token
+       (get-public-key-by-kid jwks-url)))

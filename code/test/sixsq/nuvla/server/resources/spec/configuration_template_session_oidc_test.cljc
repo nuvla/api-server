@@ -33,7 +33,7 @@
     (stu/is-invalid ::cts-oidc/schema (assoc root :bad "BAD"))
 
     (doseq [k #{:id :resource-type :created :updated :acl :service :instance
-                :client-id :jwks-url :authorize-url :token-url :redirect-url-resource}]
+                :client-id :jwks-url :authorize-url :token-url}]
       (stu/is-invalid ::cts-oidc/schema (dissoc root k)))
 
     (doseq [k #{:client-secret}]

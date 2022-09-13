@@ -8,7 +8,6 @@
     [sixsq.nuvla.auth.utils.sign :as sign]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
-    [sixsq.nuvla.server.resources.callback.utils :as cbu]
     [sixsq.nuvla.server.resources.configuration :as configuration]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.user :as user]
@@ -201,12 +200,12 @@
                     bad-claims  {}
                     bad-token   (sign/sign-cookie-info bad-claims)]
 
-                (with-redefs [auth-oidc/get-id-token   (fn [_ _ _ oauth-code _]
+                (with-redefs [auth-oidc/get-id-token          (fn [_ _ _ oauth-code _]
                                                          (case oauth-code
                                                            "GOOD" good-token
                                                            "BAD" bad-token
                                                            nil))
-                              auth-oidc/get-public-key (constantly auth-pubkey)]
+                              auth-oidc/get-public-key-by-kid (constantly auth-pubkey)]
                   (-> session-anon
                       (request (str validate-url "?code=NONE")
                                :request-method :get)

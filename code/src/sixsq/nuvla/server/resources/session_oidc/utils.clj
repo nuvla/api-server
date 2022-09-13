@@ -155,5 +155,3 @@
       (json/read-str :key-fn keyword)))
 
 (def geant-instance "geant")
-
-
