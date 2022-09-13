@@ -45,8 +45,7 @@
 
 (defmethod p/tpl->session authn-method
   [{:keys [href instance redirect-url] :as _resource} {:keys [headers base-uri] :as _request}]
-  (let [{:keys [client-id authorize-url
-                redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
+  (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
         ;; fake session values, will be replaced after callback execution
         session      (-> (sutils/create-session
                            nil "user-id" {:href href} headers
