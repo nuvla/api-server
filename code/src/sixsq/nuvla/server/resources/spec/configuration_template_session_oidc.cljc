@@ -37,7 +37,7 @@
              :json-schema/group "body"
              :json-schema/order 22
              :json-schema/hidden false
-             :json-schema/sensitive true)))
+             :json-schema/sensitive false)))
 
 
 (s/def ::token-url
@@ -48,9 +48,9 @@
              :json-schema/group "body"
              :json-schema/order 23
              :json-schema/hidden false
-             :json-schema/sensitive true)))
+             :json-schema/sensitive false)))
 
-
+; deprecated
 (s/def ::public-key
   (-> (st/spec ::cimi-core/nonblank-string)                 ;; allows jwk JSON representation
       (assoc :name "public-key"
@@ -59,9 +59,19 @@
              :json-schema/group "body"
              :json-schema/order 25
              :json-schema/hidden false
-             :json-schema/sensitive true)))
+             :json-schema/sensitive false)))
 
+(s/def ::jwks-url
+  (-> (st/spec ::cimi-core/token)
+      (assoc :name "jwks-url"
+             :json-schema/displayName "jwks url"
+             :json-schema/description "URL jwks to get public keys for signature"
+             :json-schema/group "body"
+             :json-schema/order 26
+             :json-schema/hidden false
+             :json-schema/sensitive false)))
 
+; deprecated
 (s/def ::redirect-url-resource
   (-> (st/spec #{"hook", "callback"})
       (assoc :name "redirect url resource"
@@ -69,21 +79,21 @@
              :json-schema/displayName "redirect url resource"
              :json-schema/description "redirect url resource"
              :json-schema/group "body"
-             :json-schema/order 25
+             :json-schema/order 27
              :json-schema/hidden false
              :json-schema/value-scope {:values  ["hook", "callback"]
                                        :default "callback"})))
 
 
 (def configuration-template-keys-spec-req
-  {:req-un [::ps/instance ::client-id ::public-key
-            ::authorize-url ::token-url ::redirect-url-resource]
-   :opt-un [::client-secret ::redirect-url-resource]})
+  {:req-un [::ps/instance ::client-id ::jwks-url
+            ::authorize-url ::token-url]
+   :opt-un [::client-secret ::public-key ::redirect-url-resource]})
 
 (def configuration-template-keys-spec-create
-  {:req-un [::ps/instance ::client-id ::public-key
-            ::authorize-url ::token-url ::redirect-url-resource]
-   :opt-un [::client-secret]})
+  {:req-un [::ps/instance ::client-id ::jwks-url
+            ::authorize-url ::token-url]
+   :opt-un [::client-secret ::redirect-url-resource]})
 
 ;; Defines the contents of the OIDC authentication configuration-template resource itself.
 (s/def ::schema

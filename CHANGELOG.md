@@ -2,8 +2,15 @@
 
 ## Unreleased
 
+## [6.0.3] - 2022-09-13
+
 ### Changed
 
+- OIDC configurtation - Deprecate redirect-url-resource and public-key. Added
+  jwks-url
+- OIDC - Use instead jwks-url to search for
+  corresponding public-key depending on kid #704
+- OIDC - Deprecate callback redirect
 - Nuvlabox resource log - shared acl users with view-acl only cannot delete
   resource log bugfix. Simplify resource log acl
 - Nuvlabox status - next-heartbeat should not be changed when online is set to
