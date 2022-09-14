@@ -2,7 +2,6 @@
   (:require
     [sixsq.nuvla.auth.utils.timestamp :as ts]
     [sixsq.nuvla.server.middleware.authn-info :as authn-info]
-    [sixsq.nuvla.server.resources.callback-create-session-oidc :as cb]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.hook :as hook]
@@ -46,8 +45,7 @@
 
 (defmethod p/tpl->session authn-method
   [{:keys [href instance redirect-url] :as _resource} {:keys [headers base-uri] :as _request}]
-  (let [{:keys [client-id authorize-url
-                redirect-url-resource]} (oidc-utils/config-oidc-params redirect-url instance)
+  (let [{:keys [client-id authorize-url]} (oidc-utils/config-oidc-params redirect-url instance)
         ;; fake session values, will be replaced after callback execution
         session      (-> (sutils/create-session
                            nil "user-id" {:href href} headers
@@ -55,12 +53,10 @@
                          (assoc :expiry (ts/rfc822->iso8601
                                           (ts/expiry-later-rfc822
                                             login-request-timeout))))
-        callback-url (if (= redirect-url-resource "callback")
-                       (sutils/create-callback base-uri (:id session) cb/action-name)
-                       (cond-> (str base-uri hook/resource-type "/" hook-oidc-session/action)
-                               (not= instance oidc-utils/geant-instance) (str "/" instance)))
+        hook-url     (cond-> (str base-uri hook/resource-type "/" hook-oidc-session/action)
+                             (not= instance oidc-utils/geant-instance) (str "/" instance))
         redirect-url (oidc-utils/create-redirect-url authorize-url client-id
-                                                     callback-url "openid email")
+                                                     hook-url "openid email")
         cookie       {:value   (:id session)
                       :expires (ts/rfc822 (ts/expiry-later))}]
     [{:status  303

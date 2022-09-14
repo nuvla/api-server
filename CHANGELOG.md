@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## [6.0.4] - 2022-09-13
+
+- Remove select keys from session configuration bugfix
+
+## [6.0.3] - 2022-09-13
+
+### Changed
+
+- OIDC configurtation - Deprecate redirect-url-resource and public-key. Added
+  jwks-url
+- OIDC - Use instead jwks-url to search for
+  corresponding public-key depending on kid #704
+- OIDC - Deprecate callback redirect
+- Nuvlabox resource log - shared acl users with view-acl only cannot delete
+  resource log bugfix. Simplify resource log acl
+- Nuvlabox status - next-heartbeat should not be changed when online is set to
+  false by admin
+
 ## [6.0.2] - 2022-08-03
 
 ### Added

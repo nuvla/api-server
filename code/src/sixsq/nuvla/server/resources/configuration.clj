@@ -36,8 +36,7 @@ may be added, for example, to configure external authentication.
 ;; validate subclasses of configurations
 ;;
 
-(defmulti validate-subtype
-          :service)
+(defmulti validate-subtype :service)
 
 (defmethod validate-subtype :default
   [resource]
