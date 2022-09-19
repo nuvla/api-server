@@ -153,6 +153,12 @@ Example:
              :json-schema/description "time windows in seconds for the condition to hold"
              :json-schema/order 35)))
 
+(s/def ::dev-name
+  (-> (st/spec string?)
+      (assoc :name "dev-name"
+             :json-schema/type "string"
+             :json-schema/description "device name (eg. eth0, disk0p1)"
+             :json-schema/order 36)))
 
 (s/def ::criteria
   (-> (st/spec (su/only-keys-maps {:req-un [::kind
@@ -160,7 +166,8 @@ Example:
                                             ::value
                                             ::condition]
                                    :opt-un [::window
-                                            ::value-type]}))
+                                            ::value-type
+                                            ::dev-name]}))
       (assoc :name "criteria"
              :json-schema/type "map"
              :json-schema/description "Triggering criteria via matching rules."

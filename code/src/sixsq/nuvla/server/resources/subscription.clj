@@ -112,7 +112,7 @@ Collection for holding subscriptions.
           delete-response (-> resource
                               (a/throw-cannot-delete request)
                               (db/delete request))]
-      (ka-crud/publish-tombstone resource-type (:resource-id resource))
+      (ka-crud/publish-tombstone resource-type (:id resource))
       delete-response)
     (catch Exception e
       (or (ex-data e) (throw e)))))
