@@ -93,6 +93,7 @@ status, a 'set-cookie' header, and a 'location' header with the created
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.email :as email]
+    [sixsq.nuvla.server.resources.group :as group]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.log :as log-util]
@@ -172,11 +173,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
     (or acl (create-acl id))))
 
 
-(defn can-switch-group?
-  [request]
-  (-> (auth/current-groups request) seq boolean))
-
-
 (defn dispatch-conversion
   "Dispatches on the Session authentication method for multimethods
    that take the resource and request as arguments."
@@ -193,8 +189,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
       [(u/operation-map id :add)])
     (cond-> []
             (a/can-delete? resource request) (conj (u/operation-map id :delete))
-            (a/can-manage? resource request) (conj (u/action-map id :get-peers))
-            (can-switch-group? request) (conj (u/action-map id :switch-group)))))
+            (a/can-manage? resource request) (conj (u/action-map id :get-peers)
+                                                   (u/action-map id :get-groups)
+                                                   (u/action-map id :switch-group)))))
 
 
 ;; Sets the operations for the given resources.  This is a
@@ -354,44 +351,114 @@ status, a 'set-cookie' header, and a 'location' header with the created
           (throw e)))))
 
 
-(defn throw-switch-group-not-authorized
-  [resource {{:keys [claim]} :body :as request}]
-  (let [groups  (auth/current-groups request)
-        user-id (auth/current-user-id request)]
-    (if (or (= claim user-id)
-            (contains? groups claim))
-      resource
-      (throw
-        (r/ex-response
-          (format "Switch group cannot be done to requested group: %s!" claim) 403)))))
-
-
 (def edit-impl (std-crud/edit-fn resource-type))
 
 (defn update-cookie-session
-  [{:keys [id user roles active-claim client-ip] :as session}
-   {headers :headers {:keys [claim]} :body :as request}]
-  (let [updated-claims (-> roles
-                           authn-info/split-claims
-                           (disj (or active-claim user))
-                           (conj claim))
-        updated-roles  (->> updated-claims sort (str/join " "))
+  [{:keys [id user user-groups client-ip] :as session}
+   {headers :headers {:keys [claim extended]} :body :as request}]
+  (let [extended-claim (when extended
+                         (->> user-groups
+                              :subgroups
+                              (filter #((set (:parents %)) claim))
+                              (map :id)
+                              set))
+        claims         (cond-> #{id claim "group/nuvla-anon" "group/nuvla-user"}
+                               (seq extended-claim) (set/union extended-claim))
+        roles          (->> claims sort (str/join " "))
         cookie-info    (cookies/create-cookie-info user
                                                    :session-id id
-                                                   :claims updated-claims
+                                                   :claims claims
                                                    :active-claim claim
                                                    :headers headers
                                                    :client-ip client-ip)
         cookie         (cookies/create-cookie cookie-info)
         expires        (ts/rfc822->iso8601 (:expires cookie))
-        session        (assoc session :expiry expires
-                                      :active-claim claim
-                                      :groups (:groups cookie-info)
-                                      :roles updated-roles)]
+        session        (-> session
+                           (dissoc :user-groups)
+                           (assoc :expiry expires
+                                  :active-claim claim
+                                  :roles roles))]
     (-> request
         (assoc :body session)
         (edit-impl)
         (assoc-in [:cookies authn-info/authn-cookie] cookie))))
+
+
+(defn retrieve-session
+  [{{uuid :uuid} :params :as request}]
+  (db/retrieve (str resource-type "/" uuid) request))
+
+
+(defn query-group
+  [filter-str]
+  (second
+    (crud/query-as-admin
+      group/resource-type
+      {:cimi-params {:filter (parser/parse-cimi-filter
+                               filter-str)
+                     :last   10000
+                     :select ["id" "name" "description" "parents" "users"]}})))
+
+
+(defn resolve-user-groups
+  [{:keys [user] :as session}]
+  (let [root-groups (query-group (str "users='" user "'"))
+        subgroups   (if (seq root-groups)
+                      (->> root-groups
+                           (map #(str "parents='" (:id %) "'"))
+                           (str/join " or ")
+                           query-group)
+                      [])]
+    (assoc session
+      :user-groups
+      {:root-groups  root-groups
+       :subgroups    subgroups
+       :all-grps-ids (set/union (set (map :id subgroups))
+                                (set (map :id root-groups)))})))
+
+
+(defn children [{:keys [id] :as group} subgroups]
+  (let [childs (filter (comp #{id} last :parents) subgroups)]
+    (cond-> (select-keys group [:id :name :description :children])
+            (seq childs) (assoc :children
+                                (map #(children % subgroups) childs)))))
+
+
+(defn build-group-hierarchy
+  [{:keys [root-groups
+           subgroups
+           all-grps-ids]}]
+  (->> root-groups
+       (remove (comp all-grps-ids last :parents))
+       (map #(assoc % :parents [:root]))
+       (concat subgroups)
+       (sort-by (juxt :name :id))
+       (children {:id :root :children []})
+       :children))
+
+
+(defmethod crud/do-action [resource-type "get-groups"]
+  [request]
+  (try
+    (-> request
+        retrieve-session
+        (a/throw-cannot-manage request)
+        resolve-user-groups
+        :user-groups
+        build-group-hierarchy
+        r/json-response)
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+
+(defn throw-switch-group-not-authorized
+  [{:keys [user user-groups] :as resource} {{:keys [claim]} :body :as _request}]
+  (if (or (= claim user)
+          ((:all-grps-ids user-groups) claim))
+    resource
+    (throw
+      (r/ex-response
+        (format "Switch group cannot be done to requested group: %s!" claim) 403))))
 
 
 (defmethod crud/do-action [resource-type "switch-group"]
@@ -399,8 +466,9 @@ status, a 'set-cookie' header, and a 'location' header with the created
   (try
     (let [id (str resource-type "/" uuid)]
       (-> (db/retrieve id request)
-          (throw-switch-group-not-authorized request)
           (a/throw-cannot-edit request)
+          (resolve-user-groups)
+          (throw-switch-group-not-authorized request)
           (update-cookie-session request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -409,28 +477,32 @@ status, a 'set-cookie' header, and a 'location' header with the created
 (defmethod crud/do-action [resource-type "get-peers"]
   [request]
   (try
-    (let [user-id       (auth/current-user-id request)
-          is-admin?     (a/is-admin? (auth/current-authentication request))
-          peers-ids     (when-not is-admin?
-                          (->> (cookies/collect-groups-for-user user-id :with-users? true)
-                               (map :users)
-                               (reduce set/union #{})
-                               seq))
-          filter-emails (if peers-ids
-                          (->> peers-ids
-                               (map #(format "parent='%s'" %))
-                               (str/join " or ")
-                               (format "(%s) and validated=true"))
-                          (when is-admin? "validated=true"))
-          peers         (when filter-emails
-                          (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
-                                              :select ["id", "address", "parent"]
-                                              :last   10000}}
-                               (crud/query-as-admin email/resource-type)
-                               second
-                               (map (juxt :parent :address))
-                               (into {})))]
-      (r/json-response (or peers {})))
+    (let [user-groups   (-> request
+                            retrieve-session
+                            (a/throw-cannot-manage request)
+                            resolve-user-groups
+                            :user-groups)
+          filter-emails (if (a/is-admin? (auth/current-authentication request))
+                          "validated=true"
+                          (let [{:keys [root-groups
+                                        subgroups]} user-groups]
+                            (some->> (concat root-groups subgroups)
+                                     (mapcat :users)
+                                     distinct
+                                     seq
+                                     (map #(format "parent='%s'" %))
+                                     (str/join " or ")
+                                     (format "(%s) and validated=true"))))]
+      (r/json-response
+        (if filter-emails
+          (->> {:cimi-params {:filter (parser/parse-cimi-filter filter-emails)
+                              :select ["id", "address", "parent"]
+                              :last   10000}}
+               (crud/query-as-admin email/resource-type)
+               second
+               (map (juxt :parent :address))
+               (into {}))
+          {})))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 

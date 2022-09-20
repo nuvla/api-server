@@ -4,10 +4,7 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils.sign :as sg]
-    [sixsq.nuvla.auth.utils.timestamp :as ts]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.group :as group]))
+    [sixsq.nuvla.auth.utils.timestamp :as ts]))
 
 
 (defn revoked-cookie
@@ -37,6 +34,7 @@
   ([info name]
    {name (create-cookie info)}))
 
+
 (defn extract-cookie-info
   "Extracts cookie info. Returns nil if no cookie is
    provided or if there is an error when extracting the value from the cookie."
@@ -49,37 +47,15 @@
       nil)))
 
 
-(defn collect-groups-for-user
-   [user-id & {:keys [with-users?] :or {with-users? false}}]
-  (-> (crud/query-as-admin
-        group/resource-type
-        {:cimi-params {:filter (parser/parse-cimi-filter (format "users='%s'" user-id))
-                       :select (cond-> ["id"]
-                                       with-users? (conj "users"))}})
-      second))
-
-
-(defn collect-groups-set-for-user
-  [id]
-  (->> (collect-groups-for-user id)
-       (map :id)
-       set))
-
-
 (defn create-cookie-info
   [user-id & {:keys [session-id headers client-ip active-claim claims roles-ext]}]
-  (let [server               (:nuvla-ssl-server-name headers)
-        collected-groups-set (collect-groups-set-for-user user-id)
-        groups               (-> collected-groups-set
-                                 sort
-                                 seq)]
+  (let [server (:nuvla-ssl-server-name headers)]
     (cond-> {:user-id user-id
              :claims  (or (some->> claims seq sort (str/join " "))
                           (->> [user-id "group/nuvla-user" "group/nuvla-anon"]
                                (remove nil?)
                                sort
                                (str/join " ")))}
-            groups (assoc :groups (str/join " " groups))
             roles-ext (update :claims #(str % " " (str/join " " roles-ext)))
             server (assoc :server server)
             session-id (assoc :session session-id)

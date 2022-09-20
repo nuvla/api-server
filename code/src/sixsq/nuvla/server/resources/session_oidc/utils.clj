@@ -105,20 +105,12 @@
 
 ;; retrieval of configuration parameters
 
-(def oidc-keys #{:client-id :client-secret :public-key :authorize-url :token-url :redirect-url-resource})
-
-
-(def mitreid-keys #{:client-id :client-secret :public-key :authorize-url :token-url :user-profile-url})
-
-
-(def mitreid-token-keys #{:client-ips})
-
 
 (defn config-params
-  [prefix key-set redirect-url instance]
+  [prefix redirect-url instance]
   (let [cfg-id (str prefix instance)]
     (try
-      (let [config (some-> cfg-id crud/retrieve-by-id-as-admin (select-keys key-set))]
+      (let [config (some-> cfg-id crud/retrieve-by-id-as-admin)]
         (if (->> config vals (every? (complement nil?)))
           config
           (throw-bad-client-config cfg-id redirect-url)))
@@ -126,13 +118,11 @@
         (throw-bad-client-config cfg-id redirect-url)))))
 
 
-(def config-oidc-params (partial config-params "configuration/session-oidc-" oidc-keys))
+(def config-oidc-params (partial config-params "configuration/session-oidc-"))
 
+(def config-mitreid-params (partial config-params "configuration/session-mitreid-"))
 
-(def config-mitreid-params (partial config-params "configuration/session-mitreid-" mitreid-keys))
-
-
-(def config-mitreid-token-params (partial config-params "configuration/session-mitreid-token-" mitreid-token-keys))
+(def config-mitreid-token-params (partial config-params "configuration/session-mitreid-token-"))
 
 
 (defn create-redirect-url
@@ -155,5 +145,3 @@
       (json/read-str :key-fn keyword)))
 
 (def geant-instance "geant")
-
-

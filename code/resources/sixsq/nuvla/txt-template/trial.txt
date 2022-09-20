@@ -1,6 +1,7 @@
 {{title}}
 
 {{text-1}}
+{{text-2}}
 
 {% for resource in resources %}
 {% if forloop.first %}
@@ -8,24 +9,19 @@
 {% endif %}
 {{resource.kind}}: {{resource.title}} ({{resource.id}}) - url: {{resource.url}}
 {% endfor %}
-{{text-2}}
+
+{{text-3}}
 
 {% if any button-text %}
 {{button-intro}}
 {{button-url}}
 {% endif %}
 
-{{text-3}}
+{{text-4}}
+{{text-5}}
 
-{% if any warning-initiate %}
-If you didn't initiate this request, do NOT click on the link and report this to the service administrator.
-{% endif %}
 
-{% if any conditions-url %}
-By clicking the button above, you accept the Terms and Conditions: {{conditions-url}}
-{% endif %}
-
-Don't forget that we're here to help if you have any question.
+Don't forget that we're here to help if you have any questions.
 
 Kind regards,
 SixSq Team

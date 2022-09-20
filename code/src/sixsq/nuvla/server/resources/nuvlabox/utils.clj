@@ -1,11 +1,14 @@
 (ns sixsq.nuvla.server.resources.nuvlabox.utils
   (:require
     [clojure.string :as str]
+    [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const state-new "NEW")
@@ -281,3 +284,15 @@
   [limit s]
   (cond-> s
           (> (count s) limit) (subs 0 limit)))
+
+
+(defn throw-when-payment-required
+  [request]
+  (if (or (nil? config-nuvla/*stripe-api-key*)
+          (a/is-admin? (auth/current-authentication request))
+          (let [active-claim (auth/current-active-claim request)
+                subs-status  (:status (payment/active-claim->subscription
+                                        active-claim))]
+            (#{"active" "past_due" "trialing"} subs-status)))
+    request
+    (payment/throw-payment-required)))

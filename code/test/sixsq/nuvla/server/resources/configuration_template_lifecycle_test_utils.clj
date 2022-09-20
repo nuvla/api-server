@@ -86,10 +86,8 @@
 (defn check-bad-methods
   []
   (let [resource-uri (str p/service-context (u/new-resource-id cfg-tpl/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :post]
+    (ltu/verify-405-status [[base-uri :post]
                             [base-uri :delete]
-                            [resource-uri :options]
                             [resource-uri :put]
                             [resource-uri :post]
                             [resource-uri :delete]])))

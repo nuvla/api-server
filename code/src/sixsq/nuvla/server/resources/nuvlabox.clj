@@ -20,12 +20,10 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
-    [sixsq.nuvla.server.resources.nuvlabox.utils :as nb-utils]
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -205,7 +203,7 @@ particular NuvlaBox release.
       (let [vpn-service (vpn-utils/get-service vpn-server-id)]
         (vpn-utils/check-service-subtype vpn-service)))
 
-    (user-utils/throw-user-hasnt-active-subscription request)
+    (utils/throw-when-payment-required request)
 
     (let [nb-owner     (if is-admin? (or owner "group/nuvla-admin")
                                      (auth/current-active-claim request))
@@ -288,14 +286,16 @@ particular NuvlaBox release.
           ssh-keys (assoc :ssh-keys ssh-keys)
           capabilities (assoc :capabilities capabilities)
           acl (assoc
-                :acl (merge
-                       (select-keys acl [:view-meta :edit-data :edit-meta :delete])
-                       {:owners    ["group/nuvla-admin"]
-                        :edit-acl  (vec (distinct (concat (:edit-acl acl) [owner])))
-                        :view-acl  (vec (distinct (concat (:view-acl acl) (when vpn-server-id
-                                                                            [vpn-server-id]))))
-                        :view-data (vec (distinct (concat (:view-data acl) [id])))
-                        :manage    (vec (distinct (concat (:manage acl) [id])))}))))
+                :acl (-> acl
+                         (select-keys [:view-meta :edit-data :edit-meta :delete])
+                         (merge
+                           {:owners    ["group/nuvla-admin"]
+                            :edit-acl  (vec (distinct (concat (:edit-acl acl) [owner])))
+                            :view-acl  (vec (distinct (concat (:view-acl acl) (when vpn-server-id
+                                                                                [vpn-server-id]))))
+                            :view-data (vec (distinct (concat (:view-data acl) [id])))
+                            :manage    (vec (distinct (concat (:manage acl) [id])))})
+                         (acl-utils/normalize-acl)))))
 
 
 (defmethod crud/edit resource-type
@@ -925,25 +925,24 @@ particular NuvlaBox release.
 ;;
 
 (defn create-log
-  [{:keys [id acl] :as _nuvlabox} {:keys [body] :as _request}]
-  (let [opts          (select-keys body [:since :lines])
-        components    (:components body)
-        nb-view-acl   (:view-acl acl)
-        nb-delete-acl (:delete acl)
-        log-acl       (cond-> (nb-utils/set-acl-nuvlabox-view-only acl {:owners [id]})
-                              (not-empty nb-view-acl) (assoc :manage nb-view-acl)
-                              (not-empty nb-delete-acl) (assoc :delete nb-delete-acl))]
+  [{:keys [id] :as _nuvlabox} {:keys [body] :as request}]
+  (let [opts       (select-keys body [:since :lines])
+        components (:components body)
+        session-id (auth/current-session-id request)
+        log-acl    {:owners   [id]
+                    :view-acl [session-id]
+                    :manage   [session-id]
+                    :delete   [session-id]}]
     (resource-log/create-log id components log-acl opts)))
 
 
 (defmethod crud/do-action [resource-type "create-log"]
   [{{uuid :uuid} :params :as request}]
-  (try
-    (let [id (str resource-type "/" uuid)]
-      (-> (db/retrieve id request)
-          (a/throw-cannot-manage request)
-          (u/throw-can-not-do-action utils/can-create-log? "create-log")
-          (create-log request)))))
+  (let [id (str resource-type "/" uuid)]
+    (-> (db/retrieve id request)
+        (a/throw-cannot-manage request)
+        (u/throw-can-not-do-action utils/can-create-log? "create-log")
+        (create-log request))))
 
 ;;
 ;; Allows for the creation of a NuvlaBox API key on-demand
@@ -974,7 +973,7 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
-      (user-utils/throw-user-hasnt-active-subscription request)
+      (utils/throw-when-payment-required request)
       (-> (db/retrieve id request)
           (a/throw-cannot-manage request)
           (a/throw-cannot-edit request)

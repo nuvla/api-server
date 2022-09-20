@@ -546,9 +546,7 @@
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [resource-uri :options]
-                            [resource-uri :post]])))
+    (ltu/verify-405-status [[resource-uri :post]])))
 
 
 (deftest location-as-geo-point
@@ -611,7 +609,7 @@
                       (ltu/is-status 201)
                       (ltu/location))
               abs-uri (str p/service-context uri)]
-          (if uri
+          (when uri
             (-> session-user
               (request abs-uri
                        :request-method :delete)

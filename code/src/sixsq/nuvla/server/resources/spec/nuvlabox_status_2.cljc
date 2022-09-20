@@ -87,6 +87,14 @@
 
            :json-schema/order 86)))
 
+(s/def ::network
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :name "network"
+             :json-schema/type "map"
+             :json-schema/description "network related configuration"
+
+             :json-schema/order 87)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -125,5 +133,6 @@
                                ::status-notes
                                ::orchestrator
                                ::nb-status-0/temperatures
-                               ::components]}))
+                               ::components
+                               ::network]}))
 

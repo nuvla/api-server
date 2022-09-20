@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [sixsq.nuvla.auth.utils :as auth]
@@ -27,7 +27,8 @@
 
 
 (def base-uri (str p/service-context session/resource-type))
-
+(def grp-base-uri (str p/service-context group/resource-type))
+(def nb-base-uri (str p/service-context nuvlabox/resource-type))
 
 (defn create-user
   [session-admin & {:keys [username password email activated?]}]
@@ -70,6 +71,13 @@
                               (ltu/body)
                               :message))))
         user-id))))
+
+(defn valid-create-grp
+  [group-id]
+  {:template {:href             "group-template/generic"
+              :group-identifier group-id
+              :name             (str "Group " group-id)
+              :description      (str "Group " group-id " description")}})
 
 (deftest lifecycle
 
@@ -206,7 +214,7 @@
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group))
+            (ltu/is-operation-present :switch-group))
 
         ; check contents of session
         (let [{:keys [name description tags]} (-> session-user
@@ -275,16 +283,14 @@
                    :request-method :post
                    :body (json/write-str valid-create))
           (ltu/body->edn)
-          (ltu/is-status 403)))
+          (ltu/is-status 403)))))
 
-    ))
 
-(deftest claim-account-test
-
+(deftest switch-group-lifecycle-test
   (let [app                (ltu/ring-app)
         session-json       (content-type (session app) "application/json")
         session-anon       (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin      (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-admin      (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
 
         href               (str st/resource-type "/password")
 
@@ -294,238 +300,435 @@
                                         :username username
                                         :password plaintext-password
                                         :activated? true
-                                        :email "bob@example.org")]
+                                        :email "bob@example.org")
 
+        valid-create       {:template {:href     href
+                                       :username username
+                                       :password plaintext-password}}
+        session-user       (-> session-anon
+                               (request base-uri
+                                        :request-method :post
+                                        :body (json/write-str valid-create))
+                               (ltu/body->edn)
+                               (ltu/is-set-cookie)
+                               (ltu/is-status 201))
+        session-user-id    (ltu/body-resource-id session-user)
+        sesssion-user-url  (ltu/location-url session-user)
+        handler            (wrap-authn-info identity)
+        authn-session-user (-> session-user
+                               :response
+                               (select-keys [:cookies])
+                               handler
+                               seq
+                               flatten)
+        group-a-identifier "switch-test-a"
+        group-a            (str group/resource-type "/" group-a-identifier)
+        group-b-identifier "switch-test-b"
+        group-b            (str group/resource-type "/" group-b-identifier)
+        switch-op-url      (-> (apply request session-json (concat [sesssion-user-url] authn-session-user))
+                               (ltu/body->edn)
+                               (ltu/is-status 200)
+                               (ltu/get-op-url :switch-group))]
 
-    ;; anon with valid activated user can create session
-    #_{:clj-kondo/ignore [:redundant-let]}
-    (let [username           "user/bob"
-          plaintext-password "BobBob-0"
+    (testing "User cannot switch to a group that he is not part of."
+      (-> (apply request session-json
+                 (concat [switch-op-url :body (json/write-str {:claim group-b})
+                          :request-method :post] authn-session-user))
+          (ltu/body->edn)
+          (ltu/is-status 403)
+          (ltu/message-matches #"Switch group cannot be done to requested group:.*")))
 
-          valid-create       {:template {:href     href
-                                         :username username
-                                         :password plaintext-password}}]
+    (testing "User can switch to a group that he is part of."
+      (-> session-admin
+          (request (-> session-admin
+                       (request (str p/service-context group/resource-type)
+                                :request-method :post
+                                :body (json/write-str
+                                        {:template
+                                         {:href             (str group-tpl/resource-type "/generic")
+                                          :group-identifier group-a-identifier}}))
+                       (ltu/body->edn)
+                       (ltu/is-status 201)
+                       (ltu/location-url))
+                   :request-method :put
+                   :body (json/write-str {:users [user-id]}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+      (let [response              (-> (apply request session-json
+                                             (concat [switch-op-url :body (json/write-str {:claim group-a})
+                                                      :request-method :post] authn-session-user))
+                                      (ltu/body->edn)
+                                      (ltu/is-status 200)
+                                      (ltu/is-set-cookie)
+                                      :response)
+            authn-session-group-a (-> response
+                                      (select-keys [:cookies])
+                                      handler
+                                      seq
+                                      flatten)]
+        (testing "Cookie is set and claims correspond to group a"
+          (is (= {:active-claim group-a
+                  :claims       #{"group/nuvla-anon"
+                                  "group/nuvla-user"
+                                  session-user-id
+                                  group-a}
+                  :user-id      user-id}
+                 (-> response
+                     handler
+                     auth/current-authentication))))
 
-      ; anonymous create must succeed
-      (let [session-1          (-> session-anon
-                                   (request base-uri
-                                            :request-method :post
-                                            :body (json/write-str valid-create))
-                                   (ltu/body->edn)
-                                   (ltu/is-set-cookie)
-                                   (ltu/is-status 201))
-            session-1-id       (ltu/body-resource-id session-1)
-
-            session-1-uri      (ltu/location session-1)
-            sesssion-1-abs-uri (str p/service-context session-1-uri)
-            handler            (wrap-authn-info identity)
-            authn-session-1    (-> {:cookies (get-in session-1 [:response :cookies])}
-                                   handler
-                                   seq
-                                   flatten)
-
-            group-identifier   "alpha"
-            group-alpha        (str group/resource-type "/" group-identifier)
-            group-create       {:template {:href             (str group-tpl/resource-type "/generic")
-                                           :group-identifier group-identifier}}
-            group-url          (-> session-admin
-                                   (request (str p/service-context group/resource-type)
-                                            :request-method :post
-                                            :body (json/write-str group-create))
+        (testing "Nuvlabox owner is set correctly to the active-claim"
+          (binding [config-nuvla/*stripe-api-key* nil]
+            (let [nuvlabox-url (-> (apply request session-json
+                                          (concat [nb-base-uri
+                                                   :body (json/write-str {})
+                                                   :request-method :post] authn-session-group-a))
                                    (ltu/body->edn)
                                    (ltu/is-status 201)
                                    (ltu/location-url))]
 
-        ; user without additional group should not have operation claim
-        (-> (apply request session-json (concat [sesssion-1-abs-uri] authn-session-1))
-            (ltu/body->edn)
-            (ltu/is-status 200)
-            (ltu/is-id session-1-id)
-            (ltu/is-operation-present :delete)
-            (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group))
+              (-> (apply request session-json (concat [nuvlabox-url] authn-session-group-a))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/is-key-value :owner group-a)))))
 
-        ;; add user to group/alpha
-        (-> session-admin
-            (request group-url
-                     :request-method :put
-                     :body (json/write-str {:users [user-id]}))
-            (ltu/body->edn)
-            (ltu/is-status 200))
+        (testing "switch back to user is possible"
+          (is (= user-id
+                 (-> (apply request session-json
+                            (concat [switch-op-url :body (json/write-str {:claim user-id})
+                                     :request-method :post] authn-session-group-a))
+                     (ltu/body->edn)
+                     (ltu/is-status 200)
+                     (ltu/is-set-cookie)
+                     :response
+                     (select-keys [:cookies])
+                     handler
+                     auth/current-authentication
+                     :active-claim))))
 
-        ;; check claim operation present
-        (let [session-2         (-> session-anon
-                                    (request base-uri
-                                             :request-method :post
-                                             :body (json/write-str valid-create))
-                                    (ltu/body->edn)
-                                    (ltu/is-set-cookie)
-                                    (ltu/is-status 201))
-              session-2-id      (ltu/body-resource-id session-2)
-
-              session-2-uri     (ltu/location session-2)
-              session-2-abs-uri (str p/service-context session-2-uri)
-
-              authn-session-2   (-> {:cookies (get-in session-2 [:response :cookies])}
-                                    handler
-                                    seq
-                                    flatten)
-
-              claim-op-url      (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
-                                    (ltu/body->edn)
-                                    (ltu/is-status 200)
-                                    (ltu/get-op-url :switch-group))]
-
-          (-> (apply request session-json (concat [session-2-abs-uri] authn-session-2))
+        (testing "switch to subgroup is possible"
+          (-> (header session-json authn-info-header (str "user/x " group-a " user/x group/nuvla-user group/nuvla-anon " group-a))
+              (request grp-base-uri
+                       :request-method :post
+                       :body (json/write-str (valid-create-grp "switch-test-b")))
               (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-id session-2-id)
-              (ltu/is-operation-present :delete)
-              (ltu/is-operation-absent :edit)
-              (ltu/is-operation-present :switch-group)
-              (ltu/is-operation-present :get-peers))
+              (ltu/is-status 201))
 
-          ;; claiming group-beta should fail
-          (-> (apply request session-json
-                     (concat [claim-op-url :body (json/write-str {:claim "group/beta"})
-                              :request-method :post] authn-session-2))
-              (ltu/body->edn)
-              (ltu/is-status 403)
-              (ltu/message-matches #"Switch group cannot be done to requested group:.*"))
-
-          ;; claim with old session fail because wasn't in group/alpha
-          (-> (apply request session-json
-                     (concat [claim-op-url :body (json/write-str {:claim group-alpha})
-                              :request-method :post] authn-session-1))
-              (ltu/body->edn)
-              (ltu/is-status 403))
-
-          ;; claim group-alpha
-          (let [cookie-claim        (-> (apply request session-json
-                                               (concat [claim-op-url :body (json/write-str
-                                                                             {:claim group-alpha})
-                                                        :request-method :post] authn-session-2))
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-set-cookie)
-                                        :response
-                                        :cookies)
-                authn-session-claim (-> {:cookies cookie-claim}
-                                        handler
-                                        seq
-                                        flatten)]
-            (is (= {:active-claim group-alpha
-                    :claims       #{"group/nuvla-anon"
-                                    "group/nuvla-user"
-                                    session-2-id
-                                    group-alpha}
-                    :groups       #{"group/alpha"}
-                    :user-id      user-id}
-                   (-> {:cookies cookie-claim}
+          (let [response              (-> (apply request session-json
+                                                 (concat [switch-op-url :body (json/write-str {:claim "group/switch-test-b"})
+                                                          :request-method :post] authn-session-user))
+                                          (ltu/body->edn)
+                                          (ltu/is-status 200)
+                                          (ltu/is-set-cookie)
+                                          :response)
+                authn-session-group-b (-> response
+                                          (select-keys [:cookies])
+                                          handler
+                                          seq
+                                          flatten)]
+            (is (= "group/switch-test-b"
+                   (-> response
+                       (select-keys [:cookies])
                        handler
-                       auth/current-authentication)))
+                       auth/current-authentication
+                       :active-claim)))
 
-            (-> (apply request session-json (concat [session-2-abs-uri] authn-session-claim))
+            (-> (apply request session-json (concat [(str p/service-context nuvlabox/resource-type)] authn-session-group-b))
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-id session-2-id)
-                (ltu/is-operation-present :delete)
-                (ltu/is-operation-absent :edit)
-                (ltu/is-operation-present :switch-group))
+                (ltu/is-count 0))
 
-            ;; try create NuvlaBox and check who is the owner
-            (binding [config-nuvla/*stripe-api-key* nil]
-              (let [nuvlabox-url (-> (apply request session-json
-                                            (concat [(str p/service-context nuvlabox/resource-type)
-                                                     :body (json/write-str {})
-                                                     :request-method :post] authn-session-claim))
-                                     (ltu/body->edn)
-                                     (ltu/is-status 201)
-                                     (ltu/location-url))]
+            (-> (apply request session-json
+                       (concat [nb-base-uri
+                                :body (json/write-str {})
+                                :request-method :post] authn-session-group-b))
+                (ltu/body->edn)
+                (ltu/is-status 201)))))
+      (testing "switch to subgroup with extended claims"
+        (let [response                  (-> (apply request session-json
+                                                   (concat [switch-op-url :body (json/write-str {:claim group-a :extended true})
+                                                            :request-method :post] authn-session-user))
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            (ltu/is-set-cookie)
+                                            :response)
+              authn-session-group-a-ext (-> response
+                                            (select-keys [:cookies])
+                                            handler
+                                            seq
+                                            flatten)]
+          (testing "Cookie is set and claims correspond to group a but claims are extended"
+            (is (= {:active-claim group-a
+                    :claims       #{"group/nuvla-anon"
+                                    "group/nuvla-user"
+                                    session-user-id
+                                    group-a
+                                    group-b}
+                    :user-id      user-id}
+                   (-> response
+                       handler
+                       auth/current-authentication))))
 
-                (-> session-admin
-                    (request nuvlabox-url)
-                    (ltu/body->edn)
-                    (ltu/is-status 200))
-
-                (-> (apply request session-json (concat [nuvlabox-url] authn-session-claim))
-                    (ltu/body->edn)
-                    (ltu/is-status 200)
-                    (ltu/is-key-value :owner group-alpha))))
-
-            (let [cookie-claim-back (-> (apply request session-json
-                                               (concat [claim-op-url :body (json/write-str
-                                                                             {:claim user-id})
-                                                        :request-method :post] authn-session-claim))
-                                        (ltu/body->edn)
-                                        (ltu/is-status 200)
-                                        (ltu/is-set-cookie)
-                                        :response
-                                        :cookies)]
-              (is (= user-id
-                     (-> {:cookies cookie-claim-back}
-                         handler
-                         auth/current-authentication
-                         :user-id))))))
-
-        ))))
-
-(deftest get-peers-test
-  (let [app           (ltu/ring-app)
-        session-json  (content-type (session app) "application/json")
-        session-user  (header session-json authn-info-header "user group/nuvla-user")
-        session-anon  (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
-        session-admin (header session-json authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")]
-
-    (let [href               (str st/resource-type "/password")
-          username           "user/jack"
-          plaintext-password "JackJack-0"
-
-          valid-create       {:template {:href     href
-                                         :username username
-                                         :password plaintext-password}}]
-      (create-user session-admin
-                   :username username
-                   :password plaintext-password
-                   :activated? true
-                   :email "jack@example.org")
-
-      ; anonymous create must succeed
-      (let [resp    (-> session-anon
-                        (request base-uri
-                                 :request-method :post
-                                 :body (json/write-str valid-create))
-                        (ltu/body->edn)
-                        (ltu/is-set-cookie)
-                        (ltu/is-status 201))
-            id      (ltu/body-resource-id resp)
-            uri     (ltu/location resp)
-            abs-uri (str p/service-context uri)]
+          (testing "NuvlaEdge of group b are visible for group a"
+            (-> (apply request session-json
+                       (concat [nb-base-uri] authn-session-group-a-ext))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-count 2))))))))
 
 
-        ; user should be able to see session with session role
-        (-> (session app)
-            (header authn-info-header (str "user/user group/nuvla-user " id))
+(deftest get-groups-lifecycle-test
+  (let [app             (ltu/ring-app)
+        session-json    (content-type (session app) "application/json")
+        session-anon    (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
+        user-id         (create-user session-admin
+                                     :username "tarzan"
+                                     :password "TarzanTarzan-0"
+                                     :activated? true
+                                     :email "tarzan@example.org")
+        session-user    (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
+        session-group-a (header session-json authn-info-header "user/x group/a user/x group/nuvla-user group/nuvla-anon group/a")
+        session-group-b (header session-json authn-info-header "user/x group/b user/x group/nuvla-user group/nuvla-anon group/b")
+        href            (str st/resource-type "/password")]
+
+    (-> session-admin
+        (request grp-base-uri
+                 :request-method :post
+                 :body (json/write-str (valid-create-grp "a")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+    (-> session-group-a
+        (request grp-base-uri
+                 :request-method :post
+                 :body (json/write-str (valid-create-grp "b")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+    (-> session-group-a
+        (request grp-base-uri
+                 :request-method :post
+                 :body (json/write-str (valid-create-grp "b1")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+    (-> session-group-b
+        (request grp-base-uri
+                 :request-method :post
+                 :body (json/write-str (valid-create-grp "c")))
+        (ltu/body->edn)
+        (ltu/is-status 201))
+
+    (let [resp            (-> session-anon
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str {:template {:href     href
+                                                                         :username "tarzan"
+                                                                         :password "TarzanTarzan-0"}}))
+                              (ltu/body->edn)
+                              (ltu/is-set-cookie)
+                              (ltu/is-status 201))
+          id              (ltu/body-resource-id resp)
+          abs-uri         (ltu/location-url resp)
+          session-with-id (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon " id))]
+      (testing "User should be able to see session with session role"
+        (-> session-with-id
             (request abs-uri)
             (ltu/body->edn)
             (ltu/is-status 200)
             (ltu/is-id id)
             (ltu/is-operation-present :delete)
             (ltu/is-operation-absent :edit)
-            (ltu/is-operation-absent :switch-group)
-            (ltu/is-operation-present :get-peers))
+            (ltu/is-operation-present :switch-group)
+            (ltu/is-operation-present :get-peers)
+            (ltu/is-operation-present :get-groups)))
 
-        ; check contents of session
-        (let [get-peers-url (-> session-user
-                                (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-                                (request abs-uri)
-                                (ltu/body->edn)
-                                (ltu/get-op-url :get-peers))]
-          (-> session-user
-              (header authn-info-header (str "user/user group/nuvla-user group/nuvla-anon " id))
-              (request get-peers-url)
+      (let [get-groups-url (-> session-user
+                               (header authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon " id))
+                               (request abs-uri)
+                               (ltu/body->edn)
+                               (ltu/get-op-url :get-groups))]
+
+        (testing "User who is not in any group should get empty list of groups"
+          (-> session-with-id
+              (request get-groups-url)
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/body)
-              (= {})
-              (is "Get peers body should be empty")))))))
+              (= [])
+              (is "Get groups body should have no childs")))
+
+        (testing "When user is part of a group, he should get subgroups"
+          (-> session-admin
+              (request (str p/service-context "group/b")
+                       :request-method :put
+                       :body (json/write-str {:users [user-id]}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          (-> session-with-id
+              (request get-groups-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/body)
+              (= [{:children    [{:description "Group c description"
+                                  :id          "group/c"
+                                  :name        "Group c"}]
+                   :description "Group b description"
+                   :id          "group/b"
+                   :name        "Group b"}])
+              (is "User get group/b and subgroup group/c")))
+
+        (testing "When user is part of a root group he should get
+          the full group hierarchy and group/b is not duplicated"
+          (-> session-admin
+              (request (str p/service-context "group/a")
+                       :request-method :put
+                       :body (json/write-str {:users [user-id]}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          (-> session-admin
+              (request grp-base-uri
+                       :request-method :post
+                       :body (json/write-str (valid-create-grp "z")))
+              (ltu/body->edn)
+              (ltu/is-status 201))
+          (-> session-admin
+              (request (str p/service-context "group/z")
+                       :request-method :put
+                       :body (json/write-str {:users [user-id]}))
+              (ltu/body->edn)
+              (ltu/is-status 200))
+          (-> session-with-id
+              (request get-groups-url)
+              (ltu/body->edn)
+              (ltu/is-status 200)
+              (ltu/body)
+              (= [{:children    [{:children    [{:description "Group c description"
+                                                 :id          "group/c"
+                                                 :name        "Group c"}]
+                                  :description "Group b description"
+                                  :id          "group/b"
+                                  :name        "Group b"}
+                                 {:description "Group b1 description"
+                                  :id          "group/b1"
+                                  :name        "Group b1"}]
+                   :description "Group a description"
+                   :id          "group/a"
+                   :name        "Group a"}
+                  {:description "Group z description"
+                   :id          "group/z"
+                   :name        "Group z"}])
+              (is "Get groups body should contain tree of groups")))))))
+
+
+(deftest get-peers-lifecycle-test
+  (let [app             (ltu/ring-app)
+        session-json    (content-type (session app) "application/json")
+        session-anon    (header session-json authn-info-header "user/unknown user/unknown group/nuvla-anon")
+        session-admin   (header session-json authn-info-header "user/super group/nuvla-admin group/nuvla-user group/nuvla-anon group/nuvla-admin")
+        user-id         (create-user session-admin
+                                     :username "peer0"
+                                     :password "Peer0Peer-0"
+                                     :activated? true
+                                     :email "peer-0@example.org")
+        peer-1          (create-user session-admin
+                                     :username "peer1"
+                                     :password "Peer1Peer-1"
+                                     :activated? true
+                                     :email "peer-1@example.org")
+        peer-2          (create-user session-admin
+                                     :username "peer2"
+                                     :password "Peer2Peer-2"
+                                     :activated? false
+                                     :email "peer-2@example.org")
+        peer-3          (create-user session-admin
+                                     :username "peer3"
+                                     :password "Peer3Peer-3"
+                                     :activated? true
+                                     :email "peer-3@example.org")
+        session-user    (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon"))
+        session-group-a (header session-json authn-info-header "user/x group/peers-test-a user/x group/nuvla-user group/nuvla-anon group/peers-test-a")
+        href            (str st/resource-type "/password")
+
+        resp            (-> session-anon
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str {:template {:href     href
+                                                                       :username "peer0"
+                                                                       :password "Peer0Peer-0"}}))
+                            (ltu/body->edn)
+                            (ltu/is-set-cookie)
+                            (ltu/is-status 201))
+        id              (ltu/body-resource-id resp)
+        abs-uri         (ltu/location-url resp)
+        session-with-id (header session-json authn-info-header (str user-id user-id " group/nuvla-user group/nuvla-anon " id))
+        get-peers-url   (-> session-user
+                            (header authn-info-header (str user-id " " user-id " group/nuvla-user group/nuvla-anon " id))
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/get-op-url :get-peers))]
+
+    (testing "admin should get all users with validated emails"
+      (-> session-admin
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (is "Get peers body should contain all users with validated emails")))
+
+    (testing "user who is not in any group should get empty map of peers"
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          (= {})
+          (is "Get peers body should be empty")))
+
+    (-> session-admin
+        (request (-> session-admin
+                     (request grp-base-uri
+                              :request-method :post
+                              :body (json/write-str (valid-create-grp "peers-test-a")))
+                     (ltu/body->edn)
+                     (ltu/is-status 201)
+                     (ltu/location-url))
+                 :request-method :put
+                 :body (json/write-str {:users [peer-1 user-id peer-2]}))
+        (ltu/body->edn)
+        (ltu/is-status 200))
+
+    (testing "user should get peers of the group when email is validated only"
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org"})
+          (is "Get peers body should be himself and peer-1")))
+
+    (testing "user should get peers of subgroup also"
+      (-> session-admin
+          (request (-> session-group-a
+                       (request grp-base-uri
+                                :request-method :post
+                                :body (json/write-str (valid-create-grp "peers-test-b")))
+                       (ltu/body->edn)
+                       (ltu/is-status 201)
+                       (ltu/location-url))
+                   :request-method :put
+                   :body (json/write-str {:users [peer-3 user-id peer-2]}))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+      (-> session-with-id
+          (request get-peers-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/body)
+          vals
+          set
+          (= #{"peer-0@example.org" "peer-1@example.org" "peer-3@example.org"})
+          (is "Get peers body should contain peer-3")))))

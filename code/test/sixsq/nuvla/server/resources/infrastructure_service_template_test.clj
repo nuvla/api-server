@@ -49,10 +49,8 @@
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context tpl/resource-type "/" tpl-generic/method)]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :post]
+    (ltu/verify-405-status [[base-uri :post]
                             [base-uri :delete]
-                            [resource-uri :options]
                             [resource-uri :put]
                             [resource-uri :post]
                             [resource-uri :delete]])))

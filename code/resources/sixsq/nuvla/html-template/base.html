@@ -342,21 +342,22 @@
 
                 <!-- START CENTERED WHITE CONTAINER -->
                 <table role="presentation" class="main">
-
                     <!-- START MAIN CONTENT AREA -->
+                    {% if any header-img %}
                     <tr>
                         <td>
                             <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
                                 <tbody>
                                 <tr>
                                     <td align="center">
-                                        <img src="https://nuvla.io/img/email/header-2.png" alt="Header image" border="0" style="border:0; outline:none; text-decoration:none; display:block;">
+                                        <img src="{{header-img}}" alt="Header image" border="0" style="border:0; outline:none; text-decoration:none; display:block;">
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
                         </td>
                     </tr>
+                    {% endif %}
                     <tr>
                         <td>
                             <h1>{{title}}</h1>
@@ -401,7 +402,7 @@
                                         <p>By clicking the button above, you accept the <a href="{{conditions-url}}">Terms and Conditions</a></p>
                                         {% endif %}
 
-                                        <p>Don't forget that we're here to help if you have any question.</p>
+                                        <p>Don't forget that we're here to help if you have any questions.</p>
 
                                         <br/>
                                         <p>Kind regards,</p>

@@ -41,6 +41,7 @@
 (s/def ::roles ::core/nonblank-string)
 
 
+;; this field is deprecated and will be deleted soon
 (s/def ::groups ::core/nonblank-string)
 
 

@@ -7,8 +7,7 @@
 
 (defn set-impl!
   [impl]
-  (let []
-    (alter-var-root #'*impl* (constantly impl))))
+  (alter-var-root #'*impl* (constantly impl)))
 
 (defn set-api-key! [api-key]
   (protocol/set-api-key! *impl* api-key))
@@ -28,8 +27,8 @@
 (defn delete-customer [customer]
   (protocol/delete-customer *impl* customer))
 
-(defn delete-discount-customer [customer]
-  (protocol/delete-discount-customer *impl* customer))
+(defn delete-discount [customer]
+  (protocol/delete-discount *impl* customer))
 
 (defn get-customer-subscriptions [customer]
   (protocol/get-customer-subscriptions *impl* customer))

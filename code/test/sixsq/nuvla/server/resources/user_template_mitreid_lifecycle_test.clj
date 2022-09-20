@@ -251,7 +251,6 @@
                                  :given_name  "John"
                                  :family_name "Smith"
                                  :entitlement ["alpha-entitlement"]
-                                 :groups      ["/organization/group-1"]
                                  :realm       "my-realm"}
                     good-token  (sign/sign-cookie-info good-claims)
                     bad-claims  {}

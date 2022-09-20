@@ -6,10 +6,12 @@ that start with 'nuvla-' are reserved for the server.
 "
   (:require
     [clojure.spec.alpha :as s]
+    [clojure.string :as str]
     [ring.util.codec :as codec]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.callback-join-group :as callback-join-group]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -34,10 +36,9 @@ that start with 'nuvla-' are reserved for the server.
 (def ^:const create-type (u/ns->create-type *ns*))
 
 
-(def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-admin"
-                                   "group/nuvla-user"]
-                     :bulk-delete ["group/nuvla-admin"]})
+(def collection-acl {:query ["group/nuvla-user"]
+                     :add   ["group/nuvla-admin"
+                             "group/nuvla-user"]})
 
 
 ;;
@@ -65,47 +66,69 @@ that start with 'nuvla-' are reserved for the server.
 ;;
 
 (defmethod crud/add-acl resource-type
-  [resource request]
+  [{:keys [id] :as resource} request]
   (-> resource
       (a/add-acl request)
-      (a/acl-append-resource :view-data "group/nuvla-vpn")))
+      (a/acl-append-resource :view-data "group/nuvla-vpn")
+      (a/acl-append-resource :view-acl id)))
 
 
 ;;
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
+(defn throw-subgroups-limit-reached
+  [{{:keys [parents]} :body :as request}]
+  (if (and (seq parents)
+           (>= (-> (crud/query-as-admin
+                     resource-type
+                     {:cimi-params {:filter (parser/parse-cimi-filter
+                                              (format "parents='%s'" (first parents)))
+                                    :last   0}})
+                   first
+                   :count) 19))
+    (throw (r/ex-response "A group cannot have more than 19 subgroups!" 409))
+    request))
+
 
 (defn tpl->group
-  [{:keys [group-identifier]
-    :as   resource}]
-  (let [id (str resource-type "/" group-identifier)]
+  [{:keys [group-identifier] :as resource} request]
+  (let [id           (str resource-type "/" group-identifier)
+        active-claim (auth/current-active-claim request)
+        inherit?     (and
+                       (not= "group/nuvla-admin" active-claim)
+                       (str/starts-with? active-claim "group/"))
+        {parent-id :id
+         parents   :parents
+         :as       _group} (when inherit?
+                             (crud/retrieve-by-id-as-admin active-claim))
+        user-id      (auth/current-user-id request)]
     (-> resource
         (dissoc :group-identifier)
-        (assoc :id id
-               :users []))))
+        (assoc :id id :users (cond-> []
+                                     (not= "internal" user-id) (conj user-id)))
+        (cond-> inherit? (assoc :parents (conj parents parent-id))))))
 
 
-;; modified to retain id and not call new-identifier
-(defn add-impl [{:keys [body]
-                 :as   request}]
+
+(defn add-impl
+  [{{:keys [id] :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (let [id (:id body)]
-    (db/add
-      resource-type
-      (-> body
-          u/strip-service-attrs
-          (assoc :id id
-                 :resource-type resource-type)
-          u/update-timestamps
-          (u/set-created-by request)
-          (crud/add-acl request)
-          crud/validate)
-      {})))
+  (throw-subgroups-limit-reached request)
+  (db/add
+    resource-type
+    (-> body
+        u/strip-service-attrs
+        (assoc :id id
+               :resource-type resource-type)
+        u/update-timestamps
+        (u/set-created-by request)
+        (crud/add-acl request)
+        crud/validate)
+    {}))
 
 
 (defmethod crud/add resource-type
-  [{:keys [body]
-    :as   request}]
+  [{:keys [body] :as request}]
   (a/throw-cannot-add collection-acl request)
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
@@ -115,7 +138,7 @@ that start with 'nuvla-' are reserved for the server.
                        (update-in [:template] merge desc-attrs) ;; validate desc attrs
                        (crud/validate)
                        :template
-                       tpl->group)]
+                       (tpl->group request))]
     (add-impl (assoc request :body body))))
 
 
@@ -138,15 +161,35 @@ that start with 'nuvla-' are reserved for the server.
     (-> request
         (assoc-in [:body :acl] acl)
         (update-in [:body :acl :view-meta] (comp vec set concat) (conj users id))
+        (update :body dissoc :parents)
+        (update-in [:cimi-params :select] disj "parents")
         (edit-impl))))
 
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
 
+(defn throw-when-have-child
+  [{{uuid :uuid} :params :as request}]
+  (if (-> (crud/query-as-admin
+            resource-type {:cimi-params
+                           {:last   0
+                            :filter (parser/parse-cimi-filter
+                                      (str "parents='"
+                                           resource-type "/" uuid "'"))}})
+          first
+          :count
+          pos?)
+    (throw (r/ex-response
+             "Group cannot be deleted because it has subgroups!" 409))
+    request))
+
+
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (-> request
+      throw-when-have-child
+      delete-impl))
 
 
 ;;
@@ -224,14 +267,6 @@ that start with 'nuvla-' are reserved for the server.
   (query-impl request))
 
 
-(def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
-
-
-(defmethod crud/bulk-delete resource-type
-  [request]
-  (bulk-delete-impl request))
-
-
 ;;
 ;; initialization
 ;;
@@ -298,3 +333,4 @@ that start with 'nuvla-' are reserved for the server.
   (md/register resource-metadata)
 
   (initialize-data))
+

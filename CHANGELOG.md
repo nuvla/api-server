@@ -2,6 +2,79 @@
 
 ## Unreleased
 
+## [6.0.4] - 2022-09-13
+
+- Remove select keys from session configuration bugfix
+
+## [6.0.3] - 2022-09-13
+
+### Changed
+
+- OIDC configurtation - Deprecate redirect-url-resource and public-key. Added
+  jwks-url
+- OIDC - Use instead jwks-url to search for
+  corresponding public-key depending on kid #704
+- OIDC - Deprecate callback redirect
+- Nuvlabox resource log - shared acl users with view-acl only cannot delete
+  resource log bugfix. Simplify resource log acl
+- Nuvlabox status - next-heartbeat should not be changed when online is set to
+  false by admin
+
+## [6.0.2] - 2022-08-03
+
+### Added
+
+- Nuvla Config - Make email header image configurable
+
+## [6.0.1] - 2022-07-22
+
+### Added
+
+- Routing - HTTP CORS preflight checks support
+
+### Changed
+
+- Email sending - Enhance logging when error occur
+
+## [6.0.0] - 2022-06-29
+
+### Added
+
+- Group - Allow group to create subgroups
+- Time - Helper truncate to days
+- Subscription of root group is inherited in sub-group
+- Session - New operation `get-groups` added. This operation allow user to get
+  all groups hierarchies that he is part of
+
+### Changed
+
+- Pricing - Rename method `delete-discount-customer` to `delete-discount`
+- Group - By default add connected user into created group members
+- Session - Get peers get also users of subgroups
+- Deployment - Fix interacting with non-free resources
+- Group - Bulk delete removed not needed
+- Session - Deprecate groups attribute in session and cookie
+- Session - Operation `switch-group` allow user to switch to subgroups that he
+  is implicitly part of
+
+## [5.25.2] - 2022-05-12
+
+### Changed
+
+- Time - support months duration-unit function
+
+## [5.25.1] - 2022-05-12
+
+### Added
+
+- Email - Add email content for coupons expiry
+
+### Changed
+
+- Nuvlabox - normalize acl on edit
+
+## [5.25.0] - 2022-04-29
+
 ### Added
 
 - Test helper - Resource creation

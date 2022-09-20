@@ -34,7 +34,6 @@ requires a template. All the SCRUD actions follow the standard CIMI patterns.
     [sixsq.nuvla.server.resources.user-template :as p]
     [sixsq.nuvla.server.resources.user-template-username-password :as username-password]
     [sixsq.nuvla.server.resources.user-username-password]
-    [sixsq.nuvla.server.resources.user.utils :as utils]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 

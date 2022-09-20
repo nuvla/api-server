@@ -2,7 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [are deftest is use-fixtures]]
+    [clojure.test :refer [are deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
@@ -22,33 +22,27 @@
     [sixsq.nuvla.server.resources.nuvlabox :as nb]
     [sixsq.nuvla.server.resources.nuvlabox-2 :as nb-2]
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
-    [sixsq.nuvla.server.resources.user.utils :as user-utils]
+    [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
     [sixsq.nuvla.server.util.response :as r]))
 
-
 (use-fixtures :each ltu/with-test-server-fixture)
-
 
 (def base-uri (str p/service-context nb/resource-type))
 
-
 (def playbook-base-uri (str p/service-context nb-playbook/resource-type))
-
 
 (def isg-collection-uri (str p/service-context isg/resource-type))
 
-
 (def infra-service-collection-uri (str p/service-context infra-service/resource-type))
-
 
 (def credential-collection-uri (str p/service-context credential/resource-type))
 
-
 (def timestamp "1964-08-25T10:00:00Z")
 
-
 (def nuvlabox-owner "user/alpha")
+
+(def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
 
 
 (def valid-nuvlabox {:created          timestamp
@@ -132,9 +126,8 @@
     (let [session       (-> (ltu/ring-app)
                             session
                             (content-type "application/json"))
-          session-admin (header session authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-
-          session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+          session-admin (header session authn-info-header (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+          session-owner (header session authn-info-header (str "user/alpha user/alpha group/nuvla-user group/nuvla-anon " session-id))
           session-anon  (header session authn-info-header "user/unknown user/unknown group/nuvla-anon")]
 
       (doseq [session [session-admin session-owner]]
@@ -244,12 +237,16 @@
                               (ltu/is-status 201)
                               (ltu/location-url))]
 
-              ;; verify that the log resource exists
-              (-> session
-                  (request log-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 200)
-                  (ltu/is-key-value :components ["agent" "security"])))
+              (testing "verify that the log resource exists and acl is owned by
+              nuvlabox id and edit-acl is set for the session id"
+                (-> session
+                    (request log-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 200)
+                    (ltu/is-key-value :components ["agent" "security"])
+                    (ltu/is-key-value :owners :acl [nuvlabox-id])
+                    (ltu/is-key-value :delete :acl ["group/nuvla-admin" session-id])
+                    (ltu/is-key-value :view-acl :acl ["group/nuvla-admin" session-id]))))
 
             (-> session
                 (request decommission-url
@@ -877,7 +874,7 @@
                        :body (json/write-str {:acl {:edit-acl [user-beta]}}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :edit-acl :acl [user-beta nuvlabox-owner]))
+              (ltu/is-key-value :edit-acl :acl [nuvlabox-owner user-beta]))
 
           ;; check that services exist are visible for invited user beta
           (let [services (-> session-beta
@@ -1721,13 +1718,13 @@
                                   (ltu/is-operation-present :unsuspend)
                                   (ltu/is-operation-present :decommission)
                                   (ltu/get-op-url :unsuspend))]
-            ;; owner will not able to unsuspend without an active subscription
-            (with-redefs [user-utils/throw-user-hasnt-active-subscription (fn [_req]
-                                                                            (throw (r/ex-response "An active subscription is required!" 402)))]
-              (-> session-owner
-                  (request unsuspend-url)
-                  (ltu/body->edn)
-                  (ltu/is-status 402)))
+            (testing "owner will not able to unsuspend when payment is required"
+              (with-redefs [utils/throw-when-payment-required (fn [_req]
+                                                                (throw (r/ex-response "" 402)))]
+                (-> session-owner
+                    (request unsuspend-url)
+                    (ltu/body->edn)
+                    (ltu/is-status 402))))
 
             ;; owner will be able to unsuspend when no exception thrown
             (-> session-owner
@@ -1777,7 +1774,5 @@
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
+    (ltu/verify-405-status [[base-uri :delete]
                             [resource-uri :post]])))

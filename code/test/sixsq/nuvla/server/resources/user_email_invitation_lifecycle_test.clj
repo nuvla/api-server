@@ -5,7 +5,6 @@
     [peridot.core :refer [content-type header request session]]
     [postal.core :as postal]
     [ring.util.codec :as codec]
-    [ring.util.codec :as rc]
     [sixsq.nuvla.auth.password :as auth-password]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -84,7 +83,7 @@
               (content-type "application/x-www-form-urlencoded")
               (request base-uri
                        :request-method :put
-                       :body (rc/form-encode {:filter "name!='super'"}))
+                       :body (codec/form-encode {:filter "name!='super'"}))
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-count zero?)

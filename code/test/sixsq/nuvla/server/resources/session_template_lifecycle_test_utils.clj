@@ -194,7 +194,5 @@
 
 (defn bad-methods [base-uri]
   (let [resource-uri (str p/service-context (u/new-resource-id st/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
+    (ltu/verify-405-status [[base-uri :delete]
                             [resource-uri :post]])))

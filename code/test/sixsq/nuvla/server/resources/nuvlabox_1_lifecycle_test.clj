@@ -767,7 +767,7 @@
                        :body (json/write-str {:acl {:edit-acl [user-beta]}}))
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value :edit-acl :acl [user-beta nuvlabox-owner]))
+              (ltu/is-key-value :edit-acl :acl [nuvlabox-owner user-beta]))
 
           ;; check that services exist are visible for invited user beta
           (let [services (-> session-beta
@@ -1505,7 +1505,5 @@
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
-    (ltu/verify-405-status [[base-uri :options]
-                            [base-uri :delete]
-                            [resource-uri :options]
+    (ltu/verify-405-status [[base-uri :delete]
                             [resource-uri :post]])))

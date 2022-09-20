@@ -22,9 +22,9 @@
                    :instance              "test-instance"
 
                    :client-id             "FAKE_CLIENT_ID"
-                   :public-key            "my-public-key"
-                   :authorize-url         "relative-authorize-url"
-                   :token-url             "relative-token-url"
+                   :jwks-url              "token-url"
+                   :authorize-url         "authorize-url"
+                   :token-url             "token-url"
                    :client-secret         "MyOIDCClientSecret"
                    :redirect-url-resource "callback"}]
 
@@ -33,7 +33,7 @@
     (stu/is-invalid ::cts-oidc/schema (assoc root :bad "BAD"))
 
     (doseq [k #{:id :resource-type :created :updated :acl :service :instance
-                :client-id :public-key :authorize-url :token-url :redirect-url-resource}]
+                :client-id :jwks-url :authorize-url :token-url}]
       (stu/is-invalid ::cts-oidc/schema (dissoc root k)))
 
     (doseq [k #{:client-secret}]

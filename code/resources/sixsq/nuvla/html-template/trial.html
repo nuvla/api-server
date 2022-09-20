@@ -343,19 +343,21 @@
                 <table role="presentation" class="main">
 
                     <!-- START MAIN CONTENT AREA -->
+                    {% if any header-img %}
                     <tr>
                         <td>
                             <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
                                 <tbody>
                                 <tr>
                                     <td align="center">
-                                        <img src="https://nuvla.io/img/email/header-2.png" alt="Header image" border="0" style="border:0; outline:none; text-decoration:none; display:block;">
+                                        <img src="{{header-img}}" alt="Header image" border="0" style="border:0; outline:none; text-decoration:none; display:block;">
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
                         </td>
                     </tr>
+                    {% endif %}
                     <tr>
                         <td>
                             <h1>{{title}}</h1>
@@ -367,6 +369,7 @@
 													<tr>
 														<td>
 															<p>{{text-1}}</p>
+                                                            <p>{{text-2}}</p>
 
 															{% for resource in resources %}
 															{% if forloop.first %}
@@ -375,11 +378,9 @@
                                                             <p><a href={{resource.url}}>{{resource.kind}}: {{resource.title}} ({{resource.id}})</a></p>
 															{% endfor %}
 
-															<p></p>
-															<p>{{text-2}}</p>
+                                                            <p>{{text-3}}</p>
 
-															{% if any button-text %}
-															<p>{{button-intro}}</p>
+                                                            {% if any button-text %}
 															<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
 																<tbody>
 																	<tr>
@@ -397,17 +398,10 @@
 															</table>
 															{% endif %}
 
-															<p>{{text-3}}</p>
+                                                            <p>{{text-4}}</p>
+                                                            <p>{{text-5}}</p>
 
-															{% if any warning-initiate %}
-															<p>If you didn't initiate this request, do NOT click on the link and report this to the service administrator.</p>
-															{% endif %}
-
-															{% if any conditions-url %}
-															<p>By clicking the button above, you accept the <a href="{{conditions-url}}">Terms and Conditions</a></p>
-															{% endif %}
-
-															<p>Don't forget that we're here to help if you have any question.</p>
+															<p>Don't forget that we're here to help if you have any questions.</p>
 
 															<br/>
 															<p>Kind regards,</p>
