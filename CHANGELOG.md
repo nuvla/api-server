@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Notifications - Updated to use Kafka 3.x client. Updated the schema of the
+  configuration of subscriptions to notifications. Removed creation of
+  individual subscriptions.
+
 ## [6.0.4] - 2022-09-13
 
 - Remove select keys from session configuration bugfix
