@@ -131,25 +131,29 @@ These resources represent a deployment set that regroups deployments.
                                   state action id) 409 id))))
 
 (defn action-bulk
-  [{{uuid :uuid} :params :as request} action can-action?]
+  [{{uuid :uuid} :params :as request} action can-action? action-filter]
   (let [{:keys [id]} (-> (str resource-type "/" uuid)
                          crud/retrieve-by-id-as-admin
                          (a/throw-cannot-manage request)
                          (throw-can-not-do-action can-action? action))
         authn-info (auth/current-authentication request)
-        acl {:owners   ["group/nuvla-admin"]
-             :view-acl [(auth/current-active-claim request)]}
-        payload {:filter (str "deployment-set='" id "'")}]
+        acl        {:owners   ["group/nuvla-admin"]
+                    :view-acl [(auth/current-active-claim request)]}
+        payload    {:filter action-filter}]
     (std-crud/create-bulk-job
       (str action "_deployment_set") id authn-info acl payload)))
 
 (defmethod crud/do-action [resource-type "start"]
-  [request]
-  (action-bulk request "start" can-start?))
+  [{{uuid :uuid} :params :as request}]
+  (let [id            (str resource-type "/" uuid)
+        action-filter (str "deployment-set='" id "' and (state='CREATED' or state='STOPPED')")]
+    (action-bulk request "start" can-start? action-filter)))
 
 (defmethod crud/do-action [resource-type "stop"]
-  [request]
-  (action-bulk request "stop" can-stop?))
+  [{{uuid :uuid} :params :as request}]
+  (let [id            (str resource-type "/" uuid)
+        action-filter (str "deployment-set='" id "'")]      ;;fixme missing filter state
+    (action-bulk request "stop" can-stop? action-filter)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
