@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.server.resources.deployment-set-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.test :refer [deftest use-fixtures testing]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -68,15 +67,19 @@
                             (ltu/body->edn)
                             (ltu/is-status 202))
 
-            dep-set-url (str p/service-context resource-id)
-            job-payload {"authn-info" {"active-claim" "user/jane"
-                                       "claims"       ["group/nuvla-anon"
-                                                       "user/jane"
-                                                       "group/nuvla-user"
-                                                       session-id]
-                                       "user-id"      "user/jane"}
-                         "filter"     (str "deployment-set='"
-                                           resource-id "'")}]
+            dep-set-url       (str p/service-context resource-id)
+            authn-payload     {"authn-info" {"active-claim" "user/jane"
+                                             "claims"       ["group/nuvla-anon"
+                                                             "user/jane"
+                                                             "group/nuvla-user"
+                                                             session-id]
+                                             "user-id"      "user/jane"}}
+            job-payload-start (merge authn-payload
+                                     {"filter" (str "deployment-set='" resource-id "' "
+                                                    "and (state='CREATED' or state='STOPPED')"
+                                                    )})
+            job-payload-stop  (merge authn-payload
+                                     {"filter" (str "deployment-set='" resource-id "'")})]
 
         (testing "user query should see one document"
           (-> session-user
@@ -128,7 +131,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "start_deployment_set")
-                (ltu/is-key-value json/read-str :payload job-payload))))
+                (ltu/is-key-value json/read-str :payload job-payload-start))))
 
         (testing "stop will not be possible in state CREATED"
           (-> session-user
@@ -161,8 +164,7 @@
                 (ltu/is-status 200)
                 (ltu/is-key-value :href :target-resource resource-id)
                 (ltu/is-key-value :action "stop_deployment_set")
-                (ltu/is-key-value json/read-str :payload job-payload)))
-          )
+                (ltu/is-key-value json/read-str :payload job-payload-stop))))
         ))
     ))
 
