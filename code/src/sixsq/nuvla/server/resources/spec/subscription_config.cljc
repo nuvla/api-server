@@ -160,6 +160,13 @@ Example:
              :json-schema/description "device name (eg. eth0, disk0p1)"
              :json-schema/order 36)))
 
+(s/def ::reset-interval
+  #(re-matches #"^(month|\d{1,3}d)$" %))
+
+(s/def ::reset-start-date
+  #(and (< 0 %)
+        (< % 32)))
+
 (s/def ::criteria
   (-> (st/spec (su/only-keys-maps {:req-un [::kind
                                             ::metric
@@ -167,7 +174,9 @@ Example:
                                             ::condition]
                                    :opt-un [::window
                                             ::value-type
-                                            ::dev-name]}))
+                                            ::dev-name
+                                            ::reset-interval
+                                            ::reset-start-date]}))
       (assoc :name "criteria"
              :json-schema/type "map"
              :json-schema/description "Triggering criteria via matching rules."
