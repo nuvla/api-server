@@ -160,12 +160,22 @@ Example:
              :json-schema/description "device name (eg. eth0, disk0p1)"
              :json-schema/order 36)))
 
+(def reset-interval-regex #"^(month|\d{1,3}d)$")
 (s/def ::reset-interval
-  #(re-matches #"^(month|\d{1,3}d)$" %))
+  (-> (st/spec #(re-matches reset-interval-regex %))
+      (assoc :name "reset-interval"
+             :json-schema/type "string"
+             :json-schema/description "reset interval to drop metric counters (e.g., 'month' (calendar month), '7d')"
+             :json-schema/order 37)))
 
 (s/def ::reset-start-date
-  #(and (< 0 %)
-        (< % 32)))
+  (-> st/spec #(and (integer? %)
+                    (< 0 %)
+                    (< % 32))
+      (assoc :name "reset-start-date"
+             :json-schema/type "integer"
+             :json-schema/description "startig day between 1 and 31 for monthly reset intervals, defaults to 1st of month"
+             :json-schema/order 38)))
 
 (s/def ::criteria
   (-> (st/spec (su/only-keys-maps {:req-un [::kind
