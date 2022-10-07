@@ -3,18 +3,13 @@
 Collection for holding subscriptions configurations.
 "
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
-    [sixsq.nuvla.server.resources.subscription :as subs]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))

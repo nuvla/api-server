@@ -21,7 +21,6 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-srvc-gen]
-    [sixsq.nuvla.server.resources.subscription :as subs]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -282,8 +281,7 @@ existing `infrastructure-service-template` resource.
       (event-utils/create-event id "DELETED"
                                 (a/default-acl (auth/current-authentication request))
                                 :severity "low"
-                                :category "state")
-      (subs/delete-individual-subscriptions id request))))
+                                :category "state"))))
 
 (defmethod crud/delete resource-type
   [{{uuid :uuid} :params :as request}]

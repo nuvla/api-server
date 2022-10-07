@@ -169,12 +169,12 @@ Example:
              :json-schema/order 37)))
 
 (s/def ::reset-start-date
-  (-> st/spec #(and (integer? %)
-                    (< 0 %)
-                    (< % 32))
+  (-> (st/spec #(and (integer? %)
+                     (< 0 %)
+                     (< % 32)))
       (assoc :name "reset-start-date"
              :json-schema/type "integer"
-             :json-schema/description "startig day between 1 and 31 for monthly reset intervals, defaults to 1st of month"
+             :json-schema/description "starting day between 1 and 31 for monthly reset intervals, defaults to 1st of month"
              :json-schema/order 38)))
 
 (s/def ::criteria
