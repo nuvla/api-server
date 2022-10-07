@@ -160,7 +160,7 @@ Example:
              :json-schema/description "device name (eg. eth0, disk0p1)"
              :json-schema/order 36)))
 
-(def reset-interval-regex #"^(month|\d{1,3}d)$")
+(def reset-interval-regex #"^(month|[1-9][0-9]{0,2}d)$")
 (s/def ::reset-interval
   (-> (st/spec #(re-matches reset-interval-regex %))
       (assoc :name "reset-interval"
