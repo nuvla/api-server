@@ -10,8 +10,6 @@
     [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
     [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.subscription :as subscr]
-    [sixsq.nuvla.server.resources.subscription-config :as subs-conf]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu])
   (:import
     [java.util UUID]))
