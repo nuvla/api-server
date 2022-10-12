@@ -86,3 +86,7 @@
       ["txr_fr1" ["txr_fr2"]]
       {:address {:country "FR"}}
       catalog-ch-fr)))
+
+(deftest get-catalog
+  (with-redefs [crud/retrieve-by-id-as-admin (constantly {})]
+    (is (= {} (t/get-catalog)))))
