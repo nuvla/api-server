@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- 2FA - email token format should always be on 6 digits #714
+
 ## [6.0.4] - 2022-09-13
 
 - Remove select keys from session configuration bugfix
