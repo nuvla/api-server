@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.5] - 2022-10-14
+
 ### Changed
 
 - 2FA - email token format should always be on 6 digits #714

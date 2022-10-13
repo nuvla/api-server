@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.pricing.payment-test
   (:require
-    [clojure.test :refer [deftest is are testing]]
+    [clojure.test :refer [are deftest is testing]]
     [clojure.walk :as walk]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as t]

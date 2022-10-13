@@ -2,11 +2,11 @@
   (:require
     [clojure.test :refer [deftest is testing]]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.pricing.payment :as payment]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.deployment.utils :as t]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
-    [sixsq.nuvla.server.resources.common.crud :as crud])
+    [sixsq.nuvla.pricing.payment :as payment]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
+    [sixsq.nuvla.server.resources.deployment.utils :as t])
   (:import (clojure.lang ExceptionInfo)))
 
 
