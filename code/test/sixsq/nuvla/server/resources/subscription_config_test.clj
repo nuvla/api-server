@@ -85,8 +85,7 @@
 
       ;; verify that an edit works
       (let [notif-ids [(str "notification-method/" (str (UUID/randomUUID)))]
-            updated (assoc valid-subscription-config :method-ids notif-ids)
-            _ (println updated)]
+            updated (assoc valid-subscription-config :method-ids notif-ids)]
 
         (-> session-user
             (request subs-abs-uri
