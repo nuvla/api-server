@@ -4,7 +4,9 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.resources.deployment.utils :as t])
+    [sixsq.nuvla.server.resources.deployment.utils :as t]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
+    [sixsq.nuvla.server.resources.common.crud :as crud])
   (:import (clojure.lang ExceptionInfo)))
 
 
@@ -88,3 +90,10 @@
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
                billable-deployment-not-follow))))))
 
+(deftest trial-end
+  (is (int? (t/trial-end "" {}))))
+
+(deftest create-stripe-subscription
+  (with-redefs [crud/retrieve-by-id-as-admin     identity
+                pricing-impl/create-subscription identity]
+    (is (map? (t/create-stripe-subscription nil {} nil)))))

@@ -107,3 +107,9 @@
 
   ;; returns tuple with handler and stop function
   [(create-ring-handler) stop])
+
+
+(comment
+  (do
+    (require '[sixsq.nuvla.server.ring :as ring])
+    (ring/start 'sixsq.nuvla.server.app.server/init)))
