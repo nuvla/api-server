@@ -89,7 +89,7 @@
           (is (= method (:method updated-body)))
           (is (= dest (:destination updated-body)))))
 
-      ;; user can delete the data-set
+      ;; user can delete
       (-> session-user
           (request user-abs-uri :request-method :delete)
           (ltu/body->edn)

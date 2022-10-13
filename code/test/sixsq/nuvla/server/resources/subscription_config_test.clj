@@ -3,12 +3,8 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type header request session]]
-    [ring.util.codec :as rc]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.infrastructure-service-template :as infra-service-tpl]
-    [sixsq.nuvla.server.resources.infrastructure-service-template-generic :as infra-service-tpl-generic]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.subscription-config :as t])
   (:import
@@ -89,7 +85,8 @@
 
       ;; verify that an edit works
       (let [notif-ids [(str "notification-method/" (str (UUID/randomUUID)))]
-            updated (assoc valid-subscription-config :method-ids notif-ids)]
+            updated (assoc valid-subscription-config :method-ids notif-ids)
+            _ (println updated)]
 
         (-> session-user
             (request subs-abs-uri
@@ -155,3 +152,118 @@
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))))
+
+
+(deftest test-valid-reset-start-date-vs-interval
+  (is (t/valid-reset-start-date-vs-interval?
+        {:criteria {}}))
+
+  (is (t/valid-reset-start-date-vs-interval?
+        {:criteria {:reset-interval "1d"}}))
+
+  ;; by default :reset-interval equals to 'month' is assumed
+  (is (t/valid-reset-start-date-vs-interval?
+        {:criteria {:reset-start-date 25}}))
+
+  (is (not (t/valid-reset-start-date-vs-interval?
+             {:criteria {:reset-interval   "1d"
+                         :reset-start-date 25}}))))
+
+
+(deftest subs-network-rxtx
+
+  (let [session-anon (-> (ltu/ring-app)
+                         session
+                         (content-type "application/json"))
+        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+        subs-config-base {:enabled         true
+                           :category        "notification"
+                           :method-ids      [(str "notification-method/" (str (UUID/randomUUID)))]
+                           :resource-kind   "nuvlaedge"
+                           :resource-filter "tags='foo'"
+                           :criteria        {:kind      "numeric"
+                                             :metric    "network-rx"
+                                             :value     "5.5"
+                                             :condition ">"}
+                           :acl             {:owners ["user/jane"]}}]
+
+    ;; 1. create correct subscription config with reset-start-date in
+    ;;    range [1, 31] when reset-interval is 'month'
+    ;; 2. validate editing with inconsistent criteria is rejected by server.
+    (let [subs-abs-uri (-> session-user
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str (update-in subs-config-base
+                                                                     [:criteria]
+                                                                     assoc :reset-start-date 25 :reset-interval "month")))
+                           (ltu/body->edn)
+                           (ltu/is-status 201)
+                           (ltu/location-url))]
+
+
+      ;; enabling works
+      (-> session-user
+          (request (str subs-abs-uri "/" t/enable)
+                   :request-method :post)
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+
+      ;; edit with inconsistent criteria is rejected by the server
+      (-> session-user
+          (request subs-abs-uri
+                   :request-method :put
+                   :body (json/write-str (update-in subs-config-base
+                                                    [:criteria]
+                                                    assoc :reset-start-date 7 :reset-interval "7d")))
+          (ltu/body->edn)
+          (ltu/is-status 412)
+          (ltu/message-matches t/err-msg-reset-start-date-vs-interval))
+
+
+      ;; edit with consistent criteria is accepted
+      (-> session-user
+          (request subs-abs-uri
+                   :request-method :put
+                   :body (json/write-str (update-in subs-config-base
+                                                    [:criteria]
+                                                    assoc :reset-start-date 7 :reset-interval "month")))
+          (ltu/body->edn)
+          (ltu/is-status 200))
+
+      ;; delete
+      (-> session-user
+          (request subs-abs-uri
+                   :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)))
+
+    ;; reset-start-date not in range [1, 31] when reset-interval is 'month'
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (update-in subs-config-base
+                                                  [:criteria]
+                                                  assoc :reset-start-date 0 :reset-interval "month")))
+        (ltu/body->edn)
+        (ltu/is-status 400))
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (update-in subs-config-base
+                                                  [:criteria]
+                                                  assoc :reset-start-date 32 :reset-interval "month")))
+        (ltu/body->edn)
+        (ltu/is-status 400))
+
+    ;; 412 on provided reset-start-date when reset-interval is 'Xd'
+    (-> session-user
+        (request base-uri
+                 :request-method :post
+                 :body (json/write-str (update-in subs-config-base
+                                                  [:criteria]
+                                                  assoc :reset-start-date 7 :reset-interval "7d")))
+        (ltu/body->edn)
+        (ltu/is-status 412)
+        (ltu/message-matches t/err-msg-reset-start-date-vs-interval))))

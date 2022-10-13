@@ -62,11 +62,38 @@ Collection for holding subscriptions configurations.
 ;; CRUD operations
 ;;
 
+;; :reset-start-date must not be provided when :reset-interval is Xd
+(defn valid-reset-start-date-vs-interval?
+  [subs-conf]
+  (not (and
+         (and
+           (contains? (:criteria subs-conf) :reset-interval)
+           (contains? (:criteria subs-conf) :reset-start-date))
+         (re-matches #"^[1-9][0-9]{0,2}d$" (get-in subs-conf [:criteria :reset-interval])))))
+(def ^:const err-msg-reset-start-date-vs-interval
+  ":reset-start-date must not be provided when :reset-interval is Xd")
+
+
+(def consistency-validators
+  [{:validator valid-reset-start-date-vs-interval?
+    :err-msg err-msg-reset-start-date-vs-interval}])
+
+
+(defn validate-consistency
+  [subs-conf]
+  (doseq [{validator :validator err-msg :err-msg} consistency-validators]
+    (when-not (validator subs-conf)
+      (throw
+        (r/ex-response err-msg 412))))
+  subs-conf)
+
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 
 (defmethod crud/add resource-type
   [request]
+  (validate-consistency (:body request))
   (let [resp (add-impl request)]
     (ka-crud/publish-on-add resource-type resp :key "id")
     resp))
@@ -87,13 +114,16 @@ Collection for holding subscriptions configurations.
   [:resource-filter :resource-kind])
 
 
-(def edit-forbidden-attrs-subs
-  (concat edit-forbidden-attrs [:resource-id :resource-type :id :operations]))
+(defn remove-forbidden-attrs
+  [body]
+  (apply dissoc body edit-forbidden-attrs))
 
 
 (defn edit-subs-config
   [request]
-  (let [new-body (apply dissoc (:body request) edit-forbidden-attrs)
+  (let [new-body (-> (:body request)
+                     remove-forbidden-attrs
+                     validate-consistency)
         req-updated (assoc request :body new-body)
         response (edit-impl req-updated)]
     (ka-crud/publish-on-edit resource-type response)
