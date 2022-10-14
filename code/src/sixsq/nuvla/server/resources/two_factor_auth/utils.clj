@@ -43,7 +43,7 @@
 
 (defmethod generate-token :default
   [_method _user]
-  (format "%04d" (u/secure-rand-int 0 999999)))
+  (format "%06d" (u/secure-rand-int 0 999999)))
 
 
 (defmethod generate-token method-totp

@@ -63,3 +63,16 @@
   []
   (throw (r/ex-response
            "Valid subscription and payment method are needed!" 402)))
+
+
+(defn get-catalog
+  []
+  (crud/retrieve-by-id-as-admin "catalog/catalog"))
+
+(defn tax-rates
+  [{{customer-country :country} :address :as _customer-info}
+   {:keys [taxes] :as _catalog}]
+  (or (some (fn [{:keys [country tax-rate-ids]}]
+              (when (= country customer-country)
+                tax-rate-ids)) taxes)
+      []))
