@@ -240,9 +240,8 @@
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
 
-
-(defn create-stripe-subscription
-  [active-claim {:keys [account-id price-id follow-customer-trial] :as _price} coupon]
+(defn trial-end
+  [active-claim {:keys [follow-customer-trial] :as _price}]
   (let [customer-trial-end (when (and follow-customer-trial
                                       (= (:status (payment/active-claim->subscription active-claim)) "trialing"))
                              (some-> active-claim
@@ -250,20 +249,27 @@
                                      :trial-end
                                      time/date-from-str))
         one-day-trial      (time/from-now 24 :hours)
-        trial-end          (if (and
-                                 customer-trial-end
-                                 (time/after? customer-trial-end one-day-trial))
+        end-date           (if (and customer-trial-end
+                                    (time/after? customer-trial-end one-day-trial))
                              customer-trial-end
                              one-day-trial)]
+    (time/unix-timestamp-from-date end-date)))
+
+(defn create-stripe-subscription
+  [active-claim {:keys [account-id price-id] :as price} coupon]
+  (let [customer-info (some-> active-claim
+                              payment/active-claim->s-customer
+                              pricing-impl/customer->map)]
     (pricing-impl/create-subscription
-      {"customer"                (some-> active-claim
-                                         payment/active-claim->customer
-                                         :customer-id)
+      {"customer"                (:id customer-info)
        "items"                   [{"price" price-id}]
        "application_fee_percent" 20
-       "trial_end"               (time/unix-timestamp-from-date trial-end)
+       "trial_end"               (trial-end active-claim price)
        "coupon"                  coupon
-       "transfer_data"           {"destination" account-id}})))
+       "transfer_data"           {"destination" account-id}
+       "default_tax_rates"       (payment/tax-rates
+                                   customer-info
+                                   (payment/get-catalog))})))
 
 
 (defn some-id->resource

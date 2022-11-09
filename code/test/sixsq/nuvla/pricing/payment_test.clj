@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.pricing.payment-test
   (:require
-    [clojure.test :refer [deftest is testing]]
+    [clojure.test :refer [are deftest is testing]]
     [clojure.walk :as walk]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as t]
@@ -35,16 +35,16 @@
 
 (deftest active-claim->customer
   (testing "should return customer"
-   (with-redefs [crud/query-as-admin (constantly [nil [:a]])]
-    (is (= :a (t/active-claim->customer "user/a")))))
+    (with-redefs [crud/query-as-admin (constantly [nil [:a]])]
+      (is (= :a (t/active-claim->customer "user/a")))))
   (testing "should return group customer"
-    (with-redefs [crud/query-as-admin          (fn [_ params] 
-                                                 [nil [(case (:filter 
-                                                               (walk/postwalk 
-                                                                 (fn [x] 
-                                                                   (if (and (vector? x) 
-                                                                            (not= (first x) :filter)) 
-                                                                     (last x) 
+    (with-redefs [crud/query-as-admin          (fn [_ params]
+                                                 [nil [(case (:filter
+                                                               (walk/postwalk
+                                                                 (fn [x]
+                                                                   (if (and (vector? x)
+                                                                            (not= (first x) :filter))
+                                                                     (last x)
                                                                      x))
                                                                  params))
                                                          "'group/a'" nil
@@ -53,7 +53,7 @@
       (is (= :root (t/active-claim->customer "group/a"))))))
 
 (deftest active-claim->s-customer
-  (with-redefs [t/active-claim->customer      (constantly {:customer-id 1})
+  (with-redefs [t/active-claim->customer       (constantly {:customer-id 1})
                 pricing-impl/retrieve-customer (constantly :a)]
     (is (= :a (t/active-claim->s-customer "")))))
 
@@ -61,3 +61,32 @@
   (with-redefs [t/active-claim->customer (constantly {:id 1})
                 crud/do-action-as-admin  (constantly {:body :a})]
     (is (= :a (t/active-claim->subscription "")))))
+
+(deftest tax-rates
+  (let [customer-info-ch {:address {:country "CH"}}
+        tax-ch           {:country "CH" :tax-rate-ids ["txr_ch1"]}
+        catalog-ch       {:taxes [tax-ch]}
+        catalog-ch-fr    {:taxes [{:country "FR" :tax-rate-ids ["txr_fr1" ["txr_fr2"]]}
+                                  tax-ch]}]
+    (are [expected customer-info catalog]
+      (= expected (t/tax-rates customer-info catalog))
+
+      []
+      customer-info-ch
+      {}
+
+      ["txr_ch1"]
+      customer-info-ch
+      catalog-ch
+
+      ["txr_ch1"]
+      customer-info-ch
+      catalog-ch-fr
+
+      ["txr_fr1" ["txr_fr2"]]
+      {:address {:country "FR"}}
+      catalog-ch-fr)))
+
+(deftest get-catalog
+  (with-redefs [crud/retrieve-by-id-as-admin (constantly {})]
+    (is (= {} (t/get-catalog)))))

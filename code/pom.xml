@@ -5,7 +5,7 @@
 
   <artifactId>code-dep</artifactId>
   <packaging>pom</packaging>
-  <version>6.0.5-SNAPSHOT</version>
+  <version>6.0.6-SNAPSHOT</version>
   <name>server/code</name>
   <url>http://sixsq.com</url>
 
@@ -16,7 +16,7 @@
   <parent>
     <groupId>sixsq.nuvla.server</groupId>
     <artifactId>server</artifactId>
-    <version>6.0.5-SNAPSHOT</version>
+    <version>6.0.6-SNAPSHOT</version>
   </parent>
 
   <licenses>

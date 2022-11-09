@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-status-2-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [ring.util.codec :as rc]
     [sixsq.nuvla.db.impl :as db]
