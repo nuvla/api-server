@@ -4,6 +4,7 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.util.spec :as su]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
+    [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [spec-tools.core :as st]))
 
 (s/def ::state
@@ -38,6 +39,27 @@
     :json-schema/display-name "applications"
     :json-schema/description "List of applications ids to deploy on targets."))
 
+(s/def ::application
+  (assoc (st/spec ::module-id)
+    :name "application"
+    :json-schema/description "application id"))
+
+(s/def ::environmental-variable
+  (-> (st/spec (su/only-keys :req-un [::container-spec/name
+                                      ::container-spec/value
+                                      ::application]))
+      (assoc :name "environmental-variable"
+             :json-schema/type "map"
+             :json-schema/description
+             "environmental variable name, value and application")))
+
+(s/def ::env
+  (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
+    :name "env"
+    :json-schema/type "array"
+    :json-schema/display-name "environmental variables"
+    :json-schema/description "list of environmental variable to be overwritten"))
+
 (s/def ::start
   (assoc (st/spec boolean?)
     :name "start"
@@ -48,7 +70,8 @@
 (s/def ::spec
   (assoc (st/spec (su/only-keys :req-un [::targets
                                          ::applications]
-                                :opt-un [::start]))
+                                :opt-un [::start
+                                         ::env]))
     :name "spec"
     :json-schema/type "map"
 
