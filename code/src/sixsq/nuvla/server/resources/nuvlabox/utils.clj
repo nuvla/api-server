@@ -261,7 +261,7 @@
                                         "-H content-type:application/json "
                                         "-b /tmp/nuvla-cookie "
                                         " -d \"{\\\"output\\\": \\\"$(cat "
-                                        (get-nuvlabox-playbook-output-filename (:id playbook)) " | sed -e 's/\"/\\\\\"/' )\\\"}\""))
+                                        (get-nuvlabox-playbook-output-filename (:id playbook)) " | sed -e 's/\"/\\\\\"/g' )\\\"}\""))
                                  playbooks)]
       (str "#!/bin/sh\n\n"
            exec-wrapped-runs
