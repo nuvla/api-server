@@ -81,7 +81,7 @@ NuvlaBox Engine software
 (defmethod crud/edit resource-type
   [{{:keys [output]} :body :as request}]
   (-> request
-      (cond-> output (assoc-in [:body :output] (utils/limit-string-size 1000 output)))
+      (cond-> output (assoc-in [:body :output] (utils/limit-string-size 10000 output)))
       edit-impl))
 
 
