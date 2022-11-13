@@ -87,11 +87,78 @@
 
            :json-schema/order 86)))
 
+;;
+;; network
+;;
+
+(s/def ::default-gw
+  (-> (st/spec string?)
+    (assoc :name "default-gw"
+           :json-schema/description "Interface name of the default gateway"
+
+           :json-schema/order 88)))
+
+(s/def ::public
+  (-> (st/spec string?)
+    (assoc :name "public"
+           :json-schema/description "Public IP address"
+
+           :json-schema/order 71)))
+
+(s/def ::swarm
+  (-> (st/spec string?)
+    (assoc :name "swarm"
+           :json-schema/description "Advertised IP address of Docker Swarm"
+
+           :json-schema/order 71)))
+
+(s/def ::vpn
+  (-> (st/spec string?)
+    (assoc :name "vpn"
+           :json-schema/description "VPN IP address"
+
+           :json-schema/order 71)))
+
+(s/def ::local
+  (-> (st/spec string?)
+    (assoc :name "local"
+           :json-schema/description "Local IP address"
+
+           :json-schema/order 71)))
+
+(s/def ::ips
+  (-> (st/spec (su/only-keys :opt-un [::public ::swarm ::vpn ::local]))
+    (assoc :name "ips"
+           :json-schema/description "IPs"
+
+           :json-schema/order 71)))
+
+(s/def ::address
+  (-> (st/spec string?)
+    (assoc :name "address"
+           :json-schema/description "IP address"
+
+           :json-schema/order 71)))
+
+(s/def ::ip
+  (-> (st/spec (s/coll-of (su/only-keys :opt-un [::address]) :kind vector?))
+    (assoc :name "ip"
+           :json-schema/description "List of IPs"
+
+           :json-schema/order 71)))
+
+(s/def ::interfaces
+  (-> (st/spec (su/constrained-map keyword? ::ip))
+    (assoc :name "interfaces"
+           :json-schema/description "Network interfaces"
+
+           :json-schema/order 71)))
+
 (s/def ::network
-  (-> (st/spec (su/constrained-map keyword? any?))
+  (-> (st/spec (su/only-keys :opt-un [::default-gw ::ips ::interfaces])) ; (su/constrained-map keyword? any?))
       (assoc :name "network"
              :json-schema/type "map"
-             :json-schema/description "network related configuration"
+             :json-schema/description "Network related configuration"
 
              :json-schema/order 87)))
 
