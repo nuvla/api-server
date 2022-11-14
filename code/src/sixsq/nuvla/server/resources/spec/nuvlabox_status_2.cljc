@@ -129,6 +129,7 @@
 (s/def ::ips
   (-> (st/spec (su/only-keys :opt-un [::public ::swarm ::vpn ::local]))
     (assoc :name "ips"
+           :json-schema/type "map"
            :json-schema/description "IPs"
 
            :json-schema/order 2)))
@@ -143,6 +144,7 @@
 (s/def ::ip-info
   (-> (st/spec (su/only-keys :opt-un [::address]))
       (assoc :name "ip-info"
+             :json-schema/type "map"
              :json-schema/description "IP info"
 
              :json-schema/order 3)))
@@ -157,6 +159,7 @@
 (s/def ::interface
   (-> (st/spec (su/only-keys :opt-un [:interface/ips]))
       (assoc :name "interface"
+             :json-schema/type "map"
              :json-schema/description "Network interface"
 
              :json-schema/order 1)))
@@ -164,6 +167,7 @@
 (s/def ::interfaces
   (-> (st/spec (s/map-of keyword? ::interface))
     (assoc :name "interfaces"
+           :json-schema/type "map"
            :json-schema/description "Network interfaces"
 
            :json-schema/order 3)))
