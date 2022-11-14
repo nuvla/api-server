@@ -4,7 +4,8 @@
 
 ### Changed
 
-- NuvlaEdge -  host level management (playbooks) bugfixes
+- NuvlaEdge - host level management (playbooks) bugfixes
+- NuvlaEdge status - create the spec for the new "network" attribute
 
 ## [6.0.5] - 2022-10-14
 
