@@ -87,11 +87,96 @@
 
            :json-schema/order 86)))
 
+;;
+;; network
+;;
+
+(s/def ::default-gw
+  (-> (st/spec string?)
+    (assoc :name "default-gw"
+           :json-schema/description "Interface name of the default gateway"
+
+           :json-schema/order 1)))
+
+(s/def ::vpn
+  (-> (st/spec string?)
+      (assoc :name "vpn"
+             :json-schema/description "VPN IP address"
+
+             :json-schema/order 1)))
+
+(s/def ::public
+  (-> (st/spec string?)
+    (assoc :name "public"
+           :json-schema/description "Public IP address"
+
+           :json-schema/order 2)))
+
+(s/def ::swarm
+  (-> (st/spec string?)
+    (assoc :name "swarm"
+           :json-schema/description "Advertised IP address of Docker Swarm"
+
+           :json-schema/order 3)))
+
+(s/def ::local
+  (-> (st/spec string?)
+    (assoc :name "local"
+           :json-schema/description "Local IP address"
+
+           :json-schema/order 4)))
+
+(s/def ::ips
+  (-> (st/spec (su/only-keys :opt-un [::public ::swarm ::vpn ::local]))
+    (assoc :name "ips"
+           :json-schema/type "map"
+           :json-schema/description "IPs"
+
+           :json-schema/order 2)))
+
+(s/def ::address
+  (-> (st/spec string?)
+    (assoc :name "address"
+           :json-schema/description "IP address"
+
+           :json-schema/order 4)))
+
+(s/def ::ip-info
+  (-> (st/spec (su/only-keys :opt-un [::address]))
+      (assoc :name "ip-info"
+             :json-schema/type "map"
+             :json-schema/description "IP info"
+
+             :json-schema/order 3)))
+
+(s/def :interface/ips
+  (-> (st/spec (s/coll-of ::ip-info :kind vector?))
+      (assoc :name "interface-ips"
+             :json-schema/description "List of interface IPs"
+
+             :json-schema/order 2)))
+
+(s/def ::interface
+  (-> (st/spec (su/only-keys :opt-un [:interface/ips]))
+      (assoc :name "interface"
+             :json-schema/type "map"
+             :json-schema/description "Network interface"
+
+             :json-schema/order 1)))
+
+(s/def ::interfaces
+  (-> (st/spec (s/map-of keyword? ::interface))
+    (assoc :name "interfaces"
+           :json-schema/type "map"
+           :json-schema/description "Network interfaces"
+
+           :json-schema/order 3)))
+
 (s/def ::network
-  (-> (st/spec (su/constrained-map keyword? any?))
+  (-> (st/spec (su/only-keys :opt-un [::default-gw ::ips ::interfaces])) ; (su/constrained-map keyword? any?))
       (assoc :name "network"
              :json-schema/type "map"
-             :json-schema/description "network related configuration"
+             :json-schema/description "Network related configuration"
 
              :json-schema/order 87)))
 
