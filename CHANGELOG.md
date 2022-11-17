@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.6] - 2022-11-17
+
 ### Changed
 
 - NuvlaEdge - host level management (playbooks) bugfixes
