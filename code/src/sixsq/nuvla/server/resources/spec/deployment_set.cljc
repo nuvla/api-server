@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.deployment-set
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.util.spec :as su]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
@@ -45,13 +46,13 @@
     :json-schema/description "application id"))
 
 (s/def ::environmental-variable
-  (-> (st/spec (su/only-keys :req-un [::container-spec/name
-                                      ::container-spec/value
-                                      ::application]))
-      (assoc :name "environmental-variable"
-             :json-schema/type "map"
-             :json-schema/description
-             "environmental variable name, value and application")))
+  (assoc (st/spec (su/only-keys :req-un [::container-spec/name
+                                         ::container-spec/value
+                                         ::application]))
+    :name "environmental-variable"
+    :json-schema/type "map"
+    :json-schema/description
+    "environmental variable name, value and application"))
 
 (s/def ::env
   (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
@@ -59,6 +60,26 @@
     :json-schema/type "array"
     :json-schema/display-name "environmental variables"
     :json-schema/description "list of environmental variable to be overwritten"))
+
+(s/def ::code
+  (assoc (st/spec ::core/nonblank-string)
+    :name "code"
+    :json-schema/description "coupon code"))
+
+(s/def ::coupon
+  (assoc (st/spec (su/only-keys :req-un [::code
+                                         ::application]))
+    :name "environmental-variable"
+    :json-schema/type "map"
+    :json-schema/description
+    "environmental variable name, value and application"))
+
+(s/def ::coupons
+  (assoc (st/spec (s/coll-of ::coupon :kind vector?))
+    :name "coupons"
+    :json-schema/type "array"
+    :json-schema/display-name "coupons"
+    :json-schema/description "list of coupon to apply per application"))
 
 (s/def ::start
   (assoc (st/spec boolean?)
@@ -71,7 +92,8 @@
   (assoc (st/spec (su/only-keys :req-un [::targets
                                          ::applications]
                                 :opt-un [::start
-                                         ::env]))
+                                         ::env
+                                         ::coupons]))
     :name "spec"
     :json-schema/type "map"
 
@@ -79,7 +101,7 @@
     :json-schema/description "Deployment set spec"))
 
 (def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
-(s/def ::job-id (-> (st/spec (s/and string? #(re-matches job-regex %)))))
+(s/def ::job-id (st/spec (s/and string? #(re-matches job-regex %))))
 
 (s/def ::job
   (-> (st/spec ::job-id)

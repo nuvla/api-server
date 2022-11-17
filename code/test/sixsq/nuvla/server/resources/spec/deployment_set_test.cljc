@@ -27,7 +27,10 @@
                                   "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]
                    :env          [{:name        "a"
                                    :value       "a value"
-                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]}
+                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
+                   :coupons      [{:code        "a"
+                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
+                   }
    :job           "job/e2dc1733-ac2c-45b1-b68a-0ec02653bc0c"})
 
 
@@ -40,13 +43,15 @@
   (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :applications] []))
   (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :targets] []))
   (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :env 0] {}))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :env 0] {:name "b"
+  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :env 0] {:name  "b"
                                                                                     :value "b"}))
+  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :coupon 0] {}))
+  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :coupon 0] {:code  "x"}))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state :spec}]
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  (doseq [k #{:job :env}]
+  (doseq [k #{:job :env :coupons}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))
