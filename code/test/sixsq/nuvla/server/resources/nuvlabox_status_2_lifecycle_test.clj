@@ -100,11 +100,9 @@
    :orchestrator                "kubernetes"
    :temperatures                []
    :components                  ["agent"]
-   :network                     {:foo        "bar"
-                                 :default-gw "eth0"
-                                 :interfaces {:eth0 {:ip  "1.2.3.4"
-                                                     :baz "bar"}
-                                              :eth1 {:ip "2.3.4.5"}}}})
+   :network                     {:default-gw "eth0"
+                                 :ips {:local "1.2.3.4"}
+                                 :interfaces {:eth0 {:ips [{:address "1.2.3.4"}]}}} })
 
 
 (def resources-updated {:cpu   {:capacity 10

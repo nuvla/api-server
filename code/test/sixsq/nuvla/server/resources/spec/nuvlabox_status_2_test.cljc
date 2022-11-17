@@ -112,11 +112,15 @@
                                       {:thermal-zone      "Tboard_tegra"
                                        :value             1.5}]
             :components               ["agent", "vpn-client"]
-            :network                  {:foo "bar"
-                                       :default-gw "eth0"
-                                       :interfaces {:eth0 {:ip "1.2.3.4"
-                                                           :baz "bar"}
-                                                    :eth1 {:ip "2.3.4.5"}}}})
+            :network                  {:default-gw "eth0"
+                                       :ips {:public "1.2.3.4"
+                                             :swarm "5.6.7.8"
+                                             :vpn ""}
+                                       :interfaces {:eth0 {:ips [{:address "1.2.3.4"},
+                                                                {:address "2.3.4.5"}] }
+                                                    :eth1 {:ips [{:address "3.4.5.6"}]}
+                                                    :enp3s0 {:ips []}
+                                                    :abc {}}}})
 
 
 (deftest check-nuvlabox-status

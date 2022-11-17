@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Changed
+
+- CI - concurrency and build on tag push
+
+## [6.0.6] - 2022-11-17
+
+### Changed
+
+- NuvlaEdge - host level management (playbooks) bugfixes
+- NuvlaEdge status - create the spec for the new "network" attribute
+
 ## [6.0.5] - 2022-10-14
 
 ### Changed
