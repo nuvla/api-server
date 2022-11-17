@@ -1,7 +1,7 @@
 (def parent-version "6.7.11")
 (def nuvla-ring-version "2.0.8")
 
-(defproject sixsq.nuvla.server/api-jar "6.0.6"
+(defproject sixsq.nuvla.server/api-jar "6.0.7-SNAPSHOT"
 
   :description "core api server"
 
