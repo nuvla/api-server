@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Module - Add `delete-version` operation and keep delete call to delete all versions #724
+- Module - Operations map should present specific versions urls when retrieving a specific version #724
 - CI - concurrency and build on tag push
 
 ## [6.0.6] - 2022-11-17
