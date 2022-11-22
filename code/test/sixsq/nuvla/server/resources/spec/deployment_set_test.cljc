@@ -29,8 +29,7 @@
                                    :value       "a value"
                                    :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
                    :coupons      [{:code        "a"
-                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
-                   }
+                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]}
    :job           "job/e2dc1733-ac2c-45b1-b68a-0ec02653bc0c"})
 
 

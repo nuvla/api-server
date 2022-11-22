@@ -313,6 +313,14 @@
 
     :json-schema/section "meta"))
 
+(s/def ::deployment-set-name
+  (assoc (st/spec string?)
+    :name "deployment-set-name"
+    :json-schema/type "string"
+    :json-schema/description "deployment-set name"
+
+    :json-schema/section "meta"))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -333,7 +341,8 @@
                                   ::nuvlabox-name
                                   ::credential-name
                                   ::infrastructure-service-name
-                                  ::deployment-set]}]))
+                                  ::deployment-set
+                                  ::deployment-set-name]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

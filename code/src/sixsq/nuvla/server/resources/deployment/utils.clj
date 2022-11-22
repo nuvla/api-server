@@ -190,6 +190,11 @@
   (contains? #{"STARTED" "ERROR"} state))
 
 
+(defn can-detach?
+  [{:keys [deployment-set] :as _resource}]
+  (some? deployment-set))
+
+
 (defn can-create-log?
   [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "UPDATING" "ERROR"} state))
@@ -205,11 +210,17 @@
     (resource-log/create-log id components acl opts)))
 
 
-(defn throw-can-not-do-action
+(defn throw-can-not-do-action-invalid-state
   [{:keys [id state] :as resource} pred action]
   (if (pred resource)
     resource
     (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
+
+(defn throw-can-not-do-action
+  [{:keys [id] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response (format "cannot do action %s on %s" action id) 409 id))))
 
 
 (defn throw-can-not-access-registries-creds
