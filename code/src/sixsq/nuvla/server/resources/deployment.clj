@@ -95,6 +95,13 @@ a container orchestration engine.
                :description    "delete deployment forcefully without checking state and without stopping it"
                :method         "POST"
                :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "detach"
+               :uri            "detach"
+               :description    "detach from deployment set"
+               :method         "POST"
+               :input-message  "application/json"
                :output-message "application/json"}])
 
 

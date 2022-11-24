@@ -3,18 +3,18 @@
 These resources represent a deployment set that regroups deployments.
 "
   (:require
+    [clojure.data.json :as json]
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.event.utils :as event-utils]
+    [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
-    [sixsq.nuvla.auth.utils :as auth]
-    [clojure.data.json :as json]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def ^:const resource-type (u/ns->type *ns*))
 
@@ -98,26 +98,12 @@ These resources represent a deployment set that regroups deployments.
     (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
-(defn edit-deployment-set
-  [{:keys [id] :as resource}]
-  (let [request {:params         {:uuid          (u/id->uuid id)
-                                  :resource-name resource-type}
-                 :request-method :put
-                 :body           resource
-                 :nuvla/authn    auth/internal-identity}
-        {:keys [status body]} (crud/edit request)]
-    (when (not= status 200)
-      (throw (ex-info (str "Unable to add job to " id) body)))))
-
 (defn create
   [id request]
-  (let [resource (-> (crud/retrieve-by-id-as-admin id)
-                     (a/throw-cannot-manage request))
-        response (create-job resource request "create_deployment_set")]
-    (-> resource
-        (assoc :job (get-in response [:body :location]))
-        edit-deployment-set)
-    response))
+  (-> id
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (create-job request "create_deployment_set")))
 
 (defmethod crud/do-action [resource-type "create"]
   [{{uuid :uuid} :params :as request}]

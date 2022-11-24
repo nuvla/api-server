@@ -1,19 +1,19 @@
 (ns sixsq.nuvla.server.resources.deployment-set-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest use-fixtures testing]]
+    [clojure.test :refer [deftest testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.deployment-set :as t]
+    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.deployment :as deployment]
+    [sixsq.nuvla.server.resources.deployment-set :as t]
     [sixsq.nuvla.server.resources.deployment.utils :as deployment-utils]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]))
+    [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
-(use-fixtures :once ltu/with-test-server-fixture)
+(use-fixtures :each ltu/with-test-server-fixture)
 
 (def base-uri (str p/service-context t/resource-type))
 (def deployment-base-uri (str p/service-context deployment/resource-type))
@@ -101,8 +101,7 @@
               (ltu/body->edn)
               (ltu/is-status 200)
               (ltu/is-key-value :state "CREATING")
-              (ltu/is-key-value map? :spec true)
-              (ltu/is-key-value :job location)))
+              (ltu/is-key-value map? :spec true)))
 
         (testing "job is created"
           (-> session-user

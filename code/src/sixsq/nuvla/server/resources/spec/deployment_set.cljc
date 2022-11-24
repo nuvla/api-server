@@ -1,11 +1,11 @@
 (ns sixsq.nuvla.server.resources.spec.deployment-set
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.util.spec :as su]
-    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.container :as container-spec]
+    [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
+    [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 (s/def ::state
@@ -100,22 +100,10 @@
     :json-schema/display-name "Spec"
     :json-schema/description "Deployment set spec"))
 
-(def job-regex #"^job/[a-z0-9]+(-[a-z0-9]+)*$")
-(s/def ::job-id (st/spec (s/and string? #(re-matches job-regex %))))
-
-(s/def ::job
-  (-> (st/spec ::job-id)
-      (assoc :name "job"
-             :json-schema/type "resource-id"
-
-             :json-schema/display-name "job"
-             :json-schema/description "last job id linked to the deployment-set")))
-
 (def deployment-set-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::spec
-                                  ::state]
-                         :opt-un [::job]}]))
+                                  ::state]}]))
 
 
 (s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))
