@@ -45,17 +45,15 @@
                                        :default "CREATED"})))
 
 
-(def ^:const credential-href-regex #"^credential/[a-z0-9]+(-[a-z0-9]+)*(_\d+)?$")
-
 
 (s/def ::api-key
-  (-> (st/spec (s/and string? #(re-matches credential-href-regex %)))
-      (assoc :name "api-key"
-             :json-schema/type "string"
+  (assoc cred-spec/credential-id-spec
+    :name "api-key"
+    :json-schema/type "string"
 
-             :json-schema/display-name "API key"
-             :json-schema/description "credential identifier of API key pair"
-             :json-schema/order 21)))
+    :json-schema/display-name "API key"
+    :json-schema/description "credential identifier of API key pair"
+    :json-schema/order 21))
 
 
 (s/def ::api-secret
@@ -245,33 +243,33 @@
 
 
 (s/def ::nuvlabox-name (-> (st/spec string?)
-                      (assoc :name "nuvlabox-name"
-                             :json-schema/type "string"
-                             :json-schema/description "nuvlabox name"
-
-                             :json-schema/section "meta"
-                             :json-schema/editable false
-                             :json-schema/server-managed true)))
-
-
-(s/def ::infrastructure-service-name (-> (st/spec string?)
-                           (assoc :name "infrastructure-service-name"
+                           (assoc :name "nuvlabox-name"
                                   :json-schema/type "string"
-                                  :json-schema/description "infrastructure service name"
+                                  :json-schema/description "nuvlabox name"
 
                                   :json-schema/section "meta"
                                   :json-schema/editable false
                                   :json-schema/server-managed true)))
 
 
-(s/def ::credential-name (-> (st/spec string?)     
-                             (assoc :name "credential-name"
+(s/def ::infrastructure-service-name (-> (st/spec string?)
+                                         (assoc :name "infrastructure-service-name"
                                                 :json-schema/type "string"
-                                                :json-schema/description "credential name"
+                                                :json-schema/description "infrastructure service name"
 
                                                 :json-schema/section "meta"
                                                 :json-schema/editable false
                                                 :json-schema/server-managed true)))
+
+
+(s/def ::credential-name (-> (st/spec string?)
+                             (assoc :name "credential-name"
+                                    :json-schema/type "string"
+                                    :json-schema/description "credential name"
+
+                                    :json-schema/section "meta"
+                                    :json-schema/editable false
+                                    :json-schema/server-managed true)))
 
 
 (def ^:const subscription-id-regex #"^sub_.+$")
@@ -302,6 +300,27 @@
              :json-schema/value-scope {:values ["pull" "push" "mixed"]})))
 
 
+
+(def ^:const deployment-set-id-regex #"^deployment-set/[0-9a-f]+(-[0-9a-f]+)*$")
+(defn deployment-set-id? [s] (re-matches deployment-set-id-regex s))
+(s/def ::deployment-set-id (s/and string? deployment-set-id?))
+
+(s/def ::deployment-set
+  (assoc (st/spec ::deployment-set-id)
+    :name "deployment-set"
+    :json-schema/type "resource-id"
+    :json-schema/description "reference to a deployment-set"
+
+    :json-schema/section "meta"))
+
+(s/def ::deployment-set-name
+  (assoc (st/spec string?)
+    :name "deployment-set-name"
+    :json-schema/type "string"
+    :json-schema/description "deployment-set name"
+
+    :json-schema/section "meta"))
+
 (def deployment-keys-spec
   (su/merge-keys-specs [common/common-attrs
                         {:req-un [::module
@@ -321,7 +340,9 @@
                                   ::execution-mode
                                   ::nuvlabox-name
                                   ::credential-name
-                                  ::infrastructure-service-name]}]))
+                                  ::infrastructure-service-name
+                                  ::deployment-set
+                                  ::deployment-set-name]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))

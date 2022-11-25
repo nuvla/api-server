@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Deployment set - Experimental feature
 - CI - concurrency and build on tag push
 
 ## [6.0.6] - 2022-11-17

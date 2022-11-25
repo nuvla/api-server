@@ -127,6 +127,25 @@
           result  (db/bulk-delete resource-name options)]
       (r/json-response result))))
 
+(defn create-bulk-job
+  [action-name target-resource authn-info acl payload]
+  (let [json-payload   (-> payload
+                           (assoc :authn-info authn-info)
+                           (json/write-str))
+        create-request {:params      {:resource-name "job"}
+                        :body        {:action          action-name
+                                      :target-resource {:href target-resource}
+                                      :payload         json-payload
+                                      :acl             acl}
+                        :nuvla/authn auth/internal-identity}
+        {{job-id     :resource-id
+          job-status :status} :body} (crud/add create-request)]
+    (when (not= job-status 201)
+      (throw (r/ex-response
+               (str "unable to create async job for " action-name)
+               500 target-resource)))
+    (r/map-response (str "starting " action-name " with async " job-id)
+                    202 target-resource job-id)))
 
 (defn bulk-action-fn
   [resource-name collection-acl _collection-uri]
@@ -137,28 +156,13 @@
       (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-action collection-acl request)
     (let [authn-info     (auth/current-authentication request)
-          active-claim   (auth/current-active-claim request)
-          action         (:action params)
-          action-name    (-> action
+          acl            {:owners   ["group/nuvla-admin"]
+                          :view-acl [(auth/current-active-claim request)]}
+          action-name    (-> params
+                             :action
                              (str/replace #"-" "_")
-                             (str "_" resource-name))
-          create-request {:params      {:resource-name "job"}
-                          :body        {:action          action-name
-                                        :target-resource {:href resource-name}
-                                        :payload         (-> body
-                                                             (assoc :authn-info authn-info)
-                                                             (json/write-str))
-                                        :acl             {:owners   ["group/nuvla-admin"]
-                                                          :view-acl [active-claim]}}
-                          :nuvla/authn auth/internal-identity}
-          {{job-id     :resource-id
-            job-status :status} :body} (crud/add create-request)]
-      (when (not= job-status 201)
-        (throw (r/ex-response
-                 (format "unable to create async job for %s " action)
-                 500 resource-name)))
-      (r/map-response (str "starting " action " with async " job-id)
-                      202 resource-name job-id))))
+                             (str "_" resource-name))]
+      (create-bulk-job action-name resource-name authn-info acl body))))
 
 
 (def ^:const href-not-found-msg "requested href not found")
