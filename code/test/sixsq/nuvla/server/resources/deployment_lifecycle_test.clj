@@ -237,8 +237,7 @@
                                                             {:name "NEW", :value "new"}
                                                             {:name        "BETA_ENV",
                                                              :description "beta-env variable",
-                                                             :required    true}]
-                                                           )))
+                                                             :required    true}])))
                   (ltu/body->edn)
                   (ltu/is-status 200)))
 
@@ -435,20 +434,6 @@
                             (ltu/is-status 200)
                             (ltu/is-key-value #(some #{"user/shared"} (:view-data %))
                                               :acl "user/shared")))
-
-                    ;; verify user can create another deployment from existing one
-                    (let [deployment-url-from-dep (-> session-user
-                                                      (request base-uri
-                                                               :request-method :post
-                                                               :body (json/write-str {:deployment {:href deployment-id}}))
-                                                      (ltu/body->edn)
-                                                      (ltu/is-status 201)
-                                                      (ltu/location-url))]
-                      (-> session-user
-                          (request deployment-url-from-dep
-                                   :request-method :delete)
-                          (ltu/body->edn)
-                          (ltu/is-status 200)))
 
                     ;; verify user can create another deployment from existing one by using clone action
                     (let [deployment-url-from-dep (-> session-user
@@ -767,7 +752,7 @@
                                           :other  "hello"}))
                         (ltu/body->edn)
                         (ltu/is-status 202)
-                        (ltu/message-matches "starting bulk-update with async job")
+                        (ltu/message-matches "starting bulk_update_deployment with async job")
                         (ltu/location-url))]
         (-> session-user
             (request job-url)
@@ -793,7 +778,7 @@
                                           :other  "hello"}))
                         (ltu/body->edn)
                         (ltu/is-status 202)
-                        (ltu/message-matches "starting bulk-stop with async job")
+                        (ltu/message-matches "starting bulk_stop_deployment with async job")
                         (ltu/location-url))]
         (-> session-user
             (request job-url)
@@ -810,11 +795,11 @@
                                                       "group/nuvla-user"]}}))))
 
       (let [force-delete-op (-> session-user
-                           (request deployment-url)
-                           (ltu/body->edn)
-                           (ltu/is-status 200)
-                           (ltu/is-operation-present :force-delete)
-                           (ltu/get-op-url :force-delete))]
+                                (request deployment-url)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present :force-delete)
+                                (ltu/get-op-url :force-delete))]
         (-> session-user
             (request force-delete-op)
             (ltu/body->edn)
@@ -823,9 +808,7 @@
       (-> session-user
           (request (str p/service-context module-id)
                    :request-method :delete)
-          (ltu/is-status 200))
-
-      )))
+          (ltu/is-status 200)))))
 
 
 (deftest bad-methods
