@@ -170,16 +170,16 @@
 
              :json-schema/order 1)))
 
-(s/def ::interfaces-list
+(s/def ::interfaces
   (-> (st/spec (s/coll-of ::interface :kind vector?))
-      (assoc :name "interfaces-list"
+      (assoc :name "interfaces"
              :json-schema/type "map"
              :json-schema/description "Network interfaces"
 
              :json-schema/order 3)))
 
 (s/def ::network
-  (-> (st/spec (su/only-keys :opt-un [::default-gw ::ips ::interfaces-list])) ; (su/constrained-map keyword? any?))
+  (-> (st/spec (su/only-keys :opt-un [::default-gw ::ips ::interfaces])) ; (su/constrained-map keyword? any?))
       (assoc :name "network"
              :json-schema/type "map"
              :json-schema/description "Network related configuration"

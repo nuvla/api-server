@@ -112,18 +112,18 @@
                                           {:thermal-zone "Tboard_tegra"
                                            :value        1.5}]
             :components                  ["agent", "vpn-client"]
-            :network                     {:default-gw      "eth0"
-                                          :ips             {:public "1.2.3.4"
-                                                            :swarm  "5.6.7.8"
-                                                            :vpn    ""}
-                                          :interfaces-list [{:interface "eth0"
-                                                             :ips  [{:address "1.2.3.4"},
+            :network                     {:default-gw "eth0"
+                                          :ips        {:public "1.2.3.4"
+                                                       :swarm  "5.6.7.8"
+                                                       :vpn    ""}
+                                          :interfaces [{:interface "eth0"
+                                                        :ips       [{:address "1.2.3.4"},
                                                                     {:address "2.3.4.5"}]}
-                                                            {:interface "eth1"
-                                                             :ips  [{:address "3.4.5.6"}]}
-                                                            {:interface "enp3s0"
-                                                             :ips  []}
-                                                            {:interface "abc"}]}})
+                                                       {:interface "eth1"
+                                                        :ips       [{:address "3.4.5.6"}]}
+                                                       {:interface "enp3s0"
+                                                        :ips       []}
+                                                       {:interface "abc"}]}})
 
 
 (deftest check-nuvlabox-status
