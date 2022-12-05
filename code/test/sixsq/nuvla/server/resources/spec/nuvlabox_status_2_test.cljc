@@ -116,14 +116,14 @@
                                           :ips             {:public "1.2.3.4"
                                                             :swarm  "5.6.7.8"
                                                             :vpn    ""}
-                                          :interfaces-list [{:name "eth0"
+                                          :interfaces-list [{:interface "eth0"
                                                              :ips  [{:address "1.2.3.4"},
                                                                     {:address "2.3.4.5"}]}
-                                                            {:name "eth1"
+                                                            {:interface "eth1"
                                                              :ips  [{:address "3.4.5.6"}]}
-                                                            {:name "enp3s0"
+                                                            {:interface "enp3s0"
                                                              :ips  []}
-                                                            {:name "abc"}]}})
+                                                            {:interface "abc"}]}})
 
 
 (deftest check-nuvlabox-status

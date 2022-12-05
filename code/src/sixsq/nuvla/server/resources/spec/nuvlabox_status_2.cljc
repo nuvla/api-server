@@ -156,13 +156,13 @@
 
              :json-schema/order 2)))
 
-(s/def :interface/name
+(s/def :interface/interface
   (-> (st/spec ::core/nonblank-string)
-      (assoc :name "name"
+      (assoc :name "interface"
              :json-schema/description "Interface name")))
 
 (s/def ::interface
-  (-> (st/spec (su/only-keys :opt-un [:interface/name
+  (-> (st/spec (su/only-keys :opt-un [:interface/interface
                                       :interface/ips]))
       (assoc :name "interface"
              :json-schema/type "map"
