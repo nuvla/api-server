@@ -14,7 +14,7 @@
 ;; same attribute definitions to avoid repetition.
 
 (s/def ::host-user-home
-  (-> (st/spec ::core/nonblank-string)
+  (-> (st/spec string?)
       (assoc :name "host-user-home"
              :json-schema/description "Home directory, on the host, of the user who installed the NuvlaBox"
 
