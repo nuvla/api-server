@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.7] - 2022-12-06
+
 ### Changed
 
 - Nuvlabox status - denormalize nuvlabox-engine-version
