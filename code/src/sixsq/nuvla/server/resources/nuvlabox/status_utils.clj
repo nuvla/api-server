@@ -6,7 +6,6 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.time :as time]))
 
-
 (defn get-next-heartbeat
   [nuvlabox-id]
   (try
@@ -20,29 +19,20 @@
     (catch Exception ex
       (log/errorf "Unable to get next heartbeat for %1: %2" nuvlabox-id ex))))
 
+(def DENORMALIZED_FIELD [:online :inferred-location :nuvlabox-engine-version])
 
-(defn set-nuvlabox-online
-  [{:keys [parent online] :as _nuvlabox-status}]
-  (try
-    (when (some? online)
-      (let [{nb-online :online :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
-        (when (not= nb-online online)
-          (-> nuvlabox
-              (assoc :online online)
-              (db/edit {:nuvla/authn auth/internal-identity})))))
-    (catch Exception ex
-      (log/info parent "update online attribute failed!" ex))))
+(defn status-fields-to-denormalize
+  [nuvlabox-status]
+  (->> DENORMALIZED_FIELD
+       (select-keys nuvlabox-status)
+       (filter (comp some? second))
+       (into {})))
 
-
-(defn set-inferred-location
-  [{:keys [parent inferred-location] :as resource}]
-  (try
-    (when (some? inferred-location)
-      (let [{nb-inferred-location :inferred-location :as nuvlabox} (crud/retrieve-by-id-as-admin parent)]
-        (when (not= nb-inferred-location inferred-location)
-          (-> nuvlabox
-              (assoc :inferred-location inferred-location)
-              (db/edit {:nuvla/authn auth/internal-identity})))))
-    (catch Exception ex
-      (log/info parent "update inferred-location attribute failed!" ex)))
-  resource)
+(defn denormalize-changes-nuvlabox
+  [{:keys [parent] :as nuvlabox-status}]
+  (let [propagate-status (status-fields-to-denormalize nuvlabox-status)]
+    (when (seq propagate-status)
+      (let [nuvlabox     (crud/retrieve-by-id-as-admin parent)
+            new-nuvlabox (merge nuvlabox propagate-status)]
+        (when (not= nuvlabox new-nuvlabox)
+          (db/edit new-nuvlabox {:nuvla/authn auth/internal-identity}))))))

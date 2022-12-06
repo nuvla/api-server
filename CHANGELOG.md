@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Nuvlabox status - denormalize nuvlabox-engine-version
+- Nuvlabox status - refactor denormalization code
 - Module - Add `delete-version` operation and keep delete call to delete all versions #724
 - Module - Operations map should present specific versions urls when retrieving a specific version #724
 - Deployment set - Experimental feature

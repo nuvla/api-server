@@ -56,7 +56,8 @@
                :ssh-keys                       ["credential/aaa-bbb-ccc", "credential/111-222-ccc"]
                :capabilities                   ["NUVLA_JOB_PULL", "SYS_ADMIN"]
                :online                         true
-               :host-level-management-api-key  "credential/123-abc"})
+               :host-level-management-api-key  "credential/123-abc"
+               :nuvlabox-engine-version        "1.2.3"})
 
 
 (deftest check-nuvlabox
@@ -71,30 +72,9 @@
     (stu/is-invalid ::nb-2/schema (dissoc valid-nb attr)))
 
   ;; optional
-  (doseq [attr #{:nuvlabox-status
-                 :infrastructure-service-group
-                 :location
-                 :supplier
-                 :organization
-                 :manufacturer-serial-number
-                 :firmware-version
-                 :hardware-type
-                 :form-factor
-                 :wifi-ssid
-                 :wifi-password
-                 :root-password
-                 :login-username
-                 :login-password
-                 :cloud-password
-                 :comment
-                 :vm-cidr
-                 :lan-cidr
-                 :os-version
-                 :hw-revision-code
-                 :monitored
-                 :infrastructure-service-id
-                 :ssh-keys
-                 :capabilities
-                 :online
-                 :host-level-management-api-key}]
+  (doseq [attr #{:nuvlabox-status :infrastructure-service-group :location :supplier :organization
+                 :manufacturer-serial-number :firmware-version :hardware-type :form-factor :wifi-ssid :wifi-password
+                 :root-password :login-username :login-password :cloud-password :comment :vm-cidr :lan-cidr :os-version
+                 :hw-revision-code :monitored :infrastructure-service-id :ssh-keys :capabilities :online
+                 :host-level-management-api-key :nuvlabox-engine-version}]
     (stu/is-valid ::nb-2/schema (dissoc valid-nb attr))))

@@ -136,12 +136,9 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        (str/starts-with? "nuvlabox/"))
           online                   (or is-nuvlabox? (:online body))
           online-prev              (:online current)
-          propagate-online?        (and (some? online)
-                                        (not= online online-prev))
-          edit-fn                  #(do
-                                      (when propagate-online?
-                                        (status-utils/set-nuvlabox-online %1))
-                                      (db/edit %1 request))
+          edit-fn                  #(let [response (db/edit %1 request)]
+                                      (status-utils/denormalize-changes-nuvlabox %)
+                                      response)
           minimal-update           #(-> %
                                         (u/update-timestamps)
                                         (u/set-updated-by request)
@@ -152,8 +149,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
                                        (merge editable-body)
                                        (minimal-update)
                                        (assoc :jobs jobs)
-                                       (cond-> (contains? body :resources) (assoc :resources-prev (:resources current)))
-                                       (status-utils/set-inferred-location))
+                                       (cond-> (contains? body :resources) (assoc :resources-prev (:resources current))))
           spec-exception           (try
                                      (crud/validate new-status)
                                      nil
