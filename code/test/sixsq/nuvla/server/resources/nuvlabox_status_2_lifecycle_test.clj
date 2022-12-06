@@ -101,8 +101,9 @@
    :temperatures                []
    :components                  ["agent"]
    :network                     {:default-gw "eth0"
-                                 :ips {:local "1.2.3.4"}
-                                 :interfaces {:eth0 {:ips [{:address "1.2.3.4"}]}}} })
+                                 :ips        {:local "1.2.3.4"}
+                                 :interfaces [{:interface "eth0"
+                                               :ips       [{:address "1.2.3.4"}]}]}})
 
 
 (def resources-updated {:cpu   {:capacity 10
