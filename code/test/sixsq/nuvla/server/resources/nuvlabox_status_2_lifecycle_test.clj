@@ -100,11 +100,10 @@
    :orchestrator                "kubernetes"
    :temperatures                []
    :components                  ["agent"]
-   :network                     {:foo        "bar"
-                                 :default-gw "eth0"
-                                 :interfaces {:eth0 {:ip  "1.2.3.4"
-                                                     :baz "bar"}
-                                              :eth1 {:ip "2.3.4.5"}}}})
+   :network                     {:default-gw "eth0"
+                                 :ips        {:local "1.2.3.4"}
+                                 :interfaces [{:interface "eth0"
+                                               :ips       [{:address "1.2.3.4"}]}]}})
 
 
 (def resources-updated {:cpu   {:capacity 10
@@ -340,7 +339,7 @@
                                      (ltu/body)
                                      :next-heartbeat))]
 
-          (testing "online flag is propagated to nuvlabox"
+          (testing "online flag is denormlized to nuvlabox"
             (-> session-admin
                 (request nuvlabox-url)
                 (ltu/body->edn)
@@ -364,7 +363,7 @@
           is not visible from cimi (blacklisted)"
             (is (= true (:online-prev (db/retrieve state-id {})))))
 
-          (testing "online flag propagated to nuvlabox"
+          (testing "online flag denormalized to nuvlabox"
             (-> session-admin
                 (request nuvlabox-url)
                 (ltu/body->edn)

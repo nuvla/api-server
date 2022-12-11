@@ -135,12 +135,17 @@
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
 
 
-(defn create-deployment
-  [{:keys [body] :as request}]
-  (cond
-    (get-in body [:module :href]) (assoc body :module (resolve-module request))
-    (get-in body [:deployment :href]) (resolve-deployment request)
-    :else (logu/log-and-throw-400 "Request body is missing a module or a deployment href map!")))
+(defn resolve-from-module
+  [request]
+  (if (get-in request [:body :module :href])
+    (assoc-in request [:body :module] (resolve-module request))
+    (logu/log-and-throw-400 "Request body is missing a module href!")))
+
+(defn resolve-from-deployment
+  [request]
+  (if (get-in request [:body :deployment :href])
+    (assoc request :body (resolve-deployment request))
+    (logu/log-and-throw-400 "Request body is missing a deployment href!")))
 
 
 (defn create-job
@@ -185,6 +190,11 @@
   (contains? #{"STARTED" "ERROR"} state))
 
 
+(defn can-detach?
+  [{:keys [deployment-set] :as _resource}]
+  (some? deployment-set))
+
+
 (defn can-create-log?
   [{:keys [state] :as _resource}]
   (contains? #{"STARTED" "UPDATING" "ERROR"} state))
@@ -200,11 +210,17 @@
     (resource-log/create-log id components acl opts)))
 
 
-(defn throw-can-not-do-action
+(defn throw-can-not-do-action-invalid-state
   [{:keys [id state] :as resource} pred action]
   (if (pred resource)
     resource
     (throw (r/ex-response (format "invalid state (%s) for %s on %s" state action id) 409 id))))
+
+(defn throw-can-not-do-action
+  [{:keys [id] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response (format "cannot do action %s on %s" action id) 409 id))))
 
 
 (defn throw-can-not-access-registries-creds

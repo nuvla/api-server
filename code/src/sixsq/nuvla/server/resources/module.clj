@@ -361,7 +361,7 @@ component, or application.
 
 
 (defn delete-all
-  [request {:keys [subtype versions] :as _module-meta}]
+  [{:keys [subtype versions] :as _module-meta} request]
   (doseq [version versions]
     (when version
       (delete-content (:href version) subtype)))
@@ -369,7 +369,7 @@ component, or application.
 
 
 (defn delete-item
-  [request {:keys [subtype versions] :as module-meta} version-index]
+  [{:keys [subtype versions] :as module-meta} request version-index]
   (let [content-id       (utils/retrieve-content-id versions version-index)
         delete-response  (delete-content content-id subtype)
         updated-versions (remove-version versions version-index)
@@ -382,18 +382,23 @@ component, or application.
 
 
 (defmethod crud/delete resource-type
+  [request]
+  (try
+    (-> (retrieve-edn request)
+        (a/throw-cannot-edit request)
+        (delete-all request))
+    (catch Exception e
+      (or (ex-data e) (throw e)))))
+
+(defmethod crud/do-action [resource-type "delete-version"]
   [{{uuid-full :uuid} :params :as request}]
   (try
-    (let [module-meta (-> (retrieve-edn request)
-                          (a/throw-cannot-edit request))
-
+    (let [{:keys [versions] :as module-meta} (-> (retrieve-edn request)
+                                                 (a/throw-cannot-edit request))
           [uuid version-index] (utils/split-uuid uuid-full)
-          request     (assoc-in request [:params :uuid] uuid)]
-
-      (if version-index
-        (delete-item request module-meta version-index)
-        (delete-all request module-meta)))
-
+          request (assoc-in request [:params :uuid] uuid)]
+      (delete-item module-meta request (or version-index
+                                           (utils/last-index versions))))
     (catch IndexOutOfBoundsException _
       (r/response-not-found (str resource-type "/" uuid-full)))
     (catch Exception e
@@ -477,17 +482,21 @@ component, or application.
 
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id subtype] :as resource} request]
-  (let [validate-docker-compose-op (u/action-map id :validate-docker-compose)
-        publish-op                 (u/action-map id :publish)
-        unpublish-op               (u/action-map id :unpublish)
+  [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
+  (let [id_with-version            (str resource-type "/" uuid)
+        validate-docker-compose-op (u/action-map id :validate-docker-compose)
+        publish-op                 (u/action-map id_with-version :publish)
+        unpublish-op               (u/action-map id_with-version :unpublish)
+        delete-version-op          (u/action-map id_with-version :delete-version)
         can-manage?                (a/can-manage? resource request)
+        can-delete?                (a/can-delete? resource request)
         check-op-present?          (and can-manage? (utils/is-application? subtype))
         publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op)
             publish-eligible? (update :operations conj publish-op)
-            publish-eligible? (update :operations conj unpublish-op))))
+            publish-eligible? (update :operations conj unpublish-op)
+            can-delete? (update :operations conj delete-version-op))))
 
 
 ;;

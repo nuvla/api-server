@@ -27,10 +27,11 @@
    (let [timestamp   (ts/expiry-later)
          cookie-info (assoc info :exp timestamp)
          token       (sg/sign-cookie-info cookie-info)]
-     {:value   token
-      :secure  true
-      :path    "/"
-      :expires (ts/rfc822 timestamp)}))
+     {:value     token
+      :secure    true
+      :path      "/"
+      :http-only true
+      :expires   (ts/rfc822 timestamp)}))
   ([info name]
    {name (create-cookie info)}))
 

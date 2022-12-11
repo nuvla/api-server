@@ -6,6 +6,24 @@
   configuration of subscriptions to notifications. Removed creation of
   individual subscriptions.
  
+## [6.0.7] - 2022-12-06
+
+### Changed
+
+- Nuvlabox status - denormalize nuvlabox-engine-version
+- Nuvlabox status - refactor denormalization code
+- Module - Add `delete-version` operation and keep delete call to delete all versions #724
+- Module - Operations map should present specific versions urls when retrieving a specific version #724
+- Deployment set - Experimental feature
+- CI - concurrency and build on tag push
+
+## [6.0.6] - 2022-11-17
+
+### Changed
+
+- NuvlaEdge - host level management (playbooks) bugfixes
+- NuvlaEdge status - create the spec for the new "network" attribute
+
 ## [6.0.5] - 2022-10-14
 
 ### Changed

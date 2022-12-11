@@ -198,7 +198,7 @@
           (-> session-nb
               (request save-output-op-url
                        :request-method :post
-                       :body (json/write-str {:output (apply str (repeat 1250 "g"))}))
+                       :body (json/write-str {:output (apply str (repeat 12500 "g"))}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -206,16 +206,16 @@
               (request playbook-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/is-key-value count :output 1000)))
+              (ltu/is-key-value count :output 10000)))
 
         ;; very long outputs get truncated via edit as well
         (-> session-owner
             (request playbook-url
                      :request-method :put
-                     :body (json/write-str {:output (apply str (repeat 1050 "f"))}))
+                     :body (json/write-str {:output (apply str (repeat 10500 "f"))}))
             (ltu/body->edn)
             (ltu/is-status 200)
-            (ltu/is-key-value count :output 1000))
+            (ltu/is-key-value count :output 10000))
 
         ;; nuvlabox owner can delete the playbook
         (-> session-owner

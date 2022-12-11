@@ -831,7 +831,7 @@ particular NuvlaBox release.
 
 
 (defn enable-host-level-management
-  [{:keys [id host-level-management-api-key] :as nuvlabox} request]
+  [{:keys [id host-level-management-api-key] :as nuvlabox} {:keys [base-uri] :as request}]
   (if host-level-management-api-key
     (logu/log-and-throw-400 (str "host level management is already enabled for NuvlaBox " id))
     (try
@@ -839,7 +839,7 @@ particular NuvlaBox release.
             updated_nuvlabox (assoc nuvlabox :host-level-management-api-key (:api-key credential))]
         (db/edit updated_nuvlabox request)
 
-        (r/json-response {:cronjob (utils/compose-cronjob credential id)}))
+        (r/json-response {:cronjob (utils/compose-cronjob credential id base-uri)}))
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
