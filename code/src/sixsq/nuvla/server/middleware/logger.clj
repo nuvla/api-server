@@ -1,7 +1,8 @@
 (ns sixsq.nuvla.server.middleware.logger
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log]
+    [sixsq.nuvla.server.middleware.authn-info :as auth-info]))
 
 
 (defn- display-querystring
@@ -13,8 +14,9 @@
 
 
 (defn- display-authn-info
-  [{:keys [nuvla/authn] :as _request}]
-  (let [{:keys [active-claim claims]} authn]
+  [request]
+  (let [{:keys [active-claim claims]} (or (auth-info/extract-header-authn-info request)
+                                          (auth-info/extract-cookie-authn-info request))]
     (str "[" active-claim " - " (str/join "," (sort claims)) "]")))
 
 
