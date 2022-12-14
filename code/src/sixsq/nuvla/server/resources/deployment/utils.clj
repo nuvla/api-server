@@ -278,6 +278,7 @@
        "trial_end"               (trial-end active-claim price)
        "coupon"                  coupon
        "transfer_data"           {"destination" account-id}
+       "on_behalf_of"            account-id
        "default_tax_rates"       (payment/tax-rates
                                    customer-info
                                    (payment/get-catalog))})))

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Deployment - support vendor outside platform's region nuvla/nuvla#110
+
 ## [6.0.7] - 2022-12-06
 
 ### Changed
