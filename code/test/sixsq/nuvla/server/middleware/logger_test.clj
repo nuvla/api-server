@@ -1,6 +1,5 @@
 (ns sixsq.nuvla.server.middleware.logger-test
   (:require
-    [clojure.string :as str]
     [clojure.test :refer [deftest is]]
     [sixsq.nuvla.server.middleware.logger :as t]))
 
@@ -14,18 +13,11 @@
 (def test-url "api/resource")
 
 
-(defn header-authn-info
-  [user roles]
-  {"nuvla-authn-info" (str/join " " (concat [user] roles))})
-
-
 (defn req
-  [{:keys [user-id claims query-string]}]
+  [{:keys [nuvla-authn-info query-string]}]
   {:request-method :get
    :uri            test-url
-   :nuvla/authn    {:user-id user-id
-                    :active-claim user-id
-                    :claims  claims}
+   :headers    {"nuvla-authn-info" nuvla-authn-info}
    :query-string   query-string
    :body           "body-content"})
 
@@ -43,22 +35,22 @@
 
 
 (deftest log-does-not-display-password
-  (is-request-formatted (str "GET " test-url " [super - group/nuvla-admin] ?a=1&b=2")
-                        :user-id "super" :claims #{"group/nuvla-admin"} :query-string "a=1&password=secret&b=2"))
+  (is-request-formatted (str "GET " test-url " [super - group/nuvla-admin,group/nuvla-anon,super] ?a=1&b=2")
+                        :nuvla-authn-info "super super group/nuvla-admin" :query-string "a=1&password=secret&b=2"))
 
 
 (deftest test-formatting
-  (is-response-formatted (format (str "200 (%d ms) GET " test-url " [super - group/nuvla-admin] ?a=1&b=2") (- end start))
-                         :user-id "super" :claims #{"group/nuvla-admin"} :query-string "a=1&password=secret&b=2"
+  (is-response-formatted (format (str "200 (%d ms) GET " test-url " [super - group/nuvla-admin,group/nuvla-anon,super] ?a=1&b=2") (- end start))
+                         :nuvla-authn-info "super super group/nuvla-admin" :query-string "a=1&password=secret&b=2"
                          :start start :end end :status 200)
 
-  (is-request-formatted (str "GET " test-url " [joe - ] ?c=3")
-                        :user-id "joe" :query-string "c=3")
+  (is-request-formatted (str "GET " test-url " [joe - group/nuvla-anon,joe] ?c=3")
+                        :nuvla-authn-info "joe" :query-string "c=3")
 
-  (is-request-formatted (str "GET " test-url " [joe - ] ?")
-                        :user-id "joe")
+  (is-request-formatted (str "GET " test-url " [joe - group/nuvla-anon,joe] ?")
+                        :nuvla-authn-info "joe")
 
-  (is-request-formatted (str "GET " test-url " [joe - R1,R2] ?")
-                        :user-id "joe" :claims #{"R1" "R2"}))
+  (is-request-formatted (str "GET " test-url " [joe - R1,R2,group/nuvla-anon,joe] ?")
+                        :nuvla-authn-info "joe joe R1 R2"))
 
 
