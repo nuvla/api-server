@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Logging - fix logging of claims
+- Module - Fix operations of resources in collection
+- Dependencies - Update to parent 6.7.12
 
 ## [6.0.7] - 2022-12-06
 
@@ -14,7 +16,6 @@
 - Module - Operations map should present specific versions urls when retrieving a specific version #724
 - Deployment set - Experimental feature
 - CI - concurrency and build on tag push
-- Module - Fix operations of resources in collection
 
 ## [6.0.6] - 2022-11-17
 
