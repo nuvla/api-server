@@ -6,6 +6,8 @@
 
 - Logging - fix logging of claims
 - Deployment - support vendor outside platform's region nuvla/nuvla#110
+- Module - Fix operations of resources in collection
+- Dependencies - Update to parent 6.7.12
 
 ## [6.0.7] - 2022-12-06
 
