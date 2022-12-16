@@ -483,7 +483,9 @@ component, or application.
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
-  (let [id_with-version            (str resource-type "/" uuid)
+  (let [id_with-version            (if uuid
+                                     (str resource-type "/" uuid)
+                                     id)
         validate-docker-compose-op (u/action-map id :validate-docker-compose)
         publish-op                 (u/action-map id_with-version :publish)
         unpublish-op               (u/action-map id_with-version :unpublish)

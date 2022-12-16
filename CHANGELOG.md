@@ -14,6 +14,7 @@
 - Module - Operations map should present specific versions urls when retrieving a specific version #724
 - Deployment set - Experimental feature
 - CI - concurrency and build on tag push
+- Module - Fix operations of resources in collection
 
 ## [6.0.6] - 2022-11-17
 
