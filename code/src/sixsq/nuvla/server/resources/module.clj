@@ -128,7 +128,7 @@ component, or application.
 
 
 (defn set-price
-  [{{:keys [price-id cent-amount-daily currency] :as price}
+  [{{:keys [price-id cent-amount-daily currency follow-customer-trial] :as price}
     :price name :name path :path :as body}
    active-claim]
   (if price
@@ -147,11 +147,12 @@ component, or application.
                                (nil? product-id) (assoc "product_data"
                                                         {"name"       (or name path)
                                                          "unit_label" "day"})))]
-      (assoc body :price {:price-id          (pricing-impl/get-id s-price)
-                          :product-id        (pricing-impl/get-product s-price)
-                          :account-id        account-id
-                          :cent-amount-daily cent-amount-daily
-                          :currency          currency}))
+      (assoc body :price {:price-id              (pricing-impl/get-id s-price)
+                          :product-id            (pricing-impl/get-product s-price)
+                          :account-id            account-id
+                          :cent-amount-daily     cent-amount-daily
+                          :currency              currency
+                          :follow-customer-trial follow-customer-trial}))
     body))
 
 (defn throw-cannot-access-registries-or-creds

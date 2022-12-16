@@ -356,8 +356,8 @@
 
 
 (defn create-subscription
-  [request deployment price]
-  (when (and config-nuvla/*stripe-api-key* price)
+  [request deployment {:keys [price] :as module}]
+  (when (and config-nuvla/*stripe-api-key* price (not (a/can-edit-data? module request)))
     (some-> (auth/current-active-claim request)
             (create-stripe-subscription price (:coupon deployment))
             (pricing-impl/get-id))))
@@ -372,18 +372,20 @@
             (pricing-impl/cancel-subscription {"invoice_now" true}))))
 
 (defn throw-when-payment-required
-  [{{:keys [price]} :module :as resource} request]
+  [{{:keys [price] :as module} :module :as resource} request]
   (if (or (nil? config-nuvla/*stripe-api-key*)
           (a/is-admin? (auth/current-authentication request))
           (let [active-claim (auth/current-active-claim request)]
-            (case (:status (payment/active-claim->subscription active-claim))
-              ("active" "past_due") true
-              "trialing" (or (nil? price)
-                             (:follow-customer-trial price)
-                             (-> active-claim
-                                 payment/active-claim->s-customer
-                                 payment/can-pay?))
-              false)))
+            (or
+              (a/can-edit-data? module request)
+              (case (:status (payment/active-claim->subscription active-claim))
+               ("active" "past_due") true
+               "trialing" (or (nil? price)
+                              (:follow-customer-trial price)
+                              (-> active-claim
+                                  payment/active-claim->s-customer
+                                  payment/can-pay?))
+               false))))
     resource
     (payment/throw-payment-required)))
 

@@ -197,7 +197,7 @@ a container orchestration engine.
                        (or deployment-set (:deployment-set current)))
         dep-set      (utils/some-id->resource dep-set-id request)
         dep-set-name (:name dep-set)
-        fixed-attr   (select-keys (:module current) [:href :price :license])
+        fixed-attr   (select-keys (:module current) [:href :price :license :acl])
         is-user?     (not (a/is-admin? authn-info))
         new-acl      (-> (or acl (:acl current))
                          (a/acl-append :owners (:owner current))
@@ -324,10 +324,10 @@ a container orchestration engine.
                              (utils/throw-when-payment-required request)
                              (utils/throw-can-not-access-registries-creds request))
           stopped?       (= (:state deployment) "STOPPED")
-          price          (get-in deployment [:module :price])
+          module         (:module deployment)
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
-          subs-id        (utils/create-subscription request deployment price)
+          subs-id        (utils/create-subscription request deployment module)
           execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
@@ -420,10 +420,10 @@ a container orchestration engine.
           current-subs-id (when config-nuvla/*stripe-api-key* (:subscription-id current))
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
-          {:keys [name description price license]} (utils/resolve-module
-                                                     (assoc request
-                                                       :body {:module {:href module-href}}))
-          new-subs-id     (utils/create-subscription request current price)
+          {:keys [name description price license] :as module} (utils/resolve-module
+                                                                (assoc request
+                                                                  :body {:module {:href module-href}}))
+          new-subs-id     (utils/create-subscription request current module)
           new             (-> current
                               (assoc :state "UPDATING")
                               (cond-> name (assoc-in [:module :name] name)
