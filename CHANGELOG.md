@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.8] - 2022-12-19
+
 ### Changed
 
 - Logging - fix logging of claims
