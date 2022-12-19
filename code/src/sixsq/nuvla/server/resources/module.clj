@@ -132,10 +132,8 @@ component, or application.
     :price name :name path :path :as body}
    active-claim]
   (if price
-    (let [product-id (some-> price-id
-                             pricing-impl/retrieve-price
-                             pricing-impl/price->map
-                             :product-id)
+    (let [product-id (some-> price-id pricing-impl/retrieve-price
+                             pricing-impl/price->map :product-id)
           account-id (active-claim->account-id active-claim)
           s-price    (pricing-impl/create-price
                        (cond-> {"currency"    currency
@@ -144,15 +142,15 @@ component, or application.
                                                "aggregate_usage" "sum"
                                                "usage_type"      "metered"}}
                                product-id (assoc "product" product-id)
-                               (nil? product-id) (assoc "product_data"
-                                                        {"name"       (or name path)
-                                                         "unit_label" "day"})))]
-      (assoc body :price {:price-id              (pricing-impl/get-id s-price)
-                          :product-id            (pricing-impl/get-product s-price)
-                          :account-id            account-id
-                          :cent-amount-daily     cent-amount-daily
-                          :currency              currency
-                          :follow-customer-trial follow-customer-trial}))
+                               (nil? product-id) (assoc "product_data" {"name"       (or name path)
+                                                                        "unit_label" "day"})))
+          price      (cond-> {:price-id          (pricing-impl/get-id s-price)
+                              :product-id        (pricing-impl/get-product s-price)
+                              :account-id        account-id
+                              :cent-amount-daily cent-amount-daily
+                              :currency          currency}
+                             (some? follow-customer-trial) (assoc :follow-customer-trial follow-customer-trial))]
+      (assoc body :price price))
     body))
 
 (defn throw-cannot-access-registries-or-creds
