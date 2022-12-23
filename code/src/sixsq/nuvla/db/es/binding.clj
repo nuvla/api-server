@@ -132,11 +132,10 @@
         (-> response :body :_source)
         (throw (r/ex-not-found id))))
     (catch Exception e
-      (let [{:keys [status body] :as _response} (ex-data e)
-            error (or (:message body) (:error body))]
+      (let [{:keys [status] :as _response} (ex-data e)]
         (if (= 404 status)
           (throw (r/ex-not-found id))
-          (r/response-error (str "unexpected exception retrieving " id ": " (or error e))))))))
+          (throw e))))))
 
 
 (defn delete-data

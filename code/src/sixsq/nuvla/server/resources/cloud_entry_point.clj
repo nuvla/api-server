@@ -361,14 +361,11 @@ include aggregating values over a collection of resources.
 
 (defn retrieve-impl
   [{:keys [base-uri] :as request}]
-  (let [{:keys [status] :as response} (db/retrieve resource-type {})]
-    (if (= 200 status)
-      (-> response
-          (assoc :base-uri base-uri
-                 :collections resource-links)
-          (crud/set-operations request)
-          (r/response))
-      response)))
+  (-> (db/retrieve resource-type {})
+      (assoc :base-uri base-uri
+             :collections resource-links)
+      (crud/set-operations request)
+      (r/response)))
 
 
 (defmethod crud/retrieve resource-type
