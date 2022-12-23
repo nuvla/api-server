@@ -133,7 +133,7 @@
         (throw (r/ex-not-found id))))
     (catch Exception e
       (let [{:keys [status body] :as _response} (ex-data e)
-            error (:error body)]
+            error (or (:message body) (:error body))]
         (if (= 404 status)
           (throw (r/ex-not-found id))
           (r/response-error (str "unexpected exception retrieving " id ": " (or error e))))))))
@@ -186,14 +186,14 @@
 (defn bulk-delete-data
   [client collection-id {:keys [cimi-params] :as options}]
   (try
-    (let [index    (escu/collection-id->index collection-id)
-          query    {:query (acl/and-acl-delete (filter/filter cimi-params) options)}
-          response (spandex/request client {:url    [index :_delete_by_query]
-                                            :query-string {:refresh true}
-                                            :method :post
-                                            :body   query})
+    (let [index         (escu/collection-id->index collection-id)
+          query         {:query (acl/and-acl-delete (filter/filter cimi-params) options)}
+          response      (spandex/request client {:url          [index :_delete_by_query]
+                                                 :query-string {:refresh true}
+                                                 :method       :post
+                                                 :body         query})
           body-response (:body response)
-          success? (-> body-response :failures empty?)]
+          success?      (-> body-response :failures empty?)]
       (if success?
         body-response
         (let [msg (str "error when deleting by query: " body-response)]
