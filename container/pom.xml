@@ -5,14 +5,14 @@
 
   <artifactId>container-dep</artifactId>
   <packaging>pom</packaging>
-  <version>6.0.7-SNAPSHOT</version>
+  <version>6.0.9-SNAPSHOT</version>
   <name>server/container</name>
   <url>http://sixsq.com</url>
 
   <parent>
     <groupId>sixsq.nuvla.server</groupId>
     <artifactId>server</artifactId>
-    <version>6.0.7-SNAPSHOT</version>
+    <version>6.0.9-SNAPSHOT</version>
   </parent>
 
   <licenses>
@@ -78,6 +78,10 @@
         <exclusion>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
         <exclusion>
           <groupId>potemkin</groupId>

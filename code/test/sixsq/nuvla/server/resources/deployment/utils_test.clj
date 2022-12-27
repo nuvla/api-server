@@ -88,6 +88,11 @@
                     payment/active-claim->subscription (constantly {:status "trialing"})
                     payment/can-pay?                   (constantly true)]
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
+               billable-deployment-not-follow))))
+    (testing "vendor or user with edit-data rights"
+      (with-redefs [config-nuvla/*stripe-api-key*      "123"
+                    a/can-edit-data?                        (constantly true)]
+        (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
                billable-deployment-not-follow))))))
 
 (deftest trial-end

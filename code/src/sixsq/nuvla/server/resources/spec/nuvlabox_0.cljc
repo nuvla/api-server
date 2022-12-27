@@ -256,6 +256,13 @@
 
     :json-schema/order 36))
 
+(s/def ::nuvlabox-engine-version
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "nuvlabox-engine-version"
+             :json-schema/description "nuvlabox engine release"
+
+             :json-schema/order 37)))
+
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
@@ -286,4 +293,5 @@
                                ::ssh-keys
                                ::capabilities
                                ::online
-                               ::inferred-location]}))
+                               ::inferred-location
+                               ::nuvlabox-engine-version]}))
