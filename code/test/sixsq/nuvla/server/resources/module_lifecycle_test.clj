@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.module-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -172,19 +172,36 @@
                               (ltu/is-operation-present :unpublish)
                               (ltu/get-op-url :publish))]
 
-          ; publish last version
-          (-> session
-              (request publish-url)
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/message-matches "published successfully"))
+          (testing "publish last version"
+            (-> session
+                (request publish-url)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/message-matches "published successfully")))
 
-          ; publish specific version
-          (-> session
-              (request (str abs-uri "_2/publish"))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/message-matches "published successfully"))
+          (testing "operation urls of specific version"
+            (let [abs-uri-v2         (str abs-uri "_2")
+                  resp               (-> session
+                                         (request (str abs-uri "_2"))
+                                         (ltu/body->edn)
+                                         (ltu/is-status 200))
+                  publish-url        (ltu/get-op-url resp :publish)
+                  unpublish-url      (ltu/get-op-url resp :unpublish)
+                  edit-url           (ltu/get-op-url resp :edit)
+                  delete-url         (ltu/get-op-url resp :delete)
+                  delete-version-url (ltu/get-op-url resp :delete-version)]
+              (is (= publish-url (str abs-uri-v2 "/publish")))
+              (is (= unpublish-url (str abs-uri-v2 "/unpublish")))
+              (is (= delete-version-url (str abs-uri-v2 "/delete-version")))
+              (is (= delete-url abs-uri))
+              (is (= edit-url abs-uri))))
+
+          (testing "publish specific version"
+            (-> session
+                (request (str abs-uri "_2/publish"))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/message-matches "published successfully")))
 
           (let [unpublish-url (-> session
                                   (request abs-uri)
@@ -247,10 +264,9 @@
                      :versions
                      count)))
 
-        (doseq [i ["_0" "_1"]]
+        (doseq [i ["_0/delete-version" "_1/delete-version"]]
           (-> session-admin
-              (request (str abs-uri i)
-                       :request-method :delete)
+              (request (str abs-uri i))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -260,12 +276,17 @@
               (ltu/is-status 404)))
 
 
-        ;; delete out of bound index should return 404
-        (-> session-admin
-            (request (str abs-uri "_50")
-                     :request-method :delete)
-            (ltu/body->edn)
-            (ltu/is-status 404))
+        (testing "delete latest version without specifying version"
+          (-> session-admin
+             (request (str abs-uri "/delete-version"))
+             (ltu/body->edn)
+             (ltu/is-status 200)))
+
+        (testing "delete out of bound index should return 404"
+          (-> session-admin
+             (request (str abs-uri "_50/delete-version"))
+             (ltu/body->edn)
+             (ltu/is-status 404)))
 
         (-> session-admin
             (request (str abs-uri "_50"))

@@ -126,6 +126,10 @@ These resources represent a deployment set that regroups deployments.
         acl        {:owners   ["group/nuvla-admin"]
                     :view-acl [(auth/current-active-claim request)]}
         payload    {:filter action-filter}]
+<<<<<<< HEAD
+=======
+    (event-utils/create-event id action (a/default-acl authn-info))
+>>>>>>> master
     (std-crud/create-bulk-job
       (str action "_deployment_set") id authn-info acl payload)))
 

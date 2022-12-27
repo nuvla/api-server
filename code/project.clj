@@ -1,7 +1,7 @@
-(def parent-version "6.7.11")
+(def parent-version "6.7.12")
 (def nuvla-ring-version "2.0.8")
 
-(defproject sixsq.nuvla.server/api-jar "6.0.7-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "6.0.9-SNAPSHOT"
 
   :description "core api server"
 
@@ -53,7 +53,7 @@
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
-   [zookeeper-clj]
+   [zookeeper-clj :exclusions [[org.slf4j/slf4j-log4j12]]]
    [factual/geo "3.0.1" :exclusions [[org.locationtech.jts/jts-core]
                                      [org.locationtech.spatial4j/spatial4j]
                                      [org.wololo/jts2geojson]]]

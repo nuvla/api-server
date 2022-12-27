@@ -4,6 +4,27 @@
 
 ### Changed
 
+- Cloud-entry-point - Status should be 500 when ES is down
+
+## [6.0.8] - 2022-12-19
+
+### Changed
+
+- Logging - fix logging of claims
+- Deployment - support vendor outside platform's region nuvla/nuvla#110
+- Module - Fix operations of resources in collection
+- Dependencies - Update to parent 6.7.12
+- Module - Follow customer trial not taken into account at creation time bug fix
+- Deployment - Allow vendor and users with edit right on module with price to start it without subscription
+
+## [6.0.7] - 2022-12-06
+
+### Changed
+
+- Nuvlabox status - denormalize nuvlabox-engine-version
+- Nuvlabox status - refactor denormalization code
+- Module - Add `delete-version` operation and keep delete call to delete all versions #724
+- Module - Operations map should present specific versions urls when retrieving a specific version #724
 - Deployment set - Experimental feature
 - CI - concurrency and build on tag push
 

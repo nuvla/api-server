@@ -3,6 +3,7 @@
     [clojure.data.json :as json]
     [clojure.test :refer [deftest testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
+    [qbits.spandex :as spandex]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.cloud-entry-point :as t]
@@ -81,11 +82,21 @@
         (ltu/is-key-value :name "dummy"))
 
     (testing "cors preflight check should be authorized"
-             (-> session-anon
-                 (request base-uri
-                          :request-method :options)
-                 (ltu/body->edn)
-                 (ltu/is-status 204)))))
+      (-> session-anon
+          (request base-uri
+                   :request-method :options)
+          (ltu/body->edn)
+          (ltu/is-status 204)))
+
+    (testing "error is returned to user when ES throws exception"
+      (let [error-msg "unexpected exception ...: Connection refused"]
+        (with-redefs [spandex/request (fn [_ _]
+                                        (throw (Exception. error-msg)))]
+          (-> session-anon
+              (request base-uri)
+              (ltu/body->edn)
+              (ltu/is-status 500)
+              (ltu/message-matches (re-pattern (str ".*" error-msg)))))))))
 
 
 (deftest bad-methods
