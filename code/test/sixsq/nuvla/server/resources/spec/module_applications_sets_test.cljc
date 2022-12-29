@@ -12,8 +12,8 @@
 
 (deftest test-schema-check
   (let [timestamp "1964-08-25T10:00:00.00Z"
-        root      {:id                (str "module-applications-sets" #_t/resource-type "/module-application-uuid")
-                   :resource-type     "module-applications-sets"                #_t/resource-type
+        root      {:id                (str t/resource-type "/module-application-uuid")
+                   :resource-type     t/resource-type
                    :created           timestamp
                    :updated           timestamp
                    :acl               valid-acl

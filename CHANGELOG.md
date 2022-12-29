@@ -5,6 +5,7 @@
 ### Changed
 
 - Cloud-entry-point - Status should be 500 when ES is down
+- Module - New subtype applications set
 
 ## [6.0.8] - 2022-12-19
 
