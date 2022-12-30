@@ -43,7 +43,7 @@
 
 
 (s/def ::subtype
-  (-> (st/spec #{"project" "component" "application" "application_kubernetes"})
+  (-> (st/spec #{"project" "component" "application" "application_kubernetes" "applications_sets"})
       (assoc :name "subtype"
              :json-schema/type "string"
              :json-schema/description "module type"
@@ -75,7 +75,7 @@
              :json-schema/editable false)))
 
 
-(def module-regex #"^module\-(component|application)/[a-z0-9]+(-[a-z0-9]+)*$")
+(def module-regex #"^module\-(component|application|applications-sets)/[a-z0-9]+(-[a-z0-9]+)*$")
 
 (s/def ::href
   (-> (st/spec (s/and string? #(re-matches module-regex %)))

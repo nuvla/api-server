@@ -13,6 +13,8 @@
 
 (def ^:const subtype-app-k8s "application_kubernetes")
 
+(def ^:const subtype-apps-sets "applications_sets")
+
 (def ^:const subtype-project "project")
 
 
@@ -23,6 +25,10 @@
 (defn is-application-k8s?
   [subtype]
   (= subtype subtype-app-k8s))
+
+(defn is-applications-sets?
+  [subtype]
+  (= subtype subtype-apps-sets))
 
 (defn is-component?
   [subtype]

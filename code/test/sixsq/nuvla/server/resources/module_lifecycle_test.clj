@@ -334,6 +334,16 @@
     (lifecycle-test-module utils/subtype-app valid-application)))
 
 
+(deftest lifecycle-applications-sets
+
+  (let [valid-application {:author         "someone"
+                           :commit         "wip"
+                           :applications-sets [{:name         "x"
+                                                :applications [{:id      "module/x"
+                                                                :version 0}]}]}]
+    (lifecycle-test-module utils/subtype-apps-sets valid-application)))
+
+
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id module/resource-type))]
     (ltu/verify-405-status [[base-uri :delete]

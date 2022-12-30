@@ -52,6 +52,9 @@ This resource represents applications sets module.
 
 (defmethod crud/add resource-type
   [request]
+  ;; should validate apps sets names are distinct
+  ;; should check that module exists
+  ;; should check that apps sets are same type k8s/docker
   (add-impl request))
 
 
