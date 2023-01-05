@@ -9,6 +9,7 @@
 ### Changed
 
 - Cloud-entry-point - Status should be 500 when ES is down
+- Email content test - Make current date constant for tests
 
 ## [6.0.8] - 2022-12-19
 

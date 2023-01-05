@@ -2,13 +2,12 @@
   (:require
     [clojure.java.io :as io]
     [clojure.tools.logging :as log]
+    [java-time :as t]
     [postal.core :as postal]
     [selmer.parser :as tmpl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
-    [sixsq.nuvla.server.util.response :as r])
-  (:import
-    (java.util Date)))
+    [sixsq.nuvla.server.util.response :as r]))
 
 (def base-html (slurp (io/resource "sixsq/nuvla/html-template/base.html")))
 (def trial-html (slurp (io/resource "sixsq/nuvla/html-template/trial.html")))
@@ -45,11 +44,12 @@
 
 (defn render-content
   [{:keys [template plain?] :as context-map}]
+  (println (t/java-date))
   (tmpl/render
     (case template
       :trial (if plain? trial-txt trial-html)
       base-html)
-    (assoc context-map :now (Date.))))
+    (assoc context-map :now (t/java-date))))
 
 (defn send-email
   "send email to an email-address using a map from resources.email.text
