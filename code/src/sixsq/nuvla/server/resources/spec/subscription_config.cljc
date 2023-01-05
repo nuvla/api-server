@@ -170,7 +170,7 @@ Example:
 
 (s/def ::reset-start-date
   (-> (st/spec #(and (integer? %)
-                     (< 0 %)
+                     (pos? %)
                      (< % 32)))
       (assoc :name "reset-start-date"
              :json-schema/type "integer"
