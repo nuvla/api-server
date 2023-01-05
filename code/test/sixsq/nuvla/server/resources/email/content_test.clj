@@ -2,6 +2,7 @@
   (:require
     [clojure.java.io :refer [writer]]
     [clojure.test :refer [deftest is testing]]
+    [java-time :as time]
     [sixsq.nuvla.server.resources.email.content :as t]
     [sixsq.nuvla.server.resources.email.sending :as sending]))
 
@@ -56,32 +57,33 @@
             (write (str "test-resources/email/" file "." (if plain? "txt" "html")))))))
 
 (deftest email-content
-  (testing "trial ending email content should match pre-rendered html"
-    (is (= (slurp "test-resources/email/trial-ending.html")
-           (sending/render-content (assoc
-                                     (t/trial-ending {:days-left 6 :resources resources})
-                                     :header-img "https://nuvla.io/img/email/header-2.png")))))
-  (testing "trial end email content should match pre-rendered html"
-    (is (= (slurp "test-resources/email/trial-ended.html")
-           (sending/render-content (assoc (t/trial-ended {:resources resources})
-                                     :header-img "https://nuvla.io/img/email/header-2.png")))))
-  (testing "trial end email with multiple resources should match pre-rendered html"
-    (is (= (slurp "test-resources/email/trial-ended-multi.html")
-           (sending/render-content (assoc (t/trial-ended {:resources (conj resources resource-2 resource-3)})
-                                     :header-img "https://nuvla.io/img/email/header-2.png")))))
-  (testing "trial ended email plain content with multiple resources should match pre-rendered txt"
-    (is (= (slurp "test-resources/email/trial-ended-multi.txt")
-           (sending/render-content (assoc (t/trial-ended {:resources (conj resources resource-2)})
-                                     :plain? true)))))
-  (testing "trial end with payment email content should match pre-rendered html"
-    (is (= (slurp "test-resources/email/trial-ended-with-payment.html")
-           (sending/render-content (assoc (t/trial-ended-with-payment {:resources resources})
-                                     :header-img "https://nuvla.io/img/email/header-2.png")))))
-  (testing "coupon ending content should match pre-rendered html"
-    (is (= (slurp "test-resources/email/coupon-ending.html")
-           (sending/render-content (assoc (t/coupon-ending {:days-left 5})
-                                     :header-img "https://nuvla.io/img/email/header-2.png")))))
-  (testing "coupon ended content should match pre-rendered html"
-    (is (= (slurp "test-resources/email/coupon-ended.html")
-           (sending/render-content (assoc (t/coupon-ended {})
-                                     :header-img "https://nuvla.io/img/email/header-2.png"))))))
+  (with-redefs [time/java-date (constantly #inst "2022-01-05T12:07:30.628-00:00")]
+    (testing "trial ending email content should match pre-rendered html"
+      (is (= (slurp "test-resources/email/trial-ending.html")
+             (sending/render-content (assoc
+                                       (t/trial-ending {:days-left 6 :resources resources})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))
+    (testing "trial end email content should match pre-rendered html"
+      (is (= (slurp "test-resources/email/trial-ended.html")
+             (sending/render-content (assoc (t/trial-ended {:resources resources})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))
+    (testing "trial end email with multiple resources should match pre-rendered html"
+      (is (= (slurp "test-resources/email/trial-ended-multi.html")
+             (sending/render-content (assoc (t/trial-ended {:resources (conj resources resource-2 resource-3)})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))
+    (testing "trial ended email plain content with multiple resources should match pre-rendered txt"
+      (is (= (slurp "test-resources/email/trial-ended-multi.txt")
+             (sending/render-content (assoc (t/trial-ended {:resources (conj resources resource-2)})
+                                       :plain? true)))))
+    (testing "trial end with payment email content should match pre-rendered html"
+      (is (= (slurp "test-resources/email/trial-ended-with-payment.html")
+             (sending/render-content (assoc (t/trial-ended-with-payment {:resources resources})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))
+    (testing "coupon ending content should match pre-rendered html"
+      (is (= (slurp "test-resources/email/coupon-ending.html")
+             (sending/render-content (assoc (t/coupon-ending {:days-left 5})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))
+    (testing "coupon ended content should match pre-rendered html"
+      (is (= (slurp "test-resources/email/coupon-ended.html")
+             (sending/render-content (assoc (t/coupon-ended {})
+                                       :header-img "https://nuvla.io/img/email/header-2.png")))))))
