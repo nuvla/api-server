@@ -15,7 +15,6 @@
 
 (defn- display-authn-info
   [request]
-  (log/debugf "display-authn-info - request: %s" request)
   (let [{:keys [active-claim claims]} (or (auth-info/extract-header-authn-info request)
                                           (auth-info/extract-cookie-authn-info request))]
     (str "[" active-claim " - " (str/join "," (sort claims)) "]")))
