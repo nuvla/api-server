@@ -180,9 +180,9 @@ Example:
 (s/def ::criteria
   (-> (st/spec (su/only-keys-maps {:req-un [::kind
                                             ::metric
-                                            ::value
                                             ::condition]
                                    :opt-un [::window
+                                            ::value
                                             ::value-type
                                             ::dev-name
                                             ::reset-interval
