@@ -11,8 +11,8 @@ Collection for holding subscriptions configurations.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.log :as log]))
+    [sixsq.nuvla.server.util.log :as log]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

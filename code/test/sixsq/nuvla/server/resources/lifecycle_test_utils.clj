@@ -7,6 +7,7 @@
     [clojure.test :refer [is join-fixtures]]
     [clojure.tools.logging :as log]
     [compojure.core :as cc]
+    [kinsky.embedded-kraft :as ke]
     [me.raynes.fs :as fs]
     [peridot.core :refer [request session]]
     [qbits.spandex :as spandex]
@@ -27,7 +28,6 @@
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.kafka :as ka]
-    [kinsky.embedded-kraft :as ke]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
   (:import

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.9] - 2023-01-06
+
 ### Changed
 
 - Cloud-entry-point - Status should be 500 when ES is down
