@@ -12,7 +12,7 @@ Collection for holding subscriptions configurations.
     [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as log]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -83,8 +83,7 @@ Collection for holding subscriptions configurations.
   [subs-conf]
   (doseq [{validator :validator err-msg :err-msg} consistency-validators]
     (when-not (validator subs-conf)
-      (throw
-        (r/ex-response err-msg 412))))
+      (log/log-and-throw-400 err-msg)))
   subs-conf)
 
 
@@ -204,14 +203,14 @@ Collection for holding subscriptions configurations.
                                                     disable-op
                                                     method-ids-op]))))
 
-;; Action to enable all subscription of this configuration.
+;; Action to enable subscription to notifications.
 
 (defmethod crud/do-action [resource-type enable]
   [request]
   (enable-impl request))
 
 
-;; Action to disable all subscription of this configuration.
+;; Action to disable subscription to notifications.
 
 (defmethod crud/do-action [resource-type disable]
   [request]

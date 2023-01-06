@@ -217,7 +217,7 @@
                                                     [:criteria]
                                                     assoc :reset-start-date 7 :reset-interval "7d")))
           (ltu/body->edn)
-          (ltu/is-status 412)
+          (ltu/is-status 400)
           (ltu/message-matches t/err-msg-reset-start-date-vs-interval))
 
 
@@ -256,7 +256,7 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
-    ;; 412 on provided reset-start-date when reset-interval is 'Xd'
+    ;; 400 on provided reset-start-date when reset-interval is 'Xd'
     (-> session-user
         (request base-uri
                  :request-method :post
@@ -264,5 +264,5 @@
                                                   [:criteria]
                                                   assoc :reset-start-date 7 :reset-interval "7d")))
         (ltu/body->edn)
-        (ltu/is-status 412)
+        (ltu/is-status 400)
         (ltu/message-matches t/err-msg-reset-start-date-vs-interval))))
