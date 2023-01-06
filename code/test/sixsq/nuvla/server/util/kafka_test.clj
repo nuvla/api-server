@@ -31,6 +31,8 @@
 
 
 (deftest publish-consume
+  (k/close-producer!)
+  (is (nil? k/*producer*))
   (k/set-producer! (k/create-producer bootstrap-servers :vserializer kc/json-serializer))
   (is (not (nil? k/*producer*)))
   (let [t (str "events-" (System/currentTimeMillis))
@@ -43,13 +45,13 @@
                                  "isolation.level" "read_committed"}
                                 :string kc/json-deserializer)]
       (kc/subscribe! consumer t)
-      (let [consumed (kc/poll! consumer 5000)]
+      (let [consumed (kc/poll! consumer 7000)]
         (is (> (:count consumed) 0))
         (is (= v (-> consumed
                      :by-topic
                      (get t)
                      last
                      :value))))
-      (is (= 0 (:count (kc/poll! consumer 5000))))
+      (is (= 0 (:count (kc/poll! consumer 7000))))
       (kc/stop! consumer)))
   (k/close-producer!))

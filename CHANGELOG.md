@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Notifications - Updated to use Kafka 3.x client. Updated the schema of the
+  configuration of subscriptions to notifications. Removed creation of
+  individual subscriptions.
+ 
 ### Changed
 
 - Cloud-entry-point - Status should be 500 when ES is down

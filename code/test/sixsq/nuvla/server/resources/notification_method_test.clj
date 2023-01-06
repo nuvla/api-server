@@ -6,8 +6,7 @@
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.notification-method :as t]
-    [sixsq.nuvla.server.resources.subscription :as subs])
+    [sixsq.nuvla.server.resources.notification-method :as t])
   (:import
     [java.util UUID]))
 
@@ -90,64 +89,8 @@
           (is (= method (:method updated-body)))
           (is (= dest (:destination updated-body)))))
 
-      ;; user can delete the data-set
+      ;; user can delete
       (-> session-user
           (request user-abs-uri :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200)))))
-
-(deftest lifecycle-with-subscription
-  (let [session-anon (-> (ltu/ring-app)
-                         session
-                         (content-type "application/json"))
-        session-user (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
-
-        ; create notification configuration method
-        notif-uri (-> session-user
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str valid-notif-conf))
-                      (ltu/body->edn)
-                      (ltu/is-status 201)
-                      (ltu/location))
-
-        notif-abs-uri (str p/service-context notif-uri)
-
-        subscription {:enabled         true
-                      :category        "notification"
-                      :parent          (str "subscription-config/" (str (UUID/randomUUID)))
-                      :method-ids      [notif-uri]
-                      :resource-kind   "nuvlabox-state"
-                      :resource-filter "tags='foo'"
-                      :resource-id     (str "nuvlabox-status/" (str (UUID/randomUUID)))
-                      :criteria        {:kind      "numeric"
-                                        :metric    "load"
-                                        :value     "75"
-                                        :condition ">"}
-                      :acl             {:owners ["user/jane"]}}
-        subs-uri (-> session-user
-                     (request (str p/service-context subs/resource-type)
-                              :request-method :post
-                              :body (json/write-str subscription))
-                     (ltu/body->edn)
-                     (ltu/is-status 201)
-                     (ltu/location))
-        subs-abs-uri (str p/service-context subs-uri)]
-
-    ; can't delete because of subscription referencing the notification method
-    (-> session-user
-        (request notif-abs-uri :request-method :delete)
-        (ltu/body->edn)
-        (ltu/is-status 409))
-
-    ; delete subscription
-    (-> session-user
-        (request subs-abs-uri :request-method :delete)
-        (ltu/body->edn)
-        (ltu/is-status 200))
-
-    ; now can delete notification method
-    (-> session-user
-        (request notif-abs-uri :request-method :delete)
-        (ltu/body->edn)
-        (ltu/is-status 200))))

@@ -12,7 +12,6 @@ manage it.
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job :as job]
-    [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-coe :as infra-service-coe]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-coe :as tpl-coe]
     [sixsq.nuvla.server.util.response :as r]))
@@ -181,7 +180,6 @@ manage it.
           (u/update-timestamps)
           (u/set-updated-by request)
           (db/edit request))
-      (notif-utils/create-state-event-notification-subscription id request)
       (event-utils/create-event id "STARTING" (a/default-acl (auth/current-authentication request))
                                 :severity "low"
                                 :category "state")

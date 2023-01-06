@@ -153,14 +153,39 @@ Example:
              :json-schema/description "time windows in seconds for the condition to hold"
              :json-schema/order 35)))
 
+(s/def ::dev-name
+  (-> (st/spec string?)
+      (assoc :name "dev-name"
+             :json-schema/type "string"
+             :json-schema/description "device name (eg. eth0, disk0p1)"
+             :json-schema/order 36)))
+
+(def reset-interval-regex #"^(month|[1-9][0-9]{0,2}d)$")
+(s/def ::reset-interval
+  (-> (st/spec #(re-matches reset-interval-regex %))
+      (assoc :name "reset-interval"
+             :json-schema/type "string"
+             :json-schema/description "reset interval to drop metric counters (e.g., 'month' (calendar month), '7d')"
+             :json-schema/order 37)))
+
+(s/def ::reset-start-date
+  (-> (st/spec #(and (pos-int? %)
+                     (< % 32)))
+      (assoc :name "reset-start-date"
+             :json-schema/type "integer"
+             :json-schema/description "starting day between 1 and 31 for monthly reset intervals, defaults to 1st of month"
+             :json-schema/order 38)))
 
 (s/def ::criteria
   (-> (st/spec (su/only-keys-maps {:req-un [::kind
                                             ::metric
-                                            ::value
                                             ::condition]
                                    :opt-un [::window
-                                            ::value-type]}))
+                                            ::value
+                                            ::value-type
+                                            ::dev-name
+                                            ::reset-interval
+                                            ::reset-start-date]}))
       (assoc :name "criteria"
              :json-schema/type "map"
              :json-schema/description "Triggering criteria via matching rules."

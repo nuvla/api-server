@@ -15,7 +15,8 @@
             msg-key     (if (= key "resource-id")
                           resource-id
                           ((keyword key) resource))]
-        (ka/publish-async topic msg-key resource)))
+        (log/debugf "publish on add: %s %s" msg-key resource)
+        (ka/publish topic msg-key resource)))
     (catch Exception e
       (log/warn "Failed publishing to Kafka on add: " (str e)))))
 
@@ -27,7 +28,8 @@
     (when (= 200 (int (:status edit-response)))
       (let [msg-key  (-> edit-response :body (get (keyword key)))
             resource (:body edit-response)]
-        (ka/publish-async topic msg-key resource)))
+        (log/debugf "publish on edit: %s %s" msg-key resource)
+        (ka/publish topic msg-key resource)))
     (catch Exception e
       (log/warn "Failed publishing to Kafka on edit: " (str e)))))
 
@@ -36,6 +38,7 @@
   "Publish tombstone message for `key` to `topic`."
   [topic key]
   (try
-    (ka/publish-async topic key nil)
+    (log/debugf "publish tombstone: %s" key)
+    (ka/publish topic key nil)
     (catch Exception e
       (log/warn "Failed publishing tombstone to Kafka: " (str e)))))
