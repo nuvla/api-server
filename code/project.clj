@@ -2,7 +2,7 @@
 (def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
-(defproject sixsq.nuvla.server/api-jar "6.0.9-SNAPSHOT"
+(defproject sixsq.nuvla.server/api-jar "6.0.9"
 
   :description "core api server"
 
