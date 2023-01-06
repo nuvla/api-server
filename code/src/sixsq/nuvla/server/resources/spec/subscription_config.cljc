@@ -169,8 +169,7 @@ Example:
              :json-schema/order 37)))
 
 (s/def ::reset-start-date
-  (-> (st/spec #(and (integer? %)
-                     (pos? %)
+  (-> (st/spec #(and (pos-int? %)
                      (< % 32)))
       (assoc :name "reset-start-date"
              :json-schema/type "integer"
