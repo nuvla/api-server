@@ -58,16 +58,11 @@
                   vserializer))))
 
 
-(defn publish-async
+(defn publish
   [t k v]
   (if *producer*
     (kc/send! *producer* t k v)
     (log/warn warn-producer-no-initialised)))
-
-
-(defn publish
-  [t k v]
-  (publish-async t k v))
 
 
 (defn set-producer!
@@ -76,7 +71,7 @@
   (alter-var-root #'*producer* (constantly producer))
   (let [topic "nuvla-kafka"]
     (log/info "publish test message to" topic "by:" producer)
-    (publish-async topic nil {:producer (str producer)})))
+    (publish topic nil {:producer (str producer)})))
 
 
 (defn close-producer! []
