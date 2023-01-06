@@ -2,14 +2,13 @@
 
 ## Unreleased
 
-- Notifications - Updated to use Kafka 3.x client. Updated the schema of the
-  configuration of subscriptions to notifications. Removed creation of
-  individual subscriptions.
- 
 ### Changed
 
 - Cloud-entry-point - Status should be 500 when ES is down
 - Email content test - Make current date constant for tests
+- Notifications - Updated to use Kafka 3.x client. Updated the schema of the
+  configuration of subscriptions to notifications. Removed creation of
+  individual subscriptions.
 
 ## [6.0.8] - 2022-12-19
 
