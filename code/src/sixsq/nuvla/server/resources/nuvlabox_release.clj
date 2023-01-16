@@ -64,7 +64,9 @@ and their respective artifacts
 
 (defmethod crud/add resource-type
   [request]
-  (add-impl request))
+  (-> request
+      (update-in [:body :published] #(if (some? %) % false))
+      add-impl))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))

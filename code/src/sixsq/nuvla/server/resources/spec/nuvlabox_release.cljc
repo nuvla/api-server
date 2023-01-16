@@ -75,6 +75,12 @@
                                   :json-schema/group "body"
                                   :json-schema/order 27)))
 
+(s/def ::published
+  (-> (st/spec boolean?)
+      (assoc :name "published"
+             :json-schema/type "boolean"
+             :json-schema/description "nuvlabox release is published")))
+
 ;;
 ;; -------
 ;;
@@ -86,4 +92,5 @@
                                ::pre-release
                                ::release-date
                                ::compose-files]
-                      :opt-un [::release-notes]}))
+                      :opt-un [::release-notes
+                               ::published]}))

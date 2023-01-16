@@ -5,6 +5,7 @@
 ### Changed
 
 - Configuration - Typo fix in error-msg-not-authorised-redirect
+- Nuvlabox release - Published flag support
 
 ## [6.0.9] - 2023-01-06
 

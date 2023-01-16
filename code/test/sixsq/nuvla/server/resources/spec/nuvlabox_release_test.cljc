@@ -26,7 +26,7 @@
                           :compose-files [{:file  "version: '3.7'\n\nservices:"
                                            :name  "docker-compose.yml"
                                            :scope "core"}]
-                          }]
+                          :published     true}]
 
     (stu/is-valid ::nuvlabox-release/schema nuvlabox-release)
 
@@ -35,5 +35,5 @@
     (doseq [attr #{:id :resource-type :created :updated :acl}]
       (stu/is-invalid ::nuvlabox-release/schema (dissoc nuvlabox-release attr)))
 
-    (doseq [attr #{:name :description}]
+    (doseq [attr #{:name :description :published}]
       (stu/is-valid ::nuvlabox-release/schema (dissoc nuvlabox-release attr)))))
