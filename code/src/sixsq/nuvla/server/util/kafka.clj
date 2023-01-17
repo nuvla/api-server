@@ -61,13 +61,6 @@
 (defn publish
   [t k v]
   (if *producer*
-    @(kc/send! *producer* t k v)
-    (log/warn warn-producer-no-initialised)))
-
-
-(defn publish-async
-  [t k v]
-  (if *producer*
     (kc/send! *producer* t k v)
     (log/warn warn-producer-no-initialised)))
 
@@ -76,7 +69,9 @@
   [producer]
   (log/info "setting new kafka producer:" producer)
   (alter-var-root #'*producer* (constantly producer))
-  (publish-async "nuvla-kafka" nil {:producer (str producer)}))
+  (let [topic "nuvla-kafka"]
+    (log/info "publish test message to" topic "by:" producer)
+    (publish topic nil {:producer (str producer)})))
 
 
 (defn close-producer! []

@@ -9,7 +9,6 @@ an endpoint.
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
-    [sixsq.nuvla.server.resources.notification.utils :as notif-utils]
     [sixsq.nuvla.server.resources.spec.infrastructure-service-template-generic :as infra-service-tpl-generic]))
 
 
@@ -43,7 +42,6 @@ an endpoint.
   (try
     (let [id       (:id service)
           category "state"]
-      (notif-utils/create-state-event-notification-subscription id request)
       (event-utils/create-event id
                                 ((keyword category) service)
                                 (a/default-acl (auth/current-authentication request))

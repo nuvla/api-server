@@ -41,3 +41,7 @@
 
   (doseq [attr #{:schedule}]
     (stu/is-valid ::subs/schema (dissoc valid-subs-config attr))))
+
+(deftest condition-value-is-optional
+  (stu/is-valid ::subs/schema (update-in valid-subs-config [:criteria]
+                                         dissoc :value)))

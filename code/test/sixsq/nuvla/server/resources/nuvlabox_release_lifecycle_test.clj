@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.resources.nuvlabox-release-lifecycle-test
   (:require
     [clojure.data.json :as json]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -43,10 +43,8 @@
                                 :pre-release   false
                                 :compose-files [{:file  "version: '3.7'\n\nservices:"
                                                  :name  "docker-compose.yml"
-                                                 :scope "core"}]
-                                }]
+                                                 :scope "core"}]}]
 
-    ;; admin query succeeds but is empty
     (-> session-admin
         (request base-uri)
         (ltu/body->edn)
@@ -56,13 +54,11 @@
         (ltu/is-operation-absent :delete)
         (ltu/is-operation-absent :edit))
 
-    ;; anon query fails
     (-> session-anon
         (request base-uri)
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    ;; anon create must fail
     (-> session-anon
         (request base-uri
                  :request-method :post
@@ -70,16 +66,13 @@
         (ltu/body->edn)
         (ltu/is-status 403))
 
-    ;; check nuvlabox-release creation
-    (let [admin-uri     (-> session-admin
+    (let [abs-url     (-> session-admin
                             (request base-uri
                                      :request-method :post
                                      :body (json/write-str valid-nuvlabox-release))
                             (ltu/body->edn)
                             (ltu/is-status 201)
-                            (ltu/location))
-
-          admin-abs-uri (str p/service-context admin-uri)]
+                            (ltu/location-url))]
 
       (-> session-user
           (request base-uri
@@ -104,41 +97,45 @@
           (ltu/is-resource-uri t/collection-type)
           (ltu/is-count 1))
 
-      ;; verify contents of admin nuvlabox-release
-      (let [nuvlabox-release-full (-> session-admin
-                                      (request admin-abs-uri)
-                                      (ltu/body->edn)
-                                      (ltu/is-status 200)
-                                      (ltu/is-operation-present :edit)
-                                      (ltu/is-operation-present :delete))
-            nuvlabox-release      (:body (:response nuvlabox-release-full))]
+      (-> session-admin
+          (request abs-url)
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :published false)
+          (ltu/is-key-value :name "my-nuvlabox-release")
+          (ltu/is-operation-present :edit)
+          (ltu/is-operation-present :delete))
 
-        (is (= "my-nuvlabox-release" (:name nuvlabox-release)))
+      (-> session-admin
+          (request abs-url
+                   :request-method :put
+                   :body (json/write-str {:name      "edit name"
+                                          :published true}))
+          (ltu/body->edn)
+          (ltu/is-status 200)
+          (ltu/is-key-value :name "edit name")
+          (ltu/is-key-value :published true))
 
-        ;; verify that an edit works
-        (let [updated (assoc nuvlabox-release :name "edit name")]
-
+      (-> session-admin
+          (request abs-url :request-method :delete)
+          (ltu/body->edn)
+          (ltu/is-status 200)))
+    (testing "when published flag is set on creation, it's taken into account"
+      (doseq [published [true false]]
+        (let [abs-url (-> session-admin
+                          (request base-uri
+                                   :request-method :post
+                                   :body (-> valid-nuvlabox-release
+                                             (assoc :published published)
+                                             json/write-str))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location-url))]
           (-> session-admin
-              (request admin-abs-uri
-                       :request-method :put
-                       :body (json/write-str updated))
+              (request abs-url)
               (ltu/body->edn)
               (ltu/is-status 200)
-              (ltu/body))
-
-          (let [updated-body (-> session-admin
-                                 (request admin-abs-uri)
-                                 (ltu/body->edn)
-                                 (ltu/is-status 200)
-                                 (ltu/body))]
-
-            (is (= "edit name" (:name updated-body))))))
-
-      ;; admin can delete the nuvlabox-release
-      (-> session-admin
-          (request admin-abs-uri :request-method :delete)
-          (ltu/body->edn)
-          (ltu/is-status 200)))))
+              (ltu/is-key-value :published published)))))))
 
 
 (deftest bad-methods

@@ -3,21 +3,16 @@
 Collection for holding subscriptions configurations.
 "
   (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.subscription-config :as subs-schema]
-    [sixsq.nuvla.server.resources.subscription :as subs]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
-    [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.log :as log]
+    [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -67,48 +62,38 @@ Collection for holding subscriptions configurations.
 ;; CRUD operations
 ;;
 
+;; :reset-start-date must not be provided when :reset-interval is Xd
+(defn valid-reset-start-date-vs-interval?
+  [subs-conf]
+  (not (and
+         (and
+           (contains? (:criteria subs-conf) :reset-interval)
+           (contains? (:criteria subs-conf) :reset-start-date))
+         (re-matches #"^[1-9][0-9]{0,2}d$" (get-in subs-conf [:criteria :reset-interval])))))
+(def ^:const err-msg-reset-start-date-vs-interval
+  ":reset-start-date must not be provided when :reset-interval is Xd")
+
+
+(def consistency-validators
+  [{:validator valid-reset-start-date-vs-interval?
+    :err-msg err-msg-reset-start-date-vs-interval}])
+
+
+(defn validate-consistency
+  [subs-conf]
+  (doseq [{validator :validator err-msg :err-msg} consistency-validators]
+    (when-not (validator subs-conf)
+      (log/log-and-throw-400 err-msg)))
+  subs-conf)
+
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
-;; use 'resource-name' and 'filter' to find resources to create subscription for
-(defn individual-resources-to-subscribe
-  [resource-name filter request]
-  (try
-    (let [req {:cimi-params (cond-> {:select ["id"]}
-                                    (not-empty filter) (assoc :filter (parser/parse-cimi-filter filter)))
-               :params      {:resource-name resource-name}
-               :nuvla/authn (auth/current-authentication request)}]
-      (->> (crud/query req)
-           :body
-           :resources
-           (map #(:id %))))
-    (catch Exception e
-      (log/error (str "error when finding individual resources to subscribe:" e)))))
-
-
-(defn add-subscription
-  [sub]
-  (crud/add {:params      {:resource-name subs/resource-type}
-             :body        sub
-             :nuvla/authn auth/internal-identity}))
-
-;; create individual subscriptions
-(defn create-subscriptions
-  [request response]
-  (when (= 201 (-> response :body :status))
-    (let [id (-> response :body :resource-id)
-          resource (db/retrieve id request)
-          {:keys [resource-kind resource-filter]} resource
-          parent (:id resource)
-          resources-to-subscribe (individual-resources-to-subscribe resource-kind resource-filter request)]
-      (when (not-empty resources-to-subscribe)
-        (doseq [res resources-to-subscribe]
-          (add-subscription (assoc resource :resource-id res :parent parent)))))))
 
 
 (defmethod crud/add resource-type
   [request]
+  (validate-consistency (:body request))
   (let [resp (add-impl request)]
-    (create-subscriptions request resp)
     (ka-crud/publish-on-add resource-type resp :key "id")
     resp))
 
@@ -128,107 +113,57 @@ Collection for holding subscriptions configurations.
   [:resource-filter :resource-kind])
 
 
-(def edit-forbidden-attrs-subs
-  (concat edit-forbidden-attrs [:resource-id :resource-type :id :operations]))
+(defn remove-forbidden-attrs
+  [body]
+  (apply dissoc body edit-forbidden-attrs))
 
 
-(defn edit-individual-subs
-  [{body :body {uuid :uuid} :params :as request}]
-  (let [authn (auth/current-authentication request)
-        filter (format "parent='%s'" (str resource-type "/" uuid))
-        req {:cimi-params {:filter (parser/parse-cimi-filter filter)}
-             :params      {:resource-name subs/resource-type}
-             :nuvla/authn authn}
-        results (for [res (->> (crud/query req) :body :resources)]
-                  (let [new-body (merge res (apply dissoc body edit-forbidden-attrs-subs))
-                        r (crud/edit {:params      {:uuid          (second (str/split (:id res) #"/"))
-                                                    :resource-name subs/resource-type}
-                                      :body        new-body
-                                      :nuvla/authn authn})]
-                    (= 200 (:status r))))]
-    (if (not (every? true? results))
-      (throw (r/ex-bad-request "Failed to set state on subscriptions from subscription configuration."))
-      results)))
-
-
-(defn edit-conf-and-subs
+(defn edit-subs-config
   [request]
-  (let [new-body (apply dissoc (:body request) edit-forbidden-attrs)
+  (let [new-body (-> (:body request)
+                     remove-forbidden-attrs
+                     validate-consistency)
         req-updated (assoc request :body new-body)
         response (edit-impl req-updated)]
-    (edit-individual-subs request)
+    (ka-crud/publish-on-edit resource-type response)
     response))
 
 
 (defn set-enabled
   "'enabled' boolean"
   [request enabled]
-  (edit-conf-and-subs (assoc request :body {:enabled enabled})))
+  (edit-subs-config (assoc request :body {:enabled enabled})))
 
 
-(defn disable-all
+(defn disable-impl
   [request]
   (set-enabled request false))
 
 
-(defn enable-all
+(defn enable-impl
   [request]
   (set-enabled request true))
 
 
-(defn set-notif-method-ids-all
+(defn set-notif-method-ids-impl
   [request]
-  (edit-conf-and-subs (assoc request :body {:method-ids (-> request
-                                                           :body
-                                                           :method-ids)})))
+  (edit-subs-config (assoc request :body {:method-ids (-> request
+                                                          :body
+                                                          :method-ids)})))
 
 (defmethod crud/edit resource-type
   [request]
-  (edit-conf-and-subs request))
-
-
-(defn delete-subscriptions
-  [parent-id request]
-  ;; With 'parent-id' as parent
-  ;; 1. Delete individual subscriptions from ES (with bulk delete)
-  ;; 2. Publish tombstones to Kafka
-  (let [filter (->> parent-id
-                    (format "parent='%s'")
-                    (parser/parse-cimi-filter))
-        req {:cimi-params {:filter filter
-                           :select ["id"]}
-             :params      {:resource-name subs/resource-type}
-             :nuvla/authn (auth/current-authentication request)}
-        subs-ids (->> (crud/query req)
-                      :body
-                      :resources
-                      (map :id))]
-    (when (not-empty subs-ids)
-      (let [req-with-filter (assoc request :cimi-params {:filter filter})
-            req (merge-with merge req-with-filter {:headers {"bulk" true}})]
-        ;; delete individual subscriptions
-        (subs/bulk-delete-impl req)
-        ;; publish tombstone
-        (for [subs-id subs-ids]
-          (ka-crud/publish-tombstone subs/resource-type subs-id)))))
-  parent-id)
+  (edit-subs-config request))
 
 
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
-  ;; First, set the subscription config in disabled mode,
-  ;; which in turn, should set all the subscriptions into disabled mode.
-  ;; Then, delete:
-  ;; 1. individual subscriptions from ES (with bulk delete)
-  ;; 2. publish tombstone to Kafka
-  ;; 3. delete subscription config
-  (let [resp (disable-all request)]
+  (let [resp (disable-impl request)]
     (when-not (= 200 (:status resp))
       (throw (ex-info "Delete precondition failed." resp))))
   (try
     (let [resource-id (str resource-type "/" uuid)
           delete-response (-> resource-id
-                              (delete-subscriptions request)
                               (db/retrieve request)
                               (a/throw-cannot-delete request)
                               (db/delete request))]
@@ -268,21 +203,21 @@ Collection for holding subscriptions configurations.
                                                     disable-op
                                                     method-ids-op]))))
 
-;; Action to enable all subscription of this configuration.
+;; Action to enable subscription to notifications.
 
 (defmethod crud/do-action [resource-type enable]
   [request]
-  (enable-all request))
+  (enable-impl request))
 
 
-;; Action to disable all subscription of this configuration.
+;; Action to disable subscription to notifications.
 
 (defmethod crud/do-action [resource-type disable]
   [request]
-  (disable-all request))
+  (disable-impl request))
 
 ;; Action to set notification method id.
 
 (defmethod crud/do-action [resource-type set-notif-method-ids]
   [request]
-  (set-notif-method-ids-all request))
+  (set-notif-method-ids-impl request))

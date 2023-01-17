@@ -409,7 +409,8 @@ particular NuvlaBox release.
                              crud/validate)]
         (commission nuvlabox request)
 
-        (db/edit nuvlabox request)
+        (let [resp (db/edit nuvlabox request)]
+          (ka-crud/publish-on-edit resource-type resp))
 
         (r/map-response "commission executed successfully" 200))
       (catch Exception e

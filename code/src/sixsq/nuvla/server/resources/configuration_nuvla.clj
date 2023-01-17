@@ -51,7 +51,7 @@ default values.
            (some (fn [authorized-redirect] (str/starts-with? redirect-url authorized-redirect)))
            boolean)))
 
-(def ^:const error-msg-not-authorised-redirect-url "server configuration do not authorize following rediect-url: ")
+(def ^:const error-msg-not-authorised-redirect-url "server configuration do not authorize following redirect-url: ")
 
 (defn throw-is-not-authorised-redirect-url
   [redirect-url]

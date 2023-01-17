@@ -112,8 +112,7 @@ Collection for holding notification method configurations.
   (throw-references-exist resource-id collections request)
   resource-id)
 
-(def collections ["subscription"
-                  "subscription-config"])
+(def collections ["subscription-config"])
 
 (defn delete-impl
   [{{uuid :uuid} :params :as request}]
