@@ -29,6 +29,9 @@
     (stu/is-valid ::module-applications-sets/schema (update root :applications-sets conj {:name         "y"
                                                                                           :applications [{:id      "module/y"
                                                                                                           :version 1}]}))
+    (stu/is-valid ::module-applications-sets/schema (assoc-in root [:applications-sets 0 :applications 0 :environmental-variables]
+                                                              [{:name  "var_1"
+                                                                :value "var_1 value"}]))
     (stu/is-invalid ::module-applications-sets/schema (assoc root :badKey "badValue"))
     (stu/is-invalid ::module-applications-sets/schema (assoc root :applications-sets []))
     (stu/is-invalid ::module-applications-sets/schema (assoc-in root [:applications-sets 0 :applications] []))

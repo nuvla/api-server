@@ -3,6 +3,7 @@
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
@@ -32,11 +33,25 @@
     :json-schema/type "integer"))
 
 
+(s/def ::environmental-variable
+  (assoc (st/spec (su/only-keys :req-un [::container-spec/name
+                                         ::container-spec/value]))
+    :name "environmental-variable"
+    :json-schema/type "map"
+    :json-schema/description
+    "environmental variable name, value and application"))
+
+(s/def ::environmental-variables
+  (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
+    :name "environmental-variables"
+    :json-schema/type "array"
+    :json-schema/display-name "environmental variables"
+    :json-schema/description "list of environmental variable to be overwritten"))
+
 (s/def ::application
   (assoc (st/spec (su/only-keys :req-un [::id
                                          ::version]
-                                ;:opt-un [::env]
-                                ))
+                                :opt-un [::environmental-variables]))
     :name "application"
     :json-schema/type "map"))
 
