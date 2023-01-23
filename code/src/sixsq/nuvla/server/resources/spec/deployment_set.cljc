@@ -87,11 +87,19 @@
     :json-schema/type "boolean"
     :json-schema/display-name "start"
     :json-schema/description "Start deployment automatically directly after creation"))
+::core/resource-link
+(s/def ::applications-sets (-> (st/spec (s/keys :opt-un [::core/href]))
+                               (assoc :name "applications-sets"
+                                      :json-schema/type "map"
+                                      :json-schema/display-name "applications sets")))
 
 (s/def ::spec
   (assoc (st/spec (su/only-keys :req-un [::targets
-                                         ::applications]
+                                         ::applications-sets]
                                 :opt-un [::start
+
+                                         ;; should be removed
+                                         ::applications
                                          ::env
                                          ::coupons]))
     :name "spec"

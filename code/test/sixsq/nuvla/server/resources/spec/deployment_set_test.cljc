@@ -21,15 +21,27 @@
 
    :state         "CREATED"
 
-   :spec          {:targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                  "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
-                   :applications ["module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                  "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]
-                   :env          [{:name        "a"
-                                   :value       "a value"
-                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
-                   :coupons      [{:code        "a"
-                                   :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]}})
+   :spec          {:targets           ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                       "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
+                   :applications      ["module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                       "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]
+                   :applications-sets {:id                "module/module-uuid"
+                                       :resource-type     "module"
+                                       :created           timestamp
+                                       :updated           timestamp
+                                       :acl               valid-acl
+
+                                       :author            "someone"
+                                       :commit            "wip"
+
+                                       :applications-sets [{:name         "x"
+                                                            :applications [{:id      "module/x"
+                                                                            :version 0}]}]}
+                   :env               [{:name        "a"
+                                        :value       "a value"
+                                        :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
+                   :coupons           [{:code        "a"
+                                        :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]}})
 
 
 (deftest test-schema-check
