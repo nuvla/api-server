@@ -78,7 +78,7 @@
                    :body (json/write-str (assoc valid-notification k v)))
           (ltu/body->edn)
           (ltu/is-status 400)
-          (ltu/message-matches #"(?s).*resource does not satisfy defined schema.*")))
+          (ltu/message-matches #"(?s).*resource notification/.* does not satisfy defined schema.*")))
 
     ;; Lifecycle: create, find by unique id, get, defer, delete.
     ;; Admin creates the notification for a user.

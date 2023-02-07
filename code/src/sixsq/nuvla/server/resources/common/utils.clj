@@ -210,7 +210,9 @@
       (if (ok? resource)
         resource
         (logu/log-and-throw-400
-          (str "resource " id " does not satisfy defined schema:\n"
+          (str "resource "
+               (some-> id (str " "))
+               "does not satisfy defined schema:\n"
                (explain resource)))))))
 
 
