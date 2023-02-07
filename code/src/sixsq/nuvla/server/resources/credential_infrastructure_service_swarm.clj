@@ -6,7 +6,6 @@ certificate authority's public certificate, 'ca', should also be provided.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
-    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]

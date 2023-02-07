@@ -15,78 +15,78 @@ services that are managed separately.
 
 
 (s/def ::endpoint
-  (-> (st/spec ::core/url)
-      (assoc :name "endpoint"
-             :json-schema/description "public API endpoint for the service"
+  (assoc (st/spec ::core/url)
+    :name "endpoint"
+    :json-schema/description "public API endpoint for the service"
 
-             :json-schema/order 22)))
+    :json-schema/order 22))
 
 
 (s/def ::state
-  (-> (st/spec #{"CREATED",
-                 "STARTING", "STARTED",
-                 "STOPPING", "STOPPED",
-                 "PAUSING", "PAUSED",
-                 "SUSPENDING", "SUSPENDED",
-                 "TERMINATING", "TERMINATED",
-                 "ERROR"})
-      (assoc :name "state"
-             :json-schema/type "string"
-             :json-schema/description "state of service"
+  (assoc (st/spec #{"CREATED",
+                    "STARTING", "STARTED",
+                    "STOPPING", "STOPPED",
+                    "PAUSING", "PAUSED",
+                    "SUSPENDING", "SUSPENDED",
+                    "TERMINATING", "TERMINATED",
+                    "ERROR"})
+    :name "state"
+    :json-schema/type "string"
+    :json-schema/description "state of service"
 
-             :json-schema/order 23
+    :json-schema/order 23
 
-             :json-schema/value-scope {:values  ["CREATED",
-                                                 "STARTING", "STARTED",
-                                                 "STOPPING", "STOPPED",
-                                                 "PAUSING", "PAUSED",
-                                                 "SUSPENDING", "SUSPENDED",
-                                                 "TERMINATING", "TERMINATED",
-                                                 "ERROR"]
-                                       :default "CREATED"})))
+    :json-schema/value-scope {:values  ["CREATED",
+                                        "STARTING", "STARTED",
+                                        "STOPPING", "STOPPED",
+                                        "PAUSING", "PAUSED",
+                                        "SUSPENDING", "SUSPENDED",
+                                        "TERMINATING", "TERMINATED",
+                                        "ERROR"]
+                              :default "CREATED"}))
 
 
 (s/def ::swarm-enabled
-  (-> (st/spec boolean?)
-      (assoc :name "swarm-enabled"
-             :json-schema/display-name "swarm enabled"
-             :json-schema/description "flags if swarm mode is enabled or not"
+  (assoc (st/spec boolean?)
+    :name "swarm-enabled"
+    :json-schema/display-name "swarm enabled"
+    :json-schema/description "flags if swarm mode is enabled or not"
 
-             :json-schema/order 24
-             :json-schema/hidden true)))
+    :json-schema/order 24
+    :json-schema/hidden true))
 
 (s/def ::swarm-manager
-  (-> (st/spec boolean?)
-      (assoc :name "swarm-manager"
-             :json-schema/display-name "swarm manager"
-             :json-schema/description "flags if it is a swarm manager"
+  (assoc (st/spec boolean?)
+    :name "swarm-manager"
+    :json-schema/display-name "swarm manager"
+    :json-schema/description "flags if it is a swarm manager"
 
-             :json-schema/order 25
-             :json-schema/hidden true)))
+    :json-schema/order 25
+    :json-schema/hidden true))
 
 
 (s/def ::online
-  (-> (st/spec boolean?)
-      (assoc :name "online"
-             :json-schema/display-name "online"
-             :json-schema/description "flags if the infrastructure in online or not"
+  (assoc (st/spec boolean?)
+    :name "online"
+    :json-schema/display-name "online"
+    :json-schema/description "flags if the infrastructure in online or not"
 
-             :json-schema/order 26
-             :json-schema/hidden true)))
+    :json-schema/order 26
+    :json-schema/hidden true))
 
 
 (s/def ::capabilities
-  (-> (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
-    (assoc :name "capabilities"
-           :json-schema/display-name "capabilities"
-           :json-schema/description "capabilities of the infrastructure service"
+  (assoc (st/spec (s/coll-of ::core/nonblank-string :kind vector?))
+    :name "capabilities"
+    :json-schema/display-name "capabilities"
+    :json-schema/description "capabilities of the infrastructure service"
 
-           :json-schema/order 27)))
+    :json-schema/order 27))
 
 
 (s/def ::parent
-  (-> (st/spec ::common/parent)
-      (assoc :json-schema/type "string")))
+  (assoc (st/spec ::common/parent)
+    :json-schema/type "string"))
 
 
 (def service-service-keys-spec
@@ -116,10 +116,10 @@ services that are managed separately.
 
 ;; Defines the contents of the template used in a create resource.
 (s/def ::template
-  (-> (st/spec (su/only-keys-maps infra-service-tpl/template-keys-spec
-                                  service-template-keys-spec))
-      (assoc :name "template"
-             :json-schema/type "map")))
+  (assoc (st/spec (su/only-keys-maps infra-service-tpl/template-keys-spec
+                                     service-template-keys-spec))
+    :name "template"
+    :json-schema/type "map"))
 
 
 (s/def ::schema-create
