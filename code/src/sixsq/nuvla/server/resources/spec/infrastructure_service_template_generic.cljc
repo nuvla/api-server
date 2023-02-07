@@ -52,6 +52,15 @@ services that are managed separately.
              :json-schema/display-name "swarm enabled"
              :json-schema/description "flags if swarm mode is enabled or not"
 
+             :json-schema/order 24
+             :json-schema/hidden true)))
+
+(s/def ::swarm-manager
+  (-> (st/spec boolean?)
+      (assoc :name "swarm-manager"
+             :json-schema/display-name "swarm manager"
+             :json-schema/description "flags if it is a swarm manager"
+
              :json-schema/order 25
              :json-schema/hidden true)))
 
@@ -85,6 +94,7 @@ services that are managed separately.
             ::endpoint]
    :opt-un [::state
             ::swarm-enabled
+            ::swarm-manager
             ::online
             ::capabilities]})
 
@@ -93,6 +103,7 @@ services that are managed separately.
   {:req-un [::endpoint]
    :opt-un [::state
             ::swarm-enabled
+            ::swarm-manager
             ::online
             ::capabilities]})
 

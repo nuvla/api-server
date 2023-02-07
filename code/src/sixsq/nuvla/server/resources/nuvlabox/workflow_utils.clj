@@ -619,9 +619,7 @@
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
     (let [removed-set    (if (coll? removed) (set removed) #{})
-          swarm-removed? (contains? removed-set "swarm-endpoint")
           swarm-id       (or
-                           (when swarm-removed? (get-service "swarm" isg-id))
                            (update-coe-service id name acl isg-id swarm-endpoint
                                                tags capabilities "swarm")
                            (create-coe-service id name acl isg-id swarm-endpoint
@@ -681,13 +679,6 @@
 
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
-
-      (when (contains? removed-set "swarm-client-key")
-        (delete-resource (get-coe-cred "infrastructure-service-swarm" swarm-id)
-                         auth/internal-identity))
-
-      (when swarm-removed?
-        (delete-resource swarm-id auth/internal-identity))
 
       )))
 

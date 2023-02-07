@@ -6,6 +6,7 @@ certificate authority's public certificate, 'ca', should also be provided.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as p]
@@ -85,3 +86,18 @@ certificate authority's public certificate, 'ca', should also be provided.
   (if (u/is-collection? resource-type)
     (crud/set-standard-collection-operations resource request)
     (set-resource-ops resource request)))
+
+(defn create-check-credential-request
+  [{:keys [id] :as _resource} request]
+  (p/create-check-credential-job
+    {:params      {:uuid          (u/id->uuid id)
+                   :resource-name p/resource-type}
+     :nuvla/authn (auth/current-authentication request)}))
+
+(defmethod p/post-add-hook tpl/credential-subtype
+  [resource request]
+  (create-check-credential-request resource request))
+
+(defmethod p/post-edit-hook tpl/credential-subtype
+  [resource request]
+  (create-check-credential-request resource request))
