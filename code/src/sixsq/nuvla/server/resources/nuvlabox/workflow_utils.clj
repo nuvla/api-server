@@ -343,6 +343,7 @@
       (if (= 200 status)
         (do
           (log/info subtype " service credential" resource-id "updated")
+          (credential/create-check-credential-request resource-id request)
           resource-id)
         (let [msg (str "cannot update " subtype " service credential for "
                        coe-id " linked to " nuvlabox-id)]
@@ -680,7 +681,11 @@
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
 
-      )))
+
+
+      )
+
+    ))
 
 
 (defn get-nuvlabox-children

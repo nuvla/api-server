@@ -9,6 +9,7 @@
 - Nuvlabox - Commission doesn't delete credential neither infrastructure
 - Credential - Add Post add and edit hook to create check credential jobs for swarm
 - Infrastructure - Add swarm-manager flag
+- Spec - Validation report id of resource when existing
 
 ## [6.0.9] - 2023-01-06
 

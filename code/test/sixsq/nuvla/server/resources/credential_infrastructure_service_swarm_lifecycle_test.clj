@@ -151,21 +151,7 @@
               (request job-url-filter
                        :request-method :put)
               (ltu/body->edn)
-              (ltu/is-count 2))
-
-          (-> session-user
-              (request abs-uri
-                       :request-method :put
-                       :body (json/write-str {:description descr-changed}))
-              (ltu/body->edn)
-              (ltu/is-status 200)
-              (ltu/is-key-value :description descr-changed))
-
-          (-> session-user
-              (request job-url-filter
-                       :request-method :put)
-              (ltu/body->edn)
-              (ltu/is-count 3))))
+              (ltu/is-count 2))))
 
       ;; delete the credential
       (-> session-user

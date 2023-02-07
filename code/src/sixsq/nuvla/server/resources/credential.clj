@@ -149,6 +149,13 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn create-check-credential-request
+  [id request]
+  (create-check-credential-job
+    {:params      {:uuid          (u/id->uuid id)
+                   :resource-name resource-type}
+     :nuvla/authn (auth/current-authentication request)}))
+
 
 (defmethod crud/do-action [resource-type "check"]
   [{{uuid :uuid} :params :as request}]
@@ -168,14 +175,6 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 (defmulti post-add-hook dispatch-by-first-arg-method)
 
 (defmethod post-add-hook :default
-  [_resource _request]
-  nil)
-
-(defmulti post-edit-hook dispatch-by-first-arg-method)
-
-
-;; default post-add hook is a no-op
-(defmethod post-edit-hook :default
   [_resource _request]
   nil)
 
@@ -286,18 +285,16 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 
 (defmethod crud/edit resource-type
   [{{uuid :uuid} :params body :body :as request}]
-  (let [subtype  (-> (str resource-type "/" uuid)
-                     (db/retrieve request)
-                     :subtype)
-        response (-> body
-                     (assoc :subtype subtype)
-                     (dissoc :last-check)
-                     (cond-> (:status body) (assoc :last-check (time/now-str)))
-                     (special-edit request)
-                     (->> (assoc request :body)
-                          (edit-impl)))]
-    (post-edit-hook (:body response) request)
-    response))
+  (let [subtype (-> (str resource-type "/" uuid)
+                    (db/retrieve request)
+                    :subtype)]
+    (-> body
+        (assoc :subtype subtype)
+        (dissoc :last-check)
+        (cond-> (:status body) (assoc :last-check (time/now-str)))
+        (special-edit request)
+        (->> (assoc request :body)
+             (edit-impl)))))
 
 
 (defn update-credential

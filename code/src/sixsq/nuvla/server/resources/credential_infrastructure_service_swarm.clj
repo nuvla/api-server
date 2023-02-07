@@ -87,17 +87,6 @@ certificate authority's public certificate, 'ca', should also be provided.
     (crud/set-standard-collection-operations resource request)
     (set-resource-ops resource request)))
 
-(defn create-check-credential-request
-  [{:keys [id] :as _resource} request]
-  (p/create-check-credential-job
-    {:params      {:uuid          (u/id->uuid id)
-                   :resource-name p/resource-type}
-     :nuvla/authn (auth/current-authentication request)}))
-
 (defmethod p/post-add-hook tpl/credential-subtype
-  [resource request]
-  (create-check-credential-request resource request))
-
-(defmethod p/post-edit-hook tpl/credential-subtype
-  [resource request]
-  (create-check-credential-request resource request))
+  [{:keys [id] :as _resource} request]
+  (p/create-check-credential-request id request))
