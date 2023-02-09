@@ -6,10 +6,12 @@
 
 - Configuration - Typo fix in error-msg-not-authorised-redirect
 - Nuvlabox release - Published flag support
-- Nuvlabox - Commission doesn't delete credential neither infrastructure
-- Credential - Add Post add and edit hook to create check credential jobs for swarm
-- Infrastructure - Add swarm-manager flag
 - Spec - Validation report id of resource when existing
+- Credential - Add Post add hook to create check credential jobs for swarm
+- Infrastructure - Add swarm-manager flag
+- Nuvlabox - Commission doesn't delete credential neither infrastructure
+- Nuvlabox - Remove subtype from the description of infrastructure
+- Nuvlabox - Remove Infra prefix from name of infrastructure at creation time
 
 ## [6.0.9] - 2023-01-06
 

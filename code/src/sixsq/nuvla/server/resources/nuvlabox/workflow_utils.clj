@@ -162,10 +162,9 @@
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           request {:params      {:resource-name infra-service/resource-type}
-                   :body        {:name        (str "Infra "
-                                                   (utils/format-nb-name
-                                                     nuvlabox-name (utils/short-nb-id nuvlabox-id)))
-                                 :description (str "NuvlaBox compute infrastructure on "
+                   :body        {:name        (utils/format-nb-name
+                                                nuvlabox-name (utils/short-nb-id nuvlabox-id))
+                                 :description (str "NuvlaEdge compute infrastructure on "
                                                    (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl
@@ -200,9 +199,8 @@
                                                      (utils/format-nb-name
                                                        nuvlabox-name
                                                        (utils/short-nb-id nuvlabox-id)))
-                                   :description (str (str/capitalize subtype) " cluster on "
-                                                     (utils/format-nb-name
-                                                       nuvlabox-name nuvlabox-id))
+                                   :description (str "NuvlaEdge compute infrastructure on "
+                                                     (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                    :acl         acl}
                                   tags (assoc :tags tags)
                                   endpoint (assoc :endpoint endpoint)
@@ -680,12 +678,7 @@
 
       (when (contains? removed-set "swarm-token-worker")
         (delete-resource (get-swarm-token swarm-id "WORKER") auth/internal-identity))
-
-
-
-      )
-
-    ))
+      )))
 
 
 (defn get-nuvlabox-children
