@@ -194,10 +194,9 @@
   (when-let [resource-id (get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
           body    (merge
-                    {:name        (str (str/capitalize subtype) " "
-                                       (utils/format-nb-name
-                                         nuvlabox-name
-                                         (utils/short-nb-id nuvlabox-id)))
+                    {:name        (utils/format-nb-name
+                                    nuvlabox-name
+                                    (utils/short-nb-id nuvlabox-id))
                      :description (str "NuvlaEdge compute infrastructure on "
                                        (utils/format-nb-name
                                          nuvlabox-name nuvlabox-id))
