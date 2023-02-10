@@ -619,8 +619,13 @@
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
     (let [removed-set   (if (coll? removed) (set removed) #{})
-          swarm-worker  (some-> cluster-worker-id string?)
-          swarm-enabled (some-> cluster-id string?)
+          swarm-worker  (or (some-> cluster-worker-id string?)
+                            (contains? removed-set "swarm-client-key"))
+          swarm-removed? (contains? removed-set "swarm-endpoint")
+          swarm-enabled (cond
+                          (string? cluster-id) true
+                          swarm-removed? false
+                          :else nil)
           swarm-manager (cond
                           (true? swarm-worker) false
                           (true? swarm-enabled) true
