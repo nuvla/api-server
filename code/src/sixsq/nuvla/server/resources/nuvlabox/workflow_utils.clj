@@ -5,6 +5,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
@@ -158,9 +159,14 @@
 
 
 (defn create-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id subtype endpoint & {:as opt-map}]
   (if endpoint
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+          tmpl    (merge
+                    {:href     "infrastructure-service-template/generic"
+                     :endpoint endpoint
+                     :subtype  subtype}
+                    (gen-util/filter-map-nil-value opt-map))
           request {:params      {:resource-name infra-service/resource-type}
                    :body        {:name        (utils/format-nb-name
                                                 nuvlabox-name (utils/short-nb-id nuvlabox-id))
@@ -168,12 +174,7 @@
                                                    (utils/format-nb-name nuvlabox-name nuvlabox-id))
                                  :parent      isg-id
                                  :acl         acl
-                                 :template    (cond->
-                                                {:href     "infrastructure-service-template/generic"
-                                                 :endpoint endpoint
-                                                 :subtype  subtype}
-                                                tags (assoc :tags tags)
-                                                capabilities (assoc :capabilities capabilities))}
+                                 :template    tmpl}
                    :nuvla/authn auth/internal-identity}
           {{:keys [resource-id]} :body status :status} (crud/add request)]
 
@@ -189,22 +190,23 @@
 
 
 (defn update-coe-service
-  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id endpoint tags capabilities subtype]
+  [nuvlabox-id nuvlabox-name nuvlabox-acl isg-id subtype & {:as opt-map}]
   (when-let [resource-id (get-service subtype isg-id)]
     (let [acl     (utils/set-acl-nuvlabox-view-only nuvlabox-acl)
+          body    (merge
+                    {:name        (str (str/capitalize subtype) " "
+                                       (utils/format-nb-name
+                                         nuvlabox-name
+                                         (utils/short-nb-id nuvlabox-id)))
+                     :description (str "NuvlaEdge compute infrastructure on "
+                                       (utils/format-nb-name
+                                         nuvlabox-name nuvlabox-id))
+                     :acl         acl}
+                    (gen-util/filter-map-nil-value opt-map))
+          body    body
           request {:params      {:uuid          (u/id->uuid resource-id)
                                  :resource-name infra-service/resource-type}
-                   :body        (cond->
-                                  {:name        (str (str/capitalize subtype) " "
-                                                     (utils/format-nb-name
-                                                       nuvlabox-name
-                                                       (utils/short-nb-id nuvlabox-id)))
-                                   :description (str "NuvlaEdge compute infrastructure on "
-                                                     (utils/format-nb-name nuvlabox-name nuvlabox-id))
-                                   :acl         acl}
-                                  tags (assoc :tags tags)
-                                  endpoint (assoc :endpoint endpoint)
-                                  capabilities (assoc :capabilities capabilities))
+                   :body        body
                    :nuvla/authn auth/internal-identity}
           {status :status} (crud/edit request)]
 
@@ -617,20 +619,38 @@
             cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
-    (let [removed-set    (if (coll? removed) (set removed) #{})
-          swarm-id       (or
-                           (update-coe-service id name acl isg-id swarm-endpoint
-                                               tags capabilities "swarm")
-                           (create-coe-service id name acl isg-id swarm-endpoint
-                                               tags capabilities "swarm"))
-          kubernetes-id  (or
-                           (update-coe-service id name acl isg-id kubernetes-endpoint
-                                               tags capabilities "kubernetes")
-                           (create-coe-service id name acl isg-id kubernetes-endpoint
-                                               tags capabilities "kubernetes"))
-          minio-id       (or
-                           (update-minio-service id name acl isg-id minio-endpoint)
-                           (create-minio-service id name acl isg-id minio-endpoint))]
+    (let [removed-set   (if (coll? removed) (set removed) #{})
+          swarm-worker  (some-> cluster-worker-id string?)
+          swarm-enabled (some-> cluster-id string?)
+          swarm-manager (cond
+                          (true? swarm-worker) false
+                          (true? swarm-enabled) true
+                          :else nil)
+          swarm-id      (or
+                          (update-coe-service id name acl isg-id "swarm"
+                                              :endpoint swarm-endpoint
+                                              :tags tags
+                                              :capabilities capabilities
+                                              :swarm-enabled swarm-enabled
+                                              :swarm-manager swarm-manager)
+                          (create-coe-service id name acl isg-id "swarm"
+                                              swarm-endpoint
+                                              :tags tags
+                                              :capabilities capabilities
+                                              :swarm-enabled swarm-enabled
+                                              :swarm-manager swarm-manager))
+          kubernetes-id (or
+                          (update-coe-service id name acl isg-id "kubernetes"
+                                              :endpoint kubernetes-endpoint
+                                              :tags tags
+                                              :capabilities capabilities)
+                          (create-coe-service id name acl isg-id "kubernetes"
+                                              kubernetes-endpoint
+                                              :tags tags
+                                              :capabilities capabilities))
+          minio-id      (or
+                          (update-minio-service id name acl isg-id minio-endpoint)
+                          (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when (and cluster-id cluster-managers)
         (or
