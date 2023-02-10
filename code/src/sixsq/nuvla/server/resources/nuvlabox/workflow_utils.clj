@@ -618,43 +618,43 @@
             cluster-id cluster-worker-id cluster-orchestrator cluster-managers cluster-workers
             removed]} :body :as request}]
   (when-let [isg-id infrastructure-service-group]
-    (let [removed-set   (if (coll? removed) (set removed) #{})
-          swarm-worker  (or (some-> cluster-worker-id string?)
-                            (contains? removed-set "swarm-client-key"))
+    (let [removed-set    (if (coll? removed) (set removed) #{})
+          swarm-worker   (some-> cluster-worker-id string?)
           swarm-removed? (contains? removed-set "swarm-endpoint")
-          swarm-enabled (cond
-                          (string? cluster-id) true
-                          swarm-removed? false
-                          :else nil)
-          swarm-manager (cond
-                          (true? swarm-worker) false
-                          (true? swarm-enabled) true
-                          :else nil)
-          swarm-id      (or
-                          (update-coe-service id name acl isg-id "swarm"
-                                              :endpoint swarm-endpoint
-                                              :tags tags
-                                              :capabilities capabilities
-                                              :swarm-enabled swarm-enabled
-                                              :swarm-manager swarm-manager)
-                          (create-coe-service id name acl isg-id "swarm"
-                                              swarm-endpoint
-                                              :tags tags
-                                              :capabilities capabilities
-                                              :swarm-enabled swarm-enabled
-                                              :swarm-manager swarm-manager))
-          kubernetes-id (or
-                          (update-coe-service id name acl isg-id "kubernetes"
-                                              :endpoint kubernetes-endpoint
-                                              :tags tags
-                                              :capabilities capabilities)
-                          (create-coe-service id name acl isg-id "kubernetes"
-                                              kubernetes-endpoint
-                                              :tags tags
-                                              :capabilities capabilities))
-          minio-id      (or
-                          (update-minio-service id name acl isg-id minio-endpoint)
-                          (create-minio-service id name acl isg-id minio-endpoint))]
+          swarm-enabled  (cond
+                           (or (string? cluster-id)
+                               swarm-worker) true
+                           swarm-removed? false
+                           :else nil)
+          swarm-manager  (cond
+                           (true? swarm-worker) false
+                           (true? swarm-enabled) true
+                           :else nil)
+          swarm-id       (or
+                           (update-coe-service id name acl isg-id "swarm"
+                                               :endpoint swarm-endpoint
+                                               :tags tags
+                                               :capabilities capabilities
+                                               :swarm-enabled swarm-enabled
+                                               :swarm-manager swarm-manager)
+                           (create-coe-service id name acl isg-id "swarm"
+                                               swarm-endpoint
+                                               :tags tags
+                                               :capabilities capabilities
+                                               :swarm-enabled (or swarm-enabled false)
+                                               :swarm-manager swarm-manager))
+          kubernetes-id  (or
+                           (update-coe-service id name acl isg-id "kubernetes"
+                                               :endpoint kubernetes-endpoint
+                                               :tags tags
+                                               :capabilities capabilities)
+                           (create-coe-service id name acl isg-id "kubernetes"
+                                               kubernetes-endpoint
+                                               :tags tags
+                                               :capabilities capabilities))
+          minio-id       (or
+                           (update-minio-service id name acl isg-id minio-endpoint)
+                           (create-minio-service id name acl isg-id minio-endpoint))]
 
       (when (and cluster-id cluster-managers)
         (or
