@@ -87,7 +87,7 @@
     :json-schema/type "boolean"
     :json-schema/display-name "start"
     :json-schema/description "Start deployment automatically directly after creation"))
-::core/resource-link
+
 (s/def ::applications-sets (-> (st/spec (s/keys :opt-un [::core/href]))
                                (assoc :name "applications-sets"
                                       :json-schema/type "map"
