@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [6.0.10] - 2023-02-21
+
 ### Changed
 
 - Configuration - Typo fix in error-msg-not-authorised-redirect

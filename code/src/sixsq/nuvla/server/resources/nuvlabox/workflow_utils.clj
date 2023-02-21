@@ -5,7 +5,6 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.credential :as credential]
     [sixsq.nuvla.server.resources.credential-template-api-key :as cred-tmpl-api]
@@ -18,6 +17,7 @@
     [sixsq.nuvla.server.resources.nuvlabox-playbook :as nb-playbook]
     [sixsq.nuvla.server.resources.nuvlabox-status :as nb-status]
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.response :as r]))
 
 
