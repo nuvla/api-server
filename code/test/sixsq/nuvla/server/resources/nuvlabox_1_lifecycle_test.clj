@@ -968,10 +968,8 @@
                                               :kubernetes-client-cert "cert"
                                               :kubernetes-client-ca   "ca"
                                               :kubernetes-endpoint    "https://k8s.example.com"
-                                              :removed                ["swarm-endpoint"
-                                                                       "swarm-token-manager"
-                                                                       "swarm-token-worker"
-                                                                       "swarm-client-key"]}))
+                                              :removed                ["swarm-token-manager"
+                                                                       "swarm-token-worker"]}))
               (ltu/body->edn)
               (ltu/is-status 200))
 
@@ -984,10 +982,10 @@
                                                                        "parent='%s'" isg-id)}))
                              (ltu/body->edn)
                              (ltu/is-status 200)
-                             (ltu/is-count 2)
+                             (ltu/is-count 3)
                              (ltu/entries))]
 
-            (is (= #{"s3" "kubernetes"} (set (map :subtype services))))
+            (is (= #{"s3" "kubernetes" "swarm"} (set (map :subtype services))))
 
             (doseq [{:keys [acl]} services]
               (is (= [nuvlabox-owner] (:view-acl acl))))

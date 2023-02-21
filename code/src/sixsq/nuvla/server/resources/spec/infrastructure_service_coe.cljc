@@ -106,6 +106,7 @@
             ::infra-tmpl-gen/state]
    :opt-un [::infra-tmpl-gen/endpoint
             ::infra-tmpl-gen/swarm-enabled
+            ::infra-tmpl-gen/swarm-manager
             ::infra-tmpl-gen/online
             ::infra-tmpl-gen/capabilities]})
 

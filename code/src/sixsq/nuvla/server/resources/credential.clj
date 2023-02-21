@@ -130,7 +130,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
 ;; actions
 ;;
 
-(defn create-job
+(defn create-check-credential-job
   [{{uuid :uuid} :params :as request}]
   (try
     (let [id (str resource-type "/" uuid)]
@@ -149,18 +149,34 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
+(defn create-check-credential-request
+  [id request]
+  (create-check-credential-job
+    {:params      {:uuid          (u/id->uuid id)
+                   :resource-name resource-type}
+     :nuvla/authn (auth/current-authentication request)}))
+
 
 (defmethod crud/do-action [resource-type "check"]
   [{{uuid :uuid} :params :as request}]
   (let [id       (str resource-type "/" uuid)
         resource (crud/retrieve-by-id-as-admin id)]
     (a/throw-cannot-manage resource request)
-    (create-job request)))
+    (create-check-credential-job request)))
 
 
 ;;
 ;; CRUD operations
 ;;
+
+(def dispatch-by-first-arg-method
+  (fn [{:keys [method] :as _resource} _request] method))
+
+(defmulti post-add-hook dispatch-by-first-arg-method)
+
+(defmethod post-add-hook :default
+  [_resource _request]
+  nil)
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
@@ -214,7 +230,7 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
   [{:keys [body] :as request}]
   (let [authn-info (auth/current-authentication request)
         desc-attrs (u/select-desc-keys body)
-        [create-resp {:keys [id] :as body}]
+        [create-resp body]
         (-> body
             (assoc :resource-type create-type)
             (update-in [:template] dissoc :subtype)         ;; forces use of template reference
@@ -225,16 +241,15 @@ passwords) or other services (e.g. TLS credentials for Docker). Creating new
             (tpl->credential request))
 
         response   (-> request
-                       (assoc :id id :body (merge body desc-attrs))
+                       (assoc :body (merge body desc-attrs))
                        add-impl
                        (update-in [:body] merge create-resp))
 
-        id         (:resource-id (:body response))]
+        id         (-> response :body :resource-id)
+        cred       (assoc body :id id)]
 
-    (when (= (:method body) "infrastructure-service-swarm")
-      (create-job {:params      {:uuid          (u/id->uuid id)
-                                 :resource-name resource-type}
-                   :nuvla/authn authn-info}))
+    (post-add-hook cred request)
+
     response))
 
 
