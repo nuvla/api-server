@@ -342,7 +342,6 @@
       (if (= 200 status)
         (do
           (log/info subtype " service credential" resource-id "updated")
-          (credential/create-check-credential-request resource-id request)
           resource-id)
         (let [msg (str "cannot update " subtype " service credential for "
                        coe-id " linked to " nuvlabox-id)]

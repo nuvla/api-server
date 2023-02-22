@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [6.0.11] - 2023-02-22
+
+### Changed
+
+- Nuvlabox - Check credential should not be launched at each update of Nuvlabox
+
 ## [6.0.10] - 2023-02-21
 
 ### Changed
