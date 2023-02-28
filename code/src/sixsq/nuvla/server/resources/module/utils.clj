@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.module.utils
   (:require
     [clj-yaml.core :as yaml]
+    [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -143,7 +144,7 @@
 (defn split-uuid
   [uuid]
   (let [[uuid-module index] (str/split uuid #"_")
-        index (some-> index read-string)]
+        index (some-> index edn/read-string)]
     [uuid-module index]))
 
 

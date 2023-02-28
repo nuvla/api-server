@@ -45,6 +45,8 @@
 (def session-id "session/324c6138-aaaa-bbbb-cccc-af3ad15815db")
 
 
+(def nb-name "nb-test")
+
 (def valid-nuvlabox {:created          timestamp
                      :updated          timestamp
 
@@ -54,6 +56,7 @@
                      ;; version number to test.
                      :version          2
 
+                     :name             nb-name
                      :organization     "ACME"
                      :hw-revision-code "a020d3"
                      :login-username   "aLoginName"
@@ -1169,12 +1172,10 @@
                                              :body (rc/form-encode {:filter (format "parent='%s'" infra-srvc-grp-id)}))
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    :response
-                                    :body
-                                    :resources
-                                    first
-                                    :endpoint)]
-              (is (= srvc-endpoint "http://foo")))
+                                    (ltu/entries)
+                                    first)]
+              (is (= (:endpoint srvc-endpoint) "http://foo"))
+              (is (= (:name srvc-endpoint) nb-name)))
 
             (-> session-nuvlabox
                 (request commission
@@ -1192,12 +1193,10 @@
                                                                       infra-srvc-grp-id)}))
                                     (ltu/body->edn)
                                     (ltu/is-status 200)
-                                    :response
-                                    :body
-                                    :resources
-                                    first
-                                    :endpoint)]
-              (is (= srvc-endpoint "http://bar")))
+                                    (ltu/entries)
+                                    first)]
+              (is (= (:endpoint srvc-endpoint) "http://bar"))
+              (is (= (:name srvc-endpoint) nb-name)))
 
             ))))))
 

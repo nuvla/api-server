@@ -4,9 +4,26 @@
 
 ### Changed
 
+- Module - New subtype applications set
+
+## [6.0.11] - 2023-02-22
+
+### Changed
+
+- Nuvlabox - Check credential should not be launched at each update of Nuvlabox
+
+## [6.0.10] - 2023-02-21
+
+### Changed
+
 - Configuration - Typo fix in error-msg-not-authorised-redirect
 - Nuvlabox release - Published flag support
-- Module - New subtype applications set
+- Spec - Validation report id of resource when existing
+- Credential - Add Post add hook to create check credential jobs for swarm
+- Infrastructure - Add swarm-manager flag
+- Nuvlabox - Commission doesn't delete credential neither infrastructure
+- Nuvlabox - Remove subtype from the description of infrastructure
+- Nuvlabox - Remove Infra prefix from name of infrastructure at creation time
 
 ## [6.0.9] - 2023-01-06
 

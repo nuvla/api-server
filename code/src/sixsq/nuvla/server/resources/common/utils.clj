@@ -206,10 +206,14 @@
   [spec]
   (let [ok?     (partial s/valid? spec)
         explain (partial expound/expound-str spec)]
-    (fn [resource]
-      (if-not (ok? resource)
-        (logu/log-and-throw-400 (str "resource does not satisfy defined schema:\n" (explain resource)))
-        resource))))
+    (fn [{:keys [id] :as resource}]
+      (if (ok? resource)
+        resource
+        (logu/log-and-throw-400
+          (str "resource "
+               (some-> id (str " "))
+               "does not satisfy defined schema:\n"
+               (explain resource)))))))
 
 
 (defn get-op

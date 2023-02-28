@@ -85,3 +85,7 @@ certificate authority's public certificate, 'ca', should also be provided.
   (if (u/is-collection? resource-type)
     (crud/set-standard-collection-operations resource request)
     (set-resource-ops resource request)))
+
+(defmethod p/post-add-hook tpl/credential-subtype
+  [{:keys [id] :as _resource} request]
+  (p/create-check-credential-request id request))
