@@ -56,13 +56,14 @@
     :json-schema/type "map"))
 
 (s/def ::applications
-  (assoc (st/spec (s/coll-of ::application :min-count 1))
+  (assoc (st/spec (s/coll-of ::application :min-count 0))
     :name "applications"
     :json-schema/type "array"))
 
 (s/def ::applications-set
-  (assoc (st/spec (su/only-keys :req-un [::name ::applications]
-                                :opt-un [::description]))
+  (assoc (st/spec (su/only-keys :req-un [::name]
+                                :opt-un [::applications
+                                         ::description]))
     :name "applications-set"
     :json-schema/type "map"))
 
