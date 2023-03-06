@@ -481,6 +481,22 @@ component, or application.
   [request]
   (publish-unpublish request false))
 
+(defmethod crud/do-action [resource-type "deploy"]
+  [{{uuid-full :uuid} :params :as request}]
+  (let [[uuid version-index] (utils/split-uuid uuid-full)
+        id        (str resource-type "/" uuid)
+        resource  (-> request
+                      crud/retrieve
+                      r/throw-response-not-200
+                      :body)]
+    (if (utils/can-deploy? resource request)
+      (r/json-response
+        {:application       id
+         :version           (or version-index
+                                (utils/last-index (:versions resource)))
+         :applications-sets (get-in resource [:content :applications-sets])})
+      (throw (r/ex-response "operation not available" 400)))))
+
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
@@ -491,14 +507,17 @@ component, or application.
         publish-op                 (u/action-map id_with-version :publish)
         unpublish-op               (u/action-map id_with-version :unpublish)
         delete-version-op          (u/action-map id_with-version :delete-version)
+        deploy-op                  (u/action-map id_with-version :deploy)
         can-manage?                (a/can-manage? resource request)
         can-delete?                (a/can-delete? resource request)
         check-op-present?          (and can-manage? (utils/is-application? subtype))
+        deploy-op-present?         (utils/can-deploy? resource request)
         publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op)
             publish-eligible? (update :operations conj publish-op)
             publish-eligible? (update :operations conj unpublish-op)
+            deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
 
 

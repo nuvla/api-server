@@ -10,32 +10,11 @@
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module.utils :as utils]))
 
-
 (use-fixtures :once ltu/with-test-server-fixture)
-
 
 (def base-uri (str p/service-context module/resource-type))
 
-
 (def timestamp "1964-08-25T10:00:00.00Z")
-
-(defn valid-module
-  [subtype content]
-  {:id                        (str module/resource-type "/connector-uuid")
-   :resource-type             module/resource-type
-   :created                   timestamp
-   :updated                   timestamp
-   :parent-path               "a/b"
-   :path                      "a/b/c"
-   :subtype                   subtype
-
-   :logo-url                  "https://example.org/logo"
-
-   :data-accept-content-types ["application/json" "application/x-something"]
-   :data-access-protocols     ["http+s3" "posix+nfs"]
-
-   :content                   content})
-
 
 (defn lifecycle-test-module
   [subtype valid-content]
@@ -46,11 +25,7 @@
         session-user  (header session-anon authn-info-header
                               "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-entry   {:id                        (str module/resource-type "/connector-uuid")
-                       :resource-type             module/resource-type
-                       :created                   timestamp
-                       :updated                   timestamp
-                       :parent-path               "a/b"
+        valid-entry   {:parent-path               "a/b"
                        :path                      "a/b/c"
                        :subtype                   subtype
 
@@ -253,16 +228,16 @@
               (ltu/is-key-value :published false)
               (ltu/get-op-url :unpublish)))
 
-        ;; edit module without putting the module-content should not create new version
-        (is (= 7 (-> session-admin
-                     (request abs-uri
-                              :request-method :put
-                              :body (json/write-str (dissoc valid-entry :content :path)))
-                     (ltu/body->edn)
-                     (ltu/is-status 200)
-                     (ltu/body)
-                     :versions
-                     count)))
+        (testing "edit module without putting the module-content should not create new version"
+          (is (= 7 (-> session-admin
+                       (request abs-uri
+                                :request-method :put
+                                :body (json/write-str (dissoc valid-entry :content :path)))
+                       (ltu/body->edn)
+                       (ltu/is-status 200)
+                       (ltu/body)
+                       :versions
+                       count))))
 
         (doseq [i ["_0/delete-version" "_1/delete-version"]]
           (-> session-admin
@@ -278,15 +253,15 @@
 
         (testing "delete latest version without specifying version"
           (-> session-admin
-             (request (str abs-uri "/delete-version"))
-             (ltu/body->edn)
-             (ltu/is-status 200)))
+              (request (str abs-uri "/delete-version"))
+              (ltu/body->edn)
+              (ltu/is-status 200)))
 
         (testing "delete out of bound index should return 404"
           (-> session-admin
-             (request (str abs-uri "_50/delete-version"))
-             (ltu/body->edn)
-             (ltu/is-status 404)))
+              (request (str abs-uri "_50/delete-version"))
+              (ltu/body->edn)
+              (ltu/is-status 404)))
 
         (-> session-admin
             (request (str abs-uri "_50"))
@@ -335,13 +310,49 @@
 
 
 (deftest lifecycle-applications-sets
-
-  (let [valid-application {:author         "someone"
-                           :commit         "wip"
+  (let [valid-application {:author            "someone"
+                           :commit            "wip"
                            :applications-sets [{:name         "x"
                                                 :applications [{:id      "module/x"
                                                                 :version 0}]}]}]
-    (lifecycle-test-module utils/subtype-apps-sets valid-application)))
+    (lifecycle-test-module utils/subtype-apps-sets valid-application)
+
+    (let [session-anon  (-> (session (ltu/ring-app))
+                            (content-type "application/json"))
+          session-admin (header session-anon authn-info-header
+                                "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session-anon authn-info-header
+                                "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          valid-entry   {:parent-path "a/b"
+                         :path        "a/b/c"
+                         :subtype     utils/subtype-apps-sets
+                         :content     valid-application}]
+
+      (let [response   (-> session-user
+                           (request base-uri
+                                    :request-method :post
+                                    :body (json/write-str valid-entry))
+                           (ltu/body->edn)
+                           (ltu/is-status 201))
+            uri        (ltu/location response)
+            abs-uri    (ltu/location-url response)
+            deploy-uri (-> session-user
+                           (request abs-uri)
+                           (ltu/body->edn)
+                           (ltu/is-status 200)
+                           (ltu/get-op-url :deploy))]
+        (-> session-user
+            (request deploy-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-key-value :application uri)
+            (ltu/is-key-value :version 0)
+            (ltu/is-key-value :applications-sets
+                              [{:applications [{:id      "module/x"
+                                                :version 0}]
+                                :name         "x"}]))
+        ))))
 
 
 (deftest bad-methods

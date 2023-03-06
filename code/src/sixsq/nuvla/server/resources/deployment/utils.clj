@@ -10,7 +10,6 @@
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.credential :as credential]
@@ -105,24 +104,8 @@
     (catch Exception _
       (log/errorf "cannot propagate acl to deployment parameters related to %s" deployment-id))))
 
-
-(defn resolve-module [request]
-  (let [authn-info     (auth/current-authentication request)
-        href           (get-in request [:body :module :href])
-        params         (u/id->request-params href)
-        module-request {:params params, :nuvla/authn authn-info}
-        response       (crud/retrieve module-request)
-        module-body    (:body response)]
-    (if (= (:status response) 200)
-      (-> module-body
-          (dissoc :versions :operations)                    ;; dissoc versions to avoid resolving all hrefs
-          (std-crud/resolve-hrefs authn-info true)
-          (assoc :versions (:versions module-body))
-          (assoc :href href))
-      (throw (r/ex-bad-request (str "cannot resolve " href))))))
-
-
-(defn resolve-deployment [request]
+(defn resolve-deployment
+  [request]
   (let [authn-info         (auth/current-authentication request)
         href               (get-in request [:body :deployment :href])
         params             (u/id->request-params href)
@@ -133,13 +116,6 @@
           :body
           (select-keys [:module :data :name :description :tags]))
       (throw (r/ex-bad-request (str "cannot resolve " href))))))
-
-
-(defn resolve-from-module
-  [request]
-  (if (get-in request [:body :module :href])
-    (assoc-in request [:body :module] (resolve-module request))
-    (logu/log-and-throw-400 "Request body is missing a module href!")))
 
 (defn resolve-from-deployment
   [request]

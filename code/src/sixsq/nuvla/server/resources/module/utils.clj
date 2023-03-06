@@ -4,7 +4,11 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
+    [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -76,8 +80,8 @@
   (loop [i (dec (count versions))]
     (when (not (neg? i))
       (if (some? (nth versions i))
-       i
-       (recur (dec i))))))
+        i
+        (recur (dec i))))))
 
 
 (def ^:const compose-specific-keys
@@ -160,3 +164,31 @@
                            (throw (r/ex-not-found
                                     (str "Module version not found: " id)))))]
     (assoc module-meta :content module-content)))
+
+(defn can-deploy?
+  [{:keys [subtype] :as resource} request]
+  (and (a/can-manage? resource request)
+       (is-applications-sets? subtype)))
+
+(defn resolve-module
+  [request]
+  (let [href                 (get-in request [:body :module :href])
+        authn-info           (auth/current-authentication request)
+        params               (u/id->request-params href)
+        module-request       {:params      params
+                              :nuvla/authn authn-info}
+        on-error             #(throw (r/ex-bad-request (str "cannot resolve " href)))
+        on-success           (fn [{{:keys [versions] :as body} :body}]
+                               (-> (dissoc body :versions :operations)
+                                   (std-crud/resolve-hrefs authn-info true)
+                                   (assoc :versions versions :href href)))
+        throw-cannot-resolve (r/throw-response-not-200 r/status-200? on-success on-error)]
+    (-> module-request
+        crud/retrieve
+        throw-cannot-resolve)))
+
+(defn resolve-from-module
+  [request]
+  (if (get-in request [:body :module :href])
+    (assoc-in request [:body :module] (resolve-module request))
+    (logu/log-and-throw-400 "Request body is missing a module href!")))
