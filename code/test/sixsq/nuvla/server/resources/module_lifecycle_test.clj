@@ -309,25 +309,56 @@
     (lifecycle-test-module utils/subtype-app valid-application)))
 
 
+(def valid-applications-sets-content
+  {:author            "someone"
+   :commit            "wip"
+   :applications-sets [{:name         "x"
+                        :applications [{:id      "module/x"
+                                        :version 0}]}]})
+
 (deftest lifecycle-applications-sets
-  (let [valid-application {:author            "someone"
-                           :commit            "wip"
-                           :applications-sets [{:name         "x"
-                                                :applications [{:id      "module/x"
-                                                                :version 0}]}]}]
-    (lifecycle-test-module utils/subtype-apps-sets valid-application)
+  (lifecycle-test-module utils/subtype-apps-sets valid-applications-sets-content))
 
-    (let [session-anon  (-> (session (ltu/ring-app))
-                            (content-type "application/json"))
-          session-admin (header session-anon authn-info-header
-                                "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-          session-user  (header session-anon authn-info-header
-                                "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-          valid-entry   {:parent-path "a/b"
-                         :path        "a/b/c"
-                         :subtype     utils/subtype-apps-sets
-                         :content     valid-application}]
+(deftest lifecycle-applications-sets-extended
+  (let [session-anon      (-> (session (ltu/ring-app))
+                              (content-type "application/json"))
+        session-admin     (header session-anon authn-info-header
+                                  "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user      (header session-anon authn-info-header
+                                  "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+        valid-app-1       {:parent-path "a/b"
+                           :path        "clara/app-1"
+                           :subtype     utils/subtype-app
+                           :content     {:author         "someone"
+                                         :commit         "initial"
+                                         :docker-compose "some content"}}
+        app-1-create-resp (-> session-user
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str valid-app-1))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
+        app-1-uri         (ltu/location-url app-1-create-resp)
+        app-1-id          (ltu/location app-1-create-resp)]
+
+    (let [valid-entry {:parent-path "a/b"
+                       :path        "a/b/c"
+                       :subtype     utils/subtype-apps-sets
+                       :content     (assoc-in valid-applications-sets-content
+                                      [:applications-sets 0
+                                       :applications 0 :id] app-1-id)}]
+
+      (-> session-user
+          (request app-1-uri
+                   :request-method :put
+                   :body (json/write-str
+                           (update valid-app-1 :content assoc
+                                   :docker-compose "content changed"
+                                   :commit "second commit")))
+          (ltu/body->edn)
+          (ltu/is-status 200))
 
       (let [response   (-> session-user
                            (request base-uri
@@ -349,7 +380,7 @@
             (ltu/is-key-value :application uri)
             (ltu/is-key-value :version 0)
             (ltu/is-key-value :applications-sets
-                              [{:applications [{:id      "module/x"
+                              [{:applications [{:id      app-1-id
                                                 :version 0}]
                                 :name         "x"}]))
         ))))

@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.module.utils-test
   (:require
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.server.resources.module.utils :as utils]
     [sixsq.nuvla.server.resources.module.utils :as t]))
 
 
@@ -84,3 +85,80 @@
                       ["docker-compose" []] docker-compose-2-str
                       ["docker-compose" []] docker-compose-3-str
                       ["swarm" []] docker-compose-4-str))
+
+(deftest collect-applications-hrefs
+  (are [expected applications-sets]
+    (= expected (t/collect-applications-hrefs applications-sets))
+    [] nil
+    [] {}
+    ["module/x_0"] [{:name         "x"
+                     :applications [{:id      "module/x"
+                                     :version 0}]}]
+    ["module/a_0"
+     "module/b_1"
+     "module/c_2"] [{:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/b"
+                                     :version 1}]}
+                    {:name         "x"
+                     :applications [{:id      "module/c"
+                                     :version 2}]}]
+    ["module/a_0"
+     "module/b_1"
+     "module/c_2"] [{:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/b"
+                                     :version 1}]}
+                    {:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/c"
+                                     :version 2}]}]))
+
+(deftest collect-applications-hrefs
+  (are [expected arg]
+    (= expected (t/inject-resolved-applications (first arg) (second arg)))
+    nil
+    [nil nil]
+
+    {}
+    [{} {}]
+
+    {:content {:applications-sets [{:applications [{:id       "module/a"
+                                                    :version  0
+                                                    :resolved {:name "module_a v 0"}}
+                                                   {:id      "module/c"
+                                                    :version 2}]
+                                    :name         "x"}]}}
+    [{"module/a_0" {:name "module_a v 0"}
+      "module/c_0" {:name "module_c v 0"}}
+     {:content {:applications-sets
+                [{:name         "x"
+                  :applications [{:id      "module/a"
+                                  :version 0}
+                                 {:id      "module/c"
+                                  :version 2}]}]}}]
+
+    {:content {:applications-sets [{:applications [{:id       "module/a"
+                                                    :version  0
+                                                    :resolved {:name "module_a v 0"}}
+                                                   {:id       "module/c"
+                                                    :version  2
+                                                    :resolved {:name "module_c v 2"}}]
+                                    :name         "x"}]}}
+    [{"module/a_0" {:name "module_a v 0"}
+      "module/c_2" {:name "module_c v 2"}}
+     {:content {:applications-sets
+                [{:name         "x"
+                  :applications [{:id      "module/a"
+                                  :version 0}
+                                 {:id      "module/c"
+                                  :version 2}]}]}}
+     {:content {:applications-sets [{:applications [{:id       "module/a"
+                                                     :version  0
+                                                     :resolved {:name "module_a v 0"}}
+                                                    {:id      "module/c"
+                                                     :version 2}]
+                                     :name         "x"}]}}]))

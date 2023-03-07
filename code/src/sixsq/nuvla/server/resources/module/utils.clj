@@ -192,3 +192,65 @@
   (if (get-in request [:body :module :href])
     (assoc-in request [:body :module] (resolve-module request))
     (logu/log-and-throw-400 "Request body is missing a module href!")))
+
+(defn throw-cannot-deploy
+  [resource request]
+  (if (can-deploy? resource request)
+    resource
+    (throw (r/ex-response "operation not available" 400))))
+
+(defn collect-applications-hrefs
+  [applications-sets]
+  (->> applications-sets
+       (mapcat :applications)
+       (map #(str (:id %) "_" (:version %)))
+       distinct))
+
+(defn resolve-applications-hrefs
+  [hrefs request]
+  (reduce #(assoc %1 %2 (crud/retrieve {:params         (u/id->request-params %2)
+                                        :request-method :get
+                                        :nuvla/authn    (auth/current-authentication request)}))
+          {} hrefs))
+
+(defn update-application-resolved
+  [{:keys [id version] :as application} hrefs-map]
+  (println "update-application-resolved" id version hrefs-map)
+  (let [resolved (get hrefs-map (str id "_" version))]
+    (cond-> application
+            resolved (assoc :resolved resolved))))
+
+(defn update-applications-resolved
+  [applications hrefs-map]
+  #_(println "update-applications-resolved" applications)
+  (if-let [applications (seq applications)]
+    (map #(update-application-resolved % hrefs-map) applications)
+    applications))
+
+(defn update-applications-sets-applications-resolved
+  [applications-sets hrefs-map]
+  (map #(update % :applications update-applications-resolved hrefs-map) applications-sets))
+
+(defn inject-resolved-applications
+  [hrefs-map resource]
+  (if-let [applications-sets (some-> resource :content :applications-sets seq)]
+    (assoc-in resource [:content :applications-sets]
+              (update-applications-sets-applications-resolved applications-sets hrefs-map))
+    resource))
+
+(defn resolve-referenced-applications
+  [resource request]
+  (-> resource
+      :content
+      :applications-sets
+      collect-applications-hrefs
+      (resolve-applications-hrefs request)
+      (inject-resolved-applications resource)))
+
+(defn generate-deployment-set-skeleton
+  [{:keys [id] :as resource} {{uuid-full :uuid} :params :as _request}]
+  (let [version-index (second (split-uuid uuid-full))]
+    {:application       id
+     :version           (or version-index
+                            (last-index (:versions resource)))
+     :applications-sets (get-in resource [:content :applications-sets])}))

@@ -482,21 +482,15 @@ component, or application.
   (publish-unpublish request false))
 
 (defmethod crud/do-action [resource-type "deploy"]
-  [{{uuid-full :uuid} :params :as request}]
-  (let [[uuid version-index] (utils/split-uuid uuid-full)
-        id        (str resource-type "/" uuid)
-        resource  (-> request
-                      crud/retrieve
-                      r/throw-response-not-200
-                      :body)]
-    (if (utils/can-deploy? resource request)
-      (r/json-response
-        {:application       id
-         :version           (or version-index
-                                (utils/last-index (:versions resource)))
-         :applications-sets (get-in resource [:content :applications-sets])})
-      (throw (r/ex-response "operation not available" 400)))))
-
+  [request]
+  (-> request
+      crud/retrieve
+      r/throw-response-not-200
+      :body
+      (utils/throw-cannot-deploy request)
+      (utils/generate-deployment-set-skeleton request)
+      (utils/resolve-referenced-applications request)
+      r/json-response))
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
