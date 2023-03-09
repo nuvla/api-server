@@ -208,21 +208,24 @@
 
 (defn resolve-applications-hrefs
   [hrefs request]
-  (reduce #(assoc %1 %2 (crud/retrieve {:params         (u/id->request-params %2)
-                                        :request-method :get
-                                        :nuvla/authn    (auth/current-authentication request)}))
+  (reduce #(or (some->> {:params         (u/id->request-params %2)
+                         :request-method :get
+                         :nuvla/authn    (auth/current-authentication request)}
+                        crud/retrieve
+                        r/ignore-response-not-200
+                        :body
+                        (assoc %1 %2))
+               %1)
           {} hrefs))
 
 (defn update-application-resolved
   [{:keys [id version] :as application} hrefs-map]
-  (println "update-application-resolved" id version hrefs-map)
   (let [resolved (get hrefs-map (str id "_" version))]
     (cond-> application
             resolved (assoc :resolved resolved))))
 
 (defn update-applications-resolved
   [applications hrefs-map]
-  #_(println "update-applications-resolved" applications)
   (if-let [applications (seq applications)]
     (map #(update-application-resolved % hrefs-map) applications)
     applications))
@@ -233,15 +236,14 @@
 
 (defn inject-resolved-applications
   [hrefs-map resource]
-  (if-let [applications-sets (some-> resource :content :applications-sets seq)]
-    (assoc-in resource [:content :applications-sets]
-              (update-applications-sets-applications-resolved applications-sets hrefs-map))
+  (if-let [applications-sets (some-> resource :applications-sets seq)]
+    (assoc resource :applications-sets
+                    (update-applications-sets-applications-resolved applications-sets hrefs-map))
     resource))
 
 (defn resolve-referenced-applications
   [resource request]
   (-> resource
-      :content
       :applications-sets
       collect-applications-hrefs
       (resolve-applications-hrefs request)

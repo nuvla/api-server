@@ -59,7 +59,6 @@
 
 
 (s/def ::deployment-set (assoc (st/spec (su/only-keys :req-un [::state
-                                                               ::targets
                                                                ::applications-sets]
                                                       :opt-un [::start]))
                           :name "spec"

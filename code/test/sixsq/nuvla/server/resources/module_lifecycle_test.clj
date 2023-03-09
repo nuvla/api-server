@@ -379,11 +379,15 @@
             (ltu/is-status 200)
             (ltu/is-key-value :application uri)
             (ltu/is-key-value :version 0)
-            (ltu/is-key-value :applications-sets
-                              [{:applications [{:id      app-1-id
-                                                :version 0}]
-                                :name         "x"}]))
-        ))))
+            (ltu/is-key-value #(-> %
+                                   first
+                                   :applications
+                                   first
+                                   :resolved
+                                   :content
+                                   :docker-compose)
+                              :applications-sets
+                              "some content"))))))
 
 
 (deftest bad-methods

@@ -187,3 +187,7 @@
 (def throw-response-not-200
   (configurable-check-response
     status-200? identity rethrow-response))
+
+(def ignore-response-not-200
+  (configurable-check-response
+    status-200? identity (constantly nil)))
