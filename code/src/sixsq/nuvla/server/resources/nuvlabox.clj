@@ -36,8 +36,9 @@ particular NuvlaBox release.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-action ["group/nuvla-user"]})
 
 
 ;;
@@ -340,6 +341,12 @@ particular NuvlaBox release.
         resp)
       (catch Exception e
         (or (ex-data e) (throw e))))))
+
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl collection-type))
+
+(defmethod crud/bulk-action [resource-type "bulk-edit"]
+  [request]
+  (bulk-edit-impl request))
 
 
 ;;

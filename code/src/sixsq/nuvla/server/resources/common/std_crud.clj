@@ -19,6 +19,7 @@
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
 
 
+
 (defn add-fn
   [resource-name collection-acl resource-uri]
   (validate-collection-acl collection-acl)
@@ -67,6 +68,10 @@
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
+(defn throw-bulk-header-missing
+  [{:keys [headers] :as _request}]
+  (when-not (contains? headers "bulk")
+    (throw (r/ex-bad-request "Bulk request should contain bulk http header."))))
 
 (defn delete-fn
   [resource-name]
@@ -109,10 +114,20 @@
         (r/json-response entries-and-count)))))
 
 
-(defn throw-bulk-header-missing
-  [{:keys [headers] :as _request}]
-  (when-not (contains? headers "bulk")
-    (throw (r/ex-bad-request "Bulk request should contain bulk http header."))))
+(defn bulk-edit-fn
+  [resource-name collection-acl collection-uri]
+  (validate-collection-acl collection-acl)
+  (fn [{:keys [body] :as request}]
+    (tap> body)
+    (tap> (impl/cimi-filter {:filter (:filter body)}))
+    (throw-bulk-header-missing request)
+    (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
+      (tap> "WHY?")
+      (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+    (a/throw-cannot-bulk-action collection-acl request)
+    (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
+          response (db/bulk-edit resource-name options)]
+      (r/json-response response))))
 
 
 (defn bulk-delete-fn
@@ -152,7 +167,9 @@
   (validate-collection-acl collection-acl)
   (fn [{:keys [params body] :as request}]
     (throw-bulk-header-missing request)
+    (tap> (impl/cimi-filter {:filter (:filter body)}))
     (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
+      (tap> "WHY HERE NOT?")
       (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-action collection-acl request)
     (let [authn-info     (auth/current-authentication request)
@@ -163,6 +180,7 @@
                              (str/replace #"-" "_")
                              (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
+
 
 
 (def ^:const href-not-found-msg "requested href not found")

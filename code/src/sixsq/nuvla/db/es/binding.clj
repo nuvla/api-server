@@ -181,6 +181,22 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(defn bulk-edit-data
+  [client collection-id {:keys [cimi-params] :as options}]
+  (try
+    (let [index                   (escu/collection-id->index collection-id)
+          paging                  (paging/paging cimi-params)
+          orderby                 (order/sorters cimi-params)
+          aggregation             (aggregation/aggregators cimi-params)
+          selected                (select/select cimi-params)
+          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
+          body                    (merge paging orderby selected query aggregation)]
+      [{:huh :world} :yes])
+    (catch Exception e
+      (let [{:keys [body] :as _response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception querying: " (or error e))]
+        (throw (r/ex-response msg 500))))))
 
 (defn bulk-delete-data
   [client collection-id {:keys [cimi-params] :as options}]
@@ -240,6 +256,8 @@
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))
 
+  (bulk-edit [_ collection-id options]
+    (bulk-edit-data client collection-id options))
 
   Closeable
   (close [_]
