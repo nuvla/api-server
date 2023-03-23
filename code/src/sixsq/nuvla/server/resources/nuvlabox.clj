@@ -344,9 +344,9 @@ particular NuvlaBox release.
 
 (def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl collection-type))
 
-(defmethod crud/bulk-action [resource-type "bulk-edit"]
+(defmethod crud/bulk-action [resource-type "set-tags"]
   [request]
-  (bulk-edit-impl request))
+  (bulk-edit-impl (update-in request [:body :doc] select-keys :tags)))
 
 
 ;;

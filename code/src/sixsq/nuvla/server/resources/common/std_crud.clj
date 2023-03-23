@@ -118,15 +118,14 @@
   [resource-name collection-acl collection-uri]
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
-    (tap> body)
-    (tap> (impl/cimi-filter {:filter (:filter body)}))
     (throw-bulk-header-missing request)
-    (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
-      (tap> "WHY?")
-      (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+    (tap> (zipmap (keys request) (vals request)))
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [options (select-keys request [:nuvla/authn :query-params :cimi-params])
-          response (db/bulk-edit resource-name options)]
+    (let [options    (select-keys request [:nuvla/authn :cimi-params :body])
+          cimi-filter (impl/cimi-filter (select-keys body [:filter]))
+          response   (db/bulk-edit resource-name
+                                   (assoc options :cimi-params
+                                          cimi-filter))]
       (r/json-response response))))
 
 

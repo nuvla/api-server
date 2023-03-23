@@ -2,6 +2,7 @@
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
   (:require
+    [clojure.string :as str]
     [clojure.tools.logging :as log]
     [qbits.spandex :as spandex]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
@@ -161,6 +162,7 @@
           aggregation             (aggregation/aggregators cimi-params)
           selected                (select/select cimi-params)
           query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
+          ;; _ (tap> query)
           body                    (merge paging orderby selected query aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
@@ -169,7 +171,7 @@
           count-before-pagination (-> response :body :hits :total :value)
           aggregations            (-> response :body :aggregations)
           meta                    (cond-> {:count count-before-pagination}
-                                          aggregations (assoc :aggregations aggregations))
+                                    aggregations (assoc :aggregations aggregations))
           hits                    (->> response :body :hits :hits (map :_source))]
       (if success?
         [meta hits]
@@ -182,16 +184,20 @@
         (throw (r/ex-response msg 500))))))
 
 (defn bulk-edit-data
-  [client collection-id {:keys [cimi-params] :as options}]
+  [client collection-id {:keys [body cimi-params] :as options}]
+  (tap> options)
+  (when (empty? (:doc body)) (throw (r/ex-bad-request "no valid update data provided")))
   (try
-    (let [index                   (escu/collection-id->index collection-id)
-          paging                  (paging/paging cimi-params)
-          orderby                 (order/sorters cimi-params)
-          aggregation             (aggregation/aggregators cimi-params)
-          selected                (select/select cimi-params)
-          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
-          body                    (merge paging orderby selected query aggregation)]
-      [{:huh :world} :yes])
+    (let [index        (escu/collection-id->index collection-id)
+          ;; query        {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
+          query        {:query (filter/filter cimi-params)}
+          update-scrpt {:script {:params (:doc body)
+                                 :source (str/join ";" (map (fn [[k _]] (str "ctx._source." (name k) "=params." (name k)))(:doc body)))}}
+          body         (merge query update-scrpt)
+          response     (spandex/request client {:url    [index :_update_by_query]
+                                                :method :post
+                                                :body   body})]
+      (:body response))
     (catch Exception e
       (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)
