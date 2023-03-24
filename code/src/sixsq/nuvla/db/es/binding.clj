@@ -183,16 +183,19 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
+(defn- get-script [doc]
+  (str/join ";" (map (fn [[k _]] (str "ctx._source." (name k) "=params." (name k))) doc)))
+
 (defn bulk-edit-data
   [client collection-id {:keys [body cimi-params] :as options}]
-  (tap> options)
   (when (empty? (:doc body)) (throw (r/ex-bad-request "no valid update data provided")))
   (try
-    (let [index        (escu/collection-id->index collection-id)
-          ;; query        {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
-          query        {:query (filter/filter cimi-params)}
-          update-scrpt {:script {:params (:doc body)
-                                 :source (str/join ";" (map (fn [[k _]] (str "ctx._source." (name k) "=params." (name k)))(:doc body)))}}
+    (let [doc          (:doc body)
+          index        (escu/collection-id->index collection-id)
+          query        {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
+          update-scrpt {:script {:params doc
+                                 ;; TODO: refactor this to
+                                 :source (get-script doc)}}
           body         (merge query update-scrpt)
           response     (spandex/request client {:url    [index :_update_by_query]
                                                 :method :post

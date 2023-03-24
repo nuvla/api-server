@@ -121,11 +121,9 @@
     (throw-bulk-header-missing request)
     (tap> (zipmap (keys request) (vals request)))
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [options    (select-keys request [:nuvla/authn :cimi-params :body])
-          cimi-filter (impl/cimi-filter (select-keys body [:filter]))
-          response   (db/bulk-edit resource-name
-                                   (assoc options :cimi-params
-                                          cimi-filter))]
+    (let [options     (select-keys request [:nuvla/authn :body])
+          cimi-params {:filter (impl/cimi-filter (select-keys body [:filter]))}
+          response   (db/bulk-edit resource-name (assoc options :cimi-params cimi-params))]
       (r/json-response response))))
 
 
