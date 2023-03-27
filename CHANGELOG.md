@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Nuvlabox - Adds bulk editing endpoints for tags
+
 ## [6.0.11] - 2023-02-22
 
 ### Changed
@@ -922,5 +924,3 @@ Test release to verify release process.
 ### Changed
 
 - Update parent to version 6.3.0.
-
- 
