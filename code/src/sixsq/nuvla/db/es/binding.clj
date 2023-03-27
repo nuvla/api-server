@@ -162,7 +162,6 @@
           aggregation             (aggregation/aggregators cimi-params)
           selected                (select/select cimi-params)
           query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
-          ;; _ (tap> query)
           body                    (merge paging orderby selected query aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
@@ -183,28 +182,51 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
-(defn- get-script [doc]
-  (str/join ";" (map (fn [[k _]] (str "ctx._source." (name k) "=params." (name k))) doc)))
+(defn- set-field-script [k]
+  (str "ctx._source." k "=params." k))
+
+(defn- add-to-array-script [k]
+  (str "ctx._source." k ".addAll(params." k ")"))
+
+(defn- remove-from-array-script [k]
+  (str "ctx._source." k ".removeAll(params." k ")"))
+
+(def bulk-update-ops->update-script-fn
+  {:set (fn [doc]
+          (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
+   :add (fn [doc]
+          (str/join ";" (map (fn [[k _]] (str (remove-from-array-script (name k)) ";" (add-to-array-script (name k)) )) doc)))
+   :remove (fn [doc]
+             (str/join ";" (map (fn [[k _]] (remove-from-array-script (name k))) doc)))})
+
+(defn- get-update-script [doc op]
+  (let [update-script-fn (bulk-update-ops->update-script-fn op)]
+    (when update-script-fn
+      {:params doc
+       :source (update-script-fn doc)})))
 
 (defn bulk-edit-data
-  [client collection-id {:keys [body cimi-params] :as options}]
+  [client collection-id {:keys [body cimi-params operation] :as options}]
   (when (empty? (:doc body)) (throw (r/ex-bad-request "no valid update data provided")))
   (try
     (let [doc          (:doc body)
           index        (escu/collection-id->index collection-id)
           query        {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
-          update-scrpt {:script {:params doc
-                                 ;; TODO: refactor this to
-                                 :source (get-script doc)}}
+          update-scrpt {:script (get-update-script doc operation)}
           body         (merge query update-scrpt)
           response     (spandex/request client {:url    [index :_update_by_query]
                                                 :method :post
-                                                :body   body})]
-      (:body response))
+                                                :body   body})
+          body-response (:body response)
+          success?      (-> body-response :failures empty?)]
+      (if success?
+        body-response
+        (let [msg (str "error when updating by query: " body-response)]
+          (throw (r/ex-response msg 500)))))
     (catch Exception e
       (let [{:keys [body] :as _response} (ex-data e)
             error (:error body)
-            msg   (str "unexpected exception querying: " (or error e))]
+            msg   (str "unexpected exception updating by query: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
 (defn bulk-delete-data

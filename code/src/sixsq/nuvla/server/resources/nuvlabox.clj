@@ -342,11 +342,26 @@ particular NuvlaBox release.
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
-(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl collection-type))
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
+
+(defn- remove-non-tags-fields [request]
+  (update-in request [:body :doc] select-keys [:tags]))
 
 (defmethod crud/bulk-action [resource-type "set-tags"]
   [request]
-  (bulk-edit-impl (update-in request [:body :doc] select-keys :tags)))
+  (bulk-edit-impl (remove-non-tags-fields request)))
+
+(def bulk-add-impl (std-crud/bulk-edit-fn resource-type collection-acl :add))
+
+(defmethod crud/bulk-action [resource-type "add-tags"]
+  [request]
+  (bulk-add-impl (remove-non-tags-fields request)))
+
+(def bulk-remove-impl (std-crud/bulk-edit-fn resource-type collection-acl :remove))
+
+(defmethod crud/bulk-action [resource-type "remove-tags"]
+  [request]
+  (bulk-remove-impl (remove-non-tags-fields request)))
 
 
 ;;

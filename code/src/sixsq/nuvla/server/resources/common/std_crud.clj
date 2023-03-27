@@ -115,16 +115,19 @@
 
 
 (defn bulk-edit-fn
-  [resource-name collection-acl collection-uri]
-  (validate-collection-acl collection-acl)
-  (fn [{:keys [body] :as request}]
-    (throw-bulk-header-missing request)
-    (tap> (zipmap (keys request) (vals request)))
-    (a/throw-cannot-bulk-action collection-acl request)
-    (let [options     (select-keys request [:nuvla/authn :body])
-          cimi-params {:filter (impl/cimi-filter (select-keys body [:filter]))}
-          response   (db/bulk-edit resource-name (assoc options :cimi-params cimi-params))]
-      (r/json-response response))))
+  ([resource-name collection-acl]
+   (bulk-edit-fn resource-name collection-acl :set))
+  ([resource-name collection-acl operation]
+   (validate-collection-acl collection-acl)
+   (fn [{:keys [body] :as request}]
+     (throw-bulk-header-missing request)
+     (a/throw-cannot-bulk-action collection-acl request)
+     (let [cimi-params {:filter (impl/cimi-filter (select-keys body [:filter]))}
+           options     (assoc (select-keys request [:nuvla/authn :body])
+                              :cimi-params cimi-params
+                              :operation   operation)
+           response   (db/bulk-edit resource-name options)]
+       (r/json-response response)))))
 
 
 (defn bulk-delete-fn
@@ -164,9 +167,7 @@
   (validate-collection-acl collection-acl)
   (fn [{:keys [params body] :as request}]
     (throw-bulk-header-missing request)
-    (tap> (impl/cimi-filter {:filter (:filter body)}))
     (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
-      (tap> "WHY HERE NOT?")
       (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
     (a/throw-cannot-bulk-action collection-acl request)
     (let [authn-info     (auth/current-authentication request)
@@ -177,7 +178,6 @@
                              (str/replace #"-" "_")
                              (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
-
 
 
 (def ^:const href-not-found-msg "requested href not found")
