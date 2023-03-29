@@ -103,7 +103,7 @@
     collection-id corresponds to the name of a Collection.
 
      On success, the function must return a the summary map of what was done
-     on the db..
+     on the db.
 
      On failure, the function must throw an ex-info containing the error
      ring response.  If the resource-id does not correspond to a Collection,

@@ -216,6 +216,7 @@
           body         (merge query update-scrpt)
           response     (spandex/request client {:url    [index :_update_by_query]
                                                 :method :post
+                                                :query-string {:refresh true}
                                                 :body   body})
           body-response (:body response)
           success?      (-> body-response :failures empty?)]
