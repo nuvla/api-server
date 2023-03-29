@@ -47,19 +47,3 @@
     ;; optional attributes
     (doseq [k #{:commit}]
       (stu/is-valid ::module-applications-sets/schema (dissoc root k)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
