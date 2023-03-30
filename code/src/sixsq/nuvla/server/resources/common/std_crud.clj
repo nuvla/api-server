@@ -107,7 +107,7 @@
     (validate-collection-acl collection-acl)
     (fn [request]
       (a/throw-cannot-query collection-acl request)
-      (let [options           (select-keys request [:nuvla/authn :query-params :cimi-params])
+      (let [options            (select-keys request [:nuvla/authn :params :cimi-params])
             [metadata entries] (db/query resource-name options)
             updated-entries   (remove nil? (map #(a/select-viewable-keys % request) entries))
             entries-and-count (merge metadata (wrapper-fn request updated-entries))]
