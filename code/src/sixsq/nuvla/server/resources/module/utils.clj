@@ -182,7 +182,7 @@
                                (-> (dissoc body :versions :operations)
                                    (std-crud/resolve-hrefs authn-info true)
                                    (assoc :versions versions :href href)))
-        throw-cannot-resolve (r/throw-response-not-200 r/status-200? on-success on-error)]
+        throw-cannot-resolve (r/configurable-check-response r/status-200? on-success on-error)]
     (-> module-request
         crud/retrieve
         throw-cannot-resolve)))
