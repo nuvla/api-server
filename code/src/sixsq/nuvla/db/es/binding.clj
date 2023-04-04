@@ -154,15 +154,14 @@
 
 
 (defn query-data
-  [client collection-id {:keys [cimi-params params] :as options}]
+  [client collection-id {:keys [cimi-params] :as options}]
   (try
     (let [index                   (escu/collection-id->index collection-id)
           paging                  (paging/paging cimi-params)
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
           selected                (select/select cimi-params)
-          query                   {:query (cond-> (acl/and-acl-query (filter/filter cimi-params) options)
-                                            (:viewable-only params) (acl/and-not-acl-edit options))}
+          query                   {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
           body                    (merge paging orderby selected query aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
@@ -196,7 +195,7 @@
   {:set (fn [doc]
           (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
    :add (fn [doc]
-          (str/join ";" (map (fn [[k _]] (str (remove-from-array-script (name k)) ";" (add-to-array-script (name k)) )) doc)))
+          (str/join ";" (map (fn [[k _]] (add-to-array-script (name k))) doc)))
    :remove (fn [doc]
              (str/join ";" (map (fn [[k _]] (remove-from-array-script (name k))) doc)))})
 
