@@ -71,9 +71,11 @@
                                                ::container/environmental-variables
                                                ::container/private-registries
                                                ::deployment/registries-credentials
-                                               ::unsupported-options
                                                ::files
-                                               ::requires-user-rights]}]))
+                                               ::requires-user-rights
+
+                                               ;;deprecated
+                                               ::unsupported-options]}]))
 
 
 (s/def ::schema (su/only-keys-maps module-application-keys-spec))

@@ -200,22 +200,15 @@ component, or application.
   (throw-price-error body)
 
   (let [[{:keys [subtype] :as module-meta}
-         {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
-                                                                        utils/split-resource)
-        module-meta (dissoc module-meta :compatibility :parent-path :published)]
+         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
+                                                         utils/split-resource)
+        module-meta (dissoc module-meta :parent-path :published)]
 
     (if (utils/is-project? subtype)
       (db-add-module-meta module-meta request)
       (let [content-url     (subtype->resource-url subtype)
 
-            [compatibility
-             unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
-
-            content-body    (-> module-content
-                                (dissoc :unsupported-options)
-                                (merge {:resource-type content-url})
-                                (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                         unsupported-options)))
+            content-body    (merge module-content {:resource-type content-url})
 
             content-request {:params      {:resource-name content-url}
                              :body        content-body
@@ -229,11 +222,7 @@ component, or application.
                                        :author author}
                                       commit (assoc :commit commit))])
             (set-price (auth/current-active-claim request))
-            (cond-> compatibility (assoc :compatibility compatibility))
             (db-add-module-meta request))))))
-
-
-
 
 
 (defn retrieve-edn
@@ -281,9 +270,9 @@ component, or application.
   (try
     (let [id          (str resource-type "/" (-> request :params :uuid))
           [module-meta
-           {:keys [author commit docker-compose] :as module-content}] (-> body
-                                                                          u/strip-service-attrs
-                                                                          utils/split-resource)
+           {:keys [author commit] :as module-content}] (-> body
+                                                           u/strip-service-attrs
+                                                           utils/split-resource)
           {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
                           (dissoc :compatibility :parent-path :published)
@@ -299,16 +288,7 @@ component, or application.
         (let [_              (throw-cannot-access-registries-or-creds request)
               content-url    (subtype->resource-url subtype)
 
-              [compatibility
-               unsupported-options] (when docker-compose
-                                      (utils/parse-get-compatibility-fields
-                                        subtype docker-compose))
-
-              content-body   (some-> module-content
-                                     (dissoc :unsupported-options)
-                                     (merge {:resource-type content-url})
-                                     (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                              unsupported-options)))
+              content-body   (some-> module-content (merge {:resource-type content-url}))
 
               content-id     (when content-body
                                (-> {:params      {:resource-name content-url}
@@ -334,8 +314,7 @@ component, or application.
               (cond-> module-meta
                       price-changed? (-> (assoc :price (merge price (:price module-meta)))
                                          (set-price (auth/current-active-claim request)))
-                      versions (assoc :versions versions)
-                      compatibility (assoc :compatibility compatibility)))))))
+                      versions (assoc :versions versions)))))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
