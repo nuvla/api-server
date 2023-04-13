@@ -183,7 +183,7 @@
 
 (defn bulk-edit-data
   [client collection-id {:keys [body cimi-params operation] :as options}]
-  (when (empty? (:doc body)) (throw (r/ex-bad-request "no valid update data provided")))
+  (when (empty? (:doc body)) (throw (r/ex-bad-request "No valid update data provided.")))
   (try
     (let [doc          (:doc body)
           index        (escu/collection-id->index collection-id)

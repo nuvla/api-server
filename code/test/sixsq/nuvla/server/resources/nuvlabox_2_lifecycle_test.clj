@@ -1770,6 +1770,53 @@
     true {} {:nuvlabox-status "nuvlabox-status"}
     false {:acl 1, :online true} {:acl 1, :online false}))
 
+(deftest bulk-edit-tags-test
+  (let [session (-> (ltu/ring-app)
+                    session
+                    (content-type "application/json"))
+        session-owner      (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+        session-owner-bulk (header session-owner "bulk" "yes")
+        created-result (request session-owner base-uri
+                                :request-method :post
+                                :body (json/write-str (assoc valid-nuvlabox
+                                                             :owner nuvlabox-owner)))
+        _ (tap> created-result)
+        endpoints    (mapv #(str base-uri "/" %) ["set-tags" "remove-tags" "add-tags"])
+        check-error #(-> %
+                         (ltu/is-status 400)
+                         (ltu/body)
+                         (json/read-str)
+                         (get "message"))]
+    (run!
+      (fn [endpoint]
+        (is (= "Bulk request should contain bulk http header."
+               (-> session-owner
+                   (request endpoint :request-method :patch)
+                   check-error))))
+      endpoints)
+
+    (run!
+     (fn [endpoint]
+       (is (= "No valid update data provided."
+              (-> session-owner-bulk
+                  (request endpoint :request-method :patch)
+                  check-error))))
+     endpoints)
+
+    ;; This should not throw in test setup, because it's working
+    ;; on production
+    (run!
+     (fn [endpoint]
+       (is (= "unexpected exception updating by query: {:root_cause [{:type \"illegal_argument_exception\", :reason \"script_lang not supported [painless]\"}], :type \"illegal_argument_exception\", :reason \"script_lang not supported [painless]\"}"
+              (-> session-owner-bulk
+                  (request endpoint
+                           :request-method :patch
+                           :body (json/write-str {:doc {:tags []}}))
+                  (ltu/is-status 500)
+                  (ltu/body)
+                  (json/read-str)
+                  (get "message")))))
+     endpoints)))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
