@@ -92,6 +92,16 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
+    (when (utils/is-application? subtype)
+      (testing "application should have compatibility attribute set"
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (dissoc valid-entry :compatibility)))
+            (ltu/body->edn)
+            (ltu/is-status 400)
+            (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
+
     ;; adding, retrieving and  deleting entry as user should succeed
     (doseq [session [session-admin session-user]]
       (let [uri     (-> session

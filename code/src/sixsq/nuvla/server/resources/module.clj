@@ -187,17 +187,20 @@ component, or application.
              (count creds))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
 
+(defn throw-compatibility-required-for-application
+  [{:keys [subtype compatibility]}]
+  (when (and (utils/is-application? subtype) (nil? compatibility))
+    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))))
+
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
 
   (a/throw-cannot-add collection-acl request)
-
   (throw-colliding-path (:path body))
-
   (throw-cannot-access-registries-or-creds request)
-
   (throw-price-error body)
+  (throw-compatibility-required-for-application body)
 
   (let [[{:keys [subtype] :as module-meta}
          {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
@@ -275,7 +278,7 @@ component, or application.
                                                            utils/split-resource)
           {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
-                          (dissoc :compatibility :parent-path :published)
+                          (dissoc :parent-path :published)
                           (assoc :subtype subtype)
                           utils/set-parent-path)]
 
@@ -308,13 +311,14 @@ component, or application.
                                             (get-in module-meta [:price :cent-amount-daily]))
                                       (not= (:currency price)
                                             (get-in module-meta [:price :currency]))))]
-          (edit-impl
-            (assoc request
-              :body
-              (cond-> module-meta
-                      price-changed? (-> (assoc :price (merge price (:price module-meta)))
-                                         (set-price (auth/current-active-claim request)))
-                      versions (assoc :versions versions)))))))
+          (-> request
+              (update-in [:cimi-params :select] disj "compatibility")
+              (assoc :body
+                     (cond-> module-meta
+                             price-changed? (-> (assoc :price (merge price (:price module-meta)))
+                                                (set-price (auth/current-active-claim request)))
+                             versions (assoc :versions versions)))
+              edit-impl))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
