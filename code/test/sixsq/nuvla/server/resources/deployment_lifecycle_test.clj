@@ -43,6 +43,8 @@
     :path                      path
     :subtype                   subtype
 
+    :compatibility             "docker-compose"
+
     :logo-url                  "https://example.org/logo"
 
     :data-accept-content-types ["application/json" "application/x-something"]
