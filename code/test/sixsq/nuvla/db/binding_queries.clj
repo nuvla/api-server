@@ -275,8 +275,10 @@
         ;; bulk-editing all
         (let [options {:cimi-params {:filter nil}
                        :nuvla/authn auth/internal-identity
-                       :body {:doc {:tags []}}}
-              response (db/bulk-edit db collection-id options)]
+                       ;; this breaks
+                      ;;  :operation :set
+                       :body {:doc {:tags ["testing" "is" "good"]}}}
+              response (db/bulk-edit db collection-id options) ]
           (is (= 4 (:updated response))))
 
         ;; bulk-editing half

@@ -1,24 +1,22 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require
-    [clojure.string :as str]
-    [clojure.tools.logging :as log]
-    [qbits.spandex :as spandex]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
-    [sixsq.nuvla.db.binding :refer [Binding]]
-    [sixsq.nuvla.db.es.acl :as acl]
-    [sixsq.nuvla.db.es.aggregation :as aggregation]
-    [sixsq.nuvla.db.es.common.es-mapping :as mapping]
-    [sixsq.nuvla.db.es.common.utils :as escu]
-    [sixsq.nuvla.db.es.filter :as filter]
-    [sixsq.nuvla.db.es.order :as order]
-    [sixsq.nuvla.db.es.pagination :as paging]
-    [sixsq.nuvla.db.es.select :as select]
-    [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.server.util.response :as r])
-  (:import
-    (java.io Closeable)))
+  (:require [clojure.tools.logging :as log]
+            [qbits.spandex :as spandex]
+            [sixsq.nuvla.auth.utils.acl :as acl-utils]
+            [sixsq.nuvla.db.binding :refer [Binding]]
+            [sixsq.nuvla.db.es.acl :as acl]
+            [sixsq.nuvla.db.es.aggregation :as aggregation]
+            [sixsq.nuvla.db.es.common.es-mapping :as mapping]
+            [sixsq.nuvla.db.es.common.utils :as escu]
+            [sixsq.nuvla.db.es.filter :as filter]
+            [sixsq.nuvla.db.es.order :as order]
+            [sixsq.nuvla.db.es.pagination :as paging]
+            [sixsq.nuvla.db.es.select :as select]
+            [sixsq.nuvla.db.es.script-utils :refer [get-update-script]]
+            [sixsq.nuvla.db.utils.common :as cu]
+            [sixsq.nuvla.server.util.response :as r])
+  (:import (java.io Closeable)))
 
 ;; FIXME: Need to understand why the refresh parameter must be used to make unit test pass.
 
@@ -182,28 +180,6 @@
             msg   (str "unexpected exception querying: " (or error e))]
         (throw (r/ex-response msg 500))))))
 
-(defn- set-field-script [k]
-  (str "ctx._source." k "=params." k))
-
-(defn- add-to-array-script [k]
-  (str "ctx._source." k ".addAll(params." k ")"))
-
-(defn- remove-from-array-script [k]
-  (str "ctx._source." k ".removeAll(params." k ")"))
-
-(def bulk-update-ops->update-script-fn
-  {:set (fn [doc]
-          (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
-   :add (fn [doc]
-          (str/join ";" (map (fn [[k _]] (add-to-array-script (name k))) doc)))
-   :remove (fn [doc]
-             (str/join ";" (map (fn [[k _]] (remove-from-array-script (name k))) doc)))})
-
-(defn- get-update-script [doc op]
-  (let [update-script-fn (bulk-update-ops->update-script-fn op)]
-    (when update-script-fn
-      {:params doc
-       :source (update-script-fn doc)})))
 
 (defn bulk-edit-data
   [client collection-id {:keys [body cimi-params operation] :as options}]
