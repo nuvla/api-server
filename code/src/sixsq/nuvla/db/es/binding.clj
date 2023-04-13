@@ -159,7 +159,7 @@
           orderby                 (order/sorters cimi-params)
           aggregation             (aggregation/aggregators cimi-params)
           selected                (select/select cimi-params)
-          query                   {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
+          query                   {:query (acl/and-acl-query (filter/filter cimi-params) options)}
           body                    (merge paging orderby selected query aggregation)
           response                (spandex/request client {:url    [index :_search]
                                                            :method :post
