@@ -256,3 +256,8 @@
      :version           (or version-index
                             (last-index (:versions resource)))
      :applications-sets (get-in resource [:content :applications-sets])}))
+
+
+(defn get-applications-sets
+  [applications-sets]
+  (get-in applications-sets [:content :applications-sets] []))
