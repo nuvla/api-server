@@ -574,71 +574,50 @@
      :href
      "deployment-set2/51e193db-8c21-4bf2-a5b2-852f6c22e20d/create"}]})
 
-(defn plan-set
-  [application-set application-set-overwrites]
-  (for [t (dep-set-utils/app-set-targets application-set-overwrites)
-        a (dep-set-utils/merge-apps application-set application-set-overwrites)]
-    {:credential  t
-     :application a
-     :app-set     (dep-set-utils/app-set-name application-set)}))
 
-(defn plan
-  [deployment-set applications-sets]
-  ;; plan what to create
-  ;; get existing deployments
-  ;; loop over plan
-  ;;   case not-exist create
-  ;;   case exist
-  ;;     need update? update if not keep
-
-  ;; look to list of keep and update and remove what is not referenced
-  (->> (mapcat plan-set
-            (module-utils/get-applications-sets applications-sets)
-            (dep-set-utils/get-applications-sets deployment-set))
-       (group-by :app-set)))
 
 (deftest plan-test
-  (is (= (plan u-deployment-set u-applications-sets-v11)
-         {"set-1" [{:app-set     "set-1"
-                    :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
-                                  :version 0}
-                    :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
-                   {:app-set     "set-1"
-                    :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
-                                  :version 0}
-                    :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
-                   {:app-set     "set-1"
-                    :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
-                                  :version 0}
-                    :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
-                   {:app-set     "set-1"
-                    :application {:environmental-variables [{:name  "var_1_value"
-                                                             :value "overwritten var1 overwritten in deployment set"}
-                                                            {:name  "var_2"
-                                                             :value "overwritten in deployment set"}]
-                                  :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
-                                  :version                 1}
-                    :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
-                   {:app-set     "set-1"
-                    :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
-                                  :version 0}
-                    :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
-                   {:app-set     "set-1"
-                    :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
-                                  :version 0}
-                    :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
-                   {:app-set     "set-1"
-                    :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
-                                  :version 0}
-                    :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
-                   {:app-set     "set-1"
-                    :application {:environmental-variables [{:name  "var_1_value"
-                                                             :value "overwritten var1 overwritten in deployment set"}
-                                                            {:name  "var_2"
-                                                             :value "overwritten in deployment set"}]
-                                  :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
-                                  :version                 1}
-                    :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}]})))
+  (is (= (dep-set-utils/plan u-deployment-set u-applications-sets-v11)
+         #{{:app-set     "set-1"
+            :application {:environmental-variables [{:name  "var_1_value"
+                                                     :value "overwritten var1 overwritten in deployment set"}
+                                                    {:name  "var_2"
+                                                     :value "overwritten in deployment set"}]
+                          :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                          :version                 1}
+            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+           {:app-set     "set-1"
+            :application {:environmental-variables [{:name  "var_1_value"
+                                                     :value "overwritten var1 overwritten in deployment set"}
+                                                    {:name  "var_2"
+                                                     :value "overwritten in deployment set"}]
+                          :id                      "module/361945e2-36a8-4cb2-9d5d-6f0cef38a1f8"
+                          :version                 1}
+            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+           {:app-set     "set-1"
+            :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
+                          :version 0}
+            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+           {:app-set     "set-1"
+            :application {:id      "module/188555b1-2006-4766-b287-f60e5e908197"
+                          :version 0}
+            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+           {:app-set     "set-1"
+            :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
+                          :version 0}
+            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+           {:app-set     "set-1"
+            :application {:id      "module/770f5090-be33-42a3-b9fe-0de4622f12ea"
+                          :version 0}
+            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}
+           {:app-set     "set-1"
+            :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
+                          :version 0}
+            :credential  "credential/72c875b6-9acd-4a54-b3aa-d95a2ed48316"}
+           {:app-set     "set-1"
+            :application {:id      "module/fcc71f74-1898-4e38-a284-5997141801a7"
+                          :version 0}
+            :credential  "credential/bc258c46-4771-45d3-9b38-97afdf185f44"}})))
 
 (deftest module-utils_get-applications-sets
   (is (= (module-utils/get-applications-sets u-applications-sets-v11)

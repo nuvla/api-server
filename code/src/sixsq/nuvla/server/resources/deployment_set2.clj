@@ -9,6 +9,7 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -42,6 +43,13 @@ These resources represent a deployment set that regroups deployments.
               {:name           "stop"
                :uri            "stop"
                :description    "stop deployment set"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"}
+
+              {:name           "plan"
+               :uri            "plan"
+               :description    "get an action plan for deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}])
@@ -130,6 +138,15 @@ These resources represent a deployment set that regroups deployments.
     (std-crud/create-bulk-job
       (str action "_deployment_set2") id authn-info acl payload)))
 
+(defmethod crud/do-action [resource-type "plan"]
+  [{{uuid :uuid} :params :as request}]
+  (let [id             (str resource-type "/" uuid)
+        deployment-set (-> id
+                           crud/retrieve-by-id-as-admin
+                           (a/throw-cannot-manage request))
+        applications-sets ()]
+    (r/json-response (utils/plan deployment-set applications-sets))))
+
 (defmethod crud/do-action [resource-type "start"]
   [{{uuid :uuid} :params :as request}]
   (let [id            (str resource-type "/" uuid)
@@ -181,16 +198,18 @@ These resources represent a deployment set that regroups deployments.
   (let [create-op   (u/action-map id :create)
         start-op    (u/action-map id :start)
         stop-op     (u/action-map id :stop)
+        plan-op     (u/action-map id :plan)
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
-            can-manage? (update :operations conj create-op)
+            can-manage? (update :operations conj create-op plan-op)
 
             (and can-manage? (can-start? resource))
             (update :operations conj start-op)
 
             (and can-manage? (can-stop? resource))
-            (update :operations conj stop-op))))
+            (update :operations conj stop-op)
+            )))
 
 ;;
 ;; initialization
