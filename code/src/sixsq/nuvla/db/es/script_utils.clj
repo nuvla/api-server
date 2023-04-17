@@ -10,13 +10,20 @@
 (defn- remove-from-array-script [k]
   (str "ctx._source." k ".removeAll(params." k ")"))
 
+(defn- initialize-if-necessary [k]
+  (let [field (str "ctx._source." k)]
+    (str "if (" field "== null)" field "= new ArrayList()")))
+
 (def bulk-update-ops->update-script-fn
   {:set (fn [doc]
           (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
    :add (fn [doc]
-          (str/join ";" (map (fn [[k _]] (add-to-array-script (name k))) doc)))
+          (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
+                                             (remove-from-array-script (name k))
+                                             (add-to-array-script (name k))]) doc)))
    :remove (fn [doc]
-             (str/join ";" (map (fn [[k _]] (remove-from-array-script (name k))) doc)))})
+             (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
+                                                (remove-from-array-script (name k))]) doc)))})
 
 (defn get-update-script [doc op]
   (let [update-script-fn (bulk-update-ops->update-script-fn op)]
