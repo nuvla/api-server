@@ -4,6 +4,10 @@
   [deployment-set]
   (get-in deployment-set [:applications-sets 0 :overwrites] []))
 
+(defn app-set-name
+  [app-set]
+  (:name app-set))
+
 (defn app-set-targets
   [app-set]
   (get app-set :targets []))
