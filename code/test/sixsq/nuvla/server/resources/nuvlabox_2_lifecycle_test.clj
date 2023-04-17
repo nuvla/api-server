@@ -1875,11 +1875,6 @@
                                            "NE1" ["bar" "baz"]
                                            ["foo" "bar" "baz"]))}))
 
-(deftest bad-methods
-  (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
-    (ltu/verify-405-status [[base-uri :delete]
-                            [resource-uri :post]])))
-
 (deftest bulk-edit-tags-test-fail-test
   (let [session            (-> (ltu/ring-app)
                                session
@@ -1893,17 +1888,21 @@
                                 (json/read-str)
                                 (get "message"))]
     (run!
-      (fn [endpoint]
-        (is (= "Bulk request should contain bulk http header."
-               (-> session-owner
-                   (request endpoint :request-method :patch)
-                   check-error))))
-      endpoints)
-
+     (fn [endpoint]
+       (is (= "Bulk request should contain bulk http header."
+              (-> session-owner
+                  (request endpoint :request-method :patch)
+                  check-error))))
+     endpoints)
     (run!
-      (fn [endpoint]
-        (is (= "No valid update data provided."
-               (-> session-owner-bulk
-                   (request endpoint :request-method :patch)
-                   check-error))))
-      endpoints)))
+     (fn [endpoint]
+       (is (= "No valid update data provided."
+              (-> session-owner-bulk
+                  (request endpoint :request-method :patch)
+                  check-error))))
+     endpoints)))
+
+(deftest bad-methods
+  (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
+    (ltu/verify-405-status [[base-uri :delete]
+                            [resource-uri :post]])))
