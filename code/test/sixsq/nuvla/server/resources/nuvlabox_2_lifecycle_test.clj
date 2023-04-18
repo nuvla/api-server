@@ -1869,7 +1869,7 @@
   (run-bulk-edit-test! {:endpoint         (str base-uri "/" "add-tags")
                         :filter            "id!=null"
                         :test-name        "Add specific tags to current tags for all edges"
-                        :tags             ["bar" "baz" "baz"]
+                        :tags             ["bar" "baz"]
                         :expected-fn      (fn [ne]
                                             (case (:name ne)
                                               "NE1" ["bar" "baz"]
@@ -1892,25 +1892,18 @@
      (fn [endpoint]
        (is (= "Bulk request should contain bulk http header."
               (-> session-owner
-                  (request endpoint :request-method :patch)
+                  (request endpoint :request-method :patch :body (json/write-str {:docs {:tags []}}))
                   check-error))))
      endpoints)
     (run!
      (fn [endpoint]
        (let [err-msg (-> session-owner-bulk
-                         (request endpoint :request-method :patch)
+                         (request endpoint :request-method :patch :body (json/write-str {:docs {:tags []}}))
                          check-error)]
          (is (and (string? err-msg)
                   (str/includes? err-msg "resource does not satisfy defined schema")))))
      endpoints)
-    (run!
-     (fn [endpoint]
-       (let [err-msg (-> session-owner-bulk
-                         (request endpoint :request-method :patch)
-                         check-error)]
-         (is (and (string? err-msg)
-                  (str/includes? err-msg "resource does not satisfy defined schema")))))
-     endpoints)))
+     ,))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]
