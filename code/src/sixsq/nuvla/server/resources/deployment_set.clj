@@ -138,12 +138,6 @@ These resources represent a deployment set that regroups deployments.
     (std-crud/create-bulk-job
       (str action "_deployment_set") id authn-info acl payload)))
 
-(defn retrieve-module
-  [href request]
-  (-> href
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-view request)))
-
 (defmethod crud/do-action [resource-type "plan"]
   [{{uuid :uuid} :params :as request}]
   (let [id                (str resource-type "/" uuid)
@@ -152,7 +146,7 @@ These resources represent a deployment set that regroups deployments.
                               (a/throw-cannot-manage request))
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
-                              (retrieve-module request))]
+                              (utils/resolve-application request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
 
 (defmethod crud/do-action [resource-type "start"]

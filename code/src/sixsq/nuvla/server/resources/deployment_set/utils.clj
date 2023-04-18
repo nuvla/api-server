@@ -1,6 +1,10 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
-            [sixsq.nuvla.server.resources.module.utils :as module-utils]))
+            [sixsq.nuvla.auth.utils :as auth]
+            [sixsq.nuvla.server.resources.common.crud :as crud]
+            [sixsq.nuvla.server.resources.common.utils :as u]
+            [sixsq.nuvla.server.resources.module.utils :as module-utils]
+            [sixsq.nuvla.server.util.response :as r]))
 
 (defn get-first-applications-sets
   [deployment-set]
@@ -100,3 +104,11 @@
     (mapcat plan-set
             (module-utils/get-applications-sets applications-sets)
             (get-applications-sets deployment-set))))
+
+(defn resolve-application
+  [href request]
+  (-> (crud/retrieve {:params         (u/id->request-params href)
+                      :request-method :get
+                      :nuvla/authn    (auth/current-authentication request)})
+      r/throw-response-not-200
+      :body))
