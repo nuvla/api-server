@@ -20,14 +20,13 @@
 (deftest create-update-script-for-multiple-fields
   (let [doc       {:tags ["testing" "is" "good"]
                    :other ["and" "fun"]}]
-    (is (= {:params {:tags ["testing" "is" "good"], :other ["and" "fun"]},
-            :source "ctx._source.tags=params.tags;ctx._source.other=params.other"}
+    (is (= {:params {:tags ["testing" "is" "good"], :other ["and" "fun"]}, :source "ctx._source.tags=params.tags;ctx._source.other=params.other"}
            (get-update-script doc :set)))
-    (is (= {:params {:tags ["testing" "is" "good"], :other ["and" "fun"]},
-            :source
-            "ctx._source.tags.addAll(params.tags);ctx._source.other.addAll(params.other)"}
+    (is (= {:params {:tags ["testing" "is" "good"],
+                     :other ["and" "fun"]},
+            :source "if (ctx._source.tags== null) ctx._source.tags= new ArrayList();ctx._source.tags.removeAll(params.tags);ctx._source.tags.addAll(params.tags);if (ctx._source.other== null) ctx._source.other= new ArrayList();ctx._source.other.removeAll(params.other);ctx._source.other.addAll(params.other)"}
            (get-update-script doc :add)))
-    (is (= {:params {:tags ["testing" "is" "good"], :other ["and" "fun"]},
-            :source
-            "ctx._source.tags.removeAll(params.tags);ctx._source.other.removeAll(params.other)"}
+    (is (= {:params {:tags ["testing" "is" "good"],
+                     :other ["and" "fun"]},
+            :source "if (ctx._source.tags== null) ctx._source.tags= new ArrayList();ctx._source.tags.removeAll(params.tags);if (ctx._source.other== null) ctx._source.other= new ArrayList();ctx._source.other.removeAll(params.other)"}
            (get-update-script doc :remove)))))
