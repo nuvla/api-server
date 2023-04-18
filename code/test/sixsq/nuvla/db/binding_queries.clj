@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.db.binding-queries
   (:require
     [clojure.spec.alpha :as s]
-    [clojure.test :refer [is]]
+    [clojure.test :refer [is testing deftest]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -208,7 +208,7 @@
 
         ;; and
         (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                                              (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
                        :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= 2 (:count query-meta)))
@@ -283,7 +283,7 @@
 
         ;; bulk-editing half
         (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                                              (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
                        :nuvla/authn auth/internal-identity
                        :body {:doc {:tags []}}}
               response (db/bulk-edit db collection-id options)]
@@ -291,11 +291,22 @@
 
         ;; bulk-editing none
         (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                               (str "(does_not_exists=true)"))}
+                                              (str "(does_not_exists=true)"))}
                        :nuvla/authn auth/internal-identity
                        :body {:doc {:tags []}}}
               response (db/bulk-edit db collection-id options)]
           (is (= 0 (:updated response))))
+
+        ;; bulk-editing failing data
+        (testing "failing update data"
+          (let [options {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(does_not_exists=true)"))}
+                         :nuvla/authn auth/internal-identity
+                         :body {}}
+                error-msg (try (db/bulk-edit db collection-id options)
+                               (catch Exception e (ex-message e)))]
+            (is (= "No valid update data provided." error-msg ) )))
+
 
         ;; delete all of the docs
         (let [options {:cimi-params {:filter (parser/parse-cimi-filter
