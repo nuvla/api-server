@@ -746,7 +746,8 @@
               (ltu/is-key-value :applications-sets dep-apps-sets)))
 
         (testing "user plan action should be built on demand"
-          (with-redefs [t/retrieve-module (constantly u-applications-sets-v11)]
+          (with-redefs [dep-set-utils/resolve-application
+                        (constantly u-applications-sets-v11)]
             (-> session-user
                 (request (-> session-user
                              (request dep-set-url)
