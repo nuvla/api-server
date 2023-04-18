@@ -13,55 +13,38 @@
 
 
 (def valid-deployment-set
-  {:id            (str deployment-set-resource/resource-type "/uuid")
-   :resource-type deployment-set-resource/resource-type
-   :created       timestamp
-   :updated       timestamp
-   :acl           valid-acl
+  {:id                (str deployment-set-resource/resource-type "/uuid")
+   :resource-type     deployment-set-resource/resource-type
+   :created           timestamp
+   :updated           timestamp
+   :acl               valid-acl
 
-   :state         "CREATED"
-
-   :spec          {:targets           ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                       "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]
-                   :applications      ["module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
-                                       "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"]
-                   :applications-sets {:id                "module/module-uuid"
-                                       :resource-type     "module"
-                                       :created           timestamp
-                                       :updated           timestamp
-                                       :acl               valid-acl
-
-                                       :author            "someone"
-                                       :commit            "wip"
-
-                                       :applications-sets [{:name         "x"
-                                                            :applications [{:id      "module/x"
-                                                                            :version 0}]}]}
-                   :env               [{:name        "a"
-                                        :value       "a value"
-                                        :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]
-                   :coupons           [{:code        "a"
-                                        :application "module/d2dc1733-ac2c-45b1-b68a-0ec02653bc0c_10"}]}})
+   :state             "CREATED"
+   :applications-sets [{:id         "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                        :version    1
+                        :overwrites [{:applications [{:id                      "module/c2dc1733-ac2c-45b1-b68a-0ec02653bc0f"
+                                                      :version                 10
+                                                      :environmental-variables [{:name  "env_var"
+                                                                                 :value "some value"}]}]
+                                      :targets      ["credential/a2dc1733-ac2c-45b1-b68a-0ec02653bc0c"
+                                                     "credential/b2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]}]}]})
 
 
 (deftest test-schema-check
   (stu/is-valid ::t/deployment-set valid-deployment-set)
-  (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:spec :start] true))
+  (stu/is-valid ::t/deployment-set (assoc valid-deployment-set :start true))
   (stu/is-invalid ::t/deployment-set (assoc valid-deployment-set :badKey "badValue"))
   (stu/is-invalid ::t/deployment-set (assoc valid-deployment-set :state "wrong"))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :applications] ["must-be-href"]))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :applications] []))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :targets] []))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :env 0] {}))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :env 0] {:name  "b"
-                                                                                    :value "b"}))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :coupon 0] {}))
-  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:spec :coupon 0] {:code "x"}))
+  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :id] "must-be-href"))
+  (stu/is-invalid ::t/deployment-set (assoc valid-deployment-set :applications-sets []))
+  (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :targets] []))
+  (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :applications 0
+                                                                   :environmental-variables] []))
 
   ;; required attributes
-  (doseq [k #{:id :resource-type :created :updated :acl :state :spec}]
+  (doseq [k #{:id :resource-type :created :updated :acl :state}]
     (stu/is-invalid ::t/deployment-set (dissoc valid-deployment-set k)))
 
   ;; optional attributes
-  (doseq [k #{:env :coupons}]
+  #_(doseq [k #{}]
     (stu/is-valid ::t/deployment-set (dissoc valid-deployment-set k))))

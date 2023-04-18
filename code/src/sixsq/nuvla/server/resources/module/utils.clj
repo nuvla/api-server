@@ -177,7 +177,8 @@
         params               (u/id->request-params href)
         module-request       {:params      params
                               :nuvla/authn authn-info}
-        on-error             #(throw (r/ex-bad-request (str "cannot resolve " href)))
+        on-error             (fn [_response]
+                               (throw (r/ex-bad-request (str "cannot resolve " href))))
         on-success           (fn [{{:keys [versions] :as body} :body}]
                                (-> (dissoc body :versions :operations)
                                    (std-crud/resolve-hrefs authn-info true)

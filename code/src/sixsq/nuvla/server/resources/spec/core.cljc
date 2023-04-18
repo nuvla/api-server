@@ -136,7 +136,7 @@
 ;; with a slash.  The later part is optional for singleton resources like the cloud-entry-point.
 ;;
 
-(def resource-href-regex #"^[a-z]([a-z-]*[a-z0-9])?(/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?)?$")
+(def resource-href-regex #"^[a-z]([a-z-]*[a-z])?(/[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?)?$")
 
 (s/def ::resource-href
   (-> (st/spec (s/and string? #(re-matches resource-href-regex %)))

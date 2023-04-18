@@ -1,9 +1,23 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
-  (:require [sixsq.nuvla.server.resources.module.utils :as module-utils]))
+  (:require [clojure.string :as str]
+            [sixsq.nuvla.server.resources.module.utils :as module-utils]))
+
+(defn get-first-applications-sets
+  [deployment-set]
+  (get-in deployment-set [:applications-sets 0] {}))
 
 (defn get-applications-sets
   [deployment-set]
-  (get-in deployment-set [:applications-sets 0 :overwrites] []))
+  (-> deployment-set
+      get-first-applications-sets
+      (get :overwrites [])))
+
+(defn get-applications-sets-href
+  [deployment-set]
+  (->> deployment-set
+       get-first-applications-sets
+       ((juxt :id :version))
+       (str/join "_")))
 
 (defn app-set-name
   [app-set]
