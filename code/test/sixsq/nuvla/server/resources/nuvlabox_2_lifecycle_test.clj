@@ -1866,14 +1866,15 @@
                         :expected-fn   (fn [_] [])}))
 
 (deftest bulk-add-tags
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "add-tags")
-                        :filter         "id!=null"
-                        :test-name     "Add specific tags to current tags for all edges"
-                        :tags          ["bar" "baz"]
-                        :expected-fn   (fn [ne]
-                                         (case (:name ne)
-                                           "NE1" ["bar" "baz"]
-                                           ["foo" "bar" "baz"]))}))
+  (run-bulk-edit-test! {:endpoint         (str base-uri "/" "add-tags")
+                        :filter            "id!=null"
+                        :test-name        "Add specific tags to current tags for all edges"
+                        :tags             ["bar" "baz" "baz"]
+                        :expected-fn      (fn [ne]
+                                            (case (:name ne)
+                                              "NE1" ["bar" "baz"]
+                                              ["foo" "bar" "baz"]))}))
+
 
 (deftest bulk-edit-tags-test-fail-test
   (let [session            (-> (ltu/ring-app)
@@ -1896,10 +1897,11 @@
      endpoints)
     (run!
      (fn [endpoint]
-       (is (= "No valid update data provided."
-              (-> session-owner-bulk
-                  (request endpoint :request-method :patch)
-                  check-error))))
+       (let [err-msg (-> session-owner-bulk
+                         (request endpoint :request-method :patch)
+                         check-error)]
+         (is (and (string? err-msg)
+                  (str/includes? err-msg "resource does not satisfy defined schema")))))
      endpoints)))
 
 (deftest bad-methods

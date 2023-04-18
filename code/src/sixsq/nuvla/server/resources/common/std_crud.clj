@@ -11,6 +11,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.spec.common :as common-spec]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
@@ -113,6 +114,7 @@
             entries-and-count (merge metadata (wrapper-fn request updated-entries))]
         (r/json-response entries-and-count)))))
 
+(def validate-tags (u/create-spec-validation-fn ::common-spec/tags))
 
 (defn bulk-edit-fn
   ([resource-name collection-acl]
@@ -121,6 +123,7 @@
    (validate-collection-acl collection-acl)
    (fn [{:keys [body] :as request}]
      (throw-bulk-header-missing request)
+     (validate-tags (-> body :doc :tags))
      (a/throw-cannot-bulk-action collection-acl request)
      (let [cimi-params {:filter (impl/cimi-filter (select-keys body [:filter]))}
            options     (assoc (select-keys request [:nuvla/authn :body])
