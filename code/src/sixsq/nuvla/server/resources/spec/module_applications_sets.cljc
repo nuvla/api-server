@@ -56,7 +56,7 @@
     :json-schema/type "map"))
 
 (s/def ::applications
-  (assoc (st/spec (s/coll-of ::application :min-count 0))
+  (assoc (st/spec (s/coll-of ::application))
     :name "applications"
     :json-schema/type "array"))
 
