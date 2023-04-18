@@ -1902,6 +1902,14 @@
                          check-error)]
          (is (and (string? err-msg)
                   (str/includes? err-msg "resource does not satisfy defined schema")))))
+     endpoints)
+    (run!
+     (fn [endpoint]
+       (let [err-msg (-> session-owner-bulk
+                         (request endpoint :request-method :patch)
+                         check-error)]
+         (is (and (string? err-msg)
+                  (str/includes? err-msg "resource does not satisfy defined schema")))))
      endpoints)))
 
 (deftest bad-methods

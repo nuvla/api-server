@@ -4,6 +4,7 @@
     [clojure.test :refer [is]]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.binding :as db]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.spec.acl-resource :as acl-resource]))
 
 
@@ -39,7 +40,7 @@
       ;; create an entry in the database
       (let [my-id            (str collection-id "/my-uuid")
             my-data          {:id my-id, :long 1, :boolean true, :string "ok"}
-            my-data-with-acl (assoc my-data :acl admin-acl)
+            my-data-with-acl (assoc my-data :acl admin-acl :more "hi")
             response         (db/add db my-data-with-acl nil)]
         (is (s/valid? ::resource my-data-with-acl))
         (is (= 201 (:status response)))
@@ -84,6 +85,20 @@
             ;; make sure that the update was applied
             (let [retrieved-data (db/retrieve db my-id nil)]
               (is (= updated-data retrieved-data)))
+
+            ;; bulk edit one entry
+            (let [response  (db/bulk-edit
+                             db
+                             collection-id
+                             {:cimi-params {:filter (parser/parse-cimi-filter
+                                                     (str "two=3"))}
+                              :nuvla/authn auth/internal-identity
+                              :operation :set
+                              :body {:doc {:tags ["foo;bar"]}}})
+                  retrieved-data (db/retrieve db my-id nil)]
+              ;; make sure that the update was applied
+              (is 1 (:updated response))
+              (is (= (assoc updated-data :tags ["foo;bar"]) retrieved-data)))
 
             ;; delete the first entry
             (let [response (db/delete db updated-data nil)]
