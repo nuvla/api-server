@@ -396,16 +396,14 @@ particular NuvlaBox release.
   [{{uuid :uuid} :params body :body :as request}]
   (let [id (str resource-type "/" uuid)]
     (try
-      (let [tags         (some-> body :tags set vec)
-            capabilities (some-> body :capabilities set vec)
+      (let [capabilities (some-> body :capabilities set vec)
             ssh-keys     (some-> body :ssh-keys set vec)
             nuvlabox     (-> (db/retrieve id request)
                              (a/throw-cannot-manage request)
                              (u/throw-can-not-do-action
                                utils/can-commission? "commission")
                              (assoc :state utils/state-commissioned)
-                             (cond-> tags (assoc :tags tags)
-                                     capabilities (assoc :capabilities capabilities)
+                             (cond-> capabilities (assoc :capabilities capabilities)
                                      ssh-keys (assoc :ssh-keys ssh-keys))
                              u/update-timestamps
                              crud/validate)]
