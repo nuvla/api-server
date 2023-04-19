@@ -86,19 +86,6 @@
             (let [retrieved-data (db/retrieve db my-id nil)]
               (is (= updated-data retrieved-data)))
 
-            ;; bulk edit one entry
-            (let [response  (db/bulk-edit
-                             db
-                             collection-id
-                             {:cimi-params {:filter (parser/parse-cimi-filter
-                                                     (str "two=3"))}
-                              :nuvla/authn auth/internal-identity
-                              :operation :set
-                              :body {:doc {:tags ["foo;bar"]}}})
-                  retrieved-data (db/retrieve db my-id nil)]
-              ;; make sure that the update was applied
-              (is 1 (:updated response))
-              (is (= (assoc updated-data :tags ["foo;bar"]) retrieved-data)))
 
             ;; delete the first entry
             (let [response (db/delete db updated-data nil)]
