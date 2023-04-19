@@ -12,7 +12,7 @@
 
 (defn- initialize-if-necessary [k]
   (let [field (str "ctx._source." k)]
-    (str "if (" field "== null)" field "= new ArrayList()")))
+    (str "if (" field "== null) " field "= new ArrayList()")))
 
 (def bulk-update-ops->update-script-fn
   {:set (fn [doc]

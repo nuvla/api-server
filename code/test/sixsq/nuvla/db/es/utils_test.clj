@@ -8,12 +8,11 @@
             :source "ctx._source.tags=params.tags"}
            (get-update-script doc :set)
            ))
-    (is (= {:params {:tags ["testing" "is" "good"]},
-            :source "ctx._source.tags.addAll(params.tags)"}
+    (is (= {:params {:tags ["testing" "is" "good"]}, :source "if (ctx._source.tags== null) ctx._source.tags= new ArrayList();ctx._source.tags.removeAll(params.tags);ctx._source.tags.addAll(params.tags)"}
            (get-update-script doc :add)
            ))
     (is (= {:params {:tags ["testing" "is" "good"]},
-            :source "ctx._source.tags.removeAll(params.tags)"}
+            :source "if (ctx._source.tags== null) ctx._source.tags= new ArrayList();ctx._source.tags.removeAll(params.tags)"}
            (get-update-script doc :remove)
            ))))
 
