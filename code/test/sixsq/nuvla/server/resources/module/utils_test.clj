@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.module.utils-test
   (:require
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.module.utils :as t]))
 
@@ -86,7 +87,7 @@
                       ["docker-compose" []] docker-compose-3-str
                       ["swarm" []] docker-compose-4-str))
 
-(deftest account-id->email
+(deftest active-claim->account-id
   (is (thrown-with-msg?
         Exception
         #"unable to resolve vendor account-id for active-claim 'user/jane'"
@@ -96,9 +97,41 @@
 
 (deftest resolve-vendor-email
   (let [module-meta {:price {:account-id "acct_x"}}
-        email "jane@example.com"]
+        email       "jane@example.com"]
     (is (= (t/resolve-vendor-email module-meta)
            module-meta))
     (with-redefs [crud/query-as-admin (constantly [nil [{:email email}]])]
       (is (= (t/resolve-vendor-email module-meta)
              (assoc-in module-meta [:price :vendor-email] email))))))
+
+(deftest set-price-test
+  (is (= (t/set-price {} "user/jane") {}))
+  (with-redefs [pricing-impl/retrieve-price identity
+                pricing-impl/price->map     identity
+                t/active-claim->account-id  identity
+                pricing-impl/create-price   identity
+                pricing-impl/get-product    :product
+                pricing-impl/get-id         :id]
+    (is (= (t/set-price {:price {:cent-amount-daily 10
+                                 :currency          "eur"}} "user/jane")
+           {:price {:account-id        "user/jane"
+                    :cent-amount-daily 10
+                    :currency          "eur"
+                    :price-id          nil
+                    :product-id        nil}})))
+  (with-redefs [pricing-impl/retrieve-price identity
+                pricing-impl/price->map     (constantly {:product-id "prod_x"})
+                t/active-claim->account-id  identity
+                pricing-impl/create-price   (fn [{:strs [product]}]
+                                              {:id      "price_x"
+                                               :product product})
+                pricing-impl/get-product    :product
+                pricing-impl/get-id         :id]
+    (is (= (t/set-price {:price {:price-id          "price_x"
+                                 :cent-amount-daily 10
+                                 :currency          "eur"}} "user/jane")
+           {:price {:account-id        "user/jane"
+                    :cent-amount-daily 10
+                    :currency          "eur"
+                    :price-id          "price_x"
+                    :product-id        "prod_x"}}))))
