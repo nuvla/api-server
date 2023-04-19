@@ -145,6 +145,33 @@ particular NuvlaBox release.
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
+
+              {:name             "set-tags"
+               :uri              "set-tags"
+               :description      "set tags on multiple nuvlaboxes, overwriting old values"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name "doc"
+                                   :type "map"}]}
+
+              {:name             "add-tags"
+               :uri              "add-tags"
+               :description      "add tags on multiple nuvlaboxes"
+               :method           "POST"
+               :input-message    "application/json"
+               :output-message   "application/json"
+               :input-parameters [{:name "doc"
+                                   :type "map"}]}
+
+              {:name           "remove-tags"
+               :uri            "remove-tags"
+               :description    "activate the nuvlabox"
+               :method         "POST"
+               :input-message  "application/json"
+               :output-message "application/json"
+               :input-parameters [{:name "doc"
+                                   :type "map"}]}
               ])
 
 
