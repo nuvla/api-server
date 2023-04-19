@@ -632,13 +632,11 @@
           swarm-id       (or
                            (update-coe-service id name acl isg-id "swarm"
                                                :endpoint swarm-endpoint
-                                               :tags tags
                                                :capabilities capabilities
                                                :swarm-enabled swarm-enabled
                                                :swarm-manager swarm-manager)
                            (create-coe-service id name acl isg-id "swarm"
                                                swarm-endpoint
-                                               :tags tags
                                                :capabilities capabilities
                                                :swarm-enabled (or swarm-enabled false)
                                                :swarm-manager swarm-manager))
