@@ -4,6 +4,7 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
+    [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
@@ -70,8 +71,8 @@
   (loop [i (dec (count versions))]
     (when (not (neg? i))
       (if (some? (nth versions i))
-       i
-       (recur (dec i))))))
+        i
+        (recur (dec i))))))
 
 
 (def ^:const compose-specific-keys
@@ -154,3 +155,28 @@
                            (throw (r/ex-not-found
                                     (str "Module version not found: " id)))))]
     (assoc module-meta :content module-content)))
+
+(defn get-vendor-by-query-as-admin
+  [filter-str]
+  (let [options {:cimi-params {:filter (parser/parse-cimi-filter filter-str)}}]
+    (-> (crud/query-as-admin "vendor" options)
+        second
+        first)))
+
+(defn active-claim->account-id
+  [active-claim]
+  (or (some->> active-claim
+               (format "parent='%s'")
+               get-vendor-by-query-as-admin
+               :account-id)
+      (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
+                                 active-claim "' ") 409))))
+
+(defn resolve-vendor-email
+  [{{:keys [account-id]} :price :as module-meta}]
+  (if-let [email (some->> account-id
+                          (format "account-id='%s'")
+                          get-vendor-by-query-as-admin
+                          :email)]
+    (assoc-in module-meta [:price :vendor-email] email)
+    module-meta))

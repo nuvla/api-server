@@ -114,19 +114,6 @@ component, or application.
     {}))
 
 
-(defn active-claim->account-id
-  [active-claim]
-  (let [filter     (format "parent='%s'" active-claim)
-        options    {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
-        account-id (-> (crud/query-as-admin "vendor" options)
-                       second
-                       first
-                       :account-id)]
-    (or account-id
-        (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
-                                   active-claim "' ") 409)))))
-
-
 (defn set-price
   [{{:keys [price-id cent-amount-daily currency follow-customer-trial] :as price}
     :price name :name path :path :as body}
@@ -134,7 +121,7 @@ component, or application.
   (if price
     (let [product-id (some-> price-id pricing-impl/retrieve-price
                              pricing-impl/price->map :product-id)
-          account-id (active-claim->account-id active-claim)
+          account-id (utils/active-claim->account-id active-claim)
           s-price    (pricing-impl/create-price
                        (cond-> {"currency"    currency
                                 "unit_amount" cent-amount-daily
@@ -233,9 +220,6 @@ component, or application.
             (db-add-module-meta request))))))
 
 
-
-
-
 (defn retrieve-edn
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" (-> uuid utils/split-uuid first))
@@ -250,6 +234,7 @@ component, or application.
           is-not-project? (not (utils/is-project? subtype))]
       (-> module-meta
           (cond-> is-not-project? (utils/get-module-content uuid))
+          utils/resolve-vendor-email
           (crud/set-operations request)
           (a/select-viewable-keys request)
           (r/json-response)))

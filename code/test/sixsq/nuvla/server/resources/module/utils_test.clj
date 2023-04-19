@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.module.utils-test
   (:require
     [clojure.test :refer [are deftest is]]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.module.utils :as t]))
 
 
@@ -84,3 +85,20 @@
                       ["docker-compose" []] docker-compose-2-str
                       ["docker-compose" []] docker-compose-3-str
                       ["swarm" []] docker-compose-4-str))
+
+(deftest account-id->email
+  (is (thrown-with-msg?
+        Exception
+        #"unable to resolve vendor account-id for active-claim 'user/jane'"
+        (t/active-claim->account-id "user/jane")))
+  (with-redefs [crud/query-as-admin (constantly [nil [{:account-id "acct_x"}]])]
+    (is (= (t/active-claim->account-id "user/jane") "acct_x"))))
+
+(deftest resolve-vendor-email
+  (let [module-meta {:price {:account-id "acct_x"}}
+        email "jane@example.com"]
+    (is (= (t/resolve-vendor-email module-meta)
+           module-meta))
+    (with-redefs [crud/query-as-admin (constantly [nil [{:email email}]])]
+      (is (= (t/resolve-vendor-email module-meta)
+             (assoc-in module-meta [:price :vendor-email] email))))))

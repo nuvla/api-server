@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Module - Resolve vendor email
+
 ## [6.0.11] - 2023-02-22
 
 ### Changed
