@@ -502,6 +502,21 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
+
+(defn- remove-non-tags-fields [request]
+  (update-in request [:body :doc] select-keys [:tags]))
+
+(defmethod crud/bulk-action [resource-type "set-tags"]
+  [request]
+  (bulk-edit-impl (remove-non-tags-fields request)))
+
+(def bulk-add-impl (std-crud/bulk-edit-fn resource-type collection-acl :add))
+
+(defmethod crud/bulk-action [resource-type "add-tags"]
+  [request]
+  (bulk-add-impl (remove-non-tags-fields request)))
+
 
 (def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
 
