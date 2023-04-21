@@ -25,3 +25,8 @@
 (defn and-acl-delete
   [query options]
   (and-acl query options "delete"))
+
+
+(defn and-acl-edit
+  [query options]
+  (and-acl query options "edit-data"))

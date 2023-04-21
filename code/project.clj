@@ -90,6 +90,7 @@
                                [org.clojure/test.check]
                                [org.elasticsearch.test/framework]
                                [org.elasticsearch.client/transport]
+                               [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
                                [org.slf4j/slf4j-api]
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
@@ -114,6 +115,8 @@
                                       [org.apache.curator/curator-test]
                                       [org.elasticsearch.test/framework]
                                       [org.elasticsearch.client/transport]
+                                      [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
+
                                       [org.apache.logging.log4j/log4j-core]]
               ;; paths
               :source-paths          ["src"]
