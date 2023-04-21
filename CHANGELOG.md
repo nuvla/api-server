@@ -11,6 +11,7 @@
 - Spec helper - Request body validator
 - Common body - Spec for common request body specs
 - Nuvlabox - Adds bulk editing endpoints for tags
+- Module - Resolve vendor email
 
 ## [6.0.11] - 2023-02-22
 
