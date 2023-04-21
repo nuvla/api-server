@@ -2,10 +2,10 @@
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
