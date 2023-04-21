@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Module - Let user set compatibility flag
+- Module application - Deprecate unsupported-options
+
 ## [6.0.11] - 2023-02-22
 
 ### Changed
