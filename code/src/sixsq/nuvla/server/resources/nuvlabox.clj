@@ -23,6 +23,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
@@ -36,8 +37,9 @@ particular NuvlaBox release.
 (def ^:const collection-type (u/ns->collection-type *ns*))
 
 
-(def collection-acl {:query ["group/nuvla-user"]
-                     :add   ["group/nuvla-user"]})
+(def collection-acl {:query       ["group/nuvla-user"]
+                     :add         ["group/nuvla-user"]
+                     :bulk-action ["group/nuvla-user"]})
 
 
 ;;
@@ -143,8 +145,7 @@ particular NuvlaBox release.
                :description    "unsuspend the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
-               :output-message "application/json"}
-              ])
+               :output-message "application/json"}])
 
 
 ;;
@@ -340,6 +341,33 @@ particular NuvlaBox release.
         resp)
       (catch Exception e
         (or (ex-data e) (throw e))))))
+
+(def validate-edit-tags-body (u/create-spec-validation-request-body-fn
+                               ::common-body/bulk-edit-tags-body))
+
+(defn bulk-edit-tags
+  [request bulk-impl]
+  (-> request
+      validate-edit-tags-body
+      bulk-impl))
+
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
+
+(defmethod crud/bulk-action [resource-type "set-tags"]
+  [request]
+  (bulk-edit-tags request bulk-edit-impl))
+
+(def bulk-add-impl (std-crud/bulk-edit-fn resource-type collection-acl :add))
+
+(defmethod crud/bulk-action [resource-type "add-tags"]
+  [request]
+  (bulk-edit-tags request bulk-add-impl))
+
+(def bulk-remove-impl (std-crud/bulk-edit-fn resource-type collection-acl :remove))
+
+(defmethod crud/bulk-action [resource-type "remove-tags"]
+  [request]
+  (bulk-edit-tags request bulk-remove-impl))
 
 
 ;;

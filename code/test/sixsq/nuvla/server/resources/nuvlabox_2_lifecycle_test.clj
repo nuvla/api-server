@@ -120,8 +120,8 @@
                    :body (json/write-str (assoc valid-nuvlabox
                                            :vpn-server-id "infrastructure-service/fake")))
           (ltu/body->edn)
-          (ltu/is-status 404))
-      )))
+          (ltu/is-status 404)))))
+
 
 
 (deftest create-activate-create-log-decommission-delete-lifecycle
@@ -501,9 +501,9 @@
                     (is (= 2 (count creds))))               ;; only swarm token credentials
 
                   (when (= "s3" subtype)
-                    (is (= 1 (count creds))))               ;; only key/secret pair
+                    (is (= 1 (count creds)))))))            ;; only key/secret pair
 
-                  )))
+
 
 
 
@@ -620,8 +620,8 @@
                     (is (= 1 (count creds))))               ;; only key/secret pair
 
                   (when (= "kubernetes" subtype)
-                    (is (= 1 (count creds))))
-                  ))))
+                    (is (= 1 (count creds))))))))
+
 
           (let [decommission-resp (-> session
                                       (request nuvlabox-url)
@@ -847,8 +847,8 @@
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
                 (when (= "kubernetes" subtype)
-                  (is (= 1 (count creds))))
-                )))
+                  (is (= 1 (count creds)))))))
+
 
           (-> session-beta
               (request nuvlabox-url)
@@ -914,10 +914,10 @@
                   (is (= 1 (count creds))))                 ;; only key/secret pair
 
                 (when (= "kubernetes" subtype)
-                  (is (= 1 (count creds))))
-                )))
+                  (is (= 1 (count creds))))))))))))
 
-          )))))
+
+
 
 
 (deftest create-activate-commission-vpn-lifecycle
@@ -1196,9 +1196,9 @@
                                     (ltu/entries)
                                     first)]
               (is (= (:endpoint srvc-endpoint) "http://bar"))
-              (is (= (:name srvc-endpoint) nb-name)))
+              (is (= (:name srvc-endpoint) nb-name)))))))))
 
-            ))))))
+
 
 
 (deftest execution-mode-action-lifecycle
@@ -1250,8 +1250,8 @@
                                     :edit-acl  ["user/alpha"],
                                     :view-data [nuvlabox-id "user/alpha"],
                                     :manage    [nuvlabox-id "user/alpha"],
-                                    :edit-meta [nuvlabox-id "user/alpha"]})))
-      )))
+                                    :edit-meta [nuvlabox-id "user/alpha"]}))))))
+
 
 
 (deftest create-activate-assemble-playbooks-emergency-lifecycle
@@ -1637,9 +1637,9 @@
             (-> session-owner
                 (request get-context-url)
                 (ltu/body->edn)
-                (ltu/is-status 403)))
+                (ltu/is-status 403))))))))
 
-          )))))
+
 
 
 (deftest create-activate-commission-suspend-lifecycle
@@ -1735,8 +1735,8 @@
                 (request nuvlabox-url)
                 (ltu/body->edn)
                 (ltu/is-status 200)
-                (ltu/is-key-value :state "COMMISSIONED"))
-            ))))))
+                (ltu/is-key-value :state "COMMISSIONED"))))))))
+
 
 
 (deftest should-propagate-changes-test
@@ -1770,6 +1770,107 @@
     true {} {:nuvlabox-status "nuvlabox-status"}
     false {:acl 1, :online true} {:acl 1, :online false}))
 
+(defn- create-edit-nb-bulk-edit-tags-lifecycle-test
+  [session-owner {nb-name :name
+                  nb-tags :tags}]
+  (let [ne-url (-> session-owner
+                   (request base-uri
+                            :request-method :post
+                            :body (json/write-str (assoc valid-nuvlabox :name nb-name)))
+                   (ltu/body->edn)
+                   (ltu/is-status 201)
+                   ((juxt ltu/location-url ltu/location)))]
+    (-> session-owner
+        (request (first ne-url)
+                 :request-method :put
+                 :body (json/write-str {:tags nb-tags}))
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :name nb-name)
+        (ltu/is-key-value :tags nb-tags))
+    ne-url))
+
+(defn- set-up-bulk-edit-tags-lifecycle-test
+  [session-owner nuvla-edges]
+  (mapv (partial create-edit-nb-bulk-edit-tags-lifecycle-test session-owner)
+        nuvla-edges))
+
+(defn- run-bulk-edit-test!
+  [{:keys [name endpoint filter tags expected-fn]}]
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+        ne-urls       (set-up-bulk-edit-tags-lifecycle-test
+                        session-owner
+                        [{:name "NE1"}
+                         {:name "NE2" :tags ["foo"]}
+                         {:name "NE3" :tags ["foo" "bar"]}])]
+    (testing name
+      (-> session-owner
+          (header "bulk" "yes")
+          (request endpoint
+                   :request-method :patch
+                   :body (json/write-str (cond-> {:doc {:tags tags}}
+                                                 filter (assoc :filter filter))))
+          (ltu/is-status 200))
+      (run!
+        (fn [[url]]
+          (let [ne (-> session-owner
+                       (request url)
+                       (ltu/body->edn))]
+            (testing (:name ne)
+              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+        ne-urls))))
+
+(def endpoint-set-tags (str base-uri "/" "set-tags"))
+(def endpoint-add-tags (str base-uri "/" "add-tags"))
+(def endpoint-remove-tags (str base-uri "/" "remove-tags"))
+
+(deftest bulk-set-all-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Set all"
+                        :tags        ["baz"]
+                        :expected-fn (constantly ["baz"])}))
+
+(deftest bulk-set-tags-on-subset
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :filter      "(name='NE1') or (name='NE2')"
+                        :test-name   "Set just 2"
+                        :tags        ["foo" "bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE3" ["foo" "bar"]
+                                         ["foo" "bar" "baz"]))}))
+
+(deftest bulk-remove-all-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Remove all tags for all edges"
+                        :tags        []
+                        :expected-fn (constantly [])}))
+
+(deftest bulk-remove-one-specific-tag
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo"]
+                        :expected-fn (fn [ne] (case (:name ne)
+                                                "NE3" ["bar"]
+                                                []))}))
+
+(deftest bulk-remove-multiple-specific-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo" "bar"]
+                        :expected-fn (constantly [])}))
+
+(deftest bulk-add-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-add-tags
+                        :test-name   "Add specific tags to current tags for all edges"
+                        :tags        ["bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE1" ["bar" "baz"]
+                                         ["foo" "bar" "baz"]))}))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]

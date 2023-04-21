@@ -59,6 +59,7 @@
 
     (let [collection-id "test-collection"]
 
+
       ;; initialize the database
       (db/initialize db collection-id {:spec ::resource})
 
@@ -272,10 +273,35 @@
             (is (= 201 (:status response)))
             (is (= doc-id (get-in response [:headers "Location"])))))
 
+        ;; bulk-editing all
+        (let [options  {:cimi-params {:filter nil}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :set
+                        :body        {:doc {:tags ["testing" "is" "good"]}}}
+              response (db/bulk-edit db collection-id options)]
+          (is (= 4 (:updated response))))
+
+        ;; bulk-editing half
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :add
+                        :body        {:doc {:tags []}}}
+              response (db/bulk-edit db collection-id options)]
+          (is (= 2 (:updated response))))
+
+        ;; bulk-editing none
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(does_not_exists=true)"))}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :remove
+                        :body        {:doc {:tags []}}}
+              response (db/bulk-edit db collection-id options)]
+          (is (= 0 (:updated response))))
+
         ;; delete all of the docs
-        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
-                       :nuvla/authn auth/internal-identity}
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                        :nuvla/authn auth/internal-identity}
               response (db/bulk-delete db collection-id options)]
-          (is (= 2 (:deleted response))))
-        ))))
+          (is (= 2 (:deleted response))))))))

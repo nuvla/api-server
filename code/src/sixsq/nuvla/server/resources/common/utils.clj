@@ -198,22 +198,42 @@
   (select-keys m #{:name :description :tags :parent :acl}))
 
 
+(defn create-generic-spec-validation-fn
+  ([spec error-fn]
+   (create-generic-spec-validation-fn spec identity error-fn))
+  ([spec accessor-fn error-fn]
+   (let [ok?     (partial s/valid? spec)
+         explain (partial expound/expound-str spec)]
+     (fn [value]
+       (let [checked-value (accessor-fn value)]
+         (if (ok? checked-value)
+          value
+          (error-fn checked-value (explain checked-value))))))))
+
 (defn create-spec-validation-fn
   "Creates a validation function that compares a resource against the
    given schema.  The generated function raises an exception with the
    violations of the schema and a 400 ring response. If everything's
    OK, then the resource itself is returned."
   [spec]
-  (let [ok?     (partial s/valid? spec)
-        explain (partial expound/expound-str spec)]
-    (fn [{:keys [id] :as resource}]
-      (if (ok? resource)
-        resource
-        (logu/log-and-throw-400
-          (str "resource "
-               (some-> id (str " "))
-               "does not satisfy defined schema:\n"
-               (explain resource)))))))
+  (create-generic-spec-validation-fn
+    spec
+    (fn [resource spec-error]
+      (logu/log-and-throw-400
+        (str "resource "
+             (some-> resource :id (str " "))
+             "does not satisfy defined schema:\n"
+             spec-error)))))
+
+(defn create-spec-validation-request-body-fn
+  [spec]
+  (create-generic-spec-validation-fn
+    spec
+    :body
+    (fn [_body spec-error]
+      (logu/log-and-throw-400
+        (str "request body does not satisfy defined schema:\n"
+             spec-error)))))
 
 
 (defn get-op
