@@ -12,8 +12,8 @@
             [sixsq.nuvla.db.es.filter :as filter]
             [sixsq.nuvla.db.es.order :as order]
             [sixsq.nuvla.db.es.pagination :as paging]
-            [sixsq.nuvla.db.es.select :as select]
             [sixsq.nuvla.db.es.script-utils :refer [get-update-script]]
+            [sixsq.nuvla.db.es.select :as select]
             [sixsq.nuvla.db.utils.common :as cu]
             [sixsq.nuvla.server.util.response :as r])
   (:import (java.io Closeable)))
@@ -168,7 +168,7 @@
           count-before-pagination (-> response :body :hits :total :value)
           aggregations            (-> response :body :aggregations)
           meta                    (cond-> {:count count-before-pagination}
-                                    aggregations (assoc :aggregations aggregations))
+                                          aggregations (assoc :aggregations aggregations))
           hits                    (->> response :body :hits :hits (map :_source))]
       (if success?
         [meta hits]
@@ -182,18 +182,17 @@
 
 
 (defn bulk-edit-data
-  [client collection-id {:keys [body cimi-params operation] :as options}]
-  (when (empty? (:doc body)) (throw (r/ex-bad-request "No valid update data provided.")))
+  [client collection-id
+   {{:keys [doc]} :body
+    :keys         [cimi-params operation] :as options}]
   (try
-    (let [doc          (:doc body)
-          index        (escu/collection-id->index collection-id)
-          query        {:query (acl/and-acl-edit (filter/filter cimi-params) options)}
-          update-scrpt {:script (get-update-script doc operation)}
-          body         (merge query update-scrpt)
-          response     (spandex/request client {:url    [index :_update_by_query]
-                                                :method :post
-                                                :query-string {:refresh true}
-                                                :body   body})
+    (let [index         (escu/collection-id->index collection-id)
+          body          {:query  (acl/and-acl-edit (filter/filter cimi-params) options)
+                         :script (get-update-script doc operation)}
+          response      (spandex/request client {:url          [index :_update_by_query]
+                                                 :method       :post
+                                                 :query-string {:refresh true}
+                                                 :body         body})
           body-response (:body response)
           success?      (-> body-response :failures empty?)]
       (if success?

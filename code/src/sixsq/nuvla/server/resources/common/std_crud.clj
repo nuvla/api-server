@@ -11,14 +11,12 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.spec.common :as common-spec]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
 
 
 (def validate-collection-acl (u/create-spec-validation-fn ::acl-collection/acl))
-
 
 
 (defn add-fn
@@ -74,6 +72,11 @@
   (when-not (contains? headers "bulk")
     (throw (r/ex-bad-request "Bulk request should contain bulk http header."))))
 
+(defn throw-bulk-require-cimi-filter
+  [{{:keys [filter]} :body :as _request}]
+  (when-not (coll? (impl/cimi-filter {:filter filter}))
+    (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter."))))
+
 (defn delete-fn
   [resource-name]
   (fn [{{uuid :uuid} :params :as request}]
@@ -108,13 +111,11 @@
     (validate-collection-acl collection-acl)
     (fn [request]
       (a/throw-cannot-query collection-acl request)
-      (let [options            (select-keys request [:nuvla/authn :params :cimi-params])
+      (let [options           (select-keys request [:nuvla/authn :params :cimi-params])
             [metadata entries] (db/query resource-name options)
             updated-entries   (remove nil? (map #(a/select-viewable-keys % request) entries))
             entries-and-count (merge metadata (wrapper-fn request updated-entries))]
         (r/json-response entries-and-count)))))
-
-(def validate-tags (u/create-spec-validation-fn ::common-spec/tags))
 
 (defn bulk-edit-fn
   ([resource-name collection-acl]
@@ -123,13 +124,12 @@
    (validate-collection-acl collection-acl)
    (fn [{:keys [body] :as request}]
      (throw-bulk-header-missing request)
-     (validate-tags (-> body :doc :tags))
      (a/throw-cannot-bulk-action collection-acl request)
      (let [cimi-params {:filter (impl/cimi-filter (select-keys body [:filter]))}
            options     (assoc (select-keys request [:nuvla/authn :body])
-                              :cimi-params cimi-params
-                              :operation   operation)
-           response   (db/bulk-edit resource-name options)]
+                         :cimi-params cimi-params
+                         :operation operation)
+           response    (db/bulk-edit resource-name options)]
        (r/json-response response)))))
 
 
@@ -170,16 +170,15 @@
   (validate-collection-acl collection-acl)
   (fn [{:keys [params body] :as request}]
     (throw-bulk-header-missing request)
-    (when-not (coll? (impl/cimi-filter {:filter (:filter body)}))
-      (throw (r/ex-bad-request "Bulk request should contain a non empty cimi filter.")))
+    (throw-bulk-require-cimi-filter request)
     (a/throw-cannot-bulk-action collection-acl request)
-    (let [authn-info     (auth/current-authentication request)
-          acl            {:owners   ["group/nuvla-admin"]
-                          :view-acl [(auth/current-active-claim request)]}
-          action-name    (-> params
-                             :action
-                             (str/replace #"-" "_")
-                             (str "_" resource-name))]
+    (let [authn-info  (auth/current-authentication request)
+          acl         {:owners   ["group/nuvla-admin"]
+                       :view-acl [(auth/current-active-claim request)]}
+          action-name (-> params
+                          :action
+                          (str/replace #"-" "_")
+                          (str "_" resource-name))]
       (create-bulk-job action-name resource-name authn-info acl body))))
 
 

@@ -501,7 +501,7 @@
                     (is (= 2 (count creds))))               ;; only swarm token credentials
 
                   (when (= "s3" subtype)
-                    (is (= 1 (count creds)))))))               ;; only key/secret pair
+                    (is (= 1 (count creds)))))))            ;; only key/secret pair
 
 
 
@@ -1796,114 +1796,81 @@
         nuvla-edges))
 
 (defn- run-bulk-edit-test!
-  [{:keys [name
-           endpoint
-           filter
-           tags
-           expected-fn]}]
+  [{:keys [name endpoint filter tags expected-fn]}]
   (let [session       (-> (ltu/ring-app)
                           session
                           (content-type "application/json"))
         session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-        ne-urls (set-up-bulk-edit-tags-lifecycle-test
-                 session-owner
-                 [{:name "NE1"}
-                  {:name "NE2" :tags ["foo"]}
-                  {:name "NE3" :tags ["foo" "bar"]}])]
+        ne-urls       (set-up-bulk-edit-tags-lifecycle-test
+                        session-owner
+                        [{:name "NE1"}
+                         {:name "NE2" :tags ["foo"]}
+                         {:name "NE3" :tags ["foo" "bar"]}])]
     (testing name
       (-> session-owner
           (header "bulk" "yes")
           (request endpoint
                    :request-method :patch
-                   :body (json/write-str {:filter filter
-                                          :doc {:tags tags}}))
+                   :body (json/write-str (cond-> {:doc {:tags tags}}
+                                                 filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
-       (fn [[url]]
-         (let [ne (-> session-owner
-                      (request url)
-                      (ltu/body->edn))]
-           (testing (:name ne)
-            (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
-       ne-urls))))
+        (fn [[url]]
+          (let [ne (-> session-owner
+                       (request url)
+                       (ltu/body->edn))]
+            (testing (:name ne)
+              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+        ne-urls))))
+
+(def endpoint-set-tags (str base-uri "/" "set-tags"))
+(def endpoint-add-tags (str base-uri "/" "add-tags"))
+(def endpoint-remove-tags (str base-uri "/" "remove-tags"))
 
 (deftest bulk-set-all-tags
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "set-tags")
-                        :filter         "id!=null"
-                        :test-name     "Set all"
-                        :tags          ["baz"]
-                        :expected-fn   (fn [_] ["baz"])}))
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Set all"
+                        :tags        ["baz"]
+                        :expected-fn (constantly ["baz"])}))
 
 (deftest bulk-set-tags-on-subset
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "set-tags")
-                        :filter         "(name='NE1') or (name='NE2')"
-                        :test-name     "Set just 2"
-                        :tags          ["foo" "bar" "baz"]
-                        :expected-fn   (fn [ne]
-                                         (case (:name ne)
-                                           "NE3" ["foo" "bar"]
-                                           ["foo" "bar" "baz"]))}))
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :filter      "(name='NE1') or (name='NE2')"
+                        :test-name   "Set just 2"
+                        :tags        ["foo" "bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE3" ["foo" "bar"]
+                                         ["foo" "bar" "baz"]))}))
 
 (deftest bulk-remove-all-tags
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "set-tags")
-                        :filter         "id!=null"
-                        :test-name     "Remove all tags for all edges"
-                        :tags          []
-                        :expected-fn   (fn [_] [])}))
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Remove all tags for all edges"
+                        :tags        []
+                        :expected-fn (constantly [])}))
 
 (deftest bulk-remove-one-specific-tag
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "remove-tags")
-                        :filter         "id!=null"
-                        :test-name     "Remove specific tags for all edges"
-                        :tags          ["foo"]
-                        :expected-fn   (fn [ne] (case (:name ne) "NE3" ["bar"] []))}))
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo"]
+                        :expected-fn (fn [ne] (case (:name ne)
+                                                "NE3" ["bar"]
+                                                []))}))
 
 (deftest bulk-remove-multiple-specific-tags
-  (run-bulk-edit-test! {:endpoint     (str base-uri "/" "remove-tags")
-                        :filter         "id!=null"
-                        :test-name     "Remove specific tags for all edges"
-                        :tags          ["foo" "bar"]
-                        :expected-fn   (fn [_] [])}))
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo" "bar"]
+                        :expected-fn (constantly [])}))
 
 (deftest bulk-add-tags
-  (run-bulk-edit-test! {:endpoint         (str base-uri "/" "add-tags")
-                        :filter            "id!=null"
-                        :test-name        "Add specific tags to current tags for all edges"
-                        :tags             ["bar" "baz"]
-                        :expected-fn      (fn [ne]
-                                            (case (:name ne)
-                                              "NE1" ["bar" "baz"]
-                                              ["foo" "bar" "baz"]))}))
-
-
-(deftest bulk-edit-tags-test-fail-test
-  (let [session            (-> (ltu/ring-app)
-                               session
-                               (content-type "application/json"))
-        session-owner      (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
-        session-owner-bulk (header session-owner "bulk" "yes")
-        endpoints          (mapv #(str base-uri "/" %) ["set-tags" "remove-tags" "add-tags"])
-        check-error        #(-> %
-                                (ltu/is-status 400)
-                                (ltu/body)
-                                (json/read-str)
-                                (get "message"))]
-    (run!
-     (fn [endpoint]
-       (is (= "Bulk request should contain bulk http header."
-              (-> session-owner
-                  (request endpoint :request-method :patch :body (json/write-str {:docs {:tags []}}))
-                  check-error))))
-     endpoints)
-    (run!
-     (fn [endpoint]
-       (let [err-msg (-> session-owner-bulk
-                         (request endpoint :request-method :patch :body (json/write-str {:docs {:tags []}}))
-                         check-error)]
-         (is (and (string? err-msg)
-                  (str/includes? err-msg "resource does not satisfy defined schema")))))
-     endpoints)
-     ,))
+  (run-bulk-edit-test! {:endpoint    endpoint-add-tags
+                        :test-name   "Add specific tags to current tags for all edges"
+                        :tags        ["bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE1" ["bar" "baz"]
+                                         ["foo" "bar" "baz"]))}))
 
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id nb/resource-type))]

@@ -23,6 +23,7 @@ particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.workflow-utils :as wf-utils]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.nuvlabox :as nuvlabox]
     [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.log :as logu]
@@ -144,35 +145,7 @@ particular NuvlaBox release.
                :description    "unsuspend the nuvlabox"
                :method         "POST"
                :input-message  "application/json"
-               :output-message "application/json"}
-
-              {:name             "set-tags"
-               :uri              "set-tags"
-               :description      "set tags on multiple nuvlaboxes, overwriting old values"
-               :method           "POST"
-               :input-message    "application/json"
-               :output-message   "application/json"
-               :input-parameters [{:name "doc"
-                                   :type "map"}]}
-
-              {:name             "add-tags"
-               :uri              "add-tags"
-               :description      "add tags on multiple nuvlaboxes"
-               :method           "POST"
-               :input-message    "application/json"
-               :output-message   "application/json"
-               :input-parameters [{:name "doc"
-                                   :type "map"}]}
-
-              {:name           "remove-tags"
-               :uri            "remove-tags"
-               :description    "activate the nuvlabox"
-               :method         "POST"
-               :input-message  "application/json"
-               :output-message "application/json"
-               :input-parameters [{:name "doc"
-                                   :type "map"}]}
-              ])
+               :output-message "application/json"}])
 
 
 ;;
@@ -369,26 +342,32 @@ particular NuvlaBox release.
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
-(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
+(def validate-edit-tags-body (u/create-spec-validation-request-body-fn
+                               ::common-body/bulk-edit-tags-body))
 
-(defn- remove-non-tags-fields [request]
-  (update-in request [:body :doc] select-keys [:tags]))
+(defn bulk-edit-tags
+  [request bulk-impl]
+  (-> request
+      validate-edit-tags-body
+      bulk-impl))
+
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
 
 (defmethod crud/bulk-action [resource-type "set-tags"]
   [request]
-  (bulk-edit-impl (remove-non-tags-fields request)))
+  (bulk-edit-tags request bulk-edit-impl))
 
 (def bulk-add-impl (std-crud/bulk-edit-fn resource-type collection-acl :add))
 
 (defmethod crud/bulk-action [resource-type "add-tags"]
   [request]
-  (bulk-add-impl (remove-non-tags-fields request)))
+  (bulk-edit-tags request bulk-add-impl))
 
 (def bulk-remove-impl (std-crud/bulk-edit-fn resource-type collection-acl :remove))
 
 (defmethod crud/bulk-action [resource-type "remove-tags"]
   [request]
-  (bulk-remove-impl (remove-non-tags-fields request)))
+  (bulk-edit-tags request bulk-remove-impl))
 
 
 ;;

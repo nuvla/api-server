@@ -14,19 +14,24 @@
   (let [field (str "ctx._source." k)]
     (str "if (" field "== null) " field "= new ArrayList()")))
 
-(def bulk-update-ops->update-script-fn
-  {:set (fn [doc]
-          (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
-   :add (fn [doc]
-          (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
-                                             (remove-from-array-script (name k))
-                                             (add-to-array-script (name k))]) doc)))
-   :remove (fn [doc]
-             (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
-                                                (remove-from-array-script (name k))]) doc)))})
+(defmulti bulk-update-script (fn [_ operation] operation))
 
-(defn get-update-script [doc op]
-  (let [update-script-fn (bulk-update-ops->update-script-fn op)]
-    (when update-script-fn
-      {:params doc
-       :source (update-script-fn doc)})))
+(defmethod bulk-update-script :set
+  [doc _]
+  (str/join ";" (map (fn [[k _]] (set-field-script (name k))) doc)))
+
+(defmethod bulk-update-script :add
+  [doc _]
+  (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
+                                     (remove-from-array-script (name k))
+                                     (add-to-array-script (name k))]) doc)))
+
+(defmethod bulk-update-script :remove
+  [doc _]
+  (str/join ";" (mapcat (fn [[k _]] [(initialize-if-necessary (name k))
+                                     (remove-from-array-script (name k))]) doc)))
+
+(defn get-update-script
+  [doc operation]
+  {:params doc
+   :source (bulk-update-script doc operation)})

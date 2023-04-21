@@ -209,7 +209,7 @@
 
         ;; and
         (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                              (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                                               (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
                        :nuvla/authn auth/internal-identity}
               [query-meta query-hits] (db/query db collection-id options)]
           (is (= 2 (:count query-meta)))
@@ -274,54 +274,34 @@
             (is (= doc-id (get-in response [:headers "Location"])))))
 
         ;; bulk-editing all
-        (let [options {:cimi-params {:filter nil}
-                       :nuvla/authn auth/internal-identity
-                       ;; this breaks
-                      ;;  :operation :set
-                       :body {:doc {:tags ["testing" "is" "good"]}}}
+        (let [options  {:cimi-params {:filter nil}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :set
+                        :body        {:doc {:tags ["testing" "is" "good"]}}}
               response (db/bulk-edit db collection-id options)]
           (is (= 4 (:updated response))))
 
         ;; bulk-editing half
-        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                              (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
-                       :nuvla/authn auth/internal-identity
-                       :body {:doc {:tags []}}}
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :add
+                        :body        {:doc {:tags []}}}
               response (db/bulk-edit db collection-id options)]
           (is (= 2 (:updated response))))
 
         ;; bulk-editing none
-        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                              (str "(does_not_exists=true)"))}
-                       :nuvla/authn auth/internal-identity
-                       :body {:doc {:tags []}}}
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(does_not_exists=true)"))}
+                        :nuvla/authn auth/internal-identity
+                        :operation   :remove
+                        :body        {:doc {:tags []}}}
               response (db/bulk-edit db collection-id options)]
           (is (= 0 (:updated response))))
 
-
-        ;; bulk-editing failing data
-        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                              (str "(does_not_exists=true)"))}
-                       :nuvla/authn auth/internal-identity
-                       :body {:doc {}}}
-              error-msg (try (db/bulk-edit db collection-id options)
-                             (catch Exception e (ex-message e)))]
-          (is (= "No valid update data provided." error-msg)))
-
-
-        ;; ;; bulk-editing with injection attack data
-        ;; (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-        ;;                                       (str "(does_not_exists=true)"))}
-        ;;                :nuvla/authn auth/internal-identity
-        ;;                :body {:doc {"ctx._source.id='SOMETHING ELSE'" ["blublu"]}}}
-        ;;       error-msg (try (db/bulk-edit db collection-id options)
-        ;;                      (catch Exception e (ex-message e)))]
-        ;;   (is (= "No valid update data provided." error-msg)))
-
-
         ;; delete all of the docs
-        (let [options {:cimi-params {:filter (parser/parse-cimi-filter
-                                              (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
-                       :nuvla/authn auth/internal-identity}
+        (let [options  {:cimi-params {:filter (parser/parse-cimi-filter
+                                                (str "(sequence=0 and admin!=null) or (sequence=" n " and admin=null)"))}
+                        :nuvla/authn auth/internal-identity}
               response (db/bulk-delete db collection-id options)]
           (is (= 2 (:deleted response))))))))
