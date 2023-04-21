@@ -37,7 +37,6 @@
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
-   [clj-commons/clj-yaml]
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time]

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- Module - Let user set compatibility flag
+- Module application - Deprecate unsupported-options
+- ES binding - Support bulk-edit
+- Spec helper - Generic spec validator
+- Spec helper - Request body validator
+- Common body - Spec for common request body specs
 - Nuvlabox - Adds bulk editing endpoints for tags
 
 ## [6.0.11] - 2023-02-22
@@ -924,3 +932,5 @@ Test release to verify release process.
 ### Changed
 
 - Update parent to version 6.3.0.
+
+ 
