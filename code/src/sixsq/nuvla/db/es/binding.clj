@@ -1,23 +1,22 @@
 (ns sixsq.nuvla.db.es.binding
   "Binding protocol implemented for an Elasticsearch database that makes use
    of the Elasticsearch REST API."
-  (:require
-    [clojure.tools.logging :as log]
-    [qbits.spandex :as spandex]
-    [sixsq.nuvla.auth.utils.acl :as acl-utils]
-    [sixsq.nuvla.db.binding :refer [Binding]]
-    [sixsq.nuvla.db.es.acl :as acl]
-    [sixsq.nuvla.db.es.aggregation :as aggregation]
-    [sixsq.nuvla.db.es.common.es-mapping :as mapping]
-    [sixsq.nuvla.db.es.common.utils :as escu]
-    [sixsq.nuvla.db.es.filter :as filter]
-    [sixsq.nuvla.db.es.order :as order]
-    [sixsq.nuvla.db.es.pagination :as paging]
-    [sixsq.nuvla.db.es.select :as select]
-    [sixsq.nuvla.db.utils.common :as cu]
-    [sixsq.nuvla.server.util.response :as r])
-  (:import
-    (java.io Closeable)))
+  (:require [clojure.tools.logging :as log]
+            [qbits.spandex :as spandex]
+            [sixsq.nuvla.auth.utils.acl :as acl-utils]
+            [sixsq.nuvla.db.binding :refer [Binding]]
+            [sixsq.nuvla.db.es.acl :as acl]
+            [sixsq.nuvla.db.es.aggregation :as aggregation]
+            [sixsq.nuvla.db.es.common.es-mapping :as mapping]
+            [sixsq.nuvla.db.es.common.utils :as escu]
+            [sixsq.nuvla.db.es.filter :as filter]
+            [sixsq.nuvla.db.es.order :as order]
+            [sixsq.nuvla.db.es.pagination :as paging]
+            [sixsq.nuvla.db.es.script-utils :refer [get-update-script]]
+            [sixsq.nuvla.db.es.select :as select]
+            [sixsq.nuvla.db.utils.common :as cu]
+            [sixsq.nuvla.server.util.response :as r])
+  (:import (java.io Closeable)))
 
 ;; FIXME: Need to understand why the refresh parameter must be used to make unit test pass.
 
@@ -182,6 +181,30 @@
         (throw (r/ex-response msg 500))))))
 
 
+(defn bulk-edit-data
+  [client collection-id
+   {{:keys [doc]} :body
+    :keys         [cimi-params operation] :as options}]
+  (try
+    (let [index         (escu/collection-id->index collection-id)
+          body          {:query  (acl/and-acl-edit (filter/filter cimi-params) options)
+                         :script (get-update-script doc operation)}
+          response      (spandex/request client {:url          [index :_update_by_query]
+                                                 :method       :post
+                                                 :query-string {:refresh true}
+                                                 :body         body})
+          body-response (:body response)
+          success?      (-> body-response :failures empty?)]
+      (if success?
+        body-response
+        (let [msg (str "error when updating by query: " body-response)]
+          (throw (r/ex-response msg 500)))))
+    (catch Exception e
+      (let [{:keys [body] :as _response} (ex-data e)
+            error (:error body)
+            msg   (str "unexpected exception updating by query: " (or error e))]
+        (throw (r/ex-response msg 500))))))
+
 (defn bulk-delete-data
   [client collection-id {:keys [cimi-params] :as options}]
   (try
@@ -240,6 +263,8 @@
   (bulk-delete [_ collection-id options]
     (bulk-delete-data client collection-id options))
 
+  (bulk-edit [_ collection-id options]
+    (bulk-edit-data client collection-id options))
 
   Closeable
   (close [_]

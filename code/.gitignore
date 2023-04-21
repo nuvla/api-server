@@ -38,3 +38,4 @@ project.clj.bck
 .scannerwork
 .eastwood
 test-reports/
+*.cpcache

@@ -59,3 +59,21 @@
 
 (deftest uuid->short-uuid
   (is (= "39d6acef" (u/uuid->short-uuid "39d6acef-4693-46bc-a04f-85cd3cae79e"))))
+
+(deftest create-generic-spec-validation-fn
+  (let [f (u/create-generic-spec-validation-fn int? vector)]
+    (is (= 1 (f 1)))
+    (let [v "a"
+          [v1 err-msg] (f v)]
+      (is (= v v1))
+      (is (= err-msg "-- Spec failed --------------------
+
+  \"a\"
+
+should satisfy
+
+  int?
+
+-------------------------
+Detected 1 error
+")))))

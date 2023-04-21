@@ -22,18 +22,18 @@
 (def timestamp "1964-08-25T10:00:00.00Z")
 
 
-(def valid-entry {:id             (str module-application/resource-type "/module-application-uuid")
-                  :resource-type  module-application/resource-type
-                  :created        timestamp
-                  :updated        timestamp
-                  :acl            valid-acl
+(def valid-entry {:id                  (str module-application/resource-type "/module-application-uuid")
+                  :resource-type       module-application/resource-type
+                  :created             timestamp
+                  :updated             timestamp
+                  :acl                 valid-acl
 
-                  :author         "someone"
-                  :commit         "wip"
+                  :author              "someone"
+                  :commit              "wip"
 
-                  :unsupported-options  ["devices"]
+                  :unsupported-options ["devices"]
 
-                  :docker-compose "version: \"3.3\"\nservices:\n  web:\n    ..."})
+                  :docker-compose      "version: \"3.3\"\nservices:\n  web:\n    ..."})
 
 
 (deftest lifecycle
