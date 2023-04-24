@@ -77,3 +77,84 @@
                     :currency          "eur"
                     :price-id          "price_x"
                     :product-id        "prod_x"}}))))
+
+(deftest collect-applications-hrefs
+  (are [expected applications-sets]
+    (= expected (t/collect-applications-hrefs applications-sets))
+    [] nil
+    [] {}
+    ["module/x_0"] [{:name         "x"
+                     :applications [{:id      "module/x"
+                                     :version 0}]}]
+    ["module/a_0"
+     "module/b_1"
+     "module/c_2"] [{:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/b"
+                                     :version 1}]}
+                    {:name         "x"
+                     :applications [{:id      "module/c"
+                                     :version 2}]}]
+    ["module/a_0"
+     "module/b_1"
+     "module/c_2"] [{:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/b"
+                                     :version 1}]}
+                    {:name         "x"
+                     :applications [{:id      "module/a"
+                                     :version 0}
+                                    {:id      "module/c"
+                                     :version 2}]}]))
+
+(deftest collect-applications-hrefs
+  (are [expected arg]
+    (= expected (t/inject-resolved-applications (first arg) (second arg)))
+    nil
+    [nil nil]
+
+    {}
+    [{} {}]
+
+    {:applications-sets [{:applications [{:id       "module/a"
+                                          :version  0
+                                          :resolved {:name "module_a v 0"}}
+                                         {:id      "module/c"
+                                          :version 2}]
+                          :name         "x"}]}
+    [{"module/a_0" {:name "module_a v 0"}
+      "module/c_0" {:name "module_c v 0"}}
+     {:applications-sets
+      [{:name         "x"
+        :applications [{:id      "module/a"
+                        :version 0}
+                       {:id      "module/c"
+                        :version 2}]}]}]
+
+    {:applications-sets [{:applications [{:id       "module/a"
+                                          :version  0
+                                          :resolved {:name "module_a v 0"}}
+                                         {:id       "module/c"
+                                          :version  2
+                                          :resolved {:name "module_c v 2"}}]
+                          :name         "x"}]}
+    [{"module/a_0" {:name "module_a v 0"}
+      "module/b_1" {:name "module_b v 1"}
+      "module/c_2" {:name "module_c v 2"}}
+     {:applications-sets
+      [{:name         "x"
+        :applications [{:id      "module/a"
+                        :version 0}
+                       {:id      "module/c"
+                        :version 2}]}]}
+     {:applications-sets [{:applications [{:id       "module/a"
+                                           :version  0
+                                           :resolved {:name "module_a v 0"}}
+                                          {:id       "module/b"
+                                           :version  1
+                                           :resolved {:name "module_b v 1"}}
+                                          {:id      "module/c"
+                                           :version 2}]
+                           :name         "x"}]}]))

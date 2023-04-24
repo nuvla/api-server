@@ -12,6 +12,8 @@
 - Common body - Spec for common request body specs
 - Nuvlabox - Adds bulk editing endpoints for tags
 - Module - Resolve vendor email
+- Module - New subtype applications set
+- Deployment set - v2
 
 ## [6.0.11] - 2023-02-22
 
