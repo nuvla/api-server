@@ -334,12 +334,13 @@
         session-user      (header session-anon authn-info-header
                                   "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-app-1       {:parent-path "a/b"
-                           :path        "clara/app-1"
-                           :subtype     utils/subtype-app
-                           :content     {:author         "someone"
-                                         :commit         "initial"
-                                         :docker-compose "some content"}}
+        valid-app-1       {:parent-path   "a/b"
+                           :path          "clara/app-1"
+                           :subtype       utils/subtype-app
+                           :compatibility "docker-compose"
+                           :content       {:author         "someone"
+                                           :commit         "initial"
+                                           :docker-compose "some content"}}
         app-1-create-resp (-> session-user
                               (request base-uri
                                        :request-method :post
@@ -353,8 +354,8 @@
                        :path        "a/b/c"
                        :subtype     utils/subtype-apps-sets
                        :content     (assoc-in valid-applications-sets-content
-                                      [:applications-sets 0
-                                       :applications 0 :id] app-1-id)}]
+                                              [:applications-sets 0
+                                               :applications 0 :id] app-1-id)}]
 
       (-> session-user
           (request app-1-uri

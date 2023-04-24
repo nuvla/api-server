@@ -19,12 +19,12 @@
 
 (defn create-user [user-email]
   (with-redefs [email-sending/extract-smtp-cfg
-                (fn [_]
-                  {:host "smtp@example.com"
-                   :port 465
-                   :ssl  true
-                   :user "admin"
-                   :pass "password"})
+                                    (fn [_]
+                                      {:host "smtp@example.com"
+                                       :port 465
+                                       :ssl  true
+                                       :user "admin"
+                                       :pass "password"})
 
                 postal/send-message (fn [_ _]
                                       {:code 0, :error :SUCCESS, :message "OK"})]
@@ -52,6 +52,7 @@
    :parent-path               "a/b"
    :path                      "a/b/c"
    :subtype                   "application"
+   :compatibility             "docker-compose"
 
    :logo-url                  "https://example.org/logo"
 
@@ -87,10 +88,10 @@
 (defn create-deployment
   [session module-id]
   (binding [config-nuvla/*stripe-api-key* nil]
-   (-> session
-      (request (str p/service-context deployment/resource-type)
-               :request-method :post
-               :body (json/write-str {:module {:href module-id}}))
-      (ltu/body->edn)
-      (ltu/is-status 201)
-      (ltu/location))))
+    (-> session
+        (request (str p/service-context deployment/resource-type)
+                 :request-method :post
+                 :body (json/write-str {:module {:href module-id}}))
+        (ltu/body->edn)
+        (ltu/is-status 201)
+        (ltu/location))))
