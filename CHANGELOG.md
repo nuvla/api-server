@@ -4,6 +4,10 @@
 
 ### Changed
 
+## [6.0.12] - 2023-04-24
+
+### Changed
+
 - Module - Let user set compatibility flag
 - Module application - Deprecate unsupported-options
 - ES binding - Support bulk-edit
@@ -13,7 +17,7 @@
 - Nuvlabox - Adds bulk editing endpoints for tags
 - Module - Resolve vendor email
 - Module - New subtype applications set
-- Deployment set - v2
+- Deployment set - Experimental v2
 
 ## [6.0.11] - 2023-02-22
 
