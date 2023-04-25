@@ -2,7 +2,8 @@
   (:require
     [clojure.data.json :as json]
     [clojure.string :as str]
-    [clojure.test :refer [deftest is use-fixtures]]
+    [clojure.test :refer [deftest is use-fixtures testing]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -134,6 +135,15 @@
           (ltu/body->edn)
           (ltu/is-status 403))
 
+      (testing "create should fail when user can't view parent credential"
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str (assoc valid-deployment
+                                             :parent "credential/x")))
+            (ltu/body->edn)
+            (ltu/is-status 404)))
+
       ;; check deployment creation
       (let [deployment-id  (-> session-user
                                (request base-uri
@@ -163,6 +173,7 @@
                                       (ltu/is-operation-present :start)
                                       (ltu/is-operation-present :clone)
                                       (ltu/is-operation-present :check-dct)
+                                      (ltu/is-key-value :execution-mode "mixed")
                                       (ltu/is-key-value :state "CREATED")
                                       (ltu/is-key-value :owner "user/jane"))
 
@@ -487,8 +498,8 @@
                        :request-method :post
                        :body (json/write-str invalid-deployment))
               (ltu/body->edn)
-              (ltu/is-status 400)
-              (ltu/message-matches #"cannot resolve.*"))
+              (ltu/is-status 404)
+              (ltu/message-matches "module/doesnt-exist not found"))
           ))
 
       (-> session-user
@@ -650,8 +661,8 @@
                      :request-method :put
                      :body (json/write-str {:module-href (str module-id "_10000")}))
             (ltu/body->edn)
-            (ltu/is-status 400)
-            (ltu/message-matches "cannot resolve"))
+            (ltu/is-status 404)
+            (ltu/message-matches (str module-id "_10000 not found")))
 
         (-> session-user
             (request fetch-url

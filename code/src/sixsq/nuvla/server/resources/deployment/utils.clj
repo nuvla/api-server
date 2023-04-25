@@ -104,25 +104,6 @@
     (catch Exception _
       (log/errorf "cannot propagate acl to deployment parameters related to %s" deployment-id))))
 
-(defn resolve-deployment
-  [request]
-  (let [authn-info         (auth/current-authentication request)
-        href               (get-in request [:body :deployment :href])
-        params             (u/id->request-params href)
-        request-deployment {:params params, :nuvla/authn authn-info}
-        response           (crud/retrieve request-deployment)]
-    (if (= (:status response) 200)
-      (-> response
-          :body
-          (select-keys [:module :data :name :description :tags]))
-      (throw (r/ex-bad-request (str "cannot resolve " href))))))
-
-(defn resolve-from-deployment
-  [request]
-  (if (get-in request [:body :deployment :href])
-    (assoc request :body (resolve-deployment request))
-    (logu/log-and-throw-400 "Request body is missing a deployment href!")))
-
 
 (defn create-job
   [{:keys [id nuvlabox] :as resource} request action execution-mode]
@@ -273,7 +254,7 @@
   [infra request]
   (let [parent-infra-group (some-> infra
                                    :parent
-                                   (some-id->resource request)
+                                   (crud/get-resource-throw-when-nok request)
                                    :parent)]
     (when (and
             (string? parent-infra-group)
@@ -349,20 +330,20 @@
             (pricing-impl/cancel-subscription {"invoice_now" true}))))
 
 (defn throw-when-payment-required
-  [{{:keys [price] :as module} :module :as resource} request]
+  [{{:keys [price] :as module} :module :as deployment} request]
   (if (or (nil? config-nuvla/*stripe-api-key*)
           (a/is-admin? (auth/current-authentication request))
           (let [active-claim (auth/current-active-claim request)]
             (or
               (a/can-edit-data? module request)
               (case (:status (payment/active-claim->subscription active-claim))
-               ("active" "past_due") true
-               "trialing" (or (nil? price)
-                              (:follow-customer-trial price)
-                              (-> active-claim
-                                  payment/active-claim->s-customer
-                                  payment/can-pay?))
-               false))))
-    resource
+                ("active" "past_due") true
+                "trialing" (or (nil? price)
+                               (:follow-customer-trial price)
+                               (-> active-claim
+                                   payment/active-claim->s-customer
+                                   payment/can-pay?))
+                false))))
+    deployment
     (payment/throw-payment-required)))
 

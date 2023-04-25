@@ -5,6 +5,7 @@ a container orchestration engine.
 "
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
@@ -135,22 +136,19 @@ a container orchestration engine.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn create-deployment
-  [{:keys [base-uri] {:keys [owner deployment-set] :as body} :body :as request}]
+  [{:keys [parent deployment-set] :as deployment} {:keys [base-uri] :as request}]
+  (crud/get-resource-throw-when-nok parent request)
   (let [authn-info      (auth/current-authentication request)
-        is-admin?       (a/is-admin? authn-info)
-        dep-owner       (if is-admin? (or owner "group/nuvla-admin")
-                                      (auth/current-active-claim request))
-        {deployment-set-name :name} (utils/some-id->resource deployment-set request)
-        deployment      (-> body
+        {deployment-set-name :name} (crud/get-resource-throw-when-nok deployment-set request)
+        ;; FIXME: Correct the value passed to the python API.
+        deployment      (-> deployment
                             (assoc :resource-type resource-type
                                    :state "CREATED"
                                    :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                   :owner dep-owner)
-                            (cond-> deployment-set (assoc :deployment-set deployment-set)
-                                    deployment-set-name (assoc :deployment-set-name deployment-set-name))
+                                   :owner (auth/current-active-claim request))
+                            (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
                             (utils/throw-when-payment-required request))
         create-response (add-impl (assoc request :body deployment))
-        ;; FIXME: Correct the value passed to the python API.
 
         deployment-id   (get-in create-response [:body :resource-id])
 
@@ -161,11 +159,15 @@ a container orchestration engine.
     create-response))
 
 (defmethod crud/add resource-type
-  [request]
+  [{{:keys [parent execution-mode deployment-set]
+     :or {execution-mode "mixed"}} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (-> request
       module-utils/resolve-from-module
-      create-deployment))
+      (assoc :execution-mode execution-mode)
+      (cond-> deployment-set (assoc :deployment-set deployment-set))
+      (cond-> parent (assoc :parent parent))
+      (create-deployment request)))
 
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
@@ -181,22 +183,20 @@ a container orchestration engine.
 
 (defmethod crud/edit resource-type
   [{{:keys [acl parent module deployment-set]} :body
-    {:keys [select]}                           :cimi-params
-    {uuid :uuid}                               :params :as request}]
-  (let [id           (str resource-type "/" uuid)
-        current      (db/retrieve id request)
+    {:keys [select]}                           :cimi-params :as request}]
+  (let [{:keys [id] :as current} (crud/get-resource-throw-when-nok request)
         authn-info   (auth/current-authentication request)
         cred-id      (or parent (:parent current))
-        cred         (utils/some-id->resource cred-id request)
+        cred         (crud/get-resource-throw-when-nok cred-id request)
         infra-id     (:parent cred)
         cred-name    (:name cred)
-        infra        (utils/some-id->resource infra-id request)
+        infra        (crud/get-resource-throw-when-nok infra-id request)
         infra-name   (:name cred)
         nb-id        (utils/infra->nb-id infra request)
-        nb-name      (:name (utils/some-id->resource nb-id request))
+        nb-name      (:name (crud/get-resource-throw-when-nok nb-id request))
         dep-set-id   (when-not (contains? select "deployment-set")
                        (or deployment-set (:deployment-set current)))
-        dep-set      (utils/some-id->resource dep-set-id request)
+        dep-set      (crud/get-resource-throw-when-nok dep-set-id request)
         dep-set-name (:name dep-set)
         fixed-attr   (select-keys (:module current) [:href :price :license :acl])
         is-user?     (not (a/is-admin? authn-info))
@@ -390,16 +390,12 @@ a container orchestration engine.
 
 
 (defmethod crud/do-action [resource-type "clone"]
-  [{{uuid :uuid} :params :as request}]
+  [request]
   (try
     (a/throw-cannot-add collection-acl request)
-    (let [id (str resource-type "/" uuid)]
-      (-> (crud/retrieve-by-id-as-admin id)
-          (a/throw-cannot-view-data request))
-      (-> request
-          (assoc-in [:body :deployment :href] id)
-          utils/resolve-from-deployment
-          create-deployment))
+    (-> (crud/get-resource-throw-when-nok request)
+        (select-keys [:module :data :name :description :tags])
+        (create-deployment request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -422,9 +418,7 @@ a container orchestration engine.
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
           {:keys [name description price license]
-           :as   module} (module-utils/resolve-module
-                           (assoc request
-                             :body {:module {:href module-href}}))
+           :as   module} (module-utils/resolve-module module-href request)
           new-subs-id     (utils/create-subscription request current module)
           new             (-> current
                               (assoc :state "UPDATING")
@@ -537,8 +531,7 @@ a container orchestration engine.
                                                      first))))
       (throw (r/ex-response "invalid module-href" 400)))
     (let [authn-info  (auth/current-authentication request)
-          module      (module-utils/resolve-module
-                        (assoc request :body {:module {:href module-href}}))
+          module      (module-utils/resolve-module module-href request)
           dep-updated (update deployment :module utils/merge-module module)]
       (crud/edit {:params      {:uuid          uuid
                                 :resource-name resource-type}
