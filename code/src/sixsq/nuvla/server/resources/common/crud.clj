@@ -107,7 +107,7 @@
            (id->user-request request)
            (retrieve request))))
 
-(defn get-resource-throw-when-nok
+(defn get-resource-throw-nok
   ([request]
    (-> request
        get-resource
@@ -116,7 +116,7 @@
   ([id request]
    (-> id
        (id->user-request request)
-       get-resource-throw-when-nok)))
+       get-resource-throw-nok)))
 
 
 

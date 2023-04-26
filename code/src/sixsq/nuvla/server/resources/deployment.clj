@@ -136,22 +136,24 @@ a container orchestration engine.
 
 (defn create-deployment
   [{:keys [parent deployment-set] :as deployment} {:keys [base-uri] :as request}]
-  (crud/get-resource-throw-when-nok parent request)
-  (let [authn-info      (auth/current-authentication request)
-        {deployment-set-name :name} (crud/get-resource-throw-when-nok deployment-set request)
+  (some-> parent (crud/get-resource-throw-nok request))
+  (let [authn-info          (auth/current-authentication request)
+        deployment-set-name (some-> deployment-set
+                                    (crud/get-resource-throw-nok request)
+                                    :name)
         ;; FIXME: Correct the value passed to the python API.
-        deployment      (-> deployment
-                            (assoc :resource-type resource-type
-                                   :state "CREATED"
-                                   :api-endpoint (str/replace-first base-uri #"/api/" "")
-                                   :owner (auth/current-active-claim request))
-                            (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
-                            (utils/throw-when-payment-required request))
-        create-response (add-impl (assoc request :body deployment))
+        deployment          (-> deployment
+                                (assoc :resource-type resource-type
+                                       :state "CREATED"
+                                       :api-endpoint (str/replace-first base-uri #"/api/" "")
+                                       :owner (auth/current-active-claim request))
+                                (cond-> deployment-set-name (assoc :deployment-set-name deployment-set-name))
+                                (utils/throw-when-payment-required request))
+        create-response     (add-impl (assoc request :body deployment))
 
-        deployment-id   (get-in create-response [:body :resource-id])
+        deployment-id       (get-in create-response [:body :resource-id])
 
-        msg             (get-in create-response [:body :message])]
+        msg                 (get-in create-response [:body :message])]
 
     (event-utils/create-event deployment-id msg (a/default-acl authn-info))
 
@@ -159,7 +161,7 @@ a container orchestration engine.
 
 (defmethod crud/add resource-type
   [{{:keys [parent execution-mode deployment-set]
-     :or {execution-mode "mixed"}} :body :as request}]
+     :or   {execution-mode "mixed"}} :body :as request}]
   (a/throw-cannot-add collection-acl request)
   (-> request
       module-utils/resolve-from-module
@@ -183,20 +185,19 @@ a container orchestration engine.
 (defmethod crud/edit resource-type
   [{{:keys [acl parent module deployment-set]} :body
     {:keys [select]}                           :cimi-params :as request}]
-  (let [{:keys [id] :as current} (crud/get-resource-throw-when-nok request)
+  (let [{:keys [id] :as current} (crud/get-resource-throw-nok request)
         authn-info   (auth/current-authentication request)
         cred-id      (or parent (:parent current))
-        cred         (crud/get-resource-throw-when-nok cred-id request)
+        cred         (some-> cred-id (crud/get-resource-throw-nok request))
         infra-id     (:parent cred)
         cred-name    (:name cred)
-        infra        (crud/get-resource-throw-when-nok infra-id request)
+        infra        (some-> infra-id (crud/get-resource-throw-nok request))
         infra-name   (:name cred)
         nb-id        (utils/infra->nb-id infra request)
-        nb-name      (:name (crud/get-resource-throw-when-nok nb-id request))
+        nb-name      (some-> nb-id (crud/get-resource-throw-nok request) :name)
         dep-set-id   (when-not (contains? select "deployment-set")
                        (or deployment-set (:deployment-set current)))
-        dep-set      (crud/get-resource-throw-when-nok dep-set-id request)
-        dep-set-name (:name dep-set)
+        dep-set-name (some-> dep-set-id (crud/get-resource-throw-nok request) :name)
         fixed-attr   (select-keys (:module current) [:href :price :license :acl])
         is-user?     (not (a/is-admin? authn-info))
         new-acl      (-> (or acl (:acl current))
@@ -392,7 +393,7 @@ a container orchestration engine.
   [request]
   (try
     (a/throw-cannot-add collection-acl request)
-    (-> (crud/get-resource-throw-when-nok request)
+    (-> (crud/get-resource-throw-nok request)
         (select-keys [:module :data :name :description :tags])
         (create-deployment request))
     (catch Exception e

@@ -253,7 +253,7 @@
   [infra request]
   (let [parent-infra-group (some-> infra
                                    :parent
-                                   (crud/get-resource-throw-when-nok request)
+                                   (crud/get-resource-throw-nok request)
                                    :parent)]
     (when (and
             (string? parent-infra-group)

@@ -2,7 +2,6 @@
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -171,17 +170,18 @@
 (defn resolve-module
   [href request]
   (let [authn-info (auth/current-authentication request)]
-    (as-> (crud/get-resource-throw-when-nok href request) module
-          (dissoc module :versions :operations)
-          (std-crud/resolve-hrefs module authn-info true)
-          (assoc module :versions (:versions module) :href href))))
+    (let [module (crud/get-resource-throw-nok href request)]
+      (-> module
+          (dissoc :versions :operations)
+          (std-crud/resolve-hrefs authn-info true)
+          (assoc :versions (:versions module) :href href)))))
 
 (defn resolve-from-module
   [request]
   (let [href (get-in request [:body :module :href])]
     (if href
       {:module (resolve-module href request)}
-     (logu/log-and-throw-400 "Request body is missing a module href!"))))
+      (logu/log-and-throw-400 "Request body is missing a module href!"))))
 
 (defn throw-cannot-deploy
   [resource request]
