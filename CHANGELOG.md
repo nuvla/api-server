@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Notifications - async publication of messages from resources to Kafka
+
 ### Changed
 
 ## [6.0.12] - 2023-04-24
