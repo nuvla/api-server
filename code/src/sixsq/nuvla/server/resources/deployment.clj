@@ -16,6 +16,7 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
@@ -163,7 +164,7 @@ a container orchestration engine.
   [request]
   (a/throw-cannot-add collection-acl request)
   (-> request
-      utils/resolve-from-module
+      module-utils/resolve-from-module
       create-deployment))
 
 
@@ -420,9 +421,10 @@ a container orchestration engine.
           current-subs-id (when config-nuvla/*stripe-api-key* (:subscription-id current))
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
-          {:keys [name description price license] :as module} (utils/resolve-module
-                                                                (assoc request
-                                                                  :body {:module {:href module-href}}))
+          {:keys [name description price license]
+           :as   module} (module-utils/resolve-module
+                           (assoc request
+                             :body {:module {:href module-href}}))
           new-subs-id     (utils/create-subscription request current module)
           new             (-> current
                               (assoc :state "UPDATING")
@@ -535,7 +537,8 @@ a container orchestration engine.
                                                      first))))
       (throw (r/ex-response "invalid module-href" 400)))
     (let [authn-info  (auth/current-authentication request)
-          module      (utils/resolve-module (assoc request :body {:module {:href module-href}}))
+          module      (module-utils/resolve-module
+                        (assoc request :body {:module {:href module-href}}))
           dep-updated (update deployment :module utils/merge-module module)]
       (crud/edit {:params      {:uuid          uuid
                                 :resource-name resource-type}

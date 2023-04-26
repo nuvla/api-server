@@ -17,6 +17,7 @@ component, or application.
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -65,6 +66,7 @@ component, or application.
     (utils/is-component? subtype) module-component/resource-type
     (utils/is-application? subtype) module-application/resource-type
     (utils/is-application-k8s? subtype) module-application/resource-type
+    (utils/is-applications-sets? subtype) module-applications-sets/resource-type
     :else (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
@@ -422,6 +424,16 @@ component, or application.
   [request]
   (publish-unpublish request false))
 
+(defmethod crud/do-action [resource-type "deploy"]
+  [request]
+  (-> request
+      crud/retrieve
+      r/throw-response-not-200
+      :body
+      (utils/throw-cannot-deploy request)
+      (utils/generate-deployment-set-skeleton request)
+      (utils/resolve-referenced-applications request)
+      r/json-response))
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
@@ -432,14 +444,17 @@ component, or application.
         publish-op                 (u/action-map id_with-version :publish)
         unpublish-op               (u/action-map id_with-version :unpublish)
         delete-version-op          (u/action-map id_with-version :delete-version)
+        deploy-op                  (u/action-map id_with-version :deploy)
         can-manage?                (a/can-manage? resource request)
         can-delete?                (a/can-delete? resource request)
         check-op-present?          (and can-manage? (utils/is-application? subtype))
+        deploy-op-present?         (utils/can-deploy? resource request)
         publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op)
             publish-eligible? (update :operations conj publish-op)
             publish-eligible? (update :operations conj unpublish-op)
+            deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
 
 
