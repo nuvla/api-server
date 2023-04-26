@@ -19,6 +19,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
     [sixsq.nuvla.server.resources.nuvlabox.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.nuvlabox-status :as nb-status]
+    [sixsq.nuvla.server.util.kafka-crud :as kafka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -138,6 +139,7 @@ Versioned subclasses define the attributes for a particular NuvlaBox release.
           online-prev              (:online current)
           edit-fn                  #(let [response (db/edit %1 request)]
                                       (status-utils/denormalize-changes-nuvlabox %)
+                                      (kafka-crud/publish-on-edit resource-type response)
                                       response)
           minimal-update           #(-> %
                                         (u/update-timestamps)

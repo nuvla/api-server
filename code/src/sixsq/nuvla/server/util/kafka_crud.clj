@@ -16,7 +16,7 @@
                           resource-id
                           ((keyword key) resource))]
         (log/debugf "publish on add: %s %s" msg-key resource)
-        (ka/publish topic msg-key resource)))
+        (ka/publish! topic msg-key resource)))
     (catch Exception e
       (log/warn "Failed publishing to Kafka on add: " (str e)))))
 
@@ -29,7 +29,7 @@
       (let [msg-key  (-> edit-response :body (get (keyword key)))
             resource (:body edit-response)]
         (log/debugf "publish on edit: %s %s" msg-key resource)
-        (ka/publish topic msg-key resource)))
+        (ka/publish! topic msg-key resource)))
     (catch Exception e
       (log/warn "Failed publishing to Kafka on edit: " (str e)))))
 
@@ -39,6 +39,6 @@
   [topic key]
   (try
     (log/debugf "publish tombstone: %s" key)
-    (ka/publish topic key nil)
+    (ka/publish! topic key nil)
     (catch Exception e
       (log/warn "Failed publishing tombstone to Kafka: " (str e)))))

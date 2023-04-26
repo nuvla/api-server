@@ -63,6 +63,12 @@
   []
 
   (try
+    (kafka/close-producers!)
+    (log/info "kafka producers closed")
+    (catch Exception e
+      (log/warn "kafka producers close failed:" (str e))))
+
+  (try
     (zku/close-client!)
     (log/info "zookeeper client closed")
     (catch Exception e
@@ -94,7 +100,7 @@
       (throw e)))
 
   (try
-    (kafka/load-and-set-producer)
+    (kafka/create-producers!)
     (catch Exception e
       (log/error "error creating kafka producer:" (str e))
       (throw e)))

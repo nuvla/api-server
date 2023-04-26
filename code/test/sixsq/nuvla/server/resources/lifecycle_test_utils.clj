@@ -440,10 +440,11 @@
   [msg f & rest]
   (let [ts (System/currentTimeMillis)]
     (log/debug (str "--->: " msg))
-    (if rest
-      (apply f rest)
-      (f))
-    (log/debug (str "--->: " msg " done in: " (- (System/currentTimeMillis) ts)))))
+    (let [res (if rest
+                (apply f rest)
+                (f))]
+      (log/debug (str "--->: " msg " done in: " (- (System/currentTimeMillis) ts)))
+      res)))
 
 
 (defmacro with-test-es-client
@@ -451,7 +452,8 @@
    client bound to the Elasticsearch client binding, and then clean up the
    allocated resources by closing both the client and the node."
   [& body]
-  `(let [[_# client# sniffer#]  (set-es-node-client-cache)]
+  `(let [[_# client# sniffer#]
+         (profile "setting es node client cache" set-es-node-client-cache)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      ~@body))
 
@@ -511,21 +513,32 @@
 
 (defn with-test-kafka-fixture
   [f]
+  (log/debug "executing with-test-kafka-fixture")
   (let [log-dir (ke/create-tmp-dir "kraft-combined-logs")]
-    (let [kafka (ke/start-embedded-kafka
-                     {::ke/host          kafka-host
-                      ::ke/port          kafka-port
-                      ::ke/log-dirs      (str log-dir)
-                      ::ke/server-config {"auto.create.topics.enable" "true"
-                                          "transaction.timeout.ms" "5000"}})]
+    (let [kafka (profile "start kafka"
+                         ke/start-embedded-kafka
+                         {::ke/host          kafka-host
+                          ::ke/port          kafka-port
+                          ::ke/log-dirs      (str log-dir)
+                          ::ke/server-config {"auto.create.topics.enable" "true"
+                                              "transaction.timeout.ms"    "5000"}})]
       (try
-        (ka/load-and-set-producer (format "%s:%s" kafka-host kafka-port))
-        (f)
+        (when (= 0 (count ka/*producers*))
+          (profile "create kafka producers"
+                   ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
+        (profile "run supplied function" f)
         (catch Throwable t
           (throw t))
         (finally
-          (ka/close-producer!)
-          (.close kafka)
+          (ka/close-producers!)
+          (log/debug "finalising with-test-kafka-fixture")
+          ;; FIXME: Closing Kafka server takes ~6 sec. Instead of closing Kafka
+          ;; server, delete all the topics. In case of the last test, the server
+          ;; will just go down with the JVM.
+          (let [ts (System/currentTimeMillis)]
+            (.close kafka)
+            (log/debug (str "--->: close kafka done in: "
+                            (- (System/currentTimeMillis) ts))) )
           (ke/delete-dir log-dir))))))
 
 
@@ -542,8 +555,8 @@
 
 
 ;;
-;; test fixture to ensure that all parts of the test server are started
-;; (elasticsearch, zookeeper, ring application)
+;; test fixture that starts the following parts of the test server:
+;; elasticsearch, zookeeper, ring application
 ;;
 
 (defn with-test-server-fixture
@@ -558,8 +571,12 @@
     (profile "start ring app" ring-app)
     (profile "cleanup indices" esu/cleanup-index (es-client) "nuvla-*")
     (profile "initialize indices" initialize-indices)
-    (profile "run test" f)))
+    (profile "run supplied function" f)))
 
+
+;;
+;; test fixture that starts all parts of the test server including kafka
+;;
 
 (def with-test-server-kafka-fixture (join-fixtures [with-test-server-fixture
                                                     with-test-kafka-fixture]))
