@@ -240,15 +240,6 @@
                                    (payment/get-catalog))})))
 
 
-(defn some-id->resource
-  [id request]
-  (try
-    (some-> id
-            (crud/retrieve-by-id-as-admin)
-            (a/throw-cannot-view request))
-    (catch Exception _)))
-
-
 (defn infra->nb-id
   [infra request]
   (let [parent-infra-group (some-> infra

@@ -169,12 +169,12 @@
 
 (defn resolve-module
   [href request]
-  (let [authn-info (auth/current-authentication request)]
-    (let [module (crud/get-resource-throw-nok href request)]
-      (-> module
-          (dissoc :versions :operations)
-          (std-crud/resolve-hrefs authn-info true)
-          (assoc :versions (:versions module) :href href)))))
+  (let [authn-info (auth/current-authentication request)
+        module (crud/get-resource-throw-nok href request)]
+    (-> module
+        (dissoc :versions :operations)
+        (std-crud/resolve-hrefs authn-info true)
+        (assoc :versions (:versions module) :href href))))
 
 (defn resolve-from-module
   [request]

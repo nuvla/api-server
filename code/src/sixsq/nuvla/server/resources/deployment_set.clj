@@ -146,7 +146,7 @@ These resources represent a deployment set that regroups deployments.
                               (a/throw-cannot-manage request))
         applications-sets (-> deployment-set
                               utils/get-applications-sets-href
-                              (utils/resolve-application request))]
+                              (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
 
 (defmethod crud/do-action [resource-type "start"]
