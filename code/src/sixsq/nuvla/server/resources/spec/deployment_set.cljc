@@ -2,9 +2,8 @@
   (:require
     [clojure.spec.alpha :as s]
     [sixsq.nuvla.server.resources.spec.common :as common]
-    [sixsq.nuvla.server.resources.spec.container :as container-spec]
-    [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
+    [sixsq.nuvla.server.resources.spec.module-applications-sets :as module-sets]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -28,59 +27,6 @@
     :json-schema/display-name "targets"
     :json-schema/description "List of targeted credentials ids."))
 
-(def ^:const module-id-regex #"^module/[0-9a-f]+(-[0-9a-f]+)*(_\d+)*$")
-(defn module-id? [s] (re-matches module-id-regex s))
-(s/def ::module-id (s/and string? module-id?))
-
-(s/def ::applications
-  (assoc (st/spec (s/coll-of ::module-id :min-count 1))
-    :name "applications"
-    :json-schema/type "array"
-
-    :json-schema/display-name "applications"
-    :json-schema/description "List of applications ids to deploy on targets."))
-
-(s/def ::application
-  (assoc (st/spec ::module-id)
-    :name "application"
-    :json-schema/description "application id"))
-
-(s/def ::environmental-variable
-  (assoc (st/spec (su/only-keys :req-un [::container-spec/name
-                                         ::container-spec/value
-                                         ::application]))
-    :name "environmental-variable"
-    :json-schema/type "map"
-    :json-schema/description
-    "environmental variable name, value and application"))
-
-(s/def ::env
-  (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
-    :name "env"
-    :json-schema/type "array"
-    :json-schema/display-name "environmental variables"
-    :json-schema/description "list of environmental variable to be overwritten"))
-
-(s/def ::code
-  (assoc (st/spec ::core/nonblank-string)
-    :name "code"
-    :json-schema/description "coupon code"))
-
-(s/def ::coupon
-  (assoc (st/spec (su/only-keys :req-un [::code
-                                         ::application]))
-    :name "environmental-variable"
-    :json-schema/type "map"
-    :json-schema/description
-    "environmental variable name, value and application"))
-
-(s/def ::coupons
-  (assoc (st/spec (s/coll-of ::coupon :kind vector?))
-    :name "coupons"
-    :json-schema/type "array"
-    :json-schema/display-name "coupons"
-    :json-schema/description "list of coupon to apply per application"))
-
 (s/def ::start
   (assoc (st/spec boolean?)
     :name "start"
@@ -88,22 +34,35 @@
     :json-schema/display-name "start"
     :json-schema/description "Start deployment automatically directly after creation"))
 
-(s/def ::spec
-  (assoc (st/spec (su/only-keys :req-un [::targets
-                                         ::applications]
-                                :opt-un [::start
-                                         ::env
-                                         ::coupons]))
-    :name "spec"
-    :json-schema/type "map"
+(s/def ::set-overwrites
+  (assoc (st/spec (su/only-keys :opt-un [::module-sets/applications
+                                         ::targets]))
+    :name "set-overwrites"
+    :json-schema/type "map"))
 
-    :json-schema/display-name "Spec"
-    :json-schema/description "Deployment set spec"))
+(s/def ::overwrites
+  (assoc (st/spec (s/coll-of ::set-overwrites :min-count 1))
+    :name "overwrites"
+    :json-schema/type "array"))
+
+;; id is immutable, edition possible only at creation time
+(s/def ::applications-sets-config
+  (assoc (st/spec (su/only-keys :req-un [::module-sets/id
+                                         ::module-sets/version
+                                         ::overwrites]))
+    :json-schema/type "map"))
+
+(s/def ::applications-sets
+  (assoc (st/spec (s/coll-of ::applications-sets-config :min-count 1 :max-count 1))
+    :name "applications-sets"
+    :json-schema/type "array"
+    :json-schema/display-name "applications sets"))
 
 (def deployment-set-keys-spec
   (su/merge-keys-specs [common/common-attrs
-                        {:req-un [::spec
-                                  ::state]}]))
+                        {:req-un [::state
+                                  ::applications-sets]
+                         :opt-un [::start]}]))
 
 
 (s/def ::deployment-set (su/only-keys-maps deployment-set-keys-spec))

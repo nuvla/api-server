@@ -164,3 +164,30 @@
   [msg id redirect-url]
   (let [query (str "?error=" (codec/url-encode msg))]
     (ex-response msg 303 id (str redirect-url query))))
+
+(defn rethrow-response
+  [{{:keys [resource-id status message]} :body :as response}]
+  (if (and (r/response? response)
+           (> status 399))
+    (throw (ex-response message status resource-id))
+    (let [msg "rethrow-response bad argument"]
+      (throw (ex-info msg (response-error msg))))))
+
+(defn status-200?
+  [{:keys [status] :as _response}]
+  (= status 200))
+
+(defn configurable-check-response
+  [response-ok? on-success on-error]
+  (fn [response]
+    (if (response-ok? response)
+      (on-success response)
+      (on-error response))))
+
+(def throw-response-not-200
+  (configurable-check-response
+    status-200? identity rethrow-response))
+
+(def ignore-response-not-200
+  (configurable-check-response
+    status-200? identity (constantly nil)))

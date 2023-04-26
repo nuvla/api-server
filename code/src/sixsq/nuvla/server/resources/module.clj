@@ -9,7 +9,6 @@ component, or application.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -18,6 +17,7 @@ component, or application.
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module-applications-sets :as module-applications-sets]
     [sixsq.nuvla.server.resources.module-component :as module-component]
     [sixsq.nuvla.server.resources.module.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -66,6 +66,7 @@ component, or application.
     (utils/is-component? subtype) module-component/resource-type
     (utils/is-application? subtype) module-application/resource-type
     (utils/is-application-k8s? subtype) module-application/resource-type
+    (utils/is-applications-sets? subtype) module-applications-sets/resource-type
     :else (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
 
 
@@ -113,46 +114,6 @@ component, or application.
         crud/validate)
     {}))
 
-
-(defn active-claim->account-id
-  [active-claim]
-  (let [filter     (format "parent='%s'" active-claim)
-        options    {:cimi-params {:filter (parser/parse-cimi-filter filter)}}
-        account-id (-> (crud/query-as-admin "vendor" options)
-                       second
-                       first
-                       :account-id)]
-    (or account-id
-        (throw (r/ex-response (str "unable to resolve vendor account-id for active-claim '"
-                                   active-claim "' ") 409)))))
-
-
-(defn set-price
-  [{{:keys [price-id cent-amount-daily currency follow-customer-trial] :as price}
-    :price name :name path :path :as body}
-   active-claim]
-  (if price
-    (let [product-id (some-> price-id pricing-impl/retrieve-price
-                             pricing-impl/price->map :product-id)
-          account-id (active-claim->account-id active-claim)
-          s-price    (pricing-impl/create-price
-                       (cond-> {"currency"    currency
-                                "unit_amount" cent-amount-daily
-                                "recurring"   {"interval"        "month"
-                                               "aggregate_usage" "sum"
-                                               "usage_type"      "metered"}}
-                               product-id (assoc "product" product-id)
-                               (nil? product-id) (assoc "product_data" {"name"       (or name path)
-                                                                        "unit_label" "day"})))
-          price      (cond-> {:price-id          (pricing-impl/get-id s-price)
-                              :product-id        (pricing-impl/get-product s-price)
-                              :account-id        account-id
-                              :cent-amount-daily cent-amount-daily
-                              :currency          currency}
-                             (some? follow-customer-trial) (assoc :follow-customer-trial follow-customer-trial))]
-      (assoc body :price price))
-    body))
-
 (defn throw-cannot-access-registries-or-creds
   [{{{:keys [private-registries registries-credentials]} :content} :body :as request}]
   (when
@@ -187,35 +148,31 @@ component, or application.
              (count creds))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
 
+(defn throw-compatibility-required-for-application
+  [{:keys [subtype compatibility]}]
+  (when (and (utils/is-application? subtype) (nil? compatibility))
+    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))))
+
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
 
   (a/throw-cannot-add collection-acl request)
-
   (throw-colliding-path (:path body))
-
   (throw-cannot-access-registries-or-creds request)
-
   (throw-price-error body)
+  (throw-compatibility-required-for-application body)
 
   (let [[{:keys [subtype] :as module-meta}
-         {:keys [author commit docker-compose] :as module-content}] (-> body u/strip-service-attrs
-                                                                        utils/split-resource)
-        module-meta (dissoc module-meta :compatibility :parent-path :published)]
+         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
+                                                         utils/split-resource)
+        module-meta (dissoc module-meta :parent-path :published)]
 
     (if (utils/is-project? subtype)
       (db-add-module-meta module-meta request)
       (let [content-url     (subtype->resource-url subtype)
 
-            [compatibility
-             unsupported-options] (utils/parse-get-compatibility-fields subtype docker-compose)
-
-            content-body    (-> module-content
-                                (dissoc :unsupported-options)
-                                (merge {:resource-type content-url})
-                                (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                         unsupported-options)))
+            content-body    (merge module-content {:resource-type content-url})
 
             content-request {:params      {:resource-name content-url}
                              :body        content-body
@@ -228,12 +185,8 @@ component, or application.
             (assoc :versions [(cond-> {:href   content-id
                                        :author author}
                                       commit (assoc :commit commit))])
-            (set-price (auth/current-active-claim request))
-            (cond-> compatibility (assoc :compatibility compatibility))
+            (utils/set-price (auth/current-active-claim request))
             (db-add-module-meta request))))))
-
-
-
 
 
 (defn retrieve-edn
@@ -250,6 +203,7 @@ component, or application.
           is-not-project? (not (utils/is-project? subtype))]
       (-> module-meta
           (cond-> is-not-project? (utils/get-module-content uuid))
+          utils/resolve-vendor-email
           (crud/set-operations request)
           (a/select-viewable-keys request)
           (r/json-response)))
@@ -281,12 +235,12 @@ component, or application.
   (try
     (let [id          (str resource-type "/" (-> request :params :uuid))
           [module-meta
-           {:keys [author commit docker-compose] :as module-content}] (-> body
-                                                                          u/strip-service-attrs
-                                                                          utils/split-resource)
+           {:keys [author commit] :as module-content}] (-> body
+                                                           u/strip-service-attrs
+                                                           utils/split-resource)
           {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
           module-meta (-> module-meta
-                          (dissoc :compatibility :parent-path :published)
+                          (dissoc :parent-path :published)
                           (assoc :subtype subtype)
                           utils/set-parent-path)]
 
@@ -299,16 +253,7 @@ component, or application.
         (let [_              (throw-cannot-access-registries-or-creds request)
               content-url    (subtype->resource-url subtype)
 
-              [compatibility
-               unsupported-options] (when docker-compose
-                                      (utils/parse-get-compatibility-fields
-                                        subtype docker-compose))
-
-              content-body   (some-> module-content
-                                     (dissoc :unsupported-options)
-                                     (merge {:resource-type content-url})
-                                     (cond-> (seq unsupported-options) (assoc :unsupported-options
-                                                                              unsupported-options)))
+              content-body   (some-> module-content (merge {:resource-type content-url}))
 
               content-id     (when content-body
                                (-> {:params      {:resource-name content-url}
@@ -328,14 +273,14 @@ component, or application.
                                             (get-in module-meta [:price :cent-amount-daily]))
                                       (not= (:currency price)
                                             (get-in module-meta [:price :currency]))))]
-          (edit-impl
-            (assoc request
-              :body
-              (cond-> module-meta
-                      price-changed? (-> (assoc :price (merge price (:price module-meta)))
-                                         (set-price (auth/current-active-claim request)))
-                      versions (assoc :versions versions)
-                      compatibility (assoc :compatibility compatibility)))))))
+          (-> request
+              (update-in [:cimi-params :select] disj "compatibility")
+              (assoc :body
+                     (cond-> module-meta
+                             price-changed? (-> (assoc :price (merge price (:price module-meta)))
+                                                (utils/set-price (auth/current-active-claim request)))
+                             versions (assoc :versions versions)))
+              edit-impl))))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -479,6 +424,16 @@ component, or application.
   [request]
   (publish-unpublish request false))
 
+(defmethod crud/do-action [resource-type "deploy"]
+  [request]
+  (-> request
+      crud/retrieve
+      r/throw-response-not-200
+      :body
+      (utils/throw-cannot-deploy request)
+      (utils/generate-deployment-set-skeleton request)
+      (utils/resolve-referenced-applications request)
+      r/json-response))
 
 (defmethod crud/set-operations resource-type
   [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
@@ -489,14 +444,17 @@ component, or application.
         publish-op                 (u/action-map id_with-version :publish)
         unpublish-op               (u/action-map id_with-version :unpublish)
         delete-version-op          (u/action-map id_with-version :delete-version)
+        deploy-op                  (u/action-map id_with-version :deploy)
         can-manage?                (a/can-manage? resource request)
         can-delete?                (a/can-delete? resource request)
         check-op-present?          (and can-manage? (utils/is-application? subtype))
+        deploy-op-present?         (utils/can-deploy? resource request)
         publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op)
             publish-eligible? (update :operations conj publish-op)
             publish-eligible? (update :operations conj unpublish-op)
+            deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
 
 
