@@ -108,7 +108,7 @@
 
 (defn -close-producers!
   []
-  (when (> (count *producers*) 0)
+  (when (pos? (count *producers*))
     (log/info "closing kafka producers:" *producers*)
     (map kc/close! (vals *producers*))
     (-delete-producers!)))
