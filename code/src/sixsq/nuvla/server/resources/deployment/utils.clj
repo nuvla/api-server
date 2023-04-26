@@ -18,7 +18,6 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
-    [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
     [sixsq.nuvla.server.util.time :as time]))
 

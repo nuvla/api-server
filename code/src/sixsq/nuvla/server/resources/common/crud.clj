@@ -92,19 +92,33 @@
   [resource-id]
   (retrieve-by-id resource-id {:nuvla/authn auth/internal-identity}))
 
+(defn id->user-request
+  [id request]
+  {:params         (u/id->request-params id)
+   :request-method :get
+   :base-uri       (:base-uri request)
+   :nuvla/authn    (auth/current-authentication request)})
+
+(defn get-resource
+  ([request]
+   (retrieve request))
+  ([id request]
+   (some-> id
+           (id->user-request request)
+           (retrieve request))))
+
 (defn get-resource-throw-when-nok
   ([request]
    (-> request
-       retrieve
+       get-resource
        r/throw-response-not-200
-       :body))
+       r/response-body))
   ([id request]
-   (when id
-     (get-resource-throw-when-nok
-       {:params         (u/id->request-params id)
-        :request-method :get
-        :base-uri       (:base-uri request)
-        :nuvla/authn    (auth/current-authentication request)}))))
+   (-> id
+       (id->user-request request)
+       get-resource-throw-when-nok)))
+
+
 
 (defmulti edit resource-name-dispatch)
 
