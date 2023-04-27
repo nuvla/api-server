@@ -140,11 +140,16 @@
 (defn start-producer!
   [id producer]
   (a/go-loop []
-    (when-let [{:keys [topic key value] :as msg} (<! @comm-chan!)]
-      (log/debugf "producer %s consumed from comm chan: %s" id msg)
-      (kc/send! producer topic key value)
-      (log/debugf "producer %s published: %s %s %s" id topic key value)
-      (recur))))
+    (if (some? @comm-chan!)
+      (when-let [{:keys [topic key value] :as msg} (<! @comm-chan!)]
+        (log/debugf "producer %s consumed from comm chan: %s" id msg)
+        (try
+          (kc/send! producer topic key value)
+          (log/debugf "producer %s published: %s %s %s" id topic key value)
+          (catch Exception e
+            (log/error "producer %s %s failed publishing to kafka: %s" id producer e)))
+        (recur))
+      (log/warnf "comm channel is not defined"))))
 
 
 (defn register-producer
