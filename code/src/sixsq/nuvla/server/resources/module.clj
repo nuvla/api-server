@@ -427,9 +427,7 @@ component, or application.
 (defmethod crud/do-action [resource-type "deploy"]
   [request]
   (-> request
-      crud/retrieve
-      r/throw-response-not-200
-      :body
+      crud/get-resource-throw-nok
       (utils/throw-cannot-deploy request)
       (utils/generate-deployment-set-skeleton request)
       (utils/resolve-referenced-applications request)

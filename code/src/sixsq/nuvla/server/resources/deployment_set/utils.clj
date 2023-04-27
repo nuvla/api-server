@@ -104,11 +104,3 @@
     (mapcat plan-set
             (module-utils/get-applications-sets applications-sets)
             (get-applications-sets deployment-set))))
-
-(defn resolve-application
-  [href request]
-  (-> (crud/retrieve {:params         (u/id->request-params href)
-                      :request-method :get
-                      :nuvla/authn    (auth/current-authentication request)})
-      r/throw-response-not-200
-      :body))

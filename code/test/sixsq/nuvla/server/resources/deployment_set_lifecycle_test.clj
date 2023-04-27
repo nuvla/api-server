@@ -5,6 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.deployment :as deployment]
@@ -746,7 +747,7 @@
               (ltu/is-key-value :applications-sets dep-apps-sets)))
 
         (testing "user plan action should be built on demand"
-          (with-redefs [dep-set-utils/resolve-application
+          (with-redefs [crud/get-resource-throw-nok
                         (constantly u-applications-sets-v11)]
             (-> session-user
                 (request (-> session-user

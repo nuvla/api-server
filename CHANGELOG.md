@@ -4,6 +4,10 @@
 
 ### Changed
 
+- Crud - Get resource helpers
+- Deployment - tasklist#2352 bugfix and refactor
+- Deployment - Execution-mode mixed by default at creation time tasklist#2348
+
 ## [6.0.12] - 2023-04-24
 
 ### Changed

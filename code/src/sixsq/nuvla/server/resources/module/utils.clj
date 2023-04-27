@@ -168,28 +168,20 @@
        (is-applications-sets? subtype)))
 
 (defn resolve-module
-  [request]
-  (let [href                 (get-in request [:body :module :href])
-        authn-info           (auth/current-authentication request)
-        params               (u/id->request-params href)
-        module-request       {:params      params
-                              :nuvla/authn authn-info}
-        on-error             (fn [_response]
-                               (throw (r/ex-bad-request (str "cannot resolve " href))))
-        on-success           (fn [{{:keys [versions] :as body} :body}]
-                               (-> (dissoc body :versions :operations)
-                                   (std-crud/resolve-hrefs authn-info true)
-                                   (assoc :versions versions :href href)))
-        throw-cannot-resolve (r/configurable-check-response r/status-200? on-success on-error)]
-    (-> module-request
-        crud/retrieve
-        throw-cannot-resolve)))
+  [href request]
+  (let [authn-info (auth/current-authentication request)
+        module (crud/get-resource-throw-nok href request)]
+    (-> module
+        (dissoc :versions :operations)
+        (std-crud/resolve-hrefs authn-info true)
+        (assoc :versions (:versions module) :href href))))
 
 (defn resolve-from-module
   [request]
-  (if (get-in request [:body :module :href])
-    (assoc-in request [:body :module] (resolve-module request))
-    (logu/log-and-throw-400 "Request body is missing a module href!")))
+  (let [href (get-in request [:body :module :href])]
+    (if href
+      {:module (resolve-module href request)}
+      (logu/log-and-throw-400 "Request body is missing a module href!"))))
 
 (defn throw-cannot-deploy
   [resource request]
