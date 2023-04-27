@@ -74,7 +74,7 @@
 
 (defn comm-chan-set!
   [len]
-  (swap! comm-chan! (constantly (chan (a/sliding-buffer len)))))
+  (reset! comm-chan! (chan (a/sliding-buffer len))))
 
 
 (defn comm-chan-info
@@ -147,9 +147,9 @@
           (kc/send! producer topic key value)
           (log/debugf "producer %s published: %s %s %s" id topic key value)
           (catch Exception e
-            (log/error "producer %s %s failed publishing to kafka: %s" id producer e)))
+            (log/errorf "producer %s %s failed publishing to kafka: %s" id producer e)))
         (recur))
-      (log/warnf "comm channel is not defined"))))
+      (log/warn "comm channel is not defined"))))
 
 
 (defn register-producer
@@ -182,7 +182,7 @@
   "Closes all Kafka producers and destroys their communication channel with the
   client code."
   []
-  (when (pos? (count @producers!))
+  (when (seq @producers!)
     (log/debugf "closing kafka producers: %s" @producers!)
     (doseq [[id p] @producers!]
       (log/debugf "closing producer %s: %s" id p)
@@ -190,7 +190,7 @@
         (kc/close! p)
         (catch Exception e
           (log/errorf "failed closing producer %s %s: %s" id p e))))
-    (swap! producers! (constantly {}))))
+    (reset! producers! {})))
 
 
 ;

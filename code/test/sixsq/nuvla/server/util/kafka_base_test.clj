@@ -27,14 +27,14 @@
 
 (deftest comm-chan-init-defaults
   ; the comm channel is always there as it is defined on namespace load
-  (is (not (nil? @k/comm-chan!)))
+  (is (some? @k/comm-chan!))
   (is (= k/comm-chan-len (-> @k/comm-chan! k/comm-chan-info :size)))
   (is (= 0 (-> @k/comm-chan! k/comm-chan-info :count))))
 
 
 (deftest comm-chan-reset
   ; the comm channel is always there as it is defined on namespace load
-  (is (not (nil? @k/comm-chan!)))
+  (is (some? @k/comm-chan!))
   (let [curr-len (-> @k/comm-chan! k/comm-chan-info :size)]
     (k/comm-chan-set! 5)
     (is (not (nil? @k/comm-chan!)))
@@ -61,8 +61,8 @@
   (every? (complement nil?) (vals m)))
 
 (deftest producers-lifecycle
-  (is (not (nil? @k/comm-chan!)))
+  (is (some? @k/comm-chan!))
   (k/create-producers!)
   (is (= k/producers-num (count @k/producers!)))
-  (is (all-values-not-nil? @k/producers!))
+  (is (every? some? (vals @k/producers!)))
   (k/close-producers!))
