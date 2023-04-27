@@ -6,8 +6,11 @@
 
 (defn cleanup
   [f]
+  (k/comm-chan-set! k/comm-chan-len)
   (f)
-  (k/close-producers!))
+  (do
+    (k/close-producers!)
+    (k/comm-chan-set! k/comm-chan-len)))
 
 
 (use-fixtures :each cleanup)
@@ -22,45 +25,36 @@
                                     :bar-baz-param-one "baz"} ":foo-bar-"))))
 
 
-(deftest comm-chan-init-destroy
-  (k/comm-chan-init)
-  (is (not (nil? k/*comm-chan*)))
-  (k/comm-chan-destroy)
-  (is (nil? k/*comm-chan*)))
-
-
 (deftest comm-chan-init-defaults
-  (k/comm-chan-init)
+  ; the comm channel is always there as it is defined on namespace load
   (is (not (nil? k/*comm-chan*)))
-  ;; running again doesn't recreate the channel
-  (let [sc k/*comm-chan*]
-    (k/comm-chan-init)
-    (is (= sc k/*comm-chan*)))
-
   (is (= k/comm-chan-len (.n (.buf k/*comm-chan*))))
   (is (= 0 (.count (.buf k/*comm-chan*)))))
 
 
-(deftest comm-chan-init-params
-  (k/comm-chan-init 5)
+(deftest comm-chan-reset
+  ; the comm channel is always there as it is defined on namespace load
   (is (not (nil? k/*comm-chan*)))
-
-  (is (= 5 (.n (.buf k/*comm-chan*))))
-  (is (= 0 (.count (.buf k/*comm-chan*)))))
+  (let [curr-len (-> k/*comm-chan*  k/comm-chan-info :size)]
+    (k/comm-chan-set! 5)
+    (is (not (nil? k/*comm-chan*)))
+    (is (= 5 (-> k/*comm-chan*  k/comm-chan-info :size)))
+    (is (= 0 (-> k/*comm-chan* k/comm-chan-info :count)))
+    (k/comm-chan-set! curr-len)))
 
 
 (deftest register-kafka-producer
   (is (= 0 (count k/*producers*)))
-  (k/register-kafka-producer 0 nil)
+  (k/register-producer 0 nil)
   (is (= 1 (count k/*producers*))))
 
 
 (deftest register-and-destroy-kafka-producer
-  (k/-close-producers!)
+  (k/close-producers!)
   (is (= 0 (count k/*producers*)))
-  (k/register-kafka-producer 0 nil)
+  (k/register-producer 0 nil)
   (is (= 1 (count k/*producers*)))
-  (k/-close-producers!)
+  (k/close-producers!)
   (is (= 0 (count k/*producers*))))
 
 (defn all-values-not-nil? [m]
@@ -71,6 +65,6 @@
   (is (not (nil? k/*comm-chan*)))
   (is (= k/comm-chan-len (.n (.buf k/*comm-chan*))))
   (is (= 0 (.count (.buf k/*comm-chan*))))
-  (is (= k/publishers-num (count k/*producers*)))
+  (is (= k/producers-num (count k/*producers*)))
   (is (all-values-not-nil? k/*producers*))
   (k/close-producers!))

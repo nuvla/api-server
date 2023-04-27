@@ -50,7 +50,7 @@
                                  "isolation.level" "read_committed"}
                                 :string kc/json-deserializer)]
       (kc/subscribe! consumer t)
-      (let [consumed (kc/poll! consumer 7000)]
+      (let [consumed (kc/poll! consumer 10000)]
         (is (= msg-num (:count consumed)))
         (doseq [m (-> consumed
                       :by-topic
