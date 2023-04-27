@@ -3,12 +3,9 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [kinsky.client :as kc]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.kafka :as k]))
+    [sixsq.nuvla.server.util.kafka :as k]
+    [sixsq.nuvla.server.util.kafka-base-test :refer [cleanup]]))
 
-(defn cleanup
-  [f]
-  (f)
-  (k/close-producers!))
 
 (def bootstrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
 

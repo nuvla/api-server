@@ -523,7 +523,7 @@
                           ::ke/server-config {"auto.create.topics.enable" "true"
                                               "transaction.timeout.ms"    "5000"}})]
       (try
-        (when (= 0 (count ka/*producers*))
+        (when (= 0 (count @ka/producers!))
           (profile "create kafka producers"
                    ka/create-producers! (format "%s:%s" kafka-host kafka-port)))
         (profile "run supplied function" f)

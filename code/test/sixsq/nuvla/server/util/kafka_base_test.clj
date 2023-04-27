@@ -27,44 +27,42 @@
 
 (deftest comm-chan-init-defaults
   ; the comm channel is always there as it is defined on namespace load
-  (is (not (nil? k/*comm-chan*)))
-  (is (= k/comm-chan-len (.n (.buf k/*comm-chan*))))
-  (is (= 0 (.count (.buf k/*comm-chan*)))))
+  (is (not (nil? @k/comm-chan!)))
+  (is (= k/comm-chan-len (-> @k/comm-chan! k/comm-chan-info :size)))
+  (is (= 0 (-> @k/comm-chan! k/comm-chan-info :count))))
 
 
 (deftest comm-chan-reset
   ; the comm channel is always there as it is defined on namespace load
-  (is (not (nil? k/*comm-chan*)))
-  (let [curr-len (-> k/*comm-chan*  k/comm-chan-info :size)]
+  (is (not (nil? @k/comm-chan!)))
+  (let [curr-len (-> @k/comm-chan! k/comm-chan-info :size)]
     (k/comm-chan-set! 5)
-    (is (not (nil? k/*comm-chan*)))
-    (is (= 5 (-> k/*comm-chan*  k/comm-chan-info :size)))
-    (is (= 0 (-> k/*comm-chan* k/comm-chan-info :count)))
+    (is (not (nil? @k/comm-chan!)))
+    (is (= 5 (-> @k/comm-chan! k/comm-chan-info :size)))
+    (is (= 0 (-> @k/comm-chan! k/comm-chan-info :count)))
     (k/comm-chan-set! curr-len)))
 
 
 (deftest register-kafka-producer
-  (is (= 0 (count k/*producers*)))
+  (is (= 0 (count @k/producers!)))
   (k/register-producer 0 nil)
-  (is (= 1 (count k/*producers*))))
+  (is (= 1 (count @k/producers!))))
 
 
 (deftest register-and-destroy-kafka-producer
   (k/close-producers!)
-  (is (= 0 (count k/*producers*)))
+  (is (= 0 (count @k/producers!)))
   (k/register-producer 0 nil)
-  (is (= 1 (count k/*producers*)))
+  (is (= 1 (count @k/producers!)))
   (k/close-producers!)
-  (is (= 0 (count k/*producers*))))
+  (is (= 0 (count @k/producers!))))
 
 (defn all-values-not-nil? [m]
   (every? (complement nil?) (vals m)))
 
 (deftest producers-lifecycle
+  (is (not (nil? @k/comm-chan!)))
   (k/create-producers!)
-  (is (not (nil? k/*comm-chan*)))
-  (is (= k/comm-chan-len (.n (.buf k/*comm-chan*))))
-  (is (= 0 (.count (.buf k/*comm-chan*))))
-  (is (= k/producers-num (count k/*producers*)))
-  (is (all-values-not-nil? k/*producers*))
+  (is (= k/producers-num (count @k/producers!)))
+  (is (all-values-not-nil? @k/producers!))
   (k/close-producers!))

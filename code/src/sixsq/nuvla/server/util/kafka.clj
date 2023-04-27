@@ -34,7 +34,7 @@
 (def ^:const producers-num 5)
 
 ; {id producer} map of Kafka producers (used for bookkeeping).
-(def ^:dynamic *producers* {})
+(def producers! (atom {}))
 
 ; Prefix of expected env vars for configuration of the Kafka client.
 (def ^:const kafka-client-conf-prefix ":kafka-client-conf-")
@@ -66,15 +66,15 @@
 
 
 ; Communication channel.
-(def ^:dynamic *comm-chan* (when (need-init?)
-                             (let [len (comm-channel-len-from-env)]
-                               (log/info "initialise async comm channel of len:" len)
-                               (chan (a/sliding-buffer len)))))
+(def comm-chan! (atom (when (need-init?)
+                        (let [len (comm-channel-len-from-env)]
+                          (log/info "initialise async comm channel of len:" len)
+                          (chan (a/sliding-buffer len))))))
 
 
 (defn comm-chan-set!
   [len]
-  (alter-var-root #'*comm-chan* (constantly (chan (a/sliding-buffer len)))))
+  (swap! comm-chan! (constantly (chan (a/sliding-buffer len)))))
 
 
 (defn comm-chan-info
@@ -140,7 +140,7 @@
 (defn start-producer!
   [id producer]
   (a/go-loop []
-    (when-let [{:keys [topic key value] :as msg} (<! *comm-chan*)]
+    (when-let [{:keys [topic key value] :as msg} (<! @comm-chan!)]
       (log/debugf "producer %s consumed from comm chan: %s" id msg)
       (kc/send! producer topic key value)
       (log/debugf "producer %s published: %s %s %s" id topic key value)
@@ -149,7 +149,7 @@
 
 (defn register-producer
   [n producer]
-  (alter-var-root #'*producers* assoc n producer))
+  (swap! producers! assoc n producer))
 
 
 (defn start-producers!
@@ -177,10 +177,15 @@
   "Closes all Kafka producers and destroys their communication channel with the
   client code."
   []
-  (when (pos? (count *producers*))
-    (log/info "closing kafka producers:" *producers*)
-    (map kc/close! (vals *producers*))
-    (alter-var-root #'*producers* (constantly {}))))
+  (when (pos? (count @producers!))
+    (log/debugf "closing kafka producers: %s" @producers!)
+    (doseq [[id p] @producers!]
+      (log/debugf "closing producer %s: %s" id p)
+      (try
+        (kc/close! p)
+        (catch Exception e
+          (log/errorf "failed closing producer %s %s: %s" id p e))))
+    (swap! producers! (constantly {}))))
 
 
 ;
@@ -192,6 +197,6 @@
   "Publishes `key`/`value` message to Kafka `topic`."
   [topic key value]
   (log/debugf "publish: %s %s %s" topic key value)
-  (put! *comm-chan* {:topic topic
+  (put! @comm-chan! {:topic topic
                      :key   key
                      :value value}))
