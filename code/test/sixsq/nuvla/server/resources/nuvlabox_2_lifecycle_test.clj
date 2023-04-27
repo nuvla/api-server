@@ -460,7 +460,7 @@
                 (ltu/is-operation-present :decommission)
                 (ltu/is-operation-present :cluster-nuvlabox)
                 (ltu/is-key-value :state "COMMISSIONED")
-                (ltu/is-key-value set :tags tags))
+                (ltu/is-key-value :tags nil))
 
             ;; check that services exist
             (let [services (-> session
@@ -475,13 +475,6 @@
                                (ltu/entries))]
 
               (is (= #{"swarm" "s3"} (set (map :subtype services))))
-
-              ;; tags is also applied to infra service swarm
-              (is (= tags (->> services
-                               (filter #(= (:subtype %) "swarm"))
-                               first
-                               :tags
-                               set)))
 
               (doseq [{:keys [acl]} services]
                 (is (= [nuvlabox-owner] (:view-acl acl))))
