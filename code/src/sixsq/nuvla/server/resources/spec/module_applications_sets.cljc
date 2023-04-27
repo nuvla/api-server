@@ -60,9 +60,19 @@
     :name "applications"
     :json-schema/type "array"))
 
+(s/def ::subtype
+  (-> (st/spec #{"docker" "kubernetes"})
+      (assoc :name "subtype"
+             :json-schema/type "string"
+             :json-schema/value-scope {:values ["docker" "kubernetes"]}
+             :json-schema/description "subtype of applications")))
+
+
+
 (s/def ::applications-set
   (assoc (st/spec (su/only-keys :req-un [::name]
-                                :opt-un [::applications
+                                :opt-un [::subtype
+                                         ::applications
                                          ::description]))
     :name "applications-set"
     :json-schema/type "map"))

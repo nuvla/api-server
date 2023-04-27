@@ -22,6 +22,7 @@
                    :commit            "wip"
 
                    :applications-sets [{:name         "x"
+                                        :subtype      "docker"
                                         :applications [{:id      "module/x"
                                                         :version 0}]}]}]
 
@@ -35,6 +36,8 @@
     (stu/is-invalid ::t/schema (assoc root :badKey "badValue"))
     (stu/is-invalid ::t/schema (assoc root :applications-sets []))
     (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications] []))
+    (stu/is-invalid ::t/schema (assoc-in root [:applications-sets 0 :subtype] "wrong"))
+    (stu/is-valid ::t/schema (update-in root [:applications-sets 0] dissoc :subtype))
     (stu/is-invalid ::t/schema (update-in root [:applications-sets 0] dissoc :name))
     (stu/is-invalid ::t/schema (update-in root [:applications-sets 0 :applications 0] dissoc :id))
     (stu/is-invalid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :id] "badid/x"))
