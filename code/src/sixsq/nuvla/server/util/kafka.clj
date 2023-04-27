@@ -11,9 +11,9 @@
   env vars on the server startup. Kafka producers publish the key/value messages
   to the topic provided by the resources.
 
-  The use of the sliding buffer is justified by the fact that Kafka producers can
-  block but we don't want server resources to block on publication to the
-  communication channel.
+  The use of the sliding buffer (implemented as non blocking buffer) is
+  justified by the fact that Kafka producers can block but we don't want server
+  resources to block on publication to the communication channel.
 
   The communication channel is a dynamic var to allow for external reset if
   required.
@@ -78,9 +78,10 @@
 
 
 (defn comm-chan-info
-  [channel]
-  {:size  (.n (.buf channel))
-   :count (.count (.buf channel))})
+  [^clojure.core.async.impl.channels.ManyToManyChannel channel]
+  (let [chan ^clojure.core.async.impl.buffers.SlidingBuffer (.buf channel)]
+    {:size  (.n chan)
+     :count (.count chan)}))
 
 
 ;
