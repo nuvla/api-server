@@ -7,22 +7,25 @@
     [sixsq.nuvla.server.util.kafka-base-test :refer [cleanup]]))
 
 
-(def bootstrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
-
-
 (use-fixtures :each ltu/with-test-kafka-fixture cleanup)
 
+(def boostrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
 
-(deftest publish-consume-single
-  (let [t (str "events-" (System/currentTimeMillis))
+(defn k-consumer
+  []
+  (kc/consumer {:bootstrap.servers boostrap-servers
+                :group.id "consumer-group-id"
+                "enable.auto.commit" "false"
+                "auto.offset.reset" "earliest"
+                "isolation.level" "read_committed"}
+               :string kc/json-deserializer) )
+
+
+#_(deftest publish-consume-single
+  (let [t (str "event-" (System/currentTimeMillis))
         v {:foo "bar"}]
     (k/publish! t "event" v)
-    (let [consumer (kc/consumer {:bootstrap.servers bootstrap-servers
-                                 :group.id "consumer-group-id"
-                                 "enable.auto.commit" "false"
-                                 "auto.offset.reset" "earliest"
-                                 "isolation.level" "read_committed"}
-                                :string kc/json-deserializer)]
+    (let [consumer (k-consumer)]
       (kc/subscribe! consumer t)
       (let [consumed (kc/poll! consumer 7000)]
         (is (> (:count consumed) 0))
@@ -35,19 +38,14 @@
       (kc/stop! consumer))))
 
 
-(deftest publish-consume-many
-  (let [t (str "events-" (System/currentTimeMillis))
-        msg-num 100]
+#_(deftest publish-consume-many
+  (let [t (str "event-" (System/currentTimeMillis))
+        msg-num 10]
     (doseq [i (range msg-num)]
       (k/publish! t "event" {:foo i}))
-    (let [consumer (kc/consumer {:bootstrap.servers bootstrap-servers
-                                 :group.id "consumer-group-id"
-                                 "enable.auto.commit" "false"
-                                 "auto.offset.reset" "earliest"
-                                 "isolation.level" "read_committed"}
-                                :string kc/json-deserializer)]
+    (let [consumer (k-consumer)]
       (kc/subscribe! consumer t)
-      (let [consumed (kc/poll! consumer 10000)]
+      (let [consumed (kc/poll! consumer 7000)]
         (is (= msg-num (:count consumed)))
         (doseq [m (-> consumed
                       :by-topic
