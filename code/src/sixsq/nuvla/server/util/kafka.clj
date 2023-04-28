@@ -22,7 +22,7 @@
   example to set 'delivery.timeout.ms' to 12345, provide it as the following
   environment variable: KAFKA_CLIENT_CONF_DELIVERY_TIMEOUT_MS=12345"
   (:require
-    [clojure.core.async :as a :refer [chan put! <!]]
+    [clojure.core.async :as a :refer [<! chan put!]]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [environ.core :as env]

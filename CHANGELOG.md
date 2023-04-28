@@ -2,13 +2,15 @@
 
 ## Unreleased
 
-- Notifications - async publication of messages from resources to Kafka
+## [6.0.13] - 2023-04-28
 
 ### Changed
 
 - Crud - Get resource helpers
 - Deployment - tasklist#2352 bugfix and refactor
 - Deployment - Execution-mode mixed by default at creation time tasklist#2348
+- Module applications sets - Make each application set subtype explicit #766
+- Notifications - async publication of messages from resources to Kafka
 
 ## [6.0.12] - 2023-04-24
 
