@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Notifications - async publication of messages from resources to Kafka
+
 ### Changed
 
 - Crud - Get resource helpers

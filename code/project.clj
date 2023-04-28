@@ -100,8 +100,7 @@
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"
                                :es-sniffer-init             "no"
-                               :kafka-producer-init         "no"
-                               :kafka-client-conf-client-id "test-nuvla-server"}
+                               :kafka-producer-init         "yes"}
               :aot            :all
               :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
               :test-report-sonar {:output-dir "test-reports"

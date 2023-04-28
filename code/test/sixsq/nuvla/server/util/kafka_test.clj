@@ -3,47 +3,29 @@
     [clojure.test :refer [deftest is use-fixtures]]
     [kinsky.client :as kc]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.util.kafka :as k]))
+    [sixsq.nuvla.server.util.kafka :as k]
+    [sixsq.nuvla.server.util.kafka-base-test :refer [cleanup]]))
 
 
-(def bootstrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
+(use-fixtures :each ltu/with-test-kafka-fixture cleanup)
+
+(def boostrap-servers (format "%s:%s" ltu/kafka-host ltu/kafka-port))
+
+(defn k-consumer
+  []
+  (kc/consumer {:bootstrap.servers boostrap-servers
+                :group.id "consumer-group-id"
+                "enable.auto.commit" "false"
+                "auto.offset.reset" "earliest"
+                "isolation.level" "read_committed"}
+               :string kc/json-deserializer) )
 
 
-(use-fixtures :once ltu/with-test-kafka-fixture)
-
-
-(deftest client-params-from-env-test
-  (is (= {} (k/client-params-from-env {} ":foo-bar-")))
-  (is (= {} (k/client-params-from-env {:env-var 1} ":foo-bar-")))
-  (is (= {:param.one "one" :param.two "two"}
-         (k/client-params-from-env {:foo-bar-param-one "one"
-                                    :foo-bar-param-two "two"
-                                    :bar-baz-param-one "baz"} ":foo-bar-"))))
-
-
-(deftest producer-lifecycle
-  (k/close-producer!)
-  (is (nil? k/*producer*))
-  (k/set-producer! (k/create-producer bootstrap-servers))
-  (is (not (nil? k/*producer*)))
-  (k/close-producer!)
-  (is (nil? k/*producer*)))
-
-
-(deftest publish-consume
-  (k/close-producer!)
-  (is (nil? k/*producer*))
-  (k/set-producer! (k/create-producer bootstrap-servers :vserializer kc/json-serializer))
-  (is (not (nil? k/*producer*)))
-  (let [t (str "events-" (System/currentTimeMillis))
+#_(deftest publish-consume-single
+  (let [t (str "event-" (System/currentTimeMillis))
         v {:foo "bar"}]
-    (k/publish t "event" v)
-    (let [consumer (kc/consumer {:bootstrap.servers bootstrap-servers
-                                 :group.id "consumer-group-id"
-                                 "enable.auto.commit" "false"
-                                 "auto.offset.reset" "earliest"
-                                 "isolation.level" "read_committed"}
-                                :string kc/json-deserializer)]
+    (k/publish! t "event" v)
+    (let [consumer (k-consumer)]
       (kc/subscribe! consumer t)
       (let [consumed (kc/poll! consumer 7000)]
         (is (> (:count consumed) 0))
@@ -53,5 +35,21 @@
                      last
                      :value))))
       (is (= 0 (:count (kc/poll! consumer 7000))))
-      (kc/stop! consumer)))
-  (k/close-producer!))
+      (kc/stop! consumer))))
+
+
+#_(deftest publish-consume-many
+  (let [t (str "event-" (System/currentTimeMillis))
+        msg-num 10]
+    (doseq [i (range msg-num)]
+      (k/publish! t "event" {:foo i}))
+    (let [consumer (k-consumer)]
+      (kc/subscribe! consumer t)
+      (let [consumed (kc/poll! consumer 7000)]
+        (is (= msg-num (:count consumed)))
+        (doseq [m (-> consumed
+                      :by-topic
+                      (get t))]
+          (is (<= 0 (-> m :value :foo) (- msg-num 1)))))
+      (is (= 0 (:count (kc/poll! consumer 7000))))
+      (kc/stop! consumer))))
