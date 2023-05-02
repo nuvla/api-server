@@ -191,6 +191,14 @@
               (ltu/is-key-value :owner "user/jane")
               (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"]))
 
+          (testing "user should not be able to change parent credential to something not accessible"
+            (-> session-user
+                (request deployment-url
+                         :request-method :put
+                         :body (json/write-str {:parent "credential/x"}))
+                (ltu/body->edn)
+                (ltu/is-status 404)))
+
           ;; attempt to start the deployment and check the start job was created
           (let [job-url (-> session-user
                             (request start-url

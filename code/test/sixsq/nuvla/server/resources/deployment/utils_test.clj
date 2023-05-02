@@ -1,6 +1,6 @@
 (ns sixsq.nuvla.server.resources.deployment.utils-test
   (:require
-    [clojure.test :refer [deftest is testing]]
+    [clojure.test :refer [are deftest is testing]]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as payment]
@@ -90,8 +90,8 @@
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
                billable-deployment-not-follow))))
     (testing "vendor or user with edit-data rights"
-      (with-redefs [config-nuvla/*stripe-api-key*      "123"
-                    a/can-edit-data?                        (constantly true)]
+      (with-redefs [config-nuvla/*stripe-api-key* "123"
+                    a/can-edit-data?              (constantly true)]
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
                billable-deployment-not-follow))))))
 
@@ -102,3 +102,11 @@
   (with-redefs [crud/retrieve-by-id-as-admin     identity
                 pricing-impl/create-subscription identity]
     (is (map? (t/create-stripe-subscription nil {} nil)))))
+
+(deftest cred-edited?
+  (are [expected parent current-parent]
+    (= expected (t/cred-edited? parent current-parent))
+    false nil nil
+    false nil "credential/x"
+    false "credential/x" "credential/x"
+    true "credential/y" "credential/x"))

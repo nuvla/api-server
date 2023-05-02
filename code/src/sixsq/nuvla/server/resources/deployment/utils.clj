@@ -337,3 +337,6 @@
     deployment
     (payment/throw-payment-required)))
 
+(defn cred-edited?
+  [parent current-parent]
+  (boolean (and parent (not= parent current-parent))))

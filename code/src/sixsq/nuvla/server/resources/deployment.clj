@@ -188,10 +188,13 @@ a container orchestration engine.
   (let [{:keys [id] :as current} (crud/get-resource-throw-nok request)
         authn-info   (auth/current-authentication request)
         cred-id      (or parent (:parent current))
-        cred         (some-> cred-id (crud/get-resource-throw-nok request))
+        cred-edited? (utils/cred-edited? parent (:parent current))
+        cred         (and cred-edited? cred-id
+                          (crud/get-resource-throw-nok cred-id request))
         infra-id     (:parent cred)
         cred-name    (:name cred)
-        infra        (some-> infra-id (crud/get-resource-throw-nok request))
+        infra        (and cred-edited? infra-id
+                          (crud/get-resource-throw-nok infra-id request))
         infra-name   (:name cred)
         nb-id        (utils/infra->nb-id infra request)
         nb-name      (some-> nb-id (crud/get-resource-throw-nok request) :name)
