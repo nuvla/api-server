@@ -182,17 +182,13 @@ a container orchestration engine.
 (def edit-impl (std-crud/edit-fn resource-type))
 
 
-(defn cred-edited?
-  [parent current-parent]
-  (boolean (and parent (not= parent current-parent))))
-
 (defmethod crud/edit resource-type
   [{{:keys [acl parent module deployment-set]} :body
     {:keys [select]}                           :cimi-params :as request}]
   (let [{:keys [id] :as current} (crud/get-resource-throw-nok request)
         authn-info   (auth/current-authentication request)
         cred-id      (or parent (:parent current))
-        cred-edited? (cred-edited? parent (:parent current))
+        cred-edited? (utils/cred-edited? parent (:parent current))
         cred         (and cred-edited? cred-id
                           (crud/get-resource-throw-nok cred-id request))
         infra-id     (:parent cred)
