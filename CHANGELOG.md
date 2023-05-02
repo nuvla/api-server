@@ -4,6 +4,12 @@
 
 ## Released
 
+## [6.0.14] - 2023-05-02
+
+### Changed
+
+- Deployment - Allow edit of deployment when credential is not changed
+
 ## [6.0.13] - 2023-04-28
 
 ### Changed
