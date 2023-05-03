@@ -241,10 +241,10 @@
 
 
 (defn infra->nb-id
-  [infra request]
+  [infra]
   (let [parent-infra-group (some-> infra
                                    :parent
-                                   (crud/get-resource-throw-nok request)
+                                   crud/retrieve-by-id-as-admin
                                    :parent)]
     (when (and
             (string? parent-infra-group)
