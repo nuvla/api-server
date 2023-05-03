@@ -4,6 +4,13 @@
 
 ## Released
 
+## [6.0.15] - 2023-05-03
+
+### Changed
+
+- Deployment - Check credential only when edited but force resolve when check is
+  done
+
 ## [6.0.14] - 2023-05-02
 
 ### Changed
