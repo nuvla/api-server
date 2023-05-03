@@ -189,18 +189,18 @@ a container orchestration engine.
         authn-info   (auth/current-authentication request)
         cred-id      (or parent (:parent current))
         cred-edited? (utils/cred-edited? parent (:parent current))
-        cred         (and cred-edited? cred-id
-                          (crud/get-resource-throw-nok cred-id request))
+        cred         (some-> cred-id
+                             crud/retrieve-by-id-as-admin
+                             (cond-> cred-edited? (a/throw-cannot-view request)))
         infra-id     (:parent cred)
         cred-name    (:name cred)
-        infra        (and cred-edited? infra-id
-                          (crud/get-resource-throw-nok infra-id request))
+        infra        (some-> infra-id crud/retrieve-by-id-as-admin)
         infra-name   (:name cred)
-        nb-id        (utils/infra->nb-id infra request)
-        nb-name      (some-> nb-id (crud/get-resource-throw-nok request) :name)
+        nb-id        (utils/infra->nb-id infra)
+        nb-name      (some-> nb-id crud/retrieve-by-id-as-admin :name)
         dep-set-id   (when-not (contains? select "deployment-set")
                        (or deployment-set (:deployment-set current)))
-        dep-set-name (some-> dep-set-id (crud/get-resource-throw-nok request) :name)
+        dep-set-name (some-> dep-set-id crud/retrieve-by-id-as-admin :name)
         fixed-attr   (select-keys (:module current) [:href :price :license :acl])
         is-user?     (not (a/is-admin? authn-info))
         new-acl      (-> (or acl (:acl current))
