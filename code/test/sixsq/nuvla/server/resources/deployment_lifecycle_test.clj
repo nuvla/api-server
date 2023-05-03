@@ -6,6 +6,7 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.deployment :as t]
@@ -192,12 +193,17 @@
               (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"]))
 
           (testing "user should not be able to change parent credential to something not accessible"
-            (-> session-user
-                (request deployment-url
-                         :request-method :put
-                         :body (json/write-str {:parent "credential/x"}))
-                (ltu/body->edn)
-                (ltu/is-status 404)))
+            (with-redefs [crud/retrieve-by-id-as-admin (fn [id]
+                                                         (if (= id "credential/x")
+                                                           {:id  "credential/x"
+                                                            :acl {:owners ["group/nuvla-admin"]}}
+                                                           (crud/retrieve-by-id-as-admin id)))]
+              (-> session-user
+                  (request deployment-url
+                           :request-method :put
+                           :body (json/write-str {:parent "credential/x"}))
+                  (ltu/body->edn)
+                  (ltu/is-status 403))))
 
           ;; attempt to start the deployment and check the start job was created
           (let [job-url (-> session-user
