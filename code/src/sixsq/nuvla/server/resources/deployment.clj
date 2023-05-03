@@ -139,7 +139,7 @@ a container orchestration engine.
   (some-> parent (crud/get-resource-throw-nok request))
   (let [authn-info          (auth/current-authentication request)
         deployment-set-name (some-> deployment-set
-                                    (crud/get-resource-throw-nok request)
+                                    crud/retrieve-by-id-as-admin
                                     :name)
         ;; FIXME: Correct the value passed to the python API.
         deployment          (-> deployment
