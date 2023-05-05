@@ -241,6 +241,12 @@
              :json-schema/type "boolean"
              :json-schema/description "follow customer trial?")))
 
+(s/def ::vendor-email
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "vendor email"
+             :json-schema/type "string"
+             :json-schema/server-managed true)))
+
 
 (s/def ::price
   (-> (st/spec (su/only-keys
@@ -249,7 +255,8 @@
                           ::account-id
                           ::currency
                           ::cent-amount-daily]
-                 :opt-un [::follow-customer-trial]))
+                 :opt-un [::follow-customer-trial
+                          ::vendor-email]))
       (assoc :name "price"
              :json-schema/type "map"
              :json-schema/order 38)))
