@@ -837,6 +837,126 @@
           (ltu/is-status 200)))))
 
 
+(defn- create-edit-deployment-bulk-edit-tags-lifecycle-test
+  [session-owner {depl-name :name
+                  depl-tags :tags}]
+  (let [;; setup a module that can be referenced from the deployment
+        module-id        (-> session-owner
+                             (request module-base-uri
+                                      :request-method :post
+                                      :body (json/write-str
+                                             (valid-module "component" valid-component (str "/test/tags" (random-uuid)))))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        valid-deployment {:module {:href module-id}}
+        deployment-id    (-> session-owner
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-deployment))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
+
+        deployment-url   (str p/service-context deployment-id)]
+    (-> session-owner
+        (request deployment-url
+                 :request-method :put
+                 :body (json/write-str (cond->
+                                        {:name depl-name}
+                                         depl-tags (assoc :tags depl-tags))))
+        (ltu/body->edn)
+        (ltu/is-status 200)
+        (ltu/is-key-value :name depl-name)
+        (ltu/is-key-value :tags depl-tags))
+    deployment-url))
+
+
+(defn- set-up-bulk-edit-tags-lifecycle-test
+  [session-owner deployments]
+  (mapv (partial create-edit-deployment-bulk-edit-tags-lifecycle-test session-owner)
+        deployments))
+
+
+(defn- run-bulk-edit-test!
+  [{:keys [name endpoint filter tags expected-fn]}]
+  (let [session       (-> (ltu/ring-app)
+                          session
+                          (content-type "application/json"))
+        session-owner (header session authn-info-header "user/alpha user/alpha group/nuvla-user group/nuvla-anon")
+        ne-urls       (set-up-bulk-edit-tags-lifecycle-test
+                        session-owner
+                        [
+                         {:name "NE1"}
+                         {:name "NE2" :tags ["foo"]}
+                         {:name "NE3" :tags ["foo" "bar"]}])]
+    (testing name
+      (-> session-owner
+          (header "bulk" "yes")
+          (request endpoint
+                   :request-method :patch
+                   :body (json/write-str (cond-> {:doc {:tags tags}}
+                                                 filter (assoc :filter filter))))
+          (ltu/is-status 200))
+      (run!
+        (fn [url]
+          (let [ne (-> session-owner
+                       (request url)
+                       (ltu/body->edn))]
+            (testing (:name ne)
+              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+        ne-urls))))
+
+(def endpoint-set-tags (str base-uri "/" "set-tags"))
+(def endpoint-add-tags (str base-uri "/" "add-tags"))
+(def endpoint-remove-tags (str base-uri "/" "remove-tags"))
+
+(deftest bulk-set-all-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Set all"
+                        :tags        ["baz"]
+                        :expected-fn (constantly ["baz"])}))
+
+(deftest bulk-set-tags-on-subset
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :filter      "(name='NE1') or (name='NE2')"
+                        :test-name   "Set just 2"
+                        :tags        ["foo" "bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE3" ["foo" "bar"]
+                                         ["foo" "bar" "baz"]))}))
+
+(deftest bulk-remove-all-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-set-tags
+                        :test-name   "Remove all tags for all deployments"
+                        :tags        []
+                        :expected-fn (constantly [])}))
+
+(deftest bulk-remove-one-specific-tag
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all deployments"
+                        :tags        ["foo"]
+                        :expected-fn (fn [ne] (case (:name ne)
+                                                "NE3" ["bar"]
+                                                []))}))
+
+(deftest bulk-remove-multiple-specific-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all deployments"
+                        :tags        ["foo" "bar"]
+                        :expected-fn (constantly [])}))
+
+(deftest bulk-add-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-add-tags
+                        :test-name   "Add specific tags to current tags for all deployments"
+                        :tags        ["bar" "baz"]
+                        :expected-fn (fn [ne]
+                                       (case (:name ne)
+                                         "NE1" ["bar" "baz"]
+                                         ["foo" "bar" "baz"]))}))
+
 (deftest bad-methods
   (let [resource-uri (str p/service-context (u/new-resource-id t/resource-type))]
     (ltu/verify-405-status [[base-uri :delete]
