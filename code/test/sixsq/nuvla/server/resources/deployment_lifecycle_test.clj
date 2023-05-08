@@ -845,7 +845,7 @@
                              (request module-base-uri
                                       :request-method :post
                                       :body (json/write-str
-                                             (valid-module "component" valid-component (str "/test/tags" (random-uuid)))))
+                                             (valid-module "component" valid-component (str "test/tags" (u/random-uuid)))))
                              (ltu/body->edn)
                              (ltu/is-status 201)
                              (ltu/location))
