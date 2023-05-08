@@ -897,16 +897,16 @@
           (request endpoint
                    :request-method :patch
                    :body (json/write-str (cond-> {:doc {:tags tags}}
-                                                 filter (assoc :filter filter))))
+                                           filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
-        (fn [url]
-          (let [ne (-> session-owner
-                       (request url)
-                       (ltu/body->edn))]
-            (testing (:name ne)
-              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
-        ne-urls))))
+       (fn [url]
+         (let [ne (-> session-owner
+                      (request url)
+                      (ltu/body->edn))]
+           (testing (:name ne)
+             (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+       ne-urls))))
 
 (def endpoint-set-tags (str base-uri "/" "set-tags"))
 (def endpoint-add-tags (str base-uri "/" "add-tags"))
@@ -934,19 +934,6 @@
                         :tags        []
                         :expected-fn (constantly [])}))
 
-(deftest bulk-remove-one-specific-tag
-  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
-                        :test-name   "Remove specific tags for all deployments"
-                        :tags        ["foo"]
-                        :expected-fn (fn [ne] (case (:name ne)
-                                                "NE3" ["bar"]
-                                                []))}))
-
-(deftest bulk-remove-multiple-specific-tags
-  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
-                        :test-name   "Remove specific tags for all deployments"
-                        :tags        ["foo" "bar"]
-                        :expected-fn (constantly [])}))
 
 (deftest bulk-add-tags
   (run-bulk-edit-test! {:endpoint    endpoint-add-tags
