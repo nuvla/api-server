@@ -101,6 +101,8 @@
             :swarm-node-cert-expiry-date "2020-02-18T19:42:08Z"
             :online                      true
             :host-user-home              "/home/user"
+            :cluster-node-labels         [{:name "nuvlaedge" :value "true"},
+                                          {:name "type" :value "prod"}]
             :cluster-node-role           "manager"
             :status-notes                ["Lost quorum", "Swap disabled", ""]
             :cluster-nodes               ["syz", "xyz", "1dsdr3"]
@@ -141,6 +143,7 @@
                  :inferred-location :nuvlabox-api-endpoint :gpio-pins :nuvlabox-engine-version
                  :container-plugins :vulnerabilities :swarm-node-id :installation-parameters
                  :power-consumption ::jobs :swarm-node-cert-expiry-date :online :host-user-home
-                 :cluster-id :cluster-node-role :status-notes :cluster-nodes :cluster-managers :orchestrator
-                 :cluster-join-address :temperatures :components :network}]
+                 :cluster-id :cluster-node-labels :cluster-node-role :status-notes :cluster-nodes
+                 :cluster-managers :orchestrator :cluster-join-address :temperatures :components
+                 :network}]
     (stu/is-valid ::nb-status-2/schema (dissoc state attr))))
