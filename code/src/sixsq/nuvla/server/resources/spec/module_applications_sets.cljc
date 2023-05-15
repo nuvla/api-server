@@ -4,8 +4,8 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.credential-template :as cred-spec]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
+    [sixsq.nuvla.server.resources.spec.deployment :as deployment]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -33,7 +33,6 @@
     :name "version"
     :json-schema/type "integer"))
 
-
 (s/def ::environmental-variable
   (assoc (st/spec (su/only-keys :req-un [::container-spec/name
                                          ::container-spec/value]))
@@ -42,27 +41,6 @@
     :json-schema/description
     "environmental variable name, value and application"))
 
-
-(s/def ::credential
-  (assoc cred-spec/credential-id-spec
-    :name "credential"
-    :json-schema/type "resource-id"
-    :json-schema/description "identifier of container registry credential"))
-
-(s/def ::infrastructure-service
-  (assoc (st/spec container-spec/infrastructure-service-id?)
-    :name "container-registry"
-    :json-schema/type "resource-id"
-    :json-schema/description "identifier of container registry infrastructure"))
-
-(s/def ::container-registry
-  (assoc (st/spec (su/only-keys :req-un [::infrastructure-service
-                                         ::credential]))
-    :name "container-registry"
-    :json-schema/type "map"
-    :json-schema/description
-    "container registry and credential"))
-
 (s/def ::environmental-variables
   (assoc (st/spec (s/coll-of ::environmental-variable :kind vector?))
     :name "environmental-variables"
@@ -70,19 +48,11 @@
     :json-schema/display-name "environmental variables"
     :json-schema/description "list of environmental variable to be overwritten"))
 
-
-(s/def ::container-registries
-  (assoc (st/spec (s/coll-of ::container-registry :kind vector?))
-    :name "container-registries"
-    :json-schema/type "array"
-    :json-schema/display-name "container registries"
-    :json-schema/description "list of container registries to be overwritten"))
-
 (s/def ::application
   (assoc (st/spec (su/only-keys :req-un [::id
                                          ::version]
                                 :opt-un [::environmental-variables
-                                         ::container-registries]))
+                                         ::deployment/registries-credentials]))
     :name "application"
     :json-schema/type "map"))
 
@@ -98,8 +68,6 @@
              :json-schema/value-scope {:values ["docker" "kubernetes"]}
              :json-schema/description "subtype of applications")))
 
-
-
 (s/def ::applications-set
   (assoc (st/spec (su/only-keys :req-un [::name]
                                 :opt-un [::subtype
@@ -112,7 +80,6 @@
   (assoc (st/spec (s/coll-of ::applications-set :min-count 1))
     :name "applications-sets"
     :json-schema/type "array"))
-
 
 (def module-application-keys-spec (su/merge-keys-specs
                                     [common/common-attrs
