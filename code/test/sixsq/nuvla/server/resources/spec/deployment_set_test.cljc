@@ -40,6 +40,8 @@
   (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :targets] []))
   (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :applications 0
                                                                    :environmental-variables] []))
+  (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :applications 0
+                                                                   :container-registries] []))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state}]
