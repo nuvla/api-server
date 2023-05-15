@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- NuvlaEdge status: add the field "cluster-node-labels" into nuvlabox-status
+
 ## Released
 
 ## [6.0.15] - 2023-05-03
