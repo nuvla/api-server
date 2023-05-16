@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Deployment - adds bulk editing tags endpoints, #761
+- NuvlaEdge status: add the field "cluster-node-labels" into nuvlabox-status
 
 ## Released
 
