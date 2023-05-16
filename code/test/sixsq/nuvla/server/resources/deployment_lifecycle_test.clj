@@ -934,6 +934,19 @@
                         :tags        []
                         :expected-fn (constantly [])}))
 
+(deftest bulk-remove-one-specific-tag
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo"]
+                        :expected-fn (fn [ne] (case (:name ne)
+                                                "NE3" ["bar"]
+                                                []))}))
+
+(deftest bulk-remove-multiple-specific-tags
+  (run-bulk-edit-test! {:endpoint    endpoint-remove-tags
+                        :test-name   "Remove specific tags for all edges"
+                        :tags        ["foo" "bar"]
+                        :expected-fn (constantly [])}))
 
 (deftest bulk-add-tags
   (run-bulk-edit-test! {:endpoint    endpoint-add-tags
