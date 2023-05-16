@@ -34,6 +34,37 @@
 
              :json-schema/order 79)))
 
+(s/def :cluster-node-label/name
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "cluster-node-label-name"
+             :json-schema/description "Cluster node label name"
+
+             :json-schema/order 1)))
+
+(s/def :cluster-node-label/value
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "cluster-node-label-value"
+             :json-schema/description "Cluster node label value"
+
+             :json-schema/order 2)))
+
+(s/def ::cluster-node-label
+  (-> (st/spec (su/only-keys :opt-un [:cluster-node-label/name
+                                      :cluster-node-label/value]))
+      (assoc :name "cluster-node-label"
+             :json-schema/type "map"
+             :json-schema/description "Cluster node label"
+
+             :json-schema/order 1)))
+
+(s/def ::cluster-node-labels
+  (-> (st/spec (s/coll-of ::cluster-node-label :kind vector?))
+      (assoc :name "cluster-node-labels"
+             :json-schema/type "array"
+             :json-schema/description "Cluster node labels"
+
+             :json-schema/order 80)))
+
 (s/def ::cluster-node-role
   (-> (st/spec #{"manager" "worker"})
       (assoc :name "cluster-node-role"
@@ -41,28 +72,28 @@
              :json-schema/description "Role of the node in the cluster, if any"
              :json-schema/value-scope {:values ["manager" "worker"]}
 
-             :json-schema/order 80)))
+             :json-schema/order 81)))
 
 (s/def ::status-notes
   (-> (st/spec (s/coll-of string? :kind vector?))
       (assoc :name "status-notes"
              :json-schema/description "Previously called 'comment', now turned into a list of notes related with the status"
 
-             :json-schema/order 83)))
+             :json-schema/order 82)))
 
 (s/def ::cluster-nodes
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
       (assoc :name "cluster-nodes"
              :json-schema/description "List of Node IDs in the cluster"
 
-             :json-schema/order 81)))
+             :json-schema/order 83)))
 
 (s/def ::cluster-managers
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
       (assoc :name "cluster-managers"
              :json-schema/description "List of Node IDs in the cluster, corresponding to the managers only"
 
-             :json-schema/order 82)))
+             :json-schema/order 84)))
 
 (s/def ::orchestrator
   (-> (st/spec #{"swarm" "kubernetes"})
@@ -71,21 +102,21 @@
              :json-schema/value-scope {:values ["swarm" "kubernetes"]}
              :json-schema/description "Container orchestration being used, if part of a cluster"
 
-             :json-schema/order 84)))
+             :json-schema/order 85)))
 
 (s/def ::cluster-join-address
   (-> (st/spec ::core/nonblank-string)
       (assoc :name "cluster-join-address"
              :json-schema/description "If manager, this is the advertised address to be used by other nodes to join"
 
-             :json-schema/order 85)))
+             :json-schema/order 86)))
 
 (s/def ::components
   (-> (st/spec (s/coll-of ::core/nonblank-string :min-count 1 :kind vector?))
       (assoc :name "cpmponents"
              :json-schema/description "List of all the NuvlaBox components in the edge device"
 
-             :json-schema/order 86)))
+             :json-schema/order 87)))
 
 ;;
 ;; network
@@ -184,7 +215,7 @@
              :json-schema/type "map"
              :json-schema/description "Network related configuration"
 
-             :json-schema/order 87)))
+             :json-schema/order 88)))
 
 
 (s/def ::schema
@@ -217,6 +248,7 @@
                                ::host-user-home
                                ::node-id
                                ::cluster-id
+                               ::cluster-node-labels
                                ::cluster-node-role
                                ::cluster-nodes
                                ::cluster-managers
