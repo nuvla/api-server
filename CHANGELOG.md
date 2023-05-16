@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deployment - adds bulk editing tags endpoints, #761
+
 ## Released
 
 ## [6.0.15] - 2023-05-03
@@ -962,5 +964,3 @@ Test release to verify release process.
 ### Changed
 
 - Update parent to version 6.3.0.
-
- 
