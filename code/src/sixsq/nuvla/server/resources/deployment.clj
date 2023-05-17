@@ -20,7 +20,8 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]))
+    [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.resources.spec.common-body :as common-body]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))
@@ -502,6 +503,32 @@ a container orchestration engine.
   [resource]
   (utils/get-context resource false))
 
+(def validate-edit-tags-body (u/create-spec-validation-request-body-fn
+                               ::common-body/bulk-edit-tags-body))
+
+(defn bulk-edit-tags
+  [request bulk-impl]
+  (-> request
+      validate-edit-tags-body
+      bulk-impl))
+
+(def bulk-edit-impl (std-crud/bulk-edit-fn resource-type collection-acl))
+
+(defmethod crud/bulk-action [resource-type "set-tags"]
+  [request]
+  (bulk-edit-tags request bulk-edit-impl))
+
+(def bulk-add-impl (std-crud/bulk-edit-fn resource-type collection-acl :add))
+
+(defmethod crud/bulk-action [resource-type "add-tags"]
+  [request]
+  (bulk-edit-tags request bulk-add-impl))
+
+(def bulk-remove-impl (std-crud/bulk-edit-fn resource-type collection-acl :remove))
+
+(defmethod crud/bulk-action [resource-type "remove-tags"]
+  [request]
+  (bulk-edit-tags request bulk-remove-impl))
 
 (def bulk-action-impl (std-crud/bulk-action-fn resource-type collection-acl collection-type))
 
