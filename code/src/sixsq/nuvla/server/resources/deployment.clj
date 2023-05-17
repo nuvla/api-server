@@ -18,10 +18,10 @@ a container orchestration engine.
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
+    [sixsq.nuvla.server.resources.spec.common-body :as common-body]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment-spec]
     [sixsq.nuvla.server.util.metadata :as gen-md]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.resources.spec.common-body :as common-body]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (def ^:const resource-type (u/ns->type *ns*))

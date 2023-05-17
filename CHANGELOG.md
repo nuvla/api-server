@@ -2,10 +2,13 @@
 
 ## Unreleased
 
-- Deployment - adds bulk editing tags endpoints, #761
-- NuvlaEdge status: add the field "cluster-node-labels" into nuvlabox-status
-
 ## Released
+
+## [6.0.16] - 2023-05-17
+
+- Deployment - adds bulk editing tags endpoints #761
+- Nuvlabox status - new attribute "cluster-node-labels"
+- Module - Add vendor email to spec
 
 ## [6.0.15] - 2023-05-03
 
