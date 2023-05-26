@@ -40,6 +40,8 @@
   (stu/is-invalid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :targets] []))
   (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :applications 0
                                                                    :environmental-variables] []))
+  (stu/is-valid ::t/deployment-set (assoc-in valid-deployment-set [:applications-sets 0 :overwrites 0 :applications 0
+                                                                   :registries-credentials] ["credential/f2dc1733-ac2c-45b1-b68a-0ec02653bc0c"]))
 
   ;; required attributes
   (doseq [k #{:id :resource-type :created :updated :acl :state}]

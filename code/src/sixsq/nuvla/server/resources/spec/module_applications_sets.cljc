@@ -5,6 +5,7 @@
     [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [sixsq.nuvla.server.resources.spec.core :as core]
     [sixsq.nuvla.server.resources.spec.module-component :as module-component]
+    [sixsq.nuvla.server.resources.spec.deployment :as deployment]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
@@ -32,7 +33,6 @@
     :name "version"
     :json-schema/type "integer"))
 
-
 (s/def ::environmental-variable
   (assoc (st/spec (su/only-keys :req-un [::container-spec/name
                                          ::container-spec/value]))
@@ -51,7 +51,8 @@
 (s/def ::application
   (assoc (st/spec (su/only-keys :req-un [::id
                                          ::version]
-                                :opt-un [::environmental-variables]))
+                                :opt-un [::environmental-variables
+                                         ::deployment/registries-credentials]))
     :name "application"
     :json-schema/type "map"))
 
@@ -67,8 +68,6 @@
              :json-schema/value-scope {:values ["docker" "kubernetes"]}
              :json-schema/description "subtype of applications")))
 
-
-
 (s/def ::applications-set
   (assoc (st/spec (su/only-keys :req-un [::name]
                                 :opt-un [::subtype
@@ -81,7 +80,6 @@
   (assoc (st/spec (s/coll-of ::applications-set :min-count 1))
     :name "applications-sets"
     :json-schema/type "array"))
-
 
 (def module-application-keys-spec (su/merge-keys-specs
                                     [common/common-attrs

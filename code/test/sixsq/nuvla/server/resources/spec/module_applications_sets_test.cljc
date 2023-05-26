@@ -33,6 +33,10 @@
     (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :environmental-variables]
                                        [{:name  "var_1"
                                          :value "var_1 value"}]))
+    (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :registries-credentials]
+                                       ["credential/ba2f41a3-c54c-fce8-32d2-0324e1c32ee2"]))
+    (stu/is-invalid ::t/schema (assoc-in root [:applications-sets 0 :applications 0 :registries-credentials]
+                                       []))
     (stu/is-invalid ::t/schema (assoc root :badKey "badValue"))
     (stu/is-invalid ::t/schema (assoc root :applications-sets []))
     (stu/is-valid ::t/schema (assoc-in root [:applications-sets 0 :applications] []))
