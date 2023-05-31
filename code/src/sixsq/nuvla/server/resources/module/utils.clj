@@ -2,9 +2,11 @@
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
@@ -22,34 +24,44 @@
 
 (def ^:const subtype-project "project")
 
+(defn module-subtype
+  [module]
+  (:subtype module))
+
+(defn is-subtype?
+  [resource expected]
+  (= (module-subtype resource) expected))
 
 (defn is-application?
-  [subtype]
-  (= subtype subtype-app))
+  [resource]
+  (is-subtype? resource subtype-app))
 
 (defn is-application-k8s?
-  [subtype]
-  (= subtype subtype-app-k8s))
+  [resource]
+  (is-subtype? resource subtype-app-k8s))
 
 (defn is-applications-sets?
-  [subtype]
-  (= subtype subtype-apps-sets))
+  [resource]
+  (is-subtype? resource subtype-apps-sets))
 
 (defn is-component?
-  [subtype]
-  (= subtype subtype-comp))
+  [resource]
+  (is-subtype? resource subtype-comp))
 
 (defn is-project?
-  [subtype]
-  (= subtype subtype-project))
+  [resource]
+  (is-subtype? resource subtype-project))
+
+(def is-not-project?
+  (complement is-project?))
 
 
 (defn split-resource
   "Splits a module resource into its metadata and content, returning the tuple
    [metadata, content]."
-  [{:keys [content] :as body}]
-  (let [module-meta (dissoc body :content)]
-    [module-meta content]))
+  [module]
+  (as-> (u/strip-service-attrs module) m
+        [(dissoc m :content) (:content m)]))
 
 
 (defn get-parent-path
@@ -71,9 +83,21 @@
   "Updates the :parent-path key in the module resource to ensure that it is
    consistent with the value of :path."
   [{:keys [versions] :as resource}]
-  (cond-> resource
-          (not (is-project? resource)) (assoc :published (boolean (some :published versions)))))
+  (if (is-project? resource)
+    resource
+    (assoc resource :published (boolean (some :published versions)))))
 
+(defn throw-cannot-publish-project
+  [resource]
+  (if (is-project? resource)
+    (throw (r/ex-response "project cannot be published" 400))
+    resource))
+
+(defn throw-cannot-publish-project
+  [resource]
+  (if (is-project? resource)
+    (throw (r/ex-response "project cannot be published" 400))
+    resource))
 
 (defn last-index
   [versions]
@@ -83,32 +107,51 @@
         i
         (recur (dec i))))))
 
-
-(defn retrieve-content-id
-  [versions index]
-  (let [index (or index (last-index versions))]
-    (-> versions (nth index) :href)))
-
-
 (defn split-uuid
-  [uuid]
-  (let [[uuid-module index] (str/split uuid #"_")
+  [full-uuid]
+  (let [[uuid-module index] (str/split full-uuid #"_")
         index (some-> index edn/read-string)]
     [uuid-module index]))
 
+(defn full-uuid->uuid
+  [full-uuid]
+  (-> full-uuid split-uuid first))
 
-(defn get-module-content
-  [{:keys [id versions] :as module-meta} uuid]
-  (let [version-index  (second (split-uuid uuid))
-        version-id     (retrieve-content-id versions version-index)
-        module-content (if version-id
-                         (-> version-id
-                             (crud/retrieve-by-id-as-admin)
-                             (dissoc :resource-type :operations :acl))
-                         (when version-index
-                           (throw (r/ex-not-found
-                                    (str "Module version not found: " id)))))]
-    (assoc module-meta :content module-content)))
+(defn full-uuid->version-index
+  [full-uuid]
+  (-> full-uuid split-uuid second))
+
+(defn latest-or-version-index
+  [{:keys [versions] :as _module-meta} full-uuid]
+  (or (full-uuid->version-index full-uuid)
+      (last-index versions)))
+
+(defn get-content-id
+  [{:keys [versions] :as _module-meta} version-index]
+  (-> versions (nth version-index) :href))
+
+(defn retrieve-module-meta
+  [{{full-uuid     :uuid
+     resource-name :resource-name} :params :as request}]
+  (-> (str resource-name "/" (full-uuid->uuid full-uuid))
+      (db/retrieve request)
+      (a/throw-cannot-view request)))
+
+(defn resolve-content
+  [{:keys [id] :as module-meta}
+   {{full-uuid :uuid} :params :as _request}]
+  (let [version-index (latest-or-version-index module-meta full-uuid)]
+    (if-let [content-id (get-content-id module-meta version-index)]
+     (-> content-id
+         crud/retrieve-by-id-as-admin
+         (dissoc :resource-type :operations :acl))
+     (throw (r/ex-not-found (str "Module version not found: " id))))))
+
+(defn retrieve-module-content
+  [module-meta request]
+  (if (is-project? module-meta)
+    module-meta
+    (assoc module-meta :content (resolve-content module-meta request))))
 
 (defn get-vendor-by-query-as-admin
   [filter-str]
@@ -163,14 +206,14 @@
 
 
 (defn can-deploy?
-  [{:keys [subtype] :as resource} request]
+  [resource request]
   (and (a/can-manage? resource request)
-       (is-applications-sets? subtype)))
+       (is-applications-sets? resource)))
 
 (defn resolve-module
   [href request]
   (let [authn-info (auth/current-authentication request)
-        module (crud/get-resource-throw-nok href request)]
+        module     (crud/get-resource-throw-nok href request)]
     (-> module
         (dissoc :versions :operations)
         (std-crud/resolve-hrefs authn-info true)
@@ -240,12 +283,10 @@
       (inject-resolved-applications resource)))
 
 (defn generate-deployment-set-skeleton
-  [{:keys [id] :as resource} {{uuid-full :uuid} :params :as _request}]
-  (let [version-index (second (split-uuid uuid-full))]
-    {:application       id
-     :version           (or version-index
-                            (last-index (:versions resource)))
-     :applications-sets (get-in resource [:content :applications-sets])}))
+  [{:keys [id] :as module} {{full-uuid :uuid} :params :as _request}]
+  {:application       id
+   :version           (latest-or-version-index module full-uuid)
+   :applications-sets (get-in module [:content :applications-sets])})
 
 
 (defn get-applications-sets

@@ -2,6 +2,7 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
+    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
@@ -16,7 +17,7 @@
 
 (def timestamp "1964-08-25T10:00:00.00Z")
 
-(defn lifecycle-test-module
+(defn  lifecycle-test-module
   [subtype valid-content]
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
@@ -67,7 +68,7 @@
         (ltu/body->edn)
         (ltu/is-status 400))
 
-    (when (utils/is-application? subtype)
+    (when (utils/is-application? valid-entry)
       (testing "application should have compatibility attribute set"
         (-> session-user
             (request base-uri
@@ -100,7 +101,7 @@
                           (ltu/body->edn)
                           (ltu/is-status 200)
                           (ltu/is-key-value :compatibility "docker-compose")
-                          (as-> m (if (utils/is-application? subtype)
+                          (as-> m (if (utils/is-application? valid-entry)
                                     (ltu/is-operation-present m :validate-docker-compose)
                                     (ltu/is-operation-absent m :validate-docker-compose)))
                           (ltu/body)
@@ -297,7 +298,8 @@
             (ltu/is-status 404))))))
 
 (deftest lifecycle-component
-  (let [valid-component {:author        "someone"
+  (let [subtype utils/subtype-comp
+        valid-content {:author        "someone"
                          :commit        "wip"
 
                          :architectures ["amd64" "arm/v6"]
@@ -306,7 +308,290 @@
                          :ports         [{:protocol       "tcp"
                                           :target-port    22
                                           :published-port 8022}]}]
-    (lifecycle-test-module utils/subtype-comp valid-component)))
+    (let [session-anon  (-> (session (ltu/ring-app))
+                            (content-type "application/json"))
+          session-admin (header session-anon authn-info-header
+                                "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+          session-user  (header session-anon authn-info-header
+                                "user/jane user/jane group/nuvla-user group/nuvla-anon")
+
+          valid-entry   {:parent-path               "a/b"
+                         :path                      "a/b/c"
+                         :subtype                   subtype
+
+                         :compatibility             "docker-compose"
+
+                         :logo-url                  "https://example.org/logo"
+
+                         :data-accept-content-types ["application/json" "application/x-something"]
+                         :data-access-protocols     ["http+s3" "posix+nfs"]
+
+                         :content                   valid-content}]
+
+      ;; create: NOK for anon
+      (-> session-anon
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-entry))
+          (ltu/body->edn)
+          (ltu/is-status 403))
+
+      ;; queries: NOK for anon
+      (-> session-anon
+          (request base-uri)
+          (ltu/body->edn)
+          (ltu/is-status 403))
+
+      (doseq [session [session-admin session-user]]
+        (-> session
+            (request base-uri)
+            (ltu/body->edn)
+            (ltu/is-status 200)
+            (ltu/is-count zero?)))
+
+      ;; invalid module subtype
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-entry :subtype "bad-module-subtype")))
+          (ltu/body->edn)
+          (ltu/is-status 400))
+
+      (when (utils/is-application? valid-entry)
+        (testing "application should have compatibility attribute set"
+          (-> session-user
+              (request base-uri
+                       :request-method :post
+                       :body (json/write-str (dissoc valid-entry :compatibility)))
+              (ltu/body->edn)
+              (ltu/is-status 400)
+              (ltu/message-matches "Application subtype should have compatibility attribute set!"))))
+
+      ;; adding, retrieving and  deleting entry as user should succeed
+      (doseq [session [session-admin session-user]]
+        (let [uri     (-> session
+                          (request base-uri
+                                   :request-method :post
+                                   :body (json/write-str valid-entry))
+                          (ltu/body->edn)
+                          (ltu/is-status 201)
+                          (ltu/location))
+
+              abs-uri (str p/service-context uri)]
+
+          ;; retrieve: NOK for anon
+          (-> session-anon
+              (request abs-uri)
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          (let [content (-> session-admin
+                            (request abs-uri)
+                            (ltu/body->edn)
+                            (ltu/is-status 200)
+                            (ltu/is-key-value :compatibility "docker-compose")
+                            (as-> m (if (utils/is-application? valid-entry)
+                                      (ltu/is-operation-present m :validate-docker-compose)
+                                      (ltu/is-operation-absent m :validate-docker-compose)))
+                            (ltu/body)
+                            :content)]
+            (is (= valid-content (select-keys content (keys valid-content)))))
+
+          ;; edit: NOK for anon
+          (-> session-anon
+              (request abs-uri
+                       :request-method :put
+                       :body (json/write-str valid-entry))
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          ;; insert 5 more versions
+          (doseq [_ (range 5)]
+            (-> session-admin
+                (request abs-uri
+                         :request-method :put
+                         :body (json/write-str valid-entry))
+                (ltu/body->edn)
+                (ltu/is-status 200)))
+
+          (let [versions (-> session-admin
+                             (request abs-uri
+                                      :request-method :put
+                                      :body (json/write-str valid-entry))
+                             (ltu/body->edn)
+                             (ltu/is-status 200)
+                             (ltu/body)
+                             :versions)]
+            (is (= 7 (count versions)))
+
+            ;; extract by indexes or last
+            (doseq [[i n] [["_0" 0] ["_1" 1] ["" 6]]]
+              (let [content-id (-> session-admin
+                                   (request (str abs-uri i))
+                                   (ltu/body->edn)
+                                   (ltu/is-status 200)
+                                   (ltu/body)
+                                   :content
+                                   :id)]
+                (is (= (-> versions (nth n) :href) content-id))
+                (is (= (-> versions (nth n) :author) "someone"))
+                (is (= (-> versions (nth n) :commit) "wip")))))
+
+          ;; publish
+          (let [publish-url (-> session
+                                (request abs-uri)
+                                (ltu/body->edn)
+                                (ltu/is-status 200)
+                                (ltu/is-operation-present :publish)
+                                (ltu/is-operation-present :unpublish)
+                                (ltu/get-op-url :publish))]
+
+            (testing "publish last version"
+              (-> session
+                  (request publish-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/message-matches "published successfully")))
+
+            (testing "operation urls of specific version"
+              (let [abs-uri-v2         (str abs-uri "_2")
+                    resp               (-> session
+                                           (request (str abs-uri "_2"))
+                                           (ltu/body->edn)
+                                           (ltu/is-status 200))
+                    publish-url        (ltu/get-op-url resp :publish)
+                    unpublish-url      (ltu/get-op-url resp :unpublish)
+                    edit-url           (ltu/get-op-url resp :edit)
+                    delete-url         (ltu/get-op-url resp :delete)
+                    delete-version-url (ltu/get-op-url resp :delete-version)]
+                (is (= publish-url (str abs-uri-v2 "/publish")))
+                (is (= unpublish-url (str abs-uri-v2 "/unpublish")))
+                (is (= delete-version-url (str abs-uri-v2 "/delete-version")))
+                (is (= delete-url abs-uri))
+                (is (= edit-url abs-uri))))
+
+            (testing "publish specific version"
+              (-> session
+                  (request (str abs-uri "_2/publish"))
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/message-matches "published successfully")))
+
+            (let [unpublish-url (-> session
+                                    (request abs-uri)
+                                    (ltu/body->edn)
+                                    (ltu/is-status 200)
+                                    (ltu/is-operation-present :publish)
+                                    (ltu/is-operation-present :unpublish)
+                                    (ltu/is-key-value #(-> % last :published) :versions true)
+                                    (ltu/is-key-value #(-> % (nth 2) :published) :versions true)
+                                    (ltu/is-key-value :published true)
+                                    (ltu/get-op-url :unpublish))]
+
+              (-> session
+                  (request unpublish-url)
+                  (ltu/body->edn)
+                  (ltu/is-status 200)
+                  (ltu/message-matches "unpublished successfully")))
+
+            ; publish is idempotent
+            (-> session
+                (request (str abs-uri "_2/publish"))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/message-matches "published successfully"))
+
+            (-> session
+                (request abs-uri)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :publish)
+                (ltu/is-operation-present :unpublish)
+                (ltu/is-key-value #(-> % last :published) :versions false)
+                (ltu/is-key-value :published true)
+                (ltu/get-op-url :unpublish))
+
+            (-> session
+                (request (str abs-uri "_2/unpublish"))
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/message-matches "unpublished successfully"))
+
+            (-> session
+                (request abs-uri)
+                (ltu/body->edn)
+                (ltu/is-status 200)
+                (ltu/is-operation-present :publish)
+                (ltu/is-operation-present :unpublish)
+                (ltu/is-key-value #(-> % (nth 2) :published) :versions false)
+                (ltu/is-key-value :published false)
+                (ltu/get-op-url :unpublish)))
+
+          (testing "edit module without putting the module-content should not create new version"
+            (is (= 7 (-> session-admin
+                         (request abs-uri
+                                  :request-method :put
+                                  :body (json/write-str (dissoc valid-entry :content :path)))
+                         (ltu/body->edn)
+                         (ltu/is-status 200)
+                         (ltu/body)
+                         :versions
+                         count))))
+
+          (doseq [i ["_0/delete-version" "_1/delete-version"]]
+            (-> session-admin
+                (request (str abs-uri i))
+                (ltu/body->edn)
+                (ltu/is-status 200))
+
+            (-> session-admin
+                (request abs-uri)
+                (ltu/body->edn)
+                (ltu/dump)
+                (ltu/is-status 200))
+
+            (log/error i)
+            (-> session-admin
+                (request (str abs-uri i))
+                (ltu/body->edn)
+                (ltu/is-status 404)))
+
+
+          (testing "delete latest version without specifying version"
+            (-> session-admin
+                (request (str abs-uri "/delete-version"))
+                (ltu/body->edn)
+                (ltu/is-status 200)))
+
+          (testing "delete out of bound index should return 404"
+            (-> session-admin
+                (request (str abs-uri "_50/delete-version"))
+                (ltu/body->edn)
+                (ltu/is-status 404)))
+
+          (-> session-admin
+              (request (str abs-uri "_50"))
+              (ltu/body->edn)
+              (ltu/is-status 404))
+
+          ;; delete: NOK for anon
+          (-> session-anon
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 403))
+
+          (-> session-admin
+              (request abs-uri
+                       :request-method :delete)
+              (ltu/body->edn)
+              (ltu/is-status 200))
+
+          ;; verify that the resource was deleted.
+          (-> session-admin
+              (request abs-uri)
+              (ltu/body->edn)
+              (ltu/is-status 404)))))))
 
 
 (deftest lifecycle-application

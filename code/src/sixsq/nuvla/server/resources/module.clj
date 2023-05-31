@@ -5,6 +5,7 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -61,13 +62,14 @@ component, or application.
 
 
 (defn subtype->resource-url
-  [subtype]
+  [resource]
   (cond
-    (utils/is-component? subtype) module-component/resource-type
-    (utils/is-application? subtype) module-application/resource-type
-    (utils/is-application-k8s? subtype) module-application/resource-type
-    (utils/is-applications-sets? subtype) module-applications-sets/resource-type
-    :else (throw (r/ex-bad-request (str "unknown module subtype: " subtype)))))
+    (utils/is-component? resource) module-component/resource-type
+    (utils/is-application? resource) module-application/resource-type
+    (utils/is-application-k8s? resource) module-application/resource-type
+    (utils/is-applications-sets? resource) module-applications-sets/resource-type
+    :else (throw (r/ex-bad-request (str "unknown module subtype: "
+                                        (utils/module-subtype resource))))))
 
 
 (defn colliding-path?
@@ -86,17 +88,20 @@ component, or application.
 
 
 (defn throw-colliding-path
-  [path]
-  (when (colliding-path? path)
-    (throw (r/ex-response (str "path '" path "' already exist") 409))))
+  [{{:keys [path]} :body :as request}]
+  (if (colliding-path? path)
+    (throw (r/ex-response (str "path '" path "' already exist") 409))
+    request))
 
 
 (defn throw-price-error
-  [{:keys [subtype price]}]
-  (when price
-    (config-nuvla/throw-stripe-not-configured)
-    (when (utils/is-project? subtype)
-      (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400)))))
+  [{{:keys [price] :as body} :body :as request}]
+  (if price
+    (do
+      (config-nuvla/throw-stripe-not-configured)
+      (when (utils/is-project? body)
+        (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400))))
+    request))
 
 
 (defn db-add-module-meta
@@ -149,28 +154,29 @@ component, or application.
       (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
 
 (defn throw-compatibility-required-for-application
-  [{:keys [subtype compatibility]}]
-  (when (and (utils/is-application? subtype) (nil? compatibility))
-    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))))
+  [{{:keys [compatibility] :as resource} :body :as request}]
+  (if (and (utils/is-application? resource)
+           (nil? compatibility))
+    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
+    request))
 
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
-
-  (a/throw-cannot-add collection-acl request)
-  (throw-colliding-path (:path body))
-  (throw-cannot-access-registries-or-creds request)
-  (throw-price-error body)
-  (throw-compatibility-required-for-application body)
-
-  (let [[{:keys [subtype] :as module-meta}
-         {:keys [author commit] :as module-content}] (-> body u/strip-service-attrs
-                                                         utils/split-resource)
+  (->> request
+       (a/throw-cannot-add collection-acl)
+       throw-colliding-path
+       throw-cannot-access-registries-or-creds
+       throw-price-error
+       throw-compatibility-required-for-application)
+  (let [[module-meta
+         {:keys [author commit]
+          :as   module-content}] (utils/split-resource body)
         module-meta (dissoc module-meta :parent-path :published)]
 
-    (if (utils/is-project? subtype)
+    (if (utils/is-project? module-meta)
       (db-add-module-meta module-meta request)
-      (let [content-url     (subtype->resource-url subtype)
+      (let [content-url     (subtype->resource-url module-meta)
 
             content-body    (merge module-content {:resource-type content-url})
 
@@ -188,25 +194,16 @@ component, or application.
             (utils/set-price (auth/current-active-claim request))
             (db-add-module-meta request))))))
 
-
-(defn retrieve-edn
-  [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" (-> uuid utils/split-uuid first))
-      (db/retrieve request)
-      (a/throw-cannot-view request)))
-
-
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
   (try
-    (let [{:keys [subtype] :as module-meta} (retrieve-edn request)
-          is-not-project? (not (utils/is-project? subtype))]
-      (-> module-meta
-          (cond-> is-not-project? (utils/get-module-content uuid))
-          utils/resolve-vendor-email
-          (crud/set-operations request)
-          (a/select-viewable-keys request)
-          (r/json-response)))
+    (-> request
+        utils/retrieve-module-meta
+        (utils/retrieve-module-content request)
+        utils/resolve-vendor-email
+        (crud/set-operations request)
+        (a/select-viewable-keys request)
+        (r/json-response))
     (catch IndexOutOfBoundsException _
       (r/response-not-found (str resource-type "/" uuid)))
     (catch Exception e
@@ -215,13 +212,11 @@ component, or application.
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
-
 (defn edit-module
-  [{{uuid-full :uuid} :params :as request} resource error-message]
-  (let [uuid     (-> uuid-full utils/split-uuid first)
-        response (-> request
+  [resource {{full-uuid :uuid} :params :as request} error-message]
+  (let [response (-> request
                      (assoc :request-method :put
-                            :params {:uuid          uuid
+                            :params {:uuid          (utils/full-uuid->uuid full-uuid)
                                      :resource-type resource-type}
                             :body resource)
                      edit-impl)]
@@ -233,25 +228,23 @@ component, or application.
 (defmethod crud/edit resource-type
   [{:keys [body] :as request}]
   (try
-    (let [id          (str resource-type "/" (-> request :params :uuid))
+    (let [{:keys [subtype versions price]} (-> request
+                                               utils/retrieve-module-meta
+                                               (a/throw-cannot-edit request))
           [module-meta
-           {:keys [author commit] :as module-content}] (-> body
-                                                           u/strip-service-attrs
-                                                           utils/split-resource)
-          {:keys [subtype versions price acl]} (crud/retrieve-by-id-as-admin id)
+           {:keys [author commit]
+            :as   module-content}] (utils/split-resource body)
           module-meta (-> module-meta
                           (dissoc :parent-path :published)
                           (assoc :subtype subtype)
                           utils/set-parent-path)]
 
-      (a/can-edit? {:acl acl} request)
-
-      (if (utils/is-project? subtype)
+      (if (utils/is-project? module-meta)
         (->> module-meta
              (assoc request :body)
              edit-impl)
         (let [_              (throw-cannot-access-registries-or-creds request)
-              content-url    (subtype->resource-url subtype)
+              content-url    (subtype->resource-url module-meta)
 
               content-body   (some-> module-content (merge {:resource-type content-url}))
 
@@ -286,9 +279,9 @@ component, or application.
 
 
 (defn remove-version
-  [versions index]
-  (let [part-a (subvec versions 0 index)
-        part-b (subvec versions (inc index))]
+  [{:keys [versions] :as _module-meta} version-index]
+  (let [part-a (subvec versions 0 version-index)
+        part-b (subvec versions (inc version-index))]
     (concat part-a [nil] part-b)))
 
 
@@ -296,31 +289,42 @@ component, or application.
 
 
 (defn delete-content
-  [content-id subtype]
-  (let [delete-request {:params      {:uuid          (-> content-id u/parse-id second)
-                                      :resource-name (subtype->resource-url subtype)}
+  [content-id]
+  (log/error "(u/id->request-params content-id)" (u/id->request-params content-id))
+  (let [delete-request {:params      (u/id->request-params content-id)
                         :body        {:id content-id}
                         :nuvla/authn auth/internal-identity}]
     (crud/delete delete-request)))
 
 
 (defn delete-all
-  [{:keys [subtype versions] :as _module-meta} request]
+  [{:keys [versions] :as _module-meta} request]
   (doseq [version versions]
     (when version
-      (delete-content (:href version) subtype)))
+      (delete-content (:href version))))
   (delete-impl request))
 
 
 (defn delete-item
-  [{:keys [subtype versions] :as module-meta} request version-index]
-  (let [content-id       (utils/retrieve-content-id versions version-index)
-        delete-response  (delete-content content-id subtype)
-        updated-versions (remove-version versions version-index)
+  [module-meta {{full-uuid :uuid} :params :as request}]
+  (let [version-index    (utils/latest-or-version-index module-meta full-uuid)
+        _ (log/error "version-index" version-index)
+        content-id       (utils/get-content-id module-meta version-index)
+        _ (log/error "content-id" content-id)
+        delete-response  (delete-content content-id)
+        _ (log/error "delete-response" delete-response)
+        updated-versions (remove-version module-meta version-index)
         module-meta      (-> module-meta
                              (assoc :versions updated-versions)
                              (utils/set-published))]
-    (edit-module request module-meta "A failure happened during delete module item")
+    (log/error "deleted version module-meta" module-meta)
+    (log/error "edit request" (update-in request [:params :uuid] utils/full-uuid->uuid)
+               (edit-module module-meta
+                            (update-in request [:params :uuid] utils/full-uuid->uuid)
+                            "A failure happened during delete module item"))
+    (edit-module module-meta
+                 (update-in request [:params :uuid] utils/full-uuid->uuid)
+                 "A failure happened during delete module item")
 
     delete-response))
 
@@ -328,23 +332,22 @@ component, or application.
 (defmethod crud/delete resource-type
   [request]
   (try
-    (-> (retrieve-edn request)
+    (-> request
+        utils/retrieve-module-meta
         (a/throw-cannot-edit request)
         (delete-all request))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
 (defmethod crud/do-action [resource-type "delete-version"]
-  [{{uuid-full :uuid} :params :as request}]
+  [{{full-uuid :uuid} :params :as request}]
   (try
-    (let [{:keys [versions] :as module-meta} (-> (retrieve-edn request)
-                                                 (a/throw-cannot-edit request))
-          [uuid version-index] (utils/split-uuid uuid-full)
-          request (assoc-in request [:params :uuid] uuid)]
-      (delete-item module-meta request (or version-index
-                                           (utils/last-index versions))))
+    (let [module-meta (-> request
+                          utils/retrieve-module-meta
+                          (a/throw-cannot-edit request))]
+      (delete-item module-meta request))
     (catch IndexOutOfBoundsException _
-      (r/response-not-found (str resource-type "/" uuid-full)))
+      (r/response-not-found (str resource-type "/" full-uuid)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -376,9 +379,9 @@ component, or application.
 (defmethod crud/do-action [resource-type "validate-docker-compose"]
   [{{uuid :uuid} :params :as request}]
   (let [id (str resource-type "/" uuid)
-        {:keys [subtype _acl] :as resource} (crud/retrieve-by-id-as-admin id)]
+        {:keys [_acl] :as resource} (crud/retrieve-by-id-as-admin id)]
     (a/throw-cannot-manage resource request)
-    (if (utils/is-application? subtype)
+    (if (utils/is-application? resource)
       (create-validate-docker-compose-job resource)
       (throw (r/ex-response "invalid subtype" 400)))))
 
@@ -398,20 +401,15 @@ component, or application.
 
 
 (defn publish-unpublish
-  [{{uuid-full :uuid} :params :as request} publish]
-  (let [[uuid version-index] (utils/split-uuid uuid-full)
-        id (str resource-type "/" uuid)
-        {:keys [subtype versions] :as resource} (crud/retrieve-by-id-as-admin id)]
-    (a/throw-cannot-manage resource request)
-    (if (utils/is-project? subtype)
-      (throw (r/ex-response "invalid subtype" 400))
-      (edit-module
-        request
-        (-> resource
-            (publish-version (or version-index
-                                 (utils/last-index versions)) publish)
-            utils/set-published)
-        "Edit versions failed"))
+  [{{full-uuid :uuid} :params :as request} publish]
+  (let [module-meta (utils/retrieve-module-meta request)]
+    (-> (a/throw-cannot-manage module-meta request)
+        utils/throw-cannot-publish-project
+        (publish-version
+          (utils/latest-or-version-index module-meta full-uuid)
+          publish)
+        utils/set-published
+        (edit-module request "Edit versions failed"))
     (r/map-response (str (if publish "published" "unpublished") " successfully") 200)))
 
 
@@ -434,20 +432,20 @@ component, or application.
       r/json-response))
 
 (defmethod crud/set-operations resource-type
-  [{:keys [id subtype] :as resource} {{uuid :uuid} :params :as request}]
-  (let [id_with-version            (if uuid
+  [{:keys [id] :as resource} {{uuid :uuid} :params :as request}]
+  (let [id-with-version            (if uuid
                                      (str resource-type "/" uuid)
                                      id)
         validate-docker-compose-op (u/action-map id :validate-docker-compose)
-        publish-op                 (u/action-map id_with-version :publish)
-        unpublish-op               (u/action-map id_with-version :unpublish)
-        delete-version-op          (u/action-map id_with-version :delete-version)
-        deploy-op                  (u/action-map id_with-version :deploy)
+        publish-op                 (u/action-map id-with-version :publish)
+        unpublish-op               (u/action-map id-with-version :unpublish)
+        delete-version-op          (u/action-map id-with-version :delete-version)
+        deploy-op                  (u/action-map id-with-version :deploy)
         can-manage?                (a/can-manage? resource request)
         can-delete?                (a/can-delete? resource request)
-        check-op-present?          (and can-manage? (utils/is-application? subtype))
+        check-op-present?          (and can-manage? (utils/is-application? resource))
         deploy-op-present?         (utils/can-deploy? resource request)
-        publish-eligible?          (and can-manage? (not (utils/is-project? subtype)))]
+        publish-eligible?          (and can-manage? (utils/is-not-project? resource))]
     (cond-> (crud/set-standard-operations resource request)
             check-op-present? (update :operations conj validate-docker-compose-op)
             publish-eligible? (update :operations conj publish-op)
@@ -455,13 +453,11 @@ component, or application.
             deploy-op-present? (update :operations conj deploy-op)
             can-delete? (update :operations conj delete-version-op))))
 
-
 ;;
 ;; initialization
 ;;
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::module/schema))
-
 
 (defn initialize
   []
