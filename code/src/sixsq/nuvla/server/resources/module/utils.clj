@@ -92,12 +92,6 @@
     (throw (r/ex-response "project cannot be published" 400))
     resource))
 
-(defn throw-cannot-publish-project
-  [resource]
-  (if (is-project? resource)
-    (throw (r/ex-response "project cannot be published" 400))
-    resource))
-
 (defn last-index
   [versions]
   (loop [i (dec (count versions))]
@@ -141,10 +135,10 @@
    {{full-uuid :uuid} :params :as _request}]
   (let [version-index (latest-or-version-index module-meta full-uuid)]
     (if-let [content-id (get-content-id module-meta version-index)]
-     (-> content-id
-         crud/retrieve-by-id-as-admin
-         (dissoc :resource-type :operations :acl))
-     (throw (r/ex-not-found (str "Module version not found: " id))))))
+      (-> content-id
+          crud/retrieve-by-id-as-admin
+          (dissoc :resource-type :operations :acl))
+      (throw (r/ex-not-found (str "Module version not found: " id))))))
 
 (defn retrieve-module-content
   [module-meta request]
@@ -177,12 +171,20 @@
     (assoc-in module-meta [:price :vendor-email] email)
     module-meta))
 
+(defn price-changed?
+  [previous-price new-price]
+  (not= previous-price new-price))
+
 (defn set-price
-  [{{:keys [price-id cent-amount-daily currency follow-customer-trial] :as price}
-    :price name :name path :path :as body}
+  [{new-price :price name :name path :path :as resource}
+   previous-price
    active-claim]
-  (if price
-    (let [product-id (some-> price-id pricing-impl/retrieve-price
+  (if (and new-price (price-changed? previous-price new-price))
+    (let [{:keys [price-id cent-amount-daily
+                  currency follow-customer-trial]}
+          (merge previous-price
+                 (select-keys new-price [:cent-amount-daily :currency :follow-customer-trial]))
+          product-id (some-> price-id pricing-impl/retrieve-price
                              pricing-impl/price->map :product-id)
           account-id (active-claim->account-id active-claim)
           s-price    (pricing-impl/create-price
@@ -200,8 +202,8 @@
                               :cent-amount-daily cent-amount-daily
                               :currency          currency}
                              (some? follow-customer-trial) (assoc :follow-customer-trial follow-customer-trial))]
-      (assoc body :price price))
-    body))
+      (assoc resource :price price))
+    resource))
 
 
 (defn can-deploy?

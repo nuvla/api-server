@@ -149,12 +149,10 @@
   [s]
   (disj s :id :created :updated :resource-type :acl))
 
-(defn overwrite-immutable-attributes
-  [resource request attributes]
-  (update request :body
-          #(as-> % body
-                 (apply dissoc body attributes)
-                 (merge body (select-keys resource attributes)))))
+(defn merge-resource
+  [resource {:keys [body] :as _request} immutable-attributes]
+  (let [new-body (apply dissoc body immutable-attributes)]
+    (merge resource new-body (select-keys resource immutable-attributes))))
 
 
 (defn update-timestamps

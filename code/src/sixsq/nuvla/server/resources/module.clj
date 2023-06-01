@@ -122,7 +122,7 @@ component, or application.
 
 (defn throw-cannot-access-registries-credentials
   [{{{:keys [registries-credentials]} :content} :body :as request}]
-  (let [creds (->> registries-credentials (remove str/blank?))]
+  (let [creds (remove str/blank? registries-credentials)]
     (if (and (seq creds)
              (< (query-count credential/resource-type
                              (str "subtype='infrastructure-service-registry' and ("
@@ -176,23 +176,25 @@ component, or application.
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn update-add-request
-  [body request]
-  (-> body
-      (dissoc :parent-path :published)
-      utils/set-parent-path
-      create-content
-      (dissoc :content)
-      (utils/set-price (auth/current-active-claim request))))
+  [request]
+  (update request :body
+          #(-> %
+               (dissoc :parent-path :published :versions)
+               utils/set-parent-path
+               create-content
+               (dissoc :content)
+               (utils/set-price nil (auth/current-active-claim request)))))
 
 (defmethod crud/add resource-type
   [request]
+  (a/throw-cannot-add collection-acl request)
   (-> request
       throw-colliding-path
       throw-cannot-access-registries-or-creds
       throw-project-cannot-have-price
       throw-project-cannot-have-content
       throw-compatibility-required-for-application
-      (update :body update-add-request request)
+      update-add-request
       add-impl))
 
 (defmethod crud/retrieve resource-type
@@ -213,16 +215,6 @@ component, or application.
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
-#_(defn update-edit-request
-  [body request]
-  (-> body
-      (u/overwrite-immutable-attributes
-        request [:parent-path :published :subtype :versions :price])
-      utils/set-parent-path
-      create-content
-      (dissoc :content)
-      (utils/set-price (auth/current-active-claim request))))
-
 (defn edit-module
   [resource {{full-uuid :uuid} :params :as request} error-message]
   (let [response (-> request
@@ -236,59 +228,33 @@ component, or application.
       (throw (r/ex-response (str error-message ": " response) 500)))))
 
 
+(defn update-edit-request
+  [request]
+  (let [existing-module (-> request
+                            utils/retrieve-module-meta
+                            (a/throw-cannot-edit request))]
+    (-> request
+        (update-in [:cimi-params :select] disj "compatibility")
+        (assoc
+          :body
+          (-> existing-module
+              (u/merge-resource request [:parent-path :published :versions :subtype])
+              utils/set-parent-path
+              create-content
+              (dissoc :content)
+              (utils/set-price existing-module (auth/current-active-claim request)))))))
 
 (defmethod crud/edit resource-type
-  [{:keys [body] :as request}]
+  [request]
   (try
-    (let [{:keys [subtype versions price]} (-> request
-                                               utils/retrieve-module-meta
-                                               (a/throw-cannot-edit request))
-          [module-meta
-           {:keys [author commit]
-            :as   module-content}] (utils/split-resource body)
-          module-meta (-> module-meta
-                          (dissoc :parent-path :published)
-                          (assoc :subtype subtype)
-                          utils/set-parent-path)]
-
-      (if (utils/is-project? module-meta)
-        (->> module-meta
-             (assoc request :body)
-             edit-impl)
-        (let [_              (throw-cannot-access-registries-or-creds request)
-              content-url    (subtype->resource-url module-meta)
-
-              content-body   (some-> module-content (merge {:resource-type content-url}))
-
-              content-id     (when content-body
-                               (-> {:params      {:resource-name content-url}
-                                    :body        content-body
-                                    :nuvla/authn auth/internal-identity}
-                                   crud/add
-                                   :body
-                                   :resource-id))
-
-              versions       (when content-id
-                               (conj versions
-                                     (cond-> {:href   content-id
-                                              :author author}
-                                             commit (assoc :commit commit))))
-              price-changed? (and config-nuvla/*stripe-api-key*
-                                  (or (not= (:cent-amount-daily price)
-                                            (get-in module-meta [:price :cent-amount-daily]))
-                                      (not= (:currency price)
-                                            (get-in module-meta [:price :currency]))))]
-          (-> request
-              (update-in [:cimi-params :select] disj "compatibility")
-              (assoc :body
-                     (cond-> module-meta
-                             price-changed? (-> (assoc :price (merge price (:price module-meta)))
-                                                (utils/set-price (auth/current-active-claim request)))
-                             versions (assoc :versions versions)))
-              edit-impl))))
+    (-> request
+        throw-cannot-access-registries-or-creds
+        throw-project-cannot-have-price
+        throw-project-cannot-have-content
+        update-edit-request
+        edit-impl)
     (catch Exception e
       (or (ex-data e) (throw e)))))
-
 
 (def delete-impl (std-crud/delete-fn resource-type))
 
