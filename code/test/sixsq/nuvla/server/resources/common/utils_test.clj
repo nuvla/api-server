@@ -77,3 +77,20 @@ should satisfy
 -------------------------
 Detected 1 error
 ")))))
+
+(deftest overwrite-immutable-attributes
+  (are [expect arg-map]
+    (= expect (u/overwrite-immutable-attributes
+                (:resource arg-map)
+                (:request arg-map)
+                (:attributes arg-map)))
+    {:body {}} {:resource {} :request {} :attributes []}
+    {:body {}} {:resource {} :request {}}
+    {:body {}} {:resource nil :request {}}
+    {:body {}} {:resource nil :request nil}
+    {:body {}} {:resource {:a 1} :request nil}
+    {:body {:a 1}} {:resource {:a 1} :request {} :attributes [:a]}
+    {:body {:a 1}} {:resource {:a 1} :request {:body {:a 2}} :attributes [:a]}
+    {:body {:a 1 :b 3}} {:resource {:a 1 :b 2} :request {:body {:a 2 :b 3}} :attributes [:a]}
+    {:body {:a {:nested "something"} :b 3}} {:resource {:a {:nested "something"} :b 2} :request {:body {:a 2 :b 3}} :attributes [:a]}
+    {:body {:a {:nested "something"} :b 2}} {:resource {:a {:nested "something"} :b 2 :c 3} :request {:body {:a 2 :b 3}} :attributes [:a :b]}))

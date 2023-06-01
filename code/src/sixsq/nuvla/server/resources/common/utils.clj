@@ -149,6 +149,13 @@
   [s]
   (disj s :id :created :updated :resource-type :acl))
 
+(defn overwrite-immutable-attributes
+  [resource request attributes]
+  (update request :body
+          #(as-> % body
+                 (apply dissoc body attributes)
+                 (merge body (select-keys resource attributes)))))
+
 
 (defn update-timestamps
   "Sets the updated attribute and optionally the created attribute
@@ -207,8 +214,8 @@
      (fn [value]
        (let [checked-value (accessor-fn value)]
          (if (ok? checked-value)
-          value
-          (error-fn checked-value (explain checked-value))))))))
+           value
+           (error-fn checked-value (explain checked-value))))))))
 
 (defn create-spec-validation-fn
   "Creates a validation function that compares a resource against the

@@ -2,7 +2,6 @@
   (:require
     [clojure.data.json :as json]
     [clojure.test :refer [deftest is testing use-fixtures]]
-    [clojure.tools.logging :as log]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]

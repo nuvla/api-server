@@ -8,7 +8,6 @@ component, or application.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -59,7 +58,6 @@ component, or application.
 ;; CRUD operations
 ;;
 
-
 (defn subtype->resource-url
   [resource]
   (cond
@@ -70,21 +68,21 @@ component, or application.
     :else (throw (r/ex-bad-request (str "unknown module subtype: "
                                         (utils/module-subtype resource))))))
 
+(defn query-count
+  [resource-type filter-str request]
+  (-> {:params      {:resource-name resource-type}
+       :cimi-params {:filter (parser/parse-cimi-filter filter-str)
+                     :last   0}
+       :nuvla/authn (auth/current-authentication request)}
+      crud/query
+      :body
+      :count))
 
 (defn colliding-path?
   [path]
-  (let [filter    (parser/parse-cimi-filter (format "path='%s'" path))
-        query-map {:params         {:resource-name resource-type}
-                   :request-method :put
-                   :nuvla/authn    auth/internal-identity
-                   :cimi-params    {:filter filter
-                                    :last   0}}]
-    (-> query-map
-        crud/query
-        :body
-        :count
-        pos?)))
-
+  (-> resource-type
+      (query-count (format "path='%s'" path) {:nuvla/authn auth/internal-identity})
+      pos?))
 
 (defn throw-colliding-path
   [{{:keys [path]} :body :as request}]
@@ -92,48 +90,32 @@ component, or application.
     (throw (r/ex-response (str "path '" path "' already exist") 409))
     request))
 
-
-(defn throw-price-error
+(defn throw-project-cannot-have-price
   [{{:keys [price] :as resource} :body :as request}]
   (if price
     (do
       (config-nuvla/throw-stripe-not-configured)
       (if (utils/is-project? resource)
-        (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400))
+        (throw (r/ex-response "Project should not have a price attribute!" 400))
         request))
     request))
 
-
-(defn db-add-module-meta
-  [module-meta request]
-  (db/add
-    resource-type
-    (-> module-meta
-        utils/set-parent-path
-        u/strip-service-attrs
-        (crud/new-identifier resource-type)
-        (assoc :resource-type resource-type)
-        u/update-timestamps
-        (u/set-created-by request)
-        (crud/add-acl request)
-        crud/validate)
-    {}))
+(defn throw-project-cannot-have-content
+  [{{:keys [content] :as resource} :body :as request}]
+  (if (and (utils/is-project? resource) content)
+    (throw (r/ex-response "Project should not have content attribute!" 400))
+    request))
 
 (defn throw-cannot-access-private-registries
   [{{{:keys [private-registries]} :content} :body :as request}]
   (if (and (seq private-registries)
-           (< (-> {:params      {:resource-name infra-service/resource-type}
-                   :cimi-params {:filter (parser/parse-cimi-filter
-                                           (str "subtype='registry' and ("
-                                                (->> private-registries
-                                                     (map #(str "id='" % "'"))
-                                                     (str/join " or "))
-                                                ")"))
-                                 :last   0}
-                   :nuvla/authn (:nuvla/authn request)}
-                  crud/query
-                  :body
-                  :count)
+           (< (query-count infra-service/resource-type
+                           (str "subtype='registry' and ("
+                                (->> private-registries
+                                     (map #(str "id='" % "'"))
+                                     (str/join " or "))
+                                ")")
+                           request)
               (count private-registries)))
     (throw (r/ex-response "Private registries can't be resolved!" 403))
     request))
@@ -141,21 +123,15 @@ component, or application.
 (defn throw-cannot-access-registries-credentials
   [{{{:keys [registries-credentials]} :content} :body :as request}]
   (let [creds (->> registries-credentials (remove str/blank?))]
-    (if (and
-          (seq creds)
-          (< (-> {:params      {:resource-name credential/resource-type}
-                 :cimi-params {:filter (parser/parse-cimi-filter
-                                         (str "subtype='infrastructure-service-registry' and ("
-                                              (->> creds
-                                                   (map #(str "id='" % "'"))
-                                                   (str/join " or "))
-                                              ")"))
-                               :last   0}
-                 :nuvla/authn (:nuvla/authn request)}
-                crud/query
-                :body
-                :count)
-            (count creds)))
+    (if (and (seq creds)
+             (< (query-count credential/resource-type
+                             (str "subtype='infrastructure-service-registry' and ("
+                                  (->> creds
+                                       (map #(str "id='" % "'"))
+                                       (str/join " or "))
+                                  ")")
+                             request)
+                (count creds)))
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
       request)))
 
@@ -172,39 +148,52 @@ component, or application.
     (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
     request))
 
+(defn remove-version
+  [{:keys [versions] :as _module-meta} version-index]
+  (let [part-a (subvec versions 0 version-index)
+        part-b (subvec versions (inc version-index))]
+    (concat part-a [nil] part-b)))
+
+(defn add-version
+  [{{:keys [author commit]} :content :as module} content-href]
+  (update module :versions conj (cond-> {:href   content-href
+                                         :author author}
+                                        commit (assoc :commit commit))))
+
+(defn create-content
+  [module]
+  (if-let [content (:content module)]
+    (let [content-url  (subtype->resource-url module)
+          content-body (merge content {:resource-type content-url})
+          content-href (-> (crud/add {:params      {:resource-name content-url}
+                                      :body        content-body
+                                      :nuvla/authn auth/internal-identity})
+                           :body
+                           :resource-id)]
+      (add-version module content-href))
+    module))
+
+(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
+
+(defn update-add-request
+  [body request]
+  (-> body
+      (dissoc :parent-path :published)
+      utils/set-parent-path
+      create-content
+      (dissoc :content)
+      (utils/set-price (auth/current-active-claim request))))
 
 (defmethod crud/add resource-type
-  [{:keys [body] :as request}]
-  (a/throw-cannot-add collection-acl request)
-  (->> request
-       throw-colliding-path
-       throw-cannot-access-registries-or-creds
-       throw-price-error
-       throw-compatibility-required-for-application)
-  (let [[module-meta
-         {:keys [author commit]
-          :as   module-content}] (utils/split-resource body)
-        module-meta (dissoc module-meta :parent-path :published)]
-
-    (if (utils/is-project? module-meta)
-      (db-add-module-meta module-meta request)
-      (let [content-url     (subtype->resource-url module-meta)
-
-            content-body    (merge module-content {:resource-type content-url})
-
-            content-request {:params      {:resource-name content-url}
-                             :body        content-body
-                             :nuvla/authn auth/internal-identity}
-
-            response        (crud/add content-request)
-
-            content-id      (-> response :body :resource-id)]
-        (-> module-meta
-            (assoc :versions [(cond-> {:href   content-id
-                                       :author author}
-                                      commit (assoc :commit commit))])
-            (utils/set-price (auth/current-active-claim request))
-            (db-add-module-meta request))))))
+  [request]
+  (-> request
+      throw-colliding-path
+      throw-cannot-access-registries-or-creds
+      throw-project-cannot-have-price
+      throw-project-cannot-have-content
+      throw-compatibility-required-for-application
+      (update :body update-add-request request)
+      add-impl))
 
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
@@ -224,6 +213,16 @@ component, or application.
 
 (def edit-impl (std-crud/edit-fn resource-type))
 
+#_(defn update-edit-request
+  [body request]
+  (-> body
+      (u/overwrite-immutable-attributes
+        request [:parent-path :published :subtype :versions :price])
+      utils/set-parent-path
+      create-content
+      (dissoc :content)
+      (utils/set-price (auth/current-active-claim request))))
+
 (defn edit-module
   [resource {{full-uuid :uuid} :params :as request} error-message]
   (let [response (-> request
@@ -232,9 +231,10 @@ component, or application.
                                      :resource-type resource-type}
                             :body resource)
                      edit-impl)]
-    (if (= (:status response) 200)
+    (if (r/status-200? response)
       response
       (throw (r/ex-response (str error-message ": " response) 500)))))
+
 
 
 (defmethod crud/edit resource-type
@@ -290,23 +290,15 @@ component, or application.
       (or (ex-data e) (throw e)))))
 
 
-(defn remove-version
-  [{:keys [versions] :as _module-meta} version-index]
-  (let [part-a (subvec versions 0 version-index)
-        part-b (subvec versions (inc version-index))]
-    (concat part-a [nil] part-b)))
-
-
 (def delete-impl (std-crud/delete-fn resource-type))
-
 
 (defn delete-content
   [module-meta content-id]
   subtype->resource-url
-  (let [request {:params      {:resource-name (subtype->resource-url module-meta)
-                               :uuid          (u/id->uuid content-id)}
-                 :nuvla/authn auth/internal-identity}]
-    (crud/delete request)))
+  (crud/delete
+    {:params      {:resource-name (subtype->resource-url module-meta)
+                   :uuid          (u/id->uuid content-id)}
+     :nuvla/authn auth/internal-identity}))
 
 
 (defn delete-all
