@@ -5,7 +5,6 @@ component, or application.
 "
   (:require
     [clojure.string :as str]
-    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -95,12 +94,13 @@ component, or application.
 
 
 (defn throw-price-error
-  [{{:keys [price] :as body} :body :as request}]
+  [{{:keys [price] :as resource} :body :as request}]
   (if price
     (do
       (config-nuvla/throw-stripe-not-configured)
-      (when (utils/is-project? body)
-        (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400))))
+      (if (utils/is-project? resource)
+        (throw (r/ex-response "Module of subtype project should not have a price attribute!" 400))
+        request))
     request))
 
 
@@ -119,14 +119,34 @@ component, or application.
         crud/validate)
     {}))
 
-(defn throw-cannot-access-registries-or-creds
-  [{{{:keys [private-registries registries-credentials]} :content} :body :as request}]
-  (when
-    (and (seq private-registries)
-         (< (-> {:params      {:resource-name infra-service/resource-type}
+(defn throw-cannot-access-private-registries
+  [{{{:keys [private-registries]} :content} :body :as request}]
+  (if (and (seq private-registries)
+           (< (-> {:params      {:resource-name infra-service/resource-type}
+                   :cimi-params {:filter (parser/parse-cimi-filter
+                                           (str "subtype='registry' and ("
+                                                (->> private-registries
+                                                     (map #(str "id='" % "'"))
+                                                     (str/join " or "))
+                                                ")"))
+                                 :last   0}
+                   :nuvla/authn (:nuvla/authn request)}
+                  crud/query
+                  :body
+                  :count)
+              (count private-registries)))
+    (throw (r/ex-response "Private registries can't be resolved!" 403))
+    request))
+
+(defn throw-cannot-access-registries-credentials
+  [{{{:keys [registries-credentials]} :content} :body :as request}]
+  (let [creds (->> registries-credentials (remove str/blank?))]
+    (if (and
+          (seq creds)
+          (< (-> {:params      {:resource-name credential/resource-type}
                  :cimi-params {:filter (parser/parse-cimi-filter
-                                         (str "subtype='registry' and ("
-                                              (->> private-registries
+                                         (str "subtype='infrastructure-service-registry' and ("
+                                              (->> creds
                                                    (map #(str "id='" % "'"))
                                                    (str/join " or "))
                                               ")"))
@@ -135,23 +155,15 @@ component, or application.
                 crud/query
                 :body
                 :count)
-            (count private-registries)))
-    (throw (r/ex-response "Private registries can't be resolved!" 403)))
-  (when-let [creds (->> registries-credentials (remove str/blank?) seq)]
-    (when (< (-> {:params      {:resource-name credential/resource-type}
-                  :cimi-params {:filter (parser/parse-cimi-filter
-                                          (str "subtype='infrastructure-service-registry' and ("
-                                               (->> creds
-                                                    (map #(str "id='" % "'"))
-                                                    (str/join " or "))
-                                               ")"))
-                                :last   0}
-                  :nuvla/authn (:nuvla/authn request)}
-                 crud/query
-                 :body
-                 :count)
-             (count creds))
-      (throw (r/ex-response "Registries credentials can't be resolved!" 403)))))
+            (count creds)))
+      (throw (r/ex-response "Registries credentials can't be resolved!" 403))
+      request)))
+
+(defn throw-cannot-access-registries-or-creds
+  [request]
+  (-> request
+      throw-cannot-access-private-registries
+      throw-cannot-access-registries-credentials))
 
 (defn throw-compatibility-required-for-application
   [{{:keys [compatibility] :as resource} :body :as request}]
@@ -163,8 +175,8 @@ component, or application.
 
 (defmethod crud/add resource-type
   [{:keys [body] :as request}]
+  (a/throw-cannot-add collection-acl request)
   (->> request
-       (a/throw-cannot-add collection-acl)
        throw-colliding-path
        throw-cannot-access-registries-or-creds
        throw-price-error
@@ -289,39 +301,31 @@ component, or application.
 
 
 (defn delete-content
-  [content-id]
-  (log/error "(u/id->request-params content-id)" (u/id->request-params content-id))
-  (let [delete-request {:params      (u/id->request-params content-id)
-                        :body        {:id content-id}
-                        :nuvla/authn auth/internal-identity}]
-    (crud/delete delete-request)))
+  [module-meta content-id]
+  subtype->resource-url
+  (let [request {:params      {:resource-name (subtype->resource-url module-meta)
+                               :uuid          (u/id->uuid content-id)}
+                 :nuvla/authn auth/internal-identity}]
+    (crud/delete request)))
 
 
 (defn delete-all
-  [{:keys [versions] :as _module-meta} request]
+  [{:keys [versions] :as module-meta} request]
   (doseq [version versions]
     (when version
-      (delete-content (:href version))))
+      (delete-content module-meta (:href version))))
   (delete-impl request))
 
 
 (defn delete-item
   [module-meta {{full-uuid :uuid} :params :as request}]
   (let [version-index    (utils/latest-or-version-index module-meta full-uuid)
-        _ (log/error "version-index" version-index)
         content-id       (utils/get-content-id module-meta version-index)
-        _ (log/error "content-id" content-id)
-        delete-response  (delete-content content-id)
-        _ (log/error "delete-response" delete-response)
+        delete-response  (delete-content module-meta content-id)
         updated-versions (remove-version module-meta version-index)
         module-meta      (-> module-meta
                              (assoc :versions updated-versions)
                              (utils/set-published))]
-    (log/error "deleted version module-meta" module-meta)
-    (log/error "edit request" (update-in request [:params :uuid] utils/full-uuid->uuid)
-               (edit-module module-meta
-                            (update-in request [:params :uuid] utils/full-uuid->uuid)
-                            "A failure happened during delete module item"))
     (edit-module module-meta
                  (update-in request [:params :uuid] utils/full-uuid->uuid)
                  "A failure happened during delete module item")
