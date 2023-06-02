@@ -54,15 +54,6 @@
 (def is-not-project?
   (complement is-project?))
 
-
-(defn split-resource
-  "Splits a module resource into its metadata and content, returning the tuple
-   [metadata, content]."
-  [module]
-  (as-> (u/strip-service-attrs module) m
-        [(dissoc m :content) (:content m)]))
-
-
 (defn get-parent-path
   "Gets the parent path for the given path. The root parent is the empty
    string."

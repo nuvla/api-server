@@ -5,13 +5,6 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.module.utils :as t]))
 
-
-(deftest split-resource
-  (is (= [{:alpha 1, :beta 2} {:gamma 3}]
-         (t/split-resource {:alpha   1
-                            :beta    2
-                            :content {:gamma 3}}))))
-
 (deftest full-uuid->uuid
   (is (= "f3ab4193-ff72-4947-b67b-0f9a448fe1c7" (t/full-uuid->uuid "f3ab4193-ff72-4947-b67b-0f9a448fe1c7_1"))))
 
@@ -28,13 +21,15 @@
                                 {:href "f"}
                                 {:href "g"}]}]
     (are [expected i] (= expected (t/get-content-id module-meta i))
-                      "d" "x_3"
-                      "a" "x_0"
-                      "g" "x")
-
+                      "d" 3
+                      "a" 0
+                      "g" 6)
+    (is (thrown?
+          NullPointerException
+          (t/get-content-id module-meta nil)))
     (is (thrown?
           IndexOutOfBoundsException
-          (t/get-content-id module-meta "x_10")))))
+          (t/get-content-id module-meta 10)))))
 
 
 (deftest check-parent-path
