@@ -92,9 +92,9 @@
     (is (= (t/set-price {:price {:price-id          "price_z"
                                  :cent-amount-daily 10
                                  :currency          "eur"}}
-                        {:price-id          "price_x"
-                         :cent-amount-daily 20
-                         :currency          "eur"} "user/jane")
+                        {:price {:price-id          "price_x"
+                                 :cent-amount-daily 20
+                                 :currency          "eur"}} "user/jane")
            {:price {:account-id        "user/jane"
                     :cent-amount-daily 10
                     :currency          "eur"

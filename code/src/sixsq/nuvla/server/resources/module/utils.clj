@@ -168,7 +168,7 @@
 
 (defn set-price
   [{new-price :price name :name path :path :as resource}
-   previous-price
+   {previous-price :price}
    active-claim]
   (if (and new-price (price-changed? previous-price new-price))
     (let [{:keys [price-id cent-amount-daily
