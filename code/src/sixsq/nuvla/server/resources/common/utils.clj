@@ -9,6 +9,7 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest SecureRandom)
@@ -144,15 +145,10 @@
 
 
 (defn strip-select-from-mandatory-attrs
-  "Strips non removable attributes from the set. These include
+  "Strips non-removable attributes from the set. These include
   :id :created :updated :resource-type :acl"
   [s]
   (disj s :id :created :updated :resource-type :acl))
-
-(defn merge-resource
-  [resource {:keys [body] :as _request} immutable-attributes]
-  (let [new-body (apply dissoc body immutable-attributes)]
-    (merge resource new-body (select-keys resource immutable-attributes))))
 
 
 (defn update-timestamps

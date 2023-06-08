@@ -77,20 +77,3 @@ should satisfy
 -------------------------
 Detected 1 error
 ")))))
-
-(deftest merge-resource
-  (are [expect arg-map]
-    (= expect (u/merge-resource
-                (:resource arg-map)
-                (:request arg-map)
-                (:immutable-attributes arg-map)))
-    {} {:resource {} :request {} :immutable-attributes []}
-    {} {:resource {} :request {}}
-    {} {:resource nil :request {}}
-    {} {:resource nil :request nil}
-    {:a 1} {:resource {:a 1} :request nil}
-    {:a 1} {:resource {:a 1} :request {} :immutable-attributes [:a]}
-    {:a 1} {:resource {:a 1} :request {:body {:a 2}} :immutable-attributes [:a]}
-    {:a 1 :b 3} {:resource {:a 1 :b 2} :request {:body {:a 2 :b 3}} :immutable-attributes [:a]}
-    {:a {:nested "something"} :b 3} {:resource {:a {:nested "something"} :b 2} :request {:body {:a 2 :b 3}} :immutable-attributes [:a]}
-    {:a {:nested "something"} :b 2 :c 3} {:resource {:a {:nested "something"} :b 2 :c 3} :request {:body {:a 2 :b 3}} :immutable-attributes [:a :b]}))

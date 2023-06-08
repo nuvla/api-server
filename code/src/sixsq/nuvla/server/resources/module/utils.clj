@@ -10,6 +10,7 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -84,7 +85,7 @@
     resource))
 
 (defn last-index
-  [versions]
+  [{:keys [versions] :as _module-meta}]
   (loop [i (dec (count versions))]
     (when (not (neg? i))
       (if (some? (nth versions i))
@@ -106,9 +107,9 @@
   (-> full-uuid split-uuid second))
 
 (defn latest-or-version-index
-  [{:keys [versions] :as _module-meta} full-uuid]
+  [module-meta full-uuid]
   (or (full-uuid->version-index full-uuid)
-      (last-index versions)))
+      (last-index module-meta)))
 
 (defn get-content-id
   [{:keys [versions] :as _module-meta} version-index]
@@ -167,34 +168,32 @@
   (not= previous-price new-price))
 
 (defn set-price
-  [{new-price :price name :name path :path :as resource}
+  [{new-price :price name :name path :path :as module}
    {previous-price :price}
-   active-claim]
-  (if (and new-price (price-changed? previous-price new-price))
-    (let [{:keys [price-id cent-amount-daily
-                  currency follow-customer-trial]}
-          (merge previous-price
-                 (select-keys new-price [:cent-amount-daily :currency :follow-customer-trial]))
-          product-id (some-> price-id pricing-impl/retrieve-price
-                             pricing-impl/price->map :product-id)
-          account-id (active-claim->account-id active-claim)
-          s-price    (pricing-impl/create-price
-                       (cond-> {"currency"    currency
-                                "unit_amount" cent-amount-daily
-                                "recurring"   {"interval"        "month"
-                                               "aggregate_usage" "sum"
-                                               "usage_type"      "metered"}}
-                               product-id (assoc "product" product-id)
-                               (nil? product-id) (assoc "product_data" {"name"       (or name path)
-                                                                        "unit_label" "day"})))
-          price      (cond-> {:price-id          (pricing-impl/get-id s-price)
-                              :product-id        (pricing-impl/get-product s-price)
-                              :account-id        account-id
-                              :cent-amount-daily cent-amount-daily
-                              :currency          currency}
-                             (some? follow-customer-trial) (assoc :follow-customer-trial follow-customer-trial))]
-      (assoc resource :price price))
-    resource))
+   request]
+  (let [price (gen-util/merge-and-ignore-input-immutable-attrs
+                new-price previous-price [:price-id :product-id :account-id])]
+    (if (price-changed? previous-price price)
+      (let [{:keys [cent-amount-daily currency follow-customer-trial account-id]
+             :or   {follow-customer-trial false}} price
+            account-id (or account-id (-> request
+                                          auth/current-active-claim
+                                          active-claim->account-id))
+            s-price    (pricing-impl/create-price
+                         {"currency"     currency
+                          "unit_amount"  cent-amount-daily
+                          "recurring"    {"interval"        "month"
+                                          "aggregate_usage" "sum"
+                                          "usage_type"      "metered"}
+                          "product_data" {"name"       (str (or name path) " v" (last-index module)) ;; FIXME find a clear product name
+                                          "unit_label" "day"}})]
+        (assoc module :price {:price-id              (pricing-impl/get-id s-price)
+                              :product-id            (pricing-impl/get-product s-price)
+                              :account-id            account-id
+                              :cent-amount-daily     cent-amount-daily
+                              :currency              currency
+                              :follow-customer-trial follow-customer-trial}))
+      (dissoc module :price))))
 
 
 (defn can-deploy?
