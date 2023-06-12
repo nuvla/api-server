@@ -237,14 +237,13 @@ component, or application.
                             (a/throw-cannot-edit request))]
     (-> request
         (update-in [:cimi-params :select] disj "compatibility")
-        (update
-          :body
-          #(-> %
-               (gen-util/merge-and-ignore-input-immutable-attrs
-                 existing-module [:parent-path :published :versions :subtype])
-               utils/set-parent-path
-               create-content
-               (utils/set-price existing-module request))))))
+        (update :body
+                #(-> %
+                     (gen-util/merge-and-ignore-input-immutable-attrs
+                       existing-module [:parent-path :published :versions :subtype])
+                     utils/set-parent-path
+                     create-content
+                     (utils/set-price existing-module request))))))
 
 (defmethod crud/edit resource-type
   [request]

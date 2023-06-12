@@ -9,7 +9,6 @@
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.time :as time])
   (:import
     (java.security MessageDigest SecureRandom)

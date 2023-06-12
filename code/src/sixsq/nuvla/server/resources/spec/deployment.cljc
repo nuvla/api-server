@@ -327,22 +327,23 @@
                                   ::state
                                   ::api-endpoint]
                          :opt-un [::api-credentials
-                                  ::data-objects            ;; deprecated
-                                  ::data-records            ;; deprecated
-                                  ::data-records-filter     ;; deprecated
                                   ::data
                                   ::registries-credentials
                                   ::owner
                                   ::infrastructure-service
                                   ::nuvlabox
-                                  ::subscription-id
                                   ::coupon
                                   ::execution-mode
                                   ::nuvlabox-name
                                   ::credential-name
                                   ::infrastructure-service-name
                                   ::deployment-set
-                                  ::deployment-set-name]}]))
+                                  ::deployment-set-name
+                                  ::data-objects            ;; deprecated
+                                  ::data-records            ;; deprecated
+                                  ::data-records-filter     ;; deprecated
+                                  ::subscription-id         ;; deprecated
+                                  ]}]))
 
 
 (s/def ::deployment (su/only-keys-maps deployment-keys-spec))
