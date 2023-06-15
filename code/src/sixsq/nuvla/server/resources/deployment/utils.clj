@@ -207,6 +207,7 @@
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
 
+;; TODO check if still needed hee
 (defn trial-end
   [active-claim {:keys [follow-customer-trial] :as _price}]
   (let [customer-trial-end (when (and follow-customer-trial
