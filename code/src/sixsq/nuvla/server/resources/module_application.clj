@@ -53,7 +53,6 @@ stack compose file.
 
 (defmethod crud/add resource-type
   [request]
-  (throw (r/ex-bad-request "Applications must have a parent project"))
   (add-impl request))
 
 
