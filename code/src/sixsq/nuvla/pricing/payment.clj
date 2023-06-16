@@ -52,8 +52,8 @@
           pricing-impl/retrieve-customer))
 
 (defn customer-id->subscription
-  [customer-id]
-  (:body (crud/do-action-as-admin customer-id "get-subscription")))
+  [resource-id]
+  (:body (crud/do-action-as-admin resource-id "get-subscription")))
 
 (defn active-claim->subscription
   [active-claim]
