@@ -371,6 +371,14 @@
                            :content       {:author         "someone"
                                            :commit         "initial"
                                            :docker-compose "some content"}}
+        _project          (-> session-user
+                              (request base-uri
+                                       :request-method :post
+                                       :body (json/write-str {:parent-path ""
+                                                              :path "clara"
+                                                              :subtype utils/subtype-project}))
+                              (ltu/body->edn)
+                              (ltu/is-status 201))
         app-1-create-resp (-> session-user
                               (request base-uri
                                        :request-method :post

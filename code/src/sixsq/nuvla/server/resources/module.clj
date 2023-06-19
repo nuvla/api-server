@@ -165,6 +165,8 @@ component, or application.
                                         (str "path='"
                                              (utils/get-parent-path path)
                                              "'"))}})
+               second
+               first
                (a/throw-cannot-edit request)
                utils/is-not-project?))
     (throw (r/ex-unauthorized "Application parent must be a project with edit rights!"))
