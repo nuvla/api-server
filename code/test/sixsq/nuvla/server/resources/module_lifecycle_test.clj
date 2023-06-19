@@ -328,7 +328,7 @@
 
     (lifecycle-test-module utils/subtype-app valid-application)))
 
-(deftest lifecycle-applications-extended
+(deftest lifecycle-creating-applications
   (let [session-anon  (-> (session (ltu/ring-app))
                           (content-type "application/json"))
         session-admin (header session-anon authn-info-header
@@ -336,28 +336,136 @@
         session-user  (header session-anon authn-info-header
                               "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-entry   {:parent-path               "a/b"
-                       :path                      "a/b/c"
+        project       {:resource-type             module/resource-type
+                       :created                   timestamp
+                       :updated                   timestamp
+                       :parent-path               ""
+                       :path                      "example"
+                       :subtype                   utils/subtype-project}
+
+        valid-app     {:parent-path               "example"
+                       :path                      "example/app"
                        :subtype                   utils/subtype-app
-
                        :compatibility             "docker-compose"
-
                        :logo-url                  "https://example.org/logo"
-
                        :data-accept-content-types ["application/json" "application/x-something"]
                        :data-access-protocols     ["http+s3" "posix+nfs"]
-
                        :content                   {:author         "someone"
                                                    :commit         "wip"
                                                    :docker-compose "version: \"3.6\"\n\nx-common: &common\n  stop_grace_period: 4s\n  logging:\n    options:\n      max-size: \"250k\"\n      max-file: \"10\"\n  labels:\n    - \"nuvlabox.component=True\"\n    - \"nuvlabox.deployment=production\"\n\nvolumes:\n  nuvlabox-db:\n    driver: local\n\nnetworks:\n  nuvlabox-shared-network:\n    driver: overlay\n    name: nuvlabox-shared-network\n    attachable: true\n\nservices:\n  data-gateway:\n    <<: *common\n    image: traefik:2.1.1\n    container_name: datagateway\n    restart: on-failure\n    command:\n      - --entrypoints.mqtt.address=:1883\n      - --entrypoints.web.address=:80\n      - --providers.docker=true\n      - --providers.docker.exposedbydefault=false\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    networks:\n      - default\n      - nuvlabox-shared-network\n\n  nb-mosquitto:\n    <<: *common\n    image: eclipse-mosquitto:1.6.8\n    container_name: nbmosquitto\n    restart: on-failure\n    labels:\n      - \"traefik.enable=true\"\n      - \"traefik.tcp.routers.mytcprouter.rule=HostSNI(`*`)\"\n      - \"traefik.tcp.routers.mytcprouter.entrypoints=mqtt\"\n      - \"traefik.tcp.routers.mytcprouter.service=mosquitto\"\n      - \"traefik.tcp.services.mosquitto.loadbalancer.server.port=1883\"\n      - \"nuvlabox.component=True\"\n      - \"nuvlabox.deployment=production\"\n    healthcheck:\n      test: [\"CMD-SHELL\", \"timeout -t 5 mosquitto_sub -t '$$SYS/#' -C 1 | grep -v Error || exit 1\"]\n      interval: 10s\n      timeout: 10s\n      start_period: 10s\n\n  system-manager:\n    <<: *common\n    image: nuvlabox/system-manager:1.0.1\n    restart: always\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - nuvlabox-db:/srv/nuvlabox/shared\n    ports:\n      - 127.0.0.1:3636:3636\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:3636\"]\n      interval: 30s\n      timeout: 10s\n      retries: 4\n      start_period: 10s\n\n  agent:\n    <<: *common\n    image: nuvlabox/agent:1.3.2\n    restart: on-failure\n    environment:\n      - NUVLABOX_UUID=${NUVLABOX_UUID}\n      - NUVLA_ENDPOINT=${NUVLA_ENDPOINT:-nuvla.io}\n      - NUVLA_ENDPOINT_INSECURE=${NUVLA_ENDPOINT_INSECURE:-False}\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - nuvlabox-db:/srv/nuvlabox/shared\n      - /:/rootfs:ro\n    expose:\n      - 5000\n    depends_on:\n      - system-manager\n      - compute-api\n\n  management-api:\n    <<: *common\n    image: nuvlabox/management-api:0.1.0\n    restart: on-failure\n    environment:\n      - NUVLA_ENDPOINT=${NUVLA_ENDPOINT:-nuvla.io}\n      - NUVLA_ENDPOINT_INSECURE=${NUVLA_ENDPOINT_INSECURE:-False}\n    volumes:\n      - /proc/sysrq-trigger:/sysrq\n      - ${HOME}/.ssh/authorized_keys:/rootfs/.ssh/authorized_keys\n      - nuvlabox-db:/srv/nuvlabox/shared\n      - /var/run/docker.sock:/var/run/docker.sock\n    ports:\n      - 5001:5001\n    healthcheck:\n      test: curl -k https://localhost:5001 2>&1 | grep SSL\n      interval: 20s\n      timeout: 10s\n      start_period: 30s\n\n  compute-api:\n    <<: *common\n    image: nuvlabox/compute-api:0.2.5\n    restart: on-failure\n    pid: \"host\"\n    environment:\n      - HOST=${HOSTNAME:-nuvlabox}\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - nuvlabox-db:/srv/nuvlabox/shared\n    ports:\n      - 5000:5000\n    depends_on:\n      - system-manager\n\n  network-manager:\n    <<: *common\n    image: nuvlabox/network-manager:0.0.4\n    restart: on-failure\n    environment:\n      - NUVLABOX_UUID=${NUVLABOX_UUID}\n      - VPN_INTERFACE_NAME=${NUVLABOX_VPN_IFACE:-vpn}\n    volumes:\n      - nuvlabox-db:/srv/nuvlabox/shared\n    depends_on:\n      - system-manager\n\n  vpn-client:\n    <<: *common\n    image: nuvlabox/vpn-client:0.0.4\n    container_name: vpn-client\n    restart: always\n    network_mode: host\n    cap_add:\n      - NET_ADMIN\n    devices:\n      - /dev/net/tun\n    environment:\n      - NUVLABOX_UUID=${NUVLABOX_UUID}\n    volumes:\n      - nuvlabox-db:/srv/nuvlabox/shared\n    depends_on:\n      - network-manager"}}]
-    (testing "new application must have a parent"
-      (let [response (request session-user base-uri
+
+    (testing "Failure creating application 1: no parent project is specified"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (-> valid-app
+                                             (assoc :parent-path "")
+                                             (assoc :path "app"))))
+          ltu/body->edn
+          (ltu/is-status 400)
+          (ltu/message-matches "Application subtype must have a parent project!")))
+
+    (testing "Failure creating application 2: specified parent project does not exist"
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-app :path "non-existent-parent/path")))
+          ltu/body->edn
+          (ltu/is-status 400)
+          (ltu/message-matches "No parent project found for path: non-existent-parent")))
+
+    (testing "Failure creating application 3: user does not have edit rights in parent project"
+      ;; Creating a parent project with nuvla-admin as owner
+      (let [uri (->  session-admin
+                     (request base-uri
                               :request-method :post
-                              :body (json/write-str valid-entry))]
-        (tap> (-> response :response :body :message))
-        (ltu/body->edn response)
-        (ltu/is-status response 400)
-        (ltu/message-matches response "Applications must have a parent project")))))
+                              :body (json/write-str project))
+                     ltu/body->edn
+                     (ltu/is-status 201)
+                     ltu/location-url)]
+
+        ;; If user has no view rights, failure message says that parent project does not exist.
+        (-> session-user
+            (request base-uri
+                     :request-method :post
+                     :body (json/write-str valid-app))
+            ltu/body->edn
+            (ltu/is-status 400)
+            (ltu/message-matches "No parent project found for path: example"))
+
+        ;; Adding view rights for user
+        (-> session-admin
+            (request uri
+                     :request-method :put
+                     :body (json/write-str
+                            (assoc project
+                                   :acl {:owners ["group/nuvla-admin"]
+                                         :view-meta ["user/jane"]
+                                         :view-data ["user/jane"]
+                                         :view-acl ["user/jane"]})))
+            ltu/body->edn
+            (ltu/is-status 200)))
+
+      ;; If user has view rights, message says user lacks edit rights for parent project.
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str valid-app))
+          ltu/body->edn
+          (ltu/is-status 403)
+          (ltu/message-matches "You do not have edit rights for:")))
+
+      ;; Trying to add app to parent app should fail
+    (testing "Failure creating application 4: Parent is not a project."
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc project :path "example2")))
+          ltu/body->edn
+          (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-app :path "example2/app")))
+          ltu/body->edn
+          (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-app :path "example2/app/not-allowed")))
+          ltu/body->edn
+          (ltu/is-status 403)
+          (ltu/message-matches "Application parent must be a project!")))
+
+    (testing "new application can be in a project nested inside another project"
+      ;; Creating a parent project with wrong edit rights
+      (->  session-user
+           (request base-uri
+                    :request-method :post
+                    :body (json/write-str (assoc project :path "grandparent")))
+           ltu/body->edn
+           (ltu/is-status 201))
+      (->  session-user
+           (request base-uri
+                    :request-method :post
+                    :body (json/write-str (assoc project :path "grandparent/parent")))
+           ltu/body->edn
+           (ltu/is-status 201))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-app :path "grandparent/parent/app")))
+          ltu/body->edn
+          (ltu/is-status 201)))
+
+    (testing "new application can not be top-level is also applied to admin-users"
+      (-> session-admin
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str (assoc valid-app :path "fails")))
+          ltu/body->edn
+          (ltu/is-status 400)
+          (ltu/message-matches "Application subtype must have a parent project!")))))
 
 (def valid-applications-sets-content
   {:author            "someone"

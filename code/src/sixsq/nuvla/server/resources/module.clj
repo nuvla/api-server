@@ -8,6 +8,7 @@ component, or application.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -156,21 +157,43 @@ component, or application.
     (throw (r/ex-bad-request "Application subtype must have a parent project!"))
     request))
 
+(defn query-by-path [path authn]
+  (-> (db/query
+       resource-type
+       (merge
+        {:cimi-params {:filter (parser/parse-cimi-filter
+                                (str "path='"
+                                     path
+                                     "'"))}}
+        authn))
+      second
+      first))
+
+(defn- throw-if-not-exists-or-found [resource parent-path]
+  (if (nil? resource)
+    (throw (r/ex-bad-request (str "No parent project found for path: " parent-path)))
+    resource))
+
+(defn- throw-if-no-edit-rights [resource request]
+  (try
+    (a/throw-cannot-edit resource request)
+    (catch Exception _
+      (throw (r/ex-response (str "You do not have edit rights for: "
+                                 (:id resource)
+                                 " at path: "
+                                 (:path resource))
+                            403)))))
+
 (defn throw-application-requires-editable-parent-project
   [{{:keys [path] :as resource} :body :as request}]
-  (if (and (utils/is-application? resource)
-           (-> (crud/query-as-admin
-                resource-type
-                {:cimi-params {:filter (parser/parse-cimi-filter
-                                        (str "path='"
-                                             (utils/get-parent-path path)
-                                             "'"))}})
-               second
-               first
-               (a/throw-cannot-edit request)
-               utils/is-not-project?))
-    (throw (r/ex-unauthorized "Application parent must be a project with edit rights!"))
-    request))
+  (let [parent-path (utils/get-parent-path path)]
+    (if (and (utils/is-application? resource)
+             (-> (query-by-path parent-path (select-keys request [:nuvla/authn]))
+                 (throw-if-not-exists-or-found parent-path)
+                 (throw-if-no-edit-rights request)
+                 utils/is-not-project?))
+      (throw (r/ex-response "Application parent must be a project!" 403))
+      request)))
 
 (defn remove-version
   [{:keys [versions] :as _module-meta} version-index]
