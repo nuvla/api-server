@@ -141,11 +141,33 @@ component, or application.
       throw-cannot-access-private-registries
       throw-cannot-access-registries-credentials))
 
-(defn throw-compatibility-required-for-application
+
+(defn throw-application-requires-compatibility
   [{{:keys [compatibility] :as resource} :body :as request}]
   (if (and (utils/is-application? resource)
            (nil? compatibility))
     (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
+    request))
+
+(defn throw-application-requires-parent
+  [{{:keys [path] :as resource} :body :as request}]
+  (if (and (utils/is-application? resource)
+           (str/blank? (utils/get-parent-path path)))
+    (throw (r/ex-bad-request "Application subtype must have a parent project!"))
+    request))
+
+(defn throw-application-requires-editable-parent-project
+  [{{:keys [path] :as resource} :body :as request}]
+  (if (and (utils/is-application? resource)
+           (-> (crud/query-as-admin
+                resource-type
+                {:cimi-params {:filter (parser/parse-cimi-filter
+                                        (str "path='"
+                                             (utils/get-parent-path path)
+                                             "'"))}})
+               (a/throw-cannot-edit request)
+               utils/is-not-project?))
+    (throw (r/ex-unauthorized "Application parent must be a project with edit rights!"))
     request))
 
 (defn remove-version
@@ -193,9 +215,12 @@ component, or application.
       throw-cannot-access-registries-or-creds
       throw-project-cannot-have-price
       throw-project-cannot-have-content
-      throw-compatibility-required-for-application
+      throw-application-requires-compatibility
+      throw-application-requires-parent
+      throw-application-requires-editable-parent-project
       update-add-request
-      add-impl))
+      add-impl
+      ))
 
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]
