@@ -244,8 +244,7 @@ component, or application.
       throw-application-requires-parent
       throw-application-requires-editable-parent-project
       update-add-request
-      add-impl
-      ))
+      add-impl))
 
 (defmethod crud/retrieve resource-type
   [{{uuid :uuid} :params :as request}]

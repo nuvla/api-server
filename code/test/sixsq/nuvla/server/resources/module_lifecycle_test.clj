@@ -36,7 +36,13 @@
                        :data-accept-content-types ["application/json" "application/x-something"]
                        :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                       :content                   valid-content}]
+                       :content                   valid-content}
+
+        project       (-> valid-entry
+                          (dissoc :content)
+                          (assoc :parent-path "")
+                          (update :path utils/get-parent-path)
+                          (assoc :subtype utils/subtype-project))]
 
     ;; create: NOK for anon
     (-> session-anon
@@ -69,17 +75,12 @@
 
     (when (utils/is-application? valid-entry)
       ;; Creating editable parent project
-      (let [project (-> valid-entry
-                        (dissoc :content)
-                        (assoc :parent-path "")
-                        (update :path utils/get-parent-path)
-                        (assoc :subtype utils/subtype-project))]
-        (-> session-user
-            (request base-uri
-                     :request-method :post
-                     :body (json/write-str project))
-            (ltu/body->edn)
-            (ltu/is-status 201)))
+      (-> session-user
+          (request base-uri
+                   :request-method :post
+                   :body (json/write-str project))
+          (ltu/body->edn)
+          (ltu/is-status 201))
       (testing "application should have compatibility attribute set"
         (-> session-user
             (request base-uri
