@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -98,6 +99,16 @@
                                      (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
+          _                  (-> session-user
+                                 (request module-base-uri
+                                          :request-method :post
+                                          :body (json/write-str
+                                                  (-> (valid-module subtype valid-module-content)
+                                                      (dissoc :content :id :compatibility :parent-path)
+                                                      (update :path module-utils/get-parent-path)
+                                                      (assoc  :subtype module-utils/subtype-project))))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201))
           module-id          (-> session-user
                                  (request module-base-uri
                                           :request-method :post
