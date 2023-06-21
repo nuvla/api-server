@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.module-lifecycle-test
   (:require
     [clojure.data.json :as json]
+    [clojure.string :as str]
     [clojure.test :refer [deftest is testing use-fixtures]]
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
