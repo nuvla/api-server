@@ -16,6 +16,30 @@
 
 (def timestamp "1964-08-25T10:00:00.00Z")
 
+(defn- get-path-segments
+  [path]
+  (reduce
+   (fn [acu cur]
+     (conj acu (if (seq acu)
+                 (str (last acu) "/" cur)
+                 cur)))
+   []
+   (str/split path #"/")))
+
+(defn create-parent-projects [path user]
+  (let [paths (get-path-segments (utils/get-parent-path path))]
+    (run!
+     (fn [path-segment]
+       (-> user
+           (request base-uri
+                    :request-method :post
+                    :body (json/write-str {:subtype utils/subtype-project
+                                           :path path-segment
+                                           :parent-path (utils/get-parent-path path-segment)}))
+           ltu/body->edn
+           (ltu/is-status 201)))
+     paths)))
+
 (defn lifecycle-test-module
   [subtype valid-content]
   (let [session-anon  (-> (session (ltu/ring-app))
@@ -36,13 +60,8 @@
                        :data-accept-content-types ["application/json" "application/x-something"]
                        :data-access-protocols     ["http+s3" "posix+nfs"]
 
-                       :content                   valid-content}
+                       :content                   valid-content}]
 
-        project       (-> valid-entry
-                          (dissoc :content)
-                          (assoc :parent-path "")
-                          (update :path utils/get-parent-path)
-                          (assoc :subtype utils/subtype-project))]
 
     ;; create: NOK for anon
     (-> session-anon
@@ -65,6 +84,9 @@
           (ltu/is-status 200)
           (ltu/is-count zero?)))
 
+    ;; Creating editable parent project
+    (create-parent-projects (:path valid-entry) session-user)
+
     ;; invalid module subtype
     (-> session-admin
         (request base-uri
@@ -74,13 +96,7 @@
         (ltu/is-status 400))
 
     (when (utils/is-application? valid-entry)
-      ;; Creating editable parent project
-      (-> session-user
-          (request base-uri
-                   :request-method :post
-                   :body (json/write-str project))
-          (ltu/body->edn)
-          (ltu/is-status 201))
+
       (testing "application should have compatibility attribute set"
         (-> session-user
             (request base-uri
@@ -436,7 +452,7 @@
                    :body (json/write-str (assoc valid-app :path "example2/app/not-allowed")))
           ltu/body->edn
           (ltu/is-status 403)
-          (ltu/message-matches "Application parent must be a project!")))
+          (ltu/message-matches "Parent must be a project!")))
 
     (testing "new application can be in a project nested inside another project"
       ;; Creating a parent project with wrong edit rights
@@ -492,14 +508,7 @@
                            :content       {:author         "someone"
                                            :commit         "initial"
                                            :docker-compose "some content"}}
-        _project          (-> session-user
-                              (request base-uri
-                                       :request-method :post
-                                       :body (json/write-str {:parent-path ""
-                                                              :path "clara"
-                                                              :subtype utils/subtype-project}))
-                              (ltu/body->edn)
-                              (ltu/is-status 201))
+        _project          (create-parent-projects (:path valid-app-1) session-user)
         app-1-create-resp (-> session-user
                               (request base-uri
                                        :request-method :post
@@ -520,12 +529,13 @@
           (request app-1-uri
                    :request-method :put
                    :body (json/write-str
-                           (update valid-app-1 :content assoc
-                                   :docker-compose "content changed"
-                                   :commit "second commit")))
+                          (update valid-app-1 :content assoc
+                                  :docker-compose "content changed"
+                                  :commit "second commit")))
           (ltu/body->edn)
           (ltu/is-status 200))
 
+      (create-parent-projects (:path valid-entry) session-user)
       (let [response   (-> session-user
                            (request base-uri
                                     :request-method :post

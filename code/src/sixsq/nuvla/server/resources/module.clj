@@ -150,9 +150,9 @@ component, or application.
     (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
     request))
 
-(defn throw-application-requires-parent
+(defn throw-requires-parent
   [{{:keys [path] :as resource} :body :as request}]
-  (if (and (utils/is-application? resource)
+  (if (and (utils/is-not-project? resource)
            (str/blank? (utils/get-parent-path path)))
     (throw (r/ex-bad-request "Application subtype must have a parent project!"))
     request))
@@ -184,15 +184,15 @@ component, or application.
                                  (:path resource))
                             403)))))
 
-(defn throw-application-requires-editable-parent-project
-  [{{:keys [path] :as resource} :body :as request}]
+(defn throw-requires-editable-parent-project
+  [{{:keys [path]} :body :as request}]
   (let [parent-path (utils/get-parent-path path)]
-    (if (and (utils/is-application? resource)
+    (if (and (not (str/blank? parent-path))
              (-> (query-by-path parent-path (select-keys request [:nuvla/authn]))
                  (throw-if-not-exists-or-found parent-path)
                  (throw-if-no-edit-rights request)
                  utils/is-not-project?))
-      (throw (r/ex-response "Application parent must be a project!" 403))
+      (throw (r/ex-response "Parent must be a project!" 403))
       request)))
 
 (defn remove-version
@@ -241,8 +241,8 @@ component, or application.
       throw-project-cannot-have-price
       throw-project-cannot-have-content
       throw-application-requires-compatibility
-      throw-application-requires-parent
-      throw-application-requires-editable-parent-project
+      throw-requires-parent
+      throw-requires-editable-parent-project
       update-add-request
       add-impl))
 
