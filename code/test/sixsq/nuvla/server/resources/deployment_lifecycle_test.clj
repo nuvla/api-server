@@ -13,6 +13,7 @@
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
     [sixsq.nuvla.server.resources.module :as module]
     [sixsq.nuvla.server.resources.module-application :as module-application]
+    [sixsq.nuvla.server.resources.module-lifecycle-test :refer [create-parent-projects]]
     [sixsq.nuvla.server.util.metadata-test-utils :as mdtu]))
 
 
@@ -31,6 +32,18 @@
 
 (def timestamp "1964-08-25T10:00:00.00Z")
 
+(defn- setup-module
+  [session-owner module-data]
+  (let [_                (create-parent-projects (:path module-data) session-owner)
+        module-id        (-> session-owner
+                             (request module-base-uri
+                                      :request-method :post
+                                      :body (json/write-str
+                                             module-data))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))]
+    module-id))
 
 (defn valid-module
   ([subtype content]
@@ -98,15 +111,7 @@
                                      (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
-          module-id          (-> session-user
-                                 (request module-base-uri
-                                          :request-method :post
-                                          :body (json/write-str
-                                                  (valid-module subtype valid-module-content)))
-                                 (ltu/body->edn)
-                                 (ltu/is-status 201)
-                                 (ltu/location))
-
+          module-id          (setup-module session-user (valid-module subtype valid-module-content))
           valid-deployment   {:module {:href module-id}}
           invalid-deployment {:module {:href "module/doesnt-exist"}}]
 
@@ -551,14 +556,7 @@
                                    "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
-          module-id        (-> session-user
-                               (request module-base-uri
-                                        :request-method :post
-                                        :body (json/write-str
-                                                (valid-module "component" valid-component)))
-                               (ltu/body->edn)
-                               (ltu/is-status 201)
-                               (ltu/location))
+          module-id        (setup-module session-user (valid-module "component" valid-component))
 
           valid-deployment {:module {:href module-id}}]
 
@@ -618,14 +616,7 @@
                                    "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
-          module-id        (-> session-user
-                               (request module-base-uri
-                                        :request-method :post
-                                        :body (json/write-str
-                                                (valid-module "component" valid-component)))
-                               (ltu/body->edn)
-                               (ltu/is-status 201)
-                               (ltu/location))
+          module-id        (setup-module session-user (valid-module "component" valid-component))
 
           valid-deployment {:module {:href module-id}}]
 
@@ -706,14 +697,8 @@
                                    "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
           ;; setup a module that can be referenced from the deployment
-          module-id        (-> session-user
-                               (request module-base-uri
-                                        :request-method :post
-                                        :body (json/write-str
-                                                (valid-module "component" valid-component)))
-                               (ltu/body->edn)
-                               (ltu/is-status 201)
-                               (ltu/location))
+          module-id        (setup-module session-user (valid-module "component" valid-component))
+
 
           valid-deployment {:module {:href module-id}}
           deployment-id    (-> session-user
@@ -841,14 +826,7 @@
   [session-owner {depl-name :name
                   depl-tags :tags}]
   (let [;; setup a module that can be referenced from the deployment
-        module-id        (-> session-owner
-                             (request module-base-uri
-                                      :request-method :post
-                                      :body (json/write-str
-                                             (valid-module "component" valid-component (str "test/tags" (u/random-uuid)))))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))
+        module-id        (setup-module session-owner (valid-module "component" valid-component (str depl-name "/tags" (u/random-uuid))))
 
         valid-deployment {:module {:href module-id}}
         deployment-id    (-> session-owner

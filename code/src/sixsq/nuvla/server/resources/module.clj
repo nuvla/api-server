@@ -8,6 +8,7 @@ component, or application.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
@@ -141,12 +142,58 @@ component, or application.
       throw-cannot-access-private-registries
       throw-cannot-access-registries-credentials))
 
-(defn throw-compatibility-required-for-application
+
+(defn throw-application-requires-compatibility
   [{{:keys [compatibility] :as resource} :body :as request}]
   (if (and (utils/is-application? resource)
            (nil? compatibility))
     (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
     request))
+
+(defn throw-requires-parent
+  [{{:keys [path] :as resource} :body :as request}]
+  (if (and (utils/is-not-project? resource)
+           (str/blank? (utils/get-parent-path path)))
+    (throw (r/ex-bad-request "Application subtype must have a parent project!"))
+    request))
+
+(defn query-by-path [path request]
+  (-> (db/query
+        resource-type
+        (merge
+          {:cimi-params {:filter (parser/parse-cimi-filter
+                                   (str "path='"
+                                        path
+                                        "'"))}
+           :nuvla/authn (auth/current-authentication request)}))
+      second
+      first))
+
+(defn- throw-if-not-exists-or-found [resource parent-path]
+  (if (nil? resource)
+    (throw (r/ex-bad-request (str "No parent project found for path: " parent-path)))
+    resource))
+
+(defn- throw-if-no-edit-rights [resource request]
+  (try
+    (a/throw-cannot-edit resource request)
+    (catch Exception _
+      (throw (r/ex-response (str "You do not have edit rights for: "
+                                 (:id resource)
+                                 " at path: "
+                                 (:path resource))
+                            403)))))
+
+(defn throw-requires-editable-parent-project
+  [{{:keys [path]} :body :as request}]
+  (let [parent-path (utils/get-parent-path path)]
+    (if (and (not (str/blank? parent-path))
+             (-> (query-by-path parent-path request)
+                 (throw-if-not-exists-or-found parent-path)
+                 (throw-if-no-edit-rights request)
+                 utils/is-not-project?))
+      (throw (r/ex-response "Parent must be a project!" 403))
+      request)))
 
 (defn remove-version
   [{:keys [versions] :as _module-meta} version-index]
@@ -193,7 +240,9 @@ component, or application.
       throw-cannot-access-registries-or-creds
       throw-project-cannot-have-price
       throw-project-cannot-have-content
-      throw-compatibility-required-for-application
+      throw-application-requires-compatibility
+      throw-requires-parent
+      throw-requires-editable-parent-project
       update-add-request
       add-impl))
 
@@ -340,9 +389,9 @@ component, or application.
 
 (defmethod crud/do-action [resource-type "validate-docker-compose"]
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)
-        {:keys [_acl] :as resource} (crud/retrieve-by-id-as-admin id)]
-    (a/throw-cannot-manage resource request)
+  (let [resource (-> (str resource-type "/" uuid)
+                     crud/retrieve-by-id-as-admin
+                     (a/throw-cannot-manage request))]
     (if (utils/is-application? resource)
       (create-validate-docker-compose-job resource)
       (throw (r/ex-response "invalid subtype" 400)))))

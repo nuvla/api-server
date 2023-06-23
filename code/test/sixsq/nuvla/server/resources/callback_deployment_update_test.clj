@@ -34,8 +34,7 @@
    :resource-type             module/resource-type
    :created                   timestamp
    :updated                   timestamp
-   :parent-path               "a/b"
-   :path                      "a/b/c"
+   :path                      "a/b"
    :subtype                   subtype
 
    :logo-url                  "https://example.org/logo"
@@ -82,6 +81,14 @@
                                      "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
             ;; setup a module that can be referenced from the deployment
+            _project-module  (-> session-user
+                                 (request module-base-uri
+                                          :request-method :post
+                                          :body (json/write-str
+                                                  {:subtype "project"
+                                                   :path    "a"}))
+                                 (ltu/body->edn)
+                                 (ltu/is-status 201))
             module-id        (-> session-user
                                  (request module-base-uri
                                           :request-method :post
