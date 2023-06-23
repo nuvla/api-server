@@ -4,8 +4,8 @@
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.container :as container-spec]
     [sixsq.nuvla.server.resources.spec.core :as core]
-    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.resources.spec.deployment :as deployment]
+    [sixsq.nuvla.server.resources.spec.module-component :as module-component]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 

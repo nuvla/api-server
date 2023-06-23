@@ -160,12 +160,11 @@ component, or application.
 (defn query-by-path [path request]
   (-> (db/query
         resource-type
-        (merge
-          {:cimi-params {:filter (parser/parse-cimi-filter
-                                   (str "path='"
-                                        path
-                                        "'"))}
-           :nuvla/authn (auth/current-authentication request)}))
+        {:cimi-params {:filter (parser/parse-cimi-filter
+                                 (str "path='"
+                                      path
+                                      "'"))}
+         :nuvla/authn (auth/current-authentication request)})
       second
       first))
 

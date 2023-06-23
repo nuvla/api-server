@@ -4,6 +4,14 @@
 
 ## Released
 
+## [6.0.17] - 2023-06-23
+
+- Module - Restrict app creation by checking parent project acl, subtype and
+  edit access
+- Module - Refactor module resource
+- Deployment set - State NEW introduction and change state machine accordingly
+- Module applications sets - Support for container regirstries #772
+
 ## [6.0.16] - 2023-05-17
 
 - Deployment - adds bulk editing tags endpoints #761
