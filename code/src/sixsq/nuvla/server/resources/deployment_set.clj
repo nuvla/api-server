@@ -79,6 +79,10 @@ These resources represent a deployment set that regroups deployments.
 ;; CRUD operations
 ;;
 
+(defn can-create?
+  [{:keys [state] :as _resource}]
+  (contains? #{"NEW"} state))
+
 (defn can-start?
   [{:keys [state] :as _resource}]
   (contains? #{"CREATED" "STOPPED"} state))
@@ -106,17 +110,6 @@ These resources represent a deployment set that regroups deployments.
     (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
-(defn create
-  [id request]
-  (-> id
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-manage request)
-      (create-job request "create_deployment_set")))
-
-(defmethod crud/do-action [resource-type "create"]
-  [{{uuid :uuid} :params :as request}]
-  (create (str resource-type "/" uuid) request))
-
 (defn throw-can-not-do-action
   [{:keys [id state] :as resource} pred action]
   (if (pred resource)
@@ -137,6 +130,14 @@ These resources represent a deployment set that regroups deployments.
     (event-utils/create-event id action (a/default-acl authn-info))
     (std-crud/create-bulk-job
       (str action "_deployment_set") id authn-info acl payload)))
+
+(defmethod crud/do-action [resource-type "create"]
+  [{{uuid :uuid} :params :as request}]
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (throw-can-not-do-action can-create? "create")
+      (create-job request "create_deployment_set")))
 
 (defmethod crud/do-action [resource-type "plan"]
   [{{uuid :uuid} :params :as request}]
@@ -166,10 +167,8 @@ These resources represent a deployment set that regroups deployments.
 (defmethod crud/add resource-type
   [request]
   (-> request
-      (update :body assoc :state "CREATING")
-      add-impl
-      (get-in [:body :resource-id])
-      (create request)))
+      (update :body assoc :state "NEW")
+      add-impl))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
@@ -204,9 +203,11 @@ These resources represent a deployment set that regroups deployments.
         can-manage? (a/can-manage? resource request)]
     (cond-> (crud/set-standard-operations resource request)
 
-            can-manage? (update :operations conj
-                                create-op
-                                plan-op)
+            can-manage?
+            (update :operations conj plan-op)
+
+            (and can-manage? (can-create? resource))
+            (update :operations conj create-op)
 
             (and can-manage? (can-start? resource))
             (update :operations conj start-op)
