@@ -5,12 +5,31 @@
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.module.utils :as t]))
 
+(deftest full-uuid->uuid
+  (is (= "f3ab4193-ff72-4947-b67b-0f9a448fe1c7" (t/full-uuid->uuid "f3ab4193-ff72-4947-b67b-0f9a448fe1c7_1"))))
 
-(deftest split-resource
-  (is (= [{:alpha 1, :beta 2} {:gamma 3}]
-         (t/split-resource {:alpha   1
-                            :beta    2
-                            :content {:gamma 3}}))))
+(deftest full-uuid->index
+  (is (= 1 (t/full-uuid->version-index "a_1")))
+  (is (nil? (t/full-uuid->version-index "a"))))
+
+(deftest get-content-id
+  (let [module-meta {:versions [{:href "a"}
+                                nil
+                                {:href "c"}
+                                {:href "d"}
+                                {:href "e"}
+                                {:href "f"}
+                                {:href "g"}]}]
+    (are [expected i] (= expected (t/get-content-id module-meta i))
+                      "d" 3
+                      "a" 0
+                      "g" 6)
+    (is (thrown?
+          NullPointerException
+          (t/get-content-id module-meta nil)))
+    (is (thrown?
+          IndexOutOfBoundsException
+          (t/get-content-id module-meta 10)))))
 
 
 (deftest check-parent-path
@@ -29,10 +48,10 @@
 
 (deftest active-claim->account-id
   (with-redefs [crud/query-as-admin (constantly [nil []])]
-   (is (thrown-with-msg?
-         Exception
-         #"unable to resolve vendor account-id for active-claim 'user/jane'"
-         (t/active-claim->account-id "user/jane"))))
+    (is (thrown-with-msg?
+          Exception
+          #"unable to resolve vendor account-id for active-claim 'user/jane'"
+          (t/active-claim->account-id "user/jane"))))
   (with-redefs [crud/query-as-admin (constantly [nil [{:account-id "acct_x"}]])]
     (is (= (t/active-claim->account-id "user/jane") "acct_x"))))
 
@@ -41,13 +60,13 @@
         email       "jane@example.com"]
     (with-redefs [crud/query-as-admin (constantly [nil [{}]])]
       (is (= (t/resolve-vendor-email module-meta)
-            module-meta)))
+             module-meta)))
     (with-redefs [crud/query-as-admin (constantly [nil [{:email email}]])]
       (is (= (t/resolve-vendor-email module-meta)
              (assoc-in module-meta [:price :vendor-email] email))))))
 
 (deftest set-price-test
-  (is (= (t/set-price {} "user/jane") {}))
+  (is (= (t/set-price {} nil "user/jane") {}))
   (with-redefs [pricing-impl/retrieve-price identity
                 pricing-impl/price->map     identity
                 t/active-claim->account-id  identity
@@ -55,7 +74,8 @@
                 pricing-impl/get-product    :product
                 pricing-impl/get-id         :id]
     (is (= (t/set-price {:price {:cent-amount-daily 10
-                                 :currency          "eur"}} "user/jane")
+                                 :currency          "eur"}}
+                        nil "user/jane")
            {:price {:account-id        "user/jane"
                     :cent-amount-daily 10
                     :currency          "eur"
@@ -69,8 +89,11 @@
                                                :product product})
                 pricing-impl/get-product    :product
                 pricing-impl/get-id         :id]
-    (is (= (t/set-price {:price {:price-id          "price_x"
+    (is (= (t/set-price {:price {:price-id          "price_z"
                                  :cent-amount-daily 10
+                                 :currency          "eur"}}
+                        {:price {:price-id          "price_x"
+                                 :cent-amount-daily 20
                                  :currency          "eur"}} "user/jane")
            {:price {:account-id        "user/jane"
                     :cent-amount-daily 10
