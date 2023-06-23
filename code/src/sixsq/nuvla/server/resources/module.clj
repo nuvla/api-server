@@ -157,15 +157,15 @@ component, or application.
     (throw (r/ex-bad-request "Application subtype must have a parent project!"))
     request))
 
-(defn query-by-path [path authn]
+(defn query-by-path [path request]
   (-> (db/query
-       resource-type
-       (merge
-        {:cimi-params {:filter (parser/parse-cimi-filter
-                                (str "path='"
-                                     path
-                                     "'"))}}
-        authn))
+        resource-type
+        (merge
+          {:cimi-params {:filter (parser/parse-cimi-filter
+                                   (str "path='"
+                                        path
+                                        "'"))}
+           :nuvla/authn (auth/current-authentication request)}))
       second
       first))
 
@@ -188,7 +188,7 @@ component, or application.
   [{{:keys [path]} :body :as request}]
   (let [parent-path (utils/get-parent-path path)]
     (if (and (not (str/blank? parent-path))
-             (-> (query-by-path parent-path (select-keys request [:nuvla/authn]))
+             (-> (query-by-path parent-path request)
                  (throw-if-not-exists-or-found parent-path)
                  (throw-if-no-edit-rights request)
                  utils/is-not-project?))
@@ -389,9 +389,9 @@ component, or application.
 
 (defmethod crud/do-action [resource-type "validate-docker-compose"]
   [{{uuid :uuid} :params :as request}]
-  (let [id (str resource-type "/" uuid)
-        {:keys [_acl] :as resource} (crud/retrieve-by-id-as-admin id)]
-    (a/throw-cannot-manage resource request)
+  (let [resource (-> (str resource-type "/" uuid)
+                     crud/retrieve-by-id-as-admin
+                     (a/throw-cannot-manage request))]
     (if (utils/is-application? resource)
       (create-validate-docker-compose-job resource)
       (throw (r/ex-response "invalid subtype" 400)))))

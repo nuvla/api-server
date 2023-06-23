@@ -15,6 +15,8 @@
 
 (def base-uri (str p/service-context callback/resource-type))
 
+(def module-base-uri (str p/service-context module/resource-type))
+
 (def timestamp "2000-00-00T00:00:00.00Z")
 
 (def image-name "image")
@@ -27,8 +29,7 @@
                    :resource-type             module/resource-type
                    :created                   timestamp
                    :updated                   timestamp
-                   :parent-path               "a/b"
-                   :path                      "a/b/c"
+                   :path                      "a/b"
                    :subtype                   "component"
 
                    :logo-url                  "https://example.org/logo"
@@ -51,8 +52,16 @@
         session-admin       (header session-anon authn-info-header "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
         session-user        (header session-anon authn-info-header "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
+        _project-module (-> session-user
+                            (request module-base-uri
+                                     :request-method :post
+                                     :body (json/write-str
+                                             {:subtype "project"
+                                              :path    "a"}))
+                            (ltu/body->edn)
+                            (ltu/is-status 201))
         module-resource     (-> session-user
-                                (request (str p/service-context module/resource-type)
+                                (request module-base-uri
                                          :request-method :post
                                          :body (json/write-str (assoc module-entry :content module-content)))
                                 (ltu/body->edn)

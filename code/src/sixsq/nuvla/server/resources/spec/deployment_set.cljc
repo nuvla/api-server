@@ -8,14 +8,16 @@
     [spec-tools.core :as st]))
 
 (s/def ::state
-  (assoc (st/spec #{"CREATING", "CREATED",
+  (assoc (st/spec #{"NEW",
+                    "CREATING", "CREATED",
                     "STARTING", "STARTED",
                     "STOPPING", "STOPPED"})
     :name "state"
     :json-schema/type "string"
     :json-schema/description "state of deployment set"
 
-    :json-schema/value-scope {:values ["CREATING", "CREATED",
+    :json-schema/value-scope {:values ["NEW",
+                                       "CREATING", "CREATED",
                                        "STARTING", "STARTED",
                                        "STOPPING", "STOPPED"]}))
 
