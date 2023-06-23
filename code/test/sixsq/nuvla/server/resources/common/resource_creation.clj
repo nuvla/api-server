@@ -49,8 +49,7 @@
    :resource-type             module/resource-type
    :created                   timestamp
    :updated                   timestamp
-   :parent-path               "a/b"
-   :path                      "a/b/c"
+   :path                      "a/b"
    :subtype                   "application"
    :compatibility             "docker-compose"
 
@@ -76,6 +75,14 @@
 (defn create-module
   [session]
   (binding [config-nuvla/*stripe-api-key* nil]
+    (-> session
+        (request (str p/service-context module/resource-type)
+                 :request-method :post
+                 :body (json/write-str
+                         {:subtype "project"
+                          :path    "a"}))
+        (ltu/body->edn)
+        (ltu/is-status 201))
     (-> session
         (request (str p/service-context module/resource-type)
                  :request-method :post
