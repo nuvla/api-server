@@ -26,29 +26,29 @@ These resources represent a deployment set that regroups deployments.
 (def collection-acl {:query ["group/nuvla-user"]
                      :add   ["group/nuvla-user"]})
 
-(def actions [{:name           "create"
-               :uri            "create"
+(def actions [{:name           utils/action-create
+               :uri            utils/action-create
                :description    "create deployments"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
 
-              {:name           "start"
-               :uri            "start"
+              {:name           utils/action-start
+               :uri            utils/action-start
                :description    "start deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
 
-              {:name           "stop"
-               :uri            "stop"
+              {:name           utils/action-stop
+               :uri            utils/action-stop
                :description    "stop deployment set"
                :method         "POST"
                :input-message  "application/json"
                :output-message "application/json"}
 
-              {:name           "plan"
-               :uri            "plan"
+              {:name           utils/action-plan
+               :uri            utils/action-plan
                :description    "get an action plan for deployment set"
                :method         "POST"
                :input-message  "application/json"
@@ -60,11 +60,9 @@ These resources represent a deployment set that regroups deployments.
 
 (def validate-fn (u/create-spec-validation-fn ::spec/deployment-set))
 
-
 (defmethod crud/validate resource-type
   [resource]
   (validate-fn resource))
-
 
 ;;
 ;; multimethod for ACLs
@@ -74,22 +72,9 @@ These resources represent a deployment set that regroups deployments.
   [resource request]
   (a/add-acl resource request))
 
-
 ;;
 ;; CRUD operations
 ;;
-
-(defn can-create?
-  [{:keys [state] :as _resource}]
-  (contains? #{"NEW"} state))
-
-(defn can-start?
-  [{:keys [state] :as _resource}]
-  (contains? #{"CREATED" "STOPPED"} state))
-
-(defn can-stop?
-  [{:keys [state] :as _resource}]
-  (contains? #{"STARTED"} state))
 
 (defn create-job
   [{:keys [id] :as resource} request action]
@@ -98,7 +83,7 @@ These resources represent a deployment set that regroups deployments.
         active-claim (auth/current-active-claim request)
         {{job-id     :resource-id
           job-status :status} :body} (job/create-job
-                                       id action
+                                       id (utils/action-job-name action)
                                        {:owners   ["group/nuvla-admin"]
                                         :edit-acl [active-claim]}
                                        :payload (json/write-str
@@ -107,39 +92,35 @@ These resources represent a deployment set that regroups deployments.
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment set" action) 500 id)))
-    (event-utils/create-event id job-msg (a/default-acl (auth/current-authentication request)))
+    (event-utils/create-event id action (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
-(defn throw-can-not-do-action
-  [{:keys [id state] :as resource} pred action]
-  (if (pred resource)
-    resource
-    (throw (r/ex-response (format "invalid state (%s) for %s on %s"
-                                  state action id) 409 id))))
+(defn throw-action-not-allowed
+  [{{uuid :uuid} :params :as request} can-action? action]
+  (-> (str resource-type "/" uuid)
+      crud/retrieve-by-id-as-admin
+      (a/throw-cannot-manage request)
+      (utils/throw-can-not-do-action can-action? action)))
 
 (defn action-bulk
-  [{{uuid :uuid} :params :as request} action can-action? action-filter]
-  (let [{:keys [id]} (-> (str resource-type "/" uuid)
-                         crud/retrieve-by-id-as-admin
-                         (a/throw-cannot-manage request)
-                         (throw-can-not-do-action can-action? action))
-        authn-info (auth/current-authentication request)
+  [id request action]
+  (let [authn-info (auth/current-authentication request)
         acl        {:owners   ["group/nuvla-admin"]
                     :view-acl [(auth/current-active-claim request)]}
-        payload    {:filter action-filter}]
+        payload    {:filter (str "deployment-set='" id "'")}]
     (event-utils/create-event id action (a/default-acl authn-info))
     (std-crud/create-bulk-job
-      (str action "_deployment_set") id authn-info acl payload)))
+      (utils/action-job-name action) id authn-info acl payload)))
 
-(defmethod crud/do-action [resource-type "create"]
+(defmethod crud/do-action [resource-type utils/action-create]
   [{{uuid :uuid} :params :as request}]
   (-> (str resource-type "/" uuid)
       crud/retrieve-by-id-as-admin
       (a/throw-cannot-manage request)
-      (throw-can-not-do-action can-create? "create")
-      (create-job request "create_deployment_set")))
+      (utils/throw-can-not-do-action utils/can-create? utils/action-create)
+      (create-job request utils/action-create)))
 
-(defmethod crud/do-action [resource-type "plan"]
+(defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]
   (let [id                (str resource-type "/" uuid)
         deployment-set    (-> id
@@ -150,25 +131,36 @@ These resources represent a deployment set that regroups deployments.
                               (crud/get-resource-throw-nok request))]
     (r/json-response (utils/plan deployment-set applications-sets))))
 
-(defmethod crud/do-action [resource-type "start"]
+(defmethod crud/do-action [resource-type utils/action-start]
   [{{uuid :uuid} :params :as request}]
-  (let [id            (str resource-type "/" uuid)
-        action-filter (str "deployment-set='" id "' and (state='CREATED' or state='STOPPED')")]
-    (action-bulk request "start" can-start? action-filter)))
+  (let [id             (str resource-type "/" uuid)
+        deployment-set (-> (crud/retrieve-by-id-as-admin id)
+                           (a/throw-cannot-manage request)
+                           (utils/throw-can-not-do-action
+                             utils/can-start? utils/action-start))]
+    (if (utils/state-new? deployment-set)
+      (do
+        (crud/edit-by-id-as-admin id {:start true})
+        (create-job deployment-set request utils/action-create))
+      (action-bulk id request utils/action-start))))
 
-(defmethod crud/do-action [resource-type "stop"]
+(defmethod crud/do-action [resource-type utils/action-stop]
   [{{uuid :uuid} :params :as request}]
-  (let [id            (str resource-type "/" uuid)
-        action-filter (str "deployment-set='" id "'")]      ;;fixme missing filter state
-    (action-bulk request "stop" can-stop? action-filter)))
+  (let [id (str resource-type "/" uuid)]
+    (action-bulk id request utils/action-stop)))
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defmethod crud/add resource-type
-  [request]
-  (-> request
-      (update :body assoc :state "NEW")
-      add-impl))
+  [{{:keys [start]} :body :as request}]
+  (let [response (-> request
+                     (update :body assoc :state utils/state-new)
+                     add-impl)
+        id       (get-in response [:body :resource-id])]
+    (if start
+      (create-job (crud/get-resource-throw-nok id request)
+                  request utils/action-create)
+      response)))
 
 (def retrieve-impl (std-crud/retrieve-fn resource-type))
 
@@ -206,13 +198,13 @@ These resources represent a deployment set that regroups deployments.
             can-manage?
             (update :operations conj plan-op)
 
-            (and can-manage? (can-create? resource))
+            (and can-manage? (utils/can-create? resource))
             (update :operations conj create-op)
 
-            (and can-manage? (can-start? resource))
+            (and can-manage? (utils/can-start? resource))
             (update :operations conj start-op)
 
-            (and can-manage? (can-stop? resource))
+            (and can-manage? (utils/can-stop? resource))
             (update :operations conj stop-op))))
 
 ;;
