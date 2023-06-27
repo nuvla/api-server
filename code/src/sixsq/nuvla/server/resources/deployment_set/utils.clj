@@ -1,10 +1,47 @@
 (ns sixsq.nuvla.server.resources.deployment-set.utils
   (:require [clojure.string :as str]
-            [sixsq.nuvla.auth.utils :as auth]
-            [sixsq.nuvla.server.resources.common.crud :as crud]
-            [sixsq.nuvla.server.resources.common.utils :as u]
             [sixsq.nuvla.server.resources.module.utils :as module-utils]
             [sixsq.nuvla.server.util.response :as r]))
+
+(def state-new "NEW")
+(def state-creating "CREATING")
+(def state-created "CREATED")
+(def state-starting "STARTING")
+(def state-started "STARTED")
+(def state-stopping "STOPPING")
+(def state-stopped "STOPPED")
+
+(def action-create "create")
+(def action-start "start")
+(def action-stop "stop")
+(def action-plan "plan")
+
+(defn state-new?
+  [{:keys [state] :as _resource}]
+  (= state state-new))
+
+(defn can-create?
+  [resource]
+  (state-new? resource))
+
+(defn can-start?
+  [{:keys [state] :as _resource}]
+  (contains? #{state-new state-created state-stopped} state))
+
+(defn can-stop?
+  [{:keys [state] :as _resource}]
+  (contains? #{state-started} state))
+
+(defn action-job-name
+  [action]
+  (str action "_deployment_set"))
+
+(defn throw-can-not-do-action
+  [{:keys [id state] :as resource} pred action]
+  (if (pred resource)
+    resource
+    (throw (r/ex-response (format "invalid state (%s) for %s on %s"
+                                  state action id) 409 id))))
 
 (defn get-first-applications-sets
   [deployment-set]

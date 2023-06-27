@@ -86,7 +86,7 @@
                                                            :product "prod_x"})
                   pricing-impl/get-product    :product
                   pricing-impl/get-id         :id]
-      (is (= (t/set-price {:price {:price-id          "price_z"
+    (is (= (t/set-price {:price {:price-id          "price_x"
                                    :cent-amount-daily 10
                                    :currency          "eur"}}
                           {:price {:price-id          "price_x"
