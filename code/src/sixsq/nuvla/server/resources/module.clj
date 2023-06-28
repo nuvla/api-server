@@ -236,7 +236,7 @@ component, or application.
                utils/set-parent-path
                create-content
                (dissoc :content)
-               (utils/set-price nil (auth/current-active-claim request)))))
+               (utils/set-price nil request))))
 
 (defmethod crud/add resource-type
   [request]
