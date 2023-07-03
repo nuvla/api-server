@@ -169,16 +169,6 @@ component, or application.
       first))
 
 
-(defn count-children-as-admin [parent-path]
-  (-> (crud/query-as-admin
-        resource-type
-        {:cimi-params {:filter (parser/parse-cimi-filter
-                                 (str "parent-path='" parent-path "'"))
-                       :last   0}})
-      first
-      :count))
-
-
 (defn- throw-if-not-exists-or-found [resource parent-path]
   (if (nil? resource)
     (throw (r/ex-bad-request (str "No parent project found for path: " parent-path)))
@@ -209,7 +199,7 @@ component, or application.
 (defn throw-project-cannot-delete-if-has-children
   [{:keys [path] :as resource}]
   (if (and (utils/is-project? resource)
-           (pos? (count-children-as-admin path)))
+           (pos? (utils/count-children-as-admin path)))
     (throw (r/ex-response "Cannot delete project with children" 403))
     resource))
 
