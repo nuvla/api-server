@@ -168,6 +168,7 @@ component, or application.
       second
       first))
 
+
 (defn- throw-if-not-exists-or-found [resource parent-path]
   (if (nil? resource)
     (throw (r/ex-bad-request (str "No parent project found for path: " parent-path)))
@@ -193,6 +194,15 @@ component, or application.
                  utils/is-not-project?))
       (throw (r/ex-response "Parent must be a project!" 403))
       request)))
+
+
+(defn throw-project-cannot-delete-if-has-children
+  [{:keys [path] :as resource}]
+  (if (and (utils/is-project? resource)
+           (pos? (utils/count-children-as-admin path)))
+    (throw (r/ex-response "Cannot delete project with children" 403))
+    resource))
+
 
 (defn remove-version
   [{:keys [versions] :as _module-meta} version-index]
@@ -344,6 +354,7 @@ component, or application.
   (try
     (-> request
         utils/retrieve-module-meta
+        throw-project-cannot-delete-if-has-children
         (a/throw-cannot-edit request)
         (delete-all request))
     (catch Exception e
