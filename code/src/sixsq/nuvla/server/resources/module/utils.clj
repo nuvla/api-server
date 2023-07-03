@@ -185,7 +185,7 @@
                           "recurring"    {"interval"        "month"
                                           "aggregate_usage" "sum"
                                           "usage_type"      "metered"}
-                          "product_data" {"name"       (str (or name path) " v" (last-index module)) ;; FIXME find a clear product name
+                          "product_data" {"name"       (str (or name path) " v" (last-index module))
                                           "unit_label" "day"}})]
         (assoc module :price {:price-id              (pricing-impl/get-id s-price)
                               :product-id            (pricing-impl/get-product s-price)
