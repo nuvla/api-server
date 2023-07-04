@@ -116,7 +116,12 @@
                                       [org.elasticsearch.client/transport]
                                       [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
 
-                                      [org.apache.logging.log4j/log4j-core]]
+                                      [org.apache.logging.log4j/log4j-core]
+                                      [com.github.jpmonettas/clojure "RELEASE"]
+                                      [com.github.jpmonettas/flow-storm-dbg "RELEASE"]]
+              :exclusions [org.clojure/clojure] ;; for disabling the official compiler
+              :jvm-opts ["-Dclojure.storm.instrumentEnable=true"
+                         "-Dclojure.storm.instrumentOnlyPrefixes=sixsq.nuvla."]
               ;; paths
               :source-paths          ["src"]
               :test-paths            ["test"]
