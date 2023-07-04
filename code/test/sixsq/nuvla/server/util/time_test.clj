@@ -1,7 +1,7 @@
 (ns sixsq.nuvla.server.util.time-test
   (:require
     [clojure.string :as str]
-    [clojure.test :refer [are is deftest]]
+    [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.server.util.time :as t]))
 
 (deftest test-date-from-str
