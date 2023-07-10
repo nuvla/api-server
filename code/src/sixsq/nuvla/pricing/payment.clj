@@ -51,13 +51,16 @@
           :customer-id
           pricing-impl/retrieve-customer))
 
+(defn customer-id->subscription
+  [resource-id]
+  (:body (crud/do-action-as-admin resource-id "get-subscription")))
+
 (defn active-claim->subscription
   [active-claim]
   (some-> active-claim
           active-claim->customer
           :id
-          (crud/do-action-as-admin "get-subscription")
-          :body))
+          customer-id->subscription))
 
 (defn throw-payment-required
   []

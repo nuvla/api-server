@@ -144,7 +144,7 @@
 
 
 (defn strip-select-from-mandatory-attrs
-  "Strips non removable attributes from the set. These include
+  "Strips non-removable attributes from the set. These include
   :id :created :updated :resource-type :acl"
   [s]
   (disj s :id :created :updated :resource-type :acl))

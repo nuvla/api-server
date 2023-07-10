@@ -22,6 +22,7 @@ component, or application.
     [sixsq.nuvla.server.resources.module.utils :as utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.module :as module]
+    [sixsq.nuvla.server.util.general :as gen-util]
     [sixsq.nuvla.server.util.metadata :as gen-md]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -136,13 +137,6 @@ component, or application.
       (throw (r/ex-response "Registries credentials can't be resolved!" 403))
       request)))
 
-(defn throw-cannot-access-registries-or-creds
-  [request]
-  (-> request
-      throw-cannot-access-private-registries
-      throw-cannot-access-registries-credentials))
-
-
 (defn throw-application-requires-compatibility
   [{{:keys [compatibility] :as resource} :body :as request}]
   (if (and (utils/is-application? resource)
@@ -229,6 +223,19 @@ component, or application.
       (add-version module content-href))
     module))
 
+(defn throw-cannot-access-registries-or-creds
+  [request]
+  (-> request
+      throw-cannot-access-private-registries
+      throw-cannot-access-registries-credentials))
+
+(defn throw-compatibility-required-for-application
+  [{{:keys [compatibility] :as resource} :body :as request}]
+  (if (and (utils/is-application? resource)
+           (nil? compatibility))
+    (throw (r/ex-response "Application subtype should have compatibility attribute set!" 400))
+    request))
+
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
 (defn update-add-request
@@ -239,7 +246,7 @@ component, or application.
                utils/set-parent-path
                create-content
                (dissoc :content)
-               (utils/set-price nil (auth/current-active-claim request)))))
+               (utils/set-price nil request))))
 
 (defmethod crud/add resource-type
   [request]
@@ -293,14 +300,14 @@ component, or application.
                             (a/throw-cannot-edit request))]
     (-> request
         (update-in [:cimi-params :select] disj "compatibility")
-        (assoc
-          :body
-          (-> existing-module
-              (u/merge-resource request [:parent-path :published :versions :subtype])
-              utils/set-parent-path
-              create-content
-              (dissoc :content)
-              (utils/set-price existing-module (auth/current-active-claim request)))))))
+        (update :body
+                #(-> %
+                     (gen-util/merge-and-ignore-input-immutable-attrs
+                       existing-module [:parent-path :published :versions :subtype])
+                     utils/set-parent-path
+                     create-content
+                     (dissoc :content)
+                     (utils/set-price existing-module request))))))
 
 (defmethod crud/edit resource-type
   [request]

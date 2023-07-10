@@ -63,7 +63,6 @@
 
                        :content                   valid-content}]
 
-
     ;; create: NOK for anon
     (-> session-anon
         (request base-uri
