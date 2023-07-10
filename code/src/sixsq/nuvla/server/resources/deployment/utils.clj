@@ -6,7 +6,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -18,8 +17,7 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret
@@ -206,22 +204,6 @@
 (defn remove-delete
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
-
-;; TODO check if still needed hee
-(defn trial-end
-  [active-claim {:keys [follow-customer-trial] :as _price}]
-  (let [customer-trial-end (when (and follow-customer-trial
-                                      (= (:status (payment/active-claim->subscription active-claim)) "trialing"))
-                             (some-> active-claim
-                                     payment/active-claim->subscription
-                                     :trial-end
-                                     time/date-from-str))
-        one-day-trial      (time/from-now 24 :hours)
-        end-date           (if (and customer-trial-end
-                                    (time/after? customer-trial-end one-day-trial))
-                             customer-trial-end
-                             one-day-trial)]
-    (time/unix-timestamp-from-date end-date)))
 
 
 (defn infra->nb-id

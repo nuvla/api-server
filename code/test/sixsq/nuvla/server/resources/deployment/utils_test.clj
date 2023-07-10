@@ -93,9 +93,6 @@
         (is (= (t/throw-when-payment-required billable-deployment-not-follow {})
                billable-deployment-not-follow))))))
 
-(deftest trial-end
-  (is (int? (t/trial-end "" {}))))
-
 (deftest cred-edited?
   (are [expected parent current-parent]
     (= expected (t/cred-edited? parent current-parent))
