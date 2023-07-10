@@ -8,11 +8,9 @@ a container orchestration engine.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
-    [sixsq.nuvla.server.resources.configuration-nuvla :as config-nuvla]
     [sixsq.nuvla.server.resources.deployment.utils :as utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
@@ -241,12 +239,11 @@ a container orchestration engine.
      (let [deployment-id   (str resource-type "/" uuid)
            deployment      (db/retrieve deployment-id request)
            _               (when-not force-delete
-                             (utils/throw-can-not-do-action-invalid-state deployment utils/can-delete? "delete"))
+                             (utils/throw-can-not-do-action-invalid-state
+                               deployment utils/can-delete? "delete"))
            delete-response (-> deployment
                                (a/throw-cannot-delete request)
                                (db/delete request))]
-       (when force-delete
-         (utils/stop-subscription deployment))
        (utils/delete-all-child-resources deployment-id)
        delete-response)
      (catch Exception e
@@ -275,7 +272,6 @@ a container orchestration engine.
         clone-op            (u/action-map id :clone)
         check-dct-op        (u/action-map id :check-dct)
         fetch-module-op     (u/action-map id :fetch-module)
-        upcoming-invoice-op (u/action-map id :upcoming-invoice)
         force-delete-op     (u/action-map id :force-delete)
         detach-op           (u/action-map id :detach)
         can-manage?         (a/can-manage? resource request)
@@ -295,8 +291,6 @@ a container orchestration engine.
 
             (and can-manage? can-clone?)
             (update :operations conj clone-op)
-
-            can-manage? (update :operations conj upcoming-invoice-op)
 
             can-manage? (update :operations conj check-dct-op)
 
@@ -329,10 +323,8 @@ a container orchestration engine.
                              (utils/throw-when-payment-required request)
                              (utils/throw-can-not-access-registries-creds request))
           stopped?       (= (:state deployment) "STOPPED")
-          module         (:module deployment)
           user-rights?   (get-in deployment [:module :content :requires-user-rights])
           data?          (some? (:data deployment))
-          subs-id        (utils/create-subscription request deployment module)
           execution-mode (:execution-mode deployment)
           state          (if (= execution-mode "pull") "PENDING" "STARTING")
           new-deployment (-> deployment
@@ -343,7 +335,6 @@ a container orchestration engine.
                                                        (when (or data?
                                                                  user-rights?)
                                                          (auth/current-authentication request))))
-                             (cond-> subs-id (assoc :subscription-id subs-id))
                              (edit-deployment request))]
       (when stopped?
         (utils/delete-child-resources "deployment-parameter" id))
@@ -358,13 +349,11 @@ a container orchestration engine.
     (let [deployment     (-> (str resource-type "/" uuid)
                              (crud/retrieve-by-id-as-admin)
                              (utils/throw-can-not-do-action-invalid-state utils/can-stop? "stop"))
-          execution-mode (:execution-mode deployment)
-          response       (-> deployment
-                             (assoc :state "STOPPING")
-                             (edit-deployment request)
-                             (utils/create-job request "stop_deployment" execution-mode))]
-      (utils/stop-subscription deployment)
-      response)
+          execution-mode (:execution-mode deployment)]
+      (-> deployment
+          (assoc :state "STOPPING")
+          (edit-deployment request)
+          (utils/create-job request "stop_deployment" execution-mode)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -418,22 +407,16 @@ a container orchestration engine.
                               (utils/throw-can-not-do-action-invalid-state
                                 utils/can-update? "update_deployment")
                               (utils/throw-when-payment-required request))
-          current-subs-id (when config-nuvla/*stripe-api-key* (:subscription-id current))
           module-href     (get-in current [:module :href])
           ;; update price, license, etc. from source module during update
-          {:keys [name description price license]
-           :as   module} (module-utils/resolve-module module-href request)
-          new-subs-id     (utils/create-subscription request current module)
+          {:keys [name description price license]} (module-utils/resolve-module module-href request)
           new             (-> current
                               (assoc :state "UPDATING")
                               (cond-> name (assoc-in [:module :name] name)
                                       description (assoc-in [:module :description] description)
                                       price (assoc-in [:module :price] price)
-                                      license (assoc-in [:module :license] license)
-                                      new-subs-id (assoc :subscription-id new-subs-id))
+                                      license (assoc-in [:module :license] license))
                               (edit-deployment request))]
-      (some-> current-subs-id pricing-impl/retrieve-subscription
-              (pricing-impl/cancel-subscription {"invoice_now" true}))
       (utils/create-job new request "update_deployment" (:execution-mode new)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -442,21 +425,6 @@ a container orchestration engine.
 (defmethod crud/do-action [resource-type "update"]
   [request]
   (update-deployment-impl request))
-
-
-(defmethod crud/do-action [resource-type "upcoming-invoice"]
-  [{{uuid :uuid} :params :as request}]
-  (config-nuvla/throw-stripe-not-configured)
-  (try
-    (r/json-response
-      (or (-> (str resource-type "/" uuid)
-              (crud/retrieve-by-id-as-admin)
-              (a/throw-cannot-manage request)
-              :subscription-id
-              (pricing-impl/get-upcoming-invoice-subscription-id))
-          {}))
-    (catch Exception e
-      (or (ex-data e) (throw e)))))
 
 
 (defmethod crud/do-action [resource-type "detach"]

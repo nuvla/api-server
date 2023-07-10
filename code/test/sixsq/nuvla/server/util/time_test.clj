@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.util.time-test
   (:require
-    [clojure.test :refer [are deftest]]
+    [clojure.string :as str]
+    [clojure.test :refer [are deftest is]]
     [sixsq.nuvla.server.util.time :as t]))
 
 (deftest test-date-from-str
@@ -25,3 +26,11 @@
                     "2015-04-14T00:00Z" "2015-04-14T11:07:36Z"
                     "2022-02-25T00:00Z" "2022-02-25T08:40:18.224Z"
                     "1964-08-25T00:00Z" "1964-08-25T00:00:00.00Z"))
+
+(deftest unix-timestamp-from-date
+  (is (= 1645778418
+         (t/unix-timestamp-from-date
+           (t/date-from-str "2022-02-25T08:40:18.224Z")))))
+
+(deftest truncated-to-days-test
+  (is (str/ends-with? (t/to-str (t/end-of-day-date)) "T23:59:59.999Z")))

@@ -6,7 +6,6 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
-    [sixsq.nuvla.pricing.impl :as pricing-impl]
     [sixsq.nuvla.pricing.payment :as payment]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as cimi-params-impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
@@ -18,8 +17,7 @@
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.job.interface :as job-interface]
     [sixsq.nuvla.server.resources.resource-log :as resource-log]
-    [sixsq.nuvla.server.util.response :as r]
-    [sixsq.nuvla.server.util.time :as time]))
+    [sixsq.nuvla.server.util.response :as r]))
 
 
 (defn generate-api-key-secret
@@ -207,38 +205,6 @@
   [operations]
   (vec (remove #(= (name :delete) (:rel %)) operations)))
 
-(defn trial-end
-  [active-claim {:keys [follow-customer-trial] :as _price}]
-  (let [customer-trial-end (when (and follow-customer-trial
-                                      (= (:status (payment/active-claim->subscription active-claim)) "trialing"))
-                             (some-> active-claim
-                                     payment/active-claim->subscription
-                                     :trial-end
-                                     time/date-from-str))
-        one-day-trial      (time/from-now 24 :hours)
-        end-date           (if (and customer-trial-end
-                                    (time/after? customer-trial-end one-day-trial))
-                             customer-trial-end
-                             one-day-trial)]
-    (time/unix-timestamp-from-date end-date)))
-
-(defn create-stripe-subscription
-  [active-claim {:keys [account-id price-id] :as price} coupon]
-  (let [customer-info (some-> active-claim
-                              payment/active-claim->s-customer
-                              pricing-impl/customer->map)]
-    (pricing-impl/create-subscription
-      {"customer"                (:id customer-info)
-       "items"                   [{"price" price-id}]
-       "application_fee_percent" 20
-       "trial_end"               (trial-end active-claim price)
-       "coupon"                  coupon
-       "transfer_data"           {"destination" account-id}
-       "on_behalf_of"            account-id
-       "default_tax_rates"       (payment/tax-rates
-                                   customer-info
-                                   (payment/get-catalog))})))
-
 
 (defn infra->nb-id
   [infra]
@@ -301,23 +267,6 @@
               (seq env) (assoc :environmental-variables env)
               (seq files) (assoc :files files))
       :href (:id current-module))))
-
-
-(defn create-subscription
-  [request deployment {:keys [price] :as module}]
-  (when (and config-nuvla/*stripe-api-key* price (not (a/can-edit-data? module request)))
-    (some-> (auth/current-active-claim request)
-            (create-stripe-subscription price (:coupon deployment))
-            (pricing-impl/get-id))))
-
-
-(defn stop-subscription
-  [deployment]
-  (when config-nuvla/*stripe-api-key*
-    (some-> deployment
-            :subscription-id
-            pricing-impl/retrieve-subscription
-            (pricing-impl/cancel-subscription {"invoice_now" true}))))
 
 (defn throw-when-payment-required
   [{{:keys [price] :as module} :module :as deployment} request]

@@ -66,40 +66,39 @@
              (assoc-in module-meta [:price :vendor-email] email))))))
 
 (deftest set-price-test
-  (is (= (t/set-price {} nil "user/jane") {}))
-  (with-redefs [pricing-impl/retrieve-price identity
-                pricing-impl/price->map     identity
-                t/active-claim->account-id  identity
-                pricing-impl/create-price   identity
-                pricing-impl/get-product    :product
-                pricing-impl/get-id         :id]
-    (is (= (t/set-price {:price {:cent-amount-daily 10
-                                 :currency          "eur"}}
-                        nil "user/jane")
-           {:price {:account-id        "user/jane"
-                    :cent-amount-daily 10
-                    :currency          "eur"
-                    :price-id          nil
-                    :product-id        nil}})))
-  (with-redefs [pricing-impl/retrieve-price identity
-                pricing-impl/price->map     (constantly {:product-id "prod_x"})
-                t/active-claim->account-id  identity
-                pricing-impl/create-price   (fn [{:strs [product]}]
-                                              {:id      "price_x"
-                                               :product product})
-                pricing-impl/get-product    :product
-                pricing-impl/get-id         :id]
-    (is (= (t/set-price {:price {:price-id          "price_z"
-                                 :cent-amount-daily 10
-                                 :currency          "eur"}}
-                        {:price {:price-id          "price_x"
-                                 :cent-amount-daily 20
-                                 :currency          "eur"}} "user/jane")
-           {:price {:account-id        "user/jane"
-                    :cent-amount-daily 10
-                    :currency          "eur"
-                    :price-id          "price_x"
-                    :product-id        "prod_x"}}))))
+  (let [request-jane {:nuvla/authn {:active-claim "user/jane"}}]
+    (is (= (t/set-price {} nil request-jane) {}))
+    (with-redefs [t/active-claim->account-id  identity
+                  pricing-impl/create-price   identity
+                  pricing-impl/get-product    :product
+                  pricing-impl/get-id         :id]
+      (is (= (t/set-price {:price {:cent-amount-daily 10
+                                   :currency          "eur"}}
+                          nil request-jane)
+             {:price {:account-id            "user/jane"
+                      :cent-amount-daily     10
+                      :currency              "eur"
+                      :follow-customer-trial false
+                      :price-id              nil
+                      :product-id            nil}})))
+    (with-redefs [t/active-claim->account-id  identity
+                  pricing-impl/create-price   (constantly {:id      "price_x"
+                                                           :product "prod_x"})
+                  pricing-impl/get-product    :product
+                  pricing-impl/get-id         :id]
+    (is (= (t/set-price {:price {:price-id          "price_x"
+                                   :cent-amount-daily 10
+                                   :currency          "eur"}}
+                          {:price {:price-id          "price_x"
+                                   :cent-amount-daily 20
+                                   :currency          "eur"}}
+                          request-jane)
+             {:price {:account-id            "user/jane"
+                      :cent-amount-daily     10
+                      :currency              "eur"
+                      :follow-customer-trial false
+                      :price-id              "price_x"
+                      :product-id            "prod_x"}})))))
 
 (deftest collect-applications-hrefs
   (are [expected applications-sets]
