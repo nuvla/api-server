@@ -35,6 +35,7 @@
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   [camel-snake-kebab "0.4.3"]
    [compojure]
    [com.draines/postal]
    [clj-http]
@@ -95,7 +96,8 @@
                                [org.slf4j/slf4j-log4j12]
                                [com.cemerick/url]
                                [org.apache.curator/curator-test]
-                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
+                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]
+                               [io.swagger.parser.v3/swagger-parser "2.1.16"]]
               :resource-paths ["test-resources"]
               :env            {:nuvla-session-key           "test-resources/session.key"
                                :nuvla-session-crt           "test-resources/session.crt"

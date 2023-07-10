@@ -13,7 +13,7 @@
                 "date-time" "duration"
                 "long" "integer" "number" "double"
                 "string" "resource-id" "uri"
-                "map" "array" "geo-point" "geo-shape"
+                "map" "object" "array" "geo-point" "geo-shape"
                 "any"})
 
 ;;

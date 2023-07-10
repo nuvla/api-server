@@ -3,7 +3,10 @@
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.utils.acl :as acl-utils]
+    [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as resource-metadata]
+    [sixsq.nuvla.server.util.multimethods :as multifn]
     [spec-tools.json-schema :as jsc])
   (:import
     (clojure.lang Namespace)))
@@ -90,6 +93,28 @@
   (-> resource-ns meta :doc))
 
 
+(defn get-scrud-operations
+  "Returns the operations supported by the given resource type"
+  [resource-ns]
+  (let [resource-type (u/ns->type resource-ns)]
+    (->> [;; resource level operations
+          (when (multifn/implemented? crud/retrieve resource-type)
+            :get)
+          (when (multifn/implemented? crud/edit resource-type)
+            :edit)
+          (when (multifn/implemented? crud/delete resource-type)
+            :delete)
+          ;; collection level operations
+          (when (multifn/implemented? crud/add resource-type)
+            :add)
+          (when (multifn/implemented? crud/query resource-type)
+            :query)
+          (when (multifn/implemented? crud/bulk-delete resource-type)
+            :bulk-delete)]
+         (remove nil?)
+         vec)))
+
+
 (defn get-actions
   [resource-ns]
   (some-> resource-ns
@@ -130,35 +155,40 @@
   ([child-ns parent-ns spec]
    (generate-metadata child-ns parent-ns spec nil))
   ([child-ns parent-ns spec suffix]
+   (generate-metadata child-ns parent-ns spec suffix nil))
+  ([child-ns parent-ns spec suffix {:keys [scrud-operations] :as _options}]
    (if-let [parent-ns (as-namespace parent-ns)]
-     (let [child-ns      (as-namespace child-ns)
+     (let [child-ns         (as-namespace child-ns)
 
-           resource-name (cond-> (ns->type-uri (or child-ns parent-ns))
-                                 suffix (str " \u2014 " suffix))
+           resource-name    (cond-> (ns->type-uri (or child-ns parent-ns))
+                                    suffix (str " \u2014 " suffix))
 
-           doc           (get-doc (or child-ns parent-ns))
-           type-uri      (cond-> (ns->type-uri (or child-ns parent-ns))
-                                 suffix (str "-" suffix))
+           doc              (get-doc (or child-ns parent-ns))
+           type-uri         (cond-> (ns->type-uri (or child-ns parent-ns))
+                                    suffix (str "-" suffix))
 
-           common        {:id            "resource-metadata/dummy-id"
-                          :created       "1964-08-25T10:00:00.00Z"
-                          :updated       "1964-08-25T10:00:00.00Z"
-                          :resource-type resource-metadata/resource-type
-                          :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
-                                                                   :view-acl ["group/nuvla-anon"]})
-                          :type-uri      type-uri
-                          :name          resource-name
-                          :description   doc}
+           common           {:id            "resource-metadata/dummy-id"
+                             :created       "1964-08-25T10:00:00.00Z"
+                             :updated       "1964-08-25T10:00:00.00Z"
+                             :resource-type resource-metadata/resource-type
+                             :acl           (acl-utils/normalize-acl {:owners   ["group/nuvla-admin"]
+                                                                      :view-acl ["group/nuvla-anon"]})
+                             :type-uri      type-uri
+                             :name          resource-name
+                             :description   doc}
 
-           attributes    (generate-attributes spec)
+           attributes       (generate-attributes spec)
 
-           actions       (get-actions parent-ns)
+           scrud-operations (or scrud-operations (get-scrud-operations parent-ns))
 
-           capabilities  (get-capabilities parent-ns)]
+           actions          (get-actions parent-ns)
+
+           capabilities     (get-capabilities parent-ns)]
 
        (if (and doc spec type-uri)
-         (cond-> common
+         (cond-> (assoc common :spec spec)
                  attributes (merge attributes)
+                 (seq scrud-operations) (assoc :scrud-operations scrud-operations)
                  (seq actions) (assoc :actions actions)
                  (seq capabilities) (assoc :capabilities capabilities))
          (log/error "namespace documentation and spec cannot be null for" (str parent-ns))))

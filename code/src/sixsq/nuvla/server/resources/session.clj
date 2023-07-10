@@ -114,9 +114,6 @@ status, a 'set-cookie' header, and a 'location' header with the created
                      :add   ["group/nuvla-anon"]})
 
 
-(def resource-metadata (gen-md/generate-metadata ::ns ::session/session))
-
-
 ;;
 ;; validate subclasses of sessions
 ;;
@@ -510,6 +507,10 @@ status, a 'set-cookie' header, and a 'location' header with the created
 ;;
 ;; initialization: no schema for this parent resource
 ;;
+
+
+(def resource-metadata (gen-md/generate-metadata ::ns ::session/session))
+
 
 (defn initialize
   []
