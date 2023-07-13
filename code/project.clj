@@ -30,7 +30,9 @@
   :pom-location "target/"
 
   :dependencies
-  [[buddy/buddy-core]
+  [
+   [org.clojure/core.async]
+   [buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
