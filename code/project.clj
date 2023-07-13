@@ -31,12 +31,12 @@
 
   :dependencies
   [
-   [org.clojure/core.async]
+   [org.clojure/core.async "1.5.648"]
    [buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex "0.7.10" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-http]
@@ -51,7 +51,7 @@
    [selmer "1.12.50"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
-   [org.clojure/tools.namespace]
+   [org.clojure/tools.namespace "1.2.0"]
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
