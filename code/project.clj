@@ -1,5 +1,5 @@
-(def parent-version "6.7.13")
-(def nuvla-ring-version "2.0.9")
+(def parent-version "6.7.12")
+(def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "6.0.18-SNAPSHOT"
@@ -12,8 +12,8 @@
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
-  :plugins [[lein-parent "0.3.9"]
-            [lein-environ "1.2.0"]
+  :plugins [[lein-parent "0.3.5"]
+            [lein-environ "1.1.0"]
             [lein-project-version "0.1.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
@@ -30,13 +30,11 @@
   :pom-location "target/"
 
   :dependencies
-  [
-   [org.clojure/core.async "1.5.648"]
-   [buddy/buddy-core]
+  [[buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex "0.7.10" :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-http]
@@ -51,7 +49,7 @@
    [selmer "1.12.50"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
-   [org.clojure/tools.namespace "1.2.0"]
+   [org.clojure/tools.namespace]
    [org.clojure/tools.reader]                               ;; required by spandex through core.async
    [ring/ring-core]
    [ring/ring-json]
