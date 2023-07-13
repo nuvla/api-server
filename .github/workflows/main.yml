@@ -52,10 +52,10 @@ jobs:
           echo "::set-output name=version::$VERSION"
         id: project_version
 
-      - name: run test
-        working-directory: code
-        run: |
-          lein test
+#      - name: run test
+#        working-directory: code
+#        run: |
+#          lein test
 
       - name: run cloverage
         working-directory: code
