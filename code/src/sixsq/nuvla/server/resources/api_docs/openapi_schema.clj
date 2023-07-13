@@ -28,7 +28,7 @@
 
 
 (defn transform-type->openapi-type
-  [{:keys [properties enum type oneOf allOf anyOf openapi-schema format] :as m}]
+  [{:keys [properties enum type oneOf allOf anyOf openapi-schema items] :as m}]
   (cond
     openapi-schema openapi-schema                           ;; completely replaces the generated schema
     oneOf (first oneOf)
@@ -43,7 +43,7 @@
            "date-time" (-> m (assoc :type "string" :format "date-time"))
            "geo-point" (assoc m :type "array" :items {:type "number" :format "double"})
            "geo-shape" (assoc m :type "object")
-           "array" (:items m)
+           "array" (cond-> m (not items) (assoc :items {}))
            m)
     enum (let [vs   (:enum m)
                type (set-type-from-first-child vs)]
@@ -89,6 +89,24 @@
       (csk/->PascalCase)))
 
 
+(defn resource-create-schema-name
+  "Builds the OpenAPI schema name for the schema describing the resource create payload."
+  [resource-metadata]
+  (str (resource-schema-name resource-metadata) "Create"))
+
+
+(defn resource-update-schema-name
+  "Builds the OpenAPI schema name for the schema describing the resource update payload."
+  [resource-metadata]
+  (str (resource-schema-name resource-metadata) "Update"))
+
+
+(defn resource-collection-schema-name
+  "Builds the OpenAPI schema name for the schema describing a collection of resources."
+  [resource-metadata]
+  (str (resource-schema-name resource-metadata) "Collection"))
+
+
 (defn ->openapi-resource-schema
   "Returns the OpenAPI schema for a resource type."
   [{:keys [spec] :as resource-metadata}]
@@ -101,9 +119,23 @@
 
 (defn ->openapi-schemas
   "Returns the `schemas` needed to represent operations on the given resource type."
-  [{:keys [spec] :as resource-metadata}]
-  {(resource-schema-name resource-metadata)
-   (->openapi-resource-schema resource-metadata)}
+  [{:keys [scrud-operations] :as resource-metadata}]
+  (let [scrud-op-supported? (set scrud-operations)]
+    (cond->
+      {(resource-schema-name resource-metadata)
+       (->openapi-resource-schema resource-metadata)}
+      (scrud-op-supported? :add)
+      (merge {(resource-create-schema-name resource-metadata)
+              (update (->openapi-resource-schema resource-metadata)
+                      :title #(str % "Create"))})
+      (scrud-op-supported? :edit)
+      (merge {(resource-update-schema-name resource-metadata)
+              (update (->openapi-resource-schema resource-metadata)
+                      :title #(str % "Update"))})
+      (scrud-op-supported? :query)
+      (merge {(resource-collection-schema-name resource-metadata)
+              (update (->openapi-resource-schema resource-metadata)
+                      :title #(str % "Collection"))})))
   #_(-> spec
         (visitor/visit (visitor/spec-collector))
         (->> (reduce-kv (fn [m k v]

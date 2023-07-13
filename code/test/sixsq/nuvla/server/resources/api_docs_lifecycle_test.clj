@@ -1,5 +1,6 @@
 (ns sixsq.nuvla.server.resources.api-docs-lifecycle-test
   (:require
+    [clojure.java.io :as io]
     [clojure.test :refer [deftest is use-fixtures]]
     [peridot.core :refer [content-type request session]]
     [sixsq.nuvla.server.app.params :as p]
@@ -28,6 +29,5 @@
         ;; validate the returned spec with the official Swagger parser
         ^SwaggerParseResult result  (-> (OpenAPIParser.)
                                         (.readContents swagger-json nil parse-options))]
-    #_(println swagger-json)
+    (println swagger-json)
     (is (empty? (.getMessages result)))))
-
