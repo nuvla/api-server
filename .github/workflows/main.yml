@@ -52,6 +52,11 @@ jobs:
           echo "::set-output name=version::$VERSION"
         id: project_version
 
+      - name: run test
+        working-directory: code
+        run: |
+          lein test
+
       - name: Setup Sonar Scanner
         uses: warchant/setup-sonar-scanner@v3
         with:
