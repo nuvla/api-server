@@ -13,6 +13,7 @@
             :distribution :repo}
 
   :plugins [[lein-parent "0.3.9"]
+            [lein-cloverage "1.2.4"]
             [lein-environ "1.2.0"]
             [lein-project-version "0.1.0"]]
 
@@ -35,7 +36,7 @@
    [metosin/jsonista "0.3.7"]                               ;; compilation error
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
-   [cc.qbits/spandex :exclusions [org.clojure/clojure]]
+   [cc.qbits/spandex "0.7.11" :exclusions [org.clojure/clojure]]
    [compojure]
    [com.draines/postal]
    [clj-http]
