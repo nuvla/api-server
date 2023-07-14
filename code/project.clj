@@ -32,6 +32,7 @@
   :dependencies
   [[buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
+   [metosin/jsonista "0.3.7"]                               ;; compilation error
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex :exclusions [org.clojure/clojure]]
