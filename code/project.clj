@@ -39,7 +39,7 @@
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
-   [clojure.java-time]                                      ;;to be deleted
+   [clojure.java-time "1.2.0"]                              ;;to be deleted
    [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
@@ -83,50 +83,50 @@
                                            io.netty/netty-transport-native-epoll]]
                              [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
-   :test     {:dependencies   [[me.raynes/fs]
+   :test     {:dependencies      [[me.raynes/fs]
+                                  [peridot]
+                                  [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
+                                  [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
+                                  [org.clojure/test.check]
+                                  [org.elasticsearch.test/framework]
+                                  [org.elasticsearch.client/transport]
+                                  [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
+                                  [org.slf4j/slf4j-api]
+                                  [org.slf4j/slf4j-log4j12]
+                                  [com.cemerick/url]
+                                  [org.apache.curator/curator-test]
+                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
+              :resource-paths    ["test-resources"]
+              :env               {:nuvla-session-key   "test-resources/session.key"
+                                  :nuvla-session-crt   "test-resources/session.crt"
+                                  :es-sniffer-init     "no"
+                                  :kafka-producer-init "yes"}
+              :aot               :all
+              :plugins           [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
+              :test-report-sonar {:output-dir     "test-reports"
+                                  :emit-junit-xml true}}
+
+   :dev      {:dependencies   [[org.apache.zookeeper/zookeeper]
+                               [clj-kondo "RELEASE"]
+                               ;; for running linters
+                               [me.raynes/fs]
                                [peridot]
-                               [org.apache.logging.log4j/log4j-core] ;; needed for ES logging
-                               [org.apache.logging.log4j/log4j-api] ;; needed for ES logging
-                               [org.clojure/test.check]
+                               [org.apache.curator/curator-test]
                                [org.elasticsearch.test/framework]
                                [org.elasticsearch.client/transport]
                                [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
-                               [org.slf4j/slf4j-api]
-                               [org.slf4j/slf4j-log4j12]
-                               [com.cemerick/url]
-                               [org.apache.curator/curator-test]
-                               [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
-              :resource-paths ["test-resources"]
-              :env            {:nuvla-session-key           "test-resources/session.key"
-                               :nuvla-session-crt           "test-resources/session.crt"
-                               :es-sniffer-init             "no"
-                               :kafka-producer-init         "yes"}
-              :aot            :all
-              :plugins        [[org.clojars.konstan/lein-test-report-sonar "0.0.4"]]
-              :test-report-sonar {:output-dir "test-reports"
-                                  :emit-junit-xml true}}
 
-   :dev      {:dependencies          [[org.apache.zookeeper/zookeeper]
-                                      [clj-kondo "RELEASE"]
-                                      ;; for running linters
-                                      [me.raynes/fs]
-                                      [peridot]
-                                      [org.apache.curator/curator-test]
-                                      [org.elasticsearch.test/framework]
-                                      [org.elasticsearch.client/transport]
-                                      [org.codelibs.elasticsearch.module/lang-painless "7.0.0"]
-
-                                      [org.apache.logging.log4j/log4j-core]]
+                               [org.apache.logging.log4j/log4j-core]]
               ;; paths
-              :source-paths          ["src"]
-              :test-paths            ["test"]
-              :resource-paths        ["test-resources"]
+              :source-paths   ["src"]
+              :test-paths     ["test"]
+              :resource-paths ["test-resources"]
               ;; linters
-              :eastwood              {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
-              :env                   {:nuvla-session-key   "test-resources/session.key"
-                                      :nuvla-session-crt   "test-resources/session.crt"
-                                      :es-sniffer-init     "no"
-                                      :kafka-producer-init "no"}
+              :eastwood       {:exclude-namespaces [sixsq.nuvla.server.resources.job.utils]}
+              :env            {:nuvla-session-key   "test-resources/session.key"
+                               :nuvla-session-crt   "test-resources/session.crt"
+                               :es-sniffer-init     "no"
+                               :kafka-producer-init "no"}
               ;; code coverage
-              :cloverage             {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
+              :cloverage      {:ns-exclude-regex [#"sixsq.nuvla.pricing.protocol"]}
               }})
