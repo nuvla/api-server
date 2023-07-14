@@ -62,10 +62,10 @@
    ;; spatial4j and jts-core are needed for factual/geo and for elasticsearch mock test instance
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
-   [org.locationtech.jts/jts-core "1.19.0"]
+   [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
-   [org.wololo/jts2geojson "0.18.1"]
+   [org.wololo/jts2geojson "0.15.0"]
    [one-time "0.8.0"]]
 
   :profiles
