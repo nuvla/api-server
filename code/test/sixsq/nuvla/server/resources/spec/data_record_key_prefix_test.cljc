@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def timestamp "1970-04-16T08:40:00.00Z")
+(def timestamp "1970-04-16T08:40:00Z")
 
 
 (def valid-acl {:owners   ["group/nuvla-admin"]

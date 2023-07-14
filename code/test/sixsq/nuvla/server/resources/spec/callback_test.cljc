@@ -12,7 +12,7 @@
 
 
 (deftest check-callback-schema
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp "1964-08-25T10:00:00Z"
         callback  {:id              (str t/resource-type "/test-callback")
                    :resource-type   t/resource-type
                    :created         timestamp

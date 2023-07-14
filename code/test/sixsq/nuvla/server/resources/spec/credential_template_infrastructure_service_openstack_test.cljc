@@ -13,7 +13,7 @@
 
 
 (deftest test-credential-template-service-schema-check
-  (let [timestamp "1972-10-08T10:00:00.00Z"
+  (let [timestamp "1972-10-08T10:00:00Z"
         tpl       {:id                      (str ct/resource-type "/uuid")
                    :resource-type           p/resource-type
                    :created                 timestamp

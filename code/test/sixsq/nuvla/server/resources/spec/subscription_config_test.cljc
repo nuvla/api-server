@@ -8,7 +8,7 @@
 (def valid-acl {:owners   ["group/nuvla-admin"]
                 :edit-acl ["group/nuvla-admin"]})
 
-(def timestamp "1972-10-08T10:00:00.00Z")
+(def timestamp "1972-10-08T10:00:00Z")
 
 (def valid-subs-config
   {:id              (str t/resource-type "/01")

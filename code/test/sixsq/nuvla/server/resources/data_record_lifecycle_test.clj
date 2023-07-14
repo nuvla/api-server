@@ -28,7 +28,7 @@
 (def core-attrs {:content-type "text/html; charset=utf-8"
                  :bytes        10234
                  :md5sum       "abcde"
-                 :timestamp    "2019-04-15T12:23:53.00Z"
+                 :timestamp    "2019-04-15T12:23:53Z"
                  :location     [6.143158 46.204391 373.0]
                  :mount        {:mount-type     "volume"
                                 :target         "/mnt/bucket"

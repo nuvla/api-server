@@ -39,7 +39,7 @@
    [com.draines/postal]
    [clj-http]
    [clj-stacktrace]
-   [clojure.java-time]
+   [clojure.java-time]                                      ;;to be deleted
    [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
@@ -60,15 +60,15 @@
    ;; spatial4j and jts-core are needed for factual/geo and for elasticsearch mock test instance
    ;; issue in Factual geo https://github.com/Factual/geo/issues/74
    [org.locationtech.spatial4j/spatial4j "0.8"]
-   [org.locationtech.jts/jts-core "1.18.2"]
+   [org.locationtech.jts/jts-core "1.19.0"]
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
-   [org.wololo/jts2geojson "0.15.0"]
-   [one-time "0.7.0"]]
+   [org.wololo/jts2geojson "0.18.1"]
+   [one-time "0.8.0"]]
 
   :profiles
   {
-   :provided {:dependencies [[org.clojure/clojure]
+   :provided {:dependencies [[org.clojure/clojure "1.11.1"]
                              [sixsq.nuvla.ring/code ~nuvla-ring-version
                               ; fix netty conflicts with elasticsearch test dependencies
                               :exclusions [io.netty/netty

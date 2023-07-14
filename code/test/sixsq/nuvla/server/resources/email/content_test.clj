@@ -2,9 +2,9 @@
   (:require
     [clojure.java.io :refer [writer]]
     [clojure.test :refer [deftest is testing]]
-    [java-time :as time]
     [sixsq.nuvla.server.resources.email.content :as t]
-    [sixsq.nuvla.server.resources.email.sending :as sending]))
+    [sixsq.nuvla.server.resources.email.sending :as sending]
+    [sixsq.nuvla.server.util.time :as time]))
 
 
 (def resource-1 {:id    "61467019"

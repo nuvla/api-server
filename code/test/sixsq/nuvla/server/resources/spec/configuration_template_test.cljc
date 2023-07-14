@@ -17,7 +17,7 @@
 
 
 (deftest test-configuration-template-schema-check
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp "1964-08-25T10:00:00Z"
         root      {:id            (str ct/resource-type "/test")
                    :resource-type p/service-context
                    :created       timestamp

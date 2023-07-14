@@ -35,8 +35,8 @@
 (def valid-entry
   {:passed                            true
    :plan-id                           "abcd"
-   :start-time                        "1964-08-25T10:00:00.00Z"
-   :end-time                          "1964-08-25T10:00:00.00Z"
+   :start-time                        "1964-08-25T10:00:00Z"
+   :end-time                          "1964-08-25T10:00:00Z"
    :class                             "className"
    (keyword (str ns1-prefix ":att1")) "123.456"})
 
@@ -44,8 +44,8 @@
 (def valid-nested-2-levels
   {:passed                            true
    :plan-id                           "abcd"
-   :start-time                        "1964-08-25T10:00:00.00Z"
-   :end-time                          "1964-08-25T10:00:00.00Z"
+   :start-time                        "1964-08-25T10:00:00Z"
+   :end-time                          "1964-08-25T10:00:00Z"
    :class                             "className"
    (keyword (str ns1-prefix ":att1")) {(keyword (str ns1-prefix ":att2")) "456"}})
 
@@ -53,8 +53,8 @@
 (def valid-nested-entry
   {:passed                                 true
    :plan-id                                "abcd"
-   :start-time                             "1964-08-25T10:00:00.00Z"
-   :end-time                               "1964-08-25T10:00:00.00Z"
+   :start-time                             "1964-08-25T10:00:00Z"
+   :end-time                               "1964-08-25T10:00:00Z"
    :class                                  "className"
    (keyword (str ns1-prefix ":att1"))      "hi"
    (keyword (str ns1-prefix ":attnested")) {(keyword (str ns2-prefix ":subnested"))
@@ -79,8 +79,8 @@
 (def entry-wrong-namespace
   {:passed                                true
    :plan-id                               "abcd"
-   :start-time                            "1964-08-25T10:00:00.00Z"
-   :end-time                              "1964-08-25T10:00:00.00Z"
+   :start-time                            "1964-08-25T10:00:00Z"
+   :end-time                              "1964-08-25T10:00:00Z"
    :class                                 "className"
    (keyword (str invalid-prefix ":att1")) "123.456"})
 
@@ -229,8 +229,8 @@
         with-namespaced-key (format "
     {\"plan-id\":\"abcd\",
      \"passed\": true,
-     \"end-time\": \"1964-08-25T10:00:00.00Z\",
-     \"start-time\": \"1964-08-25T10:00:00.00Z\",
+     \"end-time\": \"1964-08-25T10:00:00Z\",
+     \"start-time\": \"1964-08-25T10:00:00Z\",
      \"class\": \"className\",
      \"%s:attr-name\":\"123.456\"}
      " ns1-prefix)
@@ -297,8 +297,8 @@
   (let [attr          (ltu/random-string)
         valid-entry   {:passed                             true
                        :plan-id                            "abcd"
-                       :start-time                         "1964-08-25T10:00:00.00Z"
-                       :end-time                           "1964-08-25T10:00:00.00Z"
+                       :start-time                         "1964-08-25T10:00:00Z"
+                       :end-time                           "1964-08-25T10:00:00Z"
                        :class                              "className"
                        (keyword (str ns1-prefix ":" attr)) "123.456"}
         session-admin (-> (session (ltu/ring-app))
@@ -362,8 +362,8 @@
         attr2                 (ltu/random-string)
         valid-nested-2-levels {:passed                              true
                                :plan-id                             "abcd"
-                               :start-time                          "1964-08-25T10:00:00.00Z"
-                               :end-time                            "1964-08-25T10:00:00.00Z"
+                               :start-time                          "1964-08-25T10:00:00Z"
+                               :end-time                            "1964-08-25T10:00:00Z"
                                :class                               "className"
                                (keyword (str ns1-prefix ":" attr1)) {(keyword (str ns1-prefix ":" attr2)) "456"}}]
 
