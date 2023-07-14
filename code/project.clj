@@ -42,7 +42,7 @@
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time "1.2.0"]                              ;;to be deleted
-   [com.amazonaws/aws-java-sdk-s3]
+   [com.amazonaws/aws-java-sdk-s3 :exclusions [com.fasterxml.jackson.core/jackson-annotations]]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
@@ -83,7 +83,8 @@
                                            io.netty/netty-handler-proxy
                                            io.netty/netty-resolver-dns
                                            io.netty/netty-transport-native-epoll]]
-                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
+                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version
+                              :exclusions [com.fasterxml.jackson.core/jackson-annotations]]]}
 
    :test     {:dependencies      [[me.raynes/fs]
                                   [peridot]
@@ -97,7 +98,8 @@
                                   [org.slf4j/slf4j-log4j12]
                                   [com.cemerick/url]
                                   [org.apache.curator/curator-test]
-                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
+                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version
+                                   :exclusions [com.fasterxml.jackson.core/jackson-annotations]]]
               :resource-paths    ["test-resources"]
               :env               {:nuvla-session-key   "test-resources/session.key"
                                   :nuvla-session-crt   "test-resources/session.crt"
