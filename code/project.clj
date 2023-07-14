@@ -33,7 +33,7 @@
   :dependencies
   [[buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
-   [metosin/jsonista "0.3.7"]                               ;; compilation error
+   [metosin/jsonista "0.3.7" :exclusions [com.fasterxml.jackson.core/jackson-annotations]]]                               ;; compilation error
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex "0.7.11" :exclusions [org.clojure/clojure]]
