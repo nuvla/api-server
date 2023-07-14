@@ -1,5 +1,5 @@
-(def parent-version "6.7.13")
-(def nuvla-ring-version "2.0.9")
+(def parent-version "6.7.12")
+(def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
 (defproject sixsq.nuvla.server/api-jar "6.0.18-SNAPSHOT"
@@ -46,7 +46,7 @@
    [instaparse]
    [metosin/spec-tools]
    [org.bouncycastle/bcpkix-jdk15on "1.70"]
-   [selmer "1.12.50"]
+   [selmer "1.12.59"]
    [org.clojure/data.json]
    [org.clojure/java.classpath]
    [org.clojure/tools.namespace]
