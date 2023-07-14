@@ -33,7 +33,7 @@
   :dependencies
   [[buddy/buddy-core]
    [org.clojars.konstan/kinsky ~kinsky-version]
-   [metosin/jsonista "0.3.7" :exclusions [com.fasterxml.jackson.core/jackson-annotations]] ;; compilation error
+   [metosin/jsonista "0.3.7"] ;; compilation error
    [buddy/buddy-hashers]
    [buddy/buddy-sign]
    [cc.qbits/spandex "0.7.11" :exclusions [org.clojure/clojure]]
@@ -42,7 +42,7 @@
    [clj-http]
    [clj-stacktrace]
    [clojure.java-time "1.2.0"]                              ;;to be deleted
-   [com.amazonaws/aws-java-sdk-s3 :exclusions [com.fasterxml.jackson.core/jackson-annotations]]
+   [com.amazonaws/aws-java-sdk-s3]
    [duratom :exclusions [org.clojure/clojure]]
    [expound]
    [instaparse]
@@ -65,7 +65,8 @@
    [org.locationtech.jts/jts-core "1.18.2"]
    ;; need for Factual geo wkt polygon to geojson
    ;; upgrading jts2geojson dependency to 0.16 or 0.17 creates conflicts for now
-   [org.wololo/jts2geojson "0.15.0"]
+   [org.wololo/jts2geojson "0.15.0"
+    :exclusions [com.fasterxml.jackson.core/jackson-annotations]]
    [one-time "0.8.0"]]
 
   :profiles
@@ -83,8 +84,7 @@
                                            io.netty/netty-handler-proxy
                                            io.netty/netty-resolver-dns
                                            io.netty/netty-transport-native-epoll]]
-                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version
-                              :exclusions [com.fasterxml.jackson.core/jackson-annotations]]]}
+                             [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]}
 
    :test     {:dependencies      [[me.raynes/fs]
                                   [peridot]
@@ -98,8 +98,7 @@
                                   [org.slf4j/slf4j-log4j12]
                                   [com.cemerick/url]
                                   [org.apache.curator/curator-test]
-                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version
-                                   :exclusions [com.fasterxml.jackson.core/jackson-annotations]]]
+                                  [org.clojars.konstan/kinsky-test-jar ~kinsky-version]]
               :resource-paths    ["test-resources"]
               :env               {:nuvla-session-key   "test-resources/session.key"
                                   :nuvla-session-crt   "test-resources/session.crt"
