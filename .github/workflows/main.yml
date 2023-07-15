@@ -55,6 +55,8 @@ jobs:
       - name: run cloverage
         working-directory: code
         run: |
+          export JAVA_OPTS="-Xms6g -Xmx6g"
+          export ES_JAVA_OPTS="-Xms6g -Xmx6g"
           lein cloverage --codecov
 
       - name: Setup Sonar Scanner
