@@ -11,7 +11,7 @@
 
 
 (deftest check-service-group
-  (let [timestamp     "1964-08-25T10:00:00.00Z"
+  (let [timestamp     "1964-08-25T10:00:00Z"
         service-group {:id                      (str service/resource-type "/uuid")
                        :resource-type           service/resource-type
                        :created                 timestamp

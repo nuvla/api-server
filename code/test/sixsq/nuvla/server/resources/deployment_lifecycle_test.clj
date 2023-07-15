@@ -30,7 +30,7 @@
                 :view-acl ["user/jane"]})
 
 
-(def timestamp "1964-08-25T10:00:00.00Z")
+(def timestamp "1964-08-25T10:00:00Z")
 
 (defn- setup-module
   [session-owner module-data]
@@ -826,7 +826,7 @@
   [session-owner {depl-name :name
                   depl-tags :tags}]
   (let [;; setup a module that can be referenced from the deployment
-        module-id        (setup-module session-owner (valid-module "component" valid-component (str depl-name "/tags" (u/random-uuid))))
+        module-id        (setup-module session-owner (valid-module "component" valid-component (str depl-name "/tags" (random-uuid))))
 
         valid-deployment {:module {:href module-id}}
         deployment-id    (-> session-owner

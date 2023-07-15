@@ -53,7 +53,7 @@
 
 
 (defmethod convert :DateValue [[_ ^String s]]
-  [:Value (time/date-from-str s)])
+  [:Value (time/parse-date s)])
 
 
 (defmethod convert :NullValue [[_ ^String _]]

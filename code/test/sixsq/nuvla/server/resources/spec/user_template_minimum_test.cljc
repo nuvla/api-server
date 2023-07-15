@@ -12,7 +12,7 @@
 
 
 (deftest check-user-template-minimum-schema
-  (let [timestamp  "1964-08-25T10:00:00.00Z"
+  (let [timestamp  "1964-08-25T10:00:00Z"
         tpl        {:id            (str user-tpl/resource-type "/" minimum/registration-method)
                     :resource-type user-tpl/resource-type
                     :name          "my-template"

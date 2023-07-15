@@ -67,7 +67,7 @@
 
 (defn ordered-desc?
   [timestamps]
-  (every? (fn [[a b]] (not-before? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-before? (time/parse-date a) (time/parse-date b))) (partition 2 1 timestamps)))
 
 
 (def not-after? (complement time/after?))
@@ -75,6 +75,6 @@
 
 (defn ordered-asc?
   [timestamps]
-  (every? (fn [[a b]] (not-after? (time/date-from-str a) (time/date-from-str b))) (partition 2 1 timestamps)))
+  (every? (fn [[a b]] (not-after? (time/parse-date a) (time/parse-date b))) (partition 2 1 timestamps)))
 
 

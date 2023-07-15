@@ -164,7 +164,7 @@
                      :request-method :put
                      :body (json/write-str {:parent         bad-id
                                             :name           "updated-name"
-                                            :last-timestamp "1974-08-25T10:00:00.00Z"
+                                            :last-timestamp "1974-08-25T10:00:00Z"
                                             :log            {:c3 ["log3"]}}))
             (ltu/body->edn)
             (ltu/is-status 403))
@@ -175,7 +175,7 @@
                      :request-method :put
                      :body (json/write-str {:parent         bad-id
                                             :name           "updated-name"
-                                            :last-timestamp "1974-08-25T10:00:00.00Z"
+                                            :last-timestamp "1974-08-25T10:00:00Z"
                                             :log            {:c3 ["log3"]}}))
             (ltu/body->edn)
             (ltu/is-status 200))
@@ -192,7 +192,7 @@
           (is (not= name (:name original)))
           (is (= name "updated-name"))
 
-          (is (= last-timestamp "1974-08-25T10:00:00.00Z"))
+          (is (= last-timestamp "1974-08-25T10:00:00Z"))
 
           (is (= log {:c3 ["log3"]})))
 
@@ -347,7 +347,7 @@
                        :body (json/write-str {:parent         bad-id
                                               :name           "updated-name"
                                               :components     ["s1"]
-                                              :last-timestamp "1964-08-25T10:00:00.00Z"
+                                              :last-timestamp "1964-08-25T10:00:00Z"
                                               :log            {:s1 ["log1"]}}))
               (ltu/body->edn)
               (ltu/is-status 200))
@@ -367,7 +367,7 @@
             (is (= service (:service original)))
             (is (not= service "bad-service"))
 
-            (is (= last-timestamp "1964-08-25T10:00:00.00Z"))
+            (is (= last-timestamp "1964-08-25T10:00:00Z"))
 
             (is (= log {:s1 ["log1"]})))
 

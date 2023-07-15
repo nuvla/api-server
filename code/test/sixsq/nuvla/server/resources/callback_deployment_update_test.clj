@@ -20,7 +20,7 @@
 (def deployment-base-uri (str p/service-context deployment/resource-type))
 (def callback-base-uri (str p/service-context callback/resource-type))
 
-(def timestamp "2000-00-00T00:00:00.00Z")
+(def timestamp "2000-00-00T00:00:00Z")
 
 (def image-name "image")
 (def old-image-tag "0.1")

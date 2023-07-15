@@ -11,7 +11,7 @@
 
 
 (deftest test-schema-check
-  (let [timestamp "2019-04-15T12:23:53.00Z"
+  (let [timestamp "2019-04-15T12:23:53Z"
 
         location  [6.143158 46.204391 373.0]
 

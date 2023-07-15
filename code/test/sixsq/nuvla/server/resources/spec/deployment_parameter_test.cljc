@@ -11,7 +11,7 @@
 
 
 (deftest test-schema-check
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp "1964-08-25T10:00:00Z"
         root      {:id            (str t/resource-type "/connector-uuid")
                    :resource-type t/resource-type
                    :parent        "deployment/7b1ad037-a65e-41e0-8fdf-e0e8db30bb0b"

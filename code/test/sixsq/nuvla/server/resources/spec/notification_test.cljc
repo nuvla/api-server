@@ -6,7 +6,7 @@
     [sixsq.nuvla.server.resources.spec.spec-test-utils :as stu]))
 
 
-(def timestamp "2015-01-16T08:05:00.00Z")
+(def timestamp "2015-01-16T08:05:00Z")
 
 
 (def valid-notification

@@ -13,7 +13,7 @@
 
 (deftest check-service-template-create-coe-schema
   (doseq [coe-type ["swarm" "kubernetes"]]
-    (let [timestamp "1964-08-25T10:00:00.00Z"
+    (let [timestamp "1964-08-25T10:00:00Z"
           cfg       {:id                    (str tpl/resource-type "/1-2-3-4-5")
                      :resource-type         tpl/resource-type
                      :created               timestamp

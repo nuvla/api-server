@@ -41,7 +41,7 @@
           (ltu/location)))))
 
 
-(def timestamp "1964-08-25T10:00:00.00Z")
+(def timestamp "1964-08-25T10:00:00Z")
 
 
 (def valid-module

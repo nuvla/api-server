@@ -11,7 +11,7 @@
 
 
 (deftest test-schema-check
-  (let [timestamp "1964-08-25T10:00:00.00Z"
+  (let [timestamp "1964-08-25T10:00:00Z"
         root      {:id                (str module-application/resource-type "/module-application-uuid")
                    :resource-type     module-application/resource-type
                    :created           timestamp

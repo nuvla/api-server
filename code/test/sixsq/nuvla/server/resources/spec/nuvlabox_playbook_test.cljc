@@ -10,7 +10,7 @@
 
 
 (deftest check-nuvlabox-playbook-schema
-  (let [timestamp         "1964-08-25T10:00:00.00Z"
+  (let [timestamp         "1964-08-25T10:00:00Z"
         nuvlabox-playbook {:id            (str t/resource-type "/abcdef")
                            :name          "my nuvlabox-playbook"
                            :description   "description of my nuvlabox-playbook"
