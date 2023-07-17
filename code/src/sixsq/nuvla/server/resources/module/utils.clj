@@ -188,7 +188,7 @@
                                           "aggregate_usage" "sum"
                                           "usage_type"      "metered"}
                           "product_data" {"name"       (str (or name path) " v" (last-index module))
-                                          "unit_label" "day"}})]
+                                          "unit_label" "app days"}})]
         (assoc module :price {:price-id              (pricing-impl/get-id s-price)
                               :product-id            (pricing-impl/get-product s-price)
                               :account-id            account-id
