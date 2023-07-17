@@ -7,7 +7,8 @@
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]
-    [sixsq.nuvla.server.resources.module :as module]))
+    [sixsq.nuvla.server.resources.module :as module]
+    [sixsq.nuvla.server.resources.module.utils :as utils]))
 
 
 (use-fixtures :once ltu/with-test-server-fixture)
@@ -26,12 +27,12 @@
         session-user  (header session-anon authn-info-header
                               "user/jane user/jane group/nuvla-user group/nuvla-anon")
 
-        valid-entry   {:resource-type             module/resource-type
-                       :created                   timestamp
-                       :updated                   timestamp
-                       :parent-path               ""
-                       :path                      "example"
-                       :subtype                   "project"}]
+        valid-entry   {:resource-type module/resource-type
+                       :created       timestamp
+                       :updated       timestamp
+                       :parent-path   ""
+                       :path          "example"
+                       :subtype       "project"}]
 
     ;; create: NOK for anon
     (-> session-anon
@@ -108,7 +109,49 @@
       (-> session-user
           (request abs-uri)
           (ltu/body->edn)
-          (ltu/is-status 404)))))
+          (ltu/is-status 404))
+
+      ;; delete: NOK if project has children
+      (let [uri         (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-entry))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+            abs-uri     (str p/service-context uri)
+
+            valid-app   {:parent-path   "example"
+                         :path          "example/app"
+                         :subtype       utils/subtype-app
+                         :compatibility "docker-compose"}
+            app-uri     (-> session-user
+                            (request base-uri
+                                     :request-method :post
+                                     :body (json/write-str valid-app))
+                            (ltu/body->edn)
+                            (ltu/is-status 201)
+                            (ltu/location))
+            app-abs-uri (str p/service-context app-uri)]
+
+        (-> session-user
+            (request abs-uri
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 403)
+            (ltu/message-matches "Cannot delete project with children"))
+
+        (-> session-user
+            (request app-abs-uri
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))
+
+        (-> session-user
+            (request abs-uri
+                     :request-method :delete)
+            (ltu/body->edn)
+            (ltu/is-status 200))))))
 
 
 (deftest bad-methods

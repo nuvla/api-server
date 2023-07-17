@@ -14,6 +14,8 @@
     [sixsq.nuvla.server.util.log :as logu]
     [sixsq.nuvla.server.util.response :as r]))
 
+(def ^:const resource-type "module")
+
 (def ^:const subtype-comp "component")
 
 (def ^:const subtype-app "application")
@@ -283,3 +285,13 @@
 (defn get-applications-sets
   [applications-sets]
   (get-in applications-sets [:content :applications-sets] []))
+
+
+(defn count-children-as-admin [parent-path]
+  (-> (crud/query-as-admin
+        resource-type
+        {:cimi-params {:filter (parser/parse-cimi-filter
+                                 (str "parent-path='" parent-path "'"))
+                       :last   0}})
+      first
+      :count))

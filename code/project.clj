@@ -1,4 +1,4 @@
-(def parent-version "6.7.12")
+(def parent-version "6.7.14")
 (def nuvla-ring-version "2.0.8")
 (def kinsky-version "0.3.1")
 
@@ -12,8 +12,8 @@
             :url          "http://www.apache.org/licenses/LICENSE-2.0.txt"
             :distribution :repo}
 
-  :plugins [[lein-parent "0.3.5"]
-            [lein-environ "1.1.0"]
+  :plugins [[lein-parent "0.3.9"]
+            [lein-environ "1.2.0"]
             [lein-project-version "0.1.0"]]
 
   :parent-project {:coords  [sixsq.nuvla/parent ~parent-version]
