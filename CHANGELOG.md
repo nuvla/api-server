@@ -4,6 +4,20 @@
 
 ## Released
 
+## [6.0.18] - 2023-07-21
+
+- Deps - parent v6.7.14
+- Module - Allow user with edit rights to change price but keep initial vendor
+  account id
+- Module - Add module price lifecycle tests
+- Module - Create product for each price change
+- Deployment spec - Deprecate subscription id
+- Deployment - No more in charge of creating and deleting subscriptions
+- Deployment - Remove upcoming invoice action
+- Time - Helper end of date
+- Module - Prevent user from deleting a module of subtype project that has
+  children
+
 ## [6.0.17] - 2023-06-23
 
 - Module - Restrict app creation by checking parent project acl, subtype and

@@ -44,7 +44,6 @@
 
 (defn render-content
   [{:keys [template plain?] :as context-map}]
-  (println (t/java-date))
   (tmpl/render
     (case template
       :trial (if plain? trial-txt trial-html)
