@@ -29,6 +29,13 @@
     :json-schema/display-name "targets"
     :json-schema/description "List of targeted credentials ids."))
 
+(s/def ::fleet
+  (assoc (st/spec (s/coll-of string?))
+         :name "fleet"
+         :json-schema/type "array"
+         :json-schema/display-name "fleet"
+         :json-schema/description "List of targeted edge ids."))
+
 (s/def ::start
   (assoc (st/spec boolean?)
     :name "start"
@@ -38,7 +45,8 @@
 
 (s/def ::set-overwrites
   (assoc (st/spec (su/only-keys :opt-un [::module-sets/applications
-                                         ::targets]))
+                                         ::targets
+                                         ::fleet]))
     :name "set-overwrites"
     :json-schema/type "map"))
 
