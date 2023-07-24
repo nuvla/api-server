@@ -89,22 +89,31 @@
       (csk/->PascalCase)))
 
 
+(def ^:const create-schema-suffix "CreateInput")
+
+
+(def ^:const update-schema-suffix "UpdateInput")
+
+
+(def ^:const collection-schema-suffix "Collection")
+
+
 (defn resource-create-schema-name
   "Builds the OpenAPI schema name for the schema describing the resource create payload."
   [resource-metadata]
-  (str (resource-schema-name resource-metadata) "Create"))
+  (str (resource-schema-name resource-metadata) create-schema-suffix))
 
 
 (defn resource-update-schema-name
   "Builds the OpenAPI schema name for the schema describing the resource update payload."
   [resource-metadata]
-  (str (resource-schema-name resource-metadata) "Update"))
+  (str (resource-schema-name resource-metadata) update-schema-suffix))
 
 
 (defn resource-collection-schema-name
   "Builds the OpenAPI schema name for the schema describing a collection of resources."
   [resource-metadata]
-  (str (resource-schema-name resource-metadata) "Collection"))
+  (str (resource-schema-name resource-metadata) collection-schema-suffix))
 
 
 (defn ->openapi-resource-schema
@@ -127,15 +136,15 @@
       (scrud-op-supported? :add)
       (merge {(resource-create-schema-name resource-metadata)
               (update (->openapi-resource-schema resource-metadata)
-                      :title #(str % "Create"))})
+                      :title #(str % create-schema-suffix))})
       (scrud-op-supported? :edit)
       (merge {(resource-update-schema-name resource-metadata)
               (update (->openapi-resource-schema resource-metadata)
-                      :title #(str % "Update"))})
+                      :title #(str % update-schema-suffix))})
       (scrud-op-supported? :query)
       (merge {(resource-collection-schema-name resource-metadata)
               (update (->openapi-resource-schema resource-metadata)
-                      :title #(str % "Collection"))})))
+                      :title #(str % collection-schema-suffix))})))
   #_(-> spec
         (visitor/visit (visitor/spec-collector))
         (->> (reduce-kv (fn [m k v]
