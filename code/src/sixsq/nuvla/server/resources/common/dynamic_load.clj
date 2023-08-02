@@ -90,5 +90,8 @@
 (defn initialize
   "Runs the initialize function for all resources that define it."
   []
-  (doseq [resource-namespace (resource-namespaces)]
+  (doseq [resource-namespace (->> (resource-namespaces)
+                                  (sort-by ns-util/initialization-order))]
+    (log/debug "Initializing resource " resource-namespace)
     (initialize-resource resource-namespace)))
+

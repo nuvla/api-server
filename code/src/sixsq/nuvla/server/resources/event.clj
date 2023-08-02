@@ -68,7 +68,8 @@ an application.
                              simple-user? (assoc :category "user"))
         resp         (-> request
                          (assoc :body new-body)
-                         (can-view-resource?)
+                         ;; on a resource-deleted event, resource not present anymore
+                         #_(can-view-resource?)
                          (add-impl))]
     (ka-crud/publish-on-add resource-type resp)
     resp))
@@ -132,6 +133,11 @@ an application.
 ;;
 
 (def resource-metadata (gen-md/generate-metadata ::ns ::event/schema))
+
+
+;; Initialize the event resource before all others, because some
+;; resources call crud operations during initialization, which can generates events.
+(def initialization-order 0)
 
 
 (defn initialize

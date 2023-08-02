@@ -1,14 +1,23 @@
 (ns sixsq.nuvla.server.resources.spec.event
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.spec.acl-common :as acl-common]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
+    [sixsq.nuvla.server.resources.spec.session :as session]
     [sixsq.nuvla.server.util.spec :as su]
     [spec-tools.core :as st]))
 
 
+(s/def ::event-type
+  (-> (st/spec string?)
+      (assoc :name "event-type"
+             :json-schema/type "string"
+             :json-schema/description "type of event")))
+
+
 (s/def ::category
-  (-> (st/spec #{"state" "alarm" "action" "system" "user" "email"})
+  (-> (st/spec #{"state" "alarm" "crud" "action" "system" "user" "email"})
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
@@ -36,11 +45,18 @@
              :json-schema/order 32)))
 
 
-(s/def ::state
-  (-> (st/spec string?)
-      (assoc :name "state"
-             :json-schema/type "string"
-             :json-schema/description "label of the event's state")))
+(s/def ::message
+  (-> (st/spec ::core/nonblank-string)
+      (assoc :name "message"
+             :json-schema/description "event message")))
+
+
+(s/def ::payload
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :name "payload"
+             :json-schema/type "map"
+             :json-schema/description "event payload"
+             :json-schema/indexed false)))
 
 
 ;; Events may need to reference resources that do not follow the CIMI.
@@ -53,24 +69,35 @@
 
 
 (s/def ::resource
-  (-> (st/spec (su/only-keys :req-un [::href]))
+  (-> (st/spec (su/only-keys :req-un [::href]
+                             :opt-un [::common/resource-type]))
       (assoc :name "resource"
              :json-schema/type "map"
              :json-schema/description "link to associated resource")))
 
 
-(s/def ::content
-  (-> (st/spec (su/only-keys :req-un [::resource ::state]))
-      (assoc :name "content"
-             :json-schema/type "map"
-             :json-schema/description "content describing event"
+(s/def ::session-id
+  (-> (st/spec ::acl-common/principal)
+      (assoc :name "session-id")))
 
-             :json-schema/order 33)))
+
+(s/def ::user-id
+  (-> (st/spec string?)
+      (assoc :name "user-id")))
+
+
+(s/def ::active-claim ::session/active-claim)
 
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
                      {:req-un [::timestamp
-                               ::content
+                               ::event-type
                                ::category
-                               ::severity]}))
+                               ::severity
+                               ::resource
+                               ::user-id
+                               ::active-claim]
+                      :opt-un [::session-id
+                               ::message
+                               ::payload]}))

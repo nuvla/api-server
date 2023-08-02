@@ -599,4 +599,19 @@
                    :body (json/write-str {:dummy "value"}))
           (is-status 405)))))
 
+(defn print-events [session {:keys [keys payload?]}]
+  (clojure.pprint/pprint
+    (-> session
+        (request "/api/event"
+                 :request-method :get)
+        (body->edn)
+        (is-status 200)
+        :response
+        :body
+        :resources
+        (->> (sort-by :timestamp)
+             (map #(select-keys % (or keys
+                                      (cond-> [:id :event-type :category :message :resource :parent]
+                                              payload? (conj :payload)))))))))
+
 

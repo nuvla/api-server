@@ -75,3 +75,10 @@
       (log/errorf "error executing load function from %s: %s" ns-to-load (.getMessage e))
       (throw e))))
 
+
+(defn initialization-order
+  "Returns the `initialization-order` value if defined by the namespace,
+   or 99999 by default."
+  [resource-ns]
+  (or (some-> (resolve "initialization-order" resource-ns) deref)
+      99999))

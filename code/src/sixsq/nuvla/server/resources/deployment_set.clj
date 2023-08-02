@@ -7,10 +7,10 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.eventing :refer [with-parent-event] :as eventing]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
-    [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.deployment-set :as spec]
@@ -92,7 +92,6 @@ These resources represent a deployment set that regroups deployments.
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment set" action) 500 id)))
-    (event-utils/create-event id action (a/default-acl (auth/current-authentication request)))
     (r/map-response job-msg 202 id job-id)))
 
 (defn throw-action-not-allowed
@@ -104,21 +103,26 @@ These resources represent a deployment set that regroups deployments.
 
 (defn action-bulk
   [id request action]
-  (let [authn-info (auth/current-authentication request)
-        acl        {:owners   ["group/nuvla-admin"]
-                    :view-acl [(auth/current-active-claim request)]}
-        payload    {:filter (str "deployment-set='" id "'")}]
-    (event-utils/create-event id action (a/default-acl authn-info))
-    (std-crud/create-bulk-job
-      (utils/action-job-name action) id authn-info acl payload)))
+  (with-parent-event (eventing/create-action-event id action
+                                                   {:state   action
+                                                    :request request})
+    (let [authn-info (auth/current-authentication request)
+          acl        {:owners   ["group/nuvla-admin"]
+                      :view-acl [(auth/current-active-claim request)]}
+          payload    {:filter (str "deployment-set='" id "'")}]
+      (std-crud/create-bulk-job
+        (utils/action-job-name action) id authn-info acl payload))))
 
 (defmethod crud/do-action [resource-type utils/action-create]
   [{{uuid :uuid} :params :as request}]
-  (-> (str resource-type "/" uuid)
-      crud/retrieve-by-id-as-admin
-      (a/throw-cannot-manage request)
-      (utils/throw-can-not-do-action utils/can-create? utils/action-create)
-      (create-job request utils/action-create)))
+  (let [resource-id (str resource-type "/" uuid)]
+    (with-parent-event (eventing/create-action-event resource-id "create"
+                                                     {:request request})
+      (-> resource-id
+          crud/retrieve-by-id-as-admin
+          (a/throw-cannot-manage request)
+          (utils/throw-can-not-do-action utils/can-create? utils/action-create)
+          (create-job request utils/action-create)))))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]

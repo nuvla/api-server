@@ -16,6 +16,7 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -46,7 +47,9 @@ existing `infrastructure-service-template` resource.
 (defn initialize
   []
   (std-crud/initialize resource-type ::infra-srvc-gen/schema)
-  (md/register resource-metadata))
+  (md/register resource-metadata)
+  (eventing/configure-resource-type-events
+    resource-type :crud/edit {:state-prov :request-body-state}))
 
 
 ;;

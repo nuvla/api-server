@@ -15,6 +15,7 @@ request.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job.interface :as interface]
@@ -97,8 +98,13 @@ request.
                     utils/job-cond->addition
                     (crud/add-acl request)
                     (cond-> zk-path (assoc :tags [zk-path]))
-                    (crud/validate))]
-    (db/add resource-type new-job {})))
+                    (crud/validate))
+        response (db/add resource-type new-job {})]
+    (eventing/create-event resource-type
+                           :crud/add
+                           {:request  request
+                            :response response})
+    response))
 
 
 (defmethod crud/add resource-type

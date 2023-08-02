@@ -11,6 +11,7 @@
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.middleware.cimi-params.impl :as impl]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.spec.acl-collection :as acl-collection]
     [sixsq.nuvla.server.util.response :as r]))
@@ -24,17 +25,22 @@
   (validate-collection-acl collection-acl)
   (fn [{:keys [body] :as request}]
     (a/throw-cannot-add collection-acl request)
-    (db/add
-      resource-name
-      (-> body
-          u/strip-service-attrs
-          (crud/new-identifier resource-name)
-          (assoc :resource-type resource-uri)
-          u/update-timestamps
-          (u/set-created-by request)
-          (crud/add-acl request)
-          crud/validate)
-      {})))
+    (let [response (db/add
+                     resource-name
+                     (-> body
+                         u/strip-service-attrs
+                         (crud/new-identifier resource-name)
+                         (assoc :resource-type resource-uri)
+                         u/update-timestamps
+                         (u/set-created-by request)
+                         (crud/add-acl request)
+                         crud/validate)
+                     {})]
+      (eventing/create-event resource-name
+                             :crud/add
+                             {:request  request
+                              :response response})
+      response)))
 
 
 (defn retrieve-fn
@@ -55,15 +61,20 @@
   [resource-name]
   (fn [{{uuid :uuid} :params :as request}]
     (try
-      (let [current (-> (str resource-name "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/throw-cannot-edit request))]
-        (-> request
-            (u/delete-attributes current)
-            u/update-timestamps
-            (u/set-updated-by request)
-            crud/validate
-            (db/edit request)))
+      (let [current  (-> (str resource-name "/" uuid)
+                         (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                         (a/throw-cannot-edit request))
+            response (-> request
+                         (u/delete-attributes current)
+                         u/update-timestamps
+                         (u/set-updated-by request)
+                         crud/validate
+                         (db/edit request))]
+        (eventing/create-event resource-name
+                               :crud/edit
+                               {:request  request
+                                :response response})
+        response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
@@ -81,10 +92,15 @@
   [resource-name]
   (fn [{{uuid :uuid} :params :as request}]
     (try
-      (-> (str resource-name "/" uuid)
-          (db/retrieve request)
-          (a/throw-cannot-delete request)
-          (db/delete request))
+      (let [response (-> (str resource-name "/" uuid)
+                         (db/retrieve request)
+                         (a/throw-cannot-delete request)
+                         (db/delete request))]
+        (eventing/create-event resource-name
+                               :crud/delete
+                               {:request  request
+                                :response response})
+        response)
       (catch Exception e
         (or (ex-data e) (throw e))))))
 
