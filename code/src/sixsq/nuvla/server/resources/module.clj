@@ -4,7 +4,9 @@ This resource represents a module--the generic term for any project, image,
 component, or application.
 "
   (:require
+    [clojure.stacktrace :as st]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.filter.parser :as parser]
@@ -485,9 +487,33 @@ component, or application.
 ;; initialization
 ;;
 
+(defn create-project-apps-sets
+  []
+  (let [project-name "apps-sets"
+        request      {:params      {:resource-name resource-type}
+                      :body        {:subtype utils/subtype-project
+                                    :name    project-name
+                                    :path    project-name
+                                    :acl     {:owners    ["group/nuvla-admin"]
+                                              :edit-data ["group/nuvla-user"]}}
+                      :nuvla/authn auth/internal-identity}]
+    (try
+      (let [{:keys [status] :as response} (crud/add request)]
+        (case status
+          201 (log/infof "project '%s' created" project-name)
+          409 (log/infof "project '%s' already exists." project-name)
+          (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                      (str status) project-name response)))
+      (catch Exception e
+        (log/errorf "error when creating '%s' resource: %s\n%s"
+                    project-name
+                    (str e)
+                    (with-out-str (st/print-cause-trace e)))))))
+
 (def resource-metadata (gen-md/generate-metadata ::ns ::module/schema))
 
 (defn initialize
   []
   (std-crud/initialize resource-type ::module/schema)
-  (md/register resource-metadata))
+  (md/register resource-metadata)
+  (create-project-apps-sets))
