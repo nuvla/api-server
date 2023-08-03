@@ -4,12 +4,14 @@ These resources represent a deployment set that regroups deployments.
 "
   (:require
     [clojure.data.json :as json]
+    [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
+    [sixsq.nuvla.server.resources.module.utils :as module-utils]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.job :as job]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -151,9 +153,62 @@ These resources represent a deployment set that regroups deployments.
 
 (def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
 
+(defn retrieve-module
+  [id request]
+  (:body (crud/retrieve {:params         {:uuid          (u/id->uuid id)
+                                          :resource-name module-utils/resource-type}
+                         :request-method :get
+                         :nuvla/authn    (auth/current-authentication request)})))
+
+(defn module-version
+  [id request]
+  (-> (retrieve-module id request)
+      module-utils/latest-published-or-latest-index))
+
+(defn create-module
+  [module]
+  (let [{:keys [status resource-id]
+         :as   response} (module-utils/create-module module)]
+    (if (= status 201)
+      resource-id
+      (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                  (str status) module response))))
+
+(defn create-module-apps-set
+  [{{:keys [modules]} :body :as request}]
+  (create-module
+    {:path    (str module-utils/project-apps-sets "/" (u/random-uuid))
+     :subtype module-utils/subtype-apps-sets
+     :acl     {:owners [(auth/current-active-claim request)]}
+     :content {:commit "no commit message"
+               :author (auth/current-active-claim request)
+               :applications-sets
+               [{:name         "Main"
+                 :applications (map #(hash-map :id %
+                                               :version (module-version % request))
+                                    modules)}]}}))
+
+(defn replace-modules-by-apps-set
+  [{{:keys [edges] :as body} :body :as request}]
+  (let [apps-set-id (create-module-apps-set request)
+        new-body    (-> body
+                        (dissoc :modules :edges)
+                        (assoc :applications-sets [{:id      apps-set-id,
+                                                    :version 0
+                                                    :overwrites
+                                                    [{:edges edges}]}]))]
+    (assoc request :body new-body)))
+
+(defn request-with-create-app-set
+  [{{:keys [modules]} :body :as request}]
+  (if (seq modules)
+    (replace-modules-by-apps-set request)
+    request))
+
 (defmethod crud/add resource-type
   [{{:keys [start]} :body :as request}]
   (let [response (-> request
+                     request-with-create-app-set
                      (update :body assoc :state utils/state-new)
                      add-impl)
         id       (get-in response [:body :resource-id])]

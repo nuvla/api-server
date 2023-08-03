@@ -68,10 +68,10 @@
 (deftest set-price-test
   (let [request-jane {:nuvla/authn {:active-claim "user/jane"}}]
     (is (= (t/set-price {} nil request-jane) {}))
-    (with-redefs [t/active-claim->account-id  identity
-                  pricing-impl/create-price   identity
-                  pricing-impl/get-product    :product
-                  pricing-impl/get-id         :id]
+    (with-redefs [t/active-claim->account-id identity
+                  pricing-impl/create-price  identity
+                  pricing-impl/get-product   :product
+                  pricing-impl/get-id        :id]
       (is (= (t/set-price {:price {:cent-amount-daily 10
                                    :currency          "eur"}}
                           nil request-jane)
@@ -81,12 +81,12 @@
                       :follow-customer-trial false
                       :price-id              nil
                       :product-id            nil}})))
-    (with-redefs [t/active-claim->account-id  identity
-                  pricing-impl/create-price   (constantly {:id      "price_x"
-                                                           :product "prod_x"})
-                  pricing-impl/get-product    :product
-                  pricing-impl/get-id         :id]
-    (is (= (t/set-price {:price {:price-id          "price_x"
+    (with-redefs [t/active-claim->account-id identity
+                  pricing-impl/create-price  (constantly {:id      "price_x"
+                                                          :product "prod_x"})
+                  pricing-impl/get-product   :product
+                  pricing-impl/get-id        :id]
+      (is (= (t/set-price {:price {:price-id          "price_x"
                                    :cent-amount-daily 10
                                    :currency          "eur"}}
                           {:price {:price-id          "price_x"
@@ -180,3 +180,20 @@
                                           {:id      "module/c"
                                            :version 2}]
                            :name         "x"}]}]))
+
+(def module-meta-versions {:published true
+                           :versions  [{:href "module-application/859e9c3c-3a35-42ae-a1b8-1657bad94577"},
+                                       {:href      "module-application/212c4ea7-a09a-416a-9b89-1c32b700bad1",
+                                        :published true},
+                                       nil,
+                                       {:href "module-application/c78bab15-b0a1-4d5a-aa8c-d2d1e9dc064e"}]})
+(deftest latest-published-index
+  (is (= 1 (t/latest-published-index module-meta-versions))))
+
+(deftest latest-index
+  (is (= 3 (t/latest-index module-meta-versions))))
+
+(deftest latest-published-or-latest-index
+  (is (= 1 (t/latest-published-or-latest-index module-meta-versions)))
+  (is (= 3 (t/latest-published-or-latest-index
+             (assoc module-meta-versions :published false)))))
