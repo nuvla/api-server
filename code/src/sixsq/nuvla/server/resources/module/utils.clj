@@ -319,27 +319,24 @@
 
 (defn create-module
   [body]
-  (crud/add {:params      {:resource-name resource-type}
-             :body        body
-             :nuvla/authn auth/internal-identity}))
+  (try
+    (crud/add {:params      {:resource-name resource-type}
+               :body        body
+               :nuvla/authn auth/internal-identity})
+    (catch Exception e
+      (ex-data e))))
 
 (defn create-project-apps-sets
   []
-  (try
-    (let [{:keys [status]
-           :as   response} (create-module
-                             {:subtype subtype-project
-                              :path    project-apps-sets
-                              :name    project-apps-sets
-                              :acl     {:owners    ["group/nuvla-admin"]
-                                        :edit-data ["group/nuvla-user"]}})]
-      (case status
-        201 (log/infof "project '%s' created" project-apps-sets)
-        409 (log/infof "project '%s' already exists." project-apps-sets)
-        (log/errorf "unexpected status code (%s) when creating %s resource: %s"
-                    (str status) project-apps-sets response)))
-    (catch Exception e
-      (log/errorf "error when creating '%s' resource: %s\n%s"
-                  project-apps-sets
-                  (str e)
-                  (with-out-str (st/print-cause-trace e))))))
+  (let [{:keys [status]
+         :as   response} (create-module
+                           {:subtype subtype-project
+                            :path    project-apps-sets
+                            :name    project-apps-sets
+                            :acl     {:owners    ["group/nuvla-admin"]
+                                      :edit-data ["group/nuvla-user"]}})]
+    (case status
+      201 (log/infof "project '%s' created" project-apps-sets)
+      409 (log/infof "project '%s' already exists." project-apps-sets)
+      (log/errorf "unexpected status code (%s) when creating %s resource: %s"
+                  (str status) project-apps-sets response))))

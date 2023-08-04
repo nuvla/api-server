@@ -167,7 +167,7 @@ These resources represent a deployment set that regroups deployments.
 
 (defn create-module
   [module]
-  (let [{:keys [status resource-id]
+  (let [{{:keys [status resource-id]} :body
          :as   response} (module-utils/create-module module)]
     (if (= status 201)
       resource-id
@@ -189,14 +189,14 @@ These resources represent a deployment set that regroups deployments.
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
-  [{{:keys [edges] :as body} :body :as request}]
+  [{{:keys [fleet] :as body} :body :as request}]
   (let [apps-set-id (create-module-apps-set request)
         new-body    (-> body
-                        (dissoc :modules :edges)
+                        (dissoc :modules :fleet)
                         (assoc :applications-sets [{:id      apps-set-id,
                                                     :version 0
                                                     :overwrites
-                                                    [{:edges edges}]}]))]
+                                                    [{:fleet fleet}]}]))]
     (assoc request :body new-body)))
 
 (defn request-with-create-app-set
