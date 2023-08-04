@@ -712,18 +712,53 @@
                               (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
         session-user  (header session-anon authn-info-header
                               (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
-        module-id     (resource-creation/create-module session-user)]
+        module-id     (resource-creation/create-module session-user)
+        fleet         ["nuvlabox/1"]]
 
     (module/initialize)
+
     (-> session-user
-        (request base-uri
-                 :request-method :post
-                 :body (json/write-str {:name  dep-set-name,
-                                        :start false,
-                                        :modules [module-id]
-                                        :fleet []}))
-        (ltu/body->edn)
-        (ltu/is-status 201))))
+        (request (str p/service-context module-id)
+                 :request-method :put
+                 :body (json/write-str {:content {:docker-compose "a"
+                                                  :author         "user/jane"}}))
+        ltu/body->edn
+        (ltu/is-status 200))
+
+    (let [dep-set-url (-> session-user
+                          (request base-uri
+                                   :request-method :post
+                                   :body (json/write-str {:name    dep-set-name,
+                                                          :start   false,
+                                                          :modules [module-id]
+                                                          :fleet   fleet}))
+                          ltu/body->edn
+                          (ltu/is-status 201)
+                          ltu/location-url)
+          app-set-id  (-> session-user
+                          (request dep-set-url)
+                          ltu/body->edn
+                          (ltu/is-status 200)
+                          (ltu/is-key-value
+                            (comp :fleet first :overwrites first)
+                            :applications-sets fleet)
+                          ltu/body
+                          :applications-sets
+                          first
+                          :id)
+          app-set-url (str p/service-context app-set-id)]
+
+      (testing
+        "Application set was created in the right project
+         and latest version of the application was picked up"
+        (-> session-user
+            (request app-set-url)
+            ltu/body->edn
+            (ltu/is-status 200)
+            (ltu/is-key-value (comp first :applications first :applications-sets)
+                              :content {:id      module-id
+                                        :version 1})
+            (ltu/is-key-value :parent-path module-utils/project-apps-sets))))))
 
 (deftest lifecycle-deployment-detach
   (binding [config-nuvla/*stripe-api-key* nil]

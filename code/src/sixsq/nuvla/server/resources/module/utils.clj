@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.module.utils
   (:require
     [clojure.edn :as edn]
-    [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
     [sixsq.nuvla.auth.acl-resource :as a]

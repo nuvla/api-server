@@ -162,13 +162,13 @@ These resources represent a deployment set that regroups deployments.
 
 (defn module-version
   [id request]
-  (-> (retrieve-module id request)
-      module-utils/latest-published-or-latest-index))
+  (module-utils/latest-published-or-latest-index
+    (retrieve-module id request)))
 
 (defn create-module
   [module]
   (let [{{:keys [status resource-id]} :body
-         :as   response} (module-utils/create-module module)]
+         :as                          response} (module-utils/create-module module)]
     (if (= status 201)
       resource-id
       (log/errorf "unexpected status code (%s) when creating %s resource: %s"
