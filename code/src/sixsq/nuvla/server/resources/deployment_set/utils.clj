@@ -66,7 +66,8 @@
 
 (defn app-set-targets
   [app-set]
-  (get app-set :targets []))
+  (or (get app-set :fleet)
+      (get app-set :targets [])))
 
 (defn app-set-applications
   [app-set]
@@ -111,7 +112,7 @@
   [application-set application-set-overwrites]
   (for [t (app-set-targets application-set-overwrites)
         a (merge-apps application-set application-set-overwrites)]
-    {:credential  t
+    {:target      t
      :application a
      :app-set     (app-set-name application-set)}))
 
