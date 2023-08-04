@@ -62,6 +62,12 @@
   (str (UUID/nameUUIDFromBytes (.getBytes input "UTF-8"))))
 
 
+(defn resource-id
+  "Builds a resource id given a resource type and a uuid."
+  [resource-type uuid]
+  (str resource-type "/" uuid))
+
+
 (defn new-resource-id
   [resource-name]
   (str resource-name "/" (random-uuid)))

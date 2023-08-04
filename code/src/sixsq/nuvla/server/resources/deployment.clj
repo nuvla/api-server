@@ -155,7 +155,7 @@ a container orchestration engine.
         msg                 (get-in create-response [:body :message])]
 
     ;; TODO: check if generic event matches
-    #_(event-utils/create-event deployment-id msg (a/default-acl authn-info))
+    #_(event-utils/create-event-old deployment-id msg (a/default-acl authn-info))
 
     create-response))
 

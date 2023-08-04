@@ -8,6 +8,7 @@ manage it.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
@@ -82,7 +83,8 @@ manage it.
         (let [job-msg (format "created job %s with id %s" job-name job-id)]
           (edit-infra-service resource request #(assoc % :state new-state))
           (infra-service/event-state-change resource (assoc-in request [:body :state] new-state))
-          (event-utils/create-event resource-id job-msg (a/default-acl (auth/current-authentication request)))
+          ;; event replaced by "resource.created" event for the job
+          #_(event-utils/create-event-old resource-id job-msg (a/default-acl (auth/current-authentication request)))
           (r/map-response job-msg 202 resource-id job-id))
         (throw (r/ex-response (format "unable to create job %s" job-name) 500 resource-id))))
     (catch Exception e
@@ -180,9 +182,14 @@ manage it.
           (u/update-timestamps)
           (u/set-updated-by request)
           (db/edit request))
-      (event-utils/create-event id "STARTING" (a/default-acl (auth/current-authentication request))
-                                :severity "low"
-                                :category "state")
+      (eventing/create-event*
+        request
+        id
+        {:event-type "infrastructure-service.state.changed"
+         :details    {:new-state "STARTING"}})
+      #_(event-utils/create-event-old id "STARTING" (a/default-acl (auth/current-authentication request))
+                                      :severity "low"
+                                      :category "state")
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))

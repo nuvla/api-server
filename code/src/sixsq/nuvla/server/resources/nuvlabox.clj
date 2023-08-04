@@ -500,7 +500,7 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to decommission nuvlabox resources" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      #_(event-utils/create-event-old id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -542,7 +542,7 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to check nuvlabox api" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      #_(event-utils/create-event-old id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -580,7 +580,7 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to reboot nuvlabox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      #_(event-utils/create-event-old id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -629,7 +629,7 @@ particular NuvlaBox release.
                        ", with async " job-id)]
       (when (not= job-status 201)
         (throw (r/ex-response "unable to create async job to cluster NuvlaBox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      #_(event-utils/create-event-old id job-msg acl)
       (r/map-response job-msg 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -676,7 +676,7 @@ particular NuvlaBox release.
       (when (not= job-status 201)
         (throw (r/ex-response
                  "unable to create async job to add SSH key to NuvlaBox" 500 id)))
-      (event-utils/create-event id job-msg acl)
+      #_(event-utils/create-event-old id job-msg acl)
       (r/map-response (or (:private-key ssh-credential) job-msg) 202 id job-id))
     (catch Exception e
       (or (ex-data e) (throw e)))))
@@ -745,7 +745,7 @@ particular NuvlaBox release.
           (when (not= job-status 201)
             (throw (r/ex-response
                      "unable to create async job to remove SSH key from NuvlaBox" 500 id)))
-          (event-utils/create-event id job-msg acl)
+          #_(event-utils/create-event-old id job-msg acl)
           (r/map-response job-msg 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))))
@@ -797,7 +797,7 @@ particular NuvlaBox release.
                            ", with async " job-id)]
           (when (not= job-status 201)
             (throw (r/ex-response "unable to create async job to update NuvlaBox" 500 id)))
-          (event-utils/create-event id job-msg acl)
+          #_(event-utils/create-event-old id job-msg acl)
           (r/map-response job-msg 202 id job-id))
         (catch Exception e
           (or (ex-data e) (throw e)))))))

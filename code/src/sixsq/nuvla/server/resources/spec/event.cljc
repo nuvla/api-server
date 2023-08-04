@@ -1,6 +1,7 @@
 (ns sixsq.nuvla.server.resources.spec.event
   (:require
     [clojure.spec.alpha :as s]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.spec.acl-common :as acl-common]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
@@ -10,19 +11,18 @@
 
 
 (s/def ::event-type
-  (-> (st/spec string?)
+  (-> (st/spec (set (keys eventing/event-types)))
       (assoc :name "event-type"
              :json-schema/type "string"
              :json-schema/description "type of event")))
 
 
 (s/def ::category
-  (-> (st/spec #{"state" "alarm" "crud" "action" "system" "user" "email"})
+  (-> (st/spec #{"command" "crud" "action" "state" "alarm" "email"})
       (assoc :name "category"
              :json-schema/type "string"
              :json-schema/description "category of event"
-             :json-schema/value-scope {:values ["state" "alarm" "action" "system" "user"
-                                                "email"]}
+             :json-schema/value-scope {:values ["alarm" "crud" "action" "system" "email"]}
 
              :json-schema/order 30)))
 
@@ -51,6 +51,18 @@
              :json-schema/description "event message")))
 
 
+;; Essential details of the events, indexed by ES.
+;; DO NOT overuse, ES has a max number of keys it can index.
+;; TODO: make it stricter, depending on the event category
+(s/def ::details
+  (-> (st/spec (su/constrained-map keyword? any?))
+      (assoc :name "details"
+             :json-schema/type "map"
+             :json-schema/description "event details")))
+
+
+;; Freeform payload, not indexed by ES. Can be used to store
+;; full request/response payloads, for replaying.
 (s/def ::payload
   (-> (st/spec (su/constrained-map keyword? any?))
       (assoc :name "payload"
@@ -91,8 +103,8 @@
 
 (s/def ::schema
   (su/only-keys-maps common/common-attrs
-                     {:req-un [::timestamp
-                               ::event-type
+                     {:req-un [::event-type
+                               ::timestamp
                                ::category
                                ::severity
                                ::resource
@@ -100,4 +112,6 @@
                                ::active-claim]
                       :opt-un [::session-id
                                ::message
+                               ::details
                                ::payload]}))
+

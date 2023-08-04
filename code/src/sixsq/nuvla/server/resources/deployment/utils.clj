@@ -120,7 +120,7 @@
     (when (not= job-status 201)
       (throw (r/ex-response
                (format "unable to create async job to %s deployment" action) 500 id)))
-    #_(event-utils/create-event id (a/default-acl (auth/current-authentication request)) :message job-msg)
+    #_(event-utils/create-event-old id (a/default-acl (auth/current-authentication request)) :message job-msg)
     (r/map-response job-msg 202 id job-id)))
 
 

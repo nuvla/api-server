@@ -219,7 +219,7 @@
                                     (ltu/location))
             abs-uri             (str p/service-context uri)
             check-event         (fn [exp-state]
-                                  (let [filter (format "category='state' and content/resource/href='%s' and content/state='%s'" uri exp-state)
+                                  (let [filter (format "category='state' and resource/href='%s' and details/new-state='%s'" uri exp-state)
                                         state  (-> session-user
                                                    (content-type "application/x-www-form-urlencoded")
                                                    (request "/api/event"
@@ -231,8 +231,8 @@
                                                    (ltu/body)
                                                    :resources
                                                    first
-                                                   :content
-                                                   :state)]
+                                                   :details
+                                                   :new-state)]
                                     (is (= state exp-state))))]
 
         ;; STARTING: edit

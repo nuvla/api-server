@@ -16,19 +16,20 @@
 (def ^:private nb-events 20)
 
 
-(def valid-event {:acl       {:owners ["user/joe"]}
-                  :created   "2015-01-16T08:05:00.00Z"
-                  :updated   "2015-01-16T08:05:00.00Z"
-                  :timestamp "2015-01-16T08:05:00.00Z"
-                  :content   {:resource {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
-                              :state    "Started"}
-                  :severity  "critical"})
+(def valid-event {:acl        {:owners ["user/joe"]}
+                  :created    "2015-01-16T08:05:00.00Z"
+                  :updated    "2015-01-16T08:05:00.00Z"
+                  :timestamp  "2015-01-16T08:05:00.00Z"
+                  :event-type "resource.create"
+                  :resource   {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
+                  :payload    {:state "Started"}
+                  :severity   "critical"})
 
 
 (def valid-events
   (for [i (range nb-events)]
     (-> valid-event
-        (assoc-in [:content :resource :href] (str "run/" i))
+        (assoc-in [:resource :href] (str "run/" i))
         (assoc :timestamp (if (even? i) "2016-01-16T08:05:00.00Z" "2015-01-16T08:05:00.00Z")))))
 
 
@@ -89,6 +90,25 @@
       :timestamp))
 
 
+(deftest create-wrong-event-type
+  (let [wrong-event-type "wrong.event.type"
+        resource-href    "test/45614147-aed1-4a24-889d-6365b0b1f2cd"
+        event            {:event-type wrong-event-type
+                          :resource   {:href resource-href}}]
+    (-> (tu/exec-request base-uri nil "user/joe" :post event)
+        (ltu/is-status 400)
+        #_(ltu/does-body-contain-string (str "unknown event type " wrong-event-type)))))
+
+(deftest create-wrong-resource-type
+  (let [resource-href "test/45614147-aed1-4a24-889d-6365b0b1f2cd"
+        event-type    "deployment.start"
+        event         {:event-type event-type
+                       :resource   {:href resource-href}}]
+    (-> (tu/exec-request base-uri nil "user/joe" :post event)
+        (ltu/is-status 400)
+        #_(ltu/does-body-contain-string (str "event type " event-type " not supported for resource type test")))))
+
+
 ;; Here, timestamps are retrieved one by one (due to pagination)
 (deftest events-are-retrieved-most-recent-first-when-paginated
   (-> (map timestamp-paginate-single (range 1 (inc nb-events)))
@@ -109,48 +129,48 @@
 
 
 (deftest pagination-occurs-after-filtering
-  (are-counts 1 "?filter=content/resource/href='run/5'")
-  (are-counts 1 "?filter=content/resource/href='run/5'&last=1")
-  (are-counts 1 "?last=1&filter=content/resource/href='run/5'"))
+  (are-counts 1 "?filter=resource/href='run/5'")
+  (are-counts 1 "?filter=resource/href='run/5'&last=1")
+  (are-counts 1 "?last=1&filter=resource/href='run/5'"))
 
 
 (deftest resources-filtering
   (doseq [i (range nb-events)]
-    (are-counts 1 (str "?filter=content/resource/href='run/" i "'")))
-  (are-counts 0 "?filter=content/resource/href='run/100'")
+    (are-counts 1 (str "?filter=resource/href='run/" i "'")))
+  (are-counts 0 "?filter=resource/href='run/100'")
 
-  (are-counts 1 "?filter=content/resource/href='run/3' and category='user'")
-  (are-counts 1 "?filter=category='user' and content/resource/href='run/3'")
-  (are-counts 1 "?filter=category='user'       and     content/resource/href='run/3'")
+  (are-counts 1 "?filter=resource/href='run/3' and category='command'")
+  (are-counts 1 "?filter=category='command' and resource/href='run/3'")
+  (are-counts 1 "?filter=category='command'       and     resource/href='run/3'")
 
-  (are-counts 1 "?filter=content/resource/href='run/3'")
-  (are-counts 0 "?filter=category='WRONG' and content/resource/href='run/3'")
-  (are-counts 0 "?filter=content/resource/href='run/3' and category='WRONG'")
-  (are-counts nb-events "?filter=category='user'"))
+  (are-counts 1 "?filter=resource/href='run/3'")
+  (are-counts 0 "?filter=category='WRONG' and resource/href='run/3'")
+  (are-counts 0 "?filter=resource/href='run/3' and category='WRONG'")
+  (are-counts nb-events "?filter=category='command'"))
 
 
 (deftest filter-and
   (are-counts nb-events "filter=category='user' and timestamp='2015-01-16T08:05:00Z'")
-  (are-counts 0 "?filter=category='user' and category='XXX'")
-  (are-counts 0 "?filter=category='YYY' and category='user'")
-  (are-counts 0 "?filter=(category='user') and (category='XXX')")
-  (are-counts 0 "?filter=(category='YYY') and (category='user')"))
+  (are-counts 0 "?filter=category='command' and category='XXX'")
+  (are-counts 0 "?filter=category='YYY' and category='command'")
+  (are-counts 0 "?filter=(category='command') and (category='XXX')")
+  (are-counts 0 "?filter=(category='YYY') and (category='command')"))
 
 
 (deftest filter-or
   (are-counts 0 "?filter=category='XXX'")
-  (are-counts nb-events "?filter=category='user'")
-  (are-counts nb-events "?filter=category='user' or category='XXXX'")
-  (are-counts nb-events "?filter=category='XXXX' or category='user'")
-  (are-counts nb-events "?filter=(category='user') or (category='XXX')")
-  (are-counts nb-events "?filter=(category='XXXXX') or (category='user')")
+  (are-counts nb-events "?filter=category='command'")
+  (are-counts nb-events "?filter=category='command' or category='XXXX'")
+  (are-counts nb-events "?filter=category='XXXX' or category='command'")
+  (are-counts nb-events "?filter=(category='command') or (category='XXX')")
+  (are-counts nb-events "?filter=(category='XXXXX') or (category='command')")
   (are-counts 0 "?filter=category='XXXXX' or category='YYYY'")
   (are-counts 0 "?filter=(category='XXXXX') or (category='YYYY')"))
 
 
 (deftest filter-multiple
-  (are-counts 0 "?filter=category='user'&filter=category='XXX'")
-  (are-counts 1 "?filter=category='user'&filter=content/resource/href='run/3'"))
+  (are-counts 0 "?filter=category='command'&filter=category='XXX'")
+  (are-counts 1 "?filter=category='command'&filter=resource/href='run/3'"))
 
 
 (deftest filter-nulls
@@ -158,18 +178,19 @@
   (are-counts nb-events "?filter=null!=category")
   (are-counts 0 "?filter=category=null")
   (are-counts 0 "?filter=null=category")
-  (are-counts nb-events "?filter=(unknown=null)and(category='user')")
-  (are-counts nb-events "?filter=(content/resource/href!=null)and(category='user')"))
+  (are-counts nb-events "?filter=(unknown=null)and(category='command')")
+  (are-counts nb-events "?filter=(resource/href!=null)and(category='command')"))
 
 
 (deftest filter-prefix
-  (are-counts nb-events "?filter=category^='us'")
-  (are-counts nb-events "?filter=content/resource/href^='run/'")
-  (are-counts 0 "?filter=category^='usXXX'")
-  (are-counts 0 "?filter=content/resource/href^='XXX/'"))
+  (are-counts nb-events "?filter=category^='co'")
+  (are-counts nb-events "?filter=resource/href^='run/'")
+  (are-counts 0 "?filter=category^='coXXX'")
+  (are-counts 0 "?filter=resource/href^='XXX/'"))
 
 
 (deftest filter-wrong-param
   (-> (tu/exec-request base-uri "?filter=category='missing end quote" "user/joe")
       (ltu/is-status 400)
       (ltu/message-matches "Invalid CIMI filter. Parse error at line 1, column 11")))
+

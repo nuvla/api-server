@@ -6,6 +6,7 @@ an endpoint.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
+    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.infrastructure-service :as infra-service]
@@ -42,10 +43,15 @@ an endpoint.
   (try
     (let [id       (:id service)
           category "state"]
-      (event-utils/create-event id
-                                ((keyword category) service)
-                                (a/default-acl (auth/current-authentication request))
-                                :severity "low"
-                                :category category))
+      (eventing/create-event*
+        request
+        id
+        {:event-type "infrastructure-service.state.changed"
+         :details    {:new-state (:state service)}})
+      #_(event-utils/create-event-old id
+                                      ((keyword category) service)
+                                      (a/default-acl (auth/current-authentication request))
+                                      :severity "low"
+                                      :category category))
     (catch Exception e
       (or (ex-data e) (throw e)))))
