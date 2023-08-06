@@ -7,7 +7,6 @@ These resources represent a deployment set that regroups deployments.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.eventing :refer [with-parent-event] :as eventing]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.deployment-set.utils :as utils]
@@ -103,26 +102,21 @@ These resources represent a deployment set that regroups deployments.
 
 (defn action-bulk
   [id request action]
-  (with-parent-event (eventing/create-action-event id action
-                                                   {:state   action
-                                                    :request request})
-    (let [authn-info (auth/current-authentication request)
-          acl        {:owners   ["group/nuvla-admin"]
-                      :view-acl [(auth/current-active-claim request)]}
-          payload    {:filter (str "deployment-set='" id "'")}]
-      (std-crud/create-bulk-job
-        (utils/action-job-name action) id authn-info acl payload))))
+  (let [authn-info (auth/current-authentication request)
+        acl        {:owners   ["group/nuvla-admin"]
+                    :view-acl [(auth/current-active-claim request)]}
+        payload    {:filter (str "deployment-set='" id "'")}]
+    (std-crud/create-bulk-job
+      (utils/action-job-name action) id authn-info acl payload)))
 
 (defmethod crud/do-action [resource-type utils/action-create]
   [{{uuid :uuid} :params :as request}]
   (let [resource-id (str resource-type "/" uuid)]
-    (with-parent-event (eventing/create-action-event resource-id "create"
-                                                     {:request request})
-      (-> resource-id
-          crud/retrieve-by-id-as-admin
-          (a/throw-cannot-manage request)
-          (utils/throw-can-not-do-action utils/can-create? utils/action-create)
-          (create-job request utils/action-create)))))
+    (-> resource-id
+        crud/retrieve-by-id-as-admin
+        (a/throw-cannot-manage request)
+        (utils/throw-can-not-do-action utils/can-create? utils/action-create)
+        (create-job request utils/action-create))))
 
 (defmethod crud/do-action [resource-type utils/action-plan]
   [{{uuid :uuid} :params :as request}]

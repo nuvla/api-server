@@ -7,7 +7,7 @@ an application.
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.eventing :as eventing]
+    [sixsq.nuvla.server.resources.common.events :as events]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -23,7 +23,7 @@ an application.
 
 
 (def collection-acl {:query       ["group/nuvla-user"]
-                     :add         ["group/nuvla-user"]
+                     :add         ["group/nuvla-user" "group/nuvla-anon"]
                      :bulk-delete ["group/nuvla-user"]})
 
 
@@ -31,7 +31,7 @@ an application.
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-(def validate-fn (comp eventing/validate-event
+(def validate-fn (comp events/validate-event
                        (u/create-spec-validation-fn ::event/schema)))
 
 
@@ -61,7 +61,7 @@ an application.
 (defmethod crud/add resource-type
   [request]
   (let [resp (-> request
-                 (eventing/prepare-event)
+                 (events/prepare-event)
                  (add-impl))]
     (ka-crud/publish-on-add resource-type resp)
     resp))
@@ -126,7 +126,7 @@ an application.
 
 
 ;; disable events for the `event` resource
-(defmethod eventing/events-enabled resource-type [_]
+(defmethod events/events-enabled resource-type [_]
   false)
 
 

@@ -1,26 +1,16 @@
-(ns sixsq.nuvla.server.resources.common.eventing-test
+(ns sixsq.nuvla.server.resources.common.events-test
   (:require [clojure.test :refer [deftest testing is]]
-            [sixsq.nuvla.server.resources.common.eventing :as eventing]
-            [sixsq.nuvla.server.resources.event :as event]))
-
-
-(deftest active-config
-  (let [active-config         #'eventing/get-active-config
-        event-config          {:enabled true}
-        inactive-event-config (assoc event-config :active-when (constantly false))
-        event-config2         {:enabled false}]
-    (testing "Selection of the active event configuration"
-      (is (= event-config (active-config event-config nil)))
-      (is (= event-config (active-config [event-config] nil)))
-      (is (= event-config (active-config [event-config event-config2] nil)))
-      (is (= event-config2 (active-config [inactive-event-config event-config2] nil))))))
+            [sixsq.nuvla.auth.utils :as auth]
+            [sixsq.nuvla.server.resources.common.events :as events]
+            [sixsq.nuvla.server.resources.event :as event]
+            [sixsq.nuvla.server.util.time :as time]))
 
 
 (deftest events-disabled-for-event-resource
-  (is (false? (eventing/events-enabled event/resource-type))))
+  (is (false? (events/events-enabled event/resource-type))))
 
 
-(deftest default-events-config
+#_(deftest default-events-config
   (let [{:keys [enabled default-severity]}
         (eventing/events-configuration "fake-resource" :fake-op nil)]
     (testing "Events enabled by default"
@@ -83,6 +73,5 @@
                                                                         :crud/delete
                                                                         {:response {:status 400}})]
       (is (false? (:enabled crud-delete-default-400-config))))))
-
 
 

@@ -1,7 +1,6 @@
 (ns sixsq.nuvla.server.resources.spec.event
   (:require
     [clojure.spec.alpha :as s]
-    [sixsq.nuvla.server.resources.common.eventing :as eventing]
     [sixsq.nuvla.server.resources.spec.acl-common :as acl-common]
     [sixsq.nuvla.server.resources.spec.common :as common]
     [sixsq.nuvla.server.resources.spec.core :as core]
@@ -11,7 +10,7 @@
 
 
 (s/def ::event-type
-  (-> (st/spec (set (keys eventing/event-types)))
+  (-> (st/spec string?)
       (assoc :name "event-type"
              :json-schema/type "string"
              :json-schema/description "type of event")))
@@ -81,8 +80,8 @@
 
 
 (s/def ::resource
-  (-> (st/spec (su/only-keys :req-un [::href]
-                             :opt-un [::common/resource-type]))
+  (-> (st/spec (su/only-keys :req-un [::common/resource-type]
+                             :opt-un [::href]))
       (assoc :name "resource"
              :json-schema/type "map"
              :json-schema/description "link to associated resource")))
@@ -108,10 +107,11 @@
                                ::category
                                ::severity
                                ::resource
-                               ::user-id
                                ::active-claim]
                       :opt-un [::session-id
+                               ::user-id
                                ::message
                                ::details
                                ::payload]}))
+
 

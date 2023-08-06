@@ -16,18 +16,22 @@
    :updated       event-timestamp
    :acl           {:owners   ["user/joe"]
                    :view-acl ["group/nuvla-anon"]}
-
+   :event-type    "module.create.requested"
    :timestamp     event-timestamp
-   :content       {:resource {:href "module/HNSciCloud-RHEA/S3"}
-                   :state    "Started"}
+   :resource      {:resource-type "module"
+                   :href "module/HNSciCloud-RHEA/S3"}
+   :active-claim  "user/joe"
+   :details       {:state "Started"}
    :category      "state"
    :severity      "critical"})
 
 
 (deftest check-reference
-  (let [updated-event (assoc-in valid-event [:content :resource :href] "another/valid-identifier")]
+  (let [updated-event (assoc valid-event :resource {:resource-type "another"
+                                                    :href          "another/valid-identifier"})]
     (stu/is-valid ::event/schema updated-event))
-  (let [updated-event (assoc-in valid-event [:content :resource :href] "/not a valid reference/")]
+  (let [updated-event (assoc valid-event :resource {:resource-type "another"
+                                                    :href          "/not a valid reference/"})]
     (stu/is-invalid ::event/schema updated-event)))
 
 
@@ -48,9 +52,10 @@
   (stu/is-valid ::event/schema valid-event)
 
   ;; mandatory keywords
-  (doseq [k #{:id :resource-type :acl :timestamp :content :category :severity}]
+  (doseq [k #{:id :resource-type :acl :event-type :timestamp :category :severity :resource :active-claim}]
     (stu/is-invalid ::event/schema (dissoc valid-event k)))
 
   ;; optional keywords
   (doseq [k #{}]
     (stu/is-valid ::event/schema (dissoc valid-event k))))
+

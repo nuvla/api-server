@@ -5,6 +5,7 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
+    [sixsq.nuvla.server.resources.common.events :as events]
     [sixsq.nuvla.server.resources.event :as t]
     [sixsq.nuvla.server.resources.event.test-utils :as tu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
@@ -20,9 +21,8 @@
                   :created    "2015-01-16T08:05:00.00Z"
                   :updated    "2015-01-16T08:05:00.00Z"
                   :timestamp  "2015-01-16T08:05:00.00Z"
-                  :event-type "resource.create"
+                  :event-type "run.create.requested"
                   :resource   {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
-                  :payload    {:state "Started"}
                   :severity   "critical"})
 
 

@@ -5,6 +5,7 @@
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
+    [sixsq.nuvla.server.resources.common.events :refer [with-action-events]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -38,7 +39,8 @@
 (def action-routes
   (let-routes [uri (str p/service-context ":resource-name/:uuid/:action")]
     (ANY uri request
-      (crud/do-action request))))
+      (with-action-events request
+        (crud/do-action request)))))
 
 
 (def bulk-action-routes

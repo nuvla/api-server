@@ -8,9 +8,6 @@
     [sixsq.nuvla.server.util.time :as time]))
 
 
-(def topic event/resource-type)
-
-
 (defn ^{:deprecated    true
         :superseded-by "sixsq.nuvla.server.resources.common/create-event"}
   create-event-old
@@ -46,4 +43,3 @@
                                            start (conj (str "timestamp>='" start "'"))
                                            end (conj (str "timestamp<'" end "'")))))}})
            second)))
-

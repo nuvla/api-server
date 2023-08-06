@@ -285,7 +285,7 @@ component, or application.
   (let [response (-> request
                      (assoc :request-method :put
                             :params {:uuid          (utils/full-uuid->uuid full-uuid)
-                                     :resource-type resource-type}
+                                     :resource-name resource-type}
                             :body resource)
                      edit-impl)]
     (if (r/status-200? response)
