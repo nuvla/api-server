@@ -14,10 +14,11 @@ existing `infrastructure-service-template` resource.
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.events.config :as events-config]
+    [sixsq.nuvla.events.impl :as events]
+    [sixsq.nuvla.events.std-events :as std-events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
-    [sixsq.nuvla.server.resources.common.events :as events]
-    [sixsq.nuvla.server.resources.common.std-events :as std-events]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.event.utils :as event-utils]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
@@ -242,7 +243,7 @@ existing `infrastructure-service-template` resource.
 (defn event-state-change
   [{current-state :state id :id} {{new-state :state} :body :as request}]
   (when (and new-state (not (= current-state new-state)))
-    (events/create-resource-event
+    (events/add-resource-event
       request
       id
       {:event-type (std-events/state-changed-event-type resource-type)
@@ -287,7 +288,7 @@ existing `infrastructure-service-template` resource.
   [{{uuid :uuid} :params :as request} delete-resp]
   (let [id (str resource-type "/" uuid)]
     (when (= 200 (:status delete-resp))
-      (events/create-resource-event
+      (events/add-resource-event
         request
         id
         {:event-type (std-events/state-changed-event-type resource-type)
@@ -313,7 +314,7 @@ existing `infrastructure-service-template` resource.
   (query-impl request))
 
 
-(defmethod events/supported-event-types resource-type [_]
+(defmethod events-config/supported-event-types resource-type [_]
   (merge
     (std-events/crud-event-types resource-type)
     (std-events/actions-event-types resource-type)

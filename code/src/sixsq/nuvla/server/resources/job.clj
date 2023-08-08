@@ -15,8 +15,6 @@ request.
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.events :refer [with-crud-create-events
-                                                        with-crud-update-events]]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.job.interface :as interface]
@@ -82,26 +80,25 @@ request.
                   :or {priority 999 execution-mode "push"
                        version  latest-version} :as body} :body :as request}]
   (a/throw-cannot-add collection-acl request)
-  (with-crud-create-events request
-    (let [id      (u/new-resource-id resource-type)
-          zk-path (when (#{"push" "mixed"} execution-mode)
-                    (let [zk-path (utils/add-job-to-queue id priority)]
-                      (log/infof "Added %s, zookeeper path %s." id zk-path)
-                      zk-path))
-          new-job (-> body
-                      u/strip-service-attrs
-                      (assoc :resource-type resource-type)
-                      (assoc :id id)
-                      (assoc :state utils/state-queued)
-                      (assoc :execution-mode execution-mode)
-                      (assoc :version version)
-                      u/update-timestamps
-                      (u/set-created-by request)
-                      utils/job-cond->addition
-                      (crud/add-acl request)
-                      (cond-> zk-path (assoc :tags [zk-path]))
-                      (crud/validate))]
-      (db/add resource-type new-job {}))))
+  (let [id      (u/new-resource-id resource-type)
+        zk-path (when (#{"push" "mixed"} execution-mode)
+                  (let [zk-path (utils/add-job-to-queue id priority)]
+                    (log/infof "Added %s, zookeeper path %s." id zk-path)
+                    zk-path))
+        new-job (-> body
+                    u/strip-service-attrs
+                    (assoc :resource-type resource-type)
+                    (assoc :id id)
+                    (assoc :state utils/state-queued)
+                    (assoc :execution-mode execution-mode)
+                    (assoc :version version)
+                    u/update-timestamps
+                    (u/set-created-by request)
+                    utils/job-cond->addition
+                    (crud/add-acl request)
+                    (cond-> zk-path (assoc :tags [zk-path]))
+                    (crud/validate))]
+    (db/add resource-type new-job {})))
 
 
 (defmethod crud/add resource-type
@@ -120,18 +117,17 @@ request.
 (defn edit-impl
   [{{uuid :uuid} :params :as request}]
   (try
-    (with-crud-update-events request
-      (let [current (-> (str resource-type "/" uuid)
-                        (db/retrieve (assoc-in request [:cimi-params :select] nil))
-                        (a/throw-cannot-edit request))]
-        (-> request
-            (update :body dissoc :target-resource :action)
-            (u/delete-attributes current)
-            (u/update-timestamps)
-            (u/set-updated-by request)
-            (utils/job-cond->edition)
-            (crud/validate)
-            (db/edit request))))
+    (let [current (-> (str resource-type "/" uuid)
+                      (db/retrieve (assoc-in request [:cimi-params :select] nil))
+                      (a/throw-cannot-edit request))]
+      (-> request
+          (update :body dissoc :target-resource :action)
+          (u/delete-attributes current)
+          (u/update-timestamps)
+          (u/set-updated-by request)
+          (utils/job-cond->edition)
+          (crud/validate)
+          (db/edit request)))
     (catch Exception e
       (or (ex-data e) (throw e)))))
 
@@ -219,4 +215,4 @@ request.
         create-request {:params      {:resource-name resource-type}
                         :body        job-map
                         :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
+    (crud/add-with-events create-request)))

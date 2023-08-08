@@ -16,7 +16,7 @@
    :updated       event-timestamp
    :acl           {:owners   ["user/joe"]
                    :view-acl ["group/nuvla-anon"]}
-   :event-type    "module.create.requested"
+   :event-type    "module.create"
    :timestamp     event-timestamp
    :resource      {:resource-type "module"
                    :href "module/HNSciCloud-RHEA/S3"}
@@ -26,11 +26,17 @@
    :severity      "critical"})
 
 
+(deftest check-supported-event-types
+  (stu/is-valid ::event/schema valid-event)
+  (let [wrong-event (assoc valid-event :event-type "unsupported.event.type")]
+    (stu/is-invalid ::event/schema wrong-event)))
+
+
 (deftest check-reference
-  (let [updated-event (assoc valid-event :resource {:resource-type "another"
-                                                    :href          "another/valid-identifier"})]
+  (let [updated-event (assoc valid-event :resource {:resource-type "module"
+                                                    :href          "module/valid-identifier"})]
     (stu/is-valid ::event/schema updated-event))
-  (let [updated-event (assoc valid-event :resource {:resource-type "another"
+  (let [updated-event (assoc valid-event :resource {:resource-type "module"
                                                     :href          "/not a valid reference/"})]
     (stu/is-invalid ::event/schema updated-event)))
 

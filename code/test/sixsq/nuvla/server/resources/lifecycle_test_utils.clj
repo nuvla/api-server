@@ -16,9 +16,12 @@
     [ring.middleware.nested-params :refer [wrap-nested-params]]
     [ring.middleware.params :refer [wrap-params]]
     [ring.util.codec :as codec]
+    [sixsq.nuvla.db.atom.binding :as ab]
     [sixsq.nuvla.db.es.binding :as esb]
     [sixsq.nuvla.db.es.utils :as esu]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.events.db.db-event-manager :as db-event-manager]
+    [sixsq.nuvla.events.impl :as event-manager-impl]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.app.routes :as routes]
     [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
@@ -27,6 +30,7 @@
     [sixsq.nuvla.server.middleware.exception-handler :refer [wrap-exceptions]]
     [sixsq.nuvla.server.middleware.logger :refer [wrap-logger]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
+    [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.kafka :as ka]
     [sixsq.nuvla.server.util.zookeeper :as uzk]
     [zookeeper :as zk])
@@ -308,7 +312,7 @@
       [client server])))
 
 
-(def ^:private zk-client-server-cache (atom nil))
+(defonce ^:private zk-client-server-cache (atom nil))
 
 
 (defn set-zk-client-server-cache
@@ -387,7 +391,7 @@
     [node client sniffer]))
 
 
-(def ^:private es-node-client-cache (atom nil))
+(defonce ^:private es-node-client-cache (atom nil))
 
 (defn es-node
   []
@@ -456,6 +460,13 @@
          (profile "setting es node client cache" set-es-node-client-cache)]
      (db/set-impl! (esb/->ElasticsearchRestBinding client# sniffer#))
      ~@body))
+
+
+(defn load-and-set-event-manager
+  "Creates and loads the default events handler implementation."
+  []
+  (event-manager-impl/set-impl! (db-event-manager/->DbEventManager)))
+
 
 ;;
 ;; Ring Application Management
@@ -556,7 +567,7 @@
 
 ;;
 ;; test fixture that starts the following parts of the test server:
-;; elasticsearch, zookeeper, ring application
+;; elasticsearch, zookeeper, events handler, ring application
 ;;
 
 (defn with-test-server-fixture
@@ -567,6 +578,7 @@
   [f]
   (log/debug "executing with-test-server-fixture")
   (profile "start zookeeper" set-zk-client-server-cache)
+  (profile "set event manager" load-and-set-event-manager)
   (with-test-es-client
     (profile "start ring app" ring-app)
     (profile "cleanup indices" esu/cleanup-index (es-client) "nuvla-*")
@@ -580,6 +592,16 @@
 
 (def with-test-server-kafka-fixture (join-fixtures [with-test-server-fixture
                                                     with-test-kafka-fixture]))
+
+;;
+;; test fixture that starts the atom db binding
+;;
+
+(defn with-atom-db-fixture
+  [f]
+  (db/set-impl! (ab/->AtomBinding (atom {})))
+  (f))
+
 
 ;;
 ;; miscellaneous utilities
@@ -599,11 +621,17 @@
                    :body (json/write-str {:dummy "value"}))
           (is-status 405)))))
 
-(defn print-events [session {:keys [keys payload?]}]
-  (clojure.pprint/pprint
+
+;;
+;; Events
+;;
+
+(def event-base-uri (str p/service-context "event"))
+
+(defn dump-events [session {:keys [keys payload?]}]
+  (pprint
     (-> session
-        (request "/api/event"
-                 :request-method :get)
+        (request (str event-base-uri))
         (body->edn)
         (is-status 200)
         :response
@@ -614,4 +642,92 @@
                                       (cond-> [:id :event-type :category :message :resource :parent]
                                               payload? (conj :payload)))))))))
 
+(defn collection-event
+  [resource-type event-type]
+  {:event-type event-type
+   :resource   {:resource-type resource-type}})
 
+
+(defn resource-event
+  [resource-id event-type]
+  {:event-type event-type
+   :resource   {:resource-type (u/id->resource-type resource-id)
+                :href          resource-id}})
+
+
+(defn track-parent
+  "Given a nested vector structure, returns a flattened vector of pairs composed by the
+   item value and the index of its parent in the flattened vector.
+
+   ```
+   (is (= [[1 nil] [2 nil] [3 nil] [4 nil]] (track-parent [1 2 3 4]))) ; => true
+   (is (= [[1 nil] [2 0]] (track-parent [1 [2]]))) ; => true
+   (is (= [[1 nil] [2 0] [3 nil]] (track-parent [1 [2] 3]))) ; => true
+   (is (= [[1 nil] [2 0] [3 1] [4 2]] (track-parent [1 [2 [3 [4]]]]))) ; => true
+   (is (= [[1 nil] [2 0] [3 0] [4 nil] [5 3] [6 3]] (track-parent [1 [2 3] 4 [5 6]]))) ; => true
+   (is (= [[1 nil] [2 0]] (track-parent [[[[1]]] 2]))) ; => true
+   ```"
+  ([v]
+   (track-parent 0 nil v))
+  ([idx parent-idx v]
+   (loop [idx idx
+          v   v
+          ret []]
+     (if-let [val (first v)]
+       (if (vector? val)
+         (recur (+ idx (count (flatten val)))
+                (rest v)
+                (apply conj ret (track-parent idx (dec idx) val)))
+         (recur (inc idx)
+                (rest v)
+                (conj ret [val parent-idx])))
+       ret))))
+
+
+(defn normalize-expected-events
+  "Given a nested vector of expected events and a vector of actual events,
+   returns a flattened vector of expected events with the parent property resolved
+   from the parent position in the nested vector and the corresponding actual event."
+  [expected-events events]
+  (->> (track-parent expected-events)
+       (map (fn [[event parent-idx]]
+              (if parent-idx
+                (assoc event :parent (:id (nth events parent-idx)))
+                event)))))
+
+(defn- check-event-keys
+  "Compare an expected event with an actual event.
+   Only the keys in the expected event are checked.
+   The only exception is the :parent key which is always checked."
+  [expected-event event]
+  (is (= expected-event (select-keys event (conj (keys expected-event) :parent)))))
+
+
+(defn- check-events
+  "Given a nested vector of expected events and a vector of actual events,
+   checks that the actual event hierarchy matches the expected one, and that
+   the expected event properties match."
+  [expected-events events]
+  (when (= (count expected-events) (count events))
+    (dorun
+      (map check-event-keys
+           (normalize-expected-events expected-events events)
+           events))))
+
+
+(defn are-events
+  "Checks that the latest recorded events match the events passed as parameters.
+   Events should be a vector of events or sub-vectors of the same form.
+   Sub-vectors are meant to be children of the event that precedes.
+   Only specified keys are checked, events might contain additional keys that are not checked."
+  [session expected-events]
+  (let [expected-count (count (flatten expected-events))
+        last-events (-> session
+                        (request (str event-base-uri "?first=0&last=" expected-count))
+                        (body->edn)
+                        (is-status 200)
+                        (body)
+                        :resources
+                        reverse)]
+    (is (= expected-count (count last-events)))
+    (check-events expected-events last-events)))

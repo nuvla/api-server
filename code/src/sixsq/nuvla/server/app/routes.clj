@@ -5,7 +5,6 @@
     [ring.middleware.head :refer [wrap-head]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.events :refer [with-action-events]]
     [sixsq.nuvla.server.resources.common.dynamic-load :as dyn]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -13,7 +12,7 @@
 (def collection-routes
   (let-routes [uri (str p/service-context ":resource-name")]
     (POST uri request
-      (crud/add request))
+      (crud/add-with-events request))
     (PUT uri request
       (crud/query request))
     (GET uri request
@@ -29,9 +28,9 @@
     (GET uri request
       (crud/retrieve request))
     (PUT uri request
-      (crud/edit request))
+      (crud/edit-with-events request))
     (DELETE uri request
-      (crud/delete request))
+      (crud/delete-with-events request))
     (ANY uri request
       (throw (r/ex-bad-method request)))))
 
@@ -39,8 +38,7 @@
 (def action-routes
   (let-routes [uri (str p/service-context ":resource-name/:uuid/:action")]
     (ANY uri request
-      (with-action-events request
-        (crud/do-action request)))))
+      (crud/do-action-with-events request))))
 
 
 (def bulk-action-routes

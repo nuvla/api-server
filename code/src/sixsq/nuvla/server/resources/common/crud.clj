@@ -3,6 +3,7 @@
     [sixsq.nuvla.auth.acl-resource :as a]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.db.impl :as db]
+    [sixsq.nuvla.events.impl :as events]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.util.response :as r]))
 
@@ -256,3 +257,23 @@
 (defmethod add-acl :default
   [json _request]
   json)
+
+
+;;
+;; CRUD augmented with events recording
+;;
+
+(defn add-with-events [request]
+  ((events/wrap-crud-add add) request))
+
+
+(defn edit-with-events [request]
+  ((events/wrap-crud-edit edit) request))
+
+
+(defn delete-with-events [request]
+  ((events/wrap-crud-delete delete) request))
+
+
+(defn do-action-with-events [request]
+  ((events/wrap-action do-action) request))

@@ -5,7 +5,6 @@
     [peridot.core :refer [content-type header request session]]
     [sixsq.nuvla.server.app.params :as p]
     [sixsq.nuvla.server.middleware.authn-info :refer [authn-info-header]]
-    [sixsq.nuvla.server.resources.common.events :as events]
     [sixsq.nuvla.server.resources.event :as t]
     [sixsq.nuvla.server.resources.event.test-utils :as tu]
     [sixsq.nuvla.server.resources.lifecycle-test-utils :as ltu]))
@@ -21,7 +20,7 @@
                   :created    "2015-01-16T08:05:00.00Z"
                   :updated    "2015-01-16T08:05:00.00Z"
                   :timestamp  "2015-01-16T08:05:00.00Z"
-                  :event-type "run.create.requested"
+                  :event-type "run.create"
                   :resource   {:href "run/45614147-aed1-4a24-889d-6365b0b1f2cd"}
                   :severity   "critical"})
 
@@ -96,8 +95,8 @@
         event            {:event-type wrong-event-type
                           :resource   {:href resource-href}}]
     (-> (tu/exec-request base-uri nil "user/joe" :post event)
-        (ltu/is-status 400)
-        #_(ltu/does-body-contain-string (str "unknown event type " wrong-event-type)))))
+        (ltu/is-status 400))))
+
 
 (deftest create-wrong-resource-type
   (let [resource-href "test/45614147-aed1-4a24-889d-6365b0b1f2cd"
@@ -105,8 +104,7 @@
         event         {:event-type event-type
                        :resource   {:href resource-href}}]
     (-> (tu/exec-request base-uri nil "user/joe" :post event)
-        (ltu/is-status 400)
-        #_(ltu/does-body-contain-string (str "event type " event-type " not supported for resource type test")))))
+        (ltu/is-status 400))))
 
 
 ;; Here, timestamps are retrieved one by one (due to pagination)
@@ -193,4 +191,3 @@
   (-> (tu/exec-request base-uri "?filter=category='missing end quote" "user/joe")
       (ltu/is-status 400)
       (ltu/message-matches "Invalid CIMI filter. Parse error at line 1, column 11")))
-

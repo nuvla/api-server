@@ -6,13 +6,13 @@ an application.
 "
   (:require
     [sixsq.nuvla.auth.acl-resource :as a]
+    [sixsq.nuvla.events.config :as events-config]
+    [sixsq.nuvla.events.impl :as events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.events :as events]
     [sixsq.nuvla.server.resources.common.std-crud :as std-crud]
     [sixsq.nuvla.server.resources.common.utils :as u]
     [sixsq.nuvla.server.resources.resource-metadata :as md]
     [sixsq.nuvla.server.resources.spec.event :as event]
-    [sixsq.nuvla.server.util.kafka-crud :as ka-crud]
     [sixsq.nuvla.server.util.metadata :as gen-md]))
 
 
@@ -31,8 +31,7 @@ an application.
 ;; "Implementations" of multimethod declared in crud namespace
 ;;
 
-(def validate-fn (comp events/validate-event
-                       (u/create-spec-validation-fn ::event/schema)))
+(def validate-fn (u/create-spec-validation-fn ::event/schema))
 
 
 (defmethod crud/validate
@@ -49,8 +48,6 @@ an application.
   [resource request]
   (a/add-acl resource request))
 
-(def add-impl (std-crud/add-fn resource-type collection-acl resource-type))
-
 
 (defn can-view-resource?
   [{{{href :href} :resource} :body :as request}]
@@ -60,27 +57,17 @@ an application.
 
 (defmethod crud/add resource-type
   [request]
-  (let [resp (-> request
-                 (events/prepare-event)
-                 (add-impl))]
-    (ka-crud/publish-on-add resource-type resp)
-    resp))
-
-
-(def retrieve-impl (std-crud/retrieve-fn resource-type))
+  (events/add request))
 
 
 (defmethod crud/retrieve resource-type
   [request]
-  (retrieve-impl request))
-
-
-(def delete-impl (std-crud/delete-fn resource-type))
+  (events/retrieve request))
 
 
 (defmethod crud/delete resource-type
   [request]
-  (delete-impl request))
+  (events/delete request))
 
 
 ;;
@@ -104,13 +91,10 @@ an application.
 ;; collection
 ;;
 
-(def query-impl (std-crud/query-fn resource-type collection-acl collection-type))
-
 
 (defmethod crud/query resource-type
-  [{{:keys [orderby]} :cimi-params :as request}]
-  (query-impl
-    (assoc-in request [:cimi-params :orderby] (if (seq orderby) orderby [["timestamp" :desc]]))))
+  [request]
+  (events/query request))
 
 
 (def bulk-delete-impl (std-crud/bulk-delete-fn resource-type collection-acl collection-type))
@@ -126,7 +110,7 @@ an application.
 
 
 ;; disable events for the `event` resource
-(defmethod events/events-enabled resource-type [_]
+(defmethod events-config/events-enabled resource-type [_]
   false)
 
 

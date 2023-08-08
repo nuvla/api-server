@@ -11,6 +11,7 @@
     [sixsq.nuvla.db.ephemeral-impl :as edb]
     [sixsq.nuvla.db.impl :as db]
     [sixsq.nuvla.db.loader :as db-loader]
+    [sixsq.nuvla.events.loader :as event-manager-loader]
     [sixsq.nuvla.server.app.routes :as routes]
     [sixsq.nuvla.server.middleware.authn-info :refer [wrap-authn-info]]
     [sixsq.nuvla.server.middleware.base-uri :refer [wrap-base-uri]]
@@ -26,6 +27,9 @@
 
 
 (def default-db-binding-ns "sixsq.nuvla.db.es.loader")
+
+
+(def default-event-manager-ns "sixsq.nuvla.events.db.loader")
 
 
 (defn- create-ring-handler
@@ -92,6 +96,9 @@
 
   (db-loader/load-and-set-ephemeral-db-binding
     (env/env :ephemeral-db-binding-ns))
+
+  (event-manager-loader/load-and-set-event-manager
+    (env/env :event-manager-ns default-event-manager-ns))
 
   (try
     (zku/set-client! (zku/create-client))

@@ -1,8 +1,7 @@
 (ns sixsq.nuvla.server.resources.event.utils
   (:require
-    [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
-    [sixsq.nuvla.db.filter.parser :as parser]
+    [sixsq.nuvla.events.impl :as events]
     [sixsq.nuvla.server.resources.common.crud :as crud]
     [sixsq.nuvla.server.resources.event :as event]
     [sixsq.nuvla.server.util.time :as time]))
@@ -30,16 +29,5 @@
 (defn search-event
   ([resource-href opts]
    (search-event (merge opts {:resource-href resource-href})))
-  ([{:keys [event-type resource-href category start end]}]
-   (some-> event/resource-type
-           (crud/query-as-admin
-             {:cimi-params
-              {:filter (parser/parse-cimi-filter
-                         (str/join " and "
-                                   (cond-> []
-                                           resource-href (conj (str "resource/href='" resource-href "'"))
-                                           event-type (conj (str "event-type='" event-type "'"))
-                                           category (conj (str "category='" category "'"))
-                                           start (conj (str "timestamp>='" start "'"))
-                                           end (conj (str "timestamp<'" end "'")))))}})
-           second)))
+  ([opts]
+   (events/search opts)))

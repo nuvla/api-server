@@ -34,15 +34,15 @@
 
 (defn- setup-module
   [session-owner module-data]
-  (let [_                (create-parent-projects (:path module-data) session-owner)
-        module-id        (-> session-owner
-                             (request module-base-uri
-                                      :request-method :post
-                                      :body (json/write-str
-                                             module-data))
-                             (ltu/body->edn)
-                             (ltu/is-status 201)
-                             (ltu/location))]
+  (let [_         (create-parent-projects (:path module-data) session-owner)
+        module-id (-> session-owner
+                      (request module-base-uri
+                               :request-method :post
+                               :body (json/write-str
+                                       module-data))
+                      (ltu/body->edn)
+                      (ltu/is-status 201)
+                      (ltu/location))]
     module-id))
 
 (defn valid-module
@@ -102,18 +102,23 @@
 (defn lifecycle-deployment
   [subtype valid-module-content]
   (binding [config-nuvla/*stripe-api-key* nil]
-    (let [session-anon       (-> (ltu/ring-app)
-                                 session
-                                 (content-type "application/json"))
-          session-admin      (header session-anon authn-info-header
-                                     (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
-          session-user       (header session-anon authn-info-header
-                                     (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
+    (let [session-anon               (-> (ltu/ring-app)
+                                         session
+                                         (content-type "application/json"))
+          session-admin              (header session-anon authn-info-header
+                                             (str "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon " session-id))
+          session-user               (header session-anon authn-info-header
+                                             (str "user/jane user/jane group/nuvla-user group/nuvla-anon " session-id))
 
           ;; setup a module that can be referenced from the deployment
-          module-id          (setup-module session-user (valid-module subtype valid-module-content))
-          valid-deployment   {:module {:href module-id}}
-          invalid-deployment {:module {:href "module/doesnt-exist"}}]
+          module-id                  (setup-module session-user (valid-module subtype valid-module-content))
+          valid-deployment           {:module {:href module-id}}
+          invalid-deployment         {:module {:href "module/doesnt-exist"}}
+
+          collection-event           (partial ltu/collection-event "deployment")
+          job-collection-event       (partial ltu/collection-event "job")
+          log-collection-event       (partial ltu/collection-event "resource-log")
+          dep-param-collection-event (partial ltu/collection-event "deployment-parameter")]
 
       ;; admin/user query succeeds but is empty
       (doseq [session [session-admin session-user]]
@@ -140,6 +145,10 @@
           (ltu/body->edn)
           (ltu/is-status 403))
 
+      (ltu/are-events session-admin
+                      [(collection-event "deployment.create")
+                       [(collection-event "deployment.create.failed")]])
+
       (testing "create should fail when user can't view parent credential"
         (-> session-user
             (request base-uri
@@ -147,7 +156,11 @@
                      :body (json/write-str (assoc valid-deployment
                                              :parent "credential/x")))
             (ltu/body->edn)
-            (ltu/is-status 404)))
+            (ltu/is-status 404))
+
+        (ltu/are-events session-admin
+                        [(collection-event "deployment.create")
+                         [(collection-event "deployment.create.failed")]]))
 
       ;; check deployment creation
       (let [deployment-id  (-> session-user
@@ -158,7 +171,8 @@
                                (ltu/is-status 201)
                                (ltu/location))
 
-            deployment-url (str p/service-context deployment-id)]
+            deployment-url (str p/service-context deployment-id)
+            resource-event (partial ltu/resource-event deployment-id)]
 
         ;; admin/user should see one deployment
         (doseq [session [session-user session-admin]]
@@ -197,6 +211,10 @@
               (ltu/is-key-value :owner "user/jane")
               (ltu/is-key-value :owners :acl ["user/jane" "user/tarzan"]))
 
+          (ltu/are-events session-admin
+                          [(resource-event "deployment.update")
+                           [(resource-event "deployment.update.completed")]])
+
           (testing "user should not be able to change parent credential to something not accessible"
             (with-redefs [crud/retrieve-by-id-as-admin (fn [id]
                                                          (if (= id "credential/x")
@@ -208,15 +226,26 @@
                            :request-method :put
                            :body (json/write-str {:parent "credential/x"}))
                   (ltu/body->edn)
-                  (ltu/is-status 403))))
+                  (ltu/is-status 403))
+
+              (ltu/are-events session-admin
+                              [(resource-event "deployment.update")
+                               [(resource-event "deployment.update.failed")]])))
 
           ;; attempt to start the deployment and check the start job was created
-          (let [job-url (-> session-user
+          (let [job-id  (-> session-user
                             (request start-url
                                      :request-method :post)
                             (ltu/body->edn)
                             (ltu/is-status 202)
-                            (ltu/location-url))]
+                            (ltu/location))
+                job-url (ltu/href->url job-id)]
+            (ltu/are-events session-admin
+                            [(resource-event "deployment.start")
+                             [(job-collection-event "job.create")
+                              [(ltu/resource-event job-id "job.create.completed")]
+                              (resource-event "deployment.start.completed")]])
+
             (-> session-user
                 (request job-url)
                 (ltu/body->edn)
@@ -241,6 +270,9 @@
                                    (ltu/is-status 200)
                                    (ltu/is-key-value some? :api-credentials true)
                                    (ltu/body))
+                _              (ltu/are-events session-admin
+                                               [(resource-event "deployment.update")
+                                                [(resource-event "deployment.update.completed")]])
                 credential-id  (-> deployment :api-credentials :api-key)
                 credential-url (str p/service-context credential-id)
                 credential     (-> session-admin
@@ -254,11 +286,15 @@
             (is (:description credential))
             (is (= deployment-id (:parent credential)))
 
-            (let [module (-> session-user
-                             (request (str "/api/" module-id))
-                             (ltu/body->edn)
-                             (ltu/is-status 200)
-                             :response :body)]
+            (let [module                (-> session-user
+                                            (request (str "/api/" module-id))
+                                            (ltu/body->edn)
+                                            (ltu/is-status 200)
+                                            :response :body)
+                  module-resource-event (fn [event-type]
+                                          {:event-type event-type
+                                           :resource   {:resource-type "module"
+                                                        :href          module-id}})]
 
               (-> session-user
                   (request (str "/api/" module-id)
@@ -270,22 +306,33 @@
                                                              :description "beta-env variable",
                                                              :required    true}])))
                   (ltu/body->edn)
-                  (ltu/is-status 200)))
+                  (ltu/is-status 200))
+
+              (ltu/are-events session-admin
+                              [(module-resource-event "module.update")
+                               [(module-resource-event "module.update.completed")]]))
 
             ;; attempt to queue dct_check job
-            (let [job-url (-> session-user
+            (let [job-id  (-> session-user
                               (request check-dct-url
                                        :request-method :post)
                               (ltu/body->edn)
                               (ltu/is-status 202)
-                              (ltu/location-url))]
+                              (ltu/location))
+                  job-url (ltu/href->url job-id)]
               (-> session-user
                   (request job-url
                            :request-method :get)
                   (ltu/body->edn)
                   (ltu/is-status 200)
                   (ltu/is-key-value :state "QUEUED")
-                  (ltu/is-key-value :action "dct_check")))
+                  (ltu/is-key-value :action "dct_check"))
+
+              (ltu/are-events session-admin
+                              [(resource-event "deployment.check-dct")
+                               [(job-collection-event "job.create")
+                                [(ltu/resource-event job-id "job.create.completed")]
+                                (resource-event "deployment.check-dct.completed")]]))
 
             ;; verify that the state has changed
             (let [deployment-response (-> session-user
@@ -325,12 +372,19 @@
 
                 ;; update deployment
                 ;; try to update the deployment and check the update job was created
-                (let [job-url (-> session-user
+                (let [job-id  (-> session-user
                                   (request update-url
                                            :request-method :get)
                                   (ltu/body->edn)
                                   (ltu/is-status 202)
-                                  (ltu/location-url))]
+                                  (ltu/location))
+                      job-url (ltu/href->url job-id)]
+                  (ltu/are-events session-admin
+                                  [(resource-event "deployment.update")
+                                   [(job-collection-event "job.create")
+                                    [(ltu/resource-event job-id "job.create.completed")]
+                                    (resource-event "deployment.update.completed")]])
+
                   (-> session-user
                       (request job-url
                                :request-method :get)
@@ -355,16 +409,26 @@
                       (ltu/body->edn)
                       (ltu/is-status 200)))
 
+                (ltu/are-events session-admin
+                                [(resource-event "deployment.update")
+                                 [(resource-event "deployment.update.completed")]])
 
                 ;; check create-log operation
-                (let [log-url (-> session-user
+                (let [log-id  (-> session-user
                                   (request create-log-url
                                            :request-method :post
                                            :body (json/write-str
                                                    {:components ["my-service"]}))
                                   (ltu/body->edn)
                                   (ltu/is-status 201)
-                                  (ltu/location-url))]
+                                  (ltu/location))
+                      log-url (ltu/href->url log-id)]
+
+                  (ltu/are-events session-admin
+                                  [(resource-event "deployment.create-log")
+                                   [(log-collection-event "resource-log.create")
+                                    [(ltu/resource-event log-id "resource-log.create.completed")]
+                                    (resource-event "deployment.create-log.completed")]])
 
                   ;; verify that the log resource exists
                   (-> session-user
@@ -375,7 +439,7 @@
                   ;; normally the start job would create the deployment parameters
                   ;; create one manually to verify later that it is removed with the
                   ;; deployment
-                  (let [dep-param-url (-> session-admin
+                  (let [dep-param-id  (-> session-admin
                                           (request (str p/service-context "deployment-parameter")
                                                    :request-method :post
                                                    :body (json/write-str
@@ -386,7 +450,12 @@
                                                                       :edit-acl ["user/jane"]}}))
                                           (ltu/body->edn)
                                           (ltu/is-status 201)
-                                          (ltu/location-url))]
+                                          (ltu/location))
+                        dep-param-url (ltu/href->url dep-param-id)]
+
+                    (ltu/are-events session-admin
+                                    [(dep-param-collection-event "deployment-parameter.create")
+                                     [(ltu/resource-event dep-param-id "deployment-parameter.create.completed")]])
 
                     ;; verify that the deployment parameter was created
                     (-> session-user
@@ -395,12 +464,20 @@
                         (ltu/is-status 200))
 
                     ;; try to stop the deployment and check the stop job was created
-                    (let [job-url (-> session-user
+                    (let [job-id  (-> session-user
                                       (request stop-url
                                                :request-method :post)
                                       (ltu/body->edn)
                                       (ltu/is-status 202)
-                                      (ltu/location-url))]
+                                      (ltu/location))
+                          job-url (ltu/href->url job-id)]
+
+                      (ltu/are-events session-admin
+                                      [(resource-event "deployment.stop")
+                                       [(job-collection-event "job.create")
+                                        [(ltu/resource-event job-id "job.create.completed")]
+                                        (resource-event "deployment.stop.completed")]])
+
                       (-> session-user
                           (request job-url
                                    :request-method :get)
@@ -467,18 +544,31 @@
                                               :acl "user/shared")))
 
                     ;; verify user can create another deployment from existing one by using clone action
-                    (let [deployment-url-from-dep (-> session-user
+                    (let [deployment-id-from-dep  (-> session-user
                                                       (request (str deployment-url "/clone")
                                                                :request-method :post
                                                                :body (json/write-str {:deployment {:href deployment-id}}))
                                                       (ltu/body->edn)
                                                       (ltu/is-status 201)
-                                                      (ltu/location-url))]
+                                                      (ltu/location))
+                          deployment-url-from-dep (ltu/href->url deployment-id-from-dep)]
+
+                      (ltu/are-events session-admin
+                                      [(resource-event "deployment.clone")
+                                       [(collection-event "deployment.create")
+                                        [(ltu/resource-event deployment-id-from-dep "deployment.create.completed")]
+                                        (resource-event "deployment.clone.completed")]])
+
+
                       (-> session-user
                           (request deployment-url-from-dep
                                    :request-method :delete)
                           (ltu/body->edn)
-                          (ltu/is-status 200)))
+                          (ltu/is-status 200))
+
+                      (ltu/are-events session-admin
+                                      [(ltu/resource-event deployment-id-from-dep "deployment.delete")
+                                       [(ltu/resource-event deployment-id-from-dep "deployment.delete.completed")]]))
 
                     ;; verify that the user can delete the deployment
                     (-> session-user
@@ -486,6 +576,10 @@
                                  :request-method :delete)
                         (ltu/body->edn)
                         (ltu/is-status 200))
+
+                    (ltu/are-events session-admin
+                                    [(resource-event "deployment.delete")
+                                     [(resource-event "deployment.delete.completed")]])
 
                     ;; verify that the deployment has disappeared
                     (-> session-user
@@ -518,12 +612,20 @@
               (ltu/body->edn)
               (ltu/is-status 404)
               (ltu/message-matches "module/doesnt-exist not found"))
+
+          (ltu/are-events session-admin
+                          [(collection-event "deployment.create")
+                           [(collection-event "deployment.create.failed")]])
           ))
 
       (-> session-user
           (request (str p/service-context module-id)
                    :request-method :delete)
-          (ltu/is-status 200)))))
+          (ltu/is-status 200))
+
+      (ltu/are-events session-admin
+                      [(ltu/resource-event module-id "module.delete")
+                       [(ltu/resource-event module-id "module.delete.completed")]]))))
 
 
 (deftest lifecycle-deployment-component
@@ -842,7 +944,7 @@
         (request deployment-url
                  :request-method :put
                  :body (json/write-str (cond->
-                                        {:name depl-name}
+                                         {:name depl-name}
                                          depl-tags (assoc :tags depl-tags))))
         (ltu/body->edn)
         (ltu/is-status 200)
@@ -875,16 +977,16 @@
           (request endpoint
                    :request-method :patch
                    :body (json/write-str (cond-> {:doc {:tags tags}}
-                                           filter (assoc :filter filter))))
+                                                 filter (assoc :filter filter))))
           (ltu/is-status 200))
       (run!
-       (fn [url]
-         (let [ne (-> session-owner
-                      (request url)
-                      (ltu/body->edn))]
-           (testing (:name ne)
-             (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
-       ne-urls))))
+        (fn [url]
+          (let [ne (-> session-owner
+                       (request url)
+                       (ltu/body->edn))]
+            (testing (:name ne)
+              (ltu/is-key-value ne :tags (expected-fn (-> ne :response :body))))))
+        ne-urls))))
 
 (def endpoint-set-tags (str base-uri "/" "set-tags"))
 (def endpoint-add-tags (str base-uri "/" "add-tags"))

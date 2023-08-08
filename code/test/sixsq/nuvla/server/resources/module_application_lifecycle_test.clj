@@ -38,12 +38,15 @@
 
 (deftest lifecycle
 
-  (let [session-anon  (-> (session (ltu/ring-app))
-                          (content-type "application/json"))
-        session-admin (header session-anon authn-info-header
-                              "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
-        session-user  (header session-anon authn-info-header
-                              "user/jane user/jane group/nuvla-user group/nuvla-anon")]
+  (let [session-anon     (-> (session (ltu/ring-app))
+                             (content-type "application/json"))
+        session-admin    (header session-anon authn-info-header
+                                 "group/nuvla-admin group/nuvla-admin group/nuvla-user group/nuvla-anon")
+        session-user     (header session-anon authn-info-header
+                                 "user/jane user/jane group/nuvla-user group/nuvla-anon")
+        collection-event (fn [event-type]
+                           {:event-type event-type
+                            :resource   {:resource-type "module-application"}})]
 
     ;; create: NOK for anon, users
     (doseq [session [session-anon session-user]]
@@ -52,7 +55,11 @@
                    :request-method :post
                    :body (json/write-str valid-entry))
           (ltu/body->edn)
-          (ltu/is-status 403)))
+          (ltu/is-status 403))
+
+      (ltu/are-events session-admin
+                      [(collection-event "module-application.create")
+                       [(collection-event "module-application.create.failed")]]))
 
     ;; queries: OK for admin, NOK for others
     (doseq [session [session-anon session-user]]
@@ -68,15 +75,23 @@
         (ltu/is-count 0))
 
     ;; adding, retrieving and  deleting entry as user should succeed
-    (let [uri     (-> session-admin
-                      (request base-uri
-                               :request-method :post
-                               :body (json/write-str valid-entry))
-                      (ltu/body->edn)
-                      (ltu/is-status 201)
-                      (ltu/location))
+    (let [uri            (-> session-admin
+                             (request base-uri
+                                      :request-method :post
+                                      :body (json/write-str valid-entry))
+                             (ltu/body->edn)
+                             (ltu/is-status 201)
+                             (ltu/location))
 
-          abs-uri (str p/service-context uri)]
+          abs-uri        (str p/service-context uri)
+          resource-event (fn [event-type]
+                           {:event-type event-type
+                            :resource   {:resource-type "module-application"
+                                         :href          uri}})]
+
+      (ltu/are-events session-admin
+                      [(collection-event "module-application.create")
+                       [(resource-event "module-application.create.completed")]])
 
       ;; retrieve: OK for admin; NOK for others
       (doseq [session [session-anon session-user]]
@@ -98,11 +113,19 @@
             (ltu/body->edn)
             (ltu/is-status 403)))
 
+      (ltu/are-events session-admin
+                      [(resource-event "module-application.delete")
+                       [(resource-event "module-application.delete.failed")]])
+
       (-> session-admin
           (request abs-uri
                    :request-method :delete)
           (ltu/body->edn)
           (ltu/is-status 200))
+
+      (ltu/are-events session-admin
+                      [(resource-event "module-application.delete")
+                       [(resource-event "module-application.delete.completed")]])
 
       ;; verify that the resource was deleted.
       (-> session-admin

@@ -6,7 +6,6 @@ Stripe oauth hook.
     [clojure.string :as str]
     [sixsq.nuvla.auth.utils :as auth]
     [sixsq.nuvla.server.resources.common.crud :as crud]
-    [sixsq.nuvla.server.resources.common.events :refer [with-action-events]]
     [sixsq.nuvla.server.util.response :as r]))
 
 
@@ -23,8 +22,7 @@ Stripe oauth hook.
                                  :action        action
                                  :code          code}
                    :nuvla/authn auth/internal-identity}]
-      (with-action-events request
-        (crud/do-action request)))
+      (crud/do-action-with-events request))
     (catch Exception _
       (let [msg "Incorrect state parameter!"]
         (throw (ex-info msg (r/map-response msg 400)))))))

@@ -256,7 +256,7 @@ These resources represent the logs of a deployment or of a nuvlabox.
         create-request {:params      {:resource-name resource-type}
                         :body        log-map
                         :nuvla/authn auth/internal-identity}]
-    (crud/add create-request)))
+    (crud/add-with-events create-request)))
 
 
 ;;

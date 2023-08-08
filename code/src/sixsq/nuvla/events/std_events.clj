@@ -1,11 +1,13 @@
-(ns sixsq.nuvla.server.resources.common.std-events
+(ns sixsq.nuvla.events.std-events
   (:require [sixsq.nuvla.server.resources.common.crud :as crud]))
 
 (defn operation-requested-event-type [resource-type operation]
-  (str resource-type "." operation ".requested"))
+  (str resource-type "." operation))
+
 
 (defn operation-completed-event-type [resource-type operation]
   (str resource-type "." operation ".completed"))
+
 
 (defn operation-failed-event-type [resource-type operation]
   (str resource-type "." operation ".failed"))
@@ -17,16 +19,22 @@
 
 (defn crud-event-types [resource-type]
   {(operation-requested-event-type resource-type "create") {:category "command"}
-   (operation-completed-event-type resource-type "create") {:category "crud" :sub-category "resource-create"}
-   (operation-failed-event-type resource-type "create")    {:category "crud" :sub-category "resource-create"}
+   (operation-completed-event-type resource-type "create") {:category "crud" :subcategory "resource-create"}
+   (operation-failed-event-type resource-type "create")    {:category "crud" :subcategory "resource-create"}
 
    (operation-requested-event-type resource-type "update") {:category "command"}
-   (operation-completed-event-type resource-type "update") {:category "crud" :sub-category "resource-update"}
-   (operation-failed-event-type resource-type "update")    {:category "crud" :sub-category "resource-update"}
+   (operation-completed-event-type resource-type "update") {:category "crud" :subcategory "resource-update"}
+   (operation-failed-event-type resource-type "update")    {:category "crud" :subcategory "resource-update"}
 
    (operation-requested-event-type resource-type "delete") {:category "command"}
-   (operation-completed-event-type resource-type "delete") {:category "crud" :sub-category "resource-delete"}
-   (operation-failed-event-type resource-type "delete")    {:category "crud" :sub-category "resource-delete"}})
+   (operation-completed-event-type resource-type "delete") {:category "crud" :subcategory "resource-delete"}
+   (operation-failed-event-type resource-type "delete")    {:category "crud" :subcategory "resource-delete"}})
+
+
+(defn action-event-types [resource-type action]
+  {(operation-requested-event-type resource-type action) {:category "command"}
+   (operation-completed-event-type resource-type action) {:category "action"}
+   (operation-failed-event-type resource-type action)    {:category "action"}})
 
 
 (defn actions-event-types [resource-type]
@@ -36,10 +44,7 @@
                      (map second))]
     (reduce
       (fn [m action]
-        (merge m
-               {(operation-requested-event-type resource-type action) {:category "command"}
-                (operation-completed-event-type resource-type action) {:category "action"}
-                (operation-failed-event-type resource-type action)    {:category "action"}}))
+        (merge m (action-event-types resource-type action)))
       {}
       actions)))
 
