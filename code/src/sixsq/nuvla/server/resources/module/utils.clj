@@ -74,21 +74,6 @@
   (cond-> resource
           path (assoc :parent-path (get-parent-path path))))
 
-
-(defn set-published
-  "Updates the :parent-path key in the module resource to ensure that it is
-   consistent with the value of :path."
-  [{:keys [versions] :as resource}]
-  (if (is-project? resource)
-    resource
-    (assoc resource :published (boolean (some :published versions)))))
-
-(defn throw-cannot-publish-project
-  [resource]
-  (if (is-project? resource)
-    (throw (r/ex-response "project cannot be published" 400))
-    resource))
-
 (defn version-lookup
   [{:keys [versions] :as _module} pred]
   (loop [i (dec (count versions))]
@@ -104,15 +89,19 @@
   [module]
   (version-lookup module some?))
 
-(defn published?
-  [{:keys [published] :as _module}]
-  (boolean published))
+(defn set-published
+  "Updates the :parent-path key in the module resource to ensure that it is
+   consistent with the value of :path."
+  [module-meta]
+  (if (is-project? module-meta)
+    module-meta
+    (assoc module-meta :published (some? (latest-published-index module-meta)))))
 
-(defn latest-published-or-latest-index
-  [module]
-  (if (published? module)
-    (latest-published-index module)
-    (latest-index module)))
+(defn throw-cannot-publish-project
+  [resource]
+  (if (is-project? resource)
+    (throw (r/ex-response "project cannot be published" 400))
+    resource))
 
 (defn split-uuid
   [full-uuid]

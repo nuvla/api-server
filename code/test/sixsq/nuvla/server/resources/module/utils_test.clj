@@ -21,7 +21,6 @@
                                 {:href "f"}
                                 {:href "g"}]}]
     (are [expected i] (= expected (t/get-content-id module-meta i))
-                      "d" 3
                       "a" 0
                       "g" 6)
     (is (thrown?
@@ -181,19 +180,26 @@
                                            :version 2}]
                            :name         "x"}]}]))
 
-(def module-meta-versions {:published true
-                           :versions  [{:href "module-application/859e9c3c-3a35-42ae-a1b8-1657bad94577"},
-                                       {:href      "module-application/212c4ea7-a09a-416a-9b89-1c32b700bad1",
-                                        :published true},
-                                       nil,
-                                       {:href "module-application/c78bab15-b0a1-4d5a-aa8c-d2d1e9dc064e"}]})
+(def module-meta-versions {:versions [{:href "module-application/859e9c3c-3a35-42ae-a1b8-1657bad94577"},
+                                      {:href      "module-application/212c4ea7-a09a-416a-9b89-1c32b700bad1",
+                                       :published true},
+                                      nil,
+                                      {:href "module-application/c78bab15-b0a1-4d5a-aa8c-d2d1e9dc064e"}]})
+
+(def module-meta-versions-not-published {:versions [{:href "module-application/859e9c3c-3a35-42ae-a1b8-1657bad94577"},
+                                                    {:href      "module-application/212c4ea7-a09a-416a-9b89-1c32b700bad1"},
+                                                    nil,
+                                                    {:href "module-application/c78bab15-b0a1-4d5a-aa8c-d2d1e9dc064e",
+                                                     :published false}]})
 (deftest latest-published-index
-  (is (= 1 (t/latest-published-index module-meta-versions))))
+  (is (= 1 (t/latest-published-index module-meta-versions)))
+  (is (= nil (t/latest-published-index module-meta-versions-not-published))))
 
 (deftest latest-index
   (is (= 3 (t/latest-index module-meta-versions))))
 
-(deftest latest-published-or-latest-index
-  (is (= 1 (t/latest-published-or-latest-index module-meta-versions)))
-  (is (= 3 (t/latest-published-or-latest-index
-             (assoc module-meta-versions :published false)))))
+(deftest set-published
+  (is (= (assoc module-meta-versions :published true)
+         (t/set-published module-meta-versions)))
+  (is (= (assoc module-meta-versions-not-published :published false)
+         (t/set-published module-meta-versions-not-published))))

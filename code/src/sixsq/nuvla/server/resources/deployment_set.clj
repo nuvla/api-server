@@ -160,11 +160,6 @@ These resources represent a deployment set that regroups deployments.
                          :request-method :get
                          :nuvla/authn    (auth/current-authentication request)})))
 
-(defn module-version
-  [id request]
-  (module-utils/latest-published-or-latest-index
-    (retrieve-module id request)))
-
 (defn create-module
   [module]
   (let [{{:keys [status resource-id]} :body
@@ -184,8 +179,10 @@ These resources represent a deployment set that regroups deployments.
                :author (auth/current-active-claim request)
                :applications-sets
                [{:name         "Main"
-                 :applications (map #(hash-map :id %
-                                               :version (module-version % request))
+                 :applications (map #(hash-map :id (module-utils/full-uuid->uuid %)
+                                               :version
+                                               (module-utils/latest-or-version-index
+                                                 (retrieve-module % request) %))
                                     modules)}]}}))
 
 (defn replace-modules-by-apps-set
